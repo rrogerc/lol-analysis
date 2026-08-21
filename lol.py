@@ -7,6 +7,7 @@ Usage:
   .venv/bin/python lol.py dashboard                      # self-contained HTML
   .venv/bin/python lol.py status                         # what's in the database
   .venv/bin/python lol.py import-json                    # one-time legacy import
+  .venv/bin/python lol.py import-soloq                   # aggregate ../lol-quant soloq data
 
 All data lives in lol.db (SQLite). The legacy data/ JSON tree is import-only.
 """
@@ -526,11 +527,129 @@ def cmd_import_json(args):
     print(f"\nImported {imported} files into {DB_PATH}")
 
 
+SOLOQ_ROLE_MAP = {"TOP": "top", "JUNGLE": "jungle", "MIDDLE": "middle",
+                  "BOTTOM": "bottom", "UTILITY": "support"}
+# Riot internal names that don't lowercase to the lolalytics slug.
+SOLOQ_SLUG_FIXES = {"monkeyking": "wukong"}
+
+
+def cmd_import_soloq(args):
+    """Aggregate lol-quant's Riot-API soloq parquet into stats rows.
+
+    Produces the same shape as a lolalytics scrape (patch/tier/champion/lane/
+    bucket games+wins), so every report and dashboard works on it unchanged.
+    """
+    try:
+        import pyarrow as pa
+        import pyarrow.compute as pc
+        import pyarrow.dataset as pads
+    except ModuleNotFoundError:
+        sys.exit("pyarrow is required for import-soloq: .venv/bin/pip install pyarrow")
+
+    if not args.tier:
+        args.tier = ("soloq_otp" if args.otp_share else
+                     "soloq_mastery" if args.min_champ_games else "soloq_masters_plus")
+    part_dir = os.path.join(args.quant_dir, "data", "parquet", "participants")
+    if not os.path.isdir(part_dir):
+        sys.exit(f"No participants parquet at {part_dir} — check --quant-dir.")
+
+    filt = pads.field("role").isin(list(SOLOQ_ROLE_MAP))
+    if args.platforms:
+        filt = filt & pads.field("platform").isin(args.platforms)
+    columns = ["patch", "champion", "role", "win", "game_duration"]
+    if args.min_champ_games or args.otp_share:
+        columns.append("puuid")
+    table = pads.dataset(part_dir, format="parquet").to_table(
+        columns=columns, filter=filt)
+    print(f"Read {table.num_rows:,} participant rows from {part_dir}")
+
+    if args.otp_share:
+        # One-tricks: the champion makes up >= X% of the player's games in the
+        # role, with a floor on champion games so tiny samples don't qualify.
+        floor = args.min_champ_games or 20
+        champ_ct = table.select(["puuid", "role", "champion"]).group_by(
+            ["puuid", "role", "champion"]).aggregate([([], "count_all")])
+        role_tot = table.select(["puuid", "role"]).group_by(
+            ["puuid", "role"]).aggregate([([], "count_all")])
+        joined = champ_ct.join(role_tot, keys=["puuid", "role"],
+                               join_type="inner", right_suffix="_role")
+        share = pc.divide(pc.cast(joined["count_all"], pa.float64()),
+                          pc.cast(joined["count_all_role"], pa.float64()))
+        mask = pc.and_(pc.greater_equal(share, args.otp_share / 100),
+                       pc.greater_equal(joined["count_all"], floor))
+        keep = joined.filter(mask).select(["puuid", "role", "champion"])
+        before = table.num_rows
+        table = table.join(keep, keys=["puuid", "role", "champion"], join_type="inner")
+        print(f"One-trick filter (>= {args.otp_share:g}% of role games, "
+              f">= {floor} champion games): kept {table.num_rows:,} of {before:,} rows "
+              f"({len(keep):,} player-champion-roles)")
+    elif args.min_champ_games:
+        # Keep only games where the pilot has >= N season games on that champion.
+        counts = table.select(["puuid", "champion"]).group_by(
+            ["puuid", "champion"]).aggregate([([], "count_all")])
+        counts = counts.filter(
+            pc.field("count_all") >= args.min_champ_games).drop_columns(["count_all"])
+        before = table.num_rows
+        table = table.join(counts, keys=["puuid", "champion"], join_type="inner")
+        print(f"Mastery filter (>= {args.min_champ_games} games on champion): "
+              f"kept {table.num_rows:,} of {before:,} rows")
+
+    # game_duration is seconds; buckets 1-7 are 0-15, 15-20, ... 40+ minutes.
+    bucket = pc.min_element_wise(
+        pc.max_element_wise(pc.subtract(pc.divide(table["game_duration"], 300), 1), 1), 7)
+    grouped = pa.table({
+        "patch": table["patch"], "champion": table["champion"],
+        "role": table["role"], "bucket": bucket,
+        "win": pc.cast(table["win"], pa.int32()),
+    }).group_by(["patch", "champion", "role", "bucket"]).aggregate(
+        [("win", "sum"), ("win", "count")])
+
+    per_patch = {}
+    for row in grouped.to_pylist():
+        slug = row["champion"].lower()
+        slug = SOLOQ_SLUG_FIXES.get(slug, slug)
+        lane = SOLOQ_ROLE_MAP[row["role"]]
+        buckets = per_patch.setdefault(row["patch"], {}).setdefault((slug, lane), {})
+        buckets[row["bucket"]] = (row["win_count"], row["win_sum"])
+
+    con = db_connect()
+    for patch in sorted(per_patch, key=patch_key):
+        champ_lanes = per_patch[patch]
+        champ_games = {}
+        for (slug, lane), buckets in champ_lanes.items():
+            champ_games[slug] = champ_games.get(slug, 0) + sum(g for g, _ in buckets.values())
+        # Same rule as the scraper: keep the most-played lane plus any lane
+        # above the play-rate threshold.
+        main_lane = {}
+        for (slug, lane), buckets in champ_lanes.items():
+            games = sum(g for g, _ in buckets.values())
+            if games > main_lane.get(slug, (0, None))[0]:
+                main_lane[slug] = (games, lane)
+        entries = []
+        for (slug, lane), buckets in sorted(champ_lanes.items()):
+            rate = sum(g for g, _ in buckets.values()) / champ_games[slug] * 100
+            if rate < args.min_lane_rate and lane != main_lane[slug][1]:
+                continue
+            entries.append({"champion": slug, "lane": lane,
+                            "lane_play_rate": round(rate, 2),
+                            "buckets": {str(b): {"games": g, "wins": w}
+                                        for b, (g, w) in sorted(buckets.items())}})
+        replace_patch_data(con, patch, args.tier, entries)
+        out_dir = os.path.join(DATA_DIR, patch, args.tier)
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, "champion_win_rates.json"), "w") as f:
+            json.dump(entries, f, indent=2)
+        total = sum(g for _, bs in champ_lanes.items() for g, _ in bs.values())
+        print(f"{patch}/{args.tier}: {len(entries)} champion-lane records "
+              f"({total // 10:,} games)")
+    print("Done.")
+
+
 # ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
 
-def build_rows(con, tier, patches, min_games=1000, min_bucket_games=200):
+def build_rows(con, tier, patches, min_games=1000, min_bucket_games=1000):
     """Aggregated per-champion-lane payload used by the dashboard and the web API."""
     agg = aggregate(con, tier, patches)
     rows = []
@@ -707,6 +826,7 @@ DASHBOARD_TEMPLATE = r"""<!doctype html>
         <th data-k="l">Lane <span class="arrow"></span></th>
         <th data-k="early">Early WR <span class="arrow"></span></th>
         <th data-k="late">Late WR <span class="arrow"></span></th>
+        <th data-k="wr40">40+ WR <span class="arrow"></span></th>
         <th data-k="delta">Scaling Δ <span class="arrow"></span></th>
         <th data-k="total">Games <span class="arrow"></span></th>
       </tr></thead>
@@ -754,8 +874,9 @@ function visibleRows() {
     r.total >= min && (!lane || r.l === lane) && (!q || r.c.includes(q)));
 }
 function renderTable() {
+  const val = r => sortKey === "wr40" ? r.wr[6] : r[sortKey];
   const rows = visibleRows().slice().sort((a, b) => {
-    const va = a[sortKey], vb = b[sortKey];
+    const va = val(a), vb = val(b);
     if (va == null) return 1; if (vb == null) return -1;
     return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
   });
@@ -773,6 +894,7 @@ function renderTable() {
       cell(r.l, "lane-tag"),
       cell(r.early == null ? "—" : r.early.toFixed(2) + "%"),
       cell(r.late == null ? "—" : r.late.toFixed(2) + "%"),
+      cell(r.wr[6] == null ? "—" : r.wr[6].toFixed(2) + "%"),
       cell(r.delta == null ? "—" : (r.delta > 0 ? "+" : "") + r.delta.toFixed(2),
            r.delta > 0 ? "pos" : "neg"),
       cell(fmtInt(r.total)),
@@ -1016,7 +1138,8 @@ def _api_champion(con, tier, name):
             [tier, name, *patches]):
         d = lanes.setdefault(lane, {"wr": [None] * 7, "g": [0] * 7})
         d["g"][bucket - 1] = games
-        d["wr"][bucket - 1] = round(wins / games * 100, 2) if games >= 200 else None
+        # 1000 games ~= +/-3pp at 95%; below that a chart point is mostly noise.
+        d["wr"][bucket - 1] = round(wins / games * 100, 2) if games >= 1000 else None
     per_patch = {}
     for lane, patch, games, wins in con.execute(
             f"SELECT lane, patch, SUM(games), SUM(wins) FROM stats "
@@ -1187,8 +1310,9 @@ def main():
     sp.add_argument("--out", default="dashboard.html")
     sp.add_argument("--min-games", type=int, default=1000,
                     help="drop champion-roles with fewer total games")
-    sp.add_argument("--min-bucket-games", type=int, default=200,
-                    help="blank out chart points backed by fewer games")
+    sp.add_argument("--min-bucket-games", type=int, default=1000,
+                    help="blank out chart points backed by fewer games "
+                         "(1000 ~= +/-3pp at 95%%)")
     sp.set_defaults(func=cmd_dashboard)
 
     sp = sub.add_parser("export", help="write the web app as a static site (used by GitHub Pages)")
@@ -1207,6 +1331,26 @@ def main():
     sp = sub.add_parser("import-json", help="import legacy data/ JSON files")
     sp.add_argument("--data-dir", default="data")
     sp.set_defaults(func=cmd_import_json)
+
+    sp = sub.add_parser("import-soloq",
+                        help="aggregate lol-quant's Riot soloq parquet into the DB")
+    sp.add_argument("--quant-dir", default=os.path.join(BASE_DIR, "..", "lol-quant"),
+                    help="path to the lol-quant checkout (default: ../lol-quant)")
+    sp.add_argument("--tier",
+                    help="tier name to store the data under "
+                         "(default: soloq_masters_plus, or soloq_mastery with --min-champ-games)")
+    sp.add_argument("--platforms", nargs="+",
+                    help="riot platforms to include, e.g. kr euw1 na1 (default: all)")
+    sp.add_argument("--min-lane-rate", type=float, default=10,
+                    help="keep a lane if its play rate exceeds this %% (default 10)")
+    sp.add_argument("--min-champ-games", type=int, default=0,
+                    help="only count games where the player has at least this many "
+                         "season games on the champion (default: off)")
+    sp.add_argument("--otp-share", type=float, default=0,
+                    help="one-trick filter: champion must be at least this %% of the "
+                         "player's games in the role (e.g. 80); implies a 20-game "
+                         "champion floor unless --min-champ-games is set")
+    sp.set_defaults(func=cmd_import_soloq)
 
     args = p.parse_args()
     args.func(args)

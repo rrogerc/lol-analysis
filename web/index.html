@@ -106,6 +106,8 @@
     border-color: var(--baseline); font-weight: 600;
   }
   .lane-tag { color: var(--text-secondary); }
+  .ci { color: var(--muted); font-weight: 400; font-size: 11px; }
+  .tooltip .tt-ci { color: var(--muted); }
   svg text { font-family: inherit; }
   .view { display: none; }
   .view.active { display: block; }
@@ -168,9 +170,9 @@
       <option>bottom</option><option>support</option>
     </select>
     <select id="mingames" aria-label="Minimum games">
-      <option value="200">≥ 200 games</option>
-      <option value="1000" selected>≥ 1,000 games</option>
-      <option value="5000">≥ 5,000 games</option>
+      <option value="1000">≥ 1,000 games</option>
+      <option value="2500">≥ 2,500 games</option>
+      <option value="5000" selected>≥ 5,000 games</option>
       <option value="20000">≥ 20,000 games</option>
     </select>
   </div>
@@ -187,7 +189,7 @@
 
   <div class="card">
     <h2>Rankings</h2>
-    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. Click a row to chart it.</div>
+    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. ± is the 95% confidence interval — differences inside it are noise. Click a row to chart it.</div>
     <div class="seg" id="bucket-seg"></div>
     <div class="tablewrap">
       <table id="tbl">
@@ -287,6 +289,8 @@ const SLOTS = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
 const LANE_SLOT = { top: 0, jungle: 1, middle: 2, bottom: 3, support: 4, main: 0 };
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 const fmtInt = n => n.toLocaleString("en-US");
+// 95% CI half-width in percentage points for a win rate over n games.
+const ci95 = (wr, n) => n ? 1.96 * Math.sqrt(wr * (100 - wr) / n) : null;
 const fmtCompact = n => n >= 1e6 ? (n/1e6).toFixed(1) + "M" : n >= 1e3 ? (n/1e3).toFixed(0) + "K" : "" + n;
 const api = (path) => fetch(path).then(r => {
   if (!r.ok) throw new Error("HTTP " + r.status);
@@ -389,6 +393,12 @@ function lineChart(svg, tooltip, series, xLabels, emptyMsg) {
       const val = document.createElement("span");
       val.className = "tt-val";
       val.textContent = s.values[i] == null ? "—" : s.values[i].toFixed(1) + "%";
+      if (s.values[i] != null && s.games && s.games[i]) {
+        const c = document.createElement("span");
+        c.className = "tt-ci";
+        c.textContent = "±" + ci95(s.values[i], s.games[i]).toFixed(1);
+        val.append(" ", c);
+      }
       const name = document.createElement("span");
       name.className = "tt-name";
       name.textContent = s.name;
@@ -458,6 +468,21 @@ function cell(text, cls) {
   if (cls) td.className = cls;
   return td;
 }
+function metricCell(text, ci, cls) {
+  const td = cell(text, cls);
+  if (ci != null) {
+    const s = document.createElement("span");
+    s.className = "ci";
+    s.textContent = " ±" + ci.toFixed(1);
+    td.append(s);
+  }
+  return td;
+}
+function deltaCi(r) {
+  const gE = r.g[0] + r.g[1], gL = r.g[5] + r.g[6];
+  if (r.early == null || r.late == null || !gE || !gL) return null;
+  return Math.hypot(ci95(r.early, gE), ci95(r.late, gL));
+}
 let sortKey = "rank", sortDir = 1;
 function renderTable() {
   const byDelta = rankBucket === "delta";
@@ -487,8 +512,10 @@ function renderTable() {
     tr.append(
       cell(String(rankOf.get(id))), tdName, cell(r.l, "lane-tag"),
       byDelta
-        ? cell((r.delta > 0 ? "+" : "") + r.delta.toFixed(2), r.delta > 0 ? "pos" : "neg")
-        : cell(r.wr[rankBucket].toFixed(2) + "%"),
+        ? metricCell((r.delta > 0 ? "+" : "") + r.delta.toFixed(2), deltaCi(r),
+                     r.delta > 0 ? "pos" : "neg")
+        : metricCell(r.wr[rankBucket].toFixed(2) + "%",
+                     ci95(r.wr[rankBucket], r.g[rankBucket])),
       cell(fmtInt(gamesOf(r))));
     tr.addEventListener("click", () => toggle(r));
     return tr;

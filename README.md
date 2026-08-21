@@ -59,6 +59,10 @@ everything without touching the CLI:
 
 # What's in the database
 .venv/bin/python lol.py status
+
+# Aggregate the Riot-API soloq crawl from ../lol-quant into its own tier
+# (soloq_masters_plus). Re-run any time the crawl has new games; needs pyarrow.
+.venv/bin/python lol.py import-soloq
 ```
 
 Analysis commands default to the most recently scraped tier and all of its
