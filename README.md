@@ -24,23 +24,24 @@ committed JSON archive:
 
 ## Getting data
 
-Data comes from the `../lol-quant` Riot-API crawl. Re-run any time the crawl
-has new games; needs pyarrow.
+Data comes from the `../lol-quant` Riot-API crawl, read in place — nothing is
+copied between the repos. Whenever the crawl has new games:
 
 ```bash
-# All masters+ games -> tier soloq_masters_plus
-.venv/bin/python lol.py import-soloq
-
-# Only games where the pilot has >= 20 season games on the champ -> soloq_mastery
-.venv/bin/python lol.py import-soloq --min-champ-games 20
-
-# One-tricks only (champ >= 80% of the player's role games) -> soloq_otp
-.venv/bin/python lol.py import-soloq --otp-share 80
+.venv/bin/python lol.py sync
 ```
 
-Each import writes to `lol.db` and mirrors JSON to `data/<patch>/<tier>/` —
-commit and push that to update the published site (its CI rebuilds the DB from
-`data/` and exports a static snapshot to GitHub Pages).
+This refreshes all three tiers with their canonical definitions:
+
+- `soloq_masters_plus` — every game
+- `soloq_mastery` — pilot has ≥ 20 season games on the champion
+- `soloq_otp` — one-tricks: champion is ≥ 80% of the player's role games
+
+Sync writes to `lol.db` and mirrors JSON to `data/<patch>/<tier>/` — commit
+and push that to update the published site (its CI rebuilds the DB from
+`data/` and exports a static snapshot to GitHub Pages). For a one-off custom
+slice (other thresholds, specific platforms, a different tier name), use
+`lol.py import-soloq` directly.
 
 ## The dashboard (recommended)
 

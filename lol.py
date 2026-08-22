@@ -1,7 +1,7 @@
 """LoL scaling analysis — champion win rates by game length from the ../lol-quant soloq crawl.
 
 Usage:
-  .venv/bin/python lol.py import-soloq                   # aggregate ../lol-quant soloq data
+  .venv/bin/python lol.py sync                           # refresh all tiers from ../lol-quant
   .venv/bin/python lol.py report [--scaling]             # ranked tables
   .venv/bin/python lol.py champion kayle                 # one champ's curves
   .venv/bin/python lol.py dashboard                      # self-contained HTML
@@ -377,6 +377,29 @@ def cmd_import_soloq(args):
         print(f"{patch}/{args.tier}: {len(entries)} champion-lane records "
               f"({total // 10:,} games)")
     print("Done.")
+
+
+def cmd_sync(args):
+    """Refresh all three soloq tiers from the lol-quant crawl in one go.
+
+    The tier definitions live here so every refresh uses the same thresholds:
+    soloq_masters_plus is every game, soloq_mastery requires season games on
+    the champion, soloq_otp requires the champion to dominate the player's
+    role games.
+    """
+    presets = [
+        ("soloq_masters_plus", 0, 0),
+        ("soloq_mastery", args.min_champ_games, 0),
+        ("soloq_otp", 0, args.otp_share),
+    ]
+    for tier, min_champ_games, otp_share in presets:
+        print(f"=== {tier} ===")
+        cmd_import_soloq(argparse.Namespace(
+            quant_dir=args.quant_dir, tier=tier, platforms=args.platforms,
+            min_lane_rate=10, min_champ_games=min_champ_games,
+            otp_share=otp_share))
+        print()
+    print("Sync complete — commit and push data/ to update the published site.")
 
 
 # ---------------------------------------------------------------------------
@@ -1000,6 +1023,19 @@ def main():
     sp = sub.add_parser("import-json", help="rebuild lol.db from the data/ JSON tree")
     sp.add_argument("--data-dir", default="data")
     sp.set_defaults(func=cmd_import_json)
+
+    sp = sub.add_parser("sync",
+                        help="refresh all three soloq tiers from ../lol-quant in one go")
+    sp.add_argument("--quant-dir", default=os.path.join(BASE_DIR, "..", "lol-quant"),
+                    help="path to the lol-quant checkout (default: ../lol-quant)")
+    sp.add_argument("--platforms", nargs="+",
+                    help="riot platforms to include, e.g. kr euw1 na1 (default: all)")
+    sp.add_argument("--min-champ-games", type=int, default=20,
+                    help="soloq_mastery threshold: season games on the champion (default 20)")
+    sp.add_argument("--otp-share", type=float, default=80,
+                    help="soloq_otp threshold: champion's share of the player's "
+                         "role games in %% (default 80)")
+    sp.set_defaults(func=cmd_sync)
 
     sp = sub.add_parser("import-soloq",
                         help="aggregate lol-quant's Riot soloq parquet into the DB")
