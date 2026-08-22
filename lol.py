@@ -1,19 +1,18 @@
-"""LoL scaling analysis — scrape lolalytics and analyze champion win rates by game length.
+"""LoL scaling analysis — champion win rates by game length from the ../lol-quant soloq crawl.
 
 Usage:
-  .venv/bin/python lol.py scrape --tier diamond_plus     # fetch whatever's missing
+  .venv/bin/python lol.py import-soloq                   # aggregate ../lol-quant soloq data
   .venv/bin/python lol.py report [--scaling]             # ranked tables
   .venv/bin/python lol.py champion kayle                 # one champ's curves
   .venv/bin/python lol.py dashboard                      # self-contained HTML
   .venv/bin/python lol.py status                         # what's in the database
-  .venv/bin/python lol.py import-json                    # one-time legacy import
-  .venv/bin/python lol.py import-soloq                   # aggregate ../lol-quant soloq data
+  .venv/bin/python lol.py import-json                    # rebuild lol.db from data/
 
-All data lives in lol.db (SQLite). The legacy data/ JSON tree is import-only.
+All data lives in lol.db (SQLite). The data/ JSON tree mirrors it for the
+published site's CI, which rebuilds the DB from it via import-json.
 """
 
 import argparse
-import asyncio
 import csv
 import json
 import os
@@ -32,9 +31,6 @@ BUCKET_LABELS = {
 }
 EARLY_BUCKETS = (1, 2)   # 0-20 min
 LATE_BUCKETS = (6, 7)    # 35+ min
-
-BOOTSTRAP_CHAMP = "missfortune"
-PROBE_CHAMP = "annie"
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +73,7 @@ def db_patches(con, tier):
 
 
 def default_tier(con):
-    """Most recently scraped tier; ties (e.g. one bulk import) broken by
+    """Most recently imported tier; ties (e.g. one bulk import) broken by
     newest patch covered, then by data volume."""
     rows = con.execute(
         "SELECT tier, MAX(scraped_at), SUM(games) FROM stats GROUP BY tier"
@@ -124,271 +120,13 @@ def phase_wr(buckets, phase):
 
 
 # ---------------------------------------------------------------------------
-# Scraping (qwik/json parsing ported from the original scraper)
-# ---------------------------------------------------------------------------
-
-def _qwik_objs(html_content):
-    match = re.search(r'<script type="qwik/json">(.*?)</script>', html_content, re.DOTALL)
-    if not match:
-        return None
-    try:
-        return json.loads(match.group(1)).get("objs", [])
-    except json.JSONDecodeError:
-        return None
-
-
-def _make_resolver(objs):
-    memo = {}
-
-    def resolve(idx_str):
-        if idx_str in memo:
-            return memo[idx_str]
-        res = idx_str
-        if isinstance(idx_str, str):
-            if idx_str.startswith("\u0012"):
-                res = resolve(idx_str[1:])
-            elif idx_str.startswith("\u0011"):
-                ref = idx_str[1:].split(" ")[0]
-                if ref.endswith("!"):
-                    ref = ref[:-1]
-                res = resolve(ref)
-            else:
-                try:
-                    idx = int(idx_str, 36)
-                    if idx < len(objs):
-                        val = objs[idx]
-                        if isinstance(val, str) and (val.startswith("\u0012") or val.startswith("\u0011")):
-                            res = resolve(val)
-                        else:
-                            res = val
-                except ValueError:
-                    pass
-        memo[idx_str] = res
-        return res
-
-    return resolve
-
-
-def get_champion_slugs(html_content):
-    objs = _qwik_objs(html_content)
-    if objs is None:
-        return []
-    resolve = _make_resolver(objs)
-    for obj in objs:
-        if isinstance(obj, dict) and "champions" in obj and "champTitles" in obj:
-            champions = resolve(obj["champions"])
-            if isinstance(champions, dict):
-                return list(champions.keys())
-    return []
-
-
-def parse_champion_page(html_content, champion):
-    """Extract lane info + time-bucket stats from a champion build page."""
-    objs = _qwik_objs(html_content)
-    if objs is None:
-        return None
-    resolve = _make_resolver(objs)
-
-    main_data = None
-    for obj in objs:
-        if isinstance(obj, dict) and "sidebar" in obj and "summary" in obj:
-            main_data = obj
-            break
-    if not main_data:
-        return None
-
-    try:
-        header = resolve(main_data.get("header"))
-        page_lane = resolve(header.get("lane")) if isinstance(header, dict) else None
-        page_patch = resolve(header.get("patch")) if isinstance(header, dict) else None
-
-        lanes = {}
-        nav = resolve(main_data.get("nav"))
-        if isinstance(nav, dict) and "lanes" in nav:
-            raw = resolve(nav["lanes"])
-            if isinstance(raw, dict):
-                for lane_name, rate in raw.items():
-                    rate = resolve(rate)
-                    lanes[lane_name] = rate if isinstance(rate, (int, float)) else 0
-
-        sidebar = resolve(main_data["sidebar"])
-        if not (isinstance(sidebar, dict) and "time" in sidebar):
-            return None
-        time_data = resolve(sidebar["time"])
-        if not (isinstance(time_data, dict) and "time" in time_data and "timeWin" in time_data):
-            return None
-        games_obj = resolve(time_data["time"])
-        wins_obj = resolve(time_data["timeWin"])
-
-        buckets = {}
-        for i in range(1, 8):
-            games = resolve(games_obj.get(str(i), 0))
-            wins = resolve(wins_obj.get(str(i), 0))
-            if not isinstance(games, (int, float)):
-                games = 0
-            if not isinstance(wins, (int, float)):
-                wins = 0
-            buckets[str(i)] = {"games": int(games), "wins": int(wins)}
-
-        return {"champion": champion, "lane": page_lane, "patch": page_patch,
-                "lanes": lanes, "buckets": buckets}
-    except Exception as e:
-        print(f"Error extracting {champion}: {e}")
-        return None
-
-
-def build_url(champion, tier, patch=None, lane=None):
-    url = f"https://lolalytics.com/lol/{champion}/build/?tier={tier}"
-    if patch:
-        url += f"&patch={patch}"
-    if lane:
-        url += f"&lane={lane}"
-    return url
-
-
-async def get_bootstrap(session, tier, log=print):
-    """Fetch the bootstrap page (current patch); escalate to a browser only if challenged.
-
-    lolalytics sometimes fronts with a Cloudflare JS challenge; curl_cffi's
-    Chrome TLS impersonation usually passes without one.
-    """
-    url = build_url(BOOTSTRAP_CHAMP, tier)
-    try:
-        r = await session.get(url, impersonate="chrome")
-        if r.status_code == 200 and "qwik/json" in r.text:
-            return r.text
-    except Exception as e:
-        log(f"Plain bootstrap fetch failed: {e}")
-
-    log("Cloudflare challenge detected — falling back to a browser.")
-    import nodriver as uc
-    for headless in (True, False):
-        mode = "headless" if headless else "visible"
-        try:
-            log(f"Launching {mode} browser...")
-            browser = await uc.start(headless=headless)
-            try:
-                page = await browser.get(url)
-                html = ""
-                for _ in range(20):
-                    await page.sleep(1)
-                    html = await page.get_content()
-                    if "qwik/json" in html:
-                        break
-                if "qwik/json" not in html:
-                    raise RuntimeError("challenge not solved within timeout")
-                user_agent = await page.evaluate("navigator.userAgent")
-                cookies = await browser.cookies.get_all()
-                session.cookies.update({c.name: c.value for c in cookies})
-                session.headers["User-Agent"] = user_agent
-                return html
-            finally:
-                browser.stop()
-        except Exception as e:
-            log(f"{mode} browser attempt failed: {e}")
-    raise RuntimeError("Could not get past Cloudflare with any method.")
-
-
-async def scrape_patch(session, champions, tier, patch, concurrency, min_lane_rate, log=print):
-    """Scrape one patch/tier; returns a list of champion-lane entries."""
-    sem = asyncio.Semaphore(concurrency)
-    results = []
-
-    async def fetch_and_parse(champ, lane=None):
-        url = build_url(champ, tier, patch, lane)
-        async with sem:
-            try:
-                r = await session.get(url, impersonate="chrome")
-            except Exception as e:
-                log(f"Exception fetching {champ} ({patch}/{tier}/{lane}): {e}")
-                return None
-        if r.status_code != 200:
-            if r.status_code != 404:  # 404 = champ absent that patch, common for new champs
-                log(f"Error fetching {champ} ({patch}/{tier}/{lane}): {r.status_code}")
-            return None
-        return parse_champion_page(r.text, champ)
-
-    def make_entry(page, lanes):
-        return {"champion": page["champion"], "lane": page["lane"],
-                "lane_play_rate": round(lanes.get(page["lane"], 0), 2),
-                "buckets": page["buckets"]}
-
-    async def process(champ):
-        page = await fetch_and_parse(champ)
-        if not page or not page["lane"]:
-            return
-        lanes = page.pop("lanes")
-        results.append(make_entry(page, lanes))
-        extra = [l for l, rate in lanes.items()
-                 if l != page["lane"] and rate > min_lane_rate]
-        if extra:
-            pages = await asyncio.gather(*(fetch_and_parse(champ, l) for l in extra))
-            for p in pages:
-                if p:
-                    results.append(make_entry(p, lanes))
-
-    await asyncio.gather(*(process(c) for c in champions))
-    return results
-
-
-async def run_scrape(args, log=print):
-    from curl_cffi import AsyncSession
-
-    con = db_connect()
-    async with AsyncSession(max_clients=args.concurrency) as session:
-        html = await get_bootstrap(session, args.tier, log)
-        boot = parse_champion_page(html, BOOTSTRAP_CHAMP)
-        current_patch = boot["patch"] if boot else None
-        champions = get_champion_slugs(html)
-        if not current_patch or not champions:
-            log("Could not read current patch / champion list from bootstrap page.")
-            return
-        log(f"Current patch: {current_patch}. {len(champions)} champions.")
-
-        if args.patches:
-            targets = args.patches
-        else:
-            season, minor = (int(x) for x in current_patch.split("."))
-            targets = [f"{season}.{i}" for i in range(1, minor + 1)]
-        targets = sorted(targets, key=patch_key, reverse=True)
-
-        have = set(db_patches(con, args.tier))
-        for patch in targets:
-            if patch != current_patch and patch in have and not args.force:
-                log(f"{patch}/{args.tier}: already in database, skipping.")
-                continue
-
-            # One-request probe so a pruned patch (e.g. 16.2) costs 1 fetch, not 170.
-            probe = await session.get(build_url(PROBE_CHAMP, args.tier, patch), impersonate="chrome")
-            if probe.status_code != 200:
-                log(f"{patch}/{args.tier}: not available on lolalytics ({probe.status_code}), skipping.")
-                continue
-
-            log(f"{patch}/{args.tier}: scraping...")
-            entries = await scrape_patch(session, champions, args.tier, patch,
-                                         args.concurrency, args.min_lane_rate, log)
-            if not entries:
-                log(f"{patch}/{args.tier}: WARNING — no data extracted, nothing saved.")
-                continue
-            replace_patch_data(con, patch, args.tier, entries)
-            # Mirror to the JSON archive so a commit + push updates the
-            # published site (its CI rebuilds the DB from data/).
-            out_dir = os.path.join(DATA_DIR, patch, args.tier)
-            os.makedirs(out_dir, exist_ok=True)
-            with open(os.path.join(out_dir, "champion_win_rates.json"), "w") as f:
-                json.dump(entries, f, indent=2)
-            log(f"{patch}/{args.tier}: saved {len(entries)} champion-lane records.")
-    log("Done.")
-
-
-# ---------------------------------------------------------------------------
 # Reports
 # ---------------------------------------------------------------------------
 
 def resolve_slice(con, args):
     tier = getattr(args, "tier", None) or default_tier(con)
     if not tier:
-        sys.exit("Database is empty — run `lol.py scrape` or `lol.py import-json` first.")
+        sys.exit("Database is empty — run `lol.py import-soloq` or `lol.py import-json` first.")
     patches = getattr(args, "patches", None) or db_patches(con, tier)
     if not patches:
         sys.exit(f"No data for tier '{tier}'. Available: run `lol.py status`.")
@@ -466,7 +204,7 @@ def cmd_champion(args):
         f"WHERE tier=? AND champion=? AND patch IN ({ph}) GROUP BY lane, bucket",
         [tier, args.name, *patches]).fetchall()
     if not rows:
-        sys.exit(f"No data for '{args.name}' at {tier}. (Names are lolalytics slugs, e.g. 'missfortune'.)")
+        sys.exit(f"No data for '{args.name}' at {tier}. (Names are lowercase slugs, e.g. 'missfortune'.)")
 
     lanes = {}
     coverage = {}
@@ -497,7 +235,7 @@ def cmd_status(args):
         print("Database is empty.")
         return
     rows.sort(key=lambda r: (r[0], patch_key(r[1])))
-    print(f"{'Tier':<15} {'Patch':<8} {'Champ-lanes':<12} {'Games':<14} {'Scraped at':<22}")
+    print(f"{'Tier':<15} {'Patch':<8} {'Champ-lanes':<12} {'Games':<14} {'Imported at':<22}")
     print("-" * 72)
     for tier, patch, recs, games, at in rows:
         print(f"{tier:<15} {patch:<8} {recs:<12} {games:<14,} {at:<22}")
@@ -529,16 +267,13 @@ def cmd_import_json(args):
 
 SOLOQ_ROLE_MAP = {"TOP": "top", "JUNGLE": "jungle", "MIDDLE": "middle",
                   "BOTTOM": "bottom", "UTILITY": "support"}
-# Riot internal names that don't lowercase to the lolalytics slug.
+# Riot internal names that don't lowercase to the champion's usual slug.
 SOLOQ_SLUG_FIXES = {"monkeyking": "wukong"}
 
 
 def cmd_import_soloq(args):
-    """Aggregate lol-quant's Riot-API soloq parquet into stats rows.
-
-    Produces the same shape as a lolalytics scrape (patch/tier/champion/lane/
-    bucket games+wins), so every report and dashboard works on it unchanged.
-    """
+    """Aggregate lol-quant's Riot-API soloq parquet into stats rows
+    (patch/tier/champion/lane/bucket games+wins)."""
     try:
         import pyarrow as pa
         import pyarrow.compute as pc
@@ -618,8 +353,7 @@ def cmd_import_soloq(args):
         champ_games = {}
         for (slug, lane), buckets in champ_lanes.items():
             champ_games[slug] = champ_games.get(slug, 0) + sum(g for g, _ in buckets.values())
-        # Same rule as the scraper: keep the most-played lane plus any lane
-        # above the play-rate threshold.
+        # Keep the most-played lane plus any lane above the play-rate threshold.
         main_lane = {}
         for (slug, lane), buckets in champ_lanes.items():
             games = sum(g for g, _ in buckets.values())
@@ -1082,41 +816,6 @@ render();
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
-SCRAPE_STATE = {"running": False, "tier": None, "lines": [], "error": None,
-                "started_at": None, "finished_at": None}
-_scrape_lock = None  # created lazily so `import threading` stays inside serve
-
-
-def _start_scrape(tier, patches=None, force=False, min_lane_rate=10):
-    import threading
-    global _scrape_lock
-    if _scrape_lock is None:
-        _scrape_lock = threading.Lock()
-    with _scrape_lock:
-        if SCRAPE_STATE["running"]:
-            return False
-        SCRAPE_STATE.update(running=True, tier=tier, lines=[], error=None,
-                            finished_at=None,
-                            started_at=datetime.now(timezone.utc).strftime("%H:%M:%SZ"))
-
-    def log(msg):
-        SCRAPE_STATE["lines"].append(str(msg))
-
-    def worker():
-        ns = argparse.Namespace(tier=tier, patches=patches, concurrency=5,
-                                min_lane_rate=min_lane_rate, force=force)
-        try:
-            asyncio.run(run_scrape(ns, log=log))
-        except Exception as e:
-            SCRAPE_STATE["error"] = str(e)
-            log(f"ERROR: {e}")
-        finally:
-            SCRAPE_STATE["running"] = False
-            SCRAPE_STATE["finished_at"] = datetime.now(timezone.utc).strftime("%H:%M:%SZ")
-
-    threading.Thread(target=worker, daemon=True).start()
-    return True
-
 
 def _api_meta(con):
     inv = [{"tier": t, "patch": p, "champLanes": r, "games": g, "scrapedAt": at}
@@ -1157,7 +856,7 @@ def cmd_export(args):
     con = db_connect()
     meta = _api_meta(con)
     if not meta["tiers"]:
-        sys.exit("Database is empty — run import-json or scrape first.")
+        sys.exit("Database is empty — run import-soloq or import-json first.")
     out = args.out
     os.makedirs(os.path.join(out, "api"), exist_ok=True)
     shutil.copy(os.path.join(WEB_DIR, "index.html"), os.path.join(out, "index.html"))
@@ -1230,31 +929,10 @@ def cmd_serve(args):
                     self._json(names)
                 elif m := re.fullmatch(r"/api/champion/([a-z0-9_]+)/([a-z0-9]+)\.json", u.path):
                     self._json(_api_champion(con, m.group(1), m.group(2)))
-                elif u.path == "/api/scrape":
-                    self._json({k: v for k, v in SCRAPE_STATE.items()})
                 else:
                     self._json({"error": "not found"}, 404)
             except BrokenPipeError:
                 pass
-            except Exception as e:
-                self._json({"error": str(e)}, 500)
-
-        def do_POST(self):
-            u = urlparse(self.path)
-            if u.path != "/api/scrape":
-                self._json({"error": "not found"}, 404)
-                return
-            try:
-                length = int(self.headers.get("Content-Length", 0))
-                body = json.loads(self.rfile.read(length) or b"{}")
-                tier = (body.get("tier") or "").strip()
-                if not re.fullmatch(r"[a-z0-9_]+", tier):
-                    self._json({"error": "invalid tier"}, 400)
-                    return
-                ok = _start_scrape(tier, body.get("patches"), bool(body.get("force")))
-                self._json({"started": ok} if ok else
-                           {"started": False, "error": "a scrape is already running"},
-                           200 if ok else 409)
             except Exception as e:
                 self._json({"error": str(e)}, 500)
 
@@ -1278,17 +956,8 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def slice_args(sp):
-        sp.add_argument("--tier", help="rank tier (default: most recently scraped)")
+        sp.add_argument("--tier", help="tier (default: most recently imported)")
         sp.add_argument("--patches", nargs="+", help="patches to include (default: all in DB)")
-
-    sp = sub.add_parser("scrape", help="scrape missing patches (current patch always refreshed)")
-    sp.add_argument("--tier", required=True, help="e.g. diamond_plus, master_plus, emerald_plus")
-    sp.add_argument("--patches", nargs="+", help="explicit patch list (default: whole current season)")
-    sp.add_argument("--concurrency", type=int, default=5)
-    sp.add_argument("--min-lane-rate", type=float, default=10,
-                    help="scrape a lane if its play rate exceeds this %% (default 10)")
-    sp.add_argument("--force", action="store_true", help="re-scrape patches already in the DB")
-    sp.set_defaults(func=lambda a: asyncio.run(run_scrape(a)))
 
     sp = sub.add_parser("report", help="ranked win-rate tables per time bucket")
     slice_args(sp)
@@ -1301,7 +970,7 @@ def main():
     sp.set_defaults(func=cmd_report)
 
     sp = sub.add_parser("champion", help="one champion's win-rate curve per lane")
-    sp.add_argument("name", help="lolalytics slug, e.g. missfortune")
+    sp.add_argument("name", help="lowercase champion slug, e.g. missfortune")
     slice_args(sp)
     sp.set_defaults(func=cmd_champion)
 
@@ -1319,7 +988,7 @@ def main():
     sp.add_argument("--out", default="_site")
     sp.set_defaults(func=cmd_export)
 
-    sp = sub.add_parser("serve", help="run the local web dashboard (data + scraping in the browser)")
+    sp = sub.add_parser("serve", help="run the local web dashboard")
     sp.add_argument("--host", default="127.0.0.1")
     sp.add_argument("--port", type=int, default=8321)
     sp.add_argument("--no-open", action="store_true", help="don't auto-open the browser")
@@ -1328,7 +997,7 @@ def main():
     sp = sub.add_parser("status", help="show what's in the database")
     sp.set_defaults(func=cmd_status)
 
-    sp = sub.add_parser("import-json", help="import legacy data/ JSON files")
+    sp = sub.add_parser("import-json", help="rebuild lol.db from the data/ JSON tree")
     sp.add_argument("--data-dir", default="data")
     sp.set_defaults(func=cmd_import_json)
 

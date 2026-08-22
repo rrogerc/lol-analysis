@@ -1,12 +1,12 @@
 # LoL Scaling Analysis
 
-Scrapes League of Legends champion win rates by game length from Lolalytics and
-analyzes which champions scale into the late game. Champions are tracked
-per role: every lane with more than 10% play rate gets its own entry, so flex
-picks like Gragas have separate top/jungle/mid stats.
+Analyzes which League of Legends champions scale into the late game, using
+champion win rates by game length aggregated from the Riot-API soloq crawl in
+`../lol-quant`. Champions are tracked per role: every lane with more than 10%
+play rate gets its own entry, so flex picks like Gragas have separate
+top/jungle/mid stats.
 
 Everything lives in one SQLite database (`lol.db`) and one CLI (`lol.py`).
-There is no config file — what to scrape and what to analyze are just flags.
 
 ## Setup
 
@@ -15,11 +15,32 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-If you have a legacy `data/` JSON tree, import it once:
+If you're starting from a fresh checkout (no `lol.db`), rebuild it from the
+committed JSON archive:
 
 ```bash
 .venv/bin/python lol.py import-json
 ```
+
+## Getting data
+
+Data comes from the `../lol-quant` Riot-API crawl. Re-run any time the crawl
+has new games; needs pyarrow.
+
+```bash
+# All masters+ games -> tier soloq_masters_plus
+.venv/bin/python lol.py import-soloq
+
+# Only games where the pilot has >= 20 season games on the champ -> soloq_mastery
+.venv/bin/python lol.py import-soloq --min-champ-games 20
+
+# One-tricks only (champ >= 80% of the player's role games) -> soloq_otp
+.venv/bin/python lol.py import-soloq --otp-share 80
+```
+
+Each import writes to `lol.db` and mirrors JSON to `data/<patch>/<tier>/` —
+commit and push that to update the published site (its CI rebuilds the DB from
+`data/` and exports a static snapshot to GitHub Pages).
 
 ## The dashboard (recommended)
 
@@ -27,24 +48,17 @@ If you have a legacy `data/` JSON tree, import it once:
 .venv/bin/python lol.py serve
 ```
 
-Opens `http://127.0.0.1:8321` — an interactive local dashboard where you can do
-everything without touching the CLI:
+Opens `http://127.0.0.1:8321` — an interactive local dashboard:
 
-- **Overview** — win-rate-by-game-length chart + sortable scaling table, with
-  tier/lane/min-games filters. Click table rows to chart champions.
+- **Overview** — win-rate-by-game-length chart + sortable per-bucket rankings,
+  with tier/lane/min-games filters. Click table rows to chart champions.
 - **Champion** — any champion's win-rate curve per lane, plus their win rate
   across patches.
-- **Data & Scrape** — see what's in the database and launch scrapes from the
-  browser with a live progress log. New data appears when the scrape finishes.
+- **Data** — what's in the database, per tier and patch.
 
 ## CLI equivalents
 
 ```bash
-# Scrape a tier. Detects the current patch automatically, scrapes every
-# season patch that's missing from the DB, always refreshes the current one,
-# and skips patches lolalytics no longer serves.
-.venv/bin/python lol.py scrape --tier diamond_plus
-
 # Ranked win-rate tables per game-length bucket (0-15 ... 40+ min)
 .venv/bin/python lol.py report --top 10 --min-games 5000
 
@@ -59,23 +73,14 @@ everything without touching the CLI:
 
 # What's in the database
 .venv/bin/python lol.py status
-
-# Aggregate the Riot-API soloq crawl from ../lol-quant into its own tier
-# (soloq_masters_plus). Re-run any time the crawl has new games; needs pyarrow.
-.venv/bin/python lol.py import-soloq
 ```
 
-Analysis commands default to the most recently scraped tier and all of its
+Analysis commands default to the most recently imported tier and all of its
 patches; narrow with `--tier`, `--patches`, `--lane`, `--min-games`. Add
 `--csv out.csv` to a report to export it.
 
 ## Notes
 
-- The scraper normally runs without a browser (curl_cffi impersonates Chrome's
-  TLS fingerprint). If Cloudflare starts serving a JS challenge it falls back
-  to a headless browser automatically, and a visible one as a last resort.
-- Champion names are lolalytics slugs (`missfortune`, `aurelionsol`).
-- `lol.db` is gitignored; the legacy `data/` JSON tree is kept as an archive
-  and can rebuild the DB via `import-json` at any time.
-- Lolalytics prunes old patches (all of season 15, and 16.2, are already
-  gone) — scrape a season while it's live if you want to keep it.
+- Champion names are lowercase slugs (`missfortune`, `aurelionsol`).
+- `lol.db` is gitignored; the `data/` JSON tree is the committed archive and
+  can rebuild the DB via `import-json` at any time.

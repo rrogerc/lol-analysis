@@ -111,30 +111,6 @@
   svg text { font-family: inherit; }
   .view { display: none; }
   .view.active { display: block; }
-  #scrape-log {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
-    background: var(--page); border: 1px solid var(--grid); border-radius: 6px;
-    padding: 10px; margin-top: 12px; max-height: 320px; overflow-y: auto;
-    white-space: pre-wrap; color: var(--text-secondary); display: none;
-  }
-  .spin {
-    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
-    border: 2px solid var(--grid); border-top-color: var(--s1);
-    animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .cli-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 12px; margin-top: 10px;
-  }
-  .cli-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); }
-  .cli-grid label.cli-check { flex-direction: row; align-items: center; gap: 8px; align-self: end; padding-bottom: 8px; }
-  .cli-outrow { display: flex; gap: 10px; align-items: stretch; }
-  #cli-out {
-    flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
-    background: var(--page); border: 1px solid var(--grid); border-radius: 6px;
-    padding: 12px; overflow-x: auto; white-space: pre; margin: 0; color: var(--text-primary);
-  }
 </style>
 </head>
 <body>
@@ -149,8 +125,7 @@
 <nav>
   <button data-view="overview" class="active">Overview</button>
   <button data-view="champion">Champion</button>
-  <button data-view="data">Data &amp; Scrape</button>
-  <button data-view="cli">CLI Builder</button>
+  <button data-view="data">Data</button>
 </nav>
 
 <!-- ============================ Overview ============================ -->
@@ -232,52 +207,18 @@
   </div>
 </section>
 
-<!-- ============================ Data & Scrape ============================ -->
+<!-- ============================ Data ============================ -->
 <section class="view" id="view-data">
-  <div class="card" id="static-note" style="display:none">
-    <h2>Static snapshot</h2>
-    <div class="hint" id="static-note-text">This is a read-only copy published from the repository data.
-      Run <code>lol.py serve</code> locally to scrape new patches.</div>
-  </div>
-  <div class="card" id="scrape-card">
-    <h2>Scrape</h2>
-    <div class="hint">Scrapes every missing patch of the current season for a tier; the current patch is always refreshed. Runs on the server — you can keep browsing while it works.</div>
-    <div class="controls" style="margin-top:8px">
-      <select id="scrape-tier" aria-label="Tier to scrape"></select>
-      <label class="sub"><input type="checkbox" id="scrape-force"> re-scrape existing patches</label>
-      <button id="scrape-btn">Start scrape</button>
-      <span class="sub" id="scrape-msg"></span>
-    </div>
-    <div id="scrape-log"></div>
-  </div>
   <div class="card">
     <h2>Database</h2>
-    <div class="hint">Everything in lol.db, per tier and patch.</div>
+    <div class="hint">Everything in lol.db, per tier and patch. Refresh with <code>lol.py import-soloq</code> when the ../lol-quant crawl has new games.</div>
     <div class="tablewrap">
       <table id="inv">
         <thead><tr>
-          <th>Tier</th><th style="text-align:left">Patch</th><th>Champ-lanes</th><th>Games</th><th>Scraped at</th>
+          <th>Tier</th><th style="text-align:left">Patch</th><th>Champ-lanes</th><th>Games</th><th>Imported at</th>
         </tr></thead>
         <tbody></tbody>
       </table>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ CLI Builder ============================ -->
-<section class="view" id="view-cli">
-  <div class="card">
-    <h2>Scrape command builder</h2>
-    <div class="hint">Configure the scrape, then copy the command and run it from the repository root.</div>
-    <div class="hint" id="cli-desc"></div>
-    <div id="cli-fields" class="cli-grid"></div>
-  </div>
-  <div class="card">
-    <h2>Your command</h2>
-    <div class="hint" id="cli-note"></div>
-    <div class="cli-outrow">
-      <pre id="cli-out"></pre>
-      <button id="cli-copy">Copy</button>
     </div>
   </div>
 </section>
@@ -574,7 +515,7 @@ async function loadChampion(name) {
     d = await api(`api/champion/${encodeURIComponent(state.tier)}/${encodeURIComponent(name)}.json`);
   } catch (e) {
     document.getElementById("champ-title").textContent =
-      `No data for "${name}" at ${state.tier} — names are lolalytics slugs, e.g. missfortune`;
+      `No data for "${name}" at ${state.tier} — names are lowercase slugs, e.g. missfortune`;
     return;
   }
   document.getElementById("champ-title").textContent =
@@ -608,7 +549,7 @@ async function loadChampionList() {
   }));
 }
 
-// ---------------- data & scrape view ----------------
+// ---------------- data view ----------------
 async function loadInventory() {
   const meta = await api("api/meta.json");
   META = meta;
@@ -619,157 +560,6 @@ async function loadInventory() {
     tr.firstChild.style.textAlign = "left";
     return tr;
   }));
-}
-
-let scrapePoll = null;
-let staticMode = false;
-function enterStaticMode() {
-  staticMode = true;
-  document.getElementById("scrape-card").style.display = "none";
-  document.getElementById("static-note").style.display = "block";
-}
-async function pollScrape() {
-  if (staticMode) return;
-  let s;
-  try {
-    s = await api("api/scrape");
-  } catch (e) {
-    enterStaticMode();   // no live server behind us (e.g. GitHub Pages)
-    return;
-  }
-  const logBox = document.getElementById("scrape-log");
-  const btn = document.getElementById("scrape-btn");
-  const msg = document.getElementById("scrape-msg");
-  if (s.lines && s.lines.length) {
-    logBox.style.display = "block";
-    logBox.textContent = s.lines.join("\n");
-    logBox.scrollTop = logBox.scrollHeight;
-  }
-  if (s.running) {
-    btn.disabled = true;
-    msg.replaceChildren(Object.assign(document.createElement("span"), { className: "spin" }),
-                        document.createTextNode(`scraping ${s.tier}...`));
-    if (!scrapePoll) scrapePoll = setInterval(pollScrape, 2000);
-  } else {
-    btn.disabled = false;
-    if (scrapePoll) {
-      clearInterval(scrapePoll);
-      scrapePoll = null;
-      msg.textContent = s.error ? `failed: ${s.error}` : (s.finished_at ? "done — data refreshed" : "");
-      loadInventory();
-      loadOverview();
-    }
-  }
-}
-document.getElementById("scrape-btn").addEventListener("click", async () => {
-  const tier = document.getElementById("scrape-tier").value.trim();
-  if (!tier) { document.getElementById("scrape-msg").textContent = "enter a tier first"; return; }
-  const force = document.getElementById("scrape-force").checked;
-  const r = await fetch("api/scrape", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tier, force }),
-  });
-  const body = await r.json();
-  if (!body.started) document.getElementById("scrape-msg").textContent = body.error || "could not start";
-  else { document.getElementById("scrape-log").textContent = ""; pollScrape(); }
-});
-
-// ---------------- CLI builder ----------------
-// Every tier slug lolalytics accepts (verified against the site).
-const LOLALYTICS_TIERS = [
-  "challenger", "grandmaster_plus", "grandmaster", "master_plus", "master",
-  "d2_plus", "diamond_plus", "diamond", "emerald_plus", "emerald",
-  "platinum_plus", "platinum", "gold_plus", "gold", "silver", "bronze", "iron",
-  "all", "unranked", "1trick",
-];
-const CLI_SPEC = {
-  scrape: {
-    desc: "Download win-rate data from lolalytics into lol.db and the data/ archive.",
-    note: "Scraping always runs locally — commit and push afterwards to update this site.",
-    fields: [
-      { flag: "--tier", label: "Tier", type: "tier", def: "diamond_plus", alwaysInclude: true },
-      { flag: "--patches", label: "Patches, space-separated", type: "text", multi: true,
-        placeholder: "default: whole current season" },
-      { flag: "--concurrency", label: "Concurrent requests", type: "number", def: 5 },
-      { flag: "--min-lane-rate", label: "Min lane play rate %", type: "number", def: 10 },
-      { flag: "--force", label: "Re-scrape existing patches", type: "check" },
-    ],
-  },
-};
-
-const shq = s => /^[\w.\/:@=-]+$/.test(s) ? s : "'" + s.replaceAll("'", "'\\''") + "'";
-
-function cliFieldEl(f) {
-  const wrap = document.createElement("label");
-  let el;
-  if (f.type === "check") {
-    wrap.className = "cli-check";
-    el = document.createElement("input");
-    el.type = "checkbox";
-    wrap.append(el, document.createTextNode(f.label));
-  } else {
-    if (f.type === "tier") {
-      el = document.createElement("select");
-      el.append(...LOLALYTICS_TIERS.map(v => {
-        const o = document.createElement("option");
-        o.value = o.textContent = v;
-        return o;
-      }));
-      if (f.def) el.value = f.def;
-    } else {
-      el = document.createElement("input");
-      el.type = f.type === "number" ? "number" : "text";
-      if (f.def !== undefined) el.value = f.def;
-      el.placeholder = f.placeholder || (f.def !== undefined ? String(f.def) : "");
-    }
-    wrap.append(document.createTextNode(f.label), el);
-  }
-  f._el = el;
-  return wrap;
-}
-
-function buildCommand() {
-  const spec = CLI_SPEC.scrape;
-  const parts = [".venv/bin/python", "lol.py", "scrape"];
-  for (const f of spec.fields) {
-    if (f.type === "check") {
-      if (f._el.checked) parts.push(f.flag);
-      continue;
-    }
-    const v = f._el.value.trim();
-    if (!v) continue;
-    if (!f.alwaysInclude && f.def !== undefined && String(f.def) === v) continue;
-    if (f.multi) parts.push(f.flag, ...v.split(/\s+/).map(shq));
-    else parts.push(f.flag, shq(v));
-  }
-  document.getElementById("cli-out").textContent = parts.join(" ");
-  document.getElementById("cli-note").textContent = spec.note;
-}
-
-function initCli() {
-  const spec = CLI_SPEC.scrape;
-  document.getElementById("cli-desc").textContent = spec.desc;
-  document.getElementById("cli-fields").replaceChildren(...spec.fields.map(cliFieldEl));
-  buildCommand();
-  document.getElementById("cli-fields").addEventListener("input", buildCommand);
-  document.getElementById("cli-copy").addEventListener("click", async () => {
-    const btn = document.getElementById("cli-copy");
-    try {
-      await navigator.clipboard.writeText(document.getElementById("cli-out").textContent);
-      btn.textContent = "Copied!";
-    } catch (e) {
-      btn.textContent = "Select & copy manually";
-    }
-    setTimeout(() => { btn.textContent = "Copy"; }, 1500);
-  });
-  // The Scrape panel's tier picker shares the verified tier list.
-  const scrapeTier = document.getElementById("scrape-tier");
-  scrapeTier.replaceChildren(...LOLALYTICS_TIERS.map(v => {
-    const o = document.createElement("option");
-    o.value = o.textContent = v;
-    return o;
-  }));
-  scrapeTier.value = "diamond_plus";
 }
 
 // ---------------- shell: tabs, tier, hash routing ----------------
@@ -824,13 +614,11 @@ async function init() {
   }));
   tierSel.value = state.tier;
   await Promise.all([loadOverview(), loadChampionList(), loadInventory()]);
-  initCli();
-  pollScrape();
   if (hash.tab === "champion" && hash.name) {
     showView("champion");
     document.getElementById("champ-search").value = hash.name;
     loadChampion(hash.name);
-  } else if (hash.tab && ["overview", "champion", "data", "cli"].includes(hash.tab)) {
+  } else if (hash.tab && ["overview", "champion", "data"].includes(hash.tab)) {
     showView(hash.tab);
   }
 }
