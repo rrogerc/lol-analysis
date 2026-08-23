@@ -3,8 +3,6 @@ name: Refresh item data
 # Daily snapshot of the current patch's item data (ddragon + meraki).
 # `items fetch --force` writes nothing when upstream is unchanged, so this
 # only commits when a new patch lands or meraki corrects the current one.
-# Pushes made with GITHUB_TOKEN don't trigger the Pages workflow, which is
-# fine — item data isn't part of the published site.
 
 on:
   schedule:
@@ -25,6 +23,8 @@ jobs:
       - name: Fetch current patch item data
         run: python3 lol.py items fetch --force
       - name: Commit snapshot if it changed
+        # Pushes made with GITHUB_TOKEN don't trigger the Pages workflow,
+        # which is fine — item data isn't part of the published site.
         run: |
           if [ -n "$(git status --porcelain data/items)" ]; then
             git config user.name "github-actions[bot]"

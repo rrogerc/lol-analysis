@@ -13,14 +13,57 @@ import re
 import sys
 
 import scaling
-from common import WEB_DIR, db_connect
+from common import BASE_DIR, WEB_DIR, db_connect
+
+WORKFLOWS_DIR = os.path.join(BASE_DIR, ".github", "workflows")
+
+
+def humanize_cron(expr):
+    m, h, dom, mon, dow = (expr.split() + ["*"] * 5)[:5]
+    if dom == mon == dow == "*" and m.isdigit() and h.isdigit():
+        return f"daily {int(h):02d}:{int(m):02d} UTC"
+    return f"cron {expr}"
+
+
+def workflow_jobs():
+    """The repo's GitHub Actions workflows, for the UI's automation panel:
+    name, when they run, and the file's leading comment block as description.
+    Parsed straight from .github/workflows/ so new jobs show up on their own."""
+    jobs = []
+    if not os.path.isdir(WORKFLOWS_DIR):
+        return jobs
+    for fn in sorted(os.listdir(WORKFLOWS_DIR)):
+        if not fn.endswith((".yml", ".yaml")):
+            continue
+        with open(os.path.join(WORKFLOWS_DIR, fn)) as f:
+            text = f.read()
+        name = re.search(r"^name:\s*(.+)$", text, re.M)
+        header = text.split("\non:", 1)[0]
+        desc = " ".join(l.lstrip("# ").rstrip() for l in header.splitlines()
+                        if l.startswith("#"))
+        runs = [humanize_cron(c) for c in
+                re.findall(r"""cron:\s*["']([^"']+)["']""", text)]
+        if re.search(r"^\s{2,}push:", text, re.M):
+            runs.append("on push to main")
+        if re.search(r"^\s{2,}workflow_dispatch:", text, re.M):
+            runs.append("manual")
+        jobs.append({"name": name.group(1).strip() if name else fn,
+                     "file": f".github/workflows/{fn}",
+                     "runs": ", ".join(runs) or "?", "desc": desc})
+    return jobs
+
+
+def app_meta(con):
+    meta = scaling.api_meta(con)
+    meta["jobs"] = workflow_jobs()
+    return meta
 
 
 def cmd_export(args):
     """Write the web app + pre-generated API JSON as a static site (for GitHub Pages)."""
     import shutil
     con = db_connect()
-    meta = scaling.api_meta(con)
+    meta = app_meta(con)
     if not meta["tiers"]:
         sys.exit("Database is empty — run `lol.py scaling sync` or `lol.py import-json` first.")
     out = args.out
@@ -80,7 +123,7 @@ def cmd_serve(args):
                     return
                 con = db_connect()
                 if u.path == "/api/meta.json":
-                    self._json(scaling.api_meta(con))
+                    self._json(app_meta(con))
                 elif m := re.fullmatch(r"/api/rows/([a-z0-9_]+)\.json", u.path):
                     tier = m.group(1)
                     patches = scaling.db_patches(con, tier)

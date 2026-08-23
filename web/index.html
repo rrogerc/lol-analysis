@@ -105,6 +105,8 @@
     border-color: var(--baseline); font-weight: 600;
   }
   .lane-tag { color: var(--text-secondary); }
+  #jobs th, #jobs td { text-align: left; }
+  #jobs td:nth-child(2) { white-space: nowrap; }
   .ci { color: var(--muted); font-weight: 400; font-size: 11px; }
   .tooltip .tt-ci { color: var(--muted); }
   svg text { font-family: inherit; }
@@ -199,6 +201,14 @@
 
 <!-- ============================ Data ============================ -->
 <section class="view" id="view-data">
+  <div class="card">
+    <h2>Automation</h2>
+    <div class="hint">Recurring jobs, read straight from <code>.github/workflows/</code> — anything added there shows up here.</div>
+    <table id="jobs">
+      <thead><tr><th>Job</th><th>Runs</th><th>What it does</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
   <div class="card">
     <h2>Database</h2>
     <div class="hint">Everything in lol.db, per tier and patch. Refresh with <code>lol.py scaling sync</code> when the ../lol-quant crawl has new games.</div>
@@ -516,6 +526,11 @@ async function loadChampionList() {
 async function loadInventory() {
   const meta = await api("api/meta.json");
   META = meta;
+  document.querySelector("#jobs tbody").replaceChildren(...(meta.jobs || []).map(j => {
+    const tr = document.createElement("tr");
+    tr.append(cell(j.name), cell(j.runs), cell(j.desc));
+    return tr;
+  }));
   document.querySelector("#inv tbody").replaceChildren(...meta.inventory.map(r => {
     const tr = document.createElement("tr");
     tr.append(cell(r.tier), cell(r.patch), cell(fmtInt(r.champLanes)),
