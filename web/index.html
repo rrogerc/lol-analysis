@@ -11,7 +11,6 @@
     --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
     --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100; --s4:#008300;
     --s5:#4a3aa7; --s6:#e34948; --s7:#e87ba4; --s8:#eb6834;
-    --up: #006300; --down: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -20,7 +19,6 @@
       --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
       --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#008300;
       --s5:#9085e9; --s6:#e66767; --s7:#d55181; --s8:#d95926;
-      --up: #0ca30c; --down: #d03b3b;
     }
   }
   * { box-sizing: border-box; margin: 0; }
@@ -32,6 +30,7 @@
   header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   h1 { font-size: 20px; font-weight: 600; }
   .sub { color: var(--text-secondary); font-size: 13px; }
+  #tier-desc { margin-top: 6px; }
   select, input[type=search], input[type=text], button {
     font: inherit; font-size: 13px; color: var(--text-primary);
     background: var(--surface-1); border: 1px solid var(--border);
@@ -89,10 +88,10 @@
   th .arrow { color: var(--muted); font-size: 10px; }
   #tbl tbody tr { cursor: pointer; }
   #tbl tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
-  tbody tr.sel td:first-child { font-weight: 600; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
-  .dot.off { background: transparent; border: 1px solid var(--baseline); width: 6px; height: 6px; }
-  .pos { color: var(--up); } .neg { color: var(--down); }
+  .champ-icon {
+    width: 22px; height: 22px; border-radius: 4px; margin-right: 8px;
+    vertical-align: middle; background: var(--grid); flex: none;
+  }
   .tablewrap { max-height: 560px; overflow-y: auto; overflow-x: auto; }
   #tbl th:nth-child(3), #tbl td:nth-child(3) { text-align: left; }
   #tbl td:first-child { color: var(--muted); }
@@ -121,6 +120,7 @@
   </label>
   <span class="sub" id="subtitle"></span>
 </header>
+<div class="sub" id="tier-desc"></div>
 
 <nav>
   <button data-view="overview" class="active">Overview</button>
@@ -145,26 +145,16 @@
       <option>bottom</option><option>support</option>
     </select>
     <select id="mingames" aria-label="Minimum games">
-      <option value="1000">≥ 1,000 games</option>
+      <option value="1000" selected>≥ 1,000 games</option>
       <option value="2500">≥ 2,500 games</option>
-      <option value="5000" selected>≥ 5,000 games</option>
+      <option value="5000">≥ 5,000 games</option>
       <option value="20000">≥ 20,000 games</option>
     </select>
   </div>
 
   <div class="card">
-    <h2>Win rate by game length</h2>
-    <div class="hint">Click table rows to add or remove champions (up to 8).</div>
-    <div class="chartwrap">
-      <svg id="chart" width="100%" height="340" role="img" aria-label="Win rate by game length"></svg>
-      <div class="tooltip" id="chart-tt"></div>
-    </div>
-    <div class="legend" id="legend"></div>
-  </div>
-
-  <div class="card">
     <h2>Rankings</h2>
-    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. ± is the 95% confidence interval — differences inside it are noise. Click a row to chart it.</div>
+    <div class="hint">Champions ranked by win rate in the selected game-length bucket (minutes). The min-games filter applies to that bucket. ± is the 95% confidence interval — differences inside it are noise. Click a row to open its champion page.</div>
     <div class="seg" id="bucket-seg"></div>
     <div class="tablewrap">
       <table id="tbl">
@@ -172,8 +162,8 @@
           <th data-k="rank">Rank <span class="arrow"></span></th>
           <th data-k="c">Champion <span class="arrow"></span></th>
           <th data-k="l">Lane <span class="arrow"></span></th>
-          <th data-k="metric"><span id="tbl-metric">Win Rate</span> <span class="arrow"></span></th>
-          <th data-k="games"><span id="tbl-games">Games</span> <span class="arrow"></span></th>
+          <th data-k="metric">Win Rate <span class="arrow"></span></th>
+          <th data-k="games">Games <span class="arrow"></span></th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -373,14 +363,15 @@ function renderLegend(box, series) {
 }
 
 // ---------------- overview ----------------
-const selected = new Map();   // "champ/lane" -> slot
 const rid = r => r.c + "/" + r.l;
-function freeSlot() { const used = new Set(selected.values()); return SLOTS.findIndex((_, i) => !used.has(i)); }
-function toggle(r) {
-  const id = rid(r);
-  if (selected.has(id)) selected.delete(id);
-  else { const s = freeSlot(); if (s === -1) return; selected.set(id, s); }
-  renderOverview();
+// CommunityDragon resolves lowercase champion aliases; our only renamed slug
+// is wukong (Riot-internal monkeyking).
+const iconUrl = c =>
+  `https://cdn.communitydragon.org/latest/champion/${c === "wukong" ? "monkeyking" : c}/square`;
+function openChampion(name) {
+  showView("champion");
+  document.getElementById("champ-search").value = name;
+  loadChampion(name);
 }
 
 // Bucket 0 (0-15 min) is excluded: games that end that early are too rare
@@ -388,9 +379,8 @@ function toggle(r) {
 const RANK_OPTIONS = [
   { label: "15–20", b: 1 }, { label: "20–25", b: 2 }, { label: "25–30", b: 3 },
   { label: "30–35", b: 4 }, { label: "35–40", b: 5 }, { label: "40+", b: 6 },
-  { label: "Scaling Δ", b: "delta" },
 ];
-let rankBucket = 4;   // 30-35 min
+let rankBucket = 6;   // 40+ min
 
 function visibleRows() {
   const q = document.getElementById("search").value.trim().toLowerCase();
@@ -399,7 +389,6 @@ function visibleRows() {
   return DATA.rows.filter(r => {
     if (lane && r.l !== lane) return false;
     if (q && !r.c.includes(q)) return false;
-    if (rankBucket === "delta") return r.delta != null && r.total >= min;
     return r.wr[rankBucket] != null && r.g[rankBucket] >= min;
   });
 }
@@ -409,8 +398,8 @@ function cell(text, cls) {
   if (cls) td.className = cls;
   return td;
 }
-function metricCell(text, ci, cls) {
-  const td = cell(text, cls);
+function metricCell(text, ci) {
+  const td = cell(text);
   if (ci != null) {
     const s = document.createElement("span");
     s.className = "ci";
@@ -419,16 +408,10 @@ function metricCell(text, ci, cls) {
   }
   return td;
 }
-function deltaCi(r) {
-  const gE = r.g[0] + r.g[1], gL = r.g[5] + r.g[6];
-  if (r.early == null || r.late == null || !gE || !gL) return null;
-  return Math.hypot(ci95(r.early, gE), ci95(r.late, gL));
-}
 let sortKey = "rank", sortDir = 1;
 function renderTable() {
-  const byDelta = rankBucket === "delta";
-  const metric = r => byDelta ? r.delta : r.wr[rankBucket];
-  const gamesOf = r => byDelta ? r.total : r.g[rankBucket];
+  const metric = r => r.wr[rankBucket];
+  const gamesOf = r => r.g[rankBucket];
   // Rank is always the position by the bucket's metric, regardless of the
   // column the table happens to be sorted by.
   const base = visibleRows().sort((a, b) => metric(b) - metric(a));
@@ -439,26 +422,22 @@ function renderTable() {
     const va = get(a), vb = get(b);
     return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
   });
-  document.getElementById("tbl-metric").textContent = byDelta ? "Scaling Δ" : "Win Rate";
-  document.getElementById("tbl-games").textContent = byDelta ? "Total games" : "Games";
   document.querySelector("#tbl tbody").replaceChildren(...rows.map(r => {
     const tr = document.createElement("tr");
-    const id = rid(r);
-    if (selected.has(id)) tr.className = "sel";
-    const dot = document.createElement("span");
-    dot.className = "dot" + (selected.has(id) ? "" : " off");
-    if (selected.has(id)) dot.style.background = css(SLOTS[selected.get(id)]);
+    const icon = document.createElement("img");
+    icon.className = "champ-icon";
+    icon.src = iconUrl(r.c);
+    icon.alt = "";
+    icon.loading = "lazy";
+    icon.onerror = () => { icon.style.visibility = "hidden"; };
     const tdName = document.createElement("td");
-    tdName.append(dot, document.createTextNode(r.c));
+    tdName.append(icon, document.createTextNode(r.c));
     tr.append(
-      cell(String(rankOf.get(id))), tdName, cell(r.l, "lane-tag"),
-      byDelta
-        ? metricCell((r.delta > 0 ? "+" : "") + r.delta.toFixed(2), deltaCi(r),
-                     r.delta > 0 ? "pos" : "neg")
-        : metricCell(r.wr[rankBucket].toFixed(2) + "%",
-                     ci95(r.wr[rankBucket], r.g[rankBucket])),
+      cell(String(rankOf.get(rid(r)))), tdName, cell(r.l, "lane-tag"),
+      metricCell(r.wr[rankBucket].toFixed(2) + "%",
+                 ci95(r.wr[rankBucket], r.g[rankBucket])),
       cell(fmtInt(gamesOf(r))));
-    tr.addEventListener("click", () => toggle(r));
+    tr.addEventListener("click", () => openChampion(r.c));
     return tr;
   }));
   document.querySelectorAll("#bucket-seg button").forEach((btn, i) =>
@@ -476,18 +455,6 @@ function initBucketSeg() {
     return btn;
   }));
 }
-function renderOverview() {
-  renderTable();
-  const series = [...selected.entries()].map(([id, slot]) => {
-    const r = DATA.rows.find(x => rid(x) === id);
-    return r ? { name: `${r.c} (${r.l})`, color: css(SLOTS[slot]),
-                 values: r.wr.slice(1), games: r.g.slice(1) } : null;
-  }).filter(Boolean);
-  lineChart(document.getElementById("chart"), document.getElementById("chart-tt"),
-            series, BUCKETS.slice(1), "Select champions from the table below");
-  renderLegend(document.getElementById("legend"), series);
-}
-
 async function loadOverview() {
   DATA = await api(`api/rows/${encodeURIComponent(state.tier)}.json`);
   document.getElementById("subtitle").textContent =
@@ -499,11 +466,7 @@ async function loadOverview() {
                         .reduce((a, b) => (a && a.delta > b.delta ? a : b), null);
   document.getElementById("kpi-scaler").textContent =
     best ? `${best.c} (${best.l}) +${best.delta.toFixed(1)}` : "—";
-  selected.clear();
-  DATA.rows.filter(r => r.delta != null && r.total > 20000)
-    .sort((a, b) => b.delta - a.delta).slice(0, 5)
-    .forEach(r => selected.set(rid(r), freeSlot()));
-  renderOverview();
+  renderTable();
 }
 
 // ---------------- champion view ----------------
@@ -563,6 +526,20 @@ async function loadInventory() {
 }
 
 // ---------------- shell: tabs, tier, hash routing ----------------
+// Tier definitions mirror the thresholds in lol.py sync.
+const TIER_DESC = {
+  soloq_masters_plus: "All crawled Masters+ solo-queue games.",
+  soloq_mastery: "Only games where the pilot has ≥ 20 season games on the champion.",
+  soloq_otp: "One-tricks only: the champion is ≥ 80% of the pilot's games in that role.",
+};
+const regionName = p => p.replace(/\d+$/, "").toUpperCase();
+function renderTierDesc() {
+  const bits = [];
+  if (TIER_DESC[state.tier]) bits.push(TIER_DESC[state.tier]);
+  if (META?.platforms?.length)
+    bits.push("Regions: " + META.platforms.map(regionName).join(", "));
+  document.getElementById("tier-desc").textContent = bits.join(" · ");
+}
 function updateHash() {
   const parts = [`tab=${state.view}`, `tier=${state.tier}`];
   if (state.view === "champion" && state.champion) parts.push(`name=${state.champion}`);
@@ -582,6 +559,7 @@ document.querySelectorAll("nav button").forEach(b =>
 document.getElementById("tier").addEventListener("change", async e => {
   state.tier = e.target.value;
   updateHash();
+  renderTierDesc();
   await Promise.all([loadOverview(), loadChampionList()]);
   if (state.champion) loadChampion(state.champion);
 });
@@ -613,6 +591,7 @@ async function init() {
     return o;
   }));
   tierSel.value = state.tier;
+  renderTierDesc();
   await Promise.all([loadOverview(), loadChampionList(), loadInventory()]);
   if (hash.tab === "champion" && hash.name) {
     showView("champion");
@@ -622,8 +601,6 @@ async function init() {
     showView(hash.tab);
   }
 }
-window.addEventListener("resize", () => { renderOverview(); });
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => renderOverview());
 init();
 </script>
 </body>

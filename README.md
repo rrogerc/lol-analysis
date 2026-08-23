@@ -83,5 +83,7 @@ patches; narrow with `--tier`, `--patches`, `--lane`, `--min-games`. Add
 ## Notes
 
 - Champion names are lowercase slugs (`missfortune`, `aurelionsol`).
+- `data/platforms.json` records which regions the crawl covers (written by
+  `sync`, shown in the UI next to the tier description).
 - `lol.db` is gitignored; the `data/` JSON tree is the committed archive and
   can rebuild the DB via `import-json` at any time.

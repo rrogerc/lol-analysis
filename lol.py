@@ -399,6 +399,14 @@ def cmd_sync(args):
             min_lane_rate=10, min_champ_games=min_champ_games,
             otp_share=otp_share))
         print()
+    # Record which regions the crawl covers; the UI shows this next to the
+    # tier description. The platform partitions are directories under the
+    # participants parquet root.
+    part_dir = os.path.join(args.quant_dir, "data", "parquet", "participants")
+    platforms = args.platforms or sorted(
+        d for d in os.listdir(part_dir) if os.path.isdir(os.path.join(part_dir, d)))
+    with open(os.path.join(DATA_DIR, "platforms.json"), "w") as f:
+        json.dump(platforms, f)
     print("Sync complete — commit and push data/ to update the published site.")
 
 
@@ -847,7 +855,13 @@ def _api_meta(con):
                "SUM(games), MAX(scraped_at) FROM stats GROUP BY tier, patch")]
     inv.sort(key=lambda r: (r["tier"], patch_key(r["patch"])))
     tiers = sorted({r["tier"] for r in inv})
-    return {"inventory": inv, "tiers": tiers, "defaultTier": default_tier(con)}
+    platforms = []
+    plat_path = os.path.join(DATA_DIR, "platforms.json")
+    if os.path.exists(plat_path):
+        with open(plat_path) as f:
+            platforms = json.load(f)
+    return {"inventory": inv, "tiers": tiers, "defaultTier": default_tier(con),
+            "platforms": platforms}
 
 
 def _api_champion(con, tier, name):
