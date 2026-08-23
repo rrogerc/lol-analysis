@@ -16,6 +16,7 @@ import scaling
 from common import BASE_DIR, WEB_DIR, db_connect
 
 WORKFLOWS_DIR = os.path.join(BASE_DIR, ".github", "workflows")
+JOBS_DIR = os.path.join(BASE_DIR, "jobs")
 
 
 def humanize_cron(expr):
@@ -23,6 +24,38 @@ def humanize_cron(expr):
     if dom == mon == dow == "*" and m.isdigit() and h.isdigit():
         return f"daily {int(h):02d}:{int(m):02d} UTC"
     return f"cron {expr}"
+
+
+def local_jobs():
+    """Scheduled scripts in jobs/ (run by systemd user timers on the home
+    server). Each script declares itself in its header comments: `# name:`,
+    `# schedule:`, then description lines."""
+    jobs = []
+    if not os.path.isdir(JOBS_DIR):
+        return jobs
+    for fn in sorted(os.listdir(JOBS_DIR)):
+        if not fn.endswith(".sh"):
+            continue
+        with open(os.path.join(JOBS_DIR, fn)) as f:
+            text = f.read()
+        header = []
+        for line in text.splitlines():
+            if line.startswith("#!"):
+                continue
+            if not line.startswith("#"):
+                break
+            header.append(line.lstrip("# ").rstrip())
+        fields = {}
+        desc = []
+        for line in header:
+            m = re.match(r"(name|schedule):\s*(.+)", line)
+            if m:
+                fields[m.group(1)] = m.group(2)
+            else:
+                desc.append(line)
+        jobs.append({"name": fields.get("name", fn), "file": f"jobs/{fn}",
+                     "runs": fields.get("schedule", "?"), "desc": " ".join(desc)})
+    return jobs
 
 
 def workflow_jobs():
@@ -55,7 +88,7 @@ def workflow_jobs():
 
 def app_meta(con):
     meta = scaling.api_meta(con)
-    meta["jobs"] = workflow_jobs()
+    meta["jobs"] = local_jobs() + workflow_jobs()
     return meta
 
 

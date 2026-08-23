@@ -15,7 +15,9 @@ module and committed JSON archive:
   only live in description text) and Meraki Analytics (every stat fully
   structured — lethality, % pen, haste, crit damage). Meraki serves only the
   latest patch, so the committed per-patch snapshots are the historical
-  archive. Re-run after each patch; it's idempotent (`--force` to refresh).
+  archive. A systemd user timer on the home server runs
+  `jobs/refresh-items.sh` daily and pushes when a new patch lands, so the
+  local checkout is always current (the Data tab lists all such jobs).
 
 Shared plumbing lives in `common.py` (DB, paths, patch ordering) and
 `webapp.py` (the serve/export web shell).
