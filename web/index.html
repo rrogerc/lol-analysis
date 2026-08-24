@@ -107,6 +107,20 @@
   .lane-tag { color: var(--text-secondary); }
   #jobs th, #jobs td { text-align: left; }
   #jobs td:nth-child(2) { white-space: nowrap; }
+  .pos { color: #1b7f3b; } .neg { color: #d03b3b; }
+  @media (prefers-color-scheme: dark) { .pos { color: #2fae58; } }
+  #health {
+    margin-top: 12px; padding: 8px 12px; border-radius: 8px; font-size: 13px;
+    border: 1px solid transparent;
+  }
+  #health.warn {
+    background: color-mix(in srgb, #eda100 12%, transparent);
+    border-color: color-mix(in srgb, #eda100 40%, transparent);
+  }
+  #health.bad {
+    background: color-mix(in srgb, #e34948 12%, transparent);
+    border-color: color-mix(in srgb, #e34948 45%, transparent);
+  }
   .ci { color: var(--muted); font-weight: 400; font-size: 11px; }
   .tooltip .tt-ci { color: var(--muted); }
   svg text { font-family: inherit; }
@@ -123,6 +137,7 @@
   <span class="sub" id="subtitle"></span>
 </header>
 <div class="sub" id="tier-desc"></div>
+<div id="health" hidden></div>
 
 <nav>
   <button data-view="overview" class="active">Overview</button>
@@ -205,7 +220,7 @@
     <h2>Automation</h2>
     <div class="hint">Recurring jobs, read straight from <code>.github/workflows/</code> — anything added there shows up here.</div>
     <table id="jobs">
-      <thead><tr><th>Job</th><th>Runs</th><th>What it does</th></tr></thead>
+      <thead><tr><th>Job</th><th>Runs</th><th>Status</th><th>What it does</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -528,7 +543,8 @@ async function loadInventory() {
   META = meta;
   document.querySelector("#jobs tbody").replaceChildren(...(meta.jobs || []).map(j => {
     const tr = document.createElement("tr");
-    tr.append(cell(j.name), cell(j.runs), cell(j.desc));
+    const st = jobStatus(j);
+    tr.append(cell(j.name), cell(j.runs), cell(st.text, st.cls), cell(j.desc));
     return tr;
   }));
   document.querySelector("#inv tbody").replaceChildren(...meta.inventory.map(r => {
@@ -538,6 +554,52 @@ async function loadInventory() {
     tr.firstChild.style.textAlign = "left";
     return tr;
   }));
+}
+
+// ---------------- health: job heartbeats + item-data staleness ----------------
+// Local jobs write a heartbeat (jobs/.state/) that serve exposes as
+// lastRun/lastExit; the static export strips it, so "—" on the published site.
+function jobStatus(j) {
+  if (j.lastRun == null) return { text: "—" };
+  const hrs = (Date.now() - Date.parse(j.lastRun)) / 3.6e6;
+  const when = hrs < 1.5 ? "just now" : hrs < 48 ? Math.round(hrs) + "h ago"
+                                                 : Math.round(hrs / 24) + "d ago";
+  if (j.lastExit !== 0) return { text: `failed ${when} (exit ${j.lastExit})`, cls: "neg" };
+  if (hrs > 48) return { text: `last ran ${when} — timer may be dead`, cls: "neg" };
+  return { text: `ok, ran ${when}`, cls: "pos" };
+}
+
+// Outcome check, independent of the job: is the newest snapshot the live
+// patch? Grace period so patch day shows a heads-up, not an alarm — this
+// browser remembers when it first saw the mismatch.
+async function checkItemHealth() {
+  const el = document.getElementById("health");
+  const snap = META?.itemsSnapshot;
+  if (!snap) return;
+  let live;
+  try {
+    const versions = await api("https://ddragon.leagueoflegends.com/api/versions.json");
+    live = versions[0].split(".").slice(0, 2).join(".");
+  } catch { return; }   // offline — no verdict, say nothing
+  const showHealth = (cls, msg) => { el.className = cls; el.textContent = msg; el.hidden = false; };
+  if (live === snap.patch) {
+    if (!snap.merakiItems)
+      showHealth("warn", `Patch ${snap.patch} item snapshot has no meraki stats yet — the daily job should fill them in.`);
+    return;
+  }
+  const key = "itemsMismatchSince:" + live;
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith("itemsMismatchSince:") && k !== key) localStorage.removeItem(k);
+  });
+  const first = +localStorage.getItem(key) || Date.now();
+  localStorage.setItem(key, first);
+  if ((Date.now() - first) / 864e5 > 3)
+    showHealth("bad", `Item data is stale: live patch is ${live} but the newest snapshot is ` +
+      `${snap.patch} (fetched ${snap.fetchedAt.slice(0, 10)}). Check the refresh job: ` +
+      `journalctl --user -u lol-items-refresh`);
+  else
+    showHealth("warn", `New patch ${live} is live — item snapshot still on ${snap.patch}; ` +
+      `the daily job should catch up shortly.`);
 }
 
 // ---------------- shell: tabs, tier, hash routing ----------------
@@ -608,6 +670,7 @@ async function init() {
   tierSel.value = state.tier;
   renderTierDesc();
   await Promise.all([loadOverview(), loadChampionList(), loadInventory()]);
+  checkItemHealth();
   if (hash.tab === "champion" && hash.name) {
     showView("champion");
     document.getElementById("champ-search").value = hash.name;

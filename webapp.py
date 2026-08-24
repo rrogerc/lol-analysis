@@ -12,6 +12,7 @@ import os
 import re
 import sys
 
+import items
 import scaling
 from common import BASE_DIR, WEB_DIR, db_connect
 
@@ -53,8 +54,17 @@ def local_jobs():
                 fields[m.group(1)] = m.group(2)
             else:
                 desc.append(line)
-        jobs.append({"name": fields.get("name", fn), "file": f"jobs/{fn}",
-                     "runs": fields.get("schedule", "?"), "desc": " ".join(desc)})
+        job = {"name": fields.get("name", fn), "file": f"jobs/{fn}",
+               "runs": fields.get("schedule", "?"), "desc": " ".join(desc)}
+        # Heartbeat the script writes on every exit (jobs/.state/, gitignored)
+        # — feeds the UI health indicator on the local dashboard.
+        state_path = os.path.join(JOBS_DIR, ".state", fn[:-3] + ".json")
+        if os.path.exists(state_path):
+            with open(state_path) as f:
+                state = json.load(f)
+            job["lastRun"] = state.get("finishedAt")
+            job["lastExit"] = state.get("exit")
+        jobs.append(job)
     return jobs
 
 
@@ -89,6 +99,7 @@ def workflow_jobs():
 def app_meta(con):
     meta = scaling.api_meta(con)
     meta["jobs"] = local_jobs() + workflow_jobs()
+    meta["itemsSnapshot"] = items.latest_snapshot()
     return meta
 
 
@@ -97,6 +108,11 @@ def cmd_export(args):
     import shutil
     con = db_connect()
     meta = app_meta(con)
+    # The export is a frozen snapshot: job heartbeats would only age into a
+    # false "timer may be dead" on the published site, so strip them.
+    for job in meta["jobs"]:
+        job.pop("lastRun", None)
+        job.pop("lastExit", None)
     if not meta["tiers"]:
         sys.exit("Database is empty — run `lol.py scaling sync` or `lol.py import-json` first.")
     out = args.out

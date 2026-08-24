@@ -21,7 +21,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-from common import DATA_DIR
+from common import DATA_DIR, patch_key
 
 ITEMS_DATA_DIR = os.path.join(DATA_DIR, "items")
 
@@ -138,18 +138,29 @@ def cmd_fetch(args):
     print("Commit data/items/ to archive this patch's snapshot.")
 
 
+def snapshots():
+    """All archived snapshot metas, oldest patch first."""
+    metas = []
+    if os.path.isdir(ITEMS_DATA_DIR):
+        for patch in os.listdir(ITEMS_DATA_DIR):
+            meta_path = os.path.join(ITEMS_DATA_DIR, patch, "meta.json")
+            if os.path.exists(meta_path):
+                with open(meta_path) as f:
+                    metas.append(json.load(f))
+    return sorted(metas, key=lambda m: patch_key(m["patch"]))
+
+
+def latest_snapshot():
+    metas = snapshots()
+    return metas[-1] if metas else None
+
+
 def cmd_status(args):
     if not os.path.isdir(ITEMS_DATA_DIR):
         print("No item snapshots yet — run `lol.py items fetch`.")
         return
-    from common import patch_key
     print(f"{'Patch':<8} {'ddragon ver':<12} {'Items':<7} {'Meraki':<7} {'Fetched at':<22}")
     print("-" * 58)
-    for patch in sorted(os.listdir(ITEMS_DATA_DIR), key=patch_key):
-        meta_path = os.path.join(ITEMS_DATA_DIR, patch, "meta.json")
-        if not os.path.exists(meta_path):
-            continue
-        with open(meta_path) as f:
-            m = json.load(f)
+    for m in snapshots():
         print(f"{m['patch']:<8} {m['ddragonVersion']:<12} {m['ddragonItems']:<7} "
               f"{m['merakiItems']:<7} {m['fetchedAt']:<22}")
