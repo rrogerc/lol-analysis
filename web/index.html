@@ -121,6 +121,15 @@
     background: color-mix(in srgb, #e34948 12%, transparent);
     border-color: color-mix(in srgb, #e34948 45%, transparent);
   }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px;
+    font-size: 12px; color: var(--text-primary); background: var(--page);
+    white-space: nowrap;
+  }
+  .chip .gold { color: var(--muted); margin-left: 5px; font-variant-numeric: tabular-nums; }
+  #pool-excluded-list { margin: 8px 0 0 18px; font-size: 12px; color: var(--text-secondary); }
+  #pool-excluded-list li { margin-top: 4px; }
   #btbl th, #btbl td { text-align: right; }
   #btbl th:nth-child(2), #btbl td:nth-child(2) { text-align: left; }
   #btbl td:first-child { color: var(--muted); text-align: left; }
@@ -246,6 +255,17 @@
     <h2 id="bd-title">Damage breakdown</h2>
     <div class="hint" id="bd-hint">Where the selected build's damage comes from over the whole fight (post-mitigation).</div>
     <div id="bd-bars"></div>
+  </div>
+  <div class="card">
+    <h2 id="pool-title">Item pool</h2>
+    <div class="hint">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated — anything else would be ranked on raw stats alone and land too low.</div>
+    <div class="chips" id="pool-chips"></div>
+    <div class="hint" style="margin:10px 0 0">Boots (one per build):</div>
+    <div class="chips" id="boots-chips"></div>
+    <details id="pool-excluded" style="margin-top:12px">
+      <summary class="hint" style="cursor:pointer;display:inline-block"></summary>
+      <ul id="pool-excluded-list"></ul>
+    </details>
   </div>
 </section>
 
@@ -576,7 +596,11 @@ async function loadChampionList() {
 // Colors per damage source; anything unmapped cycles through the slots.
 const SRC_COLOR = { auto: "--s3", onhit: "--s2", wave: "--s8", "E onhit": "--s5",
                     "E active": "--s7", Q: "--s1", R: "--s6", spellblade: "--s4",
-                    kraken: "--s1", botrk: "--s6", burn: "--s8", malignance: "--s5" };
+                    kraken: "--s1", botrk: "--s6", burn: "--s8", malignance: "--s5",
+                    execute: "--s6", stormsurge: "--s1", blackfire: "--s8",
+                    ludens: "--s5", muramana: "--s4", energized: "--s3",
+                    shiv: "--s3", eclipse: "--s6", hullbreaker: "--s8",
+                    titanic: "--s8", active: "--s4", umbral: "--s6" };
 const bstate = { meta: null, champion: null, scenario: null, data: null, sel: 0 };
 
 async function loadBuildsMeta() {
@@ -599,7 +623,34 @@ async function loadBuildsMeta() {
     btn.addEventListener("click", () => { bstate.scenario = sc.key; loadScenario(); });
     return btn;
   }));
+  renderPool();
   return true;
+}
+
+function renderPool() {
+  const m = bstate.meta;
+  const chip = it => {
+    const s = document.createElement("span");
+    s.className = "chip";
+    s.append(it.name);
+    const g = document.createElement("span");
+    g.className = "gold";
+    g.textContent = fmtInt(it.gold) + "g";
+    s.append(g);
+    return s;
+  };
+  document.getElementById("pool-title").textContent =
+    `Item pool — ${m.pool.length} items + ${m.boots.length} boots (patch ${m.itemsPatch})`;
+  document.getElementById("pool-chips").replaceChildren(...m.pool.map(chip));
+  document.getElementById("boots-chips").replaceChildren(...m.boots.map(chip));
+  document.querySelector("#pool-excluded summary").textContent =
+    `Excluded items and why (${m.excluded.length})`;
+  document.getElementById("pool-excluded-list").replaceChildren(
+    ...m.excluded.map(txt => {
+      const li = document.createElement("li");
+      li.textContent = txt;
+      return li;
+    }));
 }
 
 async function loadScenario() {
@@ -611,7 +662,8 @@ async function loadScenario() {
   document.querySelectorAll("#scenario-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.scenario));
   const desc = document.getElementById("scenario-desc");
-  desc.textContent = "Simulating…";
+  desc.textContent = "Simulating… (first run of a scenario can take minutes " +
+    "with the full pool; results are cached on disk after that)";
   updateHash();
   const d = await api(`api/builds/${bstate.champion}/${bstate.scenario}.json`);
   bstate.data = d;

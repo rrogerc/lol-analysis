@@ -30,8 +30,18 @@ module and committed JSON archive:
   procs, Guinsoo phantom hits, pen ordering, EV crit) and a build
   enumerator (`builds optimize` — ranks every item-pool combination
   against a stat dummy; `--budget`/`--require` for partial builds).
-  Runes are not modeled yet. Math is pinned by hand-computed tests:
-  `python3 -m unittest test_builds`.
+  The enumeration pool covers every mage, marksman, assassin, and
+  bruiser damage item (78 items) — AP, on-hit, crit, executes, burns,
+  Energized, shreds, spellblades, item actives, fully-stacked tear
+  items; the few items whose passives can't be modeled yet (plus
+  support/tank items) are excluded rather than misranked on stats
+  alone, each with its reason recorded under `"excluded"` in
+  `item-effects.json`. Full-pool scenarios simulate ~40M builds — the
+  enumerator fans out across CPU cores and scenario results are cached
+  in `.cache/builds/` (gitignored), keyed by a hash of every input, so
+  they compute once per code/data change. Runes are not modeled yet.
+  Math is pinned by hand-computed tests: `python3 -m unittest
+  test_builds`.
 
 Shared plumbing lives in `common.py` (DB, paths, patch ordering) and
 `webapp.py` (the serve/export web shell).

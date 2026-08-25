@@ -238,12 +238,13 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(r11p["breakdown"]["wave"], r11["breakdown"]["wave"])
 
     def test_guinsoo_phantom_cadence(self):
-        # 4 seething stacks to reach max, 2 more attacks to bank 2 phantom
-        # stacks -> first phantom on attack 7, then every other attack.
+        # Attack 4 reaches max Seething and banks the first Phantom stack,
+        # attack 5 the second, attack 6 consumes them without banking a new
+        # one -> phantom hits on attacks 6, 9, 12, ... (Riot: "every third
+        # Attack" while fully stacked).
         r = self.sim(16, ["rageblade"], hp=100_000, duration=10)
         self.assertGreater(r["phantom_hits"], 0)
-        expected = max(0, (r["attacks"] - 6 + 1) // 2)
-        self.assertAlmostEqual(r["phantom_hits"], expected, delta=1)
+        self.assertEqual(r["phantom_hits"], (r["attacks"] - 6) // 3 + 1)
 
     def test_api_scenario_shape(self):
         # cheapest preset; exercises the full web-API path end to end
@@ -266,6 +267,221 @@ class TestEngine(unittest.TestCase):
         # each tick is 1% max hp pre-mitigation; with 60 mr and no pen the
         # burn can't exceed 1%/tick * ticks
         self.assertLess(r["breakdown"]["burn"], 0.01 * 10_000 * 13)
+
+    def resolve(self, level, tokens):
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        return ids, builds.resolve_stats(fake_champ(), level, ids, self.pool,
+                                         self.effects)
+
+    def test_cinderbloom_is_deterministic(self):
+        # The audit's bug: Cinderbloom was scaled by crit chance, so a 0-crit
+        # AP build got nothing. It's an unconditional 1.2x on magic damage
+        # below 40% target HP.
+        ids, sheet = self.resolve(16, ["shadowflame"])
+        self.assertEqual(sheet["crit_chance"], 0.0)
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        off = builds.simulate(sheet, self.kit, dict(fx, magicCrit=None), 16,
+                              ranks, 2000, 0, 0, 8.0)
+        on = builds.simulate(sheet, self.kit, fx, 16, ranks, 2000, 0, 0, 8.0)
+        self.assertLess(on["ttk"], off["ttk"])
+
+    def test_ap_multipliers_compound(self):
+        # Rabadon x1.30 and Blackfire's x1.04 are multiplicative in game
+        _, sheet = self.resolve(16, ["rabadons", "blackfire"])
+        self.assertAlmostEqual(sheet["ap_mult"], 1.30 * 1.04)
+        self.assertAlmostEqual(sheet["ap"], (130 + 80) * 1.30 * 1.04)
+
+    def test_blackfire_burn(self):
+        r = self.sim(16, ["blackfire"], hp=10_000, mr=0, duration=4)
+        self.assertIn("blackfire", r["breakdown"])
+        # 60 + 6% of 83.2 AP over each 3s refresh window, pre-mitigation
+        self.assertGreater(r["breakdown"]["blackfire"], 60)
+
+    def test_seraphs_awe(self):
+        # 70 AP + 2% of its 1000 bonus mana = 90 AP
+        _, sheet = self.resolve(16, ["seraphs embrace"])
+        self.assertAlmostEqual(sheet["ap"], 90.0)
+
+    def test_muramana(self):
+        ids, sheet = self.resolve(16, ["muramana"])
+        fc = fake_champ()
+        base_mana = builds.stat_at(fc["dd"]["stats"]["mp"],
+                                   fc["dd"]["stats"]["mpperlevel"], 16)
+        self.assertAlmostEqual(sheet["ad_bonus"],
+                               35 + 0.02 * (base_mana + 1000))
+        r = self.sim(16, ["muramana"], hp=10_000, armor=0, duration=4)
+        self.assertIn("muramana", r["breakdown"])  # Shock on-hit + per cast
+
+    def test_yun_tal_stacked_crit(self):
+        _, sheet = self.resolve(16, ["yun tal"])
+        self.assertAlmostEqual(sheet["crit_chance"], 25.0)
+
+    def test_yun_tal_flurry_speeds_attacks(self):
+        ids, sheet = self.resolve(16, ["yun tal"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        with_f = builds.simulate(sheet, self.kit, fx, 16, ranks,
+                                 100_000, 80, 60, 8.0)
+        without = builds.simulate(sheet, self.kit, dict(fx, flurry=None), 16,
+                                  ranks, 100_000, 80, 60, 8.0)
+        self.assertGreater(with_f["attacks"], without["attacks"])
+
+    def test_collector_execute(self):
+        # resists keep the hits small enough that one lands inside the 5%
+        # window (a chunk that jumps clean past 0 correctly never executes)
+        r = self.sim(16, ["collector"], hp=2200, armor=80, mr=80, duration=12)
+        self.assertIn("execute", r["breakdown"])
+        self.assertLessEqual(r["breakdown"]["execute"], 0.05 * 2200)
+        self.assertIsNotNone(r["ttk"])
+
+    def test_navori_accelerates_q(self):
+        # vs Phantom Dancer (more AS, no CDR): Navori must land more Q casts
+        nav = self.sim(16, ["navori"], hp=100_000, duration=12)
+        pd = self.sim(16, ["phantom dancer"], hp=100_000, duration=12)
+        self.assertGreater(nav["breakdown"]["Q"], pd["breakdown"]["Q"])
+
+    def test_giant_slayer_amps_by_bonus_hp(self):
+        base = self.sim(16, ["lord dominik"], hp=10_000, duration=6)
+        amped = self.sim(16, ["lord dominik"], hp=10_000, duration=6,
+                         target_bonus_hp=1500)
+        # every source amps 15% (E-active missing-HP feedback pushes it a bit
+        # above; the auto attack line is exactly 1.15x)
+        self.assertAlmostEqual(amped["breakdown"]["auto"],
+                               base["breakdown"]["auto"] * 1.15, places=6)
+
+    def test_abyssal_amps_magic_only(self):
+        plain = self.sim(16, [], hp=100_000, duration=4)
+        aby = self.sim(16, ["abyssal"], hp=100_000, duration=4)
+        self.assertEqual(plain["attacks"], aby["attacks"])
+        self.assertAlmostEqual(aby["breakdown"]["E onhit"],
+                               plain["breakdown"]["E onhit"] * 1.12, places=6)
+        self.assertAlmostEqual(aby["breakdown"]["auto"],
+                               plain["breakdown"]["auto"], places=6)
+
+    def test_ludens_procs_once(self):
+        r = self.sim(16, ["ludens echo"], hp=100_000, mr=0, duration=8)
+        # 150 + 10% of 100 AP, exactly once (recharge undocumented in 16.16)
+        self.assertAlmostEqual(r["breakdown"]["ludens"], 160.0, places=6)
+
+    def test_stormsurge_procs(self):
+        r = self.sim(16, ["stormsurge", "rabadons", "shadowflame"],
+                     hp=2800, duration=8)
+        self.assertIn("stormsurge", r["breakdown"])
+
+    def test_spellblade_unique_keeps_first(self):
+        ids = [builds.resolve_item(self.pool, self.idx, t)
+               for t in ("lich bane", "dusk and dawn")]
+        fx = builds.merge_effects(ids, self.effects)
+        self.assertAlmostEqual(fx["spellblade"]["apRatio"], 0.40)
+
+    def test_kraken_level_window(self):
+        k = self.effects[6672]["kraken"]["baseByLevel"]
+        self.assertAlmostEqual(builds.by_level(k, 8), 150.0)
+        self.assertAlmostEqual(builds.by_level(k, 9), 155.0)
+        self.assertAlmostEqual(builds.by_level(k, 18), 200.0)
+
+    def test_rod_of_ages_stacked(self):
+        # 45 AP + 30 stacked; 350 HP + 100; 500 mana + 300
+        _, sheet = self.resolve(16, ["rod of ages"])
+        self.assertAlmostEqual(sheet["ap"], 75.0)
+        self.assertAlmostEqual(sheet["mana_bonus"], 800.0)
+
+    def test_overlords_ad_from_hp(self):
+        # 30 AD + 2.5% of 550 bonus HP = 43.75 bonus AD
+        _, sheet = self.resolve(16, ["overlord"])
+        self.assertAlmostEqual(sheet["ad_bonus"], 30 + 0.025 * 550)
+
+    def test_endless_hunger_famine_haste(self):
+        # 5 + 10% of 65 bonus AD = 11.5 haste
+        _, sheet = self.resolve(16, ["endless hunger"])
+        self.assertAlmostEqual(sheet["haste"], 5 + 0.10 * 65)
+
+    def test_shojin_basic_haste_and_amp(self):
+        _, sheet = self.resolve(16, ["spear of shojin"])
+        self.assertLess(sheet["basic_cd_mult"], sheet["cd_mult"])
+        # vs a similar-AD stats item, Shojin's basic haste + Focused Will
+        # must produce more Q damage over a long fight
+        sho = self.sim(16, ["spear of shojin"], hp=100_000, duration=12)
+        gaq = self.sim(16, ["guardian angel"], hp=100_000, duration=12)
+        self.assertGreater(sho["breakdown"]["Q"], gaq["breakdown"]["Q"])
+
+    def test_trinity_and_essence_reaver_spellblades(self):
+        tri = self.sim(16, ["trinity"], hp=100_000, duration=6)
+        self.assertIn("spellblade", tri["breakdown"])
+        ids, sheet = self.resolve(16, ["essence reaver"])
+        fx = builds.merge_effects(ids, self.effects)
+        # 125% base AD + 0.5 per 1% crit (25% from the item itself)
+        self.assertAlmostEqual(fx["spellblade"]["perCritChancePct"], 0.5)
+        self.assertAlmostEqual(sheet["crit_chance"], 25.0)
+
+    def test_titanic_onhit_scales_with_own_hp(self):
+        r = self.sim(16, ["titanic"], hp=100_000, armor=0, duration=4)
+        self.assertIn("titanic", r["breakdown"])
+
+    def test_hullbreaker_cadence(self):
+        # ranged: 4 stacks then the 5th attack procs
+        r = self.sim(16, ["hullbreaker"], hp=100_000, armor=0, duration=10)
+        self.assertIn("hullbreaker", r["breakdown"])
+
+    def test_eclipse_procs_every_second_hit(self):
+        r = self.sim(16, ["eclipse"], hp=100_000, armor=0, duration=6)
+        self.assertIn("eclipse", r["breakdown"])
+        # ranged 4% max HP per proc, pre-mitigation with 0 armor
+        procs = r["breakdown"]["eclipse"] / (0.04 * 100_000)
+        self.assertGreater(procs, 2)
+
+    def test_energized_statikk(self):
+        r = self.sim(16, ["statikk"], hp=100_000, mr=0, duration=10)
+        self.assertIn("shiv", r["breakdown"])
+        # each proc is exactly 60 pre-mitigation at 0 MR (amp-free build)
+        procs = r["breakdown"]["shiv"] / 60.0
+        self.assertGreaterEqual(procs, 2)
+
+    def test_black_cleaver_shreds(self):
+        # same-ish AD stats item vs Cleaver against heavy armor: Cleaver's
+        # stacking 30% reduction must give more auto damage over the fight
+        bc = self.sim(16, ["black cleaver"], hp=100_000, armor=250, duration=10)
+        ga = self.sim(16, ["guardian angel"], hp=100_000, armor=250, duration=10)
+        self.assertGreater(bc["breakdown"]["auto"], ga["breakdown"]["auto"] * 1.1)
+
+    def test_hexplate_ult_steroid(self):
+        ids, sheet = self.resolve(16, ["hexplate"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        with_r = builds.simulate(sheet, self.kit, fx, 16, ranks,
+                                 100_000, 80, 60, 8.0)
+        no_r = builds.simulate(sheet, self.kit, fx, 16, ranks,
+                               100_000, 80, 60, 8.0, use_ult=False)
+        self.assertGreater(with_r["attacks"], no_r["attacks"])
+
+    def test_horizon_focus_amps_after_opener(self):
+        ids, sheet = self.resolve(16, ["horizon"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        on = builds.simulate(sheet, self.kit, fx, 16, ranks, 100_000, 80, 60, 6.0)
+        off = builds.simulate(sheet, self.kit, dict(fx, hypershot=None), 16,
+                              ranks, 100_000, 80, 60, 6.0)
+        self.assertGreater(on["total"], off["total"] * 1.05)
+
+    def test_item_actives_fire_once(self):
+        r = self.sim(16, ["gunblade"], hp=100_000, mr=0, duration=8)
+        # 175->253 by level: level 16 = 175 + 78*15/17, +30% of 80 AP
+        expected = 175 + 78 * 15 / 17 + 0.30 * 80
+        self.assertAlmostEqual(r["breakdown"]["active"], expected, places=4)
+
+    def test_umbral_true_damage_opener(self):
+        r = self.sim(16, ["umbral"], hp=100_000, armor=300, mr=300, duration=4)
+        # true damage ignores the 300 resists: exactly 50 + 1.5 * 18 lethality
+        self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
+
+    def test_pool_has_no_unmapped_stats_or_uncovered_passives(self):
+        # every pool item must resolve without stat warnings and leave no
+        # unexplained passive in `uncovered`
+        for iid in builds.DEFAULT_POOL + builds.BOOTS:
+            _, sheet = self.resolve(16, [str(iid)])
+            self.assertEqual(sheet["uncovered"], [],
+                             f"{self.pool[iid]['name']}: {sheet['uncovered']}")
 
 
 if __name__ == "__main__":

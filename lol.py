@@ -162,6 +162,8 @@ def main():
         sp.add_argument("--level", type=int, default=16)
         sp.add_argument("--patch", help="patch to use (default: newest snapshots)")
         sp.add_argument("--target-hp", type=int, default=2800)
+        sp.add_argument("--target-bonus-hp", type=float, default=0,
+                        help="item/rune share of target HP (Giant Slayer)")
         sp.add_argument("--armor", type=float, default=80)
         sp.add_argument("--mr", type=float, default=60)
         sp.add_argument("--duration", type=float, default=8,

@@ -1,20 +1,34 @@
 {
   "_comment": [
     "Hand-curated overlay for item effects that meraki only has as text.",
-    "Numbers transcribed from the meraki passive text in the current",
+    "Numbers transcribed from the ddragon/meraki text in the current",
     "data/items snapshot — re-check whenever a new patch lands. Fields:",
-    "  apMult           additive AP multiplier (Rabadon 0.30 -> AP x 1.30)",
+    "  apMult           AP multiplier (Rabadon 0.30 -> x1.30; multiplicative between items)",
     "  apFromBonusHpPct AP equal to this % of bonus (item) health",
-    "  onhit            flat on-hit riders: base (+ apRatio x AP + bonusAdRatio x bonus AD)",
+    "  apFromBonusManaPct  AP equal to this % of bonus (item) mana (Seraph's Awe)",
+    "  adFromMaxManaPct    bonus AD equal to this % of maximum mana (Muramana Awe)",
+    "  critChanceStackedPct permanent on-attack crit stacks at cap (Yun Tal)",
+    "  onhit            flat on-hit riders: base (+ apRatio x AP + bonusAdRatio x bonus AD",
+    "                   + maxManaPct% of max mana); optional source label",
     "  onhitCurrentHp   % of target CURRENT health on-hit (melee/ranged variants)",
-    "  spellblade       next attack after an ability cast: baseAdRatio x base AD + apRatio x AP",
+    "  spellblade       next attack after an ability cast: baseAdRatio x base AD + apRatio x AP;",
+    "                   reapplyOnhit: Dusk and Dawn applies on-hit effects again",
     "  asStacking       per-attack stacking bonus AS (Rageblade Seething Strike)",
-    "  phantom          Guinsoo phantom-hit stack machine (on-hits applied again)",
+    "  phantom          Guinsoo phantom-hit stack machine (every 3rd attack at full stacks)",
     "  kraken           every-3rd-attack proc with level scaling and missing-HP amp",
     "  altPen           Terminus Dark hits: stacking % armor+magic pen (every 2nd attack)",
     "  dmgAmp           time-in-combat damage amp: pctPerStack per second, capped",
-    "  burn             Liandry: refreshing max-HP burn on ability damage",
-    "  magicCrit        Shadowflame: magic/true damage crits below an HP threshold",
+    "  flatAmp          always-on damage amp for one damage type (Abyssal Mask)",
+    "  giantSlayer      amp vs target bonus HP: 1% per 100, capped at maxPct (LDR)",
+    "  burn             refreshing DoT on ability damage: Liandry (maxHpPctTotal)",
+    "                   or Blackfire (totalBase + totalApRatio); source labels the breakdown",
+    "  magicCrit        Shadowflame: magic damage always crits for critDmgPct below the threshold",
+    "  navoriCdr        on-attack % reduction of remaining basic-ability cooldowns",
+    "  flurry           Yun Tal AS window: asPct for durationS, cooldownS with on-hit refunds",
+    "  executePct       Collector: damage leaving the target below this % executes",
+    "  stormsurge       proc after dealing thresholdPct of max HP within windowS",
+    "  abilityManaProc  Muramana Shock: % max mana physical per damaging ability cast",
+    "  abilityProcOnce  Luden's: one proc on the first ability damage (recharge unknown)",
     "  ultHaste         ability haste for R only",
     "  ultBurn          Malignance: burn zone + flat MR reduction on R damage",
     "  covers           passive names accounted for (or knowingly irrelevant to",
@@ -54,12 +68,13 @@
     "6672": {
       "name": "Kraken Slayer",
       "kraken": {
-        "baseByLevel": { "from": 150, "to": 200, "curve": "linear", "levels": [9, 18] },
+        "baseByLevel": { "from": 150, "to": 200, "curve": "linear", "levels": [8, 18] },
         "rangedMult": 0.8,
         "missingHpAmpMaxPct": { "melee": 75, "ranged": 100 },
         "damageType": "physical"
       },
-      "covers": ["Bring It Down"]
+      "covers": ["Bring It Down"],
+      "note": "150 flat through level 8, +5 per level to 200 at 18"
     },
     "3153": {
       "name": "Blade of the Ruined King",
@@ -71,7 +86,8 @@
       "name": "Lich Bane",
       "spellblade": { "baseAdRatio": 0.75, "apRatio": 0.40, "icdS": 1.5,
                       "windowS": 10, "damageType": "magic" },
-      "covers": ["Spellblade"]
+      "covers": ["Spellblade"],
+      "note": "the empowered attack's 50% bonus AS is not modeled"
     },
     "4633": {
       "name": "Riftmaker",
@@ -83,7 +99,7 @@
     "6653": {
       "name": "Liandry's Torment",
       "burn": { "maxHpPctTotal": 6, "durationS": 3, "tickS": 0.5,
-                "damageType": "magic" },
+                "damageType": "magic", "source": "burn" },
       "dmgAmp": { "pctPerStack": 2, "maxStacks": 3 },
       "covers": ["Torment", "Suffering"]
     },
@@ -103,6 +119,334 @@
       "name": "Cosmic Drive",
       "covers": ["Spelldance"],
       "note": "movement speed only — damage-irrelevant"
-    }
+    },
+    "3116": {
+      "name": "Rylai's Crystal Scepter",
+      "covers": ["Rimefrost"],
+      "note": "slow — damage-irrelevant"
+    },
+    "2503": {
+      "name": "Blackfire Torch",
+      "burn": { "totalBase": 60, "totalApRatio": 0.06, "durationS": 3,
+                "tickS": 0.5, "damageType": "magic", "source": "blackfire" },
+      "apMult": 0.04,
+      "covers": ["Baleful Blaze", "Blackfire"],
+      "note": "apMult assumes the single sim target is burning (in-combat steady state)"
+    },
+    "4646": {
+      "name": "Stormsurge",
+      "stormsurge": { "thresholdPct": 25, "windowS": 2.5, "delayS": 2,
+                      "base": 125, "apRatio": 0.10, "damageType": "magic" },
+      "covers": ["Stormraider", "Squall"],
+      "note": "30s cooldown — modeled as once per fight"
+    },
+    "2510": {
+      "name": "Dusk and Dawn",
+      "spellblade": { "baseAdRatio": 0.75, "apRatio": 0.10, "icdS": 1.5,
+                      "windowS": 10, "damageType": "magic",
+                      "reapplyOnhit": true },
+      "covers": ["Spellblade"],
+      "note": "same unique passive name as Lich Bane — only one Spellblade applies; the heal is sustain, not modeled"
+    },
+    "6655": {
+      "name": "Luden's Echo",
+      "abilityProcOnce": { "base": 150, "apRatio": 0.10, "damageType": "magic",
+                           "source": "ludens" },
+      "covers": ["Echo"],
+      "note": "single target: 75 (+5% AP) plus 5 remaining echoes at 20% = 150 (+10% AP); stack recharge is undocumented in 16.16, so modeled as once per fight"
+    },
+    "3040": {
+      "name": "Seraph's Embrace",
+      "apFromBonusManaPct": 2,
+      "covers": ["Awe", "Lifeline"],
+      "note": "fully-stacked Archangel's; Awe counts ALL bonus mana in the build; Lifeline shield is defensive"
+    },
+    "3042": {
+      "name": "Muramana",
+      "adFromMaxManaPct": 2,
+      "onhit": [{ "base": 0, "maxManaPct": 1.2, "damageType": "physical",
+                  "source": "muramana" }],
+      "abilityManaProc": {
+        "pctByLevel": { "from": 3, "to": 4, "curve": "linear", "levels": [1, 18] },
+        "damageType": "physical"
+      },
+      "covers": ["Awe", "Shock", "Manaflow"],
+      "note": "fully-stacked Manamune (its 1000 mana includes the 360 Manaflow stacks)"
+    },
+    "3031": {
+      "name": "Infinity Edge",
+      "covers": []
+    },
+    "3046": {
+      "name": "Phantom Dancer",
+      "covers": ["Spectral Waltz"],
+      "note": "ghosting is mobility — damage-irrelevant"
+    },
+    "6675": {
+      "name": "Navori Flickerblade",
+      "navoriCdr": 15,
+      "covers": ["Transcendence"]
+    },
+    "3032": {
+      "name": "Yun Tal Wildarrows",
+      "critChanceStackedPct": 25,
+      "flurry": { "asPct": 30, "durationS": 6, "cooldownS": 30,
+                  "refundOnHitS": 1, "refundCritExtraS": 1 },
+      "covers": ["Practice Makes Lethal", "Flurry"],
+      "note": "Practice Makes Lethal assumed fully stacked (stacks are permanent)"
+    },
+    "6676": {
+      "name": "The Collector",
+      "executePct": 5,
+      "covers": ["Death", "Taxes"],
+      "note": "Taxes is gold income — damage-irrelevant"
+    },
+    "3036": {
+      "name": "Lord Dominik's Regards",
+      "giantSlayer": { "maxPct": 15 },
+      "covers": ["Giant Slayer"]
+    },
+    "8020": {
+      "name": "Abyssal Mask",
+      "flatAmp": { "pct": 12, "damageType": "magic" },
+      "covers": ["Unmake"],
+      "note": "700-radius curse aura — always in range at Kayle's attack range"
+    },
+
+    "3157": { "name": "Zhonya's Hourglass", "covers": [],
+              "note": "Stasis is defensive — stats only" },
+    "3102": { "name": "Banshee's Veil", "covers": ["Annul"],
+              "note": "spell shield is defensive — stats only" },
+    "3165": { "name": "Morellonomicon", "covers": ["Grievous Wounds"],
+              "note": "anti-heal — no damage vs a dummy" },
+    "3137": { "name": "Cryptbloom", "covers": ["Life From Death"],
+              "note": "takedown heal nova — stats only" },
+    "4628": {
+      "name": "Horizon Focus",
+      "hypershot": { "ampPct": 10, "durationS": 6 },
+      "covers": ["Hypershot", "Focus"],
+      "note": "marks assumed from the ranged opener and R only — sustained melee-range casts don't re-proc"
+    },
+    "6657": {
+      "name": "Rod of Ages",
+      "stackedStats": { "abilityPower": 30, "health": 100, "mana": 300 },
+      "covers": ["Timeless", "Eternity"],
+      "note": "assumed fully stacked (10 min); Eternity is sustain"
+    },
+    "3041": { "name": "Mejai's Soulstealer", "covers": ["Glory"],
+              "note": "assumed ZERO Glory stacks — ranked on base stats" },
+    "8010": {
+      "name": "Bloodletter's Curse",
+      "mrShred": { "pctPerStack": 7.5, "maxStacks": 4, "durationS": 6 },
+      "covers": ["Vile Decay"]
+    },
+    "3152": {
+      "name": "Hextech Rocketbelt",
+      "activeOnce": { "base": 100, "apRatio": 0.10, "damageType": "magic",
+                      "source": "active" },
+      "covers": [],
+      "note": "Supersonic cast on engage, once per fight"
+    },
+    "3146": {
+      "name": "Hextech Gunblade",
+      "activeOnce": { "byLevel": { "from": 175, "to": 253, "curve": "linear",
+                                   "levels": [1, 18] },
+                      "apRatio": 0.30, "damageType": "magic",
+                      "source": "active" },
+      "covers": [],
+      "note": "Lightning Bolt cast on engage, once per fight"
+    },
+    "2522": {
+      "name": "Actualizer",
+      "manaActive": { "ampBasePct": 15, "ampPer100BonusMana": 0.5,
+                      "durationS": 8, "basicCdFasterPct": 30 },
+      "covers": [],
+      "note": "Mana Made Real cast on engage; doubled mana costs not modeled (no mana pressure in-sim)"
+    },
+
+    "3085": { "name": "Runaan's Hurricane", "covers": ["Wind's Fury"],
+              "note": "bolts cannot hit the primary target — stats only single-target" },
+    "3033": { "name": "Mortal Reminder", "covers": ["Grievous Wounds"],
+              "note": "anti-heal — no damage vs a dummy" },
+    "3094": {
+      "name": "Rapid Firecannon",
+      "energized": { "bonus": 40, "damageType": "magic", "source": "energized" },
+      "covers": ["Energized", "Sharpshooter"]
+    },
+    "3097": {
+      "name": "Stormrazor",
+      "energized": { "bonus": 100, "damageType": "magic", "source": "energized" },
+      "covers": ["Energized", "Bolt"],
+      "note": "proc move-speed burst is mobility — not modeled"
+    },
+    "3087": {
+      "name": "Statikk Shiv",
+      "energized": { "bonus": 60, "damageType": "magic",
+                     "extraStacksPerAttack": 9, "source": "shiv" },
+      "covers": ["Electrospark", "Electroshock"],
+      "note": "V26.09 Energized rework (meraki text is stale); 60 magic vs champions, +9 stacks/attack from Electroshock — wiki-sourced"
+    },
+    "3072": { "name": "Bloodthirster", "covers": ["Ichorshield"],
+              "note": "overheal shield is defensive — stats only" },
+    "3508": {
+      "name": "Essence Reaver",
+      "spellblade": { "baseAdRatio": 1.25, "apRatio": 0.0,
+                      "perCritChancePct": 0.5, "icdS": 1.5, "windowS": 10,
+                      "damageType": "physical" },
+      "covers": ["Spellblade"],
+      "note": "mana refund not modeled"
+    },
+    "6673": { "name": "Immortal Shieldbow", "covers": ["Lifeline"],
+              "note": "Lifeline is defensive — stats only" },
+    "3139": { "name": "Mercurial Scimitar", "covers": [],
+              "note": "Quicksilver active is cleanse — stats only" },
+    "3172": { "name": "Zephyr", "covers": ["Like the Wind"],
+              "note": "MS stacking not fed into the Energize kiting model — minor" },
+    "2512": {
+      "name": "Fiendhunter Bolts",
+      "ultHaste": 30,
+      "ultAttackSteroid": { "attacks": 3, "asPct": 50, "critFloorEv": 1.6 },
+      "covers": ["Night Vigil", "Opening Barrage"]
+    },
+
+    "3142": { "name": "Youmuu's Ghostblade", "covers": ["Haunt"],
+              "note": "actives/MS are mobility — stats only" },
+    "6701": {
+      "name": "Opportunity",
+      "openerLethality": { "melee": 11, "ranged": 5, "durationS": 3 },
+      "covers": ["Preparation", "Extraction"]
+    },
+    "6697": { "name": "Hubris", "covers": ["Eminence"],
+              "note": "assumed ZERO Eminence stacks — ranked on base stats" },
+    "6698": {
+      "name": "Profane Hydra",
+      "activeOnce": { "adRatio": 0.80, "damageType": "physical",
+                      "source": "active" },
+      "covers": ["Cleave"],
+      "note": "Cleave splash hits other enemies only — no single-target value"
+    },
+    "6699": {
+      "name": "Voltaic Cyclosword",
+      "energized": { "bonus": 100, "damageType": "physical",
+                     "source": "energized" },
+      "covers": ["Energized", "Galvanize", "Firmament"]
+    },
+    "6696": { "name": "Axiom Arc", "covers": ["Flux"],
+              "note": "ult CD refund is out-of-fight economy — stats only" },
+    "3814": { "name": "Edge of Night", "covers": ["Annul"],
+              "note": "spell shield is defensive — stats only" },
+    "6695": { "name": "Serpent's Fang", "covers": ["Shield Reaver"],
+              "note": "the dummy has no shields — stats only" },
+    "3179": {
+      "name": "Umbral Glaive",
+      "firstAttackBonus": { "base": 50, "perLethality": 1.5,
+                            "damageType": "true", "source": "umbral" },
+      "covers": ["Blackout", "Nightstalker"],
+      "note": "Nightstalker assumes the fight opens from unseen"
+    },
+    "6692": {
+      "name": "Eclipse",
+      "hitPairProc": { "maxHpPctMelee": 6, "maxHpPctRanged": 4,
+                       "damageType": "physical" },
+      "covers": ["Ever Rising Moon"],
+      "note": "no internal cooldown in 16.16; the shield is defensive"
+    },
+    "6694": { "name": "Serylda's Grudge", "covers": ["Bitter Cold"],
+              "note": "slow — damage-irrelevant" },
+
+    "3071": {
+      "name": "Black Cleaver",
+      "armorShred": { "pctPerStack": 6, "maxStacks": 5, "durationS": 6 },
+      "covers": ["Carve", "Fervor"],
+      "note": "Carve is armor REDUCTION (before pen); Fervor is mobility"
+    },
+    "3161": {
+      "name": "Spear of Shojin",
+      "basicAbilityHaste": 25,
+      "abilityAmpStacking": { "pctPerStack": 3, "maxStacks": 4, "durationS": 6 },
+      "covers": ["Dragonforce", "Focused Will"],
+      "note": "Focused Will applied to ability instances only (on-hit spell riders excluded — slight undercount)"
+    },
+    "6610": {
+      "name": "Sundered Sky",
+      "firstAttackCritFloorEv": 1.6,
+      "covers": ["Lightshield Strike"],
+      "note": "10s per-target cooldown — once per fight; the heal is sustain"
+    },
+    "6631": {
+      "name": "Stridebreaker",
+      "activeOnce": { "adRatio": 0.80, "damageType": "physical",
+                      "source": "active" },
+      "covers": ["Cleave"],
+      "note": "Cleave splash hits other enemies only"
+    },
+    "3074": { "name": "Ravenous Hydra", "covers": ["Cleave"],
+              "note": "Cleave splash hits other enemies only — stats only single-target" },
+    "3748": {
+      "name": "Titanic Hydra",
+      "onhit": [{ "base": 0,
+                  "selfMaxHpPct": { "melee": 1.0, "ranged": 0.5 },
+                  "damageType": "physical", "source": "titanic" }],
+      "covers": ["Cleave"],
+      "note": "cone splash hits other enemies only; primary-target on-hit modeled"
+    },
+    "6333": { "name": "Death's Dance", "covers": ["Ignore Pain", "Defy"],
+              "note": "defensive — stats only" },
+    "3156": { "name": "Maw of Malmortius", "covers": ["Lifeline"],
+              "note": "defensive — stats only" },
+    "3073": {
+      "name": "Experimental Hexplate",
+      "ultHaste": 30,
+      "onUltCast": { "asPct": 50, "durationS": 8 },
+      "covers": ["Hexcharged", "Overdrive"]
+    },
+    "2501": {
+      "name": "Overlord's Bloodmail",
+      "adFromBonusHpPct": 2.5,
+      "covers": ["Tyranny", "Retribution"],
+      "note": "Retribution scales with MISSING own health — assumed full HP, contributes 0"
+    },
+    "3078": {
+      "name": "Trinity Force",
+      "spellblade": { "baseAdRatio": 2.0, "apRatio": 0.0, "icdS": 1.5,
+                      "windowS": 10, "damageType": "physical" },
+      "covers": ["Spellblade", "Quicken"]
+    },
+    "6662": {
+      "name": "Iceborn Gauntlet",
+      "spellblade": { "baseAdRatio": 1.5, "apRatio": 0.0, "icdS": 1.5,
+                      "windowS": 10, "damageType": "physical" },
+      "covers": ["Spellblade"],
+      "note": "frost field is a slow — damage-irrelevant"
+    },
+    "3181": {
+      "name": "Hullbreaker",
+      "nthHitProc": { "stacksNeededMelee": 5, "stacksNeededRanged": 4,
+                      "baseAdRatioMelee": 1.2, "baseAdRatioRanged": 0.84,
+                      "selfMaxHpPctMelee": 5.0, "selfMaxHpPctRanged": 3.5,
+                      "damageType": "physical" },
+      "covers": ["Skipper", "Boarding Party"],
+      "note": "Boarding Party buffs minions — irrelevant here"
+    },
+    "6609": { "name": "Chempunk Chainsword", "covers": ["Hackshorn"],
+              "note": "anti-heal — no damage vs a dummy" },
+    "2517": {
+      "name": "Endless Hunger",
+      "hasteFromBonusAd": { "base": 5, "perBonusAdPct": 10 },
+      "covers": ["Famine", "Feast"],
+      "note": "Feast omnivamp is sustain"
+    },
+    "3026": { "name": "Guardian Angel", "covers": ["Rebirth"],
+              "note": "defensive — stats only" }
+  },
+  "excluded": {
+    "2520": "Bastionbreaker — Shaped Charge's proc cadence isn't published in our sources",
+    "2523": "Hexoptics C44 — distance-scaled amp needs a positioning model",
+    "2524": "Bandlepipes — CC-conditional team attack-speed aura; support item",
+    "4005": "Support items (Imperial Mandate, Ardent Censer, Staff of Flowing Water, Echoes of Helia, Moonstone, Dawncore, Shurelya's, Redemption, Mikael's, Knight's Vow, Zeke's, Locket, Whispering Circlet) — ally-triggered passives; a solo dummy sim gives them nothing",
+    "3068": "Tank items (Sunfire Aegis, Hollow Radiance, Unending Despair, Frozen Heart, Spirit Visage, Protoplasm Harness ...) — out of scope for damage-carry pools; Immolate auras are modelable later",
+    "3170": "Swiftmarch — Adaptive Force is rune-layer, not yet modeled",
+    "3175": "Spellslinger's Shoes — tier-3 boots need the team-wide Feats of Strength; modeled builds assume no upgraded boots (same for Armored Advance, Chainlaced Crushers, Crimson Lucidity)",
+    "3004": "Manamune / 3003 Archangel's — pre-transform tear items; the pool carries their stacked forms (Muramana 3042, Seraph's 3040)"
   }
 }
