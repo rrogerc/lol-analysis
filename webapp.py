@@ -1,5 +1,5 @@
 """The web app shell: `lol.py serve` (local dashboard) and `lol.py export`
-(static site for GitHub Pages).
+(self-contained static snapshot of the same site).
 
 Both expose the same API shape — serve computes JSON per request, export
 pre-bakes the identical paths as files — so web/index.html runs unchanged in
@@ -104,12 +104,12 @@ def app_meta(con):
 
 
 def cmd_export(args):
-    """Write the web app + pre-generated API JSON as a static site (for GitHub Pages)."""
+    """Write the web app + pre-generated API JSON as a static site."""
     import shutil
     con = db_connect()
     meta = app_meta(con)
     # The export is a frozen snapshot: job heartbeats would only age into a
-    # false "timer may be dead" on the published site, so strip them.
+    # false "timer may be dead" wherever it's viewed later, so strip them.
     for job in meta["jobs"]:
         job.pop("lastRun", None)
         job.pop("lastExit", None)

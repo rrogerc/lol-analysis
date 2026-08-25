@@ -12,7 +12,7 @@ Usage:
   .venv/bin/python lol.py serve                     # local web dashboard
   .venv/bin/python lol.py status                    # what's in the database
   .venv/bin/python lol.py import-json               # rebuild lol.db from data/
-  .venv/bin/python lol.py export                    # static site (used by Pages CI)
+  .venv/bin/python lol.py export                    # static snapshot of the site
 """
 
 import argparse
@@ -46,7 +46,7 @@ def main():
     sp.add_argument("--no-open", action="store_true", help="don't auto-open the browser")
     sp.set_defaults(func=webapp.cmd_serve)
 
-    sp = sub.add_parser("export", help="write the web app as a static site (used by GitHub Pages)")
+    sp = sub.add_parser("export", help="write the web app as a self-contained static site")
     sp.add_argument("--out", default="_site")
     sp.set_defaults(func=webapp.cmd_export)
 

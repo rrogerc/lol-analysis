@@ -52,10 +52,10 @@ This refreshes all three tiers with their canonical definitions:
 - `soloq_otp` — one-tricks: champion is ≥ 80% of the player's role games
 
 Sync writes to `lol.db` and mirrors JSON to `data/scaling/<patch>/<tier>/` —
-commit and push that to update the published site (its CI rebuilds the DB
-from `data/` and exports a static snapshot to GitHub Pages). For a one-off
-custom slice (other thresholds, specific platforms, a different tier name),
-use `lol.py scaling import-soloq` directly.
+commit and push that so the archive on GitHub can rebuild the DB anywhere
+via `import-json`. For a one-off custom slice (other thresholds, specific
+platforms, a different tier name), use `lol.py scaling import-soloq`
+directly.
 
 ## The dashboard (recommended)
 
