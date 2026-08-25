@@ -35,13 +35,16 @@ def db_patches(con, tier):
 
 
 def default_tier(con):
-    """Most recently imported tier; ties (e.g. one bulk import) broken by
-    newest patch covered, then by data volume."""
+    """soloq_masters_plus when present (the primary tier — every game);
+    otherwise the most recently imported tier, ties broken by newest patch
+    covered, then by data volume."""
     rows = con.execute(
         "SELECT tier, MAX(scraped_at), SUM(games) FROM stats GROUP BY tier"
     ).fetchall()
     if not rows:
         return None
+    if any(t == "soloq_masters_plus" for t, _, _ in rows):
+        return "soloq_masters_plus"
     newest = {t: max((patch_key(p) for p in db_patches(con, t)), default=(0,))
               for t, _, _ in rows}
     return max(rows, key=lambda r: (r[1], newest[r[0]], r[2]))[0]
