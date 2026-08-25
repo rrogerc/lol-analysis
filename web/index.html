@@ -121,6 +121,17 @@
     background: color-mix(in srgb, #e34948 12%, transparent);
     border-color: color-mix(in srgb, #e34948 45%, transparent);
   }
+  #btbl th, #btbl td { text-align: right; }
+  #btbl th:nth-child(2), #btbl td:nth-child(2) { text-align: left; }
+  #btbl td:first-child { color: var(--muted); text-align: left; }
+  #btbl tbody tr { cursor: pointer; }
+  #btbl tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
+  #btbl tbody tr.sel { background: color-mix(in srgb, var(--s1) 10%, transparent); }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 13px; }
+  .bar-label { width: 90px; color: var(--text-secondary); text-align: right; flex: none; }
+  .bar-track { flex: 1; height: 16px; background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-val { width: 130px; font-variant-numeric: tabular-nums; flex: none; }
   .ci { color: var(--muted); font-weight: 400; font-size: 11px; }
   .tooltip .tt-ci { color: var(--muted); }
   svg text { font-family: inherit; }
@@ -142,6 +153,7 @@
 <nav>
   <button data-view="overview" class="active">Overview</button>
   <button data-view="champion">Champion</button>
+  <button data-view="builds">Builds</button>
   <button data-view="data">Data</button>
 </nav>
 
@@ -211,6 +223,29 @@
       <div class="tooltip" id="patch-tt"></div>
     </div>
     <div class="legend" id="patch-legend"></div>
+  </div>
+</section>
+
+<!-- ============================ Builds ============================ -->
+<section class="view" id="view-builds">
+  <div class="card">
+    <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
+    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by time-to-kill. Click a build to see where its damage comes from.</div>
+    <div class="seg" id="scenario-seg"></div>
+    <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
+    <div class="tablewrap">
+      <table id="btbl">
+        <thead><tr>
+          <th>#</th><th>Build</th><th>Kill time</th><th>DPS</th><th>Damage</th><th>Gold</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="bd-title">Damage breakdown</h2>
+    <div class="hint" id="bd-hint">Where the selected build's damage comes from over the whole fight (post-mitigation).</div>
+    <div id="bd-bars"></div>
   </div>
 </section>
 
@@ -537,6 +572,112 @@ async function loadChampionList() {
   }));
 }
 
+// ---------------- builds view ----------------
+// Colors per damage source; anything unmapped cycles through the slots.
+const SRC_COLOR = { auto: "--s3", onhit: "--s2", wave: "--s8", "E onhit": "--s5",
+                    "E active": "--s7", Q: "--s1", R: "--s6", spellblade: "--s4",
+                    kraken: "--s1", botrk: "--s6", burn: "--s8", malignance: "--s5" };
+const bstate = { meta: null, champion: null, scenario: null, data: null, sel: 0 };
+
+async function loadBuildsMeta() {
+  if (bstate.meta) return true;
+  try {
+    bstate.meta = await api("api/builds/meta.json");
+  } catch (e) {
+    document.getElementById("builds-note").textContent =
+      "Builds API not reachable — restart `lol.py serve` to pick up the new endpoints.";
+    return false;
+  }
+  bstate.champion = bstate.meta.champions[0]?.slug;
+  if (!bstate.meta.scenarios.some(s => s.key === bstate.scenario))
+    bstate.scenario = bstate.meta.scenarios[0]?.key;
+  const seg = document.getElementById("scenario-seg");
+  seg.replaceChildren(...bstate.meta.scenarios.map(sc => {
+    const btn = document.createElement("button");
+    btn.textContent = sc.label;
+    btn.dataset.key = sc.key;
+    btn.addEventListener("click", () => { bstate.scenario = sc.key; loadScenario(); });
+    return btn;
+  }));
+  return true;
+}
+
+async function loadScenario() {
+  if (!bstate.champion) {
+    document.getElementById("builds-note").textContent =
+      "No champion kit encodings yet — add data/builds/<champ>.json.";
+    return;
+  }
+  document.querySelectorAll("#scenario-seg button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === bstate.scenario));
+  const desc = document.getElementById("scenario-desc");
+  desc.textContent = "Simulating…";
+  updateHash();
+  const d = await api(`api/builds/${bstate.champion}/${bstate.scenario}.json`);
+  bstate.data = d;
+  bstate.sel = 0;
+  const sc = d.scenario, rk = d.ranks;
+  document.getElementById("builds-title").textContent =
+    `${d.champion} — ranked builds, ${sc.label.toLowerCase()}`;
+  desc.textContent =
+    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · target ${fmtInt(sc.targetHp)} HP, ` +
+    `${sc.armor} armor, ${sc.mr} MR · ${sc.duration}s fight` +
+    (sc.budget ? ` · ${fmtInt(sc.budget)}g budget` : "") +
+    ` · ${fmtInt(d.buildsEvaluated)} builds simulated · ` +
+    `items patch ${d.itemsPatch}, kit ${d.kitPatch} · ${bstate.meta.note}`;
+  renderBuildsTable();
+}
+
+function renderBuildsTable() {
+  const rows = bstate.data.rows;
+  document.querySelector("#btbl tbody").replaceChildren(...rows.map((r, i) => {
+    const tr = document.createElement("tr");
+    if (i === bstate.sel) tr.className = "sel";
+    tr.append(
+      cell(String(r.rank)),
+      cell(r.items.join(", ")),
+      cell(r.ttk != null ? r.ttk.toFixed(2) + "s" : "survives"),
+      cell(fmtInt(r.dps)), cell(fmtInt(r.total)), cell(fmtInt(r.gold)));
+    tr.addEventListener("click", () => { bstate.sel = i; renderBuildsTable(); });
+    return tr;
+  }));
+  renderBreakdown(rows[bstate.sel]);
+}
+
+function renderBreakdown(r) {
+  if (!r) return;
+  document.getElementById("bd-title").textContent =
+    `Damage breakdown — #${r.rank}: ${r.items.join(", ")}`;
+  document.getElementById("bd-hint").textContent =
+    `${fmtInt(r.total)} total damage · ${r.attacks} attacks · ` +
+    `${fmtInt(r.ap)} AP · ${fmtInt(r.ad)} AD · ${r.attackSpeed} attack speed · ${fmtInt(r.gold)}g`;
+  const entries = Object.entries(r.breakdown);
+  const max = Math.max(...entries.map(([, v]) => v));
+  document.getElementById("bd-bars").replaceChildren(...entries.map(([src, dmg], i) => {
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    const label = document.createElement("span");
+    label.className = "bar-label";
+    label.textContent = src;
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    const fill = document.createElement("div");
+    fill.className = "bar-fill";
+    fill.style.width = (dmg / max * 100).toFixed(1) + "%";
+    fill.style.background = css(SRC_COLOR[src] || SLOTS[i % SLOTS.length]);
+    track.append(fill);
+    const val = document.createElement("span");
+    val.className = "bar-val";
+    val.textContent = `${fmtInt(dmg)} (${(dmg / r.total * 100).toFixed(1)}%)`;
+    row.append(label, track, val);
+    return row;
+  }));
+}
+
+async function openBuilds() {
+  if (await loadBuildsMeta()) loadScenario();
+}
+
 // ---------------- data view ----------------
 async function loadInventory() {
   const meta = await api("api/meta.json");
@@ -620,6 +761,7 @@ function renderTierDesc() {
 function updateHash() {
   const parts = [`tab=${state.view}`, `tier=${state.tier}`];
   if (state.view === "champion" && state.champion) parts.push(`name=${state.champion}`);
+  if (state.view === "builds" && bstate.scenario) parts.push(`sc=${bstate.scenario}`);
   history.replaceState(null, "", "#" + parts.join("&"));
 }
 function showView(v) {
@@ -629,6 +771,7 @@ function showView(v) {
   document.querySelectorAll(".view").forEach(s =>
     s.classList.toggle("active", s.id === "view-" + v));
   updateHash();
+  if (v === "builds" && !bstate.data) openBuilds();
 }
 document.querySelectorAll("nav button").forEach(b =>
   b.addEventListener("click", () => showView(b.dataset.view)));
@@ -675,7 +818,8 @@ async function init() {
     showView("champion");
     document.getElementById("champ-search").value = hash.name;
     loadChampion(hash.name);
-  } else if (hash.tab && ["overview", "champion", "data"].includes(hash.tab)) {
+  } else if (hash.tab && ["overview", "champion", "builds", "data"].includes(hash.tab)) {
+    if (hash.tab === "builds" && hash.sc) bstate.scenario = hash.sc;
     showView(hash.tab);
   }
 }

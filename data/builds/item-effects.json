@@ -1,0 +1,108 @@
+{
+  "_comment": [
+    "Hand-curated overlay for item effects that meraki only has as text.",
+    "Numbers transcribed from the meraki passive text in the current",
+    "data/items snapshot — re-check whenever a new patch lands. Fields:",
+    "  apMult           additive AP multiplier (Rabadon 0.30 -> AP x 1.30)",
+    "  apFromBonusHpPct AP equal to this % of bonus (item) health",
+    "  onhit            flat on-hit riders: base (+ apRatio x AP + bonusAdRatio x bonus AD)",
+    "  onhitCurrentHp   % of target CURRENT health on-hit (melee/ranged variants)",
+    "  spellblade       next attack after an ability cast: baseAdRatio x base AD + apRatio x AP",
+    "  asStacking       per-attack stacking bonus AS (Rageblade Seething Strike)",
+    "  phantom          Guinsoo phantom-hit stack machine (on-hits applied again)",
+    "  kraken           every-3rd-attack proc with level scaling and missing-HP amp",
+    "  altPen           Terminus Dark hits: stacking % armor+magic pen (every 2nd attack)",
+    "  dmgAmp           time-in-combat damage amp: pctPerStack per second, capped",
+    "  burn             Liandry: refreshing max-HP burn on ability damage",
+    "  magicCrit        Shadowflame: magic/true damage crits below an HP threshold",
+    "  ultHaste         ability haste for R only",
+    "  ultBurn          Malignance: burn zone + flat MR reduction on R damage",
+    "  covers           passive names accounted for (or knowingly irrelevant to",
+    "                   damage, per the note), so stat sheets stop listing them"
+  ],
+  "asOf": "16.16",
+  "items": {
+    "3089": {
+      "name": "Rabadon's Deathcap",
+      "apMult": 0.30,
+      "covers": ["Magical Opus"]
+    },
+    "3115": {
+      "name": "Nashor's Tooth",
+      "onhit": [{ "base": 15, "apRatio": 0.15, "damageType": "magic" }],
+      "covers": ["Icathian Bite"]
+    },
+    "3091": {
+      "name": "Wit's End",
+      "onhit": [{ "base": 45, "damageType": "magic" }],
+      "covers": ["Fray"]
+    },
+    "3124": {
+      "name": "Guinsoo's Rageblade",
+      "onhit": [{ "base": 30, "damageType": "magic" }],
+      "asStacking": { "pctPerStack": 8, "maxStacks": 4, "durationS": 3 },
+      "phantom": { "stacksNeeded": 2 },
+      "covers": ["Wrath", "Seething Strike"]
+    },
+    "3302": {
+      "name": "Terminus",
+      "onhit": [{ "base": 30, "damageType": "magic" }],
+      "altPen": { "pctPerStack": 10, "maxStacks": 3, "durationS": 5 },
+      "covers": ["Shadow", "Juxtaposition"],
+      "note": "Light hits' bonus resists are defensive — not modeled"
+    },
+    "6672": {
+      "name": "Kraken Slayer",
+      "kraken": {
+        "baseByLevel": { "from": 150, "to": 200, "curve": "linear", "levels": [9, 18] },
+        "rangedMult": 0.8,
+        "missingHpAmpMaxPct": { "melee": 75, "ranged": 100 },
+        "damageType": "physical"
+      },
+      "covers": ["Bring It Down"]
+    },
+    "3153": {
+      "name": "Blade of the Ruined King",
+      "onhitCurrentHp": { "meleePct": 9, "rangedPct": 6, "damageType": "physical" },
+      "covers": ["Mist's Edge", "Clawing Shadows"],
+      "note": "Clawing Shadows is a slow — damage-irrelevant"
+    },
+    "3100": {
+      "name": "Lich Bane",
+      "spellblade": { "baseAdRatio": 0.75, "apRatio": 0.40, "icdS": 1.5,
+                      "windowS": 10, "damageType": "magic" },
+      "covers": ["Spellblade"]
+    },
+    "4633": {
+      "name": "Riftmaker",
+      "dmgAmp": { "pctPerStack": 2, "maxStacks": 4 },
+      "apFromBonusHpPct": 2,
+      "covers": ["Void Corruption", "Void Infusion"],
+      "note": "max-stack omnivamp is sustain — not modeled"
+    },
+    "6653": {
+      "name": "Liandry's Torment",
+      "burn": { "maxHpPctTotal": 6, "durationS": 3, "tickS": 0.5,
+                "damageType": "magic" },
+      "dmgAmp": { "pctPerStack": 2, "maxStacks": 3 },
+      "covers": ["Torment", "Suffering"]
+    },
+    "3118": {
+      "name": "Malignance",
+      "ultHaste": 20,
+      "ultBurn": { "totalBase": 180, "totalApRatio": 0.15, "durationS": 3,
+                   "mrReduction": 10, "damageType": "magic" },
+      "covers": ["Scorn", "Hatefog"]
+    },
+    "4645": {
+      "name": "Shadowflame",
+      "magicCrit": { "belowTargetHpPct": 40, "critDmgPct": 120 },
+      "covers": ["Cinderbloom"]
+    },
+    "4629": {
+      "name": "Cosmic Drive",
+      "covers": ["Spelldance"],
+      "note": "movement speed only — damage-irrelevant"
+    }
+  }
+}

@@ -18,6 +18,20 @@ module and committed JSON archive:
   archive. A systemd user timer on the home server runs
   `jobs/refresh-items.sh` daily and pushes when a new patch lands, so the
   local checkout is always current (the Data tab lists all such jobs).
+- **builds** (`builds.py`, `data/builds/`) — theoretical build math, no match
+  data: resolve champion + items into exact stat sheets with the real in-game
+  rules (growth curve, AS ratio and cap, pen ordering, Rabadon multiplier).
+  Champion base stats are snapshotted per patch via
+  `lol.py builds fetch-champion <name>` (ddragon canonical, meraki for AS
+  ratio/windup); text-only item passives live in the hand-curated
+  `data/builds/item-effects.json`, and ability kits in hand-encoded
+  `data/builds/<champ>.json` (kayle so far). On top: a deterministic
+  expected-value combat engine (`builds sim` — event timeline, on-hit
+  procs, Guinsoo phantom hits, pen ordering, EV crit) and a build
+  enumerator (`builds optimize` — ranks every item-pool combination
+  against a stat dummy; `--budget`/`--require` for partial builds).
+  Runes are not modeled yet. Math is pinned by hand-computed tests:
+  `python3 -m unittest test_builds`.
 
 Shared plumbing lives in `common.py` (DB, paths, patch ordering) and
 `webapp.py` (the serve/export web shell).
@@ -69,6 +83,11 @@ Opens `http://127.0.0.1:8321` — an interactive local dashboard:
   with tier/lane/min-games filters. Click table rows to chart champions.
 - **Champion** — any champion's win-rate curve per lane, plus their win rate
   across patches.
+- **Builds** — the theoretical damage model's ranked builds per preset
+  scenario (full build / mid-game budget / first item, vs squishy /
+  bruiser / tank). Click a build for its damage-source breakdown. Scenarios
+  are simulated on first request and cached; restart serve after changing
+  kits or item effects.
 - **Data** — what's in the database, per tier and patch.
 
 ## CLI equivalents

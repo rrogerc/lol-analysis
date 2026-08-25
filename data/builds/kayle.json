@@ -1,0 +1,111 @@
+{
+  "_provenance": [
+    "Hand-encoded from wiki.leagueoflegends.com/en-us/Kayle (V26.x era) on",
+    "2026-08-25, cross-checked against ddragon 16.16.1 and the meraki",
+    "champion snapshot (14.22 baseline). Wiki patch numbering V26.xx maps to",
+    "ddragon 16.xx. Season-2026 changes folded in:",
+    "  - V26.01 hotfix: Zealous lost its '+1% AS per 100 AP per stack';",
+    "    Q mana 60-100 (was 70-90), Q slow 25-45% (was 26-50%)",
+    "  - V26.04: Q base damage 60/90/120/150/180 (was 60/100/140/180/220)",
+    "  - ~16.5/16.6 (ddragon bisect, undocumented on the wiki): AD growth",
+    "    removed, 50 flat at all levels. ddragon is canonical for base stats.",
+    "Base stats themselves are NOT duplicated here — the stat layer reads",
+    "them from data/builds/champions/<patch>/kayle/. This file is only what",
+    "no structured source has: the kit's damage logic."
+  ],
+  "champion": "kayle",
+  "patch": "16.16",
+  "attack": {
+    "windupFraction": 0.19355,
+    "critModified": true,
+    "note": "windup = attackCastTime 0.3 / attackTotalTime 1.55 (meraki); attacks are Kayle's damage core, fully on-hit capable"
+  },
+  "passive": {
+    "name": "Divine Ascent",
+    "zealous": {
+      "level": 1,
+      "asPctPerStack": 6,
+      "maxStacks": 5,
+      "gainedOn": "attack",
+      "durationS": 5,
+      "exaltedAtMaxStacks": true,
+      "exaltedMsPct": 10,
+      "permanentAtLevel": 16
+    },
+    "arisen": { "level": 6, "attackRange": 525 },
+    "aflame": {
+      "level": 11,
+      "wave": {
+        "baseByLevel": { "from": 20, "to": 41, "curve": "linear", "levels": [1, 18] },
+        "bonusAdRatio": 0.10,
+        "apRatio": 0.25,
+        "damageType": "magic",
+        "trigger": "on-attack while Exalted",
+        "critModified": true,
+        "note": "a wave per attack; hits all enemies in its path — single-target sims count one hit"
+      }
+    },
+    "transcendent": { "level": 16, "attackRange": 625 }
+  },
+  "abilities": {
+    "Q": {
+      "name": "Radiant Blast",
+      "cooldownS": [12, 11, 10, 9, 8],
+      "mana": [60, 70, 80, 90, 100],
+      "damage": {
+        "base": [60, 90, 120, 150, 180],
+        "bonusAdRatio": 0.6,
+        "apRatio": 0.5,
+        "damageType": "magic"
+      },
+      "shred": {
+        "pct": 15,
+        "durationS": 4,
+        "appliesTo": ["armor", "mr"],
+        "note": "resist REDUCTION (can push below 0), applied before pen"
+      },
+      "slowPct": [25, 30, 35, 40, 45]
+    },
+    "W": {
+      "name": "Celestial Blessing",
+      "damageRelevant": false,
+      "cooldownS": [15, 15, 15, 15, 15],
+      "mana": [70, 75, 80, 85, 90]
+    },
+    "E": {
+      "name": "Starfire Spellblade",
+      "cooldownS": [8, 7.5, 7, 6.5, 6],
+      "mana": [0, 0, 0, 0, 0],
+      "onhit": {
+        "base": [15, 20, 25, 30, 35],
+        "bonusAdRatio": 0.10,
+        "apRatio": 0.20,
+        "damageType": "magic",
+        "note": "every basic attack, always on"
+      },
+      "active": {
+        "missingHpPct": [8, 8.5, 9, 9.5, 10],
+        "missingHpPctPer100Ap": 1.5,
+        "damageType": "magic",
+        "deliveredOnHit": true,
+        "resetsAttackTimer": true,
+        "monsterCap": 400,
+        "critModifiedAtAflame": true,
+        "note": "empowers the next basic attack within 6s; pre-Arisen it also becomes ranged"
+      }
+    },
+    "R": {
+      "name": "Divine Judgment",
+      "cooldownS": [160, 120, 80],
+      "mana": [100, 50, 0],
+      "delayS": 2.5,
+      "damage": {
+        "base": [200, 300, 400],
+        "bonusAdRatio": 1.0,
+        "apRatio": 0.7,
+        "damageType": "magic"
+      },
+      "note": "2.5s of target invulnerability first; Kayle keeps attacking during it"
+    }
+  }
+}

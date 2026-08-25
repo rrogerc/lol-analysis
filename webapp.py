@@ -12,6 +12,7 @@ import os
 import re
 import sys
 
+import builds
 import items
 import scaling
 from common import BASE_DIR, WEB_DIR, db_connect
@@ -127,6 +128,14 @@ def cmd_export(args):
 
     dump("api/meta.json", meta)
     files = 1
+    builds_meta = builds.api_builds_meta()
+    dump("api/builds/meta.json", builds_meta)
+    files += 1
+    for champ in builds_meta["champions"]:
+        for sc in builds_meta["scenarios"]:
+            dump(f"api/builds/{champ['slug']}/{sc['key']}.json",
+                 builds.api_optimize_scenario(champ["slug"], sc["key"]))
+            files += 1
     for tier in meta["tiers"]:
         patches = scaling.db_patches(con, tier)
         dump(f"api/rows/{tier}.json", scaling.build_rows(con, tier, patches))
@@ -169,6 +178,15 @@ def cmd_serve(args):
                     self.send_header("Content-Length", str(len(body)))
                     self.end_headers()
                     self.wfile.write(body)
+                    return
+                if u.path == "/api/builds/meta.json":
+                    self._json(builds.api_builds_meta())
+                    return
+                if m := re.fullmatch(r"/api/builds/([a-z0-9]+)/([a-z0-9-]+)\.json", u.path):
+                    try:
+                        self._json(builds.api_optimize_scenario(m.group(1), m.group(2)))
+                    except ValueError as e:
+                        self._json({"error": str(e)}, 404)
                     return
                 con = db_connect()
                 if u.path == "/api/meta.json":

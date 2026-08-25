@@ -20,6 +20,7 @@ import os
 import sys
 
 from common import BASE_DIR
+import builds
 import items
 import scaling
 import webapp
@@ -129,6 +130,68 @@ def main():
 
     sp = itsub.add_parser("status", help="list archived item snapshots")
     sp.set_defaults(func=items.cmd_status)
+
+    # ----- builds domain -----
+    bd = sub.add_parser("builds", help="theoretical build math: stat sheets, damage sim")
+    bdsub = bd.add_subparsers(dest="builds_cmd", required=True)
+
+    sp = bdsub.add_parser("fetch-champion",
+                          help="snapshot a champion's static data into data/builds/champions/")
+    sp.add_argument("name", help="champion name or slug, e.g. kayle")
+    sp.add_argument("--version",
+                    help="ddragon version or short patch to fetch (default: latest)")
+    sp.add_argument("--force", action="store_true",
+                    help="refetch even if this patch is already archived")
+    sp.set_defaults(func=builds.cmd_fetch_champion)
+
+    sp = bdsub.add_parser("stats",
+                          help="exact stat sheet for a champion + item build")
+    sp.add_argument("name", help="champion name or slug, e.g. kayle")
+    sp.add_argument("--level", type=int, default=18)
+    sp.add_argument("--items", nargs="*", default=[],
+                    help="item names, meraki nicknames, or ids")
+    sp.add_argument("--patch", help="patch to use (default: newest snapshots)")
+    sp.set_defaults(func=builds.cmd_stats)
+
+    sp = bdsub.add_parser("items", help="search the purchasable item pool")
+    sp.add_argument("query", nargs="?", default="")
+    sp.set_defaults(func=builds.cmd_items)
+
+    def sim_args(sp):
+        sp.add_argument("name", help="champion with a kit encoding, e.g. kayle")
+        sp.add_argument("--level", type=int, default=16)
+        sp.add_argument("--patch", help="patch to use (default: newest snapshots)")
+        sp.add_argument("--target-hp", type=int, default=2800)
+        sp.add_argument("--armor", type=float, default=80)
+        sp.add_argument("--mr", type=float, default=60)
+        sp.add_argument("--duration", type=float, default=8,
+                        help="fight length in seconds (default 8)")
+        sp.add_argument("--no-ult", action="store_true", help="don't cast R")
+        sp.add_argument("--prestacked", action="store_true",
+                        help="start with passive stacks already up")
+        sp.add_argument("--max-order", default="Q,E,W",
+                        help="ability max order (default Q,E,W)")
+
+    sp = bdsub.add_parser("sim",
+                          help="simulate damage vs a stat dummy for one build")
+    sim_args(sp)
+    sp.add_argument("--items", nargs="*", default=[],
+                    help="item names, meraki nicknames, or ids")
+    sp.set_defaults(func=builds.cmd_sim)
+
+    sp = bdsub.add_parser("optimize",
+                          help="enumerate and rank builds for one scenario")
+    sim_args(sp)
+    sp.add_argument("--slots", type=int, default=6,
+                    help="build size incl. boots (default 6)")
+    sp.add_argument("--budget", type=int,
+                    help="gold cap; also allows smaller builds")
+    sp.add_argument("--require", nargs="*",
+                    help="items every build must contain")
+    sp.add_argument("--pool", nargs="*",
+                    help="candidate items (default: the modeled damage pool)")
+    sp.add_argument("--top", type=int, default=15)
+    sp.set_defaults(func=builds.cmd_optimize)
 
     args = p.parse_args()
     args.func(args)
