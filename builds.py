@@ -241,6 +241,17 @@ def load_item_effects():
         return {int(k): v for k, v in json.load(f)["items"].items()}
 
 
+def load_exclusive_groups():
+    """{item id: group name} for the in-game 'Limited to 1 <group> item'
+    rules (Last Whisper, Hydra, Tear, Spellblade, ...)."""
+    if not os.path.exists(ITEM_EFFECTS_PATH):
+        return {}
+    with open(ITEM_EFFECTS_PATH) as f:
+        groups = json.load(f).get("exclusiveGroups", {})
+    return {iid: name for name, ids in groups.items()
+            if name != "_comment" for iid in ids}
+
+
 def norm_name(s):
     return "".join(ch for ch in s.lower() if ch.isalnum())
 
@@ -896,7 +907,7 @@ SCENARIOS = {
     "full-squishy": dict(label="Full build vs squishy", level=16, targetHp=2800,
                          armor=110, mr=60, duration=8, targetBonusHp=800),
     "full-bruiser": dict(label="Full build vs bruiser", level=16, targetHp=3800,
-                         armor=150, mr=100, duration=12, targetBonusHp=1500),
+                         armor=180, mr=120, duration=12, targetBonusHp=1500),
     "full-tank": dict(label="Full build vs tank", level=16, targetHp=4800,
                       armor=220, mr=160, duration=15, targetBonusHp=1500),
     "mid-squishy": dict(label="Mid-game 7.5k vs squishy", level=11, targetHp=2200,
@@ -1130,6 +1141,16 @@ def sim_setup(args):
     patch, pool = load_items(args.patch)
     idx = item_index(pool)
     ids = [resolve_item(pool, idx, t) for t in args.items]
+    group = load_exclusive_groups()
+    by_group = {}
+    for i in ids:
+        if i in group:
+            by_group.setdefault(group[i], []).append(pool[i]["name"])
+    for name, members in by_group.items():
+        if len(members) > 1:
+            print(f"Warning: {' + '.join(members)} — the game limits you to "
+                  f"one {name} item; this build is not buyable.",
+                  file=sys.stderr)
     effects = load_item_effects()
     sheet = resolve_stats(champ, args.level, ids, pool, effects)
     kit = load_kit(slug)
@@ -1267,9 +1288,13 @@ def _enum_batch(ctx, boots, size, start, step):
     import itertools
     keep = ctx["keep"]
     out, n = [], 0
+    group = ctx["group"]
     for combo in itertools.islice(
             itertools.combinations(ctx["free"], size), start, None, step):
         ids = [boots, *ctx["required"], *combo]
+        gids = [g for i in ids if (g := group.get(i)) is not None]
+        if len(gids) != len(set(gids)):  # two of a "Limited to 1" group
+            continue
         if ctx["budget"] and sum(ctx["price"][i] for i in ids) > ctx["budget"]:
             continue
         sheet = resolve_stats(ctx["champ"], ctx["level"], ids, ctx["pool"],
@@ -1313,6 +1338,7 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, target_hp,
         duration=duration, budget=budget, required=list(required), free=free,
         use_ult=use_ult, prestacked=prestacked,
         target_bonus_hp=target_bonus_hp, keep=keep,
+        group=load_exclusive_groups(),
         price={i: pool[i]["shop"]["prices"]["total"]
                for i in set(free) | set(required) | set(BOOTS)})
     combos = len(BOOTS) * sum(math.comb(len(free), s) for s in sizes)

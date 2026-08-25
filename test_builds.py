@@ -475,6 +475,45 @@ class TestEngine(unittest.TestCase):
         # true damage ignores the 300 resists: exactly 50 + 1.5 * 18 lethality
         self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
 
+    def test_exclusive_groups_match_game_evidence(self):
+        # each group's members must share the recipe component or passive
+        # name that the in-game "Limited to 1" rule hangs off — catches a
+        # stale hand-curated group after a patch reshuffles recipes
+        import json as j
+        with open("data/items/16.16/meraki.json") as f:
+            mk = j.load(f)
+        groups = {}
+        for iid, name in builds.load_exclusive_groups().items():
+            groups.setdefault(name, []).append(iid)
+        evidence = {"Last Whisper": 3035, "Hydra": 3077}
+        for name, comp in evidence.items():
+            for iid in groups[name]:
+                self.assertIn(comp, mk[str(iid)]["buildsFrom"],
+                              f"{name}: {iid} lacks component {comp}")
+        for name in ("Lifeline", "Annul", "Spellblade"):
+            for iid in groups[name]:
+                self.assertIn(name, [p.get("name") for p in
+                                     mk[str(iid)]["passives"]],
+                              f"{name}: {iid} lacks the passive")
+        self.assertEqual(sorted(groups["Tear of the Goddess"]), [3040, 3042])
+
+    def test_enumerator_respects_exclusive_groups(self):
+        # a candidate set stacked with Last Whisper items: no result may
+        # contain two of them
+        champ = fake_champ()
+        cands = [3036, 3033, 6694, 3031, 3032, 6676, 3115]
+        results, count = builds.enumerate_builds(
+            champ, self.pool, self.effects, self.kit, 16,
+            builds.skill_ranks(16), 2800, 110, 60, 8, candidates=cands)
+        group = builds.load_exclusive_groups()
+        for ids, _, _ in results:
+            gids = [group[i] for i in ids if i in group]
+            self.assertEqual(len(gids), len(set(gids)),
+                             f"two of one group in {ids}")
+        # C(7,5)=21 combos x2 boots, minus the ones holding 2+ LW items:
+        # only combos with exactly one or zero LW survive
+        self.assertLess(count, 42)
+
     def test_pool_has_no_unmapped_stats_or_uncovered_passives(self):
         # every pool item must resolve without stat warnings and leave no
         # unexplained passive in `uncovered`
