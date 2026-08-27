@@ -230,6 +230,22 @@ def load_items(patch=None):
                 parsed = parse_dd_stats(dd.get(str(iid), {}).get("description", ""))
                 if parsed is not None:
                     it["stats"] = parsed
+            # ddragon is canonical: synthesize entries for items meraki
+            # hasn't (re)published — e.g. Stormrazor came back as 3095 in
+            # 16.17 and meraki still only knew the retired 3097.
+            for sid, d in dd.items():
+                if int(sid) in pool:
+                    continue
+                desc = d.get("description", "")
+                pool[int(sid)] = {
+                    "name": d["name"],
+                    "stats": parse_dd_stats(desc) or {},
+                    "passives": [{"unique": True, "name": n} for n in
+                                 re.findall(r"<passive>(.*?)</passive>", desc)],
+                    "nicknames": [n for n in d.get("colloq", "").split(";") if n],
+                    "shop": {"prices": {"total": d.get("gold", {}).get("total", 0)},
+                             "purchasable": d.get("gold", {}).get("purchasable", False)},
+                }
         return m["patch"], pool
     sys.exit("No meraki item snapshot — run `lol.py items fetch` first.")
 
@@ -1234,7 +1250,7 @@ DEFAULT_POOL = [
     3085,  # Runaan's Hurricane (single-target: stats only)
     3033,  # Mortal Reminder
     3094,  # Rapid Firecannon
-    3097,  # Stormrazor
+    3095,  # Stormrazor (was 3097 until 16.16; Riot reissued the id in 16.17)
     3087,  # Statikk Shiv
     3072,  # Bloodthirster
     3508,  # Essence Reaver
