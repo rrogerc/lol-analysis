@@ -30,6 +30,13 @@ CREATE TABLE IF NOT EXISTS stats (
   PRIMARY KEY (patch, tier, champion, lane, bucket)
 );
 CREATE INDEX IF NOT EXISTS idx_stats_tier_patch ON stats (tier, patch);
+CREATE TABLE IF NOT EXISTS match_counts (
+  patch TEXT NOT NULL,
+  tier TEXT NOT NULL,
+  matches INTEGER NOT NULL,
+  scraped_at TEXT NOT NULL,
+  PRIMARY KEY (patch, tier)
+);
 """
 
 

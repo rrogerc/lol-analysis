@@ -170,9 +170,8 @@
 <section class="view active" id="view-overview">
   <div class="kpis">
     <div class="tile"><div class="label">Champion-roles</div><div class="value" id="kpi-roles">—</div></div>
-    <div class="tile"><div class="label">Games analyzed</div><div class="value" id="kpi-games">—</div></div>
+    <div class="tile" title="Distinct matches at this tier across the shown patches (≈ means estimated — re-run scaling sync for exact counts)"><div class="label">Matches analyzed</div><div class="value" id="kpi-games">—</div></div>
     <div class="tile"><div class="label">Patches</div><div class="value" id="kpi-patches">—</div></div>
-    <div class="tile"><div class="label">Biggest scaler</div><div class="value" id="kpi-scaler" style="font-size:18px">—</div></div>
   </div>
 
   <div class="controls">
@@ -309,7 +308,7 @@ const api = (path) => fetch(path).then(r => {
 });
 
 let META = null;
-let DATA = { rows: [], patches: [], totalGames: 0, tier: null };
+let DATA = { rows: [], patches: [], totalGames: 0, totalMatches: null, tier: null };
 const state = { tier: null, view: "overview", champion: null };
 
 // ---------------- generic line chart ----------------
@@ -540,12 +539,10 @@ async function loadOverview() {
   document.getElementById("subtitle").textContent =
     `Patches ${DATA.patches[0]}–${DATA.patches[DATA.patches.length - 1]} · ${DATA.generated}`;
   document.getElementById("kpi-roles").textContent = fmtInt(DATA.rows.length);
-  document.getElementById("kpi-games").textContent = fmtCompact(DATA.totalGames);
+  document.getElementById("kpi-games").textContent =
+    DATA.totalMatches != null ? fmtCompact(DATA.totalMatches)
+                              : "≈" + fmtCompact(Math.round(DATA.totalGames / 10));
   document.getElementById("kpi-patches").textContent = DATA.patches.length;
-  const best = DATA.rows.filter(r => r.delta != null && r.total > 20000)
-                        .reduce((a, b) => (a && a.delta > b.delta ? a : b), null);
-  document.getElementById("kpi-scaler").textContent =
-    best ? `${best.c} (${best.l}) +${best.delta.toFixed(1)}` : "—";
   renderTable();
 }
 

@@ -62,6 +62,15 @@ def replace_patch_data(con, patch, tier, entries):
         con.executemany("INSERT INTO stats VALUES (?,?,?,?,?,?,?,?,?)", rows)
 
 
+def replace_match_count(con, patch, tier, matches):
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with con:
+        con.execute("DELETE FROM match_counts WHERE patch=? AND tier=?",
+                    (patch, tier))
+        con.execute("INSERT INTO match_counts VALUES (?,?,?,?)",
+                    (patch, tier, matches, now))
+
+
 def aggregate(con, tier, patches, lane=None):
     """Sum games/wins per (champion, lane, bucket) across patches."""
     ph = ",".join("?" * len(patches))
@@ -221,6 +230,10 @@ def cmd_import_json(args):
                                 for k, b in e["buckets"].items()}}
                    for e in data]
         replace_patch_data(con, patch, tier, entries)
+        mc_path = os.path.join(root, "match_count.json")
+        if os.path.exists(mc_path):
+            with open(mc_path) as f:
+                replace_match_count(con, patch, tier, json.load(f)["matches"])
         imported += 1
         print(f"Imported {patch}/{tier}: {len(entries)} records")
     print(f"\nImported {imported} files into {DB_PATH}")
@@ -252,7 +265,7 @@ def cmd_import_soloq(args):
     filt = pads.field("role").isin(list(SOLOQ_ROLE_MAP))
     if args.platforms:
         filt = filt & pads.field("platform").isin(args.platforms)
-    columns = ["patch", "champion", "role", "win", "game_duration"]
+    columns = ["patch", "champion", "role", "win", "game_duration", "match_id"]
     if args.min_champ_games or args.otp_share:
         columns.append("puuid")
     table = pads.dataset(part_dir, format="parquet").to_table(
@@ -289,6 +302,14 @@ def cmd_import_soloq(args):
         table = table.join(counts, keys=["puuid", "champion"], join_type="inner")
         print(f"Mastery filter (>= {args.min_champ_games} games on champion): "
               f"kept {table.num_rows:,} of {before:,} rows")
+
+    # Distinct matches per patch, counted after the tier filters so filtered
+    # tiers (mastery/otp) report only matches that contributed rows.
+    counted = table.select(["patch", "match_id"]).group_by("patch").aggregate(
+        [("match_id", "count_distinct")])
+    matches_by_patch = {r["patch"]: r["match_id_count_distinct"]
+                        for r in counted.to_pylist()}
+    table = table.drop_columns(["match_id"])
 
     # game_duration is seconds; buckets 1-7 are 0-15, 15-20, ... 40+ minutes.
     bucket = pc.min_element_wise(
@@ -330,13 +351,16 @@ def cmd_import_soloq(args):
                             "buckets": {str(b): {"games": g, "wins": w}
                                         for b, (g, w) in sorted(buckets.items())}})
         replace_patch_data(con, patch, args.tier, entries)
+        matches = matches_by_patch.get(patch, 0)
+        replace_match_count(con, patch, args.tier, matches)
         out_dir = os.path.join(SCALING_DATA_DIR, patch, args.tier)
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, "champion_win_rates.json"), "w") as f:
             json.dump(entries, f, indent=2)
-        total = sum(g for _, bs in champ_lanes.items() for g, _ in bs.values())
+        with open(os.path.join(out_dir, "match_count.json"), "w") as f:
+            json.dump({"matches": matches}, f)
         print(f"{patch}/{args.tier}: {len(entries)} champion-lane records "
-              f"({total // 10:,} games)")
+              f"({matches:,} matches)")
     print("Done.")
 
 
@@ -398,11 +422,16 @@ def build_rows(con, tier, patches, min_games=1000, min_bucket_games=1000):
             "delta": round(late_wr - early_wr, 2)
                      if early_wr is not None and late_wr is not None else None,
         })
+    ph = ",".join("?" * len(patches))
+    matches = con.execute(
+        f"SELECT SUM(matches) FROM match_counts WHERE tier=? AND patch IN ({ph})",
+        [tier, *patches]).fetchone()[0]
     return {
         "tier": tier,
         "patches": patches,
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "totalGames": sum(r["total"] for r in rows),
+        "totalMatches": matches,
         "rows": rows,
     }
 
