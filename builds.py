@@ -1146,14 +1146,29 @@ def _scenario_cache_path(slug, key, sc, patch, champ):
                         f"{slug}-{key}-{h.hexdigest()[:16]}.json")
 
 
+# Every cache entry holds this many rows; a request for fewer is sliced on
+# the way out. `top` therefore stays out of the cache key — one expensive
+# result serves every caller.
+CACHED_ROWS = 20
+
+
 def api_optimize_scenario(slug, key, top=20):
     """Ranked builds for one preset scenario. Cached in-process AND on disk
     (.cache/builds/, keyed by a hash of all inputs) — big pools take minutes
     to simulate, and the disk cache survives serve restarts."""
+    out = _optimize_scenario_cached(slug, key)
+    if top >= len(out["rows"]):
+        return out
+    return {**out, "rows": out["rows"][:top]}
+
+
+def _optimize_scenario_cached(slug, key):
+    """The full CACHED_ROWS-row payload, computed at most once per input set."""
     if (slug, key) in _OPTIMIZE_CACHE:
         return _OPTIMIZE_CACHE[(slug, key)]
     if key not in SCENARIOS:
         raise ValueError(f"unknown scenario '{key}'")
+    top = CACHED_ROWS
     sc = SCENARIOS[key]
     champ = load_champion(slug)
     patch, pool = load_items()
