@@ -28,6 +28,56 @@ ITEMS_DATA_DIR = os.path.join(DATA_DIR, "items")
 DDRAGON_VERSIONS = "https://ddragon.leagueoflegends.com/api/versions.json"
 DDRAGON_ITEMS = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/item.json"
 MERAKI_ITEMS = "https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/items.json"
+# Riot's own item bin, via CommunityDragon. The ONLY machine-readable source
+# for the in-game "Limited to 1 <group> item" rules: each item lists its
+# mItemGroups, and each group record carries mMaxGroupOwnable. ddragon
+# publishes the group definitions but tags no items with them, and meraki
+# doesn't expose them at all — both are useless for this.
+CDRAGON_ITEM_BIN = "https://raw.communitydragon.org/{patch}/game/items.cdtb.bin.json"
+
+
+def item_groups(bin_data, sr_items):
+    """Distil the 16MB item bin down to what the build math needs:
+    {"maxOwnable": {group: n}, "items": {id: [group, ...]},
+     "currencyGated": {id: currency}}.
+
+    `maxOwnable`/`items` are the in-game "Limited to 1 <group> item" rules.
+    Group names are sometimes unresolved hashes like '{cf1a44c0}' — fine,
+    only identity matters for exclusivity.
+
+    `currencyGated` flags items you cannot simply buy with gold: they need a
+    non-gold currency, which on Summoner's Rift means the Feats of Strength
+    boot upgrades (dead since V26.01 removed Feats, though the requirement
+    still sits in the data) and the support-quest line. ddragon still lists
+    them as purchasable map-11 items, so this is the only reliable way to
+    keep them out of a pool of freely-buyable items.
+
+    `retired` flags items ddragon marks unpurchasable that STILL carry a
+    recipe — a live item always sells, so this combination means the item
+    was pulled from the shop and its data left behind (Opportunity,
+    Trailblazer). Items that are unpurchasable with NO recipe are the
+    transformations (Seraph's Embrace, Muramana) and stay legal."""
+    caps = {k: v["mMaxGroupOwnable"] for k, v in bin_data.items()
+            if isinstance(v, dict) and v.get("__type") == "ItemGroup"
+            and isinstance(v.get("mMaxGroupOwnable"), int)
+            and v["mMaxGroupOwnable"] >= 1}
+    items, gated = {}, {}
+    for v in bin_data.values():
+        if not (isinstance(v, dict) and "itemID" in v):
+            continue
+        iid = str(v["itemID"])
+        if iid not in sr_items:
+            continue
+        gs = [g for g in v.get("mItemGroups", []) if g in caps]
+        if gs:
+            items[iid] = sorted(gs)
+        if v.get("mRequiredBuffCurrencyName"):
+            gated[iid] = v["mRequiredBuffCurrencyName"]
+    retired = sorted(iid for iid, it in sr_items.items()
+                     if not it["gold"]["purchasable"] and it.get("from"))
+    used = {g for gs in items.values() for g in gs}
+    return {"maxOwnable": {g: caps[g] for g in sorted(used)},
+            "items": items, "currencyGated": gated, "retired": retired}
 
 
 def fetch_json(url):
@@ -93,6 +143,14 @@ def cmd_fetch(args):
     if meraki_note:
         print(f"Warning: {meraki_note}")
 
+    groups, groups_note = None, None
+    try:
+        groups = item_groups(fetch_json(CDRAGON_ITEM_BIN.format(patch=patch)), sr)
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
+        groups_note = f"item-group fetch failed: {e}"
+        print(f"Warning: {groups_note} — build exclusivity will fall back to "
+              f"the previous snapshot")
+
     # Write only when upstream actually changed, so a daily --force run (the
     # refresh workflow) leaves the tree untouched — and commits nothing —
     # until a new patch or a meraki correction lands. fetchedAt therefore
@@ -100,6 +158,8 @@ def cmd_fetch(args):
     new_files = {"ddragon.json": json.dumps(sr, separators=(",", ":"))}
     if meraki:
         new_files["meraki.json"] = json.dumps(meraki, separators=(",", ":"))
+    if groups:
+        new_files["groups.json"] = json.dumps(groups, separators=(",", ":"))
     if os.path.exists(meta_path) and all(
             read_or_none(os.path.join(out_dir, name)) == body
             for name, body in new_files.items()):
@@ -119,11 +179,16 @@ def cmd_fetch(args):
         "fetchedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "ddragonItems": len(sr),
         "merakiItems": len(meraki),
+        "groupedItems": len(groups["items"]) if groups else 0,
         "sources": {"ddragon": DDRAGON_ITEMS.format(version=version),
-                    "meraki": MERAKI_ITEMS if meraki else None},
+                    "meraki": MERAKI_ITEMS if meraki else None,
+                    "itemGroups": (CDRAGON_ITEM_BIN.format(patch=patch)
+                                   if groups else None)},
     }
     if meraki_note:
         meta["note"] = meraki_note
+    if groups_note:
+        meta["groupsNote"] = groups_note
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
 
@@ -132,7 +197,9 @@ def cmd_fetch(args):
     gaps = sorted(sr[i]["name"] for i in sr
                   if meraki and i not in meraki and sr[i]["gold"]["purchasable"])
     print(f"data/items/{patch}: {len(sr)} SR items from ddragon {version}, "
-          f"{len(meraki)} with structured stats from meraki.")
+          f"{len(meraki)} with structured stats from meraki"
+          + (f", {len(groups['items'])} with ownership-limited groups."
+             if groups else "."))
     if gaps:
         print(f"  {len(gaps)} purchasable without meraki stats: " + ", ".join(gaps))
     print("Commit data/items/ to archive this patch's snapshot.")
