@@ -238,13 +238,15 @@
 <section class="view" id="view-builds">
   <div class="card">
     <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
-    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by time-to-kill. Click a build to see where its damage comes from.</div>
+    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. Click a build to see where its damage comes from.</div>
     <div class="seg" id="scenario-seg"></div>
     <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
     <div class="tablewrap">
       <table id="btbl">
         <thead><tr>
-          <th>#</th><th>Build</th><th>Kill time</th><th>DPS</th><th>Damage</th><th>Gold</th>
+          <th>#</th><th>Build</th><th>Kill time</th>
+          <th title="Ranking metric. Same as kill time unless the build relies on an execute: expected-value crit always lands in the execute window, but real crit only would some of the time, so this blends the executing and non-executing timelines by that probability">Expected</th>
+          <th>DPS</th><th>Damage</th><th>Gold</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -686,6 +688,7 @@ function renderBuildsTable() {
       cell(String(r.rank)),
       cell(r.items.join(", ")),
       cell(r.ttk != null ? r.ttk.toFixed(2) + "s" : "survives"),
+      cell(r.ttkExp != null ? r.ttkExp.toFixed(2) + "s" : "—"),
       cell(fmtInt(r.dps)), cell(fmtInt(r.total)), cell(fmtInt(r.gold)));
     tr.addEventListener("click", () => { bstate.sel = i; renderBuildsTable(); });
     return tr;

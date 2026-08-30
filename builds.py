@@ -257,15 +257,72 @@ def load_item_effects():
         return {int(k): v for k, v in json.load(f)["items"].items()}
 
 
-def load_exclusive_groups():
-    """{item id: group name} for the in-game 'Limited to 1 <group> item'
-    rules (Last Whisper, Hydra, Tear, Spellblade, ...)."""
-    if not os.path.exists(ITEM_EFFECTS_PATH):
-        return {}
-    with open(ITEM_EFFECTS_PATH) as f:
-        groups = json.load(f).get("exclusiveGroups", {})
-    return {iid: name for name, ids in groups.items()
-            if name != "_comment" for iid in ids}
+def groups_path(patch=None):
+    """Newest snapshot carrying the distilled item-bin rules, or None."""
+    metas = items.snapshots()
+    if patch:
+        metas = [m for m in metas if m["patch"] == patch]
+    for m in reversed(metas):
+        path = os.path.join(items.ITEMS_DATA_DIR, m["patch"], "groups.json")
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def load_item_rules(patch=None):
+    """Riot's own item rules, captured by `lol.py items fetch`."""
+    path = groups_path(patch)
+    if path is None:
+        print("Warning: no groups.json in any item snapshot — build "
+              "exclusivity is NOT enforced. Run `lol.py items fetch --force`.",
+              file=sys.stderr)
+        return {}, {}, {}, set()
+    with open(path) as f:
+        g = json.load(f)
+    return ({int(k): v for k, v in g["items"].items()},
+            g["maxOwnable"],
+            {int(k): v for k, v in g.get("currencyGated", {}).items()},
+            {int(i) for i in g.get("retired", [])})
+
+
+def load_exclusive_groups(patch=None):
+    """The in-game ownership limits. Returns ({item id: [group, ...]},
+    {group: max ownable}) — an item can sit in several groups at once
+    (Terminus is both a Last Whisper and a Void Pen item)."""
+    groups, caps, _, _ = load_item_rules(patch)
+    return groups, caps
+
+
+def load_gated_items(patch=None):
+    """{item id: currency} for items gold alone cannot buy — the Feats of
+    Strength boots and the support-quest line. They must never enter a pool
+    of freely-buyable items."""
+    return load_item_rules(patch)[2]
+
+
+def load_retired_items(patch=None):
+    """Ids pulled from the shop whose data ddragon still carries."""
+    return load_item_rules(patch)[3]
+
+
+def group_name(group):
+    """'Items/ItemGroups/LastWhisper' -> 'Last Whisper'; unresolved hashes
+    stay as-is (they still identify a group, just without a readable name)."""
+    tail = group.rsplit("/", 1)[-1]
+    if tail.startswith("{"):
+        return tail
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", tail)
+
+
+def build_is_legal(ids, groups, caps):
+    """False when a build owns more of a group than the game allows."""
+    counts = {}
+    for i in ids:
+        for g in groups.get(i, ()):
+            counts[g] = counts.get(g, 0) + 1
+            if counts[g] > caps.get(g, 99):
+                return False
+    return True
 
 
 def norm_name(s):
@@ -432,6 +489,8 @@ def resolve_stats(champ, level, item_ids, pool, effects=None):
         "heal_shield_power": agg["heal_shield_power"],
         "move_speed": (dd["movespeed"] + agg["ms_flat"])
                       * (1.0 + agg["ms_pct"] / 100.0),
+        # base (form-independent) range; the kit's passive may override it
+        "base_attack_range": dd["attackrange"],
         "uncovered": uncovered,
     }
     sheet["ad"] = sheet["ad_base"] + sheet["ad_bonus"]
@@ -447,6 +506,7 @@ def resolve_stats(champ, level, item_ids, pool, effects=None):
 # - Q/R have a flat 0.25s cast lockout that delays the next auto
 # - an E reset lands its empowered attack after one windup (windup/AS)
 # - stacking buffs (Zeal, Seething, Terminus) never expire mid-fight
+# - range-scaled amps (Hexoptics) assume every attack is made at max range
 # ---------------------------------------------------------------------------
 
 ABILITY_LOCKOUT_S = 0.25
@@ -473,7 +533,8 @@ SINGLETON_FX = (
     "stormsurge", "abilityManaProc", "abilityProcOnce", "armorShred",
     "mrShred", "abilityAmpStacking", "manaActive", "onUltCast",
     "ultAttackSteroid", "hitPairProc", "nthHitProc", "hypershot",
-    "openerLethality", "firstAttackBonus", "firstAttackCritFloorEv")
+    "openerLethality", "firstAttackBonus", "firstAttackCritFloorEv",
+    "attackAmp")
 
 
 def merge_effects(item_ids, effects):
@@ -498,7 +559,8 @@ def merge_effects(item_ids, effects):
 
 
 def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
-             duration, use_ult=True, prestacked=False, target_bonus_hp=0.0):
+             duration, use_ult=True, prestacked=False, target_bonus_hp=0.0,
+             _blend=True):
     """One fight vs a stat dummy. Returns totals, DPS, time-to-kill (None if
     the dummy survives), and a per-source damage breakdown."""
     INF = float("inf")
@@ -511,6 +573,21 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 
     crit_c = sheet["crit_chance"] / 100.0
     crit_ev = 1.0 + crit_c * (sheet["crit_damage"] / 100.0 - 1.0)
+
+    # Attack range for this level: form passives (Kayle's Arisen/Transcendent)
+    # override the champion's base range.
+    atk_range = sheet["base_attack_range"]
+    for form in ("arisen", "transcendent"):
+        f = kit["passive"].get(form, {})
+        if "attackRange" in f and level >= f["level"]:
+            atk_range = f["attackRange"]
+    # Hexoptics' Magnification: scales with distance to the target, capped.
+    # We assume attacks are made at max range (see approximations above).
+    auto_amp = 1.0
+    if fx["attackAmp"]:
+        aa = fx["attackAmp"]
+        auto_amp += (aa["maxPct"] / 100.0
+                     * min(1.0, atk_range / aa["maxAtRange"]))
 
     st = {
         "t": 0.0, "hp": float(target_hp),
@@ -530,7 +607,11 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         "hex_until": -1.0, "post_r_attacks": 10 ** 9, "sundered_used": False,
         "r_impact": INF,
         "next_attack": 0.0,
-        "breakdown": {}, "total": 0.0, "ttk": None,
+        # per-timestamp damage batch, for the interpolated kill time
+        "ev_t": -1.0, "ev_hp0": float(target_hp), "ev_dmg": 0.0,
+        "prev_ev_t": 0.0,
+        "breakdown": {}, "total": 0.0, "ttk": None, "ttk_eff": None,
+        "exec_p": None,
     }
     if fx["manaActive"]:  # Actualizer: cast on engage, empowered for 8s
         st["ma_until"] = fx["manaActive"]["durationS"]
@@ -562,6 +643,10 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                              target_bonus_hp / 100.0) / 100.0
         if fx["hypershot"] and t < st["hz_until"]:
             amp *= 1.0 + fx["hypershot"]["ampPct"] / 100.0
+        # "increased basic damage" is the attack itself — not the on-hit
+        # effects it triggers, and not abilities
+        if source == "auto":
+            amp *= auto_amp
         if ability and fx["abilityAmpStacking"]:  # Shojin's Focused Will
             aa = fx["abilityAmpStacking"]
             amp *= 1.0 + aa["pctPerStack"] / 100.0 * st["shojin"]
@@ -612,6 +697,13 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         elif below:
             ev = fx["magicCrit"]["critDmgPct"] / 100.0
         dmg = amount * amp * resist_mult(r) * ev
+        # Damage arrives in batches at discrete times (an attack and all its
+        # on-hits share one timestamp). Track each batch so the killing blow
+        # can be credited only for the share of it that was actually needed.
+        if t != st["ev_t"]:
+            st["prev_ev_t"] = max(st["ev_t"], 0.0)
+            st["ev_t"], st["ev_hp0"], st["ev_dmg"] = t, st["hp"], 0.0
+        st["ev_dmg"] += dmg
         st["hp"] -= dmg
         st["total"] += dmg
         st["breakdown"][source] = st["breakdown"].get(source, 0.0) + dmg
@@ -645,14 +737,35 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                          if tt >= t - ss["windowS"])
             if recent >= ss["thresholdPct"] / 100.0 * target_hp:
                 st["ss_at"] = t + ss["delayS"]
+        exec_amt = 0.0
         if (fx["executePct"] and st["ttk"] is None
                 and 0.0 < st["hp"] <= fx["executePct"] / 100.0 * target_hp):
+            exec_amt = st["hp"]
             st["breakdown"]["execute"] = (st["breakdown"].get("execute", 0.0)
-                                          + st["hp"])
-            st["total"] += st["hp"]
+                                          + exec_amt)
+            st["total"] += exec_amt
+            st["ev_dmg"] += exec_amt
             st["hp"] = 0.0
         if st["hp"] <= 0 and st["ttk"] is None:
             st["ttk"] = t
+            # Effective (ranking) kill time. The real kill lands on this
+            # batch, but a blow that overkills 4x shouldn't earn the same
+            # credit as one that barely finishes the job: interpolate back
+            # over the gap by the fraction of the batch actually needed.
+            # Without this, whole-attack rounding hands threshold effects
+            # (Collector's execute) a full attack cycle for a few % of HP.
+            frac = min(1.0, st["ev_hp0"] / st["ev_dmg"]) if st["ev_dmg"] > 0 else 1.0
+            st["ttk_eff"] = st["prev_ev_t"] + frac * (t - st["prev_ev_t"])
+            # With expected-value crit the health curve is fixed, so an
+            # execute window ALWAYS catches the target. With real (random)
+            # crits the health left before the killing attack is spread over
+            # that attack's damage, so a window of W catches it only about
+            # W/D of the time. Record that probability; the caller blends the
+            # executing and non-executing timelines with it.
+            if exec_amt > 0.0:
+                window = fx["executePct"] / 100.0 * target_hp
+                batch = st["ev_dmg"] - exec_amt
+                st["exec_p"] = min(1.0, window / batch) if batch > 0 else 1.0
 
     def prime_spellblade():
         if fx["spellblade"] and st["t"] >= st["sb_icd_until"]:
@@ -906,9 +1019,24 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                 st["mal_shred_until"] = st["t"] + ub["durationS"]
                 st["next_mal"] = st["t"] + 0.25
 
+    # Expected kill time: blend the executing timeline with the one where the
+    # window was missed, weighted by how often real crit would land in it.
+    # Only execute builds pay for the second pass. If the non-executing run
+    # never kills, the fight length stands in for "no kill this window".
+    ttk_exp = st["ttk"]
+    if _blend and st["ttk"] is not None and (st["exec_p"] or 1.0) < 1.0:
+        alt = simulate(sheet, kit, dict(fx, executePct=None), level, ranks,
+                       target_hp, target_armor, target_mr, duration,
+                       use_ult=use_ult, prestacked=prestacked,
+                       target_bonus_hp=target_bonus_hp, _blend=False)
+        p = st["exec_p"]
+        ttk_exp = (p * st["ttk"]
+                   + (1.0 - p) * (alt["ttk"] if alt["ttk"] is not None
+                                  else duration))
     fight = min(duration, st["ttk"]) if st["ttk"] is not None else duration
     return {"total": st["total"], "dps": st["total"] / fight if fight else 0.0,
-            "ttk": st["ttk"], "attacks": st["attacks"],
+            "ttk": st["ttk"], "ttk_eff": st["ttk_eff"],
+            "ttk_exp": ttk_exp, "attacks": st["attacks"],
             "phantom_hits": st["phantom_hits"], "hp_left": max(st["hp"], 0.0),
             "breakdown": dict(sorted(st["breakdown"].items(),
                                      key=lambda kv: -kv[1]))}
@@ -966,6 +1094,20 @@ def api_builds_meta():
     if os.path.exists(ITEM_EFFECTS_PATH):
         with open(ITEM_EFFECTS_PATH) as f:
             excluded = sorted((json.load(f).get("excluded") or {}).values())
+    # items gold alone can't buy (Feats of Strength boots, support quest
+    # line) are excluded by the data itself, not by hand
+    gated = load_gated_items()
+    by_currency = {}
+    for iid, cur in gated.items():
+        if iid in pool:
+            by_currency.setdefault(cur, []).append(pool[iid]["name"])
+    for cur, names in sorted(by_currency.items()):
+        excluded.append(f"{', '.join(sorted(names))} — needs {cur}, "
+                        f"not buyable with gold alone")
+    retired = sorted(pool[i]["name"] for i in load_retired_items() if i in pool)
+    if retired:
+        excluded.append(f"{', '.join(retired)} — pulled from the shop; "
+                        f"ddragon still carries the data")
     return {
         "champions": champs,
         "scenarios": [{"key": k, **v} for k, v in SCENARIOS.items()],
@@ -985,12 +1127,17 @@ SCENARIO_CACHE_DIR = os.path.join(BASE_DIR, ".cache", "builds")
 
 def _scenario_cache_path(slug, key, sc, patch, champ):
     """Disk-cache filename whose hash covers every input the result depends
-    on: the scenario, the pool, both data files, and this module's code."""
+    on: the scenario, the pool, the data files (including the item-bin rules
+    that decide which builds are legal), and this module's code."""
     import hashlib
     h = hashlib.sha256()
-    for p in (ITEM_EFFECTS_PATH,
-              os.path.join(BUILDS_DATA_DIR, f"{slug}.json"),
-              os.path.abspath(__file__)):
+    paths = [ITEM_EFFECTS_PATH,
+             os.path.join(BUILDS_DATA_DIR, f"{slug}.json"),
+             os.path.abspath(__file__)]
+    gp = groups_path()
+    if gp:
+        paths.append(gp)
+    for p in paths:
         with open(p, "rb") as f:
             h.update(f.read())
     h.update(json.dumps([patch, champ["meta"]["patch"], sc, DEFAULT_POOL,
@@ -1029,6 +1176,8 @@ def api_optimize_scenario(slug, key, top=20):
             "rank": n, "items": [pool[i]["name"] for i in ids],
             "gold": sheet["gold"],
             "ttk": round(r["ttk"], 2) if r["ttk"] is not None else None,
+            "ttkExp": round(r["ttk_exp"], 2) if r["ttk_exp"] is not None else None,
+            "ttkEff": round(r["ttk_eff"], 3) if r["ttk_eff"] is not None else None,
             "dps": round(r["dps"]), "total": round(r["total"]),
             "attacks": r["attacks"],
             "ap": round(sheet["ap"]), "ad": round(sheet["ad"]),
@@ -1157,15 +1306,16 @@ def sim_setup(args):
     patch, pool = load_items(args.patch)
     idx = item_index(pool)
     ids = [resolve_item(pool, idx, t) for t in args.items]
-    group = load_exclusive_groups()
+    groups, caps = load_exclusive_groups(args.patch)
     by_group = {}
     for i in ids:
-        if i in group:
-            by_group.setdefault(group[i], []).append(pool[i]["name"])
-    for name, members in by_group.items():
-        if len(members) > 1:
+        for g in groups.get(i, ()):
+            by_group.setdefault(g, []).append(pool[i]["name"])
+    for g, members in by_group.items():
+        cap = caps.get(g, 99)
+        if len(members) > cap:
             print(f"Warning: {' + '.join(members)} — the game limits you to "
-                  f"one {name} item; this build is not buyable.",
+                  f"{cap} {group_name(g)} item(s); this build is not buyable.",
                   file=sys.stderr)
     effects = load_item_effects()
     sheet = resolve_stats(champ, args.level, ids, pool, effects)
@@ -1250,17 +1400,16 @@ DEFAULT_POOL = [
     3085,  # Runaan's Hurricane (single-target: stats only)
     3033,  # Mortal Reminder
     3094,  # Rapid Firecannon
+    2523,  # Hexoptics C44 (max-range assumption; see item-effects note)
     3095,  # Stormrazor (was 3097 until 16.16; Riot reissued the id in 16.17)
     3087,  # Statikk Shiv
     3072,  # Bloodthirster
     3508,  # Essence Reaver
     6673,  # Immortal Shieldbow
     3139,  # Mercurial Scimitar
-    3172,  # Zephyr
     2512,  # Fiendhunter Bolts
     # --- assassin ---
     3142,  # Youmuu's Ghostblade
-    6701,  # Opportunity
     6697,  # Hubris (assumed zero stacks)
     6698,  # Profane Hydra
     6699,  # Voltaic Cyclosword
@@ -1304,12 +1453,11 @@ def _enum_batch(ctx, boots, size, start, step):
     import itertools
     keep = ctx["keep"]
     out, n = [], 0
-    group = ctx["group"]
+    groups, caps = ctx["groups"], ctx["caps"]
     for combo in itertools.islice(
             itertools.combinations(ctx["free"], size), start, None, step):
         ids = [boots, *ctx["required"], *combo]
-        gids = [g for i in ids if (g := group.get(i)) is not None]
-        if len(gids) != len(set(gids)):  # two of a "Limited to 1" group
+        if not build_is_legal(ids, groups, caps):
             continue
         if ctx["budget"] and sum(ctx["price"][i] for i in ids) > ctx["budget"]:
             continue
@@ -1321,7 +1469,12 @@ def _enum_batch(ctx, boots, size, start, step):
                      use_ult=ctx["use_ult"], prestacked=ctx["prestacked"],
                      target_bonus_hp=ctx["target_bonus_hp"])
         n += 1
-        key = (0, r["ttk"]) if r["ttk"] is not None else (1, -r["total"])
+        # Rank on the EXPECTED kill time (real time, plus the charge-back for
+        # an execute that deterministic crit guarantees but real crit would
+        # not). The interpolated time breaks ties inside an attack tick,
+        # ordering builds that land on the same attack by damage to spare.
+        key = ((0, r["ttk_exp"], r["ttk_eff"]) if r["ttk"] is not None
+               else (1, float("inf"), -r["total"]))
         out.append((key, ids, sheet, r))
         if len(out) > 4 * keep:  # bound memory: keep only the running best
             out.sort(key=lambda x: x[0])
@@ -1339,22 +1492,23 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, target_hp,
                      candidates=None, use_ult=True, prestacked=False,
                      target_bonus_hp=0.0, keep=250):
     """Simulate every boots + item combination; returns (results, count):
-    the top-`keep` (ids, sheet, result) sorted best-first — by time-to-kill
-    when the dummy dies, else by damage — plus how many builds were
-    simulated. Large pools fan out across CPU cores (fork)."""
+    the top-`keep` (ids, sheet, result) sorted best-first — by the
+    interpolated time-to-kill when the dummy dies, else by damage — plus how
+    many builds were simulated. Large pools fan out across CPU cores (fork)."""
     import math
     free = [i for i in (candidates or DEFAULT_POOL) if i not in required]
     n_free = slots - 1 - len(required)  # one slot is always boots
     if n_free < 0:
         sys.exit("more required items than slots allow")
     sizes = list(range(n_free + 1)) if budget else [n_free]
+    _groups, _caps = load_exclusive_groups()
     ctx = dict(
         champ=champ, pool=pool, effects=effects, kit=kit, level=level,
         ranks=ranks, target_hp=target_hp, armor=armor, mr=mr,
         duration=duration, budget=budget, required=list(required), free=free,
         use_ult=use_ult, prestacked=prestacked,
         target_bonus_hp=target_bonus_hp, keep=keep,
-        group=load_exclusive_groups(),
+        groups=_groups, caps=_caps,
         price={i: pool[i]["shop"]["prices"]["total"]
                for i in set(free) | set(required) | set(BOOTS)})
     combos = len(BOOTS) * sum(math.comb(len(free), s) for s in sizes)
@@ -1409,11 +1563,13 @@ def cmd_optimize(args):
           f"in {time.time() - t0:.1f}s, {args.duration:g}s vs "
           f"{args.target_hp}hp {args.armor}armor {args.mr}mr"
           + (f", budget {args.budget}g" if args.budget else "") + "\n")
-    print(f"  {'#':>3} {'ttk':>6} {'dps':>6} {'total':>7} {'gold':>6}  items")
+    print(f"  {'#':>3} {'ttk':>6} {'exp':>6} {'dps':>6} {'total':>7} "
+          f"{'gold':>6}  items")
     for n, (ids, sheet, r) in enumerate(results[:args.top], 1):
         names = ", ".join(pool[i]["name"].split()[0] for i in ids)
         ttk = f"{r['ttk']:.2f}" if r["ttk"] is not None else "-"
-        print(f"  {n:>3} {ttk:>6} {r['dps']:>6.0f} {r['total']:>7.0f} "
+        eff = f"{r['ttk_exp']:.2f}" if r["ttk_exp"] is not None else "-"
+        print(f"  {n:>3} {ttk:>6} {eff:>6} {r['dps']:>6.0f} {r['total']:>7.0f} "
               f"{sheet['gold']:>6}  {names}")
 
     ids, sheet, r = results[0]

@@ -20,7 +20,7 @@ def fake_champ(**dd_overrides):
         "spellblock": 22, "spellblockperlevel": 1.3,
         "attackdamage": 50, "attackdamageperlevel": 0,
         "attackspeed": 0.625, "attackspeedperlevel": 1.5,
-        "movespeed": 335,
+        "movespeed": 335, "attackrange": 175,
     }}
     dd["stats"].update(dd_overrides)
     mk = {"stats": {"attackSpeedRatio": {"flat": 0.667},
@@ -335,6 +335,63 @@ class TestEngine(unittest.TestCase):
         self.assertLessEqual(r["breakdown"]["execute"], 0.05 * 2200)
         self.assertIsNotNone(r["ttk"])
 
+    def test_effective_ttk_discounts_overkill(self):
+        # a blow that overkills lands the real kill on its own tick, but the
+        # effective time interpolates back toward the previous batch
+        r = self.sim(16, ["infinity edge", "collector"], hp=2200,
+                     armor=80, mr=80, duration=12)
+        self.assertIsNotNone(r["ttk"])
+        self.assertLessEqual(r["ttk_eff"], r["ttk"])
+        self.assertGreater(r["ttk_eff"], 0.0)
+
+    def test_ranking_is_ordered_by_expected_kill_time(self):
+        cands = [3031, 6676, 3036, 3072, 3115, 3089, 3135, 4645]
+        results, _ = builds.enumerate_builds(
+            fake_champ(), self.pool, self.effects, self.kit, 16,
+            builds.skill_ranks(16), 2800, 110, 60, 8, candidates=cands)
+        killers = [r for _, _, r in results if r["ttk"] is not None]
+        exp = [r["ttk_exp"] for r in killers]
+        self.assertEqual(exp, sorted(exp))
+        # among builds with no execute, expected == real, so the real kill
+        # times must still be ordered — no bogus overkill leapfrogging
+        plain = [r["ttk"] for r in killers
+                 if r["breakdown"].get("execute") is None]
+        self.assertEqual(plain, sorted(plain))
+
+    def test_execute_charged_back_to_expected_value(self):
+        # deterministic crit always lands in the 5% window; real crit would
+        # only ~W/D of the time, so expected sits between the two outcomes
+        ids, sheet = self.resolve(16, ["berserkers", "infinity edge", "yun tal",
+                                       "collector", "lord dominik"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        a = (sheet, self.kit, fx, 16, ranks, 2800, 110, 60, 8.0)
+        on = builds.simulate(*a)
+        off = builds.simulate(*a[:2], dict(fx, executePct=None), *a[3:])
+        self.assertGreater(on["ttk_exp"], on["ttk"])
+        self.assertLess(on["ttk_exp"], off["ttk"])
+
+    def test_no_execute_leaves_expected_equal_to_real(self):
+        r = self.sim(16, ["infinity edge", "lord dominik"], hp=2200,
+                     armor=80, mr=60, duration=12)
+        self.assertIsNotNone(r["ttk"])
+        self.assertAlmostEqual(r["ttk_exp"], r["ttk"], places=9)
+
+    def test_effective_ttk_shrinks_execute_advantage(self):
+        # Collector's execute must not buy a whole attack cycle: its worth
+        # under the effective metric is well under its worth under raw ttk
+        ids, sheet = self.resolve(16, ["berserkers", "infinity edge", "yun tal",
+                                       "collector", "lord dominik"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        a = (sheet, self.kit, fx, 16, ranks, 2800, 110, 60, 8.0)
+        on = builds.simulate(*a)
+        off = builds.simulate(*a[:2], dict(fx, executePct=None), *a[3:])
+        raw = off["ttk"] - on["ttk"]
+        eff = off["ttk_eff"] - on["ttk_eff"]
+        self.assertGreater(raw, 0.0)
+        self.assertLess(eff, raw)
+
     def test_navori_accelerates_q(self):
         # vs Phantom Dancer (more AS, no CDR): Navori must land more Q casts
         nav = self.sim(16, ["navori"], hp=100_000, duration=12)
@@ -349,6 +406,34 @@ class TestEngine(unittest.TestCase):
         # above; the auto attack line is exactly 1.15x)
         self.assertAlmostEqual(amped["breakdown"]["auto"],
                                base["breakdown"]["auto"] * 1.15, places=6)
+
+    def test_hexoptics_amps_the_attack_only(self):
+        # Magnification: +10% at/beyond 500 range. Kayle is 625 at 16, so the
+        # amp is capped — and it must not touch on-hits or abilities.
+        ids, sheet = self.resolve(16, ["hexoptics"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(16)
+        args = (sheet, self.kit, None, 16, ranks, 100_000, 80, 60, 6.0)
+        hexo = builds.simulate(*args[:2], fx, *args[3:])
+        off = builds.simulate(*args[:2], dict(fx, attackAmp=None), *args[3:])
+        self.assertEqual(hexo["attacks"], off["attacks"])
+        self.assertAlmostEqual(hexo["breakdown"]["auto"],
+                               off["breakdown"]["auto"] * 1.10, places=6)
+        for src in ("E onhit", "Q", "R", "wave"):
+            self.assertAlmostEqual(hexo["breakdown"][src],
+                                   off["breakdown"][src], places=6)
+
+    def test_hexoptics_scales_down_for_short_range(self):
+        # a melee-form level (pre-Arisen, 175 range) gets 175/500 of the 10%
+        ids, sheet = self.resolve(5, ["hexoptics"])
+        fx = builds.merge_effects(ids, self.effects)
+        ranks = builds.skill_ranks(5)
+        r = builds.simulate(sheet, self.kit, fx, 5, ranks, 100_000, 0, 0, 6.0)
+        flat = builds.simulate(sheet, self.kit, dict(fx, attackAmp=None), 5,
+                               ranks, 100_000, 0, 0, 6.0)
+        self.assertAlmostEqual(r["breakdown"]["auto"],
+                               flat["breakdown"]["auto"] * (1 + 0.10 * 175 / 500),
+                               places=6)
 
     def test_abyssal_amps_magic_only(self):
         plain = self.sim(16, [], hp=100_000, duration=4)
@@ -475,44 +560,67 @@ class TestEngine(unittest.TestCase):
         # true damage ignores the 300 resists: exactly 50 + 1.5 * 18 lethality
         self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
 
-    def test_exclusive_groups_match_game_evidence(self):
-        # each group's members must share the recipe component or passive
-        # name that the in-game "Limited to 1" rule hangs off — catches a
-        # stale hand-curated group after a patch reshuffles recipes
-        import json as j
-        with open("data/items/16.16/meraki.json") as f:
-            mk = j.load(f)
-        groups = {}
-        for iid, name in builds.load_exclusive_groups().items():
-            groups.setdefault(name, []).append(iid)
-        evidence = {"Last Whisper": 3035, "Hydra": 3077}
-        for name, comp in evidence.items():
-            for iid in groups[name]:
-                self.assertIn(comp, mk[str(iid)]["buildsFrom"],
-                              f"{name}: {iid} lacks component {comp}")
-        for name in ("Lifeline", "Annul", "Spellblade"):
-            for iid in groups[name]:
-                self.assertIn(name, [p.get("name") for p in
-                                     mk[str(iid)]["passives"]],
-                              f"{name}: {iid} lacks the passive")
-        self.assertEqual(sorted(groups["Tear of the Goddess"]), [3040, 3042])
+    def test_exclusive_groups_come_from_the_game_bin(self):
+        # the groups are Riot's own mItemGroups, so assert the memberships
+        # that actually bite — including the two that hand-curation missed
+        groups, caps = builds.load_exclusive_groups()
+        self.assertTrue(groups, "no item groups loaded")
+
+        def named(label):
+            return {i for i, gs in groups.items()
+                    if any(builds.group_name(g) == label for g in gs)}
+        lw = named("Last Whisper")
+        for iid in (3036, 3033, 6694, 3302, 3071):  # incl. Terminus, Cleaver
+            self.assertIn(iid, lw, f"{iid} should be a Last Whisper item")
+        # Terminus sits in two groups at once — the old one-group-per-item
+        # model could not express this
+        self.assertIn(3302, named("Void Pen"))
+        self.assertIn(3040, named("Lifeline Items"))  # Seraph's, also missed
+        for g in groups.get(3036, ()):
+            self.assertEqual(caps[g], 1)
 
     def test_enumerator_respects_exclusive_groups(self):
-        # a candidate set stacked with Last Whisper items: no result may
-        # contain two of them
+        # candidates stacked with Last Whisper items, including Terminus and
+        # Black Cleaver: no result may hold two of any capped group
         champ = fake_champ()
-        cands = [3036, 3033, 6694, 3031, 3032, 6676, 3115]
+        cands = [3036, 3033, 6694, 3302, 3071, 3031, 3032, 6676, 3115]
         results, count = builds.enumerate_builds(
             champ, self.pool, self.effects, self.kit, 16,
             builds.skill_ranks(16), 2800, 110, 60, 8, candidates=cands)
-        group = builds.load_exclusive_groups()
+        groups, caps = builds.load_exclusive_groups()
+        self.assertTrue(results)
         for ids, _, _ in results:
-            gids = [group[i] for i in ids if i in group]
-            self.assertEqual(len(gids), len(set(gids)),
-                             f"two of one group in {ids}")
-        # C(7,5)=21 combos x2 boots, minus the ones holding 2+ LW items:
-        # only combos with exactly one or zero LW survive
-        self.assertLess(count, 42)
+            self.assertTrue(builds.build_is_legal(ids, groups, caps),
+                            f"unbuyable build survived: {ids}")
+
+    def test_pool_is_buyable_with_gold_alone(self):
+        # Feats of Strength boots (Gunmetal Greaves, Spellslinger's, ...) and
+        # the support-quest line still read as purchasable map-11 items in
+        # ddragon; only the item bin's currency flag keeps them out
+        gated = builds.load_gated_items()
+        self.assertTrue(gated, "no currency-gated items loaded")
+        offenders = [(i, self.pool[i]["name"], gated[i])
+                     for i in builds.DEFAULT_POOL + builds.BOOTS if i in gated]
+        self.assertEqual(offenders, [])
+        self.assertIn(3175, gated)  # Spellslinger's Shoes, a known T3 boot
+
+    def test_pool_has_no_retired_items(self):
+        # an item ddragon marks unpurchasable while it still has a recipe was
+        # pulled from the shop (Opportunity); meraki keeps calling it buyable
+        retired = builds.load_retired_items()
+        self.assertIn(6701, retired)
+        offenders = [(i, self.pool[i]["name"])
+                     for i in builds.DEFAULT_POOL + builds.BOOTS
+                     if i in retired]
+        self.assertEqual(offenders, [])
+        # transformations are unpurchasable but legitimate — must NOT be swept up
+        for iid in (3040, 3042):  # Seraph's Embrace, Muramana
+            self.assertNotIn(iid, retired)
+
+    def test_terminus_and_lord_dominik_never_pair(self):
+        groups, caps = builds.load_exclusive_groups()
+        self.assertFalse(builds.build_is_legal([3302, 3036], groups, caps))
+        self.assertTrue(builds.build_is_legal([3302, 3031], groups, caps))
 
     def test_pool_has_no_unmapped_stats_or_uncovered_passives(self):
         # every pool item must resolve without stat warnings and leave no
