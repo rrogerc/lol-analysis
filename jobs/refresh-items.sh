@@ -19,6 +19,10 @@ python3 lol.py items fetch --force
 if [ -n "$(git status --porcelain data/items)" ]; then
   git add data/items
   git commit -m "items: refresh snapshot for current patch"
-  git pull --rebase --quiet
+  # --autostash: only data/items is staged above, but rebase refuses to run
+  # while ANY other path is dirty. Without it, unrelated work-in-progress in
+  # this checkout makes the job commit locally and then die before pushing,
+  # leaving GitHub silently behind (happened 2026-08-26, exit 128).
+  git pull --rebase --autostash --quiet
   git push --quiet
 fi
