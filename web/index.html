@@ -105,10 +105,12 @@
     border-color: var(--baseline); font-weight: 600;
   }
   .lane-tag { color: var(--text-secondary); }
-  #jobs th, #jobs td { text-align: left; }
-  #jobs td:nth-child(2) { white-space: nowrap; }
-  .pos { color: #1b7f3b; } .neg { color: #d03b3b; }
-  @media (prefers-color-scheme: dark) { .pos { color: #2fae58; } }
+  #jobs th, #jobs td, #services th, #services td { text-align: left; }
+  #jobs td:nth-child(2), #services td:nth-child(2) { white-space: nowrap; }
+  .pos { color: #1b7f3b; } .neg { color: #d03b3b; } .amber { color: #a5730a; }
+  @media (prefers-color-scheme: dark) {
+    .pos { color: #2fae58; } .amber { color: #d9a441; }
+  }
   #health {
     margin-top: 12px; padding: 8px 12px; border-radius: 8px; font-size: 13px;
     border: 1px solid transparent;
@@ -272,9 +274,20 @@
 
 <!-- ============================ Data ============================ -->
 <section class="view" id="view-data">
+  <div class="card" id="services-card">
+    <h2>Services</h2>
+    <div class="hint">The systemd units that run this repo, declared in
+      <code>dotfiles/nixos/configuration.nix</code> — that file is where to change them.
+      A restart count climbing on a continuous unit means it is crash-looping:
+      <code>journalctl -u &lt;unit&gt;</code> has the reason.</div>
+    <table id="services">
+      <thead><tr><th>Unit</th><th>Runs</th><th>State</th><th>Last / next</th><th>What it does</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
   <div class="card">
     <h2>Automation</h2>
-    <div class="hint">Recurring jobs, read straight from <code>.github/workflows/</code> — anything added there shows up here.</div>
+    <div class="hint">Recurring jobs, read from the script headers in <code>jobs/</code> — anything added there shows up here. Status is the heartbeat each script writes when it exits.</div>
     <table id="jobs">
       <thead><tr><th>Job</th><th>Runs</th><th>Status</th><th>What it does</th></tr></thead>
       <tbody></tbody>
@@ -734,6 +747,15 @@ async function openBuilds() {
 async function loadInventory() {
   const meta = await api("api/meta.json");
   META = meta;
+  const svcs = meta.services || [];
+  document.getElementById("services-card").hidden = !svcs.length;
+  document.querySelector("#services tbody").replaceChildren(...svcs.map(s => {
+    const st = svcState(s);
+    const tr = document.createElement("tr");
+    tr.append(cell(s.unit), cell(s.runs), cell(st.text, st.cls),
+              cell(svcWhen(s)), cell(s.desc));
+    return tr;
+  }));
   document.querySelector("#jobs tbody").replaceChildren(...(meta.jobs || []).map(j => {
     const tr = document.createElement("tr");
     const st = jobStatus(j);
@@ -747,6 +769,42 @@ async function loadInventory() {
     tr.firstChild.style.textAlign = "left";
     return tr;
   }));
+}
+
+// ---------------- health: systemd units ----------------
+// serve reads these with `systemctl show`; the static export drops them
+// entirely, since frozen unit state could only ever be a lie once viewed.
+// Restarts are the signal worth watching: a service that cannot bind its
+// port restarts forever, and nothing else here would reveal it — the page
+// you are reading is served by whichever process did get the port.
+function svcState(s) {
+  if (!s.loaded) return { text: "not found", cls: "neg" };
+  if (s.unit.endsWith(".timer"))
+    return s.state === "active" ? { text: "armed", cls: "pos" }
+                                : { text: s.state || "?", cls: "neg" };
+  if (s.state !== "active") return { text: s.state || "?", cls: "neg" };
+  if (s.restarts) return { text: `running · ${s.restarts} restarts`, cls: "amber" };
+  return { text: "running", cls: "pos" };
+}
+
+// "40 min ago" / "in 9.6h" from a unix timestamp.
+function relTime(ts) {
+  const d = (Date.now() - ts * 1000) / 1000, m = Math.abs(d);
+  const n = m < 90 ? `${Math.round(m)}s` : m < 5400 ? `${Math.round(m / 60)} min`
+          : m < 172800 ? `${(m / 3600).toFixed(1)}h` : `${(m / 86400).toFixed(1)}d`;
+  return d >= 0 ? `${n} ago` : `in ${n}`;
+}
+
+function svcWhen(s) {
+  if (!s.loaded) return "—";
+  if (!s.unit.endsWith(".timer"))
+    return s.since ? `up ${relTime(s.since)}` : "—";
+  const parts = [s.last ? `last ${relTime(s.last)}` : "never run"];
+  if (s.running) parts.push("running now");
+  else if (s.result && s.result !== "success") parts.push(s.result);
+  else if (s.result === "success") parts.push("ok");
+  if (s.next) parts.push(`next ${relTime(s.next)}`);
+  return parts.join(" · ");
 }
 
 // ---------------- health: job heartbeats + item-data staleness ----------------

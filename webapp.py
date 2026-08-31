@@ -10,6 +10,7 @@ both places.
 import json
 import os
 import re
+import subprocess
 import sys
 
 import builds
@@ -19,6 +20,19 @@ from common import BASE_DIR, WEB_DIR, db_connect
 
 WORKFLOWS_DIR = os.path.join(BASE_DIR, ".github", "workflows")
 JOBS_DIR = os.path.join(BASE_DIR, "jobs")
+
+# The systemd units that run this repo, declared in
+# dotfiles/nixos/configuration.nix. Listed here rather than discovered, so a
+# unit that disappears shows up as "not found" instead of silently dropping
+# out of the table. The dashboard is a *system* unit, the refresh timer a
+# *user* one (it pushes over SSH as rogerc) — they need different buses.
+SERVICES = [
+    {"unit": "lol-dashboard.service", "scope": "system", "runs": "continuous",
+     "desc": "serves this dashboard on :8321, reachable over Tailscale only"},
+    {"unit": "lol-items-refresh.timer", "svc": "lol-items-refresh.service",
+     "scope": "user", "runs": "daily 07:23",
+     "desc": "triggers jobs/refresh-items.sh — its own outcome is below"},
+]
 
 
 def humanize_cron(expr):
@@ -97,9 +111,74 @@ def workflow_jobs():
     return jobs
 
 
+def systemctl_show(unit, props, scope):
+    """`systemctl show` as a dict, or {} when systemd can't answer — not this
+    box, unit removed, user bus unreachable. Never raises: the Data tab has
+    to render with or without a verdict."""
+    cmd = ["systemctl", "show", unit, "--timestamp=unix", "-p", ",".join(props)]
+    env = dict(os.environ)
+    if scope == "user":
+        cmd.insert(1, "--user")
+        # A system service running as rogerc has no session bus of its own.
+        # Lingering keeps /run/user/<uid> alive, which is all systemctl needs.
+        env.setdefault("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=5,
+                             env=env)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    return dict(l.split("=", 1) for l in out.stdout.splitlines() if "=" in l)
+
+
+def unix_stamp(v):
+    """systemd's '@<epoch>' (from --timestamp=unix) as an int. Unset
+    timestamps come back as 0 or 'n/a' — both mean "never", i.e. None."""
+    if v and v.startswith("@"):
+        try:
+            return int(float(v[1:])) or None
+        except ValueError:
+            return None
+    return None
+
+
+def services():
+    """Live state of the units behind this repo, for the Data tab.
+
+    The restart count is the point. A service that can't bind its port
+    restarts forever, and no other indicator here would show it: whichever
+    process *did* get the port is the one serving this page."""
+    rows = []
+    for s in SERVICES:
+        row = {k: s[k] for k in ("unit", "runs", "desc")}
+        p = systemctl_show(s["unit"],
+                           ["LoadState", "ActiveState", "NRestarts",
+                            "ExecMainStartTimestamp", "NextElapseUSecRealtime",
+                            "LastTriggerUSec"], s["scope"])
+        row["loaded"] = p.get("LoadState") == "loaded"
+        if not row["loaded"]:
+            rows.append(row)
+            continue
+        row["state"] = p.get("ActiveState")
+        if s["unit"].endswith(".timer"):
+            row["last"] = unix_stamp(p.get("LastTriggerUSec"))
+            row["next"] = unix_stamp(p.get("NextElapseUSecRealtime"))
+            # A timer is only ever "armed" — whether the run it triggered
+            # succeeded is on the service it starts.
+            if s.get("svc"):
+                r = systemctl_show(s["svc"], ["ActiveState", "Result"], s["scope"])
+                row["result"] = r.get("Result")
+                row["running"] = r.get("ActiveState") in ("active", "activating")
+        else:
+            row["since"] = unix_stamp(p.get("ExecMainStartTimestamp"))
+            row["restarts"] = int(p.get("NRestarts") or 0)
+        rows.append(row)
+    return rows
+
+
 def app_meta(con):
     meta = scaling.api_meta(con)
     meta["jobs"] = local_jobs() + workflow_jobs()
+    meta["services"] = services()
     meta["itemsSnapshot"] = items.latest_snapshot()
     return meta
 
@@ -111,6 +190,9 @@ def cmd_export(args):
     meta = app_meta(con)
     # The export is a frozen snapshot: job heartbeats would only age into a
     # false "timer may be dead" wherever it's viewed later, so strip them.
+    # Unit state is worse — it describes a machine the reader isn't on — so
+    # drop it entirely and let the Services card hide itself.
+    meta.pop("services", None)
     for job in meta["jobs"]:
         job.pop("lastRun", None)
         job.pop("lastExit", None)
