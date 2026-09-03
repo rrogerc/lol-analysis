@@ -312,8 +312,14 @@ def cmd_import_soloq(args):
     table = table.drop_columns(["match_id"])
 
     # game_duration is seconds; buckets 1-7 are 0-15, 15-20, ... 40+ minutes.
+    # Integer division is load-bearing here — force an integer type rather
+    # than trusting the parquet schema (a float column would yield float
+    # buckets, which blow up as dict keys downstream).
+    dur = table["game_duration"]
+    if not pa.types.is_integer(dur.type):
+        dur = pc.cast(pc.floor(pc.cast(dur, pa.float64())), pa.int64())
     bucket = pc.min_element_wise(
-        pc.max_element_wise(pc.subtract(pc.divide(table["game_duration"], 300), 1), 1), 7)
+        pc.max_element_wise(pc.subtract(pc.divide(dur, 300), 1), 1), 7)
     grouped = pa.table({
         "patch": table["patch"], "champion": table["champion"],
         "role": table["role"], "bucket": bucket,
