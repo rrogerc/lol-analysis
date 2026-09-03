@@ -238,6 +238,7 @@ def load_items(patch=None):
                     continue
                 desc = d.get("description", "")
                 pool[int(sid)] = {
+                    "id": int(sid),
                     "name": d["name"],
                     "stats": parse_dd_stats(desc) or {},
                     "passives": [{"unique": True, "name": n} for n in
@@ -570,6 +571,9 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
     aflame = level >= kit["passive"]["aflame"]["level"]
     wave_cfg = kit["passive"]["aflame"]["wave"]
     e_cfg, q_cfg, r_cfg = (kit["abilities"][s] for s in ("E", "Q", "R"))
+    q_shred = q_cfg.get("shred", {})
+    q_shred_pct = {res: q_shred.get("pct", 0.0)
+                   for res in q_shred.get("appliesTo", ())}
 
     crit_c = sheet["crit_chance"] / 100.0
     crit_ev = 1.0 + crit_c * (sheet["crit_damage"] / 100.0 - 1.0)
@@ -658,9 +662,9 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         if fx["altPen"]:
             dark_pen = min(st["dark"], fx["altPen"]["maxStacks"]) \
                        * fx["altPen"]["pctPerStack"]
-        qs = 15.0 if t < st["q_shred_until"] else 0.0
+        qs_on = t < st["q_shred_until"]
         if dtype == "physical":
-            shred = qs
+            shred = q_shred_pct.get("armor", 0.0) if qs_on else 0.0
             if fx["armorShred"]:  # Black Cleaver: % armor reduction stacks
                 shred += st["cleaver"] * fx["armorShred"]["pctPerStack"]
             leth = sheet["lethality"]
@@ -675,7 +679,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         else:
             mal = (fx["ultBurn"]["mrReduction"]
                    if fx["ultBurn"] and t < st["mal_shred_until"] else 0.0)
-            shred = qs
+            shred = q_shred_pct.get("mr", 0.0) if qs_on else 0.0
             if fx["mrShred"]:  # Bloodletter's Curse: % MR reduction stacks
                 shred += st["blood"] * fx["mrShred"]["pctPerStack"]
             r = eff_resist(target_mr, mal, shred,
@@ -800,7 +804,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 
     def cast_q():
         st["q_ready"] = st["t"] + basic_cd(q_cfg["cooldownS"][ranks["Q"] - 1])
-        st["q_shred_until"] = st["t"] + q_cfg["shred"]["durationS"]
+        st["q_shred_until"] = st["t"] + q_shred.get("durationS", 0.0)
         deal(ability_hit(q_cfg["damage"], ranks["Q"], sheet), "magic", "Q",
              ability=True)
         ability_cast_proc()
@@ -1125,10 +1129,12 @@ _OPTIMIZE_CACHE = {}
 SCENARIO_CACHE_DIR = os.path.join(BASE_DIR, ".cache", "builds")
 
 
-def _scenario_cache_path(slug, key, sc, patch, champ):
+def _scenario_cache_path(slug, key, sc, patch, champ, pool):
     """Disk-cache filename whose hash covers every input the result depends
-    on: the scenario, the pool, the data files (including the item-bin rules
-    that decide which builds are legal), and this module's code."""
+    on: the scenario, the pool, the loaded snapshot data (champion and item
+    stats — content, not just patch labels, since the daily refresh rewrites
+    a patch's snapshot in place), the item-bin rules that decide which builds
+    are legal, and this module's code."""
     import hashlib
     h = hashlib.sha256()
     paths = [ITEM_EFFECTS_PATH,
@@ -1140,8 +1146,8 @@ def _scenario_cache_path(slug, key, sc, patch, champ):
     for p in paths:
         with open(p, "rb") as f:
             h.update(f.read())
-    h.update(json.dumps([patch, champ["meta"]["patch"], sc, DEFAULT_POOL,
-                         BOOTS], sort_keys=True).encode())
+    h.update(json.dumps([patch, champ, sc, DEFAULT_POOL, BOOTS, pool],
+                        sort_keys=True).encode())
     return os.path.join(SCENARIO_CACHE_DIR,
                         f"{slug}-{key}-{h.hexdigest()[:16]}.json")
 
@@ -1168,11 +1174,14 @@ def _optimize_scenario_cached(slug, key):
         return _OPTIMIZE_CACHE[(slug, key)]
     if key not in SCENARIOS:
         raise ValueError(f"unknown scenario '{key}'")
+    # ValueError (not load_champion's sys.exit) so the web layer can 404
+    if slug not in kit_champions():
+        raise ValueError(f"unknown champion '{slug}'")
     top = CACHED_ROWS
     sc = SCENARIOS[key]
     champ = load_champion(slug)
     patch, pool = load_items()
-    cache_path = _scenario_cache_path(slug, key, sc, patch, champ)
+    cache_path = _scenario_cache_path(slug, key, sc, patch, champ, pool)
     if os.path.exists(cache_path):
         with open(cache_path) as f:
             out = json.load(f)
