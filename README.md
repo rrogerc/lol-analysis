@@ -27,11 +27,16 @@ module and committed JSON archive:
   `lol.py builds fetch-champion <name>` (ddragon canonical, meraki for AS
   ratio/windup); text-only item passives live in the hand-curated
   `data/builds/item-effects.json`, and ability kits in hand-encoded
-  `data/builds/<champ>.json` (kayle so far). On top: a deterministic
-  expected-value combat engine (`builds sim` — event timeline, on-hit
-  procs, Guinsoo phantom hits, pen ordering, EV crit) and a build
-  enumerator (`builds optimize` — ranks every item-pool combination
-  against a stat dummy; `--budget`/`--require` for partial builds).
+  `data/builds/<champ>.json` — Kayle and Vladimir so far, each paired
+  with a rotation driver in `builds.py` (`KIT_DRIVERS`) that says what
+  the champion does with its attacks and abilities; the engine itself is
+  champion-agnostic (clock, target, item procs, damage pipeline). On top:
+  a deterministic expected-value combat engine (`builds sim` — event
+  timeline, on-hit procs, Guinsoo phantom hits, pen ordering, EV crit)
+  and a build enumerator (`builds optimize` — ranks every item-pool
+  combination against a stat dummy; `--budget`/`--require` for partial
+  builds). A kit can rule items out of its pool (Vladimir has no mana,
+  so the Tear items and Actualizer never enter his enumeration).
   The enumeration pool covers every mage, marksman, assassin, and
   bruiser damage item (76 items + 2 boots) — AP, on-hit, crit, executes,
   burns, Energized, shreds, spellblades, item actives, fully-stacked tear
@@ -96,11 +101,12 @@ Opens `http://127.0.0.1:8321` — an interactive local dashboard:
   with tier/lane/min-games filters. Click table rows to chart champions.
 - **Champion** — any champion's win-rate curve per lane, plus their win rate
   across patches.
-- **Builds** — the theoretical damage model's ranked builds per preset
-  scenario (full build / mid-game budget / first item, vs squishy /
-  bruiser / tank). Click a build for its damage-source breakdown. Scenarios
-  are simulated on first request and cached; restart serve after changing
-  kits or item effects.
+- **Builds** — the theoretical damage model's ranked builds per champion
+  and preset scenario (full build / mid-game budget / first item, vs
+  squishy / bruiser / tank). Click a build for its damage-source
+  breakdown. Scenarios are simulated on first request and cached on disk
+  under a hash of every input; a running serve also memoizes in-process,
+  so restart it after changing code, kits or item effects.
 - **Data** — systemd unit health, automation job status, and what's in the
   database, per tier and patch.
 

@@ -631,5 +631,225 @@ class TestEngine(unittest.TestCase):
                              f"{self.pool[iid]['name']}: {sheet['uncovered']}")
 
 
+def fake_vlad():
+    """A Vladimir-shaped champion snapshot (patch 16.17 ddragon values)."""
+    dd = {"name": "Vladimir", "stats": {
+        "hp": 600, "hpperlevel": 110, "mp": 2, "mpperlevel": 0,
+        "armor": 24, "armorperlevel": 4.5,
+        "spellblock": 30, "spellblockperlevel": 1.3,
+        "attackdamage": 55, "attackdamageperlevel": 0,
+        "attackspeed": 0.658, "attackspeedperlevel": 2,
+        "movespeed": 330, "attackrange": 450,
+    }}
+    mk = {"stats": {"attackSpeedRatio": {"flat": 0.658},
+                    "criticalStrikeDamage": {"flat": 175.0}}}
+    return {"slug": "vladimir", "dd": dd, "mk": mk, "meta": {"patch": "16.17"}}
+
+
+class TestVladimirKit(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = builds.load_kit("vladimir")
+
+    def test_shape(self):
+        for slot, ranks in [("Q", 5), ("W", 5), ("E", 5), ("R", 3)]:
+            self.assertEqual(len(self.kit["abilities"][slot]["cooldownS"]), ranks)
+        e = self.kit["abilities"]["E"]["damage"]
+        self.assertEqual(len(e["min"]["base"]), 5)
+        self.assertEqual(len(e["max"]["base"]), 5)
+        self.assertEqual(self.kit["abilities"]["Q"]["crimsonRush"]["everyNthCast"], 3)
+        self.assertTrue(self.kit["manaless"])
+        self.assertEqual(builds.kit_max_order(self.kit), ("Q", "E", "W"))
+        self.assertEqual(builds.kit_max_order(self.kit, "e,q,w"), ("E", "Q", "W"))
+
+    def test_registered(self):
+        self.assertEqual(builds.kit_champions(), ["kayle", "vladimir"])
+
+    def test_own_health_ratios(self):
+        # E at full charge, rank 5: 180 + 80% AP + 6% of OWN max health
+        sheet = {"ad": 55.0, "ad_bonus": 0.0, "ap": 100.0, "hp": 3000.0,
+                 "hp_bonus": 800.0}
+        e = self.kit["abilities"]["E"]["damage"]["max"]
+        self.assertAlmostEqual(builds.ability_hit(e, 5, sheet), 180 + 80 + 180)
+        # W rank 5 over the pool: 300 + 15% bonus health
+        w = self.kit["abilities"]["W"]["damage"]
+        self.assertAlmostEqual(builds.ability_hit(w, 5, sheet), 300 + 120)
+
+
+class TestVladimirEngine(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = builds.load_kit("vladimir")
+        cls.patch, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+
+    def resolve(self, level, tokens):
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        return ids, builds.resolve_stats(fake_vlad(), level, ids, self.pool,
+                                         self.effects, kit=self.kit)
+
+    def sim(self, level, tokens, hp=2800, armor=80, mr=60, duration=8.0,
+            use_ult=True, **kw):
+        ids, sheet = self.resolve(level, tokens)
+        return builds.simulate(sheet, self.kit,
+                               builds.merge_effects(ids, self.effects), level,
+                               builds.skill_ranks(level), hp, armor, mr,
+                               duration, use_ult=use_ult, **kw)
+
+    def item_stat(self, iid, stat):
+        return self.pool[iid]["stats"].get(stat, {}).get("flat", 0.0)
+
+    def test_crimson_pact(self):
+        # Rylai's: its AP plus 1 AP per 30 of its health; then 1.6 health per
+        # point of AP that did NOT come from the pact itself
+        ids, sheet = self.resolve(16, ["rylai"])
+        ap_i, hp_i = (self.item_stat(ids[0], k) for k in ("abilityPower", "health"))
+        self.assertGreater(hp_i, 0)
+        self.assertAlmostEqual(sheet["ap"], ap_i + hp_i / 30)
+        base_hp = builds.stat_at(600, 110, 16)
+        self.assertAlmostEqual(sheet["hp"], base_hp + hp_i + 1.6 * ap_i)
+        self.assertAlmostEqual(sheet["hp_bonus"], hp_i + 1.6 * ap_i)
+
+    def test_crimson_pact_rabadon(self):
+        # The wiki's Rabadon's figures: bonus AP = 30% AP + 4.333% bonus
+        # health, bonus health = 208% AP + 1.6% bonus health — Rabadon's 30%
+        # of the pact's AP is credited to Rabadon's, so it does earn health
+        ids, sheet = self.resolve(16, ["rabadons", "rylai"])
+        ap_i = sum(self.item_stat(i, "abilityPower") for i in ids)
+        hp_i = sum(self.item_stat(i, "health") for i in ids)
+        self.assertAlmostEqual(sheet["ap"], 1.30 * ap_i + 1.30 / 30 * hp_i)
+        self.assertAlmostEqual(sheet["hp_bonus"],
+                               hp_i + 2.08 * ap_i + 0.016 * hp_i)
+
+    def test_crimson_pact_riftmaker_fixed_point(self):
+        # Riftmaker's 2% of bonus health counts the pact's health, whose AP
+        # grows the health again: the closed form must survive one more
+        # pass of the loop unchanged
+        ids, sheet = self.resolve(16, ["rabadons", "riftmaker"])
+        ap_i = sum(self.item_stat(i, "abilityPower") for i in ids)
+        hp_i = sum(self.item_stat(i, "health") for i in ids)
+        ap, hp_pact = sheet["ap"], sheet["hp_bonus"] - hp_i
+        again = 1.30 * (ap_i + 0.02 * (hp_i + hp_pact) + hp_i / 30)
+        self.assertAlmostEqual(ap, again, places=6)
+        self.assertAlmostEqual(hp_pact, 1.6 * (ap - hp_i / 30), places=6)
+        self.assertAlmostEqual(sheet["ap"], sheet["ap_flat"] * sheet["ap_mult"])
+
+    def test_level1_hand_computed(self):
+        # Q at t=0 (80 magic, 0.25s lockout), one 55-AD auto at 0.25; the
+        # next auto (1/0.658 later) is past 1s
+        r = self.sim(1, [], hp=10_000, armor=0, mr=0, duration=1.0,
+                     use_ult=False)
+        self.assertEqual(r["attacks"], 1)
+        self.assertAlmostEqual(r["breakdown"]["Q"], 80.0)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 55.0)
+        self.assertAlmostEqual(r["total"], 135.0)
+
+    def test_rotation_hand_computed(self):
+        # Level 16 naked, no ult, 0 MR, 10s. Q (4.6s cd) at 0, 4.6, 9.2 —
+        # the third is Crimson Rush: 160 x 1.85 = 296. E charges at 0.25
+        # (Q's cast time) for 1s and lands 180 + 6% of 2192.25 max health;
+        # again at 6.25 (5s cd from the release). W rides the first charge:
+        # 190 over four ticks. No items, so no amps and no bonus health.
+        r = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=10.0,
+                     use_ult=False)
+        self.assertAlmostEqual(r["breakdown"]["Q"], 320.0)
+        self.assertAlmostEqual(r["breakdown"]["Q empowered"], 296.0)
+        e_hit = 180 + 0.06 * builds.stat_at(600, 110, 16)
+        self.assertAlmostEqual(r["breakdown"]["E"], 2 * e_hit)
+        self.assertAlmostEqual(r["breakdown"]["W"], 190.0)
+        self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"], places=6)
+
+    def test_e_charge_pauses_attacks(self):
+        # Level 1 (Q only): autos at 0.25 and 1.77. Level 2 (Q, E): the auto
+        # at 0.25 weaves in ahead of the charge, which then holds attacks
+        # until its release at 1.25 plus the cast lockout — the next auto is
+        # at 1.5, so a 1.4s window sees one attack instead of two.
+        q_only = self.sim(1, [], hp=100_000, armor=0, mr=0, duration=1.8,
+                          use_ult=False)
+        with_e = self.sim(2, [], hp=100_000, armor=0, mr=0, duration=1.4,
+                          use_ult=False)
+        self.assertEqual(q_only["attacks"], 2)
+        self.assertEqual(with_e["attacks"], 1)
+        self.assertIn("E", with_e["breakdown"])
+
+    def test_hemoplague_amps_everything_including_itself(self):
+        # 4s fight at 0 resists: R's 10% holds through its own burst at 4.0s
+        # (350 x 1.1 = 385) and every auto inside the window is 55 x 1.1
+        r = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=4.0)
+        self.assertAlmostEqual(r["breakdown"]["R"], 385.0)
+        self.assertAlmostEqual(r["breakdown"]["auto"], r["attacks"] * 55 * 1.1)
+        off = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=4.0,
+                       use_ult=False)
+        self.assertNotIn("R", off["breakdown"])
+
+    def test_true_damage_escapes_hemoplague(self):
+        # Umbral's opener is true damage: exactly 50 + 1.5 x 18 lethality,
+        # untouched by the 10% amp it lands inside of
+        r = self.sim(16, ["umbral"], hp=100_000, armor=300, mr=300, duration=4.0)
+        self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
+
+    def test_pool_blocks_casts_but_not_the_charged_release(self):
+        # Q at 0, one auto weaves in at 0.25 as the charge and the pool start
+        # together; the release still lands inside the pool at 1.25, and
+        # nothing else attacks or casts before the pool ends at 2.25
+        r = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=2.24,
+                     use_ult=False)
+        self.assertEqual(r["attacks"], 1)
+        self.assertIn("E", r["breakdown"])
+        self.assertAlmostEqual(r["breakdown"]["W"], 190.0)
+        self.assertAlmostEqual(r["breakdown"]["Q"], 160.0)
+        longer = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=2.26,
+                          use_ult=False)
+        self.assertEqual(longer["attacks"], 2)
+
+    def test_ability_items_ride_the_casts(self):
+        r = self.sim(16, ["lich bane", "liandry", "ludens echo"],
+                     hp=100_000, duration=8.0)
+        for src in ("spellblade", "burn", "ludens"):
+            self.assertIn(src, r["breakdown"])
+        self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"], places=6)
+
+    def test_manaless_pool(self):
+        vlad = builds.champion_pool(self.kit, self.effects)
+        kayle = builds.champion_pool(builds.load_kit("kayle"), self.effects)
+        self.assertEqual(kayle, builds.DEFAULT_POOL)
+        for iid in (3040, 3042, 2522):  # Seraph's, Muramana, Actualizer
+            self.assertIn(iid, kayle)
+            self.assertNotIn(iid, vlad)
+        self.assertEqual(len(vlad), len(builds.DEFAULT_POOL) - 3)
+        meta = builds.api_builds_meta()
+        by_slug = {c["slug"]: c for c in meta["champions"]}
+        self.assertEqual(by_slug["vladimir"]["pool"], vlad)
+        self.assertEqual(by_slug["vladimir"]["name"], "Vladimir")
+        self.assertTrue(any("mana" in x for x in by_slug["vladimir"]["excluded"]))
+        self.assertEqual(by_slug["kayle"]["excluded"], [])
+
+    def test_ranking_prefers_kill_time(self):
+        cands = [3089, 3135, 4645, 6653, 4633, 3100, 3115, 3031]
+        results, _ = builds.enumerate_builds(
+            fake_vlad(), self.pool, self.effects, self.kit, 16,
+            builds.skill_ranks(16), 2800, 110, 60, 8, candidates=cands)
+        killers = [r for _, _, r in results if r["ttk"] is not None]
+        self.assertTrue(killers)
+        exp = [r["ttk_exp"] for r in killers]
+        self.assertEqual(exp, sorted(exp))
+
+    def test_api_scenario_shape(self):
+        builds._OPTIMIZE_CACHE.clear()
+        d = builds.api_optimize_scenario("vladimir", "first-item", top=5)
+        self.assertEqual(d["champion"], "vladimir")
+        self.assertEqual(d["championName"], "Vladimir")
+        self.assertEqual([r["rank"] for r in d["rows"]], [1, 2, 3, 4, 5])
+        self.assertEqual(d["ranks"], builds.skill_ranks(9))
+        for r in d["rows"]:
+            self.assertLessEqual(r["gold"], 4500)
+            self.assertNotIn("Muramana", r["items"])
+            self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"],
+                                   delta=len(r["breakdown"]))  # rounding
+        ttks = [r["ttk"] for r in d["rows"] if r["ttk"] is not None]
+        self.assertEqual(ttks, sorted(ttks))
+
+
 if __name__ == "__main__":
     unittest.main()

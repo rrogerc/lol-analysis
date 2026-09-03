@@ -1,0 +1,100 @@
+{
+  "_provenance": [
+    "Hand-encoded on 2026-09-03 from wiki.leagueoflegends.com/en-us/Vladimir",
+    "(V26.17 era), cross-checked against ddragon 16.17.1, the meraki champion",
+    "snapshot (14.24 baseline) and Riot's own 16.17 game files",
+    "(raw.communitydragon.org/16.17/game/data/characters/vladimir/): every",
+    "base, ratio, cooldown and duration below agrees across all four. Wiki",
+    "patch numbering V26.xx maps to ddragon 16.xx.",
+    "Recent history: V25.23 base HP 600 (was 607) and armor 24 (was 27);",
+    "V26.17 Crimson Pact bug fix (rune AP now converts). No other Summoner's",
+    "Rift change to the kit in the V26 cycle. Riot's own recommended skill",
+    "order (game files): Q > E > W, R when available.",
+    "Modeling notes the sources do not settle: the Crimson Rush surge is",
+    "taken to open when Q comes off cooldown after the 2nd cast (the only",
+    "reading that fits a 4.6s cooldown); Riftmaker's Void Infusion is taken",
+    "to count the pact's bonus health (see resolve_stats).",
+    "Base stats are NOT duplicated here — the stat layer reads them from",
+    "data/builds/champions/<patch>/vladimir/. This file is only what no",
+    "structured source has: the kit's damage logic and its channel rules."
+  ],
+  "champion": "vladimir",
+  "name": "Vladimir",
+  "patch": "16.17",
+  "manaless": true,
+  "maxOrder": ["Q", "E", "W"],
+  "attack": {
+    "windupFraction": 0.19737,
+    "ranged": true,
+    "note": "windup = attackCastTime 0.3 / attackTotalTime 1.52 (meraki); autos are filler between casts, no resets in the kit"
+  },
+  "passive": {
+    "name": "Crimson Pact",
+    "crimsonPact": {
+      "apPer30BonusHp": 1,
+      "bonusHpPerAp": 1.6,
+      "note": "the health it grants never feeds its own AP conversion; the AP it grants is multiplied by Rabadon's like any other AP"
+    }
+  },
+  "abilities": {
+    "Q": {
+      "name": "Transfusion",
+      "cooldownS": [9, 7.9, 6.8, 5.7, 4.6],
+      "castTimeS": 0.25,
+      "damage": {
+        "base": [80, 100, 120, 140, 160],
+        "apRatio": 0.6,
+        "damageType": "magic"
+      },
+      "heal": { "base": [20, 25, 30, 35, 40], "apRatio": 0.35, "note": "sustain, not modeled" },
+      "crimsonRush": {
+        "everyNthCast": 3,
+        "bonusDamagePct": 85,
+        "surgeWindowS": 2.5,
+        "note": "each cast banks a point over its cooldown; at 2 the surge opens for 2.5s and the next Transfusion deals 85% more (148-296 +111% AP). Cast on cooldown, every third Q is the empowered one"
+      }
+    },
+    "W": {
+      "name": "Sanguine Pool",
+      "cooldownS": [28, 25, 22, 19, 16],
+      "costCurrentHpPct": 15,
+      "durationS": 2,
+      "damage": {
+        "base": [80, 135, 190, 245, 300],
+        "bonusHpRatio": 15,
+        "ticks": 4,
+        "tickS": 0.5,
+        "damageType": "magic",
+        "note": "totals over the pool; ticks at 0/0.5/1.0/1.5s"
+      },
+      "note": "untargetable for 2s: no attacks and no casts, except releasing a Tides of Blood that was already charging"
+    },
+    "E": {
+      "name": "Tides of Blood",
+      "cooldownS": [13, 11, 9, 7, 5],
+      "costMaxHpPct": 8,
+      "chargeMaxS": 1.5,
+      "chargeFullS": 1.0,
+      "damage": {
+        "min": { "base": [30, 45, 60, 75, 90], "apRatio": 0.35, "maxHpRatio": 1.5 },
+        "max": { "base": [60, 90, 120, 150, 180], "apRatio": 0.8, "maxHpRatio": 6 },
+        "damageType": "magic",
+        "note": "grows linearly over the first second of the charge, then holds; maxHpRatio is Vladimir's OWN max health"
+      },
+      "note": "no attacks while charging; Q or R would end the charge (auto-release), so the sim holds them until the release; W is allowed"
+    },
+    "R": {
+      "name": "Hemoplague",
+      "cooldownS": [120, 120, 120],
+      "delayS": 4,
+      "ampPct": 10,
+      "damage": {
+        "base": [150, 250, 350],
+        "apRatio": 0.7,
+        "damageType": "magic"
+      },
+      "heal": { "base": [150, 250, 350], "apRatio": 0.7, "note": "sustain, not modeled" },
+      "note": "infected targets take 10% more damage from all sources (true damage excepted) for 4s, including the burst that ends it"
+    }
+  }
+}

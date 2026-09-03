@@ -138,7 +138,7 @@ def main():
 
     sp = bdsub.add_parser("fetch-champion",
                           help="snapshot a champion's static data into data/builds/champions/")
-    sp.add_argument("name", help="champion name or slug, e.g. kayle")
+    sp.add_argument("name", help="champion name or slug, e.g. vladimir")
     sp.add_argument("--version",
                     help="ddragon version or short patch to fetch (default: latest)")
     sp.add_argument("--force", action="store_true",
@@ -147,7 +147,7 @@ def main():
 
     sp = bdsub.add_parser("stats",
                           help="exact stat sheet for a champion + item build")
-    sp.add_argument("name", help="champion name or slug, e.g. kayle")
+    sp.add_argument("name", help="champion name or slug, e.g. vladimir")
     sp.add_argument("--level", type=int, default=18)
     sp.add_argument("--items", nargs="*", default=[],
                     help="item names, meraki nicknames, or ids")
@@ -159,7 +159,8 @@ def main():
     sp.set_defaults(func=builds.cmd_items)
 
     def sim_args(sp):
-        sp.add_argument("name", help="champion with a kit encoding, e.g. kayle")
+        sp.add_argument("name",
+                        help="champion with a kit encoding: kayle, vladimir")
         sp.add_argument("--level", type=int, default=16)
         sp.add_argument("--patch", help="patch to use (default: newest snapshots)")
         sp.add_argument("--target-hp", type=int, default=2800)
@@ -172,8 +173,8 @@ def main():
         sp.add_argument("--no-ult", action="store_true", help="don't cast R")
         sp.add_argument("--prestacked", action="store_true",
                         help="start with passive stacks already up")
-        sp.add_argument("--max-order", default="Q,E,W",
-                        help="ability max order (default Q,E,W)")
+        sp.add_argument("--max-order",
+                        help="ability max order, e.g. Q,E,W (default: the kit's)")
 
     sp = bdsub.add_parser("sim",
                           help="simulate damage vs a stat dummy for one build")

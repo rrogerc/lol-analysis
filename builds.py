@@ -100,13 +100,23 @@ def eff_resist(base, flat_reduction=0.0, pct_reduction=0.0,
 # kit encodings (hand-curated ability formulas, data/builds/<slug>.json)
 # ---------------------------------------------------------------------------
 
-def load_kit(slug):
+def load_kit(slug, required=True):
     path = os.path.join(BUILDS_DATA_DIR, f"{slug}.json")
     if not os.path.exists(path):
+        if not required:
+            return None
         sys.exit(f"No kit encoding at data/builds/{slug}.json — only "
                  f"hand-encoded champions can be simulated.")
     with open(path) as f:
         return json.load(f)
+
+
+def kit_max_order(kit, override=None):
+    """Ability max order for skill_ranks: a CLI override ("Q,E,W"), else the
+    kit's declared order, else the Q > E > W default."""
+    if override:
+        return tuple(override.upper().split(","))
+    return tuple(kit.get("maxOrder", ("Q", "E", "W")))
 
 
 def by_level(spec, level):
@@ -118,11 +128,18 @@ def by_level(spec, level):
 
 
 def ability_hit(dmg, rank, sheet):
-    """Raw (pre-mitigation) damage of one ability hit at `rank` (1-5)."""
-    return (dmg["base"][rank - 1]
-            + dmg.get("bonusAdRatio", 0.0) * sheet["ad_bonus"]
-            + dmg.get("adRatio", 0.0) * sheet["ad"]
-            + dmg.get("apRatio", 0.0) * sheet["ap"])
+    """Raw (pre-mitigation) damage of one ability hit at `rank` (1-5):
+    base plus AD/AP ratios, plus ratios on the caster's own health
+    (Vladimir's E and W) where the encoding has them."""
+    amt = (dmg["base"][rank - 1]
+           + dmg.get("bonusAdRatio", 0.0) * sheet["ad_bonus"]
+           + dmg.get("adRatio", 0.0) * sheet["ad"]
+           + dmg.get("apRatio", 0.0) * sheet["ap"])
+    if "maxHpRatio" in dmg:
+        amt += dmg["maxHpRatio"] / 100.0 * sheet["hp"]
+    if "bonusHpRatio" in dmg:
+        amt += dmg["bonusHpRatio"] / 100.0 * sheet["hp_bonus"]
+    return amt
 
 
 # ---------------------------------------------------------------------------
@@ -389,8 +406,10 @@ IGNORED_ITEM_STATS = {("goldPer10", "flat"), ("healthRegen", "flat"),
                       ("healthRegen", "percent"), ("manaRegen", "percent")}
 
 
-def resolve_stats(champ, level, item_ids, pool, effects=None):
+def resolve_stats(champ, level, item_ids, pool, effects=None, kit=None):
     """Champion base stats at `level` plus `item_ids` -> final stat sheet.
+    `kit` (the champion's encoding) supplies stat-converting passives —
+    Vladimir's Crimson Pact; without it the sheet is items and levels only.
 
     Returns a flat dict; `uncovered` lists item passives that exist only as
     text and aren't part of the sheet (the combat engine's job, or genuinely
@@ -458,7 +477,31 @@ def resolve_stats(champ, level, item_ids, pool, effects=None):
     bonus_as = dd["attackspeedperlevel"] * growth(level) + agg["bonus_as_pct"]
     attack_speed = min(base_as + as_ratio * bonus_as / 100.0, AS_CAP)
 
-    ap = agg["ap_flat"] * ap_mult
+    # Vladimir's Crimson Pact: 1 AP per 30 bonus health, and 1.6 bonus health
+    # per point of AP. "Does not stack with itself" (wiki, Crimson Pact
+    # notes): the AP the pact makes from health earns no health back — but
+    # Rabadon's enhancement of that AP is credited to Rabadon's and does.
+    # Riftmaker's Void Infusion reads bonus health, which the pact's health
+    # is, so with both on the sheet the pair feeds back on itself; this is
+    # the closed form of that fixed point (the wiki is silent on whether the
+    # game resolves it that way — a modeling assumption).
+    pact = (kit or {}).get("passive", {}).get("crimsonPact")
+    pact_hp = 0.0
+    if pact:
+        per_hp = pact["apPer30BonusHp"] / 30.0
+        per_ap = pact["bonusHpPerAp"]
+        rift = sum(effects.get(i, {}).get("apFromBonusHpPct", 0.0)
+                   for i in item_ids) / 100.0
+        ap_pact = per_hp * agg["hp"]
+        ap = (ap_mult * (agg["ap_flat"] + ap_pact * (1.0 - rift * per_ap))
+              / (1.0 - ap_mult * rift * per_ap))
+        agg["ap_flat"] = ap / ap_mult
+        pact_hp = per_ap * (ap - ap_pact)
+        for iid in item_ids:  # Overlord's: bonus AD counts that health too
+            agg["ad_bonus"] += (effects.get(iid, {}).get("adFromBonusHpPct", 0.0)
+                                / 100.0 * pact_hp)
+    else:
+        ap = agg["ap_flat"] * ap_mult
     haste = agg["haste"]
     sheet = {
         "champion": champ["slug"], "level": level, "gold": gold,
@@ -476,7 +519,8 @@ def resolve_stats(champ, level, item_ids, pool, effects=None):
         "cd_mult": 100.0 / (100.0 + haste),
         # Shojin's Dragonforce: extra haste for basic abilities only
         "basic_cd_mult": 100.0 / (100.0 + haste + basic_haste),
-        "hp": stat_at(dd["hp"], dd["hpperlevel"], level) + agg["hp"],
+        "hp": stat_at(dd["hp"], dd["hpperlevel"], level) + agg["hp"] + pact_hp,
+        "hp_bonus": agg["hp"] + pact_hp,
         "mana": stat_at(dd["mp"], dd["mpperlevel"], level) + agg["mana"],
         "mana_bonus": agg["mana"],
         "armor": stat_at(dd["armor"], dd["armorperlevel"], level) + agg["armor"],
@@ -501,16 +545,21 @@ def resolve_stats(champ, level, item_ids, pool, effects=None):
 # ---------------------------------------------------------------------------
 # combat engine: deterministic expected-value damage timeline
 #
-# Approximations (all chosen to preserve build RANKING, not absolute DPS):
+# The engine owns the clock, the target, the damage pipeline and every item
+# proc; a per-champion driver (KIT_DRIVERS) owns the rotation — what the
+# champion does with its attacks and abilities. Approximations (all chosen
+# to preserve build RANKING, not absolute DPS):
 # - crit is expected value, no RNG anywhere
 # - projectiles land instantly; the target never moves or acts
-# - Q/R have a flat 0.25s cast lockout that delays the next auto
-# - an E reset lands its empowered attack after one windup (windup/AS)
+# - every ability cast has a flat 0.25s lockout that delays the next auto
+# - an attack reset (Kayle E) lands its empowered attack after one windup
 # - stacking buffs (Zeal, Seething, Terminus) never expire mid-fight
 # - range-scaled amps (Hexoptics) assume every attack is made at max range
 # ---------------------------------------------------------------------------
 
 ABILITY_LOCKOUT_S = 0.25
+INF = float("inf")
+MELEE_MAX_RANGE = 325  # Riot's split: every melee champion attacks from <= 325
 
 
 def skill_ranks(level, max_order=("Q", "E", "W")):
@@ -559,32 +608,282 @@ def merge_effects(item_ids, effects):
     return fx
 
 
+# ---------------------------------------------------------------------------
+# kit drivers: one class per hand-encoded champion. The engine calls these
+# hooks at each point of the fight; `e` is the engine handle — fight state
+# `e.st` (drivers keep their own state there too), the stat sheet, merged
+# item effects, the target, and the callbacks an ability cast has to fire:
+# deal, ability_cast_proc, eclipse_hit, prime_spellblade, basic_cd,
+# attack_speed, lockout.
+# ---------------------------------------------------------------------------
+
+class KitDriver:
+    basic_cd_keys = ("q_ready",)  # the cooldowns Navori's on-attack CDR shaves
+
+    def __init__(self, kit, sheet, level, ranks, prestacked):
+        self.kit, self.sheet = kit, sheet
+        self.level, self.ranks, self.prestacked = level, ranks, prestacked
+        self.attack_range = sheet["base_attack_range"]
+        self.ranged = self.attack_range > MELEE_MAX_RANGE
+
+    def init_state(self, st):
+        pass
+
+    def bonus_as(self, st):
+        """Kit-side bonus attack speed (stacking passives), in percent."""
+        return 0.0
+
+    def before_attack(self, e):
+        """On-attack, before the hit lands: stack gains."""
+
+    def attack_riders(self, e):
+        """Ability on-hit riders — reapplied whenever the item on-hits are
+        (Guinsoo phantom hits, Dusk and Dawn)."""
+
+    def after_attack(self, e):
+        """Ability procs delivered by the attack that just landed."""
+
+    def schedule_attack(self, e):
+        e.st["next_attack"] = e.st["t"] + 1.0 / e.attack_speed()
+
+    def q_at(self, e):
+        """Earliest moment Q can be cast; INF when it can't be."""
+        if not self.ranks["Q"]:
+            return INF
+        return max(e.st["q_ready"], e.st["t"])
+
+    def cast_q(self, e):
+        raise NotImplementedError
+
+    def cast_r(self, e):
+        """Kit-side effects of the R cast at t=0 (the engine schedules the
+        delayed damage and the item ult-cast procs itself)."""
+
+    def events(self, e):
+        """Extra timed events as (time, kind) pairs the engine folds into
+        its timeline; `on_event` handles them when they come up."""
+        return ()
+
+    def on_event(self, e, kind):
+        raise NotImplementedError(kind)
+
+
+class KayleDriver(KitDriver):
+    """An auto-attacker: Zealous stacks attack speed per attack, Arisen makes
+    her ranged at 6, Aflame (11) rides a wave on every attack at full stacks,
+    E is an always-on on-hit plus an attack-reset active, Q shreds resists."""
+
+    basic_cd_keys = ("q_ready", "e_ready")
+
+    def __init__(self, kit, sheet, level, ranks, prestacked):
+        super().__init__(kit, sheet, level, ranks, prestacked)
+        p = kit["passive"]
+        self.zeal = p["zealous"]
+        self.zeal_perm = level >= self.zeal["permanentAtLevel"]
+        self.ranged = level >= p["arisen"]["level"]
+        self.aflame = level >= p["aflame"]["level"]
+        self.wave = p["aflame"]["wave"]
+        self.q_cfg, self.e_cfg = kit["abilities"]["Q"], kit["abilities"]["E"]
+        # form passives override the champion's base attack range
+        for form in ("arisen", "transcendent"):
+            f = p.get(form, {})
+            if "attackRange" in f and level >= f["level"]:
+                self.attack_range = f["attackRange"]
+
+    def init_state(self, st):
+        st["zeal"] = (self.zeal["maxStacks"]
+                      if (self.zeal_perm or self.prestacked) else 0)
+        st["e_ready"], st["e_pending"] = 0.0, False
+
+    def bonus_as(self, st):
+        return st["zeal"] * self.zeal["asPctPerStack"]
+
+    def before_attack(self, e):
+        if not self.zeal_perm:
+            e.st["zeal"] = min(e.st["zeal"] + 1, self.zeal["maxStacks"])
+
+    def attack_riders(self, e):
+        if self.ranks["E"]:
+            e.deal(ability_hit(self.e_cfg["onhit"], self.ranks["E"], self.sheet),
+                   "magic", "E onhit")
+
+    def after_attack(self, e):
+        st = e.st
+        if st["e_pending"]:
+            act = self.e_cfg["active"]
+            pct = (act["missingHpPct"][self.ranks["E"] - 1]
+                   + act["missingHpPctPer100Ap"] * self.sheet["ap"] / 100.0)
+            e.deal(pct / 100.0 * (e.target_hp - max(st["hp"], 0.0)), "magic",
+                   "E active", crit_mod=self.aflame, ability=True)
+            e.ability_cast_proc()
+            e.eclipse_hit()
+            st["e_pending"] = False
+        if self.aflame and st["zeal"] >= self.zeal["maxStacks"]:
+            e.deal(by_level(self.wave["baseByLevel"], self.level)
+                   + self.wave["bonusAdRatio"] * self.sheet["ad_bonus"]
+                   + self.wave["apRatio"] * self.sheet["ap"],
+                   "magic", "wave", crit_mod=True, ability=True)
+
+    def schedule_attack(self, e):
+        # E weave: cast right after an auto to use the attack reset
+        st, t = e.st, e.st["t"]
+        if self.ranks["E"] and t >= st["e_ready"] and not st["e_pending"]:
+            st["e_pending"] = True
+            st["e_ready"] = t + e.basic_cd(self.e_cfg["cooldownS"][self.ranks["E"] - 1])
+            e.prime_spellblade()
+            st["next_attack"] = t + self.kit["attack"]["windupFraction"] / e.attack_speed()
+        else:
+            st["next_attack"] = t + 1.0 / e.attack_speed()
+
+    def cast_q(self, e):
+        st, q = e.st, self.q_cfg
+        st["q_ready"] = st["t"] + e.basic_cd(q["cooldownS"][self.ranks["Q"] - 1])
+        st["shred_until"] = st["t"] + q.get("shred", {}).get("durationS", 0.0)
+        e.deal(ability_hit(q["damage"], self.ranks["Q"], self.sheet), "magic", "Q",
+               ability=True)
+        e.ability_cast_proc()
+        e.eclipse_hit()
+        e.prime_spellblade()
+        e.lockout()
+
+
+class VladimirDriver(KitDriver):
+    """A caster who pays health, not mana. The rotation, from the wiki's
+    channel rules: R opens the fight (its amp holds through its own burst);
+    E is charged only as long as its damage grows (1s of its 1.5s) and
+    released — attacks and Q wait, since either would end the charge; W is
+    cast as the charge begins (the E-W combo: the pool blocks attacks and
+    casts for 2s, but a charging E may still release inside it); Q is cast
+    the moment it's castable, and every third cast is Crimson Rush-empowered
+    (a cooldown-cast Q always lands inside the 2.5s surge window)."""
+
+    basic_cd_keys = ("q_ready", "e_ready", "w_ready")
+
+    def __init__(self, kit, sheet, level, ranks, prestacked):
+        super().__init__(kit, sheet, level, ranks, prestacked)
+        ab = kit["abilities"]
+        self.q_cfg, self.w_cfg, self.e_cfg, self.r_cfg = (
+            ab[s] for s in ("Q", "W", "E", "R"))
+        self.rush = self.q_cfg["crimsonRush"]
+
+    def init_state(self, st):
+        st.update(e_ready=0.0, w_ready=0.0, q_casts=0,
+                  busy_until=0.0,      # a cast animation: the next cast waits
+                  charge_until=INF,    # E release time while charging
+                  pool_until=-1.0,     # W: no attacks or casts until then
+                  w_ticks_left=0, w_next=INF)
+
+    def _castable_at(self, e, ready):
+        st = e.st
+        t = max(ready, st["t"], st["busy_until"], st["pool_until"])
+        if st["charge_until"] != INF:  # a cast would cut the charge short
+            t = max(t, st["charge_until"])
+        return t
+
+    def _cast_done(self, e):
+        st = e.st
+        st["busy_until"] = st["t"] + ABILITY_LOCKOUT_S
+        st["next_attack"] = max(st["next_attack"], st["t"] + ABILITY_LOCKOUT_S)
+
+    def q_at(self, e):
+        return self._castable_at(e, e.st["q_ready"]) if self.ranks["Q"] else INF
+
+    def cast_q(self, e):
+        st, q, rank = e.st, self.q_cfg, self.ranks["Q"]
+        st["q_ready"] = st["t"] + e.basic_cd(q["cooldownS"][rank - 1])
+        st["q_casts"] += 1
+        amt = ability_hit(q["damage"], rank, self.sheet)
+        empowered = st["q_casts"] % self.rush["everyNthCast"] == 0
+        if empowered:
+            amt *= 1.0 + self.rush["bonusDamagePct"] / 100.0
+        e.deal(amt, "magic", "Q empowered" if empowered else "Q", ability=True)
+        e.ability_cast_proc()
+        e.eclipse_hit()
+        e.prime_spellblade()
+        self._cast_done(e)
+
+    def cast_r(self, e):
+        st = e.st
+        st["kit_amp_pct"] = self.r_cfg["ampPct"]
+        st["kit_amp_until"] = st["t"] + self.r_cfg["delayS"]
+        st["busy_until"] = st["t"] + ABILITY_LOCKOUT_S
+
+    def events(self, e):
+        st, ev = e.st, []
+        if self.ranks["E"]:
+            if st["charge_until"] != INF:
+                ev.append((st["charge_until"], "e_release"))
+            else:
+                ev.append((self._castable_at(e, st["e_ready"]), "e_charge"))
+        if st["w_ticks_left"]:
+            ev.append((st["w_next"], "w_tick"))
+        return ev
+
+    def on_event(self, e, kind):
+        st = e.st
+        if kind == "e_charge":
+            if self._castable_at(e, st["e_ready"]) > st["t"]:
+                return  # a cast at this instant took priority; try again
+            st["charge_until"] = st["t"] + self.e_cfg["chargeFullS"]
+            st["next_attack"] = max(st["next_attack"], st["charge_until"])
+            if self.ranks["W"] and st["t"] >= st["w_ready"]:
+                self.cast_w(e)
+        elif kind == "e_release":
+            st["charge_until"] = INF
+            rank = self.ranks["E"]
+            st["e_ready"] = st["t"] + e.basic_cd(self.e_cfg["cooldownS"][rank - 1])
+            e.deal(ability_hit(self.e_cfg["damage"]["max"], rank, self.sheet),
+                   "magic", "E", ability=True)
+            e.ability_cast_proc()
+            e.eclipse_hit()
+            e.prime_spellblade()
+            self._cast_done(e)
+        elif kind == "w_tick":
+            w, rank = self.w_cfg, self.ranks["W"]
+            e.deal(ability_hit(w["damage"], rank, self.sheet) / w["damage"]["ticks"],
+                   "magic", "W", ability=True)
+            st["w_ticks_left"] -= 1
+            st["w_next"] = st["t"] + w["damage"]["tickS"] if st["w_ticks_left"] else INF
+        else:
+            raise NotImplementedError(kind)
+
+    def cast_w(self, e):
+        st, w, rank = e.st, self.w_cfg, self.ranks["W"]
+        st["w_ready"] = st["t"] + e.basic_cd(w["cooldownS"][rank - 1])
+        st["pool_until"] = st["t"] + w["durationS"]
+        st["next_attack"] = max(st["next_attack"], st["pool_until"])
+        st["w_ticks_left"], st["w_next"] = w["damage"]["ticks"], st["t"]
+        e.prime_spellblade()
+
+
+KIT_DRIVERS = {"kayle": KayleDriver, "vladimir": VladimirDriver}
+
+
+def kit_driver(kit, sheet, level, ranks, prestacked):
+    cls = KIT_DRIVERS.get(kit["champion"])
+    if cls is None:
+        raise ValueError(f"no engine driver for '{kit['champion']}' — a kit "
+                         f"encoding needs matching rotation logic in builds.py")
+    return cls(kit, sheet, level, ranks, prestacked)
+
+
 def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
              duration, use_ult=True, prestacked=False, target_bonus_hp=0.0,
              _blend=True):
     """One fight vs a stat dummy. Returns totals, DPS, time-to-kill (None if
     the dummy survives), and a per-source damage breakdown."""
-    INF = float("inf")
-    ranged = level >= kit["passive"]["arisen"]["level"]
-    zeal_cfg = kit["passive"]["zealous"]
-    zeal_perm = level >= zeal_cfg["permanentAtLevel"]
-    aflame = level >= kit["passive"]["aflame"]["level"]
-    wave_cfg = kit["passive"]["aflame"]["wave"]
-    e_cfg, q_cfg, r_cfg = (kit["abilities"][s] for s in ("E", "Q", "R"))
-    q_shred = q_cfg.get("shred", {})
-    q_shred_pct = {res: q_shred.get("pct", 0.0)
-                   for res in q_shred.get("appliesTo", ())}
+    from types import SimpleNamespace
+    drv = kit_driver(kit, sheet, level, ranks, prestacked)
+    ranged, atk_range = drv.ranged, drv.attack_range
+    r_cfg = kit["abilities"]["R"]
+    # kit resist shreds (Kayle Q): reductions that hold while the debuff is up
+    shred_cfg = kit["abilities"]["Q"].get("shred", {})
+    shred_pct = {res: shred_cfg.get("pct", 0.0)
+                 for res in shred_cfg.get("appliesTo", ())}
 
     crit_c = sheet["crit_chance"] / 100.0
     crit_ev = 1.0 + crit_c * (sheet["crit_damage"] / 100.0 - 1.0)
 
-    # Attack range for this level: form passives (Kayle's Arisen/Transcendent)
-    # override the champion's base range.
-    atk_range = sheet["base_attack_range"]
-    for form in ("arisen", "transcendent"):
-        f = kit["passive"].get(form, {})
-        if "attackRange" in f and level >= f["level"]:
-            atk_range = f["attackRange"]
     # Hexoptics' Magnification: scales with distance to the target, capped.
     # We assume attacks are made at max range (see approximations above).
     auto_amp = 1.0
@@ -595,11 +894,12 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 
     st = {
         "t": 0.0, "hp": float(target_hp),
-        "zeal": zeal_cfg["maxStacks"] if (zeal_perm or prestacked) else 0,
         "seething": 0, "phantom": 0, "kraken": 0, "dark": 0, "attacks": 0,
         "phantom_hits": 0,
-        "q_ready": 0.0, "e_ready": 0.0, "e_pending": False,
-        "q_shred_until": -1.0, "mal_shred_until": -1.0,
+        "q_ready": 0.0,
+        "shred_until": -1.0, "mal_shred_until": -1.0,
+        # kit-side damage amp (Vladimir's Hemoplague): pct while t <= until
+        "kit_amp_pct": 0.0, "kit_amp_until": -1.0,
         "burns": [{"until": -1.0, "next": INF} for _ in fx["burns"]],
         "mal_until": -1.0, "next_mal": INF, "mal_tick": 0.0,
         "sb_primed": False, "sb_icd_until": -1.0,
@@ -617,11 +917,12 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         "breakdown": {}, "total": 0.0, "ttk": None, "ttk_eff": None,
         "exec_p": None,
     }
+    drv.init_state(st)
     if fx["manaActive"]:  # Actualizer: cast on engage, empowered for 8s
         st["ma_until"] = fx["manaActive"]["durationS"]
 
     def attack_speed():
-        bonus = sheet["bonus_as_pct"] + st["zeal"] * zeal_cfg["asPctPerStack"]
+        bonus = sheet["bonus_as_pct"] + drv.bonus_as(st)
         if fx["asStacking"]:
             bonus += st["seething"] * fx["asStacking"]["pctPerStack"]
         if fx["flurry"] and st["t"] < st["flurry_until"]:
@@ -647,6 +948,8 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                              target_bonus_hp / 100.0) / 100.0
         if fx["hypershot"] and t < st["hz_until"]:
             amp *= 1.0 + fx["hypershot"]["ampPct"] / 100.0
+        if t <= st["kit_amp_until"] and dtype != "true":
+            amp *= 1.0 + st["kit_amp_pct"] / 100.0
         # "increased basic damage" is the attack itself — not the on-hit
         # effects it triggers, and not abilities
         if source == "auto":
@@ -662,9 +965,9 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         if fx["altPen"]:
             dark_pen = min(st["dark"], fx["altPen"]["maxStacks"]) \
                        * fx["altPen"]["pctPerStack"]
-        qs_on = t < st["q_shred_until"]
+        qs_on = t < st["shred_until"]
         if dtype == "physical":
-            shred = q_shred_pct.get("armor", 0.0) if qs_on else 0.0
+            shred = shred_pct.get("armor", 0.0) if qs_on else 0.0
             if fx["armorShred"]:  # Black Cleaver: % armor reduction stacks
                 shred += st["cleaver"] * fx["armorShred"]["pctPerStack"]
             leth = sheet["lethality"]
@@ -679,7 +982,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         else:
             mal = (fx["ultBurn"]["mrReduction"]
                    if fx["ultBurn"] and t < st["mal_shred_until"] else 0.0)
-            shred = q_shred_pct.get("mr", 0.0) if qs_on else 0.0
+            shred = shred_pct.get("mr", 0.0) if qs_on else 0.0
             if fx["mrShred"]:  # Bloodletter's Curse: % MR reduction stacks
                 shred += st["blood"] * fx["mrShred"]["pctPerStack"]
             r = eff_resist(target_mr, mal, shred,
@@ -802,15 +1105,15 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
             cd /= 1.0 + fx["manaActive"]["basicCdFasterPct"] / 100.0
         return cd
 
-    def cast_q():
-        st["q_ready"] = st["t"] + basic_cd(q_cfg["cooldownS"][ranks["Q"] - 1])
-        st["q_shred_until"] = st["t"] + q_shred.get("durationS", 0.0)
-        deal(ability_hit(q_cfg["damage"], ranks["Q"], sheet), "magic", "Q",
-             ability=True)
-        ability_cast_proc()
-        eclipse_hit()
-        prime_spellblade()
+    def lockout():
+        """A cast just happened: the next auto waits out its animation."""
         st["next_attack"] = max(st["next_attack"], st["t"]) + ABILITY_LOCKOUT_S
+
+    e = SimpleNamespace(
+        st=st, sheet=sheet, fx=fx, level=level, ranks=ranks,
+        target_hp=target_hp, deal=deal, ability_cast_proc=ability_cast_proc,
+        eclipse_hit=eclipse_hit, prime_spellblade=prime_spellblade,
+        basic_cd=basic_cd, attack_speed=attack_speed, lockout=lockout)
 
     def apply_onhits():
         """Everything riding a basic attack hit (reapplied by a phantom hit)."""
@@ -822,8 +1125,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                 pct = oh["selfMaxHpPct"]["ranged" if ranged else "melee"]
                 amt += pct / 100.0 * sheet["hp"]
             deal(amt, oh["damageType"], oh.get("source", "onhit"))
-        if ranks["E"]:
-            deal(ability_hit(e_cfg["onhit"], ranks["E"], sheet), "magic", "E onhit")
+        drv.attack_riders(e)
         for oh in fx["onhitCurrentHp"]:
             pct = oh["rangedPct"] if ranged else oh["meleePct"]
             deal(pct / 100.0 * max(st["hp"], 0.0), oh["damageType"], "botrk")
@@ -832,7 +1134,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         t = st["t"]
         st["attacks"] += 1
         if fx["navoriCdr"]:  # on-attack: shave 15% off remaining basic CDs
-            for key in ("q_ready", "e_ready"):
+            for key in drv.basic_cd_keys:
                 if st[key] > t:
                     st[key] = t + (st[key] - t) * (1.0 - fx["navoriCdr"] / 100.0)
         if fx["flurry"]:
@@ -862,8 +1164,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         if fx["altPen"]:
             if st["attacks"] % 2 == 0:  # every other hit is a Dark hit
                 st["dark"] = min(st["dark"] + 1, fx["altPen"]["maxStacks"])
-        if not zeal_perm:
-            st["zeal"] = min(st["zeal"] + 1, zeal_cfg["maxStacks"])
+        drv.before_attack(e)
 
         floor = 1.0
         if fx["firstAttackCritFloorEv"] and not st["sundered_used"]:
@@ -883,9 +1184,9 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                                         for e in fx["energized"])
             if st["energize"] >= 100.0:
                 st["energize"] -= 100.0
-                for e in fx["energized"]:
-                    deal(e["bonus"], e["damageType"],
-                         e.get("source", "energized"))
+                for en in fx["energized"]:
+                    deal(en["bonus"], en["damageType"],
+                         en.get("source", "energized"))
         eclipse_hit()
         if fx["nthHitProc"]:  # Hullbreaker's Skipper
             nh = fx["nthHitProc"]
@@ -921,31 +1222,11 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
             amp_max = k["missingHpAmpMaxPct"]["ranged" if ranged else "melee"]
             missing = 1.0 - max(st["hp"], 0.0) / target_hp
             deal(base * (1.0 + amp_max / 100.0 * missing), k["damageType"], "kraken")
-        if st["e_pending"]:
-            pct = (e_cfg["active"]["missingHpPct"][ranks["E"] - 1]
-                   + e_cfg["active"]["missingHpPctPer100Ap"] * sheet["ap"] / 100.0)
-            deal(pct / 100.0 * (target_hp - max(st["hp"], 0.0)), "magic",
-                 "E active", crit_mod=aflame, ability=True)
-            ability_cast_proc()
-            eclipse_hit()
-            st["e_pending"] = False
-        if aflame and st["zeal"] >= zeal_cfg["maxStacks"]:
-            deal(by_level(wave_cfg["baseByLevel"], level)
-                 + wave_cfg["bonusAdRatio"] * sheet["ad_bonus"]
-                 + wave_cfg["apRatio"] * sheet["ap"],
-                 "magic", "wave", crit_mod=True, ability=True)
+        drv.after_attack(e)
         if phantom_now:
             st["phantom_hits"] += 1
             apply_onhits()
-
-        # E weave: cast right after an auto to use the attack reset
-        if ranks["E"] and t >= st["e_ready"] and not st["e_pending"]:
-            st["e_pending"] = True
-            st["e_ready"] = t + basic_cd(e_cfg["cooldownS"][ranks["E"] - 1])
-            prime_spellblade()
-            st["next_attack"] = t + kit["attack"]["windupFraction"] / attack_speed()
-        else:
-            st["next_attack"] = t + 1.0 / attack_speed()
+        drv.schedule_attack(e)
 
     # opening casts at t=0, before the first auto
     if use_ult and ranks["R"]:
@@ -956,6 +1237,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
             st["hex_until"] = fx["onUltCast"]["durationS"]
         if fx["ultAttackSteroid"]:  # Fiendhunter's next-3-attacks window
             st["post_r_attacks"] = 0
+        drv.cast_r(e)
     # item actives (Rocketbelt, Gunblade, hydra actives) fire on engage;
     # they're item casts, not abilities — no spellblade/burn interaction
     for a in fx["activesOnce"]:
@@ -973,14 +1255,17 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
             cand.append((st["ss_at"], "ss", 0))
         if st["r_impact"] != INF:
             cand.append((st["r_impact"], "r", 0))
-        if ranks["Q"]:  # so Q casts the moment it's ready, not at the next event
-            cand.append((max(st["q_ready"], st["t"]), "q", 0))
+        q_at = drv.q_at(e)
+        if q_at != INF:  # so Q casts the moment it's ready, not at the next event
+            cand.append((q_at, "q", 0))
+        for t_ev, kind in drv.events(e):
+            cand.append((t_ev, kind, 0))
         t_next, kind, idx = min(cand)
         if t_next > duration or st["hp"] <= 0:
             break
         st["t"] = t_next
-        if ranks["Q"] and st["t"] >= st["q_ready"]:
-            cast_q()
+        if drv.q_at(e) <= st["t"]:
+            drv.cast_q(e)
             if kind == "attack" and st["next_attack"] > st["t"]:
                 continue  # the lockout pushed this auto; re-pick the next event
         if kind == "attack":
@@ -1022,6 +1307,8 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                 st["mal_until"] = st["t"] + ub["durationS"]
                 st["mal_shred_until"] = st["t"] + ub["durationS"]
                 st["next_mal"] = st["t"] + 0.25
+        elif kind != "q":
+            drv.on_event(e, kind)
 
     # Expected kill time: blend the executing timeline with the one where the
     # window was missed, weighted by how often real crit would land in it.
@@ -1071,24 +1358,48 @@ SCENARIOS = {
 
 
 def kit_champions():
-    """Slugs with a hand-encoded kit (data/builds/<slug>.json)."""
+    """Slugs with a hand-encoded kit (data/builds/<slug>.json) and the
+    rotation logic that drives it (KIT_DRIVERS)."""
     slugs = []
     if os.path.isdir(BUILDS_DATA_DIR):
         for fn in sorted(os.listdir(BUILDS_DATA_DIR)):
             if not fn.endswith(".json"):
                 continue
             with open(os.path.join(BUILDS_DATA_DIR, fn)) as f:
-                if "abilities" in json.load(f):
-                    slugs.append(fn[:-5])
+                if "abilities" not in json.load(f):
+                    continue
+            if fn[:-5] not in KIT_DRIVERS:
+                print(f"Warning: data/builds/{fn} has no engine driver — add "
+                      f"one to KIT_DRIVERS to simulate it", file=sys.stderr)
+                continue
+            slugs.append(fn[:-5])
     return slugs
 
 
+def champion_pool(kit, effects):
+    """The enumeration pool for one champion: DEFAULT_POOL minus the items
+    the kit can't use — mana-scaling items on a manaless champion (Tear
+    stacks by spending mana, which Vladimir never does)."""
+    return [i for i in DEFAULT_POOL
+            if not (kit.get("manaless") and effects.get(i, {}).get("needsMana"))]
+
+
 def api_builds_meta():
+    patch, pool = load_items()
+    effects = load_item_effects()
     champs = []
     for slug in kit_champions():
         kit = load_kit(slug)
-        champs.append({"slug": slug, "kitPatch": kit.get("patch")})
-    patch, pool = load_items()
+        ids = champion_pool(kit, effects)
+        name = kit.get("name", slug)
+        dropped = [pool[i]["name"] for i in DEFAULT_POOL
+                   if i not in ids and i in pool]
+        champs.append({
+            "slug": slug, "name": name, "kitPatch": kit.get("patch"),
+            "pool": ids,
+            "excluded": [f"{', '.join(dropped)} — need mana to stack or "
+                         f"scale; {name} has none"] if dropped else [],
+        })
 
     def entry(iid):
         return {"id": iid, "name": pool[iid]["name"],
@@ -1189,10 +1500,11 @@ def _optimize_scenario_cached(slug, key):
         return out
     effects = load_item_effects()
     kit = load_kit(slug)
-    ranks = skill_ranks(sc["level"])
+    ranks = skill_ranks(sc["level"], kit_max_order(kit))
     results, count = enumerate_builds(
         champ, pool, effects, kit, sc["level"], ranks, sc["targetHp"],
         sc["armor"], sc["mr"], sc["duration"], budget=sc.get("budget"),
+        candidates=champion_pool(kit, effects),
         target_bonus_hp=sc.get("targetBonusHp", 0.0))
     rows = []
     for n, (ids, sheet, r) in enumerate(results[:top], 1):
@@ -1208,7 +1520,8 @@ def _optimize_scenario_cached(slug, key):
             "attackSpeed": round(sheet["attack_speed"], 2),
             "breakdown": {k: round(v) for k, v in r["breakdown"].items()},
         })
-    out = {"champion": slug, "scenario": {"key": key, **sc},
+    out = {"champion": slug, "championName": kit.get("name", slug),
+           "scenario": {"key": key, **sc},
            "itemsPatch": patch, "championPatch": champ["meta"]["patch"],
            "kitPatch": kit.get("patch"), "buildsEvaluated": count,
            "ranks": ranks, "rows": rows}
@@ -1283,11 +1596,12 @@ def cmd_fetch_champion(args):
 
 
 def cmd_stats(args):
-    champ = load_champion(norm_name(args.name), args.patch)
+    slug = norm_name(args.name)
+    champ = load_champion(slug, args.patch)
     patch, pool = load_items(args.patch)
     idx = item_index(pool)
     ids = [resolve_item(pool, idx, t) for t in args.items]
-    s = resolve_stats(champ, args.level, ids, pool)
+    s = resolve_stats(champ, args.level, ids, pool, kit=load_kit(slug, required=False))
 
     print(f"{champ['dd']['name']} — level {s['level']}, items patch {patch} "
           f"(champion: {champ['meta']['patch']})")
@@ -1342,14 +1656,14 @@ def sim_setup(args):
                   f"{cap} {group_name(g)} item(s); this build is not buyable.",
                   file=sys.stderr)
     effects = load_item_effects()
-    sheet = resolve_stats(champ, args.level, ids, pool, effects)
     kit = load_kit(slug)
+    sheet = resolve_stats(champ, args.level, ids, pool, effects, kit=kit)
     return champ, patch, pool, ids, effects, sheet, kit
 
 
 def cmd_sim(args):
     champ, patch, pool, ids, effects, sheet, kit = sim_setup(args)
-    ranks = skill_ranks(args.level, tuple(args.max_order.upper().split(",")))
+    ranks = skill_ranks(args.level, kit_max_order(kit, args.max_order))
     fx = merge_effects(ids, effects)
     r = simulate(sheet, kit, fx, args.level, ranks,
                  args.target_hp, args.armor, args.mr, args.duration,
@@ -1486,7 +1800,7 @@ def _enum_batch(ctx, boots, size, start, step):
         if ctx["budget"] and sum(ctx["price"][i] for i in ids) > ctx["budget"]:
             continue
         sheet = resolve_stats(ctx["champ"], ctx["level"], ids, ctx["pool"],
-                              ctx["effects"])
+                              ctx["effects"], kit=ctx["kit"])
         r = simulate(sheet, ctx["kit"], merge_effects(ids, ctx["effects"]),
                      ctx["level"], ctx["ranks"], ctx["target_hp"],
                      ctx["armor"], ctx["mr"], ctx["duration"],
@@ -1570,9 +1884,9 @@ def cmd_optimize(args):
     idx = item_index(pool)
     effects = load_item_effects()
     kit = load_kit(slug)
-    ranks = skill_ranks(args.level, tuple(args.max_order.upper().split(",")))
+    ranks = skill_ranks(args.level, kit_max_order(kit, args.max_order))
     candidates = ([resolve_item(pool, idx, t) for t in args.pool]
-                  if args.pool else None)
+                  if args.pool else champion_pool(kit, effects))
     required = [resolve_item(pool, idx, t) for t in (args.require or [])]
 
     t0 = time.time()
