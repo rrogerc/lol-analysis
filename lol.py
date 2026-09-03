@@ -1,8 +1,9 @@
 """LoL analysis monorepo — one CLI, one SQLite DB, one web app.
 
-Domains (each is a module with its own tables in lol.db and archive under data/):
+Domains (each is a module with an archive under data/ and, if needed, tables in lol.db):
   scaling    champion win rates by game length from the ../lol-quant soloq crawl
-  items      static item data snapshots (for build math)
+  items      static item data snapshots (ddragon + meraki + item-bin shop rules)
+  builds     theoretical build math: stat sheets, damage sim, build optimizer
 
 Usage:
   .venv/bin/python lol.py scaling sync              # refresh soloq tiers from ../lol-quant

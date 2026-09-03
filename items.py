@@ -1,6 +1,6 @@
 """Item data for build math: per-patch snapshots of static item stats.
 
-`lol.py items fetch` archives two sources into data/items/<patch>/:
+`lol.py items fetch` archives three sources into data/items/<patch>/:
 
 - ddragon.json — Riot's Data Dragon item.json, filtered to Summoner's Rift
   items. Canonical and patch-versioned, but its structured stats block omits
@@ -9,6 +9,10 @@
 - meraki.json — Meraki Analytics items.json, same item ids with every stat
   fully structured (plus passives/actives with numbers). Meraki only serves
   the latest patch, so the committed snapshot here IS the historical archive.
+- groups.json — Riot's shop rules, distilled from the raw item bin (via
+  CommunityDragon) plus ddragon's purchasable flags: each SR item's ownership
+  groups with per-group caps ("Limited to 1"), currency-gated item ids, and
+  retired-from-shop ids.
 
 No DB tables yet; the build-math layer will define its own shape on top of
 these raw snapshots.

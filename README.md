@@ -11,10 +11,12 @@ module and committed JSON archive:
   separate top/jungle/mid stats.
 - **items** (`items.py`, `data/items/`) — static item data for build math.
   `lol.py items fetch` snapshots the current patch's Summoner's Rift items
-  from two sources: Riot's Data Dragon (canonical, but key offensive stats
-  only live in description text) and Meraki Analytics (every stat fully
-  structured — lethality, % pen, haste, crit damage). Meraki serves only the
-  latest patch, so the committed per-patch snapshots are the historical
+  from three sources: Riot's Data Dragon (canonical, but key offensive stats
+  only live in description text), Meraki Analytics (every stat fully
+  structured — lethality, % pen, haste, crit damage), and Riot's raw item
+  bin via CommunityDragon, distilled to `groups.json` ("Limited to 1"
+  ownership groups, currency-gated and retired items). Meraki serves only
+  the latest patch, so the committed per-patch snapshots are the historical
   archive. A systemd user timer on the home server runs
   `jobs/refresh-items.sh` daily and pushes when a new patch lands, so the
   local checkout is always current (the Data tab lists all such jobs).
@@ -31,12 +33,13 @@ module and committed JSON archive:
   enumerator (`builds optimize` — ranks every item-pool combination
   against a stat dummy; `--budget`/`--require` for partial builds).
   The enumeration pool covers every mage, marksman, assassin, and
-  bruiser damage item (78 items) — AP, on-hit, crit, executes, burns,
-  Energized, shreds, spellblades, item actives, fully-stacked tear
+  bruiser damage item (76 items + 2 boots) — AP, on-hit, crit, executes,
+  burns, Energized, shreds, spellblades, item actives, fully-stacked tear
   items; the few items whose passives can't be modeled yet (plus
   support/tank items) are excluded rather than misranked on stats
   alone, each with its reason recorded under `"excluded"` in
-  `item-effects.json`. Full-pool scenarios simulate ~40M builds — the
+  `item-effects.json`. Full-pool scenarios simulate ~33M legal builds
+  (~37M combinations before Riot's ownership limits prune them) — the
   enumerator fans out across CPU cores and scenario results are cached
   in `.cache/builds/` (gitignored), keyed by a hash of every input, so
   they compute once per code/data change. Runes are not modeled yet.
@@ -98,7 +101,8 @@ Opens `http://127.0.0.1:8321` — an interactive local dashboard:
   bruiser / tank). Click a build for its damage-source breakdown. Scenarios
   are simulated on first request and cached; restart serve after changing
   kits or item effects.
-- **Data** — what's in the database, per tier and patch.
+- **Data** — systemd unit health, automation job status, and what's in the
+  database, per tier and patch.
 
 ## CLI equivalents
 
