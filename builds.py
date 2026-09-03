@@ -503,10 +503,19 @@ def resolve_stats(champ, level, item_ids, pool, effects=None, kit=None):
     else:
         ap = agg["ap_flat"] * ap_mult
     haste = agg["haste"]
+    # ddragon 16.5.1 onward publishes attackdamageperlevel = 0 for every
+    # champion at once (other per-level fields untouched) while Riot's game
+    # files keep the real growth (16.17: Vladimir 3, Kayle 2.5) — a Data
+    # Dragon regression, not a game change. Meraki's per-level AD is the
+    # fallback for exactly that case; meraki lags patches, so re-check any
+    # champion against raw.communitydragon.org when the number matters.
+    ad_growth = dd["attackdamageperlevel"]
+    if ad_growth == 0:
+        ad_growth = mk.get("attackDamage", {}).get("perLevel", 0.0) or 0.0
     sheet = {
         "champion": champ["slug"], "level": level, "gold": gold,
         "items": names,
-        "ad_base": stat_at(dd["attackdamage"], dd["attackdamageperlevel"], level),
+        "ad_base": stat_at(dd["attackdamage"], ad_growth, level),
         "ad_bonus": agg["ad_bonus"],
         "ap": ap, "ap_flat": agg["ap_flat"], "ap_mult": ap_mult,
         "attack_speed": attack_speed, "base_as": base_as, "as_ratio": as_ratio,

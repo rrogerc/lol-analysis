@@ -25,7 +25,9 @@ module and committed JSON archive:
   rules (growth curve, AS ratio and cap, pen ordering, Rabadon multiplier).
   Champion base stats are snapshotted per patch via
   `lol.py builds fetch-champion <name>` (ddragon canonical, meraki for AS
-  ratio/windup); text-only item passives live in the hand-curated
+  ratio/windup — and for AD growth, which ddragon has published as 0 for
+  every champion since 16.5 while Riot's game files still carry it);
+  text-only item passives live in the hand-curated
   `data/builds/item-effects.json`, and ability kits in hand-encoded
   `data/builds/<champ>.json` — Kayle and Vladimir so far, each paired
   with a rotation driver in `builds.py` (`KIT_DRIVERS`) that says what

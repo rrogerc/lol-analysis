@@ -735,6 +735,17 @@ class TestVladimirEngine(unittest.TestCase):
         self.assertAlmostEqual(hp_pact, 1.6 * (ap - hp_i / 30), places=6)
         self.assertAlmostEqual(sheet["ap"], sheet["ap_flat"] * sheet["ap_mult"])
 
+    def test_ad_growth_falls_back_to_meraki(self):
+        # ddragon 16.5+ zeroes attackdamageperlevel for everyone; meraki's
+        # 3/level stands in (Riot's files agree) — 55 + 3 * growth(16)
+        champ = fake_vlad()
+        champ["mk"]["stats"]["attackDamage"] = {"flat": 55, "perLevel": 3}
+        s = builds.resolve_stats(champ, 16, [], {}, effects={}, kit=self.kit)
+        self.assertAlmostEqual(s["ad"], 55 + 3 * builds.growth(16))
+        # a genuinely flat champion (no meraki growth either) stays flat
+        s = builds.resolve_stats(fake_vlad(), 16, [], {}, effects={}, kit=self.kit)
+        self.assertAlmostEqual(s["ad"], 55.0)
+
     def test_level1_hand_computed(self):
         # Q at t=0 (80 magic, 0.25s lockout), one 55-AD auto at 0.25; the
         # next auto (1/0.658 later) is past 1s
