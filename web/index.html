@@ -144,6 +144,9 @@
   .bar-track { flex: 1; height: 16px; background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 4px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 4px; }
   .bar-val { width: 130px; font-variant-numeric: tabular-nums; flex: none; }
+  .bd-group { margin: 14px 0 2px; font-size: 13px; color: var(--text-secondary); }
+  .bd-group:first-child { margin-top: 4px; }
+  .bd-group b { color: var(--text-primary); font-weight: 600; }
   .ci { color: var(--muted); font-weight: 400; font-size: 11px; }
   .tooltip .tt-ci { color: var(--muted); }
   svg text { font-family: inherit; }
@@ -241,17 +244,13 @@
 <section class="view" id="view-builds">
   <div class="card">
     <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
-    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. Click a build to see where its damage comes from.</div>
+    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. Every scenario belongs to a tier (full build, mid-game budget, first item) whose targets are simulated together, so each row also shows the same build's kill time against the tier's other targets; the <em>overall</em> scenarios rank the builds on every target at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
     <div class="seg" id="scenario-seg"></div>
     <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
     <div class="tablewrap">
       <table id="btbl">
-        <thead><tr>
-          <th>#</th><th>Build</th><th>Kill time</th>
-          <th title="Ranking metric. Same as kill time unless the build relies on an execute: expected-value crit always lands in the execute window, but real crit only would some of the time, so this blends the executing and non-executing timelines by that probability">Expected</th>
-          <th>DPS</th><th>Damage</th><th>Gold</th>
-        </tr></thead>
+        <thead><tr></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -759,9 +758,13 @@ async function loadScenario() {
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
+  const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
+  const what = sc.overall
+    ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
+      "by the geometric mean of expected kill times, builds that kill all of them first"
+    : `target ${dummy(sc)}`;
   desc.textContent =
-    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · target ${fmtInt(sc.targetHp)} HP, ` +
-    `${sc.armor} armor, ${sc.mr} MR · ${sc.duration}s fight` +
+    `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}` +
     (sc.budget ? ` · ${fmtInt(sc.budget)}g budget` : "") +
     ` · ${fmtInt(d.buildsEvaluated)} builds simulated` +
     (when ? ` · computed ${when} in ${fmtDur(d.computeSeconds)}` : "") +
@@ -788,50 +791,126 @@ async function showPending(req) {
   bstate.timer = setTimeout(() => showPending(req), 10000);
 }
 
+const EXPECTED_TITLE = "Ranking metric. Same as kill time unless the build relies on an execute: expected-value crit always lands in the execute window, but real crit only would some of the time, so this blends the executing and non-executing timelines by that probability";
+const MEAN_TITLE = "Ranking metric: the geometric mean of the expected kill times against every target, so each target counts equally in percentage terms. Builds that kill every target rank above builds that leave one standing; a ≈ time is extrapolated past the fight at its average DPS.";
+const vsTitle = t =>
+  `The same build's expected kill time against the ${t.target} (${fmtInt(t.targetHp)} HP, ` +
+  `${t.armor} armor, ${t.mr} MR, ${t.duration}s), and how far behind that target's own best build it is`;
+
+// One build's fight against one target: expected kill time (≈ extrapolated
+// past the fight if the dummy survived) and its distance from the best.
+function vsCell(r, t) {
+  const v = r.vs?.[t.target];
+  const td = document.createElement("td");
+  if (!v) { td.textContent = "—"; return td; }
+  if (v.ttkExp != null) td.append(v.ttkExp.toFixed(2) + "s");
+  else if (v.killTime != null) {
+    td.append("≈" + v.killTime.toFixed(1) + "s");
+    td.title = `survives the ${t.duration}s fight (${fmtInt(v.total)} damage dealt) — ` +
+      "time extrapolated at the fight's average DPS";
+  } else td.append("—");
+  if (v.loss != null) {
+    const s = document.createElement("span");
+    s.className = "ci";
+    s.textContent = v.loss < 1.005 ? " best" : ` +${Math.round((v.loss - 1) * 100)}%`;
+    td.append(s);
+  }
+  return td;
+}
+
+// Columns depend on the cell: a per-target cell leads with its own fight and
+// adds the build's kill time against the tier's other targets; the overall
+// cell shows every target, then the mean it is ranked by.
+function buildColumns(sc) {
+  const targets = sc.targets || [];
+  const cols = [
+    { th: "#", td: r => cell(String(r.rank)) },
+    { th: "Build", td: r => cell(r.items.join(", ")) },
+  ];
+  if (sc.overall) {
+    targets.forEach(t => cols.push({ th: `vs ${t.target}`, title: vsTitle(t), td: r => vsCell(r, t) }));
+    cols.push({ th: "Mean", title: MEAN_TITLE,
+                td: r => cell(r.mean != null ? r.mean.toFixed(2) + "s" : "—") });
+  } else {
+    cols.push(
+      { th: "Kill time", td: r => cell(r.ttk != null ? r.ttk.toFixed(2) + "s" : "survives") },
+      { th: "Expected", title: EXPECTED_TITLE,
+        td: r => cell(r.ttkExp != null ? r.ttkExp.toFixed(2) + "s" : "—") });
+    targets.filter(t => t.target !== sc.target).forEach(t =>
+      cols.push({ th: `vs ${t.target}`, title: vsTitle(t), td: r => vsCell(r, t) }));
+    cols.push({ th: "DPS", td: r => cell(fmtInt(r.dps)) },
+              { th: "Damage", td: r => cell(fmtInt(r.total)) });
+  }
+  cols.push({ th: "Gold", td: r => cell(fmtInt(r.gold)) });
+  return cols;
+}
+
 function renderBuildsTable() {
-  const rows = bstate.data.rows;
-  document.querySelector("#btbl tbody").replaceChildren(...rows.map((r, i) => {
+  const rows = bstate.data.rows, cols = buildColumns(bstate.data.scenario);
+  document.querySelector("#btbl thead tr").replaceChildren(...cols.map(c => {
+    const th = document.createElement("th");
+    th.textContent = c.th;
+    if (c.title) th.title = c.title;
+    return th;
+  }));
+  const body = document.querySelector("#btbl tbody");
+  body.replaceChildren(...rows.map((r, i) => {
     const tr = document.createElement("tr");
     if (i === bstate.sel) tr.className = "sel";
-    tr.append(
-      cell(String(r.rank)),
-      cell(r.items.join(", ")),
-      cell(r.ttk != null ? r.ttk.toFixed(2) + "s" : "survives"),
-      cell(r.ttkExp != null ? r.ttkExp.toFixed(2) + "s" : "—"),
-      cell(fmtInt(r.dps)), cell(fmtInt(r.total)), cell(fmtInt(r.gold)));
-    tr.addEventListener("click", () => { bstate.sel = i; renderBuildsTable(); });
+    tr.append(...cols.map(c => c.td(r)));
+    tr.addEventListener("click", () => {
+      bstate.sel = i;
+      [...body.children].forEach((row, j) => row.classList.toggle("sel", j === i));
+      renderBreakdown(r);
+    });
     return tr;
   }));
   renderBreakdown(rows[bstate.sel]);
 }
 
+function bar(src, dmg, max, total, i) {
+  const row = document.createElement("div");
+  row.className = "bar-row";
+  const label = document.createElement("span");
+  label.className = "bar-label";
+  label.textContent = src;
+  const track = document.createElement("div");
+  track.className = "bar-track";
+  const fill = document.createElement("div");
+  fill.className = "bar-fill";
+  fill.style.width = (dmg / max * 100).toFixed(1) + "%";
+  fill.style.background = css(SRC_COLOR[src] || SLOTS[i % SLOTS.length]);
+  track.append(fill);
+  const val = document.createElement("span");
+  val.className = "bar-val";
+  val.textContent = `${fmtInt(dmg)} (${(dmg / total * 100).toFixed(1)}%)`;
+  row.append(label, track, val);
+  return row;
+}
+
+// The selected build's damage sources, one group per target of the tier:
+// every cell carries the build's fight against each of them.
 function renderBreakdown(r) {
   if (!r) return;
+  const sc = bstate.data.scenario;
   document.getElementById("bd-title").textContent =
     `Damage breakdown — #${r.rank}: ${r.items.join(", ")}`;
   document.getElementById("bd-hint").textContent =
-    `${fmtInt(r.total)} total damage · ${r.attacks} attacks · ` +
-    `${fmtInt(r.ap)} AP · ${fmtInt(r.ad)} AD · ${r.attackSpeed} attack speed · ${fmtInt(r.gold)}g`;
-  const entries = Object.entries(r.breakdown);
-  const max = Math.max(...entries.map(([, v]) => v));
-  document.getElementById("bd-bars").replaceChildren(...entries.map(([src, dmg], i) => {
-    const row = document.createElement("div");
-    row.className = "bar-row";
-    const label = document.createElement("span");
-    label.className = "bar-label";
-    label.textContent = src;
-    const track = document.createElement("div");
-    track.className = "bar-track";
-    const fill = document.createElement("div");
-    fill.className = "bar-fill";
-    fill.style.width = (dmg / max * 100).toFixed(1) + "%";
-    fill.style.background = css(SRC_COLOR[src] || SLOTS[i % SLOTS.length]);
-    track.append(fill);
-    const val = document.createElement("span");
-    val.className = "bar-val";
-    val.textContent = `${fmtInt(dmg)} (${(dmg / r.total * 100).toFixed(1)}%)`;
-    row.append(label, track, val);
-    return row;
+    `${fmtInt(r.ap)} AP · ${fmtInt(r.ad)} AD · ${r.attackSpeed} attack speed · ${fmtInt(r.gold)}g · ` +
+    "where the damage comes from over the whole fight (post-mitigation), against each target of the tier";
+  const groups = (sc.targets || []).filter(t => r.vs?.[t.target]);
+  document.getElementById("bd-bars").replaceChildren(...groups.flatMap(t => {
+    const v = r.vs[t.target];
+    const head = document.createElement("div");
+    head.className = "bd-group";
+    const b = document.createElement("b");
+    b.textContent = `vs ${t.target}`;
+    const fight = v.ttk != null ? `dies at ${v.ttk.toFixed(2)}s` : `survives the ${t.duration}s fight`;
+    head.append(b, ` (${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR) — ` +
+      `${fmtInt(v.total)} damage · ${fmtInt(v.dps)} DPS · ${v.attacks} attacks · ${fight}`);
+    const entries = Object.entries(v.breakdown);
+    const max = Math.max(...entries.map(([, x]) => x));
+    return [head, ...entries.map(([src, dmg], i) => bar(src, dmg, max, v.total, i))];
   }));
 }
 

@@ -32,6 +32,7 @@ penetration"); each is cited at its implementation.
 import glob
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -1359,24 +1360,57 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 # web API: the preset scenarios the dashboard shows
 # ---------------------------------------------------------------------------
 
+# A tier is one level/budget preset. Its targets are simulated together: one
+# enumeration pass scores every build against each of them, which fills the
+# per-target cells and — at no extra cost — the tier's "overall" cell, which
+# ranks every build on all of the targets at once (see overall_key).
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
 SCENARIOS = {
-    "full-squishy": dict(label="Full build vs squishy", level=16, targetHp=2800,
-                         armor=110, mr=60, duration=8, targetBonusHp=800),
-    "full-bruiser": dict(label="Full build vs bruiser", level=16, targetHp=3800,
-                         armor=180, mr=120, duration=12, targetBonusHp=1500),
-    "full-tank": dict(label="Full build vs tank", level=16, targetHp=4800,
-                      armor=220, mr=160, duration=15, targetBonusHp=1500),
-    "mid-squishy": dict(label="Mid-game 7.5k vs squishy", level=11, targetHp=2200,
-                        armor=60, mr=45, duration=8, budget=7500,
-                        targetBonusHp=600),
-    "mid-tank": dict(label="Mid-game 7.5k vs tank", level=11, targetHp=3800,
-                     armor=160, mr=110, duration=12, budget=7500,
-                     targetBonusHp=1500),
-    "first-item": dict(label="First item 4.5k spike", level=9, targetHp=1900,
-                       armor=50, mr=40, duration=8, budget=4500,
-                       targetBonusHp=400),
+    "full-squishy": dict(label="Full build vs squishy", tier="full",
+                         target="squishy", level=16, targetHp=2800, armor=110,
+                         mr=60, duration=8, targetBonusHp=800),
+    "full-bruiser": dict(label="Full build vs bruiser", tier="full",
+                         target="bruiser", level=16, targetHp=3800, armor=180,
+                         mr=120, duration=12, targetBonusHp=1500),
+    "full-tank": dict(label="Full build vs tank", tier="full", target="tank",
+                      level=16, targetHp=4800, armor=220, mr=160, duration=15,
+                      targetBonusHp=1500),
+    "full-overall": dict(label="Full build — overall", tier="full",
+                         overall=True, level=16),
+    "mid-squishy": dict(label="Mid-game 7.5k vs squishy", tier="mid",
+                        target="squishy", level=11, targetHp=2200, armor=60,
+                        mr=45, duration=8, budget=7500, targetBonusHp=600),
+    "mid-tank": dict(label="Mid-game 7.5k vs tank", tier="mid", target="tank",
+                     level=11, targetHp=3800, armor=160, mr=110, duration=12,
+                     budget=7500, targetBonusHp=1500),
+    "mid-overall": dict(label="Mid-game 7.5k — overall", tier="mid",
+                        overall=True, level=11, budget=7500),
+    "first-item": dict(label="First item 4.5k spike", tier="first-item",
+                       target="squishy", level=9, targetHp=1900, armor=50,
+                       mr=40, duration=8, budget=4500, targetBonusHp=400),
 }
+
+
+def tier_scenarios(tier):
+    """A tier's scenario keys in SCENARIOS order: its targets, then overall."""
+    return [k for k, sc in SCENARIOS.items() if sc["tier"] == tier]
+
+
+def tier_targets(tier):
+    """The scenario keys a tier's builds are simulated against."""
+    return [k for k in tier_scenarios(tier) if not SCENARIOS[k].get("overall")]
+
+
+def tiers():
+    """Tier keys cheapest first: budget presets before full builds (they
+    reject nearly every combination before simulating it), shorter total
+    fight length first."""
+    def cost(tier):
+        ts = tier_targets(tier)
+        return (SCENARIOS[ts[0]].get("budget") is None,
+                sum(SCENARIOS[k]["duration"] for k in ts))
+    return sorted(dict.fromkeys(sc["tier"] for sc in SCENARIOS.values()),
+                  key=cost)
 
 
 def kit_champions():
@@ -1476,7 +1510,7 @@ def api_builds_meta():
 # ---------------------------------------------------------------------------
 
 SCENARIO_CACHE_DIR = os.path.join(BASE_DIR, ".cache", "builds")
-CACHED_ROWS = 20  # rows kept per cell
+CACHED_ROWS = 250  # rows kept per cell (all the enumerator keeps)
 
 # This module's own source is part of every cache key: a result is only valid
 # for the code that produced it. Hashed once at import, so a serve that keeps
@@ -1494,24 +1528,26 @@ def source_stale():
 
 
 def cells():
-    """Every (champion slug, scenario key) the dashboard shows, in warm order:
-    cheapest first, so the tab is usable within a minute. Budget presets
-    reject nearly every combination before simulating it and take seconds;
-    the full-build ones simulate ~30M builds and scale with the fight length
-    (10-16 min each on 16 cores)."""
-    order = sorted(SCENARIOS, key=lambda k: (SCENARIOS[k].get("budget") is None,
-                                             SCENARIOS[k]["duration"]))
+    """Every (champion slug, scenario key) the dashboard shows, in warm
+    order: tier by tier, cheapest first, so the tab is usable within a
+    minute. A tier's cells are computed together — its targets share one
+    enumeration pass — so one champion's cells of a tier sit side by side.
+    Budget presets reject nearly every combination before simulating it and
+    take seconds; a full-build tier simulates ~30M builds against each of
+    its targets and scales with the fight lengths (an hour on 16 cores)."""
     champs = kit_champions()
-    return [(slug, key) for key in order for slug in champs]
+    return [(slug, key) for tier in tiers() for slug in champs
+            for key in tier_scenarios(tier)]
 
 
 def cell_paths():
     """{(slug, key): cache path} for every cell. The path's hash covers every
-    input a result depends on: this module's code, the scenario, the pool
-    constants, the loaded item and champion data (content, not just patch
-    labels, since the daily refresh rewrites a patch's snapshot in place),
-    the kit encoding, the hand-curated item passives, and the item-bin rules
-    that decide which builds are legal."""
+    input a result depends on: this module's code, the whole tier (its cells
+    come from one pass, and the overall cell depends on every target), the
+    pool constants, the loaded item and champion data (content, not just
+    patch labels, since the daily refresh rewrites a patch's snapshot in
+    place), the kit encoding, the hand-curated item passives, and the
+    item-bin rules that decide which builds are legal."""
     patch, pool = load_items()
     base = hashlib.sha256(SOURCE_HASH.encode())
     for path in (ITEM_EFFECTS_PATH, groups_path()):
@@ -1526,11 +1562,15 @@ def cell_paths():
         with open(os.path.join(BUILDS_DATA_DIR, f"{slug}.json"), "rb") as f:
             h_champ.update(f.read())
         h_champ.update(json.dumps(load_champion(slug), sort_keys=True).encode())
-        for key, sc in SCENARIOS.items():
+        for tier in tiers():
+            keys = tier_scenarios(tier)
             h = h_champ.copy()
-            h.update(json.dumps(sc, sort_keys=True).encode())
-            paths[(slug, key)] = os.path.join(
-                SCENARIO_CACHE_DIR, f"{slug}-{key}-{h.hexdigest()[:16]}.json")
+            h.update(json.dumps([[k, SCENARIOS[k]] for k in keys],
+                                sort_keys=True).encode())
+            for key in keys:
+                paths[(slug, key)] = os.path.join(
+                    SCENARIO_CACHE_DIR,
+                    f"{slug}-{key}-{h.hexdigest()[:16]}.json")
     return paths
 
 
@@ -1553,53 +1593,153 @@ def cached_scenario(slug, key, paths=None):
         return json.load(f)
 
 
-def compute_scenario(slug, key, path):
-    """Simulate one cell and write its payload to `path` — through a temp
-    file and rename, so a killed run can never leave a truncated file — then
-    retire the cell's older generations. Returns the payload."""
+def kill_time(r, duration):
+    """The expected kill time of one fight, extended past its end for a dummy
+    that survived: the time the fight's average DPS would have needed. None
+    if the build dealt no damage at all."""
+    if r["ttk"] is not None:
+        return r["ttk_exp"]
+    return duration + r["hp_left"] / r["dps"] if r["dps"] > 0 else None
+
+
+def rank_key(r):
+    """Sort key of one fight, best first. Rank on the EXPECTED kill time
+    (real time, plus the charge-back for an execute that deterministic crit
+    guarantees but real crit would not). The interpolated time breaks ties
+    inside an attack tick, ordering builds that land on the same attack by
+    damage to spare. Builds that never kill come last, most damage first."""
+    return ((0, r["ttk_exp"], r["ttk_eff"]) if r["ttk"] is not None
+            else (1, INF, -r["total"]))
+
+
+def geo_mean(xs):
+    return math.exp(sum(math.log(max(x, 1e-9)) for x in xs) / len(xs))
+
+
+def overall_key(rs, targets):
+    """Sort key across every target of a tier, best first: builds that kill
+    all of them come before builds that leave one standing; within that, the
+    geometric mean of the kill times (kill_time, so a survived fight counts
+    as the time it would have needed). The geometric mean weights each
+    target equally in percentage terms — 10% slower on the tank and 10%
+    faster on the squishy is level pegging — and ranking by it is the same
+    as ranking by the mean regret against each target's own best build, so
+    no per-target optimum is needed to compute it. The interpolated times
+    break ties the same way, so builds landing on the same attack tick
+    everywhere are ordered by damage to spare."""
+    unkilled = sum(rs[k]["ttk"] is None for k in targets)
+    times = [kill_time(rs[k], targets[k]["duration"]) for k in targets]
+    if None in times:
+        return (unkilled, INF, INF)
+    effs = [rs[k]["ttk_eff"] if rs[k]["ttk"] is not None else t
+            for k, t in zip(targets, times)]
+    return (unkilled, geo_mean(times), geo_mean(effs))
+
+
+def _fight_row(r, duration, best):
+    """One fight's numbers for a row's `vs` map. `loss` is the kill time as a
+    multiple of the target's best build's (1.0 = as good as it gets)."""
+    kt = kill_time(r, duration)
+    return {
+        "ttk": round(r["ttk"], 2) if r["ttk"] is not None else None,
+        "ttkExp": round(r["ttk_exp"], 2) if r["ttk_exp"] is not None else None,
+        "killTime": round(kt, 2) if kt is not None else None,
+        "loss": round(kt / best, 4) if kt is not None and best else None,
+        "dps": round(r["dps"]), "total": round(r["total"]),
+        "attacks": r["attacks"],
+        "breakdown": {k: round(v) for k, v in r["breakdown"].items()},
+    }
+
+
+def compute_tier(slug, tier, paths):
+    """Simulate one champion's tier — every build against each of its
+    targets, in one pass — and write every cell of the tier to its path in
+    `paths` (cell_paths()): through a temp file and rename, so a killed run
+    can never leave a truncated file, then retiring the cell's older
+    generations. Returns {key: payload}. Every row carries the build's fight
+    against every target of the tier under `vs`; per-target cells also keep
+    their own fight's numbers flat, and the overall cell adds `mean` (the
+    geometric mean it is ranked by) and `kills`."""
     import time
     t0 = time.time()
-    sc = SCENARIOS[key]
+    keys = tier_scenarios(tier)
+    targets = {k: SCENARIOS[k] for k in tier_targets(tier)}
+    overall = next((k for k in keys if SCENARIOS[k].get("overall")), None)
+    level, budget = SCENARIOS[keys[0]]["level"], SCENARIOS[keys[0]].get("budget")
     champ = load_champion(slug)
     patch, pool = load_items()
     effects = load_item_effects()
     kit = load_kit(slug)
-    ranks = skill_ranks(sc["level"], kit_max_order(kit))
-    results, count = enumerate_builds(
-        champ, pool, effects, kit, sc["level"], ranks, sc["targetHp"],
-        sc["armor"], sc["mr"], sc["duration"], budget=sc.get("budget"),
-        candidates=champion_pool(kit, effects),
-        target_bonus_hp=sc.get("targetBonusHp", 0.0))
-    rows = []
-    for n, (ids, sheet, r) in enumerate(results[:CACHED_ROWS], 1):
-        rows.append({
-            "rank": n, "items": [pool[i]["name"] for i in ids],
-            "gold": sheet["gold"],
-            "ttk": round(r["ttk"], 2) if r["ttk"] is not None else None,
-            "ttkExp": round(r["ttk_exp"], 2) if r["ttk_exp"] is not None else None,
-            "ttkEff": round(r["ttk_eff"], 3) if r["ttk_eff"] is not None else None,
-            "dps": round(r["dps"]), "total": round(r["total"]),
-            "attacks": r["attacks"],
-            "ap": round(sheet["ap"]), "ad": round(sheet["ad"]),
-            "attackSpeed": round(sheet["attack_speed"], 2),
-            "breakdown": {k: round(v) for k, v in r["breakdown"].items()},
-        })
-    out = {"champion": slug, "championName": kit.get("name", slug),
-           "scenario": {"key": key, **sc},
-           "itemsPatch": patch, "championPatch": champ["meta"]["patch"],
-           "kitPatch": kit.get("patch"), "buildsEvaluated": count,
-           "ranks": ranks, "rows": rows,
-           "computedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-           "computeSeconds": round(time.time() - t0, 1)}
+    ranks = skill_ranks(level, kit_max_order(kit))
+    lists, count = enumerate_builds(
+        champ, pool, effects, kit, level, ranks, targets, budget=budget,
+        candidates=champion_pool(kit, effects), overall=overall)
+    secs = round(time.time() - t0, 1)
+    # each target's best kill time, for the loss column: the top of the
+    # target's own list is its fastest kill whenever anything kills at all
+    best = {}
+    for k, t in targets.items():
+        times = [kill_time(rs[k], t["duration"])
+                 for lst in lists.values() for _, _, rs in lst]
+        times = [x for x in times if x is not None]
+        best[k] = min(times) if times else None
+    target_meta = [{"key": k, **t} for k, t in targets.items()]
+    when = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    outs = {}
+    for key in keys:
+        sc = SCENARIOS[key]
+        rows = []
+        for n, (ids, sheet, rs) in enumerate(lists[key][:CACHED_ROWS], 1):
+            row = {"rank": n, "items": [pool[i]["name"] for i in ids],
+                   "gold": sheet["gold"],
+                   "ap": round(sheet["ap"]), "ad": round(sheet["ad"]),
+                   "attackSpeed": round(sheet["attack_speed"], 2),
+                   "vs": {t["target"]: _fight_row(rs[k], t["duration"], best[k])
+                          for k, t in targets.items()}}
+            if sc.get("overall"):
+                times = [kill_time(rs[k], t["duration"])
+                         for k, t in targets.items()]
+                row["kills"] = sum(rs[k]["ttk"] is not None for k in targets)
+                row["mean"] = (round(geo_mean(times), 2)
+                               if None not in times else None)
+            else:
+                r = rs[key]
+                row.update({
+                    "ttk": round(r["ttk"], 2) if r["ttk"] is not None else None,
+                    "ttkExp": (round(r["ttk_exp"], 2)
+                               if r["ttk_exp"] is not None else None),
+                    "ttkEff": (round(r["ttk_eff"], 3)
+                               if r["ttk_eff"] is not None else None),
+                    "dps": round(r["dps"]), "total": round(r["total"]),
+                    "attacks": r["attacks"],
+                    "breakdown": {s: round(v) for s, v in r["breakdown"].items()},
+                })
+            rows.append(row)
+        outs[key] = {
+            "champion": slug, "championName": kit.get("name", slug),
+            "scenario": {"key": key, **sc, "targets": target_meta},
+            "itemsPatch": patch, "championPatch": champ["meta"]["patch"],
+            "kitPatch": kit.get("patch"), "buildsEvaluated": count,
+            "ranks": ranks, "rows": rows,
+            "computedAt": when, "computeSeconds": secs}
     os.makedirs(SCENARIO_CACHE_DIR, exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(out, f, separators=(",", ":"))
-    os.replace(tmp, path)
-    for old in glob.glob(os.path.join(SCENARIO_CACHE_DIR, f"{slug}-{key}-*.json")):
-        if old != path:
-            os.remove(old)
-    return out
+    for key, out in outs.items():
+        path = paths[(slug, key)]
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(out, f, separators=(",", ":"))
+        os.replace(tmp, path)
+        for old in glob.glob(os.path.join(SCENARIO_CACHE_DIR,
+                                          f"{slug}-{key}-*.json")):
+            if old != path:
+                os.remove(old)
+    return outs
+
+
+def compute_scenario(slug, key, paths):
+    """One cell's payload — computing its whole tier, since a tier's cells
+    come from one pass; the siblings are written too. See compute_tier."""
+    return compute_tier(slug, SCENARIOS[key]["tier"], paths)[key]
 
 
 def warm_lock():
@@ -1631,11 +1771,12 @@ def _say(line):
 
 
 def warm(log=_say):
-    """Compute every cold cell, cheapest first. Returns how many were
-    computed, or None if another warmer holds the lock. Results are keyed to
-    the code this process runs (SOURCE_HASH), so an edit to builds.py mid-run
-    doesn't disturb it: a serve running that same code keeps a complete
-    matrix, and the next serve recomputes under the new hash."""
+    """Compute every cold cell, cheapest first — a tier at a time, since a
+    tier's cells come from one pass. Returns how many cells were computed,
+    or None if another warmer holds the lock. Results are keyed to the code
+    this process runs (SOURCE_HASH), so an edit to builds.py mid-run doesn't
+    disturb it: a serve running that same code keeps a complete matrix, and
+    the next serve recomputes under the new hash."""
     import signal
     lock = warm_lock()
     if lock is None:
@@ -1647,12 +1788,20 @@ def warm(log=_say):
         for tmp in glob.glob(os.path.join(SCENARIO_CACHE_DIR, "*.tmp")):
             os.remove(tmp)
         paths = cell_paths()
-        cold = [c for c in cells() if not os.path.exists(paths[c])]
-        for n, (slug, key) in enumerate(cold, 1):
-            log(f"[{n}/{len(cold)}] {slug}/{key} …")
-            out = compute_scenario(slug, key, paths[(slug, key)])
-            log(f"  {out['buildsEvaluated']:,} builds in {out['computeSeconds']}s")
-        return len(cold)
+        champs = kit_champions()
+        cold = [(slug, tier) for tier in tiers() for slug in champs
+                if any(not os.path.exists(paths[(slug, k)])
+                       for k in tier_scenarios(tier))]
+        done = 0
+        for n, (slug, tier) in enumerate(cold, 1):
+            keys = tier_scenarios(tier)
+            log(f"[{n}/{len(cold)}] {slug}/{tier} ({', '.join(keys)}) …")
+            outs = compute_tier(slug, tier, paths)
+            first = outs[keys[0]]
+            log(f"  {first['buildsEvaluated']:,} builds in "
+                f"{first['computeSeconds']}s")
+            done += len(outs)
+        return done
     finally:
         lock.close()
 
@@ -1921,12 +2070,26 @@ BOOTS = [3006, 3020]
 _ENUM_CTX = None  # set before forking workers; children inherit via fork
 
 
+def _keep_best(lst, keep):
+    """Bound a running result list: sort and cut it to `keep` once it has
+    grown past 4x that, so memory stays flat over millions of builds."""
+    if len(lst) > 4 * keep:
+        lst.sort(key=lambda x: x[0])
+        del lst[keep:]
+
+
 def _enum_batch(ctx, boots, size, start, step):
     """Simulate every `step`-th combination of `size` items (offset `start`)
-    with `boots`; returns (top-`keep` results, simulated count)."""
+    with `boots` against each of ctx["targets"]; returns ({key: top-`keep`
+    results}, simulated count) — one list per target, ranked by rank_key,
+    and, if ctx["overall"] names one, a list under that key ranking every
+    build on all targets at once (overall_key)."""
     import itertools
-    keep = ctx["keep"]
-    out, n = [], 0
+    keep, targets, overall = ctx["keep"], ctx["targets"], ctx["overall"]
+    out = {k: [] for k in targets}
+    if overall:
+        out[overall] = []
+    n = 0
     groups, caps = ctx["groups"], ctx["caps"]
     for combo in itertools.islice(
             itertools.combinations(ctx["free"], size), start, None, step):
@@ -1937,22 +2100,19 @@ def _enum_batch(ctx, boots, size, start, step):
             continue
         sheet = resolve_stats(ctx["champ"], ctx["level"], ids, ctx["pool"],
                               ctx["effects"], kit=ctx["kit"])
-        r = simulate(sheet, ctx["kit"], merge_effects(ids, ctx["effects"]),
-                     ctx["level"], ctx["ranks"], ctx["target_hp"],
-                     ctx["armor"], ctx["mr"], ctx["duration"],
-                     use_ult=ctx["use_ult"], prestacked=ctx["prestacked"],
-                     target_bonus_hp=ctx["target_bonus_hp"])
+        fx = merge_effects(ids, ctx["effects"])
+        rs = {k: simulate(sheet, ctx["kit"], fx, ctx["level"], ctx["ranks"],
+                          t["targetHp"], t["armor"], t["mr"], t["duration"],
+                          use_ult=ctx["use_ult"], prestacked=ctx["prestacked"],
+                          target_bonus_hp=t.get("targetBonusHp", 0.0))
+              for k, t in targets.items()}
         n += 1
-        # Rank on the EXPECTED kill time (real time, plus the charge-back for
-        # an execute that deterministic crit guarantees but real crit would
-        # not). The interpolated time breaks ties inside an attack tick,
-        # ordering builds that land on the same attack by damage to spare.
-        key = ((0, r["ttk_exp"], r["ttk_eff"]) if r["ttk"] is not None
-               else (1, float("inf"), -r["total"]))
-        out.append((key, ids, sheet, r))
-        if len(out) > 4 * keep:  # bound memory: keep only the running best
-            out.sort(key=lambda x: x[0])
-            del out[keep:]
+        for k in targets:
+            out[k].append((rank_key(rs[k]), ids, sheet, rs))
+            _keep_best(out[k], keep)
+        if overall:
+            out[overall].append((overall_key(rs, targets), ids, sheet, rs))
+            _keep_best(out[overall], keep)
     return out, n
 
 
@@ -1961,15 +2121,16 @@ def _enum_worker(task):
     return _enum_batch(_ENUM_CTX, boots, size, start, step)
 
 
-def enumerate_builds(champ, pool, effects, kit, level, ranks, target_hp,
-                     armor, mr, duration, budget=None, slots=6, required=(),
-                     candidates=None, use_ult=True, prestacked=False,
-                     target_bonus_hp=0.0, keep=250):
-    """Simulate every boots + item combination; returns (results, count):
-    the top-`keep` (ids, sheet, result) sorted best-first — by the
-    interpolated time-to-kill when the dummy dies, else by damage — plus how
-    many builds were simulated. Large pools fan out across CPU cores (fork)."""
-    import math
+def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
+                     budget=None, slots=6, required=(), candidates=None,
+                     use_ult=True, prestacked=False, keep=250, overall=None):
+    """Simulate every boots + item combination against each target in one
+    pass — `targets` is {key: scenario-shaped dict: targetHp, armor, mr,
+    duration, targetBonusHp}. Returns ({key: results}, count): per target
+    the top-`keep` (ids, sheet, {target key: fight result}) best-first by
+    rank_key, plus, with `overall` set, a list under that key ranked by
+    overall_key across every target; and how many builds were simulated.
+    Large pools fan out across CPU cores (fork)."""
     free = [i for i in (candidates or DEFAULT_POOL) if i not in required]
     n_free = slots - 1 - len(required)  # one slot is always boots
     if n_free < 0:
@@ -1978,16 +2139,15 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, target_hp,
     _groups, _caps = load_exclusive_groups()
     ctx = dict(
         champ=champ, pool=pool, effects=effects, kit=kit, level=level,
-        ranks=ranks, target_hp=target_hp, armor=armor, mr=mr,
-        duration=duration, budget=budget, required=list(required), free=free,
-        use_ult=use_ult, prestacked=prestacked,
-        target_bonus_hp=target_bonus_hp, keep=keep,
-        groups=_groups, caps=_caps,
+        ranks=ranks, targets=dict(targets), overall=overall, budget=budget,
+        required=list(required), free=free, use_ult=use_ult,
+        prestacked=prestacked, keep=keep, groups=_groups, caps=_caps,
         price={i: pool[i]["shop"]["prices"]["total"]
                for i in set(free) | set(required) | set(BOOTS)})
     combos = len(BOOTS) * sum(math.comb(len(free), s) for s in sizes)
     workers = max(1, (os.cpu_count() or 2) - 1)
-    results, count = [], 0
+    keys = list(targets) + ([overall] if overall else [])
+    lists, count = {k: [] for k in keys}, 0
     if combos > 50_000 and workers > 1 and hasattr(os, "fork"):
         import multiprocessing as mp
         global _ENUM_CTX
@@ -1996,20 +2156,20 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, target_hp,
             with mp.get_context("fork").Pool(workers) as p:
                 tasks = [(b, s, w, workers) for b in BOOTS for s in sizes
                          for w in range(workers)]
-                for out, n in p.map(_enum_worker, tasks):
-                    results += out
-                    count += n
+                batches = p.map(_enum_worker, tasks)
         finally:
             _ENUM_CTX = None
     else:
-        for b in BOOTS:
-            for s in sizes:
-                out, n = _enum_batch(ctx, b, s, 0, 1)
-                results += out
-                count += n
-    results.sort(key=lambda x: x[0])
-    del results[keep:]
-    return [(ids, sheet, r) for _, ids, sheet, r in results], count
+        batches = [_enum_batch(ctx, b, s, 0, 1) for b in BOOTS for s in sizes]
+    for out, n in batches:
+        for k in keys:
+            lists[k] += out[k]
+        count += n
+    for k in keys:
+        lists[k].sort(key=lambda x: x[0])
+        del lists[k][keep:]
+        lists[k] = [(ids, sheet, rs) for _, ids, sheet, rs in lists[k]]
+    return lists, count
 
 
 def cmd_optimize(args):
@@ -2024,14 +2184,16 @@ def cmd_optimize(args):
     candidates = ([resolve_item(pool, idx, t) for t in args.pool]
                   if args.pool else champion_pool(kit, effects))
     required = [resolve_item(pool, idx, t) for t in (args.require or [])]
+    target = dict(targetHp=args.target_hp, armor=args.armor, mr=args.mr,
+                  duration=args.duration, targetBonusHp=args.target_bonus_hp)
 
     t0 = time.time()
-    results, count = enumerate_builds(
-        champ, pool, effects, kit, args.level, ranks, args.target_hp,
-        args.armor, args.mr, args.duration, budget=args.budget,
-        slots=args.slots, required=required, candidates=candidates,
-        use_ult=not args.no_ult, prestacked=args.prestacked,
-        target_bonus_hp=args.target_bonus_hp)
+    lists, count = enumerate_builds(
+        champ, pool, effects, kit, args.level, ranks, {"target": target},
+        budget=args.budget, slots=args.slots, required=required,
+        candidates=candidates, use_ult=not args.no_ult,
+        prestacked=args.prestacked)
+    results = [(ids, sheet, rs["target"]) for ids, sheet, rs in lists["target"]]
 
     print(f"{champ['dd']['name']} lvl {args.level} — {count} builds "
           f"in {time.time() - t0:.1f}s, {args.duration:g}s vs "

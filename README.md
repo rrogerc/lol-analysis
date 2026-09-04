@@ -47,15 +47,22 @@ module and committed JSON archive:
   items; the few items whose passives can't be modeled yet (plus
   support/tank items) are excluded rather than misranked on stats
   alone, each with its reason recorded under `"excluded"` in
-  `item-effects.json`. Full-pool scenarios simulate ~33M legal builds
-  (~37M combinations before Riot's ownership limits prune them) — the
-  enumerator fans out across CPU cores, 10-16 minutes per full-build
-  scenario on 16 cores. The dashboard never simulates on request:
-  `lol.py builds warm` precomputes every (champion, scenario) cell into
-  `.cache/builds/` (gitignored) under a hash of every input, cheapest
-  first, and `serve` runs it in the background whenever a cell is cold,
-  so a code or data change just makes cells recompute. Runes are not
-  modeled yet.
+  `item-effects.json`. Scenarios come in tiers — full build, mid-game
+  budget, first item — and a tier's targets (squishy / bruiser / tank
+  stat dummies) are simulated in one pass, which also fills the tier's
+  *overall* cell: every build ranked on all of the targets at once, by
+  the geometric mean of its expected kill times (each target counts
+  equally in percentage terms; a build must kill every target to rank
+  above one that leaves any standing). Full-pool tiers simulate ~33M
+  legal builds (~37M combinations before Riot's ownership limits prune
+  them) against each target — the enumerator fans out across CPU cores,
+  about an hour per champion on 16 cores. The dashboard never simulates
+  on request: `lol.py builds warm` precomputes every (champion, scenario)
+  cell — its top 250 builds, each with its fight against every target of
+  the tier — into `.cache/builds/` (gitignored) under a hash of every
+  input, cheapest first, and `serve` runs it in the background whenever
+  a cell is cold, so a code or data change just makes cells recompute.
+  Runes are not modeled yet.
   Math is pinned by hand-computed tests: `python3 -m unittest
   test_builds`.
 
@@ -110,9 +117,13 @@ Opens `http://127.0.0.1:8321` — an interactive local dashboard:
 - **Champion** — any champion's win-rate curve per lane, plus their win rate
   across patches.
 - **Builds** — the theoretical damage model's ranked builds per champion
-  and preset scenario (full build / mid-game budget / first item, vs
-  squishy / bruiser / tank). Click a build for its damage-source
-  breakdown. Every scenario is precomputed (`lol.py builds warm`, which
+  and preset scenario: full build vs squishy, bruiser, tank, or overall;
+  mid-game budget vs squishy, tank, or overall; first item. Every row
+  shows the build's expected kill time against each target of its tier
+  and how far behind that target's best it is; the overall scenarios
+  rank by the geometric mean of those times. Click a build for its
+  damage-source breakdown against each target. Every scenario is
+  precomputed (`lol.py builds warm`, which
   `serve` runs in the background whenever something is cold — `--no-warm`
   turns that off); a cell that isn't computed yet says so and fills in
   when it lands. Restart serve after editing `builds.py` — the tab tells
