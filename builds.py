@@ -1360,10 +1360,12 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 # web API: the preset scenarios the dashboard shows
 # ---------------------------------------------------------------------------
 
-# A tier is one level/budget preset. Its targets are simulated together: one
+# A tier is one level/budget preset (a budget caps the build's gold and lets
+# it be smaller than six items). Its targets are simulated together: one
 # enumeration pass scores every build against each of them, which fills the
 # per-target cells and — at no extra cost — the tier's "overall" cell, which
-# ranks every build on all of the targets at once (see overall_key).
+# ranks every build on all of the targets at once (see overall_key). Only the
+# full-build tier ships; the mid-game and first-item presets were dropped.
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
 SCENARIOS = {
     "full-squishy": dict(label="Full build vs squishy", tier="full",
@@ -1377,17 +1379,6 @@ SCENARIOS = {
                       targetBonusHp=1500),
     "full-overall": dict(label="Full build — overall", tier="full",
                          overall=True, level=16),
-    "mid-squishy": dict(label="Mid-game 7.5k vs squishy", tier="mid",
-                        target="squishy", level=11, targetHp=2200, armor=60,
-                        mr=45, duration=8, budget=7500, targetBonusHp=600),
-    "mid-tank": dict(label="Mid-game 7.5k vs tank", tier="mid", target="tank",
-                     level=11, targetHp=3800, armor=160, mr=110, duration=12,
-                     budget=7500, targetBonusHp=1500),
-    "mid-overall": dict(label="Mid-game 7.5k — overall", tier="mid",
-                        overall=True, level=11, budget=7500),
-    "first-item": dict(label="First item 4.5k spike", tier="first-item",
-                       target="squishy", level=9, targetHp=1900, armor=50,
-                       mr=40, duration=8, budget=4500, targetBonusHp=400),
 }
 
 
@@ -1529,12 +1520,12 @@ def source_stale():
 
 def cells():
     """Every (champion slug, scenario key) the dashboard shows, in warm
-    order: tier by tier, cheapest first, so the tab is usable within a
-    minute. A tier's cells are computed together — its targets share one
-    enumeration pass — so one champion's cells of a tier sit side by side.
-    Budget presets reject nearly every combination before simulating it and
-    take seconds; a full-build tier simulates ~30M builds against each of
-    its targets and scales with the fight lengths (an hour on 16 cores)."""
+    order: tier by tier, cheapest first (a budget preset would reject nearly
+    every combination before simulating it). A tier's cells are computed
+    together — its targets share one enumeration pass — so one champion's
+    cells of a tier sit side by side. The full-build tier simulates ~30M
+    builds against each of its targets and scales with the fight lengths:
+    about half an hour per champion on 16 cores."""
     champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
@@ -1788,6 +1779,15 @@ def warm(log=_say):
         for tmp in glob.glob(os.path.join(SCENARIO_CACHE_DIR, "*.tmp")):
             os.remove(tmp)
         paths = cell_paths()
+        # cells of a scenario or champion that no longer exists would linger
+        # forever (nothing recomputes them); older generations of live cells
+        # are left to compute_tier, so a serve on older code keeps serving
+        # them until their replacement lands
+        for path in glob.glob(os.path.join(SCENARIO_CACHE_DIR, "*.json")):
+            m = re.fullmatch(r"([a-z0-9]+)-(.+)-[0-9a-f]{16}\.json",
+                             os.path.basename(path))
+            if m and (m.group(1), m.group(2)) not in paths:
+                os.remove(path)
         champs = kit_champions()
         cold = [(slug, tier) for tier in tiers() for slug in champs
                 if any(not os.path.exists(paths[(slug, k)])

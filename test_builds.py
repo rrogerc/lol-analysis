@@ -928,6 +928,12 @@ class TestScenarioCache(unittest.TestCase):
     touched."""
     # Rabadon, Void Staff, Shadowflame, Liandry, Riftmaker, Nashor, Muramana
     TINY_POOL = [3089, 3135, 4645, 6653, 4633, 3115, 3042]
+    # a budget tier that doesn't ship, to exercise the multi-tier paths:
+    # warm order (cheap before full) and per-tier cache invalidation
+    PROBE = {"probe-squishy": dict(label="Probe vs squishy", tier="probe",
+                                   target="squishy", level=9, targetHp=1900,
+                                   armor=50, mr=40, duration=8, budget=4500,
+                                   targetBonusHp=400)}
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -946,7 +952,10 @@ class TestScenarioCache(unittest.TestCase):
         for key, sc in builds.SCENARIOS.items():
             self.assertIn("tier", sc, key)
             self.assertEqual("target" in sc, not sc.get("overall"), key)
-        self.assertEqual(builds.tiers(), ["first-item", "mid", "full"])
+        self.assertEqual(list(builds.SCENARIOS),
+                         ["full-squishy", "full-bruiser", "full-tank",
+                          "full-overall"])
+        self.assertEqual(builds.tiers(), ["full"])
         for tier in builds.tiers():
             keys = builds.tier_scenarios(tier)
             targets = builds.tier_targets(tier)
@@ -966,27 +975,34 @@ class TestScenarioCache(unittest.TestCase):
         self.assertEqual(builds.tier_scenarios("full")[-1], "full-overall")
 
     def test_cells_cheapest_first(self):
-        cs = builds.cells()
         champs = builds.kit_champions()
+        cs = builds.cells()
         self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
         self.assertEqual(len(set(cs)), len(cs))
-        # tier by tier: budget presets before full builds, shorter total
-        # fights first; every champion gets a tier's cells before anyone
-        # gets a costlier tier's; and one champion's cells of a tier are
-        # adjacent, since they come from one pass
-        def cost(key):
-            ts = builds.tier_targets(builds.SCENARIOS[key]["tier"])
-            return (builds.SCENARIOS[ts[0]].get("budget") is None,
-                    sum(builds.SCENARIOS[k]["duration"] for k in ts))
-        costs = [cost(k) for _, k in cs]
-        self.assertEqual(costs, sorted(costs))
-        groups = [(slug, builds.SCENARIOS[k]["tier"]) for slug, k in cs]
-        runs = 1 + sum(a != b for a, b in zip(groups, groups[1:]))
-        self.assertEqual(runs, len(set(groups)))
-        for tier in builds.tiers():
-            self.assertEqual([s for s, t in dict.fromkeys(groups) if t == tier],
-                             champs)
-        self.assertEqual(cs[0], (champs[0], "first-item"))
+        self.assertEqual(cs[0], (champs[0], "full-squishy"))
+        # with a budget tier in the mix: tier by tier, budget presets before
+        # full builds (seconds, not half an hour), shorter total fights
+        # first; every champion gets a tier's cells before anyone gets a
+        # costlier tier's; and one champion's cells of a tier are adjacent,
+        # since they come from one pass
+        with mock.patch.dict(builds.SCENARIOS, self.PROBE):
+            self.assertEqual(builds.tiers(), ["probe", "full"])
+            cs = builds.cells()
+            self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
+            def cost(key):
+                ts = builds.tier_targets(builds.SCENARIOS[key]["tier"])
+                return (builds.SCENARIOS[ts[0]].get("budget") is None,
+                        sum(builds.SCENARIOS[k]["duration"] for k in ts))
+            costs = [cost(k) for _, k in cs]
+            self.assertEqual(costs, sorted(costs))
+            groups = [(slug, builds.SCENARIOS[k]["tier"]) for slug, k in cs]
+            runs = 1 + sum(a != b for a, b in zip(groups, groups[1:]))
+            self.assertEqual(runs, len(set(groups)))
+            for tier in builds.tiers():
+                self.assertEqual(
+                    [s for s, t in dict.fromkeys(groups) if t == tier], champs)
+            self.assertEqual(cs[:len(champs)],
+                             [(s, "probe-squishy") for s in champs])
 
     def test_cell_paths_cover_code_and_inputs(self):
         paths = builds.cell_paths()
@@ -998,29 +1014,36 @@ class TestScenarioCache(unittest.TestCase):
             self.assertTrue(builds.source_stale())
             other = builds.cell_paths()
         self.assertTrue(set(other.values()).isdisjoint(paths.values()))
-        with mock.patch.dict(builds.SCENARIOS["first-item"], {"armor": 51}):
-            changed = builds.cell_paths()
-        for cell in paths:
-            same = cell[1] != "first-item"
-            self.assertEqual(changed[cell] == paths[cell], same, cell)
         # a target's change reaches every cell of its tier — they come from
         # the same pass, and the overall cell depends on all of them — and
-        # no cell of any other tier
-        with mock.patch.dict(builds.SCENARIOS["full-squishy"], {"armor": 111}):
-            changed = builds.cell_paths()
-        for cell in paths:
-            same = builds.SCENARIOS[cell[1]]["tier"] != "full"
-            self.assertEqual(changed[cell] == paths[cell], same, cell)
+        # no cell of any other tier; and the shipped cells don't care
+        # whether another tier exists
+        with mock.patch.dict(builds.SCENARIOS, self.PROBE):
+            both = builds.cell_paths()
+            self.assertEqual({c: both[c] for c in paths}, paths)
+            with mock.patch.dict(builds.SCENARIOS["probe-squishy"],
+                                 {"armor": 51}):
+                changed = builds.cell_paths()
+            for cell in both:
+                same = builds.SCENARIOS[cell[1]]["tier"] != "probe"
+                self.assertEqual(changed[cell] == both[cell], same, cell)
+            with mock.patch.dict(builds.SCENARIOS["full-squishy"],
+                                 {"armor": 111}):
+                changed = builds.cell_paths()
+            for cell in both:
+                same = builds.SCENARIOS[cell[1]]["tier"] != "full"
+                self.assertEqual(changed[cell] == both[cell], same, cell)
 
     def test_read_only_then_compute(self):
-        cell = ("kayle", "first-item")
+        cell = ("kayle", "full-squishy")
         paths = builds.cell_paths()
         with mock.patch.object(builds, "enumerate_builds",
                                side_effect=AssertionError("simulated on read")):
             self.assertIsNone(builds.cached_scenario(*cell))
         self.assertRaises(ValueError, builds.cached_scenario, "kayle", "nope")
-        self.assertRaises(ValueError, builds.cached_scenario, "teemo", "first-item")
-        stale = os.path.join(self.tmp, "kayle-first-item-0000000000000000.json")
+        self.assertRaises(ValueError, builds.cached_scenario, "teemo", "full-squishy")
+        self.assertRaises(ValueError, builds.cached_scenario, "kayle", "first-item")
+        stale = os.path.join(self.tmp, "kayle-full-squishy-0000000000000000.json")
         open(stale, "w").close()
         d = builds.compute_scenario(*cell, paths)
         self.assertTrue(os.path.exists(paths[cell]))
@@ -1028,18 +1051,20 @@ class TestScenarioCache(unittest.TestCase):
         self.assertFalse(os.path.exists(paths[cell] + ".tmp"))
         self.assertEqual(builds.cached_scenario(*cell), d)
         self.assertEqual(d["champion"], "kayle")
-        self.assertEqual(d["scenario"]["key"], "first-item")
-        self.assertEqual(d["scenario"]["tier"], "first-item")
+        self.assertEqual(d["scenario"]["key"], "full-squishy")
+        self.assertEqual(d["scenario"]["tier"], "full")
         self.assertEqual([t["key"] for t in d["scenario"]["targets"]],
-                         ["first-item"])
+                         ["full-squishy", "full-bruiser", "full-tank"])
         self.assertEqual([r["rank"] for r in d["rows"]],
                          list(range(1, len(d["rows"]) + 1)))
         self.assertTrue(d["rows"])
         for r in d["rows"]:
-            self.assertLessEqual(r["gold"], 4500)
+            self.assertEqual(len(r["items"]), 6)
             self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"],
                                    delta=len(r["breakdown"]))  # rounding
-            # the row's own fight is also under vs, keyed by the target name
+            # every fight of the tier is under vs, keyed by the target name;
+            # the row's own is the squishy one
+            self.assertEqual(list(r["vs"]), ["squishy", "bruiser", "tank"])
             v = r["vs"]["squishy"]
             self.assertEqual((v["ttk"], v["ttkExp"], v["dps"], v["total"]),
                              (r["ttk"], r["ttkExp"], r["dps"], r["total"]))
@@ -1053,18 +1078,23 @@ class TestScenarioCache(unittest.TestCase):
         self.assertGreaterEqual(d["computeSeconds"], 0)
 
     def test_vladimir_cell_drops_mana_items(self):
-        cell = ("vladimir", "first-item")
+        cell = ("vladimir", "full-tank")
         d = builds.compute_scenario(*cell, builds.cell_paths())
         self.assertEqual(d["championName"], "Vladimir")
-        self.assertEqual(d["ranks"], builds.skill_ranks(9))
+        kit = builds.load_kit("vladimir")
+        self.assertEqual(d["ranks"],
+                         builds.skill_ranks(16, builds.kit_max_order(kit)))
         self.assertTrue(d["rows"])
         for r in d["rows"]:
-            self.assertLessEqual(r["gold"], 4500)
             self.assertNotIn("Muramana", r["items"])
 
     def test_warm_computes_cold_cells_once_and_respects_lock(self):
+        # a cell of a scenario that no longer ships is swept, not kept forever
+        stray = os.path.join(self.tmp, "kayle-mid-squishy-0123456789abcdef.json")
+        open(stray, "w").close()
         log = []
         self.assertEqual(builds.warm(log=log.append), len(builds.cells()))
+        self.assertFalse(os.path.exists(stray))
         self.assertTrue(all(builds.cell_ready().values()))
         # one pass per (champion, tier), announced with the cells it fills
         heads = [l for l in log if l.startswith("[")]
@@ -1134,9 +1164,9 @@ class TestOverallRanking(unittest.TestCase):
              mock.patch.object(builds, "DEFAULT_POOL",
                                TestScenarioCache.TINY_POOL):
             paths = builds.cell_paths()
-            outs = builds.compute_tier("kayle", "mid", paths)
-            self.assertEqual(set(outs),
-                             {"mid-squishy", "mid-tank", "mid-overall"})
+            outs = builds.compute_tier("kayle", "full", paths)
+            self.assertEqual(set(outs), {"full-squishy", "full-bruiser",
+                                         "full-tank", "full-overall"})
             for key in outs:
                 self.assertTrue(os.path.exists(paths[("kayle", key)]))
             champ = builds.load_champion("kayle")
@@ -1146,13 +1176,15 @@ class TestOverallRanking(unittest.TestCase):
             cands = builds.champion_pool(kit, effects)
             # each per-target cell is exactly what a pass over that target
             # alone ranks — the shared pass changes nothing but the cost
-            for key in ("mid-squishy", "mid-tank"):
+            targets = builds.tier_targets("full")
+            names = [builds.SCENARIOS[k]["target"] for k in targets]
+            for key in targets:
                 sc = builds.SCENARIOS[key]
                 single, count = enum_one(
                     champ, pool, effects, kit, sc["level"],
                     builds.skill_ranks(sc["level"], builds.kit_max_order(kit)),
                     sc["targetHp"], sc["armor"], sc["mr"], sc["duration"],
-                    bonus_hp=sc["targetBonusHp"], budget=sc["budget"],
+                    bonus_hp=sc["targetBonusHp"], budget=sc.get("budget"),
                     candidates=cands)
                 d = outs[key]
                 self.assertEqual(d["buildsEvaluated"], count)
@@ -1167,42 +1199,38 @@ class TestOverallRanking(unittest.TestCase):
                 top = d["rows"][0]
                 if top["ttk"] is not None:
                     self.assertEqual(top["vs"][sc["target"]]["loss"], 1.0)
-        ov = outs["mid-overall"]
+        ov = outs["full-overall"]
         self.assertTrue(ov["scenario"]["overall"])
-        self.assertEqual([t["key"] for t in ov["scenario"]["targets"]],
-                         ["mid-squishy", "mid-tank"])
+        self.assertEqual([t["key"] for t in ov["scenario"]["targets"]], targets)
         rows = ov["rows"]
         self.assertTrue(rows)
         # the tiny pool fits in one cell, so every list holds every build
-        self.assertEqual(len(rows), len(outs["mid-squishy"]["rows"]))
+        self.assertEqual(len(rows), len(outs[targets[0]]["rows"]))
+        geo = lambda xs: math.prod(xs) ** (1 / len(xs))
         order = [(-r["kills"], r["mean"]) for r in rows]
         self.assertEqual(order, sorted(order))
         for r in rows:
-            times = [r["vs"][t]["killTime"] for t in ("squishy", "tank")]
-            self.assertAlmostEqual(r["mean"], math.sqrt(times[0] * times[1]),
-                                   delta=0.02)  # rounded inputs
-            for t in ("squishy", "tank"):
+            times = [r["vs"][t]["killTime"] for t in names]
+            self.assertAlmostEqual(r["mean"], geo(times), delta=0.02)  # rounded
+            for t in names:
                 self.assertGreaterEqual(r["vs"][t]["loss"], 1.0)
             self.assertEqual(r["kills"],
-                             sum(r["vs"][t]["ttk"] is not None
-                                 for t in ("squishy", "tank")))
+                             sum(r["vs"][t]["ttk"] is not None for t in names))
         # the winner's fights are the same ones its per-target rows report
         best = rows[0]
-        for key, t in (("mid-squishy", "squishy"), ("mid-tank", "tank")):
+        for key, t in zip(targets, names):
             twin = next(r for r in outs[key]["rows"]
                         if r["items"] == best["items"])
             self.assertEqual(twin["vs"], best["vs"])
             self.assertEqual(twin["ttkExp"], best["vs"][t]["ttkExp"])
-        # no per-target best beats the overall winner on the mean: the
-        # winner is the minimum of the mean over the whole (shared) universe
-        for key in ("mid-squishy", "mid-tank"):
+        # no per-target row beats the overall winner on the mean: the winner
+        # is the minimum of the mean over the whole (shared) universe
+        for key in targets:
             for r in outs[key]["rows"]:
-                kills = sum(r["vs"][t]["ttk"] is not None
-                            for t in ("squishy", "tank"))
-                times = [r["vs"][t]["killTime"] for t in ("squishy", "tank")]
-                self.assertLessEqual(
-                    (-best["kills"], best["mean"]),
-                    (-kills, round(math.sqrt(times[0] * times[1]), 2) + 0.02))
+                kills = sum(r["vs"][t]["ttk"] is not None for t in names)
+                times = [r["vs"][t]["killTime"] for t in names]
+                self.assertLessEqual((-best["kills"], best["mean"]),
+                                     (-kills, round(geo(times), 2) + 0.02))
 
 
 if __name__ == "__main__":
