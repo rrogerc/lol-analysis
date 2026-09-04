@@ -38,7 +38,9 @@ module and committed JSON archive:
   and a build enumerator (`builds optimize` — ranks every item-pool
   combination against a stat dummy; `--budget`/`--require` for partial
   builds). A kit can rule items out of its pool (Vladimir has no mana,
-  so the Tear items and Actualizer never enter his enumeration).
+  so the Tear items and Actualizer never enter his enumeration) or
+  declare that the champion never auto-attacks (Vladimir, as played:
+  on-hit, crit and spellblade items then rank on their raw stats).
   The enumeration pool covers every mage, marksman, assassin, and
   bruiser damage item (76 items + 2 boots) — AP, on-hit, crit, executes,
   burns, Energized, shreds, spellblades, item actives, fully-stacked tear

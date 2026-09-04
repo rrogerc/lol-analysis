@@ -263,6 +263,7 @@
   </div>
   <div class="card">
     <h2 id="pool-title">Item pool</h2>
+    <div class="hint" id="pool-notes" hidden></div>
     <div class="hint">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated — anything else would be ranked on raw stats alone and land too low. In-game "Limited to 1" groups (Last Whisper, Hydra, Tear, Spellblade, Energized, Lifeline, Annul) are enforced — no build carries two of a group.</div>
     <div class="chips" id="pool-chips"></div>
     <div class="hint" style="margin:10px 0 0">Boots (one per build):</div>
@@ -677,6 +678,10 @@ function renderPool() {
   document.getElementById("pool-title").textContent =
     `Item pool${champ ? " for " + (champ.name || champ.slug) : ""} — ` +
     `${pool.length} items + ${m.boots.length} boots (patch ${m.itemsPatch})`;
+  const notes = champ?.notes || [];
+  const noteEl = document.getElementById("pool-notes");
+  noteEl.textContent = notes.join(" ");
+  noteEl.hidden = !notes.length;
   document.getElementById("pool-chips").replaceChildren(...pool.map(chip));
   document.getElementById("boots-chips").replaceChildren(...m.boots.map(chip));
   document.querySelector("#pool-excluded summary").textContent =

@@ -929,6 +929,9 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         "exec_p": None,
     }
     drv.init_state(st)
+    if kit.get("attack", {}).get("never"):
+        # a kit played without autos: nothing that rides an attack ever fires
+        st["next_attack"] = INF
     if fx["manaActive"]:  # Actualizer: cast on engage, empowered for 8s
         st["ma_until"] = fx["manaActive"]["durationS"]
 
@@ -1405,11 +1408,17 @@ def api_builds_meta():
         name = kit.get("name", slug)
         dropped = [pool[i]["name"] for i in DEFAULT_POOL
                    if i not in ids and i in pool]
+        notes = []
+        if kit.get("attack", {}).get("never"):
+            notes.append(f"{name} never auto-attacks in this model, as played: "
+                         "on-hit, crit, energized and spellblade passives never "
+                         "fire, so those items rank on their raw stats alone.")
         champs.append({
             "slug": slug, "name": name, "kitPatch": kit.get("patch"),
             "pool": ids,
             "excluded": [f"{', '.join(dropped)} — need mana to stack or "
                          f"scale; {name} has none"] if dropped else [],
+            "notes": notes,
         })
 
     def entry(iid):

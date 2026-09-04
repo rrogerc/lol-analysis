@@ -7,6 +7,7 @@ wiki; the integration tests read the committed data/items snapshot, so they
 also catch a meraki schema change sneaking past ITEM_STAT_MAP.
 """
 
+import copy
 import os
 import shutil
 import tempfile
@@ -668,7 +669,11 @@ class TestVladimirKit(unittest.TestCase):
 class TestVladimirEngine(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.kit = builds.load_kit("vladimir")
+        cls.kit = builds.load_kit("vladimir")  # as played: never attacks
+        # the same kit with autos on, to pin the driver's channel rules
+        # (charge and pool vs attacks) that other kits rely on
+        cls.kit_autos = copy.deepcopy(cls.kit)
+        del cls.kit_autos["attack"]["never"]
         cls.patch, cls.pool = builds.load_items()
         cls.idx = builds.item_index(cls.pool)
         cls.effects = builds.load_item_effects()
@@ -679,12 +684,37 @@ class TestVladimirEngine(unittest.TestCase):
                                          self.effects, kit=self.kit)
 
     def sim(self, level, tokens, hp=2800, armor=80, mr=60, duration=8.0,
-            use_ult=True, **kw):
+            use_ult=True, kit=None, **kw):
         ids, sheet = self.resolve(level, tokens)
-        return builds.simulate(sheet, self.kit,
+        return builds.simulate(sheet, kit or self.kit,
                                builds.merge_effects(ids, self.effects), level,
                                builds.skill_ranks(level), hp, armor, mr,
                                duration, use_ult=use_ult, **kw)
+
+    def test_never_attacks(self):
+        # a crit/on-hit/spellblade build gets nothing from its passives —
+        # only the rotation and the raw stats count
+        r = self.sim(16, ["infinity edge", "kraken slayer", "lich bane"],
+                     hp=100_000, duration=8.0)
+        self.assertEqual(r["attacks"], 0)
+        for src in ("auto", "onhit", "kraken", "spellblade"):
+            self.assertNotIn(src, r["breakdown"])
+        for src in ("Q", "E", "W", "R"):
+            self.assertIn(src, r["breakdown"])
+        # and the rotation itself is exactly what it was with autos on
+        on = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=10.0,
+                      use_ult=False, kit=self.kit_autos)
+        off = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=10.0,
+                       use_ult=False)
+        self.assertIn("auto", on["breakdown"])
+        self.assertNotIn("auto", off["breakdown"])
+        for src in ("Q", "Q empowered", "E", "W"):
+            self.assertAlmostEqual(off["breakdown"][src], on["breakdown"][src])
+        meta = builds.api_builds_meta()
+        by_slug = {c["slug"]: c for c in meta["champions"]}
+        self.assertTrue(any("never auto-attacks" in n
+                            for n in by_slug["vladimir"]["notes"]))
+        self.assertEqual(by_slug["kayle"]["notes"], [])
 
     def item_stat(self, iid, stat):
         return self.pool[iid]["stats"].get(stat, {}).get("flat", 0.0)
@@ -739,7 +769,7 @@ class TestVladimirEngine(unittest.TestCase):
         # Q at t=0 (80 magic, 0.25s lockout), one 55-AD auto at 0.25; the
         # next auto (1/0.658 later) is past 1s
         r = self.sim(1, [], hp=10_000, armor=0, mr=0, duration=1.0,
-                     use_ult=False)
+                     use_ult=False, kit=self.kit_autos)
         self.assertEqual(r["attacks"], 1)
         self.assertAlmostEqual(r["breakdown"]["Q"], 80.0)
         self.assertAlmostEqual(r["breakdown"]["auto"], 55.0)
@@ -766,9 +796,9 @@ class TestVladimirEngine(unittest.TestCase):
         # until its release at 1.25 plus the cast lockout — the next auto is
         # at 1.5, so a 1.4s window sees one attack instead of two.
         q_only = self.sim(1, [], hp=100_000, armor=0, mr=0, duration=1.8,
-                          use_ult=False)
+                          use_ult=False, kit=self.kit_autos)
         with_e = self.sim(2, [], hp=100_000, armor=0, mr=0, duration=1.4,
-                          use_ult=False)
+                          use_ult=False, kit=self.kit_autos)
         self.assertEqual(q_only["attacks"], 2)
         self.assertEqual(with_e["attacks"], 1)
         self.assertIn("E", with_e["breakdown"])
@@ -776,7 +806,8 @@ class TestVladimirEngine(unittest.TestCase):
     def test_hemoplague_amps_everything_including_itself(self):
         # 4s fight at 0 resists: R's 10% holds through its own burst at 4.0s
         # (350 x 1.1 = 385) and every auto inside the window is 55 x 1.1
-        r = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=4.0)
+        r = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=4.0,
+                     kit=self.kit_autos)
         self.assertAlmostEqual(r["breakdown"]["R"], 385.0)
         self.assertAlmostEqual(r["breakdown"]["auto"], r["attacks"] * 55 * 1.1)
         off = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=4.0,
@@ -786,7 +817,8 @@ class TestVladimirEngine(unittest.TestCase):
     def test_true_damage_escapes_hemoplague(self):
         # Umbral's opener is true damage: exactly 50 + 1.5 x 18 lethality,
         # untouched by the 10% amp it lands inside of
-        r = self.sim(16, ["umbral"], hp=100_000, armor=300, mr=300, duration=4.0)
+        r = self.sim(16, ["umbral"], hp=100_000, armor=300, mr=300, duration=4.0,
+                     kit=self.kit_autos)
         self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
 
     def test_pool_blocks_casts_but_not_the_charged_release(self):
@@ -794,21 +826,27 @@ class TestVladimirEngine(unittest.TestCase):
         # together; the release still lands inside the pool at 1.25, and
         # nothing else attacks or casts before the pool ends at 2.25
         r = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=2.24,
-                     use_ult=False)
+                     use_ult=False, kit=self.kit_autos)
         self.assertEqual(r["attacks"], 1)
         self.assertIn("E", r["breakdown"])
         self.assertAlmostEqual(r["breakdown"]["W"], 190.0)
         self.assertAlmostEqual(r["breakdown"]["Q"], 160.0)
         longer = self.sim(16, [], hp=100_000, armor=0, mr=0, duration=2.26,
-                          use_ult=False)
+                          use_ult=False, kit=self.kit_autos)
         self.assertEqual(longer["attacks"], 2)
 
     def test_ability_items_ride_the_casts(self):
+        # burns and Luden's ride the casts; spellblade needs the attack the
+        # kit never makes (it does fire with autos on)
         r = self.sim(16, ["lich bane", "liandry", "ludens echo"],
                      hp=100_000, duration=8.0)
-        for src in ("spellblade", "burn", "ludens"):
+        for src in ("burn", "ludens"):
             self.assertIn(src, r["breakdown"])
+        self.assertNotIn("spellblade", r["breakdown"])
         self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"], places=6)
+        on = self.sim(16, ["lich bane"], hp=100_000, duration=8.0,
+                      kit=self.kit_autos)
+        self.assertIn("spellblade", on["breakdown"])
 
     def test_manaless_pool(self):
         vlad = builds.champion_pool(self.kit, self.effects)
