@@ -27,14 +27,18 @@ JOBS_DIR = os.path.join(BASE_DIR, "jobs")
 # The systemd units that run this repo, declared in
 # dotfiles/nixos/configuration.nix. Listed here rather than discovered, so a
 # unit that disappears shows up as "not found" instead of silently dropping
-# out of the table. The dashboard is a *system* unit, the refresh timer a
-# *user* one (it pushes over SSH as rogerc) — they need different buses.
+# out of the table. The dashboard is a *system* unit, the timers *user*
+# ones (the item refresh pushes over SSH as rogerc, the scaling sync writes
+# lol.db as rogerc) — they need different buses.
 SERVICES = [
     {"unit": "lol-dashboard.service", "scope": "system", "runs": "continuous",
      "desc": "serves this dashboard on :8321, reachable over Tailscale only"},
     {"unit": "lol-items-refresh.timer", "svc": "lol-items-refresh.service",
      "scope": "user", "runs": "daily 07:23",
      "desc": "triggers jobs/refresh-items.sh — its own outcome is below"},
+    {"unit": "lol-scaling-sync.timer", "svc": "lol-scaling-sync.service",
+     "scope": "user", "runs": "every 6h at :30",
+     "desc": "triggers jobs/sync-scaling.sh — its own outcome is below"},
 ]
 
 

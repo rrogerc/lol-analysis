@@ -359,12 +359,13 @@ def cmd_import_soloq(args):
         replace_patch_data(con, patch, args.tier, entries)
         matches = matches_by_patch.get(patch, 0)
         replace_match_count(con, patch, args.tier, matches)
-        out_dir = os.path.join(SCALING_DATA_DIR, patch, args.tier)
-        os.makedirs(out_dir, exist_ok=True)
-        with open(os.path.join(out_dir, "champion_win_rates.json"), "w") as f:
-            json.dump(entries, f, indent=2)
-        with open(os.path.join(out_dir, "match_count.json"), "w") as f:
-            json.dump({"matches": matches}, f)
+        if not getattr(args, "db_only", False):
+            out_dir = os.path.join(SCALING_DATA_DIR, patch, args.tier)
+            os.makedirs(out_dir, exist_ok=True)
+            with open(os.path.join(out_dir, "champion_win_rates.json"), "w") as f:
+                json.dump(entries, f, indent=2)
+            with open(os.path.join(out_dir, "match_count.json"), "w") as f:
+                json.dump({"matches": matches}, f)
         print(f"{patch}/{args.tier}: {len(entries)} champion-lane records "
               f"({matches:,} matches)")
     print("Done.")
@@ -388,7 +389,7 @@ def cmd_sync(args):
         cmd_import_soloq(argparse.Namespace(
             quant_dir=args.quant_dir, tier=tier, platforms=args.platforms,
             min_lane_rate=10, min_champ_games=min_champ_games,
-            otp_share=otp_share))
+            otp_share=otp_share, db_only=args.db_only))
         print()
     # Record which regions the crawl covers; the UI shows this next to the
     # tier description. The platform partitions are directories under the
@@ -399,7 +400,14 @@ def cmd_sync(args):
     os.makedirs(SCALING_DATA_DIR, exist_ok=True)
     with open(os.path.join(SCALING_DATA_DIR, "platforms.json"), "w") as f:
         json.dump(platforms, f)
-    print("Sync complete — commit and push data/ to update the published site.")
+    if args.db_only:
+        # The scheduled sync (jobs/sync-scaling.sh) runs this way: lol.db
+        # follows the crawl, while the committed data/scaling archive is left
+        # to deliberate hand-run syncs — an 8 MB rewrite four times a day
+        # would only bloat the repo.
+        print("Sync complete: lol.db refreshed, data/scaling archive left as is.")
+    else:
+        print("Sync complete — commit data/scaling to checkpoint the archive.")
 
 
 # ---------------------------------------------------------------------------
@@ -432,9 +440,15 @@ def build_rows(con, tier, patches, min_games=1000, min_bucket_games=1000):
     matches = con.execute(
         f"SELECT SUM(matches) FROM match_counts WHERE tier=? AND patch IN ({ph})",
         [tier, *patches]).fetchone()[0]
+    # When lol.db last pulled these patches from the crawl. The page shows
+    # this, not the request date: it is the one that can go stale.
+    synced = con.execute(
+        f"SELECT MAX(scraped_at) FROM stats WHERE tier=? AND patch IN ({ph})",
+        [tier, *patches]).fetchone()[0]
     return {
         "tier": tier,
         "patches": patches,
+        "synced": synced,
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "totalGames": sum(r["total"] for r in rows),
         "totalMatches": matches,

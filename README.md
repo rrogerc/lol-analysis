@@ -87,10 +87,14 @@ committed JSON archive:
 ## Getting data
 
 Scaling data comes from the `../lol-quant` Riot-API crawl, read in place —
-nothing is copied between the repos. Whenever the crawl has new games:
+nothing is copied between the repos, but `lol.db` is an aggregate that has
+to be rebuilt from the crawl's parquet. On the home server a systemd user
+timer runs `jobs/sync-scaling.sh` every six hours (`scaling sync
+--db-only`), so the Scaling tab follows the crawler on its own and its
+subtitle shows when it last synced. To refresh by hand:
 
 ```bash
-.venv/bin/python lol.py scaling sync
+python3 lol.py scaling sync
 ```
 
 This refreshes all three tiers with their canonical definitions:
@@ -99,9 +103,10 @@ This refreshes all three tiers with their canonical definitions:
 - `soloq_mastery` — pilot has ≥ 20 season games on the champion
 - `soloq_otp` — one-tricks: champion is ≥ 80% of the player's role games
 
-Sync writes to `lol.db` and mirrors JSON to `data/scaling/<patch>/<tier>/` —
-commit and push that so the archive on GitHub can rebuild the DB anywhere
-via `import-json`. For a one-off custom slice (other thresholds, specific
+A hand-run sync also mirrors JSON to `data/scaling/<patch>/<tier>/` —
+commit that when you want a checkpoint the archive on GitHub can rebuild
+the DB from via `import-json` (the timer skips it: an 8 MB rewrite four
+times a day would bloat the repo). For a one-off custom slice (other thresholds, specific
 platforms, a different tier name), use `lol.py scaling import-soloq`
 directly.
 

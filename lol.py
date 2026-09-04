@@ -99,6 +99,9 @@ def main():
     sp.add_argument("--otp-share", type=float, default=80,
                     help="soloq_otp threshold: champion's share of the player's "
                          "role games in %% (default 80)")
+    sp.add_argument("--db-only", action="store_true",
+                    help="refresh lol.db but leave the data/scaling JSON archive "
+                         "untouched (what the jobs/sync-scaling.sh timer runs)")
     sp.set_defaults(func=scaling.cmd_sync)
 
     sp = scsub.add_parser("import-soloq",
@@ -116,6 +119,8 @@ def main():
                     help="one-trick filter: champion must be at least this %% of the "
                          "player's games in the role (e.g. 80); implies a 20-game "
                          "champion floor unless --min-champ-games is set")
+    sp.add_argument("--db-only", action="store_true",
+                    help="refresh lol.db but leave the data/scaling JSON archive untouched")
     sp.set_defaults(func=scaling.cmd_import_soloq)
 
     # ----- items domain -----

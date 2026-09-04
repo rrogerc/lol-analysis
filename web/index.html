@@ -553,8 +553,15 @@ function initBucketSeg() {
 }
 async function loadOverview() {
   DATA = await api(`api/rows/${encodeURIComponent(state.tier)}.json`);
-  document.getElementById("subtitle").textContent =
-    `Patches ${DATA.patches[0]}–${DATA.patches[DATA.patches.length - 1]} · ${DATA.generated}`;
+  // "synced" is when lol.db last pulled from the crawl — the date that can
+  // go stale. The request date always looks fresh and hid a 10-day gap once.
+  const synced = DATA.synced
+    ? "synced " + new Date(DATA.synced).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+    : DATA.generated;
+  const sub = document.getElementById("subtitle");
+  sub.textContent =
+    `Patches ${DATA.patches[0]}–${DATA.patches[DATA.patches.length - 1]} · ${synced}`;
+  sub.title = DATA.synced || "";
   document.getElementById("kpi-roles").textContent = fmtInt(DATA.rows.length);
   document.getElementById("kpi-games").textContent =
     DATA.totalMatches != null ? fmtCompact(DATA.totalMatches)
