@@ -54,13 +54,30 @@ module and committed JSON archive:
   every build ranked on all three at once, by the geometric mean of its
   expected kill times (each target counts equally in percentage terms; a
   build must kill every target to rank above one that leaves any
-  standing). That pass simulates ~33M legal builds (~37M combinations
-  before Riot's ownership limits prune them) against each target — the
-  enumerator fans out across CPU cores, one to two hours per champion on
-  16 cores (boots that differ only in stats the engine never reads, like
-  Mercury's Treads and Plated Steelcaps, share one simulation). The dashboard never simulates on request: `lol.py builds
-  warm` precomputes every (champion, scenario) cell — its top 500
-  builds, each with its fight against every target — into
+  standing). That pass ranks ~115M legal builds — every tier-2 boots
+  with every legal five-item combination from a ~75-item pool — against
+  each target. The enumerator fans out across CPU cores in blocks and
+  prunes exactly: it publishes every cell's running 500th-best in shared
+  memory, drops results that can't place, and stops a fight the moment
+  its clock passes the point where the build can no longer place on that
+  target's list nor on the overall one (a survivor ranks below every
+  killer, and a kill still to come lands later than the clock), so the
+  lists come out exactly as an unpruned pass ranks them (a test checks
+  that). Boots that fight alike share one simulation: Mercury's Treads,
+  Plated Steelcaps and Gluttonous Greaves always; Boots of Swiftness too
+  unless the build carries an Energized item, since move speed only
+  charges those; Berserker's Greaves too for a champion who never
+  attacks. A previous result's rows are scored first, so the bounds are
+  tight from the start. Under CPython a champion takes on the order of
+  half an hour on 16 cores; `serve` runs the warm on `pypy3` when that is
+  on PATH (or on `$LOL_WARM_PYTHON`), whose JIT makes the pass another
+  three to four times faster with bit-identical results — the NixOS unit
+  puts `pypy3` on its PATH for exactly that (elsewhere: `nix-shell -p
+  pypy3 --run 'python3 lol.py serve …'`). Progress lines land in
+  `.cache/builds/warm.log`.
+  The dashboard never simulates on request: `lol.py builds warm`
+  precomputes every (champion, scenario) cell — its
+  top 500 builds, each with its fight against every target — into
   `.cache/builds/` (gitignored) under a hash of every input, and `serve`
   runs it in the background whenever a cell is cold, so a code or data
   change just makes cells recompute. Runes are not modeled yet.
@@ -116,7 +133,20 @@ directly.
 .venv/bin/python lol.py serve
 ```
 
-Opens `http://127.0.0.1:8321` — an interactive local dashboard:
+Opens `http://127.0.0.1:8321` — an interactive local dashboard.
+
+On the home server nobody runs that command: the NixOS system unit
+`lol-dashboard.service` (declared in `dotfiles/nixos/configuration.nix`)
+runs it on :8321 with `Restart=always`, and `lol-dashboard-reload.path`
+restarts it about 10 s after every commit or pull of this repo. A serve
+started by hand there either fails to bind or, if it got there first,
+squats the port and leaves the unit failed while it answers — so use
+another port for experiments (`--port 8399`), restart with a commit or
+`sudo systemctl restart lol-dashboard`, and read `systemctl status
+lol-dashboard` / `journalctl -u lol-dashboard` for its state. The same
+notes live in `CLAUDE.md` for anyone (or anything) working here.
+
+The tabs:
 
 - **Overview** — win-rate-by-game-length chart + sortable per-bucket rankings,
   with tier/lane/min-games filters. Click table rows to chart champions.
@@ -131,8 +161,9 @@ Opens `http://127.0.0.1:8321` — an interactive local dashboard:
   warm`, which
   `serve` runs in the background whenever something is cold — `--no-warm`
   turns that off); a cell that isn't computed yet says so and fills in
-  when it lands. Restart serve after editing `builds.py` — the tab tells
-  you when it is running older code than is on disk.
+  when it lands. Restart serve after editing `builds.py` (on the server:
+  commit, or `sudo systemctl restart lol-dashboard`) — the tab tells you
+  when it is running older code than is on disk.
 - **Data** — systemd unit health, automation job status, and what's in the
   database, per tier and patch.
 

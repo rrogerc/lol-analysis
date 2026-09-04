@@ -8,6 +8,7 @@ also catch a meraki schema change sneaking past ITEM_STAT_MAP.
 """
 
 import copy
+import json
 import math
 import os
 import re
@@ -1333,6 +1334,203 @@ class TestBootsClasses(unittest.TestCase):
                         self.assertEqual(per_boots[a][1:], per_boots[b][1:])
             # each member keeps its own sheet: Mercury's costs 50 more
             self.assertEqual(per_boots[3111][0] - per_boots[3047][0], 50)
+
+
+class TestEnumeratorPruning(unittest.TestCase):
+    """The exact pruning in enumerate_builds: bounds from the lists as they
+    fill, fights stopped once they can't matter, per-build boots classes,
+    seeds, the checked guess behind the overall bound — every one of them
+    has to leave the result exactly what an unpruned pass ranks. On a
+    9-item pool (126 combinations), so it runs in a second."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.champ = builds.load_champion("kayle")
+        _, cls.pool = builds.load_items()
+        cls.effects = builds.load_item_effects()
+        cls.kit = builds.load_kit("kayle")
+        cls.ranks = builds.skill_ranks(16, builds.kit_max_order(cls.kit))
+        full = builds.champion_pool(cls.kit, cls.effects)
+        charged = [i for i in full if "energized" in cls.effects.get(i, {})]
+        cls.energized = charged[0]
+        cls.tiny = [i for i in full if i not in charged][:8] + [cls.energized]
+        cls.keys = builds.tier_scenarios("full")
+        cls.targets = {k: builds.SCENARIOS[k] for k in builds.tier_targets("full")}
+        cls.overall = "full-overall"
+
+    def enum(self, **kw):
+        kw.setdefault("candidates", self.tiny)
+        kw.setdefault("overall", self.overall)
+        kw.setdefault("keep", 20)
+        return builds.enumerate_builds(self.champ, self.pool, self.effects,
+                                       self.kit, 16, self.ranks, self.targets,
+                                       **kw)
+
+    @classmethod
+    def reference(cls):
+        """The unpruned ranking: keep more than there are builds, so no
+        bound ever forms, then cut to 20."""
+        if not hasattr(cls, "_ref"):
+            lists, count = builds.enumerate_builds(
+                cls.champ, cls.pool, cls.effects, cls.kit, 16, cls.ranks,
+                cls.targets, candidates=cls.tiny, overall=cls.overall,
+                keep=10_000)
+            assert count == 7 * math.comb(len(cls.tiny), 5)
+            assert all(len(lst) == count for lst in lists.values())
+            cls._ref = ({k: lst[:20] for k, lst in lists.items()}, count)
+        return cls._ref
+
+    def assertSameRanking(self, lists, count):
+        ref, ref_count = self.reference()
+        self.assertEqual(count, ref_count)
+        for k in self.keys:
+            self.assertEqual([ids for ids, _, _ in lists[k]],
+                             [ids for ids, _, _ in ref[k]], k)
+            for (_, sheet, rs), (_, ref_sheet, ref_rs) in zip(lists[k], ref[k]):
+                self.assertEqual(sheet, ref_sheet)
+                self.assertEqual(rs, ref_rs)
+
+    def test_pruned_pass_ranks_like_an_unpruned_one(self):
+        lists, count = self.enum()
+        self.assertSameRanking(lists, count)
+        # and the rows carry every fight in full, breakdown included
+        for k in self.keys:
+            for _, _, rs in lists[k]:
+                for t in self.targets:
+                    self.assertTrue(rs[t]["breakdown"], (k, t))
+
+    def test_forked_pass_ranks_like_a_sequential_one(self):
+        with mock.patch.object(builds, "FORK_ABOVE", 0):
+            lists, count = self.enum(workers=3)
+        self.assertSameRanking(lists, count)
+
+    def test_a_wrong_guess_is_caught_and_the_pass_redone(self):
+        # a bound above the true fastest kill would cut builds that belong on
+        # the overall list; the end-of-pass check must notice and rerun
+        log = []
+        with mock.patch.object(builds, "MIN_KILL_GUESS", 2.0):
+            lists, count = self.enum(log=log.append)
+        self.assertTrue(any("faster than assumed" in line for line in log), log)
+        self.assertSameRanking(lists, count)
+
+    def test_seeds_only_change_the_order_of_work(self):
+        ref, _ = self.reference()
+        seeds = [ids for k in self.keys for ids, _, _ in ref[k][:3]]
+        seeds += [[3006, 9999999, *self.tiny[:4]],  # not in the pool
+                  [self.tiny[0], *self.tiny[1:6]],  # no boots
+                  [3006, *self.tiny[:4]],           # too short
+                  [3006, self.tiny[0], self.tiny[0], *self.tiny[1:4]]]  # a dupe
+        lists, count = self.enum(seeds=seeds)
+        self.assertSameRanking(lists, count)
+
+    def test_progress_is_logged(self):
+        log = []
+        self.enum(log=log.append)
+        self.assertTrue(log and "100.0%" in log[-1], log)
+        self.assertIn(f"{7 * math.comb(len(self.tiny), 5):,} builds", log[-1])
+
+    def test_stop_after_cuts_a_fight_that_cannot_matter(self):
+        ids = [3006, *self.tiny[:5]]
+        sheet = builds.resolve_stats(self.champ, 16, ids, self.pool,
+                                     self.effects, kit=self.kit)
+        fx = builds.merge_effects(ids, self.effects)
+        sc = self.targets["full-tank"]
+        args = (sheet, self.kit, fx, 16, self.ranks, sc["targetHp"],
+                sc["armor"], sc["mr"], sc["duration"])
+        full = builds.simulate(*args, target_bonus_hp=sc["targetBonusHp"])
+        self.assertIsNotNone(full["ttk"])
+        # the clock passes the cut before the kill: nothing to report
+        self.assertIsNone(builds.simulate(*args, target_bonus_hp=sc["targetBonusHp"],
+                                          stop_after=full["ttk"] / 2))
+        # the kill comes first: the fight is the full one
+        self.assertEqual(builds.simulate(*args, target_bonus_hp=sc["targetBonusHp"],
+                                         stop_after=full["ttk"]), full)
+        # no breakdown wanted: the numbers don't change
+        lean = builds.simulate(*args, target_bonus_hp=sc["targetBonusHp"],
+                               breakdown=False)
+        self.assertEqual(lean["breakdown"], {})
+        self.assertEqual({k: v for k, v in lean.items() if k != "breakdown"},
+                         {k: v for k, v in full.items() if k != "breakdown"})
+
+    def test_cached_builds_seed_from_any_cell_file(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        names = lambda ids: [self.pool[i]["name"] for i in ids]
+        a, b = [3006, *self.tiny[:5]], [3020, *self.tiny[1:6]]
+        with mock.patch.object(builds, "SCENARIO_CACHE_DIR", tmp):
+            with open(os.path.join(tmp, "kayle-full-tank-0000000000000000.json"), "w") as f:
+                json.dump({"rows": [{"items": names(a)}, {"items": names(b)},
+                                    {"items": names(a)},
+                                    {"items": ["No Such Item", *names(a)[1:]]}]}, f)
+            with open(os.path.join(tmp, "kayle-full-squishy-1111111111111111.json"), "w") as f:
+                f.write("not json")
+            with open(os.path.join(tmp, "vladimir-full-tank-0000000000000000.json"), "w") as f:
+                json.dump({"rows": [{"items": names(b)}]}, f)
+            self.assertEqual(builds.cached_builds("kayle", self.pool), [a, b])
+            self.assertEqual(builds.cached_builds("vladimir", self.pool), [b])
+            self.assertEqual(builds.cached_builds("teemo", self.pool), [])
+
+
+class TestBootsPartitions(unittest.TestCase):
+    """Boots classes per build: move speed only charges Energized items, so
+    without one Swiftness fights like the 45-speed boots; a kit that never
+    attacks reads neither move speed nor attack speed, so Berserker's joins
+    them too."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.pool = builds.load_items()
+        cls.effects = builds.load_item_effects()
+        cls.kayle, cls.vlad = builds.load_kit("kayle"), builds.load_kit("vladimir")
+        cls.name = lambda self, b: self.pool[b]["name"]
+
+    def classes(self, kit, calm):
+        return [[self.pool[b]["name"] for b in c]
+                for c in builds.boots_partitions(self.pool, self.effects, kit)[calm]]
+
+    def test_kayle_without_an_energized_item_merges_swiftness(self):
+        self.assertEqual(self.classes(self.kayle, True), [
+            ["Berserker's Greaves"], ["Sorcerer's Shoes"],
+            ["Ionian Boots of Lucidity"],
+            ["Boots of Swiftness", "Mercury's Treads", "Plated Steelcaps",
+             "Gluttonous Greaves"]])
+        self.assertEqual(self.classes(self.kayle, False),
+                         [[self.pool[b]["name"] for b in c]
+                          for c in builds.boots_classes(self.pool, self.effects)])
+
+    def test_vladimir_never_attacks_so_only_pen_and_haste_tell_boots_apart(self):
+        for calm in (True, False):
+            self.assertEqual(self.classes(self.vlad, calm), [
+                ["Berserker's Greaves", "Boots of Swiftness", "Mercury's Treads",
+                 "Plated Steelcaps", "Gluttonous Greaves"],
+                ["Sorcerer's Shoes"], ["Ionian Boots of Lucidity"]])
+
+    def fight(self, slug, kit, ids):
+        champ = builds.load_champion(slug)
+        ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
+        sheet = builds.resolve_stats(champ, 16, ids, self.pool, self.effects, kit=kit)
+        r = builds.simulate(sheet, kit, builds.merge_effects(ids, self.effects), 16,
+                            ranks, 4800, 220, 160, 15, target_bonus_hp=1500)
+        return (r["total"], r["ttk"], r["ttk_exp"], r["breakdown"])
+
+    def test_the_merged_boots_really_fight_alike(self):
+        idx = builds.item_index(self.pool)
+        item = lambda n: builds.resolve_item(self.pool, idx, n)
+        calm = [item(n) for n in ("Infinity Edge", "Kraken Slayer",
+                                  "Lord Dominik's Regards", "Nashor's Tooth")]
+        charged = [item("Rapid Firecannon"), *calm]
+        # Kayle, no Energized item: Swiftness = Steelcaps
+        self.assertEqual(self.fight("kayle", self.kayle, [3009, *calm]),
+                         self.fight("kayle", self.kayle, [3047, *calm]))
+        # with one, the 10 extra move speed charges it sooner
+        self.assertNotEqual(self.fight("kayle", self.kayle, [3009, *charged]),
+                            self.fight("kayle", self.kayle, [3047, *charged]))
+        # Vladimir: Berserker's = Steelcaps, even with an Energized item
+        vlad = [item(n) for n in ("Rabadon's Deathcap", "Void Staff", "Liandry's Torment")]
+        self.assertEqual(self.fight("vladimir", self.vlad, [3006, *vlad]),
+                         self.fight("vladimir", self.vlad, [3047, *vlad]))
+        self.assertEqual(self.fight("vladimir", self.vlad, [3006, item("Stormrazor"), *vlad[:2]]),
+                         self.fight("vladimir", self.vlad, [3009, item("Stormrazor"), *vlad[:2]]))
 
 
 if __name__ == "__main__":

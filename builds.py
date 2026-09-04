@@ -37,6 +37,7 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import items
 from common import BASE_DIR, DATA_DIR, patch_key
@@ -701,6 +702,14 @@ class KayleDriver(KitDriver):
             f = p.get(form, {})
             if "attackRange" in f and level >= f["level"]:
                 self.attack_range = f["attackRange"]
+        # per-fight constants: the Q's damage, the E on-hit, the wave's damage
+        self.q_dmg = (ability_hit(self.q_cfg["damage"], ranks["Q"], sheet)
+                      if ranks["Q"] else 0.0)
+        self.e_onhit = (ability_hit(self.e_cfg["onhit"], ranks["E"], sheet)
+                        if ranks["E"] else 0.0)
+        self.wave_dmg = (by_level(self.wave["baseByLevel"], level)
+                         + self.wave["bonusAdRatio"] * sheet["ad_bonus"]
+                         + self.wave["apRatio"] * sheet["ap"])
 
     def init_state(self, st):
         st["zeal"] = (self.zeal["maxStacks"]
@@ -716,8 +725,7 @@ class KayleDriver(KitDriver):
 
     def attack_riders(self, e):
         if self.ranks["E"]:
-            e.deal(ability_hit(self.e_cfg["onhit"], self.ranks["E"], self.sheet),
-                   "magic", "E onhit")
+            e.deal(self.e_onhit, "magic", "E onhit")
 
     def after_attack(self, e):
         st = e.st
@@ -731,10 +739,7 @@ class KayleDriver(KitDriver):
             e.eclipse_hit()
             st["e_pending"] = False
         if self.aflame and st["zeal"] >= self.zeal["maxStacks"]:
-            e.deal(by_level(self.wave["baseByLevel"], self.level)
-                   + self.wave["bonusAdRatio"] * self.sheet["ad_bonus"]
-                   + self.wave["apRatio"] * self.sheet["ap"],
-                   "magic", "wave", crit_mod=True, ability=True)
+            e.deal(self.wave_dmg, "magic", "wave", crit_mod=True, ability=True)
 
     def schedule_attack(self, e):
         # E weave: cast right after an auto to use the attack reset
@@ -751,8 +756,7 @@ class KayleDriver(KitDriver):
         st, q = e.st, self.q_cfg
         st["q_ready"] = st["t"] + e.basic_cd(q["cooldownS"][self.ranks["Q"] - 1])
         st["shred_until"] = st["t"] + q.get("shred", {}).get("durationS", 0.0)
-        e.deal(ability_hit(q["damage"], self.ranks["Q"], self.sheet), "magic", "Q",
-               ability=True)
+        e.deal(self.q_dmg, "magic", "Q", ability=True)
         e.ability_cast_proc()
         e.eclipse_hit()
         e.prime_spellblade()
@@ -777,6 +781,15 @@ class VladimirDriver(KitDriver):
         self.q_cfg, self.w_cfg, self.e_cfg, self.r_cfg = (
             ab[s] for s in ("Q", "W", "E", "R"))
         self.rush = self.q_cfg["crimsonRush"]
+        # per-fight constants: each ability's damage and cooldown at its rank
+        q, w, e = ranks["Q"], ranks["W"], ranks["E"]
+        self.q_dmg = ability_hit(self.q_cfg["damage"], q, sheet) if q else 0.0
+        self.q_cd = self.q_cfg["cooldownS"][q - 1] if q else INF
+        self.e_dmg = ability_hit(self.e_cfg["damage"]["max"], e, sheet) if e else 0.0
+        self.e_cd = self.e_cfg["cooldownS"][e - 1] if e else INF
+        self.w_tick = (ability_hit(self.w_cfg["damage"], w, sheet)
+                       / self.w_cfg["damage"]["ticks"]) if w else 0.0
+        self.w_cd = self.w_cfg["cooldownS"][w - 1] if w else INF
 
     def init_state(self, st):
         st.update(e_ready=0.0, w_ready=0.0, q_casts=0,
@@ -801,10 +814,10 @@ class VladimirDriver(KitDriver):
         return self._castable_at(e, e.st["q_ready"]) if self.ranks["Q"] else INF
 
     def cast_q(self, e):
-        st, q, rank = e.st, self.q_cfg, self.ranks["Q"]
-        st["q_ready"] = st["t"] + e.basic_cd(q["cooldownS"][rank - 1])
+        st = e.st
+        st["q_ready"] = st["t"] + e.basic_cd(self.q_cd)
         st["q_casts"] += 1
-        amt = ability_hit(q["damage"], rank, self.sheet)
+        amt = self.q_dmg
         empowered = st["q_casts"] % self.rush["everyNthCast"] == 0
         if empowered:
             amt *= 1.0 + self.rush["bonusDamagePct"] / 100.0
@@ -842,26 +855,23 @@ class VladimirDriver(KitDriver):
                 self.cast_w(e)
         elif kind == "e_release":
             st["charge_until"] = INF
-            rank = self.ranks["E"]
-            st["e_ready"] = st["t"] + e.basic_cd(self.e_cfg["cooldownS"][rank - 1])
-            e.deal(ability_hit(self.e_cfg["damage"]["max"], rank, self.sheet),
-                   "magic", "E", ability=True)
+            st["e_ready"] = st["t"] + e.basic_cd(self.e_cd)
+            e.deal(self.e_dmg, "magic", "E", ability=True)
             e.ability_cast_proc()
             e.eclipse_hit()
             e.prime_spellblade()
             self._cast_done(e)
         elif kind == "w_tick":
-            w, rank = self.w_cfg, self.ranks["W"]
-            e.deal(ability_hit(w["damage"], rank, self.sheet) / w["damage"]["ticks"],
-                   "magic", "W", ability=True)
+            e.deal(self.w_tick, "magic", "W", ability=True)
             st["w_ticks_left"] -= 1
-            st["w_next"] = st["t"] + w["damage"]["tickS"] if st["w_ticks_left"] else INF
+            st["w_next"] = (st["t"] + self.w_cfg["damage"]["tickS"]
+                            if st["w_ticks_left"] else INF)
         else:
             raise NotImplementedError(kind)
 
     def cast_w(self, e):
-        st, w, rank = e.st, self.w_cfg, self.ranks["W"]
-        st["w_ready"] = st["t"] + e.basic_cd(w["cooldownS"][rank - 1])
+        st, w = e.st, self.w_cfg
+        st["w_ready"] = st["t"] + e.basic_cd(self.w_cd)
         st["pool_until"] = st["t"] + w["durationS"]
         st["next_attack"] = max(st["next_attack"], st["pool_until"])
         st["w_ticks_left"], st["w_next"] = w["damage"]["ticks"], st["t"]
@@ -881,10 +891,13 @@ def kit_driver(kit, sheet, level, ranks, prestacked):
 
 def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
              duration, use_ult=True, prestacked=False, target_bonus_hp=0.0,
-             _blend=True):
+             stop_after=INF, breakdown=True, _blend=True):
     """One fight vs a stat dummy. Returns totals, DPS, time-to-kill (None if
-    the dummy survives), and a per-source damage breakdown."""
-    from types import SimpleNamespace
+    the dummy survives), and a per-source damage breakdown (empty unless
+    `breakdown`: the enumerator skips it and fills it in for the rows that
+    place) — or None if the clock passed `stop_after` with the dummy still
+    standing (the enumerator stops fights whose outcome can no longer
+    matter)."""
     drv = kit_driver(kit, sheet, level, ranks, prestacked)
     ranged, atk_range = drv.ranged, drv.attack_range
     r_cfg = kit["abilities"]["R"]
@@ -937,146 +950,206 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
     if fx["manaActive"]:  # Actualizer: cast on engage, empowered for 8s
         st["ma_until"] = fx["manaActive"]["durationS"]
 
+    as_stacking, flurry, on_ult, ult_steroid = (
+        fx["asStacking"], fx["flurry"], fx["onUltCast"], fx["ultAttackSteroid"])
+    sheet_bonus_as, base_as, as_ratio = (sheet["bonus_as_pct"], sheet["base_as"],
+                                         sheet["as_ratio"])
+
     def attack_speed():
-        bonus = sheet["bonus_as_pct"] + drv.bonus_as(st)
-        if fx["asStacking"]:
-            bonus += st["seething"] * fx["asStacking"]["pctPerStack"]
-        if fx["flurry"] and st["t"] < st["flurry_until"]:
-            bonus += fx["flurry"]["asPct"]
-        if fx["onUltCast"] and st["t"] < st["hex_until"]:
-            bonus += fx["onUltCast"]["asPct"]
-        if (fx["ultAttackSteroid"]
-                and st["post_r_attacks"] < fx["ultAttackSteroid"]["attacks"]):
-            bonus += fx["ultAttackSteroid"]["asPct"]
-        return min(sheet["base_as"] + sheet["as_ratio"] * bonus / 100.0, AS_CAP)
+        bonus = sheet_bonus_as + drv.bonus_as(st)
+        if as_stacking:
+            bonus += st["seething"] * as_stacking["pctPerStack"]
+        if flurry and st["t"] < st["flurry_until"]:
+            bonus += flurry["asPct"]
+        if on_ult and st["t"] < st["hex_until"]:
+            bonus += on_ult["asPct"]
+        if ult_steroid and st["post_r_attacks"] < ult_steroid["attacks"]:
+            bonus += ult_steroid["asPct"]
+        return min(base_as + as_ratio * bonus / 100.0, AS_CAP)
+
+    # Everything deal() needs that the build and target fix, resolved once:
+    # the effect fields (most are None for most builds), the sheet's numbers,
+    # the amp a damage type carries after n seconds in combat, and — cached
+    # on the little state that changes it — the resist multiplier.
+    dmg_amps, flat_amps = fx["dmgAmps"], fx["flatAmps"]
+    giant, hyper, shojin_fx, mana_fx = (fx["giantSlayer"], fx["hypershot"],
+                                       fx["abilityAmpStacking"], fx["manaActive"])
+    alt_pen, armor_shred, mr_shred = fx["altPen"], fx["armorShred"], fx["mrShred"]
+    opener, magic_crit, exec_pct = (fx["openerLethality"], fx["magicCrit"],
+                                    fx["executePct"])
+    storm, burn_fx, once_fx, ult_burn = (fx["stormsurge"], fx["burns"],
+                                         fx["abilityProcOnce"], fx["ultBurn"])
+    lethality, armor_pen_pct = sheet["lethality"], sheet["armor_pen_pct"]
+    magic_pen_pct, magic_pen_flat = sheet["magic_pen_pct"], sheet["magic_pen_flat"]
+    crit_damage = sheet["crit_damage"]
+    shred_armor, shred_mr = shred_pct.get("armor", 0.0), shred_pct.get("mr", 0.0)
+    hyper_amp = 1.0 + hyper["ampPct"] / 100.0 if hyper else 1.0
+    mana_amp = (1.0 + (mana_fx["ampBasePct"] + mana_fx["ampPer100BonusMana"]
+                       * sheet["mana_bonus"] / 100.0) / 100.0) if mana_fx else 1.0
+    shojin_per = shojin_fx["pctPerStack"] / 100.0 if shojin_fx else 0.0
+    shojin_max = shojin_fx["maxStacks"] if shojin_fx else 0
+    crit_below = magic_crit["belowTargetHpPct"] if magic_crit else 0.0
+    crit_below_pct = magic_crit["critDmgPct"] if magic_crit else 0.0
+    crit_below_ev = magic_crit["critDmgPct"] / 100.0 if magic_crit else 0.0
+    exec_hp = exec_pct / 100.0 * target_hp if exec_pct else 0.0
+    opener_until = opener["durationS"] if opener else -1.0
+    opener_leth = (opener["ranged"] if ranged else opener["melee"]) if opener else 0.0
+    alt_max = alt_pen["maxStacks"] if alt_pen else 0
+    alt_per = alt_pen["pctPerStack"] if alt_pen else 0.0
+    cleaver_per = armor_shred["pctPerStack"] if armor_shred else 0.0
+    cleaver_max = armor_shred["maxStacks"] if armor_shred else 0
+    blood_per = mr_shred["pctPerStack"] if mr_shred else 0.0
+    blood_max = mr_shred["maxStacks"] if mr_shred else 0
+    mal_reduction = ult_burn["mrReduction"] if ult_burn else 0.0
+    # the resist multiplier depends on more than the Q shred for some builds
+    phys_dyn = bool(armor_shred or alt_pen or opener)
+    magic_dyn = bool(mr_shred or alt_pen or ult_burn)
+    # a build's base amp by damage type — and, with a ramp (Liandry's,
+    # Riftmaker) on the build, by whole seconds in combat
+    def base_amp(dt, secs):
+        amp = 1.0
+        for a in dmg_amps:
+            amp *= 1.0 + a["pctPerStack"] / 100.0 * min(a["maxStacks"], secs)
+        for a in flat_amps:  # Abyssal Mask: always-on, one damage type
+            if a["damageType"] in (dt, "all"):
+                amp *= 1.0 + a["pct"] / 100.0
+        if giant:  # 1% per 100 target bonus HP, capped
+            amp *= 1.0 + min(giant["maxPct"], target_bonus_hp / 100.0) / 100.0
+        return amp
+    amp_base = {}
+    if dmg_amps:
+        n_secs = max(1, int(duration) + 2) if duration < INF else 64
+        for dt in ("physical", "magic", "true"):
+            amp_base[dt] = [base_amp(dt, secs) for secs in range(n_secs)]
+    else:
+        for dt in ("physical", "magic", "true"):
+            amp_base[dt] = [base_amp(dt, 0)]
+    resist_phys, resist_magic = {}, {}
+    bd = st["breakdown"]
 
     def deal(amount, dtype, source, crit_mod=False, ability=False,
              ev_floor=1.0):
         t = st["t"]
-        amp = 1.0
         if st["combat_t0"] is None:  # the first damage dealt opens combat
             st["combat_t0"] = t
         # Liandry's Suffering, Riftmaker's Void Corruption: a stack per whole
         # second in combat. The hair of tolerance keeps a cast that lands on
         # a second boundary on the right side of it — 4.6 / 1.15 is
         # 3.9999999999999996 to the machine.
-        secs_in_combat = int(t - st["combat_t0"] + 1e-9)
-        for a in fx["dmgAmps"]:
-            amp *= 1.0 + a["pctPerStack"] / 100.0 * min(a["maxStacks"], secs_in_combat)
-        for a in fx["flatAmps"]:  # Abyssal Mask: always-on, one damage type
-            if a["damageType"] in (dtype, "all"):
-                amp *= 1.0 + a["pct"] / 100.0
-        if fx["giantSlayer"]:  # 1% per 100 target bonus HP, capped
-            amp *= 1.0 + min(fx["giantSlayer"]["maxPct"],
-                             target_bonus_hp / 100.0) / 100.0
-        if fx["hypershot"] and t < st["hz_until"]:
-            amp *= 1.0 + fx["hypershot"]["ampPct"] / 100.0
+        amp = amp_base[dtype][int(t - st["combat_t0"] + 1e-9) if dmg_amps else 0]
+        if hyper and t < st["hz_until"]:
+            amp *= hyper_amp
         if t <= st["kit_amp_until"] and dtype != "true":
             amp *= 1.0 + st["kit_amp_pct"] / 100.0
         # "increased basic damage" is the attack itself — not the on-hit
         # effects it triggers, and not abilities
         if source == "auto":
             amp *= auto_amp
-        if ability and fx["abilityAmpStacking"]:  # Shojin's Focused Will
-            aa = fx["abilityAmpStacking"]
-            amp *= 1.0 + aa["pctPerStack"] / 100.0 * st["shojin"]
-        if ability and fx["manaActive"] and t < st["ma_until"]:
-            ma = fx["manaActive"]
-            amp *= 1.0 + (ma["ampBasePct"] + ma["ampPer100BonusMana"]
-                          * sheet["mana_bonus"] / 100.0) / 100.0
-        dark_pen = 0.0
-        if fx["altPen"]:
-            dark_pen = min(st["dark"], fx["altPen"]["maxStacks"]) \
-                       * fx["altPen"]["pctPerStack"]
+        if ability:
+            if shojin_fx:  # Shojin's Focused Will
+                amp *= 1.0 + shojin_per * st["shojin"]
+            if mana_fx and t < st["ma_until"]:
+                amp *= mana_amp
         qs_on = t < st["shred_until"]
         if dtype == "physical":
-            shred = shred_pct.get("armor", 0.0) if qs_on else 0.0
-            if fx["armorShred"]:  # Black Cleaver: % armor reduction stacks
-                shred += st["cleaver"] * fx["armorShred"]["pctPerStack"]
-            leth = sheet["lethality"]
-            if fx["openerLethality"] and t < fx["openerLethality"]["durationS"]:
-                ol = fx["openerLethality"]
-                leth += ol["ranged"] if ranged else ol["melee"]
-            r = eff_resist(target_armor, 0.0, shred,
-                           stack_pct_pen(sheet["armor_pen_pct"], dark_pen),
-                           leth)
+            key = ((qs_on, st["cleaver"], st["dark"], t < opener_until)
+                   if phys_dyn else qs_on)
+            mult = resist_phys.get(key)
+            if mult is None:
+                dark_pen = min(st["dark"], alt_max) * alt_per if alt_pen else 0.0
+                shred = shred_armor if qs_on else 0.0
+                if armor_shred:  # Black Cleaver: % armor reduction stacks
+                    shred += st["cleaver"] * cleaver_per
+                leth = lethality
+                if opener and t < opener_until:
+                    leth += opener_leth
+                mult = resist_phys[key] = resist_mult(eff_resist(
+                    target_armor, 0.0, shred,
+                    stack_pct_pen(armor_pen_pct, dark_pen), leth))
         elif dtype == "true":
-            r = 0.0
+            mult = 1.0
         else:
-            mal = (fx["ultBurn"]["mrReduction"]
-                   if fx["ultBurn"] and t < st["mal_shred_until"] else 0.0)
-            shred = shred_pct.get("mr", 0.0) if qs_on else 0.0
-            if fx["mrShred"]:  # Bloodletter's Curse: % MR reduction stacks
-                shred += st["blood"] * fx["mrShred"]["pctPerStack"]
-            r = eff_resist(target_mr, mal, shred,
-                           stack_pct_pen(sheet["magic_pen_pct"], dark_pen),
-                           sheet["magic_pen_flat"])
+            key = ((qs_on, st["blood"], st["dark"], t < st["mal_shred_until"])
+                   if magic_dyn else qs_on)
+            mult = resist_magic.get(key)
+            if mult is None:
+                dark_pen = min(st["dark"], alt_max) * alt_per if alt_pen else 0.0
+                mal = mal_reduction if ult_burn and t < st["mal_shred_until"] else 0.0
+                shred = shred_mr if qs_on else 0.0
+                if mr_shred:  # Bloodletter's Curse: % MR reduction stacks
+                    shred += st["blood"] * blood_per
+                mult = resist_magic[key] = resist_mult(eff_resist(
+                    target_mr, mal, shred,
+                    stack_pct_pen(magic_pen_pct, dark_pen), magic_pen_flat))
         # Cinderbloom is a deterministic crit: magic damage below the HP
         # threshold always deals critDmgPct (120%). A wave that can already
         # crit rolls real crit first; the non-crit share cinderblooms.
-        below = (fx["magicCrit"] is not None and dtype == "magic"
-                 and st["hp"] / target_hp * 100.0
-                     < fx["magicCrit"]["belowTargetHpPct"])
+        hp = st["hp"]
+        below = (magic_crit is not None and dtype == "magic"
+                 and hp / target_hp * 100.0 < crit_below)
         ev = 1.0
         if crit_mod:
             ev = crit_ev
             if below:
-                ev = (crit_c * sheet["crit_damage"] / 100.0
-                      + (1.0 - crit_c) * fx["magicCrit"]["critDmgPct"] / 100.0)
-            ev = max(ev, ev_floor)  # guaranteed-crit attacks (Sundered Sky)
+                ev = (crit_c * crit_damage / 100.0
+                      + (1.0 - crit_c) * crit_below_pct / 100.0)
+            if ev < ev_floor:  # guaranteed-crit attacks (Sundered Sky)
+                ev = ev_floor
         elif below:
-            ev = fx["magicCrit"]["critDmgPct"] / 100.0
-        dmg = amount * amp * resist_mult(r) * ev
+            ev = crit_below_ev
+        dmg = amount * amp * mult * ev
         # Damage arrives in batches at discrete times (an attack and all its
         # on-hits share one timestamp). Track each batch so the killing blow
         # can be credited only for the share of it that was actually needed.
         if t != st["ev_t"]:
-            st["prev_ev_t"] = max(st["ev_t"], 0.0)
-            st["ev_t"], st["ev_hp0"], st["ev_dmg"] = t, st["hp"], 0.0
+            st["prev_ev_t"] = st["ev_t"] if st["ev_t"] > 0.0 else 0.0
+            st["ev_t"], st["ev_hp0"], st["ev_dmg"] = t, hp, 0.0
         st["ev_dmg"] += dmg
-        st["hp"] -= dmg
+        hp -= dmg
+        st["hp"] = hp
         st["total"] += dmg
-        st["breakdown"][source] = st["breakdown"].get(source, 0.0) + dmg
+        if breakdown:
+            bd[source] = bd.get(source, 0.0) + dmg
         # stacking shreds/amps build off the damage just dealt
-        if dtype == "physical" and fx["armorShred"]:
-            st["cleaver"] = min(st["cleaver"] + 1, fx["armorShred"]["maxStacks"])
+        if dtype == "physical" and armor_shred:
+            c = st["cleaver"] + 1
+            st["cleaver"] = c if c < cleaver_max else cleaver_max
         if ability:
-            if fx["mrShred"] and dtype == "magic":
-                st["blood"] = min(st["blood"] + 1, fx["mrShred"]["maxStacks"])
-            if fx["abilityAmpStacking"]:
-                st["shojin"] = min(st["shojin"] + 1,
-                                   fx["abilityAmpStacking"]["maxStacks"])
-            if fx["hypershot"] and not st["hz_first"]:
+            if mr_shred and dtype == "magic":
+                b = st["blood"] + 1
+                st["blood"] = b if b < blood_max else blood_max
+            if shojin_fx:
+                s = st["shojin"] + 1
+                st["shojin"] = s if s < shojin_max else shojin_max
+            if hyper and not st["hz_first"]:
                 # the opening cast is the one made from 600+ range
                 st["hz_first"] = True
-                st["hz_until"] = t + fx["hypershot"]["durationS"]
-        if ability:
-            for i, b in enumerate(fx["burns"]):
-                if st["burns"][i]["next"] == INF:
-                    st["burns"][i]["next"] = t + b["tickS"]
-                st["burns"][i]["until"] = t + b["durationS"]
-            if fx["abilityProcOnce"] and not st["once_done"]:
+                st["hz_until"] = t + hyper["durationS"]
+            for i, b in enumerate(burn_fx):
+                sb = st["burns"][i]
+                if sb["next"] == INF:
+                    sb["next"] = t + b["tickS"]
+                sb["until"] = t + b["durationS"]
+            if once_fx and not st["once_done"]:
                 st["once_done"] = True
-                po = fx["abilityProcOnce"]
-                deal(po["base"] + po["apRatio"] * sheet["ap"],
-                     po["damageType"], po["source"])
-        if fx["stormsurge"] and not st["ss_done"] and st["ss_at"] == INF:
-            ss = fx["stormsurge"]
+                deal(once_fx["base"] + once_fx["apRatio"] * sheet["ap"],
+                     once_fx["damageType"], once_fx["source"])
+        hp = st["hp"]
+        if storm and not st["ss_done"] and st["ss_at"] == INF:
             st["dmg_log"].append((t, dmg))
-            recent = sum(d for tt, d in st["dmg_log"]
-                         if tt >= t - ss["windowS"])
-            if recent >= ss["thresholdPct"] / 100.0 * target_hp:
-                st["ss_at"] = t + ss["delayS"]
+            recent = math.fsum(d for tt, d in st["dmg_log"]
+                               if tt >= t - storm["windowS"])
+            if recent >= storm["thresholdPct"] / 100.0 * target_hp:
+                st["ss_at"] = t + storm["delayS"]
         exec_amt = 0.0
-        if (fx["executePct"] and st["ttk"] is None
-                and 0.0 < st["hp"] <= fx["executePct"] / 100.0 * target_hp):
-            exec_amt = st["hp"]
-            st["breakdown"]["execute"] = (st["breakdown"].get("execute", 0.0)
-                                          + exec_amt)
+        if exec_pct and st["ttk"] is None and 0.0 < hp <= exec_hp:
+            exec_amt = hp
+            if breakdown:
+                bd["execute"] = bd.get("execute", 0.0) + exec_amt
             st["total"] += exec_amt
             st["ev_dmg"] += exec_amt
-            st["hp"] = 0.0
-        if st["hp"] <= 0 and st["ttk"] is None:
+            st["hp"] = hp = 0.0
+        if hp <= 0 and st["ttk"] is None:
             st["ttk"] = t
             # Effective (ranking) kill time. The real kill lands on this
             # batch, but a blow that overkills 4x shouldn't earn the same
@@ -1093,9 +1166,8 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
             # W/D of the time. Record that probability; the caller blends the
             # executing and non-executing timelines with it.
             if exec_amt > 0.0:
-                window = fx["executePct"] / 100.0 * target_hp
                 batch = st["ev_dmg"] - exec_amt
-                st["exec_p"] = min(1.0, window / batch) if batch > 0 else 1.0
+                st["exec_p"] = min(1.0, exec_hp / batch) if batch > 0 else 1.0
 
     def prime_spellblade():
         if fx["spellblade"] and st["t"] >= st["sb_icd_until"]:
@@ -1138,113 +1210,128 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         eclipse_hit=eclipse_hit, prime_spellblade=prime_spellblade,
         basic_cd=basic_cd, attack_speed=attack_speed, lockout=lockout)
 
+    # on-hit damage is fixed by the sheet: work each entry out once
+    onhits = []
+    for oh in fx["onhit"]:
+        amt = (oh["base"] + oh.get("apRatio", 0.0) * sheet["ap"]
+               + oh.get("bonusAdRatio", 0.0) * sheet["ad_bonus"]
+               + oh.get("maxManaPct", 0.0) / 100.0 * sheet["mana"])
+        if "selfMaxHpPct" in oh:  # Titanic Hydra: % of OWN max health
+            pct = oh["selfMaxHpPct"]["ranged" if ranged else "melee"]
+            amt += pct / 100.0 * sheet["hp"]
+        onhits.append((amt, oh["damageType"], oh.get("source", "onhit")))
+    onhits_current = [((oh["rangedPct"] if ranged else oh["meleePct"]) / 100.0,
+                       oh["damageType"]) for oh in fx["onhitCurrentHp"]]
+
     def apply_onhits():
         """Everything riding a basic attack hit (reapplied by a phantom hit)."""
-        for oh in fx["onhit"]:
-            amt = (oh["base"] + oh.get("apRatio", 0.0) * sheet["ap"]
-                   + oh.get("bonusAdRatio", 0.0) * sheet["ad_bonus"]
-                   + oh.get("maxManaPct", 0.0) / 100.0 * sheet["mana"])
-            if "selfMaxHpPct" in oh:  # Titanic Hydra: % of OWN max health
-                pct = oh["selfMaxHpPct"]["ranged" if ranged else "melee"]
-                amt += pct / 100.0 * sheet["hp"]
-            deal(amt, oh["damageType"], oh.get("source", "onhit"))
+        for amt, dtype, source in onhits:
+            deal(amt, dtype, source)
         drv.attack_riders(e)
-        for oh in fx["onhitCurrentHp"]:
-            pct = oh["rangedPct"] if ranged else oh["meleePct"]
-            deal(pct / 100.0 * max(st["hp"], 0.0), oh["damageType"], "botrk")
+        for pct, dtype in onhits_current:
+            deal(pct * max(st["hp"], 0.0), dtype, "botrk")
+
+    navori, phantom, kraken, alt_pen_fx = (fx["navoriCdr"], fx["phantom"],
+                                           fx["kraken"], fx["altPen"])
+    sundered, nth_hit, first_bonus, spellblade, energized = (
+        fx["firstAttackCritFloorEv"], fx["nthHitProc"], fx["firstAttackBonus"],
+        fx["spellblade"], fx["energized"])
+    ad, move_speed = sheet["ad"], sheet["move_speed"]
+    # Energize: 6 stacks per attack (+ item bonuses) plus 1 per 24 units
+    # moved — assumed kiting at full move speed between attacks
+    energize_per_attack = 6.0 + sum(en.get("extraStacksPerAttack", 0.0)
+                                    for en in energized)
+    if kraken:
+        kraken_base = by_level(kraken["baseByLevel"], level)
+        if ranged:
+            kraken_base *= kraken["rangedMult"]
+        kraken_amp = kraken["missingHpAmpMaxPct"]["ranged" if ranged else "melee"]
+    if nth_hit:  # Hullbreaker's Skipper
+        nth_need = (nth_hit["stacksNeededRanged"] if ranged
+                    else nth_hit["stacksNeededMelee"])
+        nth_dmg = ((nth_hit["baseAdRatioRanged"] if ranged
+                    else nth_hit["baseAdRatioMelee"]) * sheet["ad_base"]
+                   + (nth_hit["selfMaxHpPctRanged"] if ranged
+                      else nth_hit["selfMaxHpPctMelee"]) / 100.0 * sheet["hp"])
+    if spellblade:
+        spellblade_dmg = (spellblade["baseAdRatio"] * sheet["ad_base"]
+                          + spellblade["apRatio"] * sheet["ap"]
+                          + spellblade.get("perCritChancePct", 0.0)
+                          * sheet["crit_chance"])
 
     def do_attack():
         t = st["t"]
         st["attacks"] += 1
-        if fx["navoriCdr"]:  # on-attack: shave 15% off remaining basic CDs
+        if navori:  # on-attack: shave 15% off remaining basic CDs
             for key in drv.basic_cd_keys:
                 if st[key] > t:
-                    st[key] = t + (st[key] - t) * (1.0 - fx["navoriCdr"] / 100.0)
-        if fx["flurry"]:
-            f = fx["flurry"]
+                    st[key] = t + (st[key] - t) * (1.0 - navori / 100.0)
+        if flurry:
             if t >= st["flurry_ready"]:
-                st["flurry_until"] = t + f["durationS"]
-                st["flurry_ready"] = t + f["cooldownS"]
+                st["flurry_until"] = t + flurry["durationS"]
+                st["flurry_ready"] = t + flurry["cooldownS"]
             # on-hit refund (1s, 2s on crit -> EV blend) pulls the next window in
-            st["flurry_ready"] -= (f["refundOnHitS"]
-                                   + crit_c * f["refundCritExtraS"])
+            st["flurry_ready"] -= (flurry["refundOnHitS"]
+                                   + crit_c * flurry["refundCritExtraS"])
         # on-attack stack machinery first (pre-hit state decides the procs)
         phantom_now = False
-        if fx["phantom"] and st["phantom"] >= fx["phantom"]["stacksNeeded"]:
+        if phantom and st["phantom"] >= phantom["stacksNeeded"]:
             phantom_now, st["phantom"] = True, 0
         kraken_now = False
-        if fx["kraken"] and st["kraken"] >= 2:
+        if kraken and st["kraken"] >= 2:
             kraken_now, st["kraken"] = True, 0
-        elif fx["kraken"]:
+        elif kraken:
             st["kraken"] += 1
-        if fx["asStacking"]:
-            st["seething"] = min(st["seething"] + 1, fx["asStacking"]["maxStacks"])
+        if as_stacking:
+            st["seething"] = min(st["seething"] + 1, as_stacking["maxStacks"])
             # the consuming attack grants no Phantom stack: Riot's tooltip is
             # "every third Attack" at full stacks, not every other
-            if (fx["phantom"] and not phantom_now
-                    and st["seething"] == fx["asStacking"]["maxStacks"]):
-                st["phantom"] = min(st["phantom"] + 1, fx["phantom"]["stacksNeeded"])
-        if fx["altPen"]:
+            if (phantom and not phantom_now
+                    and st["seething"] == as_stacking["maxStacks"]):
+                st["phantom"] = min(st["phantom"] + 1, phantom["stacksNeeded"])
+        if alt_pen_fx:
             if st["attacks"] % 2 == 0:  # every other hit is a Dark hit
-                st["dark"] = min(st["dark"] + 1, fx["altPen"]["maxStacks"])
+                st["dark"] = min(st["dark"] + 1, alt_pen_fx["maxStacks"])
         drv.before_attack(e)
 
         floor = 1.0
-        if fx["firstAttackCritFloorEv"] and not st["sundered_used"]:
+        if sundered and not st["sundered_used"]:
             st["sundered_used"] = True  # Sundered Sky: once per target
-            floor = fx["firstAttackCritFloorEv"]
-        if (fx["ultAttackSteroid"]
-                and st["post_r_attacks"] < fx["ultAttackSteroid"]["attacks"]):
-            floor = max(floor, fx["ultAttackSteroid"].get("critFloorEv", 1.0))
-        deal(sheet["ad"], "physical", "auto", crit_mod=True, ev_floor=floor)
+            floor = sundered
+        if ult_steroid and st["post_r_attacks"] < ult_steroid["attacks"]:
+            floor = max(floor, ult_steroid.get("critFloorEv", 1.0))
+        deal(ad, "physical", "auto", crit_mod=True, ev_floor=floor)
         apply_onhits()
-        if fx["energized"]:
-            # Energize: 6 stacks per attack (+ item bonuses) plus 1 per 24
-            # units moved — assumed kiting at full move speed between attacks
-            st["energize"] += (t - st["en_last"]) * sheet["move_speed"] / 24.0
+        if energized:
+            st["energize"] += (t - st["en_last"]) * move_speed / 24.0
             st["en_last"] = t
-            st["energize"] += 6.0 + sum(e.get("extraStacksPerAttack", 0.0)
-                                        for e in fx["energized"])
+            st["energize"] += energize_per_attack
             if st["energize"] >= 100.0:
                 st["energize"] -= 100.0
-                for en in fx["energized"]:
+                for en in energized:
                     deal(en["bonus"], en["damageType"],
                          en.get("source", "energized"))
         eclipse_hit()
-        if fx["nthHitProc"]:  # Hullbreaker's Skipper
-            nh = fx["nthHitProc"]
-            need = nh["stacksNeededRanged"] if ranged else nh["stacksNeededMelee"]
-            if st["nth"] >= need:
+        if nth_hit:
+            if st["nth"] >= nth_need:
                 st["nth"] = 0
-                ratio = nh["baseAdRatioRanged"] if ranged else nh["baseAdRatioMelee"]
-                hp_pct = nh["selfMaxHpPctRanged"] if ranged else nh["selfMaxHpPctMelee"]
-                deal(ratio * sheet["ad_base"] + hp_pct / 100.0 * sheet["hp"],
-                     nh["damageType"], "hullbreaker")
+                deal(nth_dmg, nth_hit["damageType"], "hullbreaker")
             else:
                 st["nth"] += 1
-        if fx["firstAttackBonus"] and st["attacks"] == 1:
-            fb = fx["firstAttackBonus"]  # Umbral: opens from unseen
-            deal(fb["base"] + fb["perLethality"] * sheet["lethality"],
-                 fb["damageType"], fb.get("source", "opener"))
+        if first_bonus and st["attacks"] == 1:  # Umbral: opens from unseen
+            deal(first_bonus["base"] + first_bonus["perLethality"] * lethality,
+                 first_bonus["damageType"], first_bonus.get("source", "opener"))
         st["post_r_attacks"] += 1
         if st["sb_primed"]:
-            sb = fx["spellblade"]
-            deal(sb["baseAdRatio"] * sheet["ad_base"]
-                 + sb["apRatio"] * sheet["ap"]
-                 + sb.get("perCritChancePct", 0.0) * sheet["crit_chance"],
-                 sb["damageType"], "spellblade")
+            deal(spellblade_dmg, spellblade["damageType"], "spellblade")
             st["sb_primed"] = False
-            st["sb_icd_until"] = t + sb["icdS"]
-            if sb.get("reapplyOnhit"):  # Dusk and Dawn: on-hits land twice
+            st["sb_icd_until"] = t + spellblade["icdS"]
+            if spellblade.get("reapplyOnhit"):  # Dusk and Dawn: on-hits land twice
                 apply_onhits()
         if kraken_now:
-            k = fx["kraken"]
-            base = by_level(k["baseByLevel"], level)
-            if ranged:
-                base *= k["rangedMult"]
-            amp_max = k["missingHpAmpMaxPct"]["ranged" if ranged else "melee"]
             missing = 1.0 - max(st["hp"], 0.0) / target_hp
-            deal(base * (1.0 + amp_max / 100.0 * missing), k["damageType"], "kraken")
+            deal(kraken_base * (1.0 + kraken_amp / 100.0 * missing),
+                 kraken["damageType"], "kraken")
         drv.after_attack(e)
         if phantom_now:
             st["phantom_hits"] += 1
@@ -1270,24 +1357,39 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
                + a.get("apRatio", 0.0) * sheet["ap"])
         deal(amt, a["damageType"], a.get("source", "active"))
 
+    burns = st["burns"]
     while True:
-        cand = [(st["next_attack"], "attack", 0), (st["next_mal"], "mal", 0)]
-        for i, b in enumerate(st["burns"]):
-            cand.append((b["next"], "burn", i))
-        if st["ss_at"] != INF:
-            cand.append((st["ss_at"], "ss", 0))
-        if st["r_impact"] != INF:
-            cand.append((st["r_impact"], "r", 0))
-        q_at = drv.q_at(e)
-        if q_at != INF:  # so Q casts the moment it's ready, not at the next event
-            cand.append((q_at, "q", 0))
-        for t_ev, kind in drv.events(e):
-            cand.append((t_ev, kind, 0))
-        t_next, kind, idx = min(cand)
+        # the next event: the earliest of everything scheduled; at the same
+        # instant, the kind that sorts first (attack, burn, e_charge,
+        # e_release, mal, q, r, ss, w_tick), then the earlier burn
+        t_next, kind, idx = st["next_attack"], "attack", 0
+        x = st["next_mal"]
+        if x < t_next or (x == t_next and "mal" < kind):
+            t_next, kind = x, "mal"
+        for i, b in enumerate(burns):
+            x = b["next"]
+            if x < t_next or (x == t_next and ("burn", i) < (kind, idx)):
+                t_next, kind, idx = x, "burn", i
+        x = st["ss_at"]
+        if x < t_next or (x == t_next and "ss" < kind):
+            t_next, kind, idx = x, "ss", 0
+        x = st["r_impact"]
+        if x < t_next or (x == t_next and "r" < kind):
+            t_next, kind, idx = x, "r", 0
+        q_at = drv.q_at(e)  # so Q casts the moment it's ready, not at the next event
+        if q_at < t_next or (q_at == t_next and "q" < kind):
+            t_next, kind, idx = q_at, "q", 0
+        for x, k in drv.events(e):
+            if x < t_next or (x == t_next and k < kind):
+                t_next, kind, idx = x, k, 0
         if t_next > duration or st["hp"] <= 0:
             break
+        if t_next > stop_after:
+            return None
         st["t"] = t_next
-        if drv.q_at(e) <= st["t"]:
+        # castable now? q_at only grows with the clock, so the answer is
+        # whether the moment it was castable is already here
+        if q_at <= t_next:
             drv.cast_q(e)
             if kind == "attack" and st["next_attack"] > st["t"]:
                 continue  # the lockout pushed this auto; re-pick the next event
@@ -1342,7 +1444,8 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         alt = simulate(sheet, kit, dict(fx, executePct=None), level, ranks,
                        target_hp, target_armor, target_mr, duration,
                        use_ult=use_ult, prestacked=prestacked,
-                       target_bonus_hp=target_bonus_hp, _blend=False)
+                       target_bonus_hp=target_bonus_hp, breakdown=False,
+                       _blend=False)
         p = st["exec_p"]
         ttk_exp = (p * st["ttk"]
                    + (1.0 - p) * (alt["ttk"] if alt["ttk"] is not None
@@ -1524,9 +1627,9 @@ def cells():
     every combination before simulating it). A tier's cells are computed
     together — its targets share one enumeration pass — so one champion's
     cells of a tier sit side by side. The full-build tier ranks ~130M
-    builds against each of its targets (five simulations per item
-    combination: boots of one class share one) and scales with the fight
-    lengths — one to two hours per champion on 16 cores."""
+    builds against each of its targets (three to five fights per item
+    combination and target: boots that fight alike share one, and most
+    fights stop early once the build can't place)."""
     champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
@@ -1605,7 +1708,9 @@ def rank_key(r):
 
 
 def geo_mean(xs):
-    return math.exp(sum(math.log(max(x, 1e-9)) for x in xs) / len(xs))
+    # fsum: the same bits from every Python (CPython's sum() compensates
+    # float rounding since 3.12; PyPy's doesn't)
+    return math.exp(math.fsum(math.log(max(x, 1e-9)) for x in xs) / len(xs))
 
 
 def overall_key(rs, targets):
@@ -1643,7 +1748,30 @@ def _fight_row(r, duration, best):
     }
 
 
-def compute_tier(slug, tier, paths):
+def cached_builds(slug, pool):
+    """Every build on the champion's cached cells, whatever code and data
+    they were computed for, as id lists — the seeds of the next pass:
+    yesterday's winners are still good builds, and scoring them first
+    gives the enumerator tight pruning bounds from the outset."""
+    by_name = {it["name"]: i for i, it in pool.items()}
+    seen, out = set(), []
+    for path in sorted(glob.glob(os.path.join(SCENARIO_CACHE_DIR,
+                                              f"{slug}-*.json"))):
+        try:
+            with open(path) as f:
+                rows = json.load(f).get("rows", [])
+        except (OSError, ValueError):
+            continue
+        for row in rows:
+            ids = [by_name.get(name) for name in row.get("items", [])]
+            if None in ids or tuple(ids) in seen:
+                continue
+            seen.add(tuple(ids))
+            out.append(ids)
+    return out
+
+
+def compute_tier(slug, tier, paths, log=None):
     """Simulate one champion's tier — every build against each of its
     targets, in one pass — and write every cell of the tier to its path in
     `paths` (cell_paths()): through a temp file and rename, so a killed run
@@ -1665,7 +1793,8 @@ def compute_tier(slug, tier, paths):
     ranks = skill_ranks(level, kit_max_order(kit))
     lists, count = enumerate_builds(
         champ, pool, effects, kit, level, ranks, targets, budget=budget,
-        candidates=champion_pool(kit, effects), overall=overall)
+        candidates=champion_pool(kit, effects), overall=overall,
+        seeds=cached_builds(slug, pool), log=log)
     secs = round(time.time() - t0, 1)
     # each target's best kill time, for the loss column: the top of the
     # target's own list is its fastest kill whenever anything kills at all
@@ -1797,7 +1926,7 @@ def warm(log=_say):
         for n, (slug, tier) in enumerate(cold, 1):
             keys = tier_scenarios(tier)
             log(f"[{n}/{len(cold)}] {slug}/{tier} ({', '.join(keys)}) …")
-            outs = compute_tier(slug, tier, paths)
+            outs = compute_tier(slug, tier, paths, log=log)
             first = outs[keys[0]]
             log(f"  {first['buildsEvaluated']:,} builds in "
                 f"{first['computeSeconds']}s")
@@ -2083,21 +2212,22 @@ ENGINE_IGNORES = frozenset({"armor", "mr", "tenacity", "lifesteal", "omnivamp",
 EFFECT_META = ("name", "covers", "note")
 
 
-def boots_classes(pool, effects, boots=None):
+def boots_classes(pool, effects, boots=None, ignores=ENGINE_IGNORES):
     """Group boots whose damage-relevant stats and modeled effects are
     identical — a list of member lists, in BOOTS order. Stat resolution sums
     each item's contributions, so two such boots give the same sheet, and
     the same fight, alongside any other five items: the enumerator simulates
     each class once per item combination and ranks every member with the
     result (Mercury's Treads, Plated Steelcaps and Gluttonous Greaves are
-    one class; Swiftness moves faster, Lucidity casts faster)."""
+    one class; Swiftness moves faster, Lucidity casts faster). `ignores`
+    names the stats that don't tell boots apart (see boots_partitions)."""
     classes = {}
     for b in (BOOTS if boots is None else boots):
         stats = tuple(sorted(
             (key, val) for stat, fields in pool[b]["stats"].items()
             for field, val in fields.items() if val
             for key in [ITEM_STAT_MAP.get((stat, field))]
-            if key and key not in ENGINE_IGNORES))
+            if key and key not in ignores))
         modeled = {k: v for k, v in effects.get(b, {}).items()
                    if k not in EFFECT_META}
         sig = (stats, json.dumps(modeled, sort_keys=True))
@@ -2105,68 +2235,305 @@ def boots_classes(pool, effects, boots=None):
     return list(classes.values())
 
 
-def _keep_best(lst, keep):
+# Stats the engine reads only on a basic attack: attack speed, and move
+# speed — Energized items charge with movement, and are spent by an attack.
+ATTACK_ONLY_STATS = frozenset({"bonus_as_pct", "ms_flat", "ms_pct"})
+MOVE_STATS = frozenset({"ms_flat", "ms_pct"})
+
+
+def boots_partitions(pool, effects, kit):
+    """{no Energized item in the build: boots classes} for one kit. Move
+    speed is read only to charge Energized items, so in a build without one
+    Swiftness fights exactly like the 45-speed boots; a kit that never
+    attacks (Vladimir) never charges them and never reads attack speed
+    either, so Berserker's joins them too, whatever the build."""
+    never = bool(kit.get("attack", {}).get("never"))
+    busy = ENGINE_IGNORES | (ATTACK_ONLY_STATS if never else frozenset())
+    calm = ENGINE_IGNORES | (ATTACK_ONLY_STATS if never else MOVE_STATS)
+    return {False: boots_classes(pool, effects, ignores=busy),
+            True: boots_classes(pool, effects, ignores=calm)}
+
+
+# ---------------------------------------------------------------------------
+# enumeration: every build against every target of a tier, pruned exactly
+#
+# A result list keeps the best `keep` rows, so a build only matters while it
+# can still beat the keep-th best. The parent publishes every list's current
+# keep-th key in a small table of doubles (_Bounds) that forked workers read
+# through shared memory; before each item combination a worker reads it and
+# (a) drops results that cannot place, (b) stops a fight the moment its clock
+# passes the point past which the build can place neither on that target's
+# list nor on the overall list — a survivor ranks below every killer, and a
+# kill still to come lands later than the clock. Both cuts only ever discard
+# builds that lose to one already found, so the lists come out exactly as an
+# unpruned pass ranks them. A stale read of the table is only ever looser.
+# ---------------------------------------------------------------------------
+
+# A result row is (sort key, ids, {target key: fight}). Rows are ordered by
+# key, then by the build's place in the enumeration (items in pool order,
+# then boots in BOOTS order) — a total order, so ties (boots of one class
+# share a fight; on a fast kill every boots may) come out the same however
+# the work is split into tasks and whichever order those finish in.
+def _enum_order(free, required=()):
+    """{item id: its place in the enumeration}, for ordering ties."""
+    order = {b: i for i, b in enumerate(BOOTS)}
+    for i, item in enumerate([*required, *free]):
+        order.setdefault(item, len(BOOTS) + i)
+    return order
+
+
+def _place(order, ids):
+    """A build's place in the enumeration: its items' places, then its
+    boots'."""
+    return ([order.get(i, i) for i in ids[1:]],
+            order.get(ids[0], ids[0]) if ids else -1)
+
+
+def _row_key(order):
+    return lambda row: (row[0], _place(order, row[1]))
+
+
+def _cut(lst, keep, order):
+    """Sort a result list best-first and cut it to `keep`."""
+    lst.sort(key=_row_key(order))
+    del lst[keep:]
+
+
+def _keep_best(lst, keep, order):
     """Bound a running result list: sort and cut it to `keep` once it has
     grown past 4x that, so memory stays flat over millions of builds."""
     if len(lst) > 4 * keep:
-        lst.sort(key=lambda x: x[0])
-        del lst[keep:]
+        _cut(lst, keep, order)
 
 
-def _enum_batch(ctx, size, start, step):
-    """Simulate every `step`-th combination of `size` items (offset `start`)
-    with each boots against each of ctx["targets"]; returns ({key: top-`keep`
-    results}, ranked count) — one list per target, ranked by rank_key, and,
-    if ctx["overall"] names one, a list under that key ranking every build
-    on all targets at once (overall_key). Boots of one class (boots_classes)
-    share a simulation: the same fight, each with its own sheet."""
+class _Bounds:
+    """Every result list's keep-th best row, flattened into a table of
+    doubles (a list, or a multiprocessing.RawArray the workers inherit).
+    Per target key: [the latest expected kill time a killer may have (INF:
+    any), the least total a survivor needs (-INF: any; INF: none), a lower
+    bound on the fastest kill of that target by any build (0: unknown)].
+    For the overall key: [the most survivors allowed, the largest geometric
+    mean at that count, the keep-th row's ids] — builds that leave the same
+    targets standing all tie on the overall key, so the ids that break ties
+    travel too. A list that isn't full yet bounds nothing."""
+    WIDTH = 8  # two values and a bound, or two values and up to six ids
+
+    def __init__(self, keys, overall, table):
+        self.keys, self.overall, self.table = list(keys), overall, table
+
+    def reset(self):
+        for i, k in enumerate(self.keys):
+            base = i * self.WIDTH
+            self.table[base] = INF
+            self.table[base + 1] = INF if k == self.overall else -INF
+            for j in range(2, self.WIDTH):
+                self.table[base + j] = 0.0
+
+    def update(self, lists, keep, min_kill):
+        """Refresh from the parent's lists (each already cut to `keep`) and
+        its {target key: lower bound on the fastest kill}. Workers read
+        without a lock, so every value has to stay sound on its own and
+        across a half-done update: each one only ever tightens, and the
+        overall row's ids land before the values they break ties for (an
+        older, looser pair of values with newer ids is still right)."""
+        for i, k in enumerate(self.keys):
+            lst, base = lists[k], i * self.WIDTH
+            if k != self.overall:
+                self.table[base + 2] = min_kill.get(k, 0.0)
+            if len(lst) < keep:
+                continue
+            thr, ids = lst[keep - 1][0], lst[keep - 1][1]
+            if k == self.overall:
+                for j in range(6):
+                    self.table[base + 2 + j] = float(ids[j]) if j < len(ids) else 0.0
+                self.table[base], self.table[base + 1] = thr[0], thr[1]
+            elif thr[0] == 0:  # a killer: no survivor can place
+                self.table[base], self.table[base + 1] = thr[1], INF
+            else:  # a survivor: every killer places, survivors need its total
+                self.table[base], self.table[base + 1] = INF, -thr[2]
+
+    def target(self, i):
+        base = i * self.WIDTH
+        return self.table[base], self.table[base + 1], self.table[base + 2]
+
+    def overall_bound(self, i):
+        base = i * self.WIDTH
+        ids = [int(self.table[base + 2 + j]) for j in range(6)]
+        return self.table[base], self.table[base + 1], [x for x in ids if x]
+
+
+# slack on the kill-time cuts: a stopped fight must belong to a build that is
+# worse than the keep-th best by more than rounding could account for
+_PRUNE_SLACK = 1.0 + 1e-9
+# the guess behind the overall list's bound: no build kills a target faster
+# than this share of the fastest kill seen so far (checked at the end; a
+# wrong guess costs a second pass, never a wrong result)
+MIN_KILL_GUESS = 0.75
+# pools with more builds than this fan out across CPU cores
+FORK_ABOVE = 50_000
+
+
+def _enum_task(ctx, task):
+    """Simulate one task's builds and return ({key: rows}, ranked count) —
+    the rows that could still place, given the bounds when they were
+    scored. A task is ("block", size, prefix): every combination of `size`
+    free items whose first indices are `prefix` (the rest enumerate in C);
+    or ("builds", [ids, ...]): explicit builds, the seeds. Each boots class
+    fights every target once and every member of the class is ranked with
+    that fight (boots_partitions)."""
     import itertools
     keep, targets, overall = ctx["keep"], ctx["targets"], ctx["overall"]
-    out = {k: [] for k in targets}
-    if overall:
-        out[overall] = []
+    tkeys = list(targets)
+    keys = tkeys + ([overall] if overall else [])
+    n_t = len(tkeys)
+    bounds = _Bounds(keys, overall, ctx["shared"])
+    out = {k: [] for k in keys}
     n = 0
-    groups, caps = ctx["groups"], ctx["caps"]
-    for combo in itertools.islice(
-            itertools.combinations(ctx["free"], size), start, None, step):
-        rest = [*ctx["required"], *combo]
-        for members in ctx["boots_classes"]:
-            rs = None
-            for boots in members:
-                ids = [boots, *rest]
-                if not build_is_legal(ids, groups, caps):
+    groups, caps, price, budget = (ctx["groups"], ctx["caps"], ctx["price"],
+                                   ctx["budget"])
+    champ, level, pool, effects, kit = (ctx["champ"], ctx["level"], ctx["pool"],
+                                        ctx["effects"], ctx["kit"])
+    ranks, use_ult, prestacked = ctx["ranks"], ctx["use_ult"], ctx["prestacked"]
+    free, partitions, energized = ctx["free"], ctx["classes"], ctx["energized"]
+    order = ctx["order"]
+    place = lambda ids: _place(order, ids)
+    # boots share no ownership group with anything else in the game today,
+    # so a build's legality is its items' — but a boots in a group is checked
+    grouped_boots = {b for b in BOOTS if groups.get(b)}
+    if task[0] == "block":
+        _, size, prefix = task
+        stem = [*ctx["required"], *(free[i] for i in prefix)]
+        tail = free[prefix[-1] + 1:] if prefix else free
+        work = ((stem + list(c), None) for c in
+                itertools.combinations(tail, size - len(prefix)))
+    else:
+        work = ((list(ids[1:]), [[ids[0]]]) for ids in task[1])
+    tv = [(t["targetHp"], t["armor"], t["mr"], t["duration"],
+           t.get("targetBonusHp", 0.0)) for t in targets.values()]
+    for rest, classes in work:
+        if not build_is_legal(rest, groups, caps):
+            continue
+        if classes is None:
+            classes = partitions[energized.isdisjoint(rest)]
+        # the bounds, once per item combination
+        tb = [bounds.target(i) for i in range(n_t)]
+        if overall:
+            o_max, o_g, o_ids = bounds.overall_bound(n_t)
+            o_ids = place(o_ids)
+        for members in classes:
+            legal = [[b, *rest] for b in members
+                     if b not in grouped_boots
+                     or build_is_legal([b, *rest], groups, caps)]
+            if budget:
+                legal = [ids for ids in legal
+                         if sum(price[i] for i in ids) <= budget]
+            if not legal:
+                continue
+            n += len(legal)
+            sheet = resolve_stats(champ, level, legal[0], pool, effects, kit=kit)
+            fx = merge_effects(legal[0], effects)
+            rs, unkilled, prod = {}, 0, 1.0
+            # once the build can no longer make the overall list, each fight
+            # only has its own target's list to make
+            out_of_overall = not overall
+            for i, k in enumerate(tkeys):
+                hp, armor, mr, duration, bonus_hp = tv[i]
+                stop = INF
+                if not out_of_overall:
+                    # a survivor too many, or the same survivors as the
+                    # keep-th row and ids that sort after it (rows with a
+                    # survivor tie on everything but ids)
+                    if unkilled > o_max or (unkilled == o_max and o_max > 0
+                                            and min(map(place, legal)) > o_ids):
+                        out_of_overall = True
+                if out_of_overall:
+                    stop = tb[i][0] * _PRUNE_SLACK
+                elif o_max == 0:
+                    # every target has to die: the geometric mean of the
+                    # kill times bounds this fight — the fights already
+                    # fought by their times, those to come by the fastest
+                    # any build kills them
+                    rem = prod
+                    for j in range(i + 1, n_t):
+                        rem *= tb[j][2]
+                    if rem > 0.0:
+                        stop = max(tb[i][0], o_g ** n_t / rem) * _PRUNE_SLACK
+                r = simulate(sheet, kit, fx, level, ranks, hp, armor, mr,
+                             duration, use_ult=use_ult, prestacked=prestacked,
+                             target_bonus_hp=bonus_hp, stop_after=stop,
+                             breakdown=False)
+                rs[k] = r
+                if r is None:  # cut: off this target's list and the overall
+                    out_of_overall = True
                     continue
-                if ctx["budget"] and sum(ctx["price"][i] for i in ids) > ctx["budget"]:
+                if r["ttk"] is None:
+                    unkilled += 1
+                prod *= kill_time(r, duration) or 0.0
+            for i, k in enumerate(tkeys):
+                r = rs[k]
+                if r is None:
                     continue
-                sheet = resolve_stats(ctx["champ"], ctx["level"], ids, ctx["pool"],
-                                      ctx["effects"], kit=ctx["kit"])
-                if rs is None:
-                    fx = merge_effects(ids, ctx["effects"])
-                    rs = {k: simulate(sheet, ctx["kit"], fx, ctx["level"],
-                                      ctx["ranks"], t["targetHp"], t["armor"],
-                                      t["mr"], t["duration"],
-                                      use_ult=ctx["use_ult"],
-                                      prestacked=ctx["prestacked"],
-                                      target_bonus_hp=t.get("targetBonusHp", 0.0))
-                          for k, t in targets.items()}
-                n += 1
-                for k in targets:
-                    out[k].append((rank_key(rs[k]), ids, sheet, rs))
-                    _keep_best(out[k], keep)
-                if overall:
-                    out[overall].append((overall_key(rs, targets), ids, sheet, rs))
-                    _keep_best(out[overall], keep)
+                t_max, tot_min, _ = tb[i]
+                if r["ttk"] is not None:
+                    if r["ttk_exp"] > t_max:
+                        continue
+                elif r["total"] < tot_min:
+                    continue
+                key = rank_key(r)
+                for ids in legal:
+                    out[k].append((key, ids, rs))
+                _keep_best(out[k], keep, order)
+            if overall and not out_of_overall:
+                key = overall_key(rs, targets)
+                lead = (key[0], key[1])
+                if lead < (o_max, o_g):
+                    take = legal
+                elif lead == (o_max, o_g):
+                    take = legal if o_max == 0 else [ids for ids in legal
+                                                     if place(ids) <= o_ids]
+                else:
+                    take = []
+                for ids in take:
+                    out[overall].append((key, ids, rs))
+                _keep_best(out[overall], keep, order)
+    for k in keys:
+        _cut(out[k], keep, order)
     return out, n
 
 
 def _enum_worker(task):
-    size, start, step = task
-    return _enum_batch(_ENUM_CTX, size, start, step)
+    i, spec = task
+    out, n = _enum_task(_ENUM_CTX, spec)
+    return i, out, n
+
+
+def _enum_init():
+    if hasattr(os, "nice"):
+        os.nice(5)
+
+
+def _enum_blocks(n_free, sizes):
+    """The enumeration in blocks, biggest first (the tail is then made of
+    small ones, so the workers all finish at about the same time): the
+    combinations of each size, split by their first two indices. Returns
+    [(combinations in the block, ("block", size, prefix))]."""
+    import itertools
+    blocks = []
+    for size in sizes:
+        p = min(2, size)
+        for prefix in itertools.combinations(range(n_free), p):
+            tail = n_free - (prefix[-1] + 1 if prefix else 0)
+            count = math.comb(tail, size - p)
+            if count:
+                blocks.append((count, ("block", size, prefix)))
+    blocks.sort(key=lambda b: -b[0])
+    return blocks
 
 
 def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
                      budget=None, slots=6, required=(), candidates=None,
-                     use_ult=True, prestacked=False, keep=500, overall=None):
+                     use_ult=True, prestacked=False, keep=500, overall=None,
+                     seeds=(), log=None, workers=None):
     """Rank every boots + item combination against each target in one pass
     — `targets` is {key: scenario-shaped dict: targetHp, armor, mr,
     duration, targetBonusHp}. Returns ({key: results}, count): per target
@@ -2174,45 +2541,163 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
     rank_key, plus, with `overall` set, a list under that key ranked by
     overall_key across every target; and how many builds were ranked (boots
     of one class share a simulation, see boots_classes). Large pools fan
-    out across CPU cores (fork)."""
+    out across CPU cores (fork) in blocks handed out as workers free up,
+    pruned exactly as the lists fill (see _Bounds). `seeds` are builds to
+    score before the rest — an earlier result's rows — so the pruning bounds
+    are tight from the start. `log` gets a progress line now and then.
+
+    The overall list's bound leans on a guess: that no build kills a target
+    faster than three quarters of the fastest kill seen so far. A faster
+    kill exposes the guess the moment it lands (a cut fight was never the
+    fastest, so the fastest seen is the fastest there is); the blocks that
+    could have used the stale guess are then scored again at the end with
+    the true minimum — exact either way, only slower."""
+    import time
     free = [i for i in (candidates or DEFAULT_POOL) if i not in required]
     n_free = slots - 1 - len(required)  # one slot is always boots
     if n_free < 0:
         sys.exit("more required items than slots allow")
     sizes = list(range(n_free + 1)) if budget else [n_free]
     _groups, _caps = load_exclusive_groups()
+    keys = list(targets) + ([overall] if overall else [])
     ctx = dict(
         champ=champ, pool=pool, effects=effects, kit=kit, level=level,
         ranks=ranks, targets=dict(targets), overall=overall, budget=budget,
         required=list(required), free=free, use_ult=use_ult,
         prestacked=prestacked, keep=keep, groups=_groups, caps=_caps,
-        boots_classes=boots_classes(pool, effects),
+        classes=boots_partitions(pool, effects, kit),
+        order=_enum_order(free, required),
+        energized=frozenset(i for i in pool if "energized" in effects.get(i, {})),
         price={i: pool[i]["shop"]["prices"]["total"]
-               for i in set(free) | set(required) | set(BOOTS)})
-    combos = len(BOOTS) * sum(math.comb(len(free), s) for s in sizes)
-    workers = max(1, (os.cpu_count() or 2) - 1)
-    keys = list(targets) + ([overall] if overall else [])
+               for i in set(free) | set(required) | set(BOOTS)},
+        shared=None)
+    blocks = _enum_blocks(len(free), sizes)
+    total = sum(count for count, _ in blocks)
+    combos = len(BOOTS) * total
+    pool_ids = set(free) | set(required)
+    seeds = list(dict.fromkeys(
+        tuple(s) for s in seeds
+        if len(set(s)) == len(s) and s[0] in BOOTS
+        and set(required) <= set(s[1:]) <= pool_ids
+        and len(s) - 1 - len(required) in sizes))
+    seeds = [list(s) for s in seeds]
+    specs = ([("builds", seeds)] if seeds else []) + [b for _, b in blocks]
+    tasks = list(enumerate(specs))
+    workers = workers or max(1, os.cpu_count() or 2)
     lists, count = {k: [] for k in keys}, 0
-    if combos > 50_000 and workers > 1 and hasattr(os, "fork"):
+    have = {k: set() for k in keys}  # ids on each list: seeds come round twice
+    done, t0, t_log = 0, time.time(), time.time()
+    min_kill = {}  # {target key: lower bound on the fastest kill}
+    used = {}  # the largest bound each fight was ever cut with
+    guessing = True  # a second pass runs with the true minima instead
+    finished = 0  # tasks merged so far
+    suspect = 0  # tasks (in order) that may have used a wrong guess
+
+    def merge(i, out, n):
+        nonlocal count, done, t_log, finished, suspect
+        spec = specs[i]
+        for k in keys:
+            lst, seen, new = lists[k], have[k], []
+            for row in out[k]:
+                ids = tuple(row[1])
+                if ids not in seen:
+                    seen.add(ids)
+                    new.append(row)
+            if new:
+                lst += new
+                _cut(lst, keep, ctx["order"])
+                have[k] = {tuple(row[1]) for row in lst}
+        finished += 1
+        if guessing:
+            for k in targets:
+                if lists[k] and lists[k][0][0][0] == 0:
+                    best = lists[k][0][0][1]
+                    if best < used.get(k, 0.0):
+                        # a kill faster than the guess allowed: every task
+                        # dispatched so far — those done, and up to one per
+                        # worker still running — may have cut a build that
+                        # belongs on the overall list
+                        suspect = max(suspect, finished + workers)
+                        used[k] = 0.0
+                    min_kill[k] = MIN_KILL_GUESS * best
+                    used[k] = max(used.get(k, 0.0), min_kill[k])
+        bounds.update(lists, keep, min_kill)
+        if spec[0] == "block" and guessing:
+            count += n
+            _, size, prefix = spec
+            tail = len(free) - (prefix[-1] + 1 if prefix else 0)
+            done += math.comb(tail, size - len(prefix))
+        if log and (time.time() - t_log >= 30 or done == total):
+            t_log = time.time()
+            secs = t_log - t0
+            eta = secs / done * (total - done) if done else 0.0
+            log(f"  {done / total * 100:5.1f}%  {done * len(BOOTS):,} of "
+                f"{combos:,} builds, {secs:,.0f}s in, ~{eta:,.0f}s to go")
+
+    def second_pass():
+        """The tasks a wrong guess may have spoiled, with the true minima."""
+        nonlocal guessing
+        if not suspect:
+            return []
+        guessing = False
+        min_kill.clear()
+        min_kill.update({k: lists[k][0][0][1] for k in targets
+                         if lists[k] and lists[k][0][0][0] == 0})
+        bounds.update(lists, keep, min_kill)
+        again = tasks[:suspect]
+        if log:
+            log(f"  a build killed faster than assumed: scoring "
+                f"{len(again)} of {len(tasks)} blocks again with the exact bound")
+        return again
+
+    if combos > FORK_ABOVE and workers > 1 and hasattr(os, "fork"):
         import multiprocessing as mp
         global _ENUM_CTX
+        ctx["shared"] = mp.RawArray("d", _Bounds.WIDTH * len(keys))
+        bounds = _Bounds(keys, overall, ctx["shared"])
+        bounds.reset()
         _ENUM_CTX = ctx
         try:
-            with mp.get_context("fork").Pool(workers) as p:
-                tasks = [(s, w, workers) for s in sizes for w in range(workers)]
-                batches = p.map(_enum_worker, tasks)
+            # workers on every core, a little nicer than a serve on the same
+            # box; the parent only merges
+            with mp.get_context("fork").Pool(workers, _enum_init) as p:
+                for i, out, n in p.imap_unordered(_enum_worker, tasks):
+                    merge(i, out, n)
+                for i, out, n in p.imap_unordered(_enum_worker, second_pass()):
+                    merge(i, out, n)
         finally:
             _ENUM_CTX = None
     else:
-        batches = [_enum_batch(ctx, s, 0, 1) for s in sizes]
-    for out, n in batches:
-        for k in keys:
-            lists[k] += out[k]
-        count += n
+        ctx["shared"] = [0.0] * (_Bounds.WIDTH * len(keys))
+        bounds = _Bounds(keys, overall, ctx["shared"])
+        bounds.reset()
+        for i, spec in tasks:
+            merge(i, *_enum_task(ctx, spec))
+        for i, spec in second_pass():
+            merge(i, *_enum_task(ctx, spec))
+    # The rows that made it get their sheets and their fights in full: the
+    # workers skip the damage breakdown, and a build placing on one target's
+    # list may have been cut short on another. Boots of one class still
+    # share a fight.
+    sheets, fought = {}, {}
     for k in keys:
-        lists[k].sort(key=lambda x: x[0])
-        del lists[k][keep:]
-        lists[k] = [(ids, sheet, rs) for _, ids, sheet, rs in lists[k]]
+        rows = []
+        for _, ids, rs in lists[k]:
+            t_ids = tuple(ids)
+            if t_ids not in sheets:
+                sheets[t_ids] = resolve_stats(champ, level, ids, pool, effects,
+                                              kit=kit)
+            if id(rs) not in fought:
+                fx = merge_effects(ids, effects)
+                fought[id(rs)] = {
+                    t: simulate(sheets[t_ids], kit, fx, level, ranks,
+                                sc["targetHp"], sc["armor"], sc["mr"],
+                                sc["duration"], use_ult=use_ult,
+                                prestacked=prestacked,
+                                target_bonus_hp=sc.get("targetBonusHp", 0.0))
+                    for t, sc in targets.items()}
+            rows.append((ids, sheets[t_ids], fought[id(rs)]))
+        lists[k] = rows
     return lists, count
 
 

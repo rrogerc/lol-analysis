@@ -11,6 +11,7 @@ serve keeps them warm in the background and never simulates on request.
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -206,15 +207,23 @@ def cmd_export(args):
     print(f"Exported static site to {out}/ ({files} API files, tiers: {', '.join(meta['tiers'])})")
 
 
+def warm_python():
+    """The interpreter the background warm runs on: $LOL_WARM_PYTHON if set,
+    else pypy3 when it is on PATH (its JIT runs the pure-Python simulator
+    three to four times as fast as CPython, same results), else this one."""
+    return (os.environ.get("LOL_WARM_PYTHON") or shutil.which("pypy3")
+            or sys.executable)
+
+
 class AutoWarm:
     """Keeps the builds cache warm from inside `serve`: once a minute, if any
-    cell is cold, runs `lol.py builds warm` as a subprocess. A subprocess
-    rather than a thread because the enumerator forks a worker pool, which is
-    only safe from a single-threaded process, and because a crash there must
-    not take the dashboard down. The warm lock stops it ever doubling up with
-    a manual run. A warm that exits non-zero — it failed, or someone killed
-    it — turns auto-warm off until serve restarts, so a broken setup can't
-    loop and a deliberate kill sticks."""
+    cell is cold, runs `lol.py builds warm` as a subprocess (on warm_python).
+    A subprocess rather than a thread because the enumerator forks a worker
+    pool, which is only safe from a single-threaded process, and because a
+    crash there must not take the dashboard down. The warm lock stops it
+    ever doubling up with a manual run. A warm that exits non-zero — it
+    failed, or someone killed it — turns auto-warm off until serve restarts,
+    so a broken setup can't loop and a deliberate kill sticks."""
 
     def __init__(self, enabled):
         self.proc = None
@@ -241,9 +250,12 @@ class AutoWarm:
         if self.state() != "idle" or all(builds.cell_ready().values()):
             return
         os.makedirs(builds.SCENARIO_CACHE_DIR, exist_ok=True)
+        python = warm_python()
         with open(os.path.join(builds.SCENARIO_CACHE_DIR, "warm.log"), "a") as log:
+            log.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] warming with {python}\n")
+            log.flush()
             self.proc = subprocess.Popen(
-                [sys.executable, os.path.join(BASE_DIR, "lol.py"), "builds", "warm"],
+                [python, os.path.join(BASE_DIR, "lol.py"), "builds", "warm"],
                 cwd=BASE_DIR, stdout=log, stderr=subprocess.STDOUT)
 
     def _loop(self):
