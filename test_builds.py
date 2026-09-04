@@ -678,18 +678,52 @@ class TestVladimirEngine(unittest.TestCase):
         cls.idx = builds.item_index(cls.pool)
         cls.effects = builds.load_item_effects()
 
-    def resolve(self, level, tokens):
+    def resolve(self, level, tokens, effects=None):
         ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
         return ids, builds.resolve_stats(fake_vlad(), level, ids, self.pool,
-                                         self.effects, kit=self.kit)
+                                         effects or self.effects, kit=self.kit)
 
     def sim(self, level, tokens, hp=2800, armor=80, mr=60, duration=8.0,
-            use_ult=True, kit=None, **kw):
-        ids, sheet = self.resolve(level, tokens)
+            use_ult=True, kit=None, effects=None, **kw):
+        fx = effects or self.effects
+        ids, sheet = self.resolve(level, tokens, fx)
         return builds.simulate(sheet, kit or self.kit,
-                               builds.merge_effects(ids, self.effects), level,
+                               builds.merge_effects(ids, fx), level,
                                builds.skill_ranks(level), hp, armor, mr,
                                duration, use_ult=use_ult, **kw)
+
+    def test_ramp_amps_by_seconds_in_combat(self):
+        # Liandry's Suffering: +2% per whole second in combat, capped at 6%.
+        # Against the same build with the ramp zeroed, each source's ratio is
+        # the average multiplier over its casts — Q at 0 and 4.6 -> 1.03, E at
+        # 1.25 and 6.25 -> 1.04, the Crimson Rush Q at 9.2 -> 1.06, the W
+        # ticks at 0.25/0.75/1.25/1.75 -> 1.01 (timings as pinned above)
+        flat = copy.deepcopy(self.effects)
+        flat[6653]["dmgAmp"] = {"pctPerStack": 0, "maxStacks": 3}
+        flat[4633]["dmgAmp"] = {"pctPerStack": 0, "maxStacks": 4}
+        args = dict(hp=100_000, armor=0, mr=0, duration=10.0, use_ult=False)
+        on = self.sim(16, ["liandry"], **args)
+        off = self.sim(16, ["liandry"], effects=flat, **args)
+        ratio = lambda src: on["breakdown"][src] / off["breakdown"][src]
+        self.assertAlmostEqual(ratio("Q"), 1.03)
+        self.assertAlmostEqual(ratio("E"), 1.04)
+        self.assertAlmostEqual(ratio("Q empowered"), 1.06)
+        self.assertAlmostEqual(ratio("W"), 1.01)
+        # A cast landing on a second boundary gets that second's stack even
+        # when the machine computes the moment a hair short: Riftmaker's 15
+        # haste puts Q at 0, 4.6 / 1.15 = 3.9999999999999996 and 8.0 — four
+        # stacks at 4.0 (1.00 and 1.08 average 1.04), not three
+        on = self.sim(16, ["riftmaker"], **args)
+        off = self.sim(16, ["riftmaker"], effects=flat, **args)
+        self.assertAlmostEqual(ratio("Q"), 1.04)
+        self.assertAlmostEqual(ratio("Q empowered"), 1.08)
+        # The clock starts at the first damage dealt, not at t=0: with the ult
+        # opening the fight the first hit is Q at 0.25 (R's cast lockout), so
+        # Hemoplague's burst at 4.0 has been in combat 3.75s — three stacks
+        on = self.sim(16, ["riftmaker"], hp=100_000, armor=0, mr=0, duration=4.0)
+        off = self.sim(16, ["riftmaker"], hp=100_000, armor=0, mr=0, duration=4.0,
+                       effects=flat)
+        self.assertAlmostEqual(ratio("R"), 1.06)
 
     def test_never_attacks(self):
         # a crit/on-hit/spellblade build gets nothing from its passives —
@@ -973,12 +1007,6 @@ class TestScenarioCache(unittest.TestCase):
         finally:
             lock.close()
         self.assertFalse(builds.warm_running())
-
-    def test_warm_stops_when_source_changes(self):
-        paths = builds.cell_paths()
-        with mock.patch.object(builds, "source_stale", return_value=True):
-            self.assertEqual(builds.warm(log=lambda _: None), 0)
-        self.assertFalse(any(os.path.exists(p) for p in paths.values()))
 
 
 if __name__ == "__main__":

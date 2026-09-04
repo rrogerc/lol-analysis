@@ -911,6 +911,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
         "shred_until": -1.0, "mal_shred_until": -1.0,
         # kit-side damage amp (Vladimir's Hemoplague): pct while t <= until
         "kit_amp_pct": 0.0, "kit_amp_until": -1.0,
+        "combat_t0": None,  # when the first damage landed: "in combat" since
         "burns": [{"until": -1.0, "next": INF} for _ in fx["burns"]],
         "mal_until": -1.0, "next_mal": INF, "mal_tick": 0.0,
         "sb_primed": False, "sb_icd_until": -1.0,
@@ -952,8 +953,15 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
              ev_floor=1.0):
         t = st["t"]
         amp = 1.0
+        if st["combat_t0"] is None:  # the first damage dealt opens combat
+            st["combat_t0"] = t
+        # Liandry's Suffering, Riftmaker's Void Corruption: a stack per whole
+        # second in combat. The hair of tolerance keeps a cast that lands on
+        # a second boundary on the right side of it — 4.6 / 1.15 is
+        # 3.9999999999999996 to the machine.
+        secs_in_combat = int(t - st["combat_t0"] + 1e-9)
         for a in fx["dmgAmps"]:
-            amp *= 1.0 + a["pctPerStack"] / 100.0 * min(a["maxStacks"], int(t))
+            amp *= 1.0 + a["pctPerStack"] / 100.0 * min(a["maxStacks"], secs_in_combat)
         for a in fx["flatAmps"]:  # Abyssal Mask: always-on, one damage type
             if a["damageType"] in (dtype, "all"):
                 amp *= 1.0 + a["pct"] / 100.0
@@ -1624,9 +1632,10 @@ def _say(line):
 
 def warm(log=_say):
     """Compute every cold cell, cheapest first. Returns how many were
-    computed, or None if another warmer holds the lock. Stops early if
-    builds.py changes on disk mid-run — the results would belong to code
-    that no longer exists."""
+    computed, or None if another warmer holds the lock. Results are keyed to
+    the code this process runs (SOURCE_HASH), so an edit to builds.py mid-run
+    doesn't disturb it: a serve running that same code keeps a complete
+    matrix, and the next serve recomputes under the new hash."""
     import signal
     lock = warm_lock()
     if lock is None:
@@ -1640,9 +1649,6 @@ def warm(log=_say):
         paths = cell_paths()
         cold = [c for c in cells() if not os.path.exists(paths[c])]
         for n, (slug, key) in enumerate(cold, 1):
-            if source_stale():
-                log("builds.py changed on disk — stopping; rerun to continue")
-                return n - 1
             log(f"[{n}/{len(cold)}] {slug}/{key} …")
             out = compute_scenario(slug, key, paths[(slug, key)])
             log(f"  {out['buildsEvaluated']:,} builds in {out['computeSeconds']}s")
