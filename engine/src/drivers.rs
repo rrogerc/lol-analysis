@@ -11,6 +11,7 @@ use crate::sheet::Sheet;
 /// An auto-attacker: Zealous stacks attack speed per attack, Arisen makes
 /// her ranged at 6, Aflame (11) rides a wave on every attack at full stacks,
 /// E is an always-on on-hit plus an attack-reset active, Q shreds resists.
+#[derive(Clone, Debug, PartialEq)]
 pub struct KayleDriver {
     ranged: bool,
     attack_range: f64,
@@ -25,9 +26,18 @@ pub struct KayleDriver {
     q_cd_base: f64,
     e_cd_base: f64,
     q_shred_duration: f64,
-    e_active_pct: f64,
+    /// `e_active_pct / 100.0`: the rank and the sheet's AP settle it.
+    e_active_frac: f64,
     windup_fraction: f64,
-    // state
+    /// The rotation state, and a pristine copy of it: `reset` is that copy,
+    /// so a field cannot be added here and forgotten there.
+    s: KayleState,
+    s0: KayleState,
+}
+
+/// Everything of Kayle's rotation a fight moves.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct KayleState {
     zeal: i64,
     e_ready: f64,
     e_pending: bool,
@@ -65,12 +75,18 @@ impl Driver for KayleDriver {
         };
         let wave_dmg = wave.base_by_level.at(level) + wave.bonus_ad_ratio * sheet.ad_bonus
             + wave.ap_ratio * sheet.ap;
-        let e_active_pct = if ranks.e > 0 {
+        let e_active_frac = if ranks.e > 0 {
             let act = kit.e.active.as_ref().ok_or("kayle kit needs E.active")?;
-            act.missing_hp_pct[(ranks.e - 1) as usize]
-                + act.missing_hp_pct_per_100_ap * sheet.ap / 100.0
+            (act.missing_hp_pct[(ranks.e - 1) as usize]
+                + act.missing_hp_pct_per_100_ap * sheet.ap / 100.0)
+                / 100.0
         } else {
-            0.0
+            0.0 / 100.0
+        };
+        let state = KayleState {
+            zeal: if zeal_perm || prestacked { zeal.max_stacks } else { 0 },
+            e_ready: 0.0,
+            e_pending: false,
         };
         Ok(KayleDriver {
             ranged,
@@ -86,12 +102,15 @@ impl Driver for KayleDriver {
             q_cd_base: if ranks.q > 0 { kit.q.cooldown_s[(ranks.q - 1) as usize] } else { 0.0 },
             e_cd_base: if ranks.e > 0 { kit.e.cooldown_s[(ranks.e - 1) as usize] } else { 0.0 },
             q_shred_duration: kit.q.shred_duration_s,
-            e_active_pct,
+            e_active_frac,
             windup_fraction: kit.windup_fraction.ok_or("kayle kit needs attack.windupFraction")?,
-            zeal: if zeal_perm || prestacked { zeal.max_stacks } else { 0 },
-            e_ready: 0.0,
-            e_pending: false,
+            s: state,
+            s0: state,
         })
+    }
+
+    fn reset(&mut self) {
+        self.s = self.s0;
     }
 
     fn ranged(&self) -> bool {
@@ -103,17 +122,17 @@ impl Driver for KayleDriver {
     }
 
     fn bonus_as(&self) -> f64 {
-        self.zeal as f64 * self.as_pct_per_stack
+        self.s.zeal as f64 * self.as_pct_per_stack
     }
 
     fn shave_cooldowns(&mut self, st: &mut St, t: f64, factor: f64) {
         shave(&mut st.q_ready, t, factor);
-        shave(&mut self.e_ready, t, factor);
+        shave(&mut self.s.e_ready, t, factor);
     }
 
     fn before_attack(&mut self, _e: &mut Engine) {
         if !self.zeal_perm {
-            self.zeal = imin(self.zeal + 1, self.max_stacks);
+            self.s.zeal = imin(self.s.zeal + 1, self.max_stacks);
         }
     }
 
@@ -124,15 +143,15 @@ impl Driver for KayleDriver {
     }
 
     fn after_attack(&mut self, e: &mut Engine) {
-        if self.e_pending {
+        if self.s.e_pending {
             let missing = e.target_hp - pymax(e.st.hp, 0.0);
-            e.deal(self.e_active_pct / 100.0 * missing, DType::Magic, SRC_E_ACTIVE, self.aflame,
+            e.deal(self.e_active_frac * missing, DType::Magic, SRC_E_ACTIVE, self.aflame,
                    true, 1.0);
             e.ability_cast_proc();
             e.eclipse_hit();
-            self.e_pending = false;
+            self.s.e_pending = false;
         }
-        if self.aflame && self.zeal >= self.max_stacks {
+        if self.aflame && self.s.zeal >= self.max_stacks {
             e.deal(self.wave_dmg, DType::Magic, SRC_WAVE, true, true, 1.0);
         }
     }
@@ -140,15 +159,15 @@ impl Driver for KayleDriver {
     fn schedule_attack(&mut self, e: &mut Engine) {
         // E weave: cast right after an auto to use the attack reset
         let t = e.st.t;
-        if self.ranks.e > 0 && t >= self.e_ready && !self.e_pending {
-            self.e_pending = true;
-            self.e_ready = t + e.basic_cd(self.e_cd_base);
+        if self.ranks.e > 0 && t >= self.s.e_ready && !self.s.e_pending {
+            self.s.e_pending = true;
+            self.s.e_ready = t + e.basic_cd(self.e_cd_base);
             e.prime_spellblade();
             let b = self.bonus_as();
-            e.st.next_attack = t + self.windup_fraction / e.attack_speed(b);
+            e.st.next_attack = t + e.attack_windup(b, self.windup_fraction);
         } else {
             let b = self.bonus_as();
-            e.st.next_attack = t + 1.0 / e.attack_speed(b);
+            e.st.next_attack = t + e.attack_period(b);
         }
     }
 
@@ -167,6 +186,7 @@ impl Driver for KayleDriver {
 /// A caster who pays health, not mana: R opens the fight, E is charged for
 /// 1s and released with attacks and Q held, W is cast as the charge begins,
 /// Q is cast the moment it's castable and every third cast is empowered.
+#[derive(Clone, Debug, PartialEq)]
 pub struct VladimirDriver {
     ranged: bool,
     attack_range: f64,
@@ -178,14 +198,22 @@ pub struct VladimirDriver {
     w_tick: f64,
     w_cd: f64,
     every_nth_cast: i64,
-    bonus_damage_pct: f64,
+    /// `1.0 + bonus_damage_pct / 100.0`: the kit's own number.
+    rush_mult: f64,
     charge_full_s: f64,
     w_duration_s: f64,
     w_ticks: i64,
     w_tick_s: f64,
     r_amp_pct: f64,
     r_delay_s: f64,
-    // state
+    /// The rotation state, and a pristine copy of it (see `KayleDriver`).
+    s: VladState,
+    s0: VladState,
+}
+
+/// Everything of Vladimir's rotation a fight moves.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct VladState {
     e_ready: f64,
     w_ready: f64,
     q_casts: i64,
@@ -199,27 +227,27 @@ pub struct VladimirDriver {
 impl VladimirDriver {
     fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
         let st = &e.st;
-        let mut t = pymax(pymax(pymax(ready, st.t), self.busy_until), self.pool_until);
-        if self.charge_until != INF {
+        let mut t = pymax(pymax(pymax(ready, st.t), self.s.busy_until), self.s.pool_until);
+        if self.s.charge_until != INF {
             // a cast would cut the charge short
-            t = pymax(t, self.charge_until);
+            t = pymax(t, self.s.charge_until);
         }
         t
     }
 
     fn cast_done(&mut self, e: &mut Engine) {
         let t = e.st.t;
-        self.busy_until = t + ABILITY_LOCKOUT_S;
+        self.s.busy_until = t + ABILITY_LOCKOUT_S;
         e.st.next_attack = pymax(e.st.next_attack, t + ABILITY_LOCKOUT_S);
     }
 
     fn cast_w(&mut self, e: &mut Engine) {
         let t = e.st.t;
-        self.w_ready = t + e.basic_cd(self.w_cd);
-        self.pool_until = t + self.w_duration_s;
-        e.st.next_attack = pymax(e.st.next_attack, self.pool_until);
-        self.w_ticks_left = self.w_ticks;
-        self.w_next = t;
+        self.s.w_ready = t + e.basic_cd(self.w_cd);
+        self.s.pool_until = t + self.w_duration_s;
+        e.st.next_attack = pymax(e.st.next_attack, self.s.pool_until);
+        self.s.w_ticks_left = self.w_ticks;
+        self.s.w_next = t;
         e.prime_spellblade();
     }
 }
@@ -248,6 +276,16 @@ impl Driver for VladimirDriver {
         } else {
             0.0
         };
+        let state = VladState {
+            e_ready: 0.0,
+            w_ready: 0.0,
+            q_casts: 0,
+            busy_until: 0.0,
+            charge_until: INF,
+            pool_until: -1.0,
+            w_ticks_left: 0,
+            w_next: INF,
+        };
         Ok(VladimirDriver {
             ranged: attack_range > MELEE_MAX_RANGE,
             attack_range,
@@ -259,22 +297,20 @@ impl Driver for VladimirDriver {
             w_tick,
             w_cd: if w > 0 { kit.w.cooldown_s[(w - 1) as usize] } else { INF },
             every_nth_cast: rush.every_nth_cast,
-            bonus_damage_pct: rush.bonus_damage_pct,
+            rush_mult: 1.0 + rush.bonus_damage_pct / 100.0,
             charge_full_s: kit.e.charge_full_s.unwrap_or(0.0),
             w_duration_s: kit.w.duration_s.unwrap_or(0.0),
             w_ticks,
             w_tick_s: kit.w.tick_s.unwrap_or(0.0),
             r_amp_pct: kit.r.amp_pct.unwrap_or(0.0),
             r_delay_s: kit.r.delay_s.unwrap_or(0.0),
-            e_ready: 0.0,
-            w_ready: 0.0,
-            q_casts: 0,
-            busy_until: 0.0,
-            charge_until: INF,
-            pool_until: -1.0,
-            w_ticks_left: 0,
-            w_next: INF,
+            s: state,
+            s0: state,
         })
+    }
+
+    fn reset(&mut self) {
+        self.s = self.s0;
     }
 
     fn ranged(&self) -> bool {
@@ -287,8 +323,8 @@ impl Driver for VladimirDriver {
 
     fn shave_cooldowns(&mut self, st: &mut St, t: f64, factor: f64) {
         shave(&mut st.q_ready, t, factor);
-        shave(&mut self.e_ready, t, factor);
-        shave(&mut self.w_ready, t, factor);
+        shave(&mut self.s.e_ready, t, factor);
+        shave(&mut self.s.w_ready, t, factor);
     }
 
     fn q_at(&self, e: &Engine) -> f64 {
@@ -302,11 +338,11 @@ impl Driver for VladimirDriver {
     fn cast_q(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.q_ready = t + e.basic_cd(self.q_cd);
-        self.q_casts += 1;
+        self.s.q_casts += 1;
         let mut amt = self.q_dmg;
-        let empowered = self.q_casts % self.every_nth_cast == 0;
+        let empowered = self.s.q_casts % self.every_nth_cast == 0;
         if empowered {
-            amt *= 1.0 + self.bonus_damage_pct / 100.0;
+            amt *= self.rush_mult;
         }
         e.deal(amt, DType::Magic, if empowered { SRC_Q_EMPOWERED } else { SRC_Q }, false, true,
                1.0);
@@ -319,22 +355,23 @@ impl Driver for VladimirDriver {
     fn cast_r(&mut self, e: &mut Engine) {
         let t = e.st.t;
         e.st.kit_amp_pct = self.r_amp_pct;
+        e.st.kit_amp_mult = 1.0 + self.r_amp_pct / 100.0;
         e.st.kit_amp_until = t + self.r_delay_s;
-        self.busy_until = t + ABILITY_LOCKOUT_S;
+        self.s.busy_until = t + ABILITY_LOCKOUT_S;
     }
 
     fn events(&self, e: &Engine, out: &mut [(f64, Kind); 2]) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
-            if self.charge_until != INF {
-                out[n] = (self.charge_until, Kind::ERelease);
+            if self.s.charge_until != INF {
+                out[n] = (self.s.charge_until, Kind::ERelease);
             } else {
-                out[n] = (self.castable_at(e, self.e_ready), Kind::ECharge);
+                out[n] = (self.castable_at(e, self.s.e_ready), Kind::ECharge);
             }
             n += 1;
         }
-        if self.w_ticks_left != 0 {
-            out[n] = (self.w_next, Kind::WTick);
+        if self.s.w_ticks_left != 0 {
+            out[n] = (self.s.w_next, Kind::WTick);
             n += 1;
         }
         n
@@ -344,18 +381,18 @@ impl Driver for VladimirDriver {
         let t = e.st.t;
         match kind {
             Kind::ECharge => {
-                if self.castable_at(e, self.e_ready) > t {
+                if self.castable_at(e, self.s.e_ready) > t {
                     return; // a cast at this instant took priority; try again
                 }
-                self.charge_until = t + self.charge_full_s;
-                e.st.next_attack = pymax(e.st.next_attack, self.charge_until);
-                if self.ranks.w > 0 && t >= self.w_ready {
+                self.s.charge_until = t + self.charge_full_s;
+                e.st.next_attack = pymax(e.st.next_attack, self.s.charge_until);
+                if self.ranks.w > 0 && t >= self.s.w_ready {
                     self.cast_w(e);
                 }
             }
             Kind::ERelease => {
-                self.charge_until = INF;
-                self.e_ready = t + e.basic_cd(self.e_cd);
+                self.s.charge_until = INF;
+                self.s.e_ready = t + e.basic_cd(self.e_cd);
                 e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
                 e.ability_cast_proc();
                 e.eclipse_hit();
@@ -364,8 +401,8 @@ impl Driver for VladimirDriver {
             }
             Kind::WTick => {
                 e.deal(self.w_tick, DType::Magic, SRC_W, false, true, 1.0);
-                self.w_ticks_left -= 1;
-                self.w_next = if self.w_ticks_left != 0 { t + self.w_tick_s } else { INF };
+                self.s.w_ticks_left -= 1;
+                self.s.w_next = if self.s.w_ticks_left != 0 { t + self.w_tick_s } else { INF };
             }
             other => panic!("unhandled event {other:?}"),
         }

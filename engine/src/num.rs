@@ -46,15 +46,18 @@ pub fn imax(a: i64, b: i64) -> i64 {
 }
 
 /// `(level - 1) * (0.7025 + 0.0175 * (level - 1))`
+#[inline(always)]
 pub fn growth(level: i64) -> f64 {
     let l = (level - 1) as f64;
     l * (0.7025 + 0.0175 * l)
 }
 
+#[inline(always)]
 pub fn stat_at(base: f64, per_level: f64, level: i64) -> f64 {
     base + per_level * growth(level)
 }
 
+#[inline(always)]
 pub fn resist_mult(resist: f64) -> f64 {
     if resist >= 0.0 {
         100.0 / (100.0 + resist)
@@ -63,10 +66,21 @@ pub fn resist_mult(resist: f64) -> f64 {
     }
 }
 
+#[inline(always)]
 pub fn stack_pct_pen(a: f64, b: f64) -> f64 {
     100.0 * (1.0 - (1.0 - a / 100.0) * (1.0 - b / 100.0))
 }
 
+/// `stack_pct_pen` with `1.0 - a / 100.0` already worked out: the fight's
+/// `a` is the sheet's pen, fixed for the whole fight, so the divide and the
+/// subtraction can happen once. Every remaining operation, operand and
+/// association is the one above, so the bits are the same.
+#[inline(always)]
+pub fn stack_pct_pen_pre(a_factor: f64, b: f64) -> f64 {
+    100.0 * (1.0 - a_factor * (1.0 - b / 100.0))
+}
+
+#[inline(always)]
 pub fn eff_resist(base: f64, flat_reduction: f64, pct_reduction: f64, pct_pen: f64,
                   flat_pen: f64) -> f64 {
     let mut r = (base - flat_reduction) * (1.0 - pct_reduction / 100.0);
@@ -139,7 +153,7 @@ impl DType {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ranks {
     pub q: i64,
     pub w: i64,

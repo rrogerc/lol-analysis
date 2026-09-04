@@ -42,15 +42,29 @@
   `$LOL_WARM_PYTHON`).
 - Cells are keyed by a hash of every input including `builds.py` and the
   engine sources (`lol_engine.SOURCE_HASH`, stamped by `engine/build.rs`),
-  so an edit to either recomputes everything: about 35 s for both
-  champions on this 16-thread box (Kayle 21 s, Vladimir 11 s, measured
-  2026-09-04; the pure-Python engine took 59 min). Editing `engine/src`
+  so an edit to either recomputes everything: about 17 s for both
+  champions on this 16-thread box with the previous cells as seeds
+  (Kayle 11 s, Vladimir 5.4 s, measured 2026-09-04 after the hot-path
+  rewrite; the first Rust cut took 32 s, the pure-Python engine 59 min).
+  A cold cache (no seeds) takes ~26 s: the first blocks run unbounded
+  and the kill-time guess gets repaired by a second pass. Editing `engine/src`
   without rebuilding makes `source_stale()` true — the Builds tab says so;
   run the build script, then restart serve.
 - The enumerator's inner loop is `engine/src/enumerate.rs` (Ctx.run_block);
   the parent side — blocks, merge, the shared bounds table `_Bounds`, the
   checked guess — stays in `builds.py`. It prunes exactly: results must
   stay identical to an unpruned pass, and `test_builds` checks that.
+- The fight engine builds the target-independent half of a fight once per
+  boots class (`Prep` in `fight.rs`, driven through `Sim`) and runs the
+  three targets against it; per-hit values that depend only on a few
+  discrete stacks (resist multipliers, attack speed, the amp per combat
+  second) are memoized and, in a debug build, re-checked bit for bit
+  against the slow path on every call. Items are dense indices inside
+  `Ctx` (no hashing in the loop) and a class does no heap allocation per
+  fight. Benchmarks on this hybrid CPU must be pinned to a P-core
+  (`taskset -c 2`) and interleaved with the baseline; monomorphising the
+  whole block loop per driver measured as a 3.5% loss (I-cache), so only
+  the fight itself is generic over the driver.
 - Any engine change must keep the fights bit-identical unless it is a
   deliberate model change: `test_builds.TestGolden` replays
   `data/builds/golden` (every fight of ~250 builds and three enumeration

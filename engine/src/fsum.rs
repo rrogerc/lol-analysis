@@ -3,8 +3,75 @@
 //! ranks with the same function, so a geometric mean computed here is the
 //! same bits the parent process computes.
 
+/// CPython's partials array: 32 slots on the stack, spilling to the heap
+/// only when a sum needs more (Modules/mathmodule.c does the same). Reads
+/// and writes stay inside the live length, so the spill is only ever
+/// touched once a sum has more than 32 partials.
+struct Partials {
+    n: usize,
+    fixed: [f64; NSTACK],
+    spill: Vec<f64>,
+}
+
+const NSTACK: usize = 32;
+
+impl Partials {
+    #[inline]
+    fn new() -> Partials {
+        Partials { n: 0, fixed: [0.0; NSTACK], spill: Vec::new() }
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        self.n
+    }
+
+    #[inline]
+    fn get(&self, i: usize) -> f64 {
+        if i < NSTACK {
+            self.fixed[i]
+        } else {
+            self.spill[i - NSTACK]
+        }
+    }
+
+    #[inline]
+    fn set(&mut self, i: usize, v: f64) {
+        if i < NSTACK {
+            self.fixed[i] = v;
+        } else {
+            self.spill[i - NSTACK] = v;
+        }
+    }
+
+    #[inline]
+    fn truncate(&mut self, i: usize) {
+        self.n = i;
+    }
+
+    #[inline]
+    fn clear(&mut self) {
+        self.n = 0;
+    }
+
+    #[inline]
+    fn push(&mut self, v: f64) {
+        if self.n < NSTACK {
+            self.fixed[self.n] = v;
+        } else {
+            let k = self.n - NSTACK;
+            if k < self.spill.len() {
+                self.spill[k] = v;
+            } else {
+                self.spill.push(v);
+            }
+        }
+        self.n += 1;
+    }
+}
+
 pub fn fsum<I: IntoIterator<Item = f64>>(iter: I) -> f64 {
-    let mut p: Vec<f64> = Vec::with_capacity(32);
+    let mut p = Partials::new();
     let mut special_sum = 0.0f64;
     let mut inf_sum = 0.0f64;
     let mut lo = 0.0f64;
@@ -12,7 +79,7 @@ pub fn fsum<I: IntoIterator<Item = f64>>(iter: I) -> f64 {
         let xsave = x;
         let mut i = 0;
         for j in 0..p.len() {
-            let mut y = p[j];
+            let mut y = p.get(j);
             if x.abs() < y.abs() {
                 std::mem::swap(&mut x, &mut y);
             }
@@ -20,7 +87,7 @@ pub fn fsum<I: IntoIterator<Item = f64>>(iter: I) -> f64 {
             let yr = hi - x;
             lo = y - yr;
             if lo != 0.0 {
-                p[i] = lo;
+                p.set(i, lo);
                 i += 1;
             }
             x = hi;
@@ -51,12 +118,12 @@ pub fn fsum<I: IntoIterator<Item = f64>>(iter: I) -> f64 {
     let mut n = p.len();
     if n > 0 {
         n -= 1;
-        hi = p[n];
+        hi = p.get(n);
         // sum_exact(ps, hi) from the top, stop when the sum becomes inexact
         while n > 0 {
             let x = hi;
             n -= 1;
-            let y = p[n];
+            let y = p.get(n);
             hi = x + y;
             let yr = hi - x;
             lo = y - yr;
@@ -65,7 +132,7 @@ pub fn fsum<I: IntoIterator<Item = f64>>(iter: I) -> f64 {
             }
         }
         // make half-even rounding work across multiple partials
-        if n > 0 && ((lo < 0.0 && p[n - 1] < 0.0) || (lo > 0.0 && p[n - 1] > 0.0)) {
+        if n > 0 && ((lo < 0.0 && p.get(n - 1) < 0.0) || (lo > 0.0 && p.get(n - 1) > 0.0)) {
             let y = lo * 2.0;
             let x = hi + y;
             let yr = x - hi;

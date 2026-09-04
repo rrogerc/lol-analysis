@@ -118,6 +118,8 @@ pub fn parse_stat_pairs(v: &Bound<'_, PyAny>) -> PyResult<Vec<(SK, f64)>> {
         let pair = pair?;
         let name: String = pair.get_item(0)?.extract()?;
         let val: f64 = pair.get_item(1)?.extract()?;
+        // resolve() leans on item stats being finite: see its skip-zero note
+        debug_assert!(val.is_finite(), "item stat {name} is not finite: {val}");
         let key = SK::parse(&name).ok_or_else(|| PyKeyError::new_err(name))?;
         out.push((key, val));
     }
@@ -251,8 +253,12 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
                 _ => agg[k as usize] += v,
             }
         }
-        // AP increases (Rabadon, Blackfire) compound multiplicatively
-        ap_mult *= 1.0 + fx.ap_mult;
+        // AP increases (Rabadon, Blackfire) compound multiplicatively.
+        // `*= 1.0 + 0.0` is `*= 1.0`, an exact identity for every finite
+        // value, so an item that grants none is skipped outright.
+        if fx.ap_mult != 0.0 {
+            ap_mult *= 1.0 + fx.ap_mult;
+        }
         // permanent-stack items (Rod of Ages) are assumed fully stacked
         for &(k, v) in &fx.stacked {
             agg[k as usize] += v;
@@ -264,14 +270,33 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
     // AP multiplier, matching the in-game order.
     let base_mana = stat_at(base.mp, base.mp_per, level);
     let mut basic_haste = 0.0f64;
+    // One item in seventy-nine carries any given field here, so each term is
+    // skipped when the item's own number is exactly 0.0. Adding a term whose
+    // factor is 0.0 changes an accumulator's bits only when the accumulator
+    // is -0.0: under round-to-nearest `a + b == -0.0` needs BOTH operands
+    // -0.0, every accumulator here starts at +0.0, and item stats are finite
+    // (parse_stat_pairs asserts it), so no accumulator is ever -0.0 and the
+    // skipped adds are exact no-ops.
     for (_, fx) in items {
-        agg[SK::ApFlat as usize] += fx.ap_from_bonus_hp_pct / 100.0 * agg[SK::Hp as usize];
-        agg[SK::AdBonus as usize] += fx.ad_from_bonus_hp_pct / 100.0 * agg[SK::Hp as usize];
-        agg[SK::ApFlat as usize] += fx.ap_from_bonus_mana_pct / 100.0 * agg[SK::Mana as usize];
-        agg[SK::AdBonus as usize] += fx.ad_from_max_mana_pct / 100.0
-            * (base_mana + agg[SK::Mana as usize]);
-        agg[SK::CritChance as usize] += fx.crit_chance_stacked_pct;
-        basic_haste += fx.basic_ability_haste;
+        if fx.ap_from_bonus_hp_pct != 0.0 {
+            agg[SK::ApFlat as usize] += fx.ap_from_bonus_hp_pct / 100.0 * agg[SK::Hp as usize];
+        }
+        if fx.ad_from_bonus_hp_pct != 0.0 {
+            agg[SK::AdBonus as usize] += fx.ad_from_bonus_hp_pct / 100.0 * agg[SK::Hp as usize];
+        }
+        if fx.ap_from_bonus_mana_pct != 0.0 {
+            agg[SK::ApFlat as usize] += fx.ap_from_bonus_mana_pct / 100.0 * agg[SK::Mana as usize];
+        }
+        if fx.ad_from_max_mana_pct != 0.0 {
+            agg[SK::AdBonus as usize] += fx.ad_from_max_mana_pct / 100.0
+                * (base_mana + agg[SK::Mana as usize]);
+        }
+        if fx.crit_chance_stacked_pct != 0.0 {
+            agg[SK::CritChance as usize] += fx.crit_chance_stacked_pct;
+        }
+        if fx.basic_ability_haste != 0.0 {
+            basic_haste += fx.basic_ability_haste;
+        }
     }
     for (_, fx) in items {
         // Famine (Endless Hunger): haste from total bonus AD

@@ -688,3 +688,53 @@ impl Fx {
         Ok(fx)
     }
 }
+
+impl Singletons {
+    /// Nothing set, so `first_wins!` over this entry cannot change a merge.
+    pub fn is_empty(&self) -> bool {
+        self.spellblade.is_none()
+            && self.as_stacking.is_none()
+            && self.phantom.is_none()
+            && self.kraken.is_none()
+            && self.alt_pen.is_none()
+            && self.magic_crit.is_none()
+            && self.ult_burn.is_none()
+            && self.navori_cdr.is_none()
+            && self.flurry.is_none()
+            && self.execute_pct.is_none()
+            && self.giant_slayer.is_none()
+            && self.stormsurge.is_none()
+            && self.ability_mana_proc.is_none()
+            && self.ability_proc_once.is_none()
+            && self.armor_shred.is_none()
+            && self.mr_shred.is_none()
+            && self.ability_amp_stacking.is_none()
+            && self.mana_active.is_none()
+            && self.on_ult_cast.is_none()
+            && self.ult_attack_steroid.is_none()
+            && self.hit_pair_proc.is_none()
+            && self.nth_hit_proc.is_none()
+            && self.hypershot.is_none()
+            && self.opener_lethality.is_none()
+            && self.first_attack_bonus.is_none()
+            && self.first_attack_crit_floor_ev.is_none()
+            && self.attack_amp.is_none()
+    }
+}
+
+impl ItemFx {
+    /// True when `Fx::merge` cannot see this entry at all: every fight-side
+    /// list empty and every singleton unset. Merging it is then a no-op, at
+    /// any position (the enumerator leans on that for boots, which carry no
+    /// modeled effects). Says nothing about the stat-sheet half.
+    pub fn is_empty(&self) -> bool {
+        self.onhit.is_empty()
+            && self.onhit_current_hp.is_none()
+            && self.dmg_amp.is_none()
+            && self.flat_amp.is_none()
+            && self.burn.is_none()
+            && self.active_once.is_none()
+            && self.energized.is_none()
+            && self.s.is_empty()
+    }
+}

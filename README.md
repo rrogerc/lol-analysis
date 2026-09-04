@@ -71,8 +71,9 @@ module and committed JSON archive:
   attacks. A previous result's rows are scored first, so the bounds are
   tight from the start. The sheet, the fight and that inner loop are
   compiled (`engine/`, Rust through PyO3, imported as `lol_engine`; build
-  it with `jobs/build-engine.sh`): a champion takes 10–20 s on 16 cores,
-  where the pure-Python engine it replaced took half an hour. Its output
+  it with `jobs/build-engine.sh`): a champion takes 5–11 s on 16 cores (the
+  whole warm about 17 s), where the pure-Python engine it replaced took
+  half an hour. Its output
   is pinned bit for bit by the fixtures in `data/builds/golden`
   (`test_builds.TestGolden`; regenerate with `jobs/gen_golden.py` only
   after a deliberate model change). Progress lines land in

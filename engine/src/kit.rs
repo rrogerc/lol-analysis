@@ -72,9 +72,30 @@ pub struct Ability {
     pub amp_pct: Option<f64>,
 }
 
+/// Which rotation driver a kit needs (engine/src/drivers.rs). Settled
+/// once, when the kit is parsed, so a fight never matches on a string.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DriverId {
+    Kayle,
+    Vladimir,
+}
+
+impl DriverId {
+    /// The driver a champion slug names, `None` when the engine has none
+    /// (`simulate` says so, exactly as it always did).
+    pub fn of(champion: &str) -> Option<DriverId> {
+        match champion {
+            "kayle" => Some(DriverId::Kayle),
+            "vladimir" => Some(DriverId::Vladimir),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Kit {
     pub champion: String,
+    pub driver: Option<DriverId>,
     pub attack_never: bool,
     pub windup_fraction: Option<f64>,
     pub zealous: Option<Zealous>,
@@ -212,8 +233,10 @@ impl Kit {
             }
         }
         let abilities = reqd(d, "abilities")?;
+        let champion = reqs(d, "champion")?;
         Ok(Kit {
-            champion: reqs(d, "champion")?,
+            driver: DriverId::of(&champion),
+            champion,
             attack_never,
             windup_fraction: windup,
             zealous,
