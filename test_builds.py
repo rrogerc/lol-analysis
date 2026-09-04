@@ -1275,8 +1275,12 @@ class TestBootsClasses(unittest.TestCase):
     def test_engine_never_reads_an_ignored_stat(self):
         # the merge is only sound while the engine (and every kit driver)
         # leaves these sheet fields alone; move speed it does read
+        read = set()
+        for name in ("fight.rs", "drivers.rs", "num.rs"):
+            with open(os.path.join(builds.ENGINE_DIR, "src", name)) as f:
+                read |= set(re.findall(r"sheet\.(\w+)", f.read()))
         with open(builds.__file__) as f:
-            read = set(re.findall(r'sheet\["(\w+)"\]', f.read()))
+            read |= set(re.findall(r'sheet\["(\w+)"\]', f.read()))
         self.assertFalse(read & builds.ENGINE_IGNORES, read & builds.ENGINE_IGNORES)
         self.assertIn("move_speed", read)
 
@@ -1469,6 +1473,121 @@ class TestEnumeratorPruning(unittest.TestCase):
             self.assertEqual(builds.cached_builds("kayle", self.pool), [a, b])
             self.assertEqual(builds.cached_builds("vladimir", self.pool), [b])
             self.assertEqual(builds.cached_builds("teemo", self.pool), [])
+
+
+class TestGolden(unittest.TestCase):
+    """The engine's output pinned bit for bit. data/builds/golden holds every
+    fight of a few hundred builds (each item at least twice, every effect
+    key, five targets, the flag variants) and three enumeration passes, as
+    the pre-Rust Python engine computed them at commit d2922e6. A refactor
+    has to reproduce them exactly; a deliberate model change regenerates
+    them in the same commit (see the README there)."""
+
+    GOLDEN = os.path.join(builds.BUILDS_DATA_DIR, "golden")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.patch, cls.pool = builds.load_items()
+        cls.effects = builds.load_item_effects()
+        cls.champs = {}
+        cls.sheets = {}
+
+    @staticmethod
+    def first_diff(exp, got, path=""):
+        """The path of the first difference, or None. Exact float equality;
+        an int and a float of the same value are the same number (the old
+        engine let a kit's integer delay leak through the clock as an int);
+        tuples count as lists; dict order doesn't count."""
+        if isinstance(exp, bool) or isinstance(got, bool):
+            return None if exp is got else f"{path}: {exp!r} != {got!r}"
+        if isinstance(exp, (int, float)) and isinstance(got, (int, float)):
+            return None if exp == got else f"{path}: {exp!r} != {got!r}"
+        if isinstance(exp, list) and isinstance(got, (list, tuple)):
+            if len(exp) != len(got):
+                return f"{path}: {len(exp)} items != {len(got)}"
+            for n, (a, b) in enumerate(zip(exp, got)):
+                d = TestGolden.first_diff(a, b, f"{path}[{n}]")
+                if d:
+                    return d
+            return None
+        if isinstance(exp, dict) and isinstance(got, dict):
+            if set(exp) != set(got):
+                return f"{path}: keys {sorted(set(exp) ^ set(got))}"
+            for k in exp:
+                d = TestGolden.first_diff(exp[k], got[k], f"{path}.{k}")
+                if d:
+                    return d
+            return None
+        return None if exp == got else f"{path}: {exp!r} != {got!r}"
+
+    def champ(self, slug):
+        if slug not in self.champs:
+            kit = builds.load_kit(slug)
+            self.champs[slug] = (kit, builds.load_champion(slug),
+                                 builds.kit_max_order(kit))
+        return self.champs[slug]
+
+    def sheet(self, slug, level, ids):
+        key = (slug, level, tuple(ids))
+        if key not in self.sheets:
+            kit, champ, _ = self.champ(slug)
+            self.sheets[key] = builds.resolve_stats(champ, level, list(ids),
+                                                    self.pool, self.effects,
+                                                    kit=kit)
+        return self.sheets[key]
+
+    def test_fights(self):
+        with open(os.path.join(self.GOLDEN, "engine-fights.json")) as f:
+            doc = json.load(f)
+        self.assertEqual(doc["patch"], self.patch)
+        for case in doc["cases"]:
+            slug, level, ids = case["champion"], case["level"], case["ids"]
+            kit, _, order = self.champ(slug)
+            sheet = self.sheet(slug, level, ids)
+            fx = builds.merge_effects(list(ids), self.effects)
+            ranks = builds.skill_ranks(level, order)
+            slim = {k: v for k, v in sheet.items() if k != "uncovered"}
+            for what, exp, got in (("sheet", case["sheet"], slim),
+                                   ("fx", case["fx"], fx),
+                                   ("ranks", case["ranks"], ranks)):
+                self.assertIsNone(self.first_diff(exp, got, what),
+                                  (case["id"], case["items"]))
+            stop = (math.inf if case["stop_after"] is None
+                    else case["stop_after"])
+            got = builds.simulate(
+                sheet, kit, fx, level, ranks, case["targetHp"], case["armor"],
+                case["mr"], case["duration"], use_ult=case["use_ult"],
+                prestacked=case["prestacked"],
+                target_bonus_hp=case["targetBonusHp"], stop_after=stop,
+                breakdown=case["breakdown"], _blend=case["blend"])
+            self.assertIsNone(self.first_diff(case["result"], got, "result"),
+                              (case["id"], case["items"], case["target"]))
+
+    def test_enumerate(self):
+        with open(os.path.join(self.GOLDEN, "enumerate.json")) as f:
+            doc = json.load(f)
+        for run in doc["runs"]:
+            kit, champ, order = self.champ(run["champion"])
+            lists, count = builds.enumerate_builds(
+                champ, self.pool, self.effects, kit, run["level"],
+                builds.skill_ranks(run["level"], order), doc["targets"],
+                candidates=list(run["pool"]), overall=run["overall"],
+                keep=run["keep"], workers=run["workers"])
+            self.assertEqual(count, run["count"], run["name"])
+            self.assertEqual(set(lists), set(run["lists"]), run["name"])
+            for key, rows in run["lists"].items():
+                got = lists[key]
+                self.assertEqual([r["ids"] for r in rows],
+                                 [list(ids) for ids, _, _ in got],
+                                 (run["name"], key))
+                for n, (r, (_, sheet, fights)) in enumerate(zip(rows, got)):
+                    slim = {k: sheet[k] for k in run["sheet_keys"]}
+                    self.assertIsNone(
+                        self.first_diff(r["sheet"], slim, "sheet"),
+                        (run["name"], key, n))
+                    self.assertIsNone(
+                        self.first_diff(r["fights"], fights, "fights"),
+                        (run["name"], key, n, r["ids"]))
 
 
 class TestBootsPartitions(unittest.TestCase):

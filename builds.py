@@ -2,11 +2,18 @@
 for champion + item combinations — first principles only, no match data.
 
 The plan for this domain, built up in phases:
-  1. stat layer (this file's core) — resolve champion base stats at a level
-     plus an item set into a final stat sheet using the real in-game rules
+  1. stat layer — resolve champion base stats at a level plus an item set
+     into a final stat sheet using the real in-game rules
   2. kit encoding — data/builds/<champ>.json, hand-encoded ability formulas
   3. combat engine — deterministic event-based DPS vs a configured target
   4. optimizer — rank builds over a scenario grid (level x target x duration)
+
+The numbers (the sheet, the fight, the enumeration's inner loop) are computed
+by the compiled engine in engine/ (Rust, imported as lol_engine — build it
+with jobs/build-engine.sh). This module keeps the data, the parent side of
+the enumeration, the cache and the CLI, and wraps the engine's entry points
+with the Python-facing contracts (resolve_stats, simulate, enumerate_builds).
+The fixtures under data/builds/golden pin the engine's output bit for bit.
 
 Data sources — the rule everywhere is: ddragon (Riot, patch-versioned) is
 canonical wherever it has the number; meraki fills the structural gaps but
@@ -29,6 +36,7 @@ Stat formulas follow the League wiki ("Champion statistic", "Armor
 penetration"); each is cited at its implementation.
 """
 
+import ctypes
 import glob
 import hashlib
 import json
@@ -37,10 +45,18 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
-from types import SimpleNamespace
 
 import items
 from common import BASE_DIR, DATA_DIR, patch_key
+
+try:
+    import lol_engine
+except ImportError as e:  # the compiled engine: engine/, built by jobs/build-engine.sh
+    raise ImportError("builds needs the compiled engine (lol_engine.abi3.so at the repo "
+                      "root) — run jobs/build-engine.sh; it uses cargo, or fetches one "
+                      "through nix-shell") from e
+
+ENGINE_DIR = os.path.join(BASE_DIR, "engine")
 
 BUILDS_DATA_DIR = os.path.join(DATA_DIR, "builds")
 CHAMPIONS_DIR = os.path.join(BUILDS_DATA_DIR, "champions")
@@ -50,7 +66,8 @@ DDRAGON_CHAMP_INDEX = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en
 DDRAGON_CHAMP = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion/{cid}.json"
 MERAKI_CHAMP = "https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions/{cid}.json"
 
-AS_CAP = 2.5  # attack speed is hard-capped in game
+AS_CAP = 2.5  # attack speed is hard-capped in game (the engine's num.rs agrees)
+INF = float("inf")
 
 
 # ---------------------------------------------------------------------------
@@ -410,157 +427,89 @@ IGNORED_ITEM_STATS = {("goldPer10", "flat"), ("healthRegen", "flat"),
                       ("healthRegen", "percent"), ("manaRegen", "percent")}
 
 
+def champ_base(champ):
+    """The champion base stats the sheet needs, as one flat dict for the
+    engine: ddragon's numbers with meraki's attack-speed ratio and crit damage
+    riding along, and the AD-growth fallback resolved — ddragon 16.5.1 onward
+    publishes attackdamageperlevel = 0 for every champion at once (a Data
+    Dragon regression, not a game change; Riot's files keep the real growth,
+    16.17: Vladimir 3, Kayle 2.5), so meraki's per-level AD stands in for
+    exactly that case. Meraki lags patches: re-check a champion against
+    raw.communitydragon.org when the number matters."""
+    dd = champ["dd"]["stats"]
+    mk = (champ["mk"] or {}).get("stats", {})
+    ad_growth = dd["attackdamageperlevel"]
+    if ad_growth == 0:
+        ad_growth = mk.get("attackDamage", {}).get("perLevel", 0.0) or 0.0
+    return dict(
+        hp=dd["hp"], hp_per=dd["hpperlevel"], mp=dd["mp"], mp_per=dd["mpperlevel"],
+        armor=dd["armor"], armor_per=dd["armorperlevel"],
+        mr=dd["spellblock"], mr_per=dd["spellblockperlevel"],
+        ad=dd["attackdamage"], ad_per=ad_growth,
+        base_as=dd["attackspeed"], as_per=dd["attackspeedperlevel"],
+        # ddragon doesn't ship the ratio; without meraki, ratio = base AS
+        as_ratio=mk.get("attackSpeedRatio", {}).get("flat", dd["attackspeed"]),
+        # 175% base crit damage; items with criticalStrikeDamage add to it
+        crit_damage_base=mk.get("criticalStrikeDamage", {}).get("flat", 175.0),
+        move_speed=dd["movespeed"], attack_range=dd["attackrange"])
+
+
+def stat_pairs(item):
+    """An item's mapped, nonzero stats as (sheet key, value), in the order
+    the sheet folds them. Percent-natured stats arrive as percent points
+    (attackSpeed.flat 50.0 == +50% AS). Warns about a stat ITEM_STAT_MAP
+    doesn't know, so a meraki schema change can't slip past silently."""
+    out = []
+    for stat, fields in item["stats"].items():
+        for field, val in fields.items():
+            if not val:
+                continue
+            key = ITEM_STAT_MAP.get((stat, field))
+            if key:
+                out.append((key, val))
+            elif (stat, field) not in IGNORED_ITEM_STATS:
+                print(f"Warning: unmapped item stat {stat}.{field} on "
+                      f"{item['name']} — update ITEM_STAT_MAP", file=sys.stderr)
+    return out
+
+
 def resolve_stats(champ, level, item_ids, pool, effects=None, kit=None):
     """Champion base stats at `level` plus `item_ids` -> final stat sheet.
     `kit` (the champion's encoding) supplies stat-converting passives —
     Vladimir's Crimson Pact; without it the sheet is items and levels only.
 
-    Returns a flat dict; `uncovered` lists item passives that exist only as
-    text and aren't part of the sheet (the combat engine's job, or genuinely
-    out of scope) so callers can show what the numbers do NOT include.
+    The numbers come from the engine (engine/src/sheet.rs: the in-game
+    rules, the AP multipliers, the stat-granting passives that need the item
+    totals, the Crimson Pact / Riftmaker closed form). Returns a flat dict;
+    `uncovered` lists item passives that exist only as text and aren't part
+    of the sheet (the combat engine's job, or genuinely out of scope) so
+    callers can show what the numbers do NOT include.
     """
     effects = effects if effects is not None else load_item_effects()
-    dd = champ["dd"]["stats"]
-    mk = (champ["mk"] or {}).get("stats", {})
-
-    agg = {v: 0.0 for v in ITEM_STAT_MAP.values()}
-    ap_mult, gold, names, uncovered = 1.0, 0, [], []
-    pct_pen_multi = {"armor_pen_pct": 0.0, "magic_pen_pct": 0.0}
+    entries, names, gold, uncovered = [], [], 0, []
     for iid in item_ids:
         it = pool[iid]
         names.append(it["name"])
         gold += it["shop"]["prices"]["total"]
-        for stat, fields in it["stats"].items():
-            for field, val in fields.items():
-                if not val:
-                    continue
-                key = ITEM_STAT_MAP.get((stat, field))
-                if key in pct_pen_multi:
-                    pct_pen_multi[key] = stack_pct_pen(pct_pen_multi[key], val)
-                elif key:
-                    agg[key] += val
-                elif (stat, field) not in IGNORED_ITEM_STATS:
-                    print(f"Warning: unmapped item stat {stat}.{field} on "
-                          f"{it['name']} — update ITEM_STAT_MAP", file=sys.stderr)
         fx = effects.get(iid, {})
-        # AP increases (Rabadon, Blackfire) compound multiplicatively in game
-        ap_mult *= 1.0 + fx.get("apMult", 0.0)
-        # permanent-stack items (Rod of Ages) are assumed fully stacked
-        for stat, val in fx.get("stackedStats", {}).items():
-            agg[{"abilityPower": "ap_flat", "attackDamage": "ad_bonus",
-                 "health": "hp", "mana": "mana"}[stat]] += val
+        entries.append((stat_pairs(it), fx))
         covered = set(fx.get("covers", []))
         uncovered += [f"{p['name']} ({it['name']})" for p in it["passives"]
                       if p.get("name") and p["name"] not in covered]
-    agg.update(pct_pen_multi)
-    # Stat-granting passives that need the item totals: Riftmaker (AP from
-    # bonus health), Seraph's (AP from bonus mana), Muramana (AD from maximum
-    # mana), Yun Tal (permanent crit stacks, assumed fully stacked). All land
-    # before the AP multiplier, matching the in-game order.
-    base_mana = stat_at(dd["mp"], dd["mpperlevel"], level)
-    basic_haste = 0.0
-    for iid in item_ids:
-        fx = effects.get(iid, {})
-        agg["ap_flat"] += fx.get("apFromBonusHpPct", 0.0) / 100.0 * agg["hp"]
-        agg["ad_bonus"] += fx.get("adFromBonusHpPct", 0.0) / 100.0 * agg["hp"]
-        agg["ap_flat"] += fx.get("apFromBonusManaPct", 0.0) / 100.0 * agg["mana"]
-        agg["ad_bonus"] += (fx.get("adFromMaxManaPct", 0.0) / 100.0
-                            * (base_mana + agg["mana"]))
-        agg["crit_chance"] += fx.get("critChanceStackedPct", 0.0)
-        basic_haste += fx.get("basicAbilityHaste", 0.0)
-    for iid in item_ids:  # Famine (Endless Hunger): haste from total bonus AD
-        fh = effects.get(iid, {}).get("hasteFromBonusAd")
-        if fh:
-            agg["haste"] += fh["base"] + fh["perBonusAdPct"] / 100.0 * agg["ad_bonus"]
-
-    # Attack speed is the one stat with its own model: growth and item AS are
-    # both "bonus AS" percent, converted through the champion's AS ratio
-    # (ddragon doesn't ship the ratio; without meraki, ratio = base AS).
-    base_as = dd["attackspeed"]
-    as_ratio = mk.get("attackSpeedRatio", {}).get("flat", base_as)
-    bonus_as = dd["attackspeedperlevel"] * growth(level) + agg["bonus_as_pct"]
-    attack_speed = min(base_as + as_ratio * bonus_as / 100.0, AS_CAP)
-
-    # Vladimir's Crimson Pact: 1 AP per 30 bonus health, and 1.6 bonus health
-    # per point of AP. "Does not stack with itself" (wiki, Crimson Pact
-    # notes): the AP the pact makes from health earns no health back — but
-    # Rabadon's enhancement of that AP is credited to Rabadon's and does.
-    # Riftmaker's Void Infusion reads bonus health, which the pact's health
-    # is, so with both on the sheet the pair feeds back on itself; this is
-    # the closed form of that fixed point (the wiki is silent on whether the
-    # game resolves it that way — a modeling assumption).
     pact = (kit or {}).get("passive", {}).get("crimsonPact")
-    pact_hp = 0.0
-    if pact:
-        per_hp = pact["apPer30BonusHp"] / 30.0
-        per_ap = pact["bonusHpPerAp"]
-        rift = sum(effects.get(i, {}).get("apFromBonusHpPct", 0.0)
-                   for i in item_ids) / 100.0
-        ap_pact = per_hp * agg["hp"]
-        ap = (ap_mult * (agg["ap_flat"] + ap_pact * (1.0 - rift * per_ap))
-              / (1.0 - ap_mult * rift * per_ap))
-        agg["ap_flat"] = ap / ap_mult
-        pact_hp = per_ap * (ap - ap_pact)
-        for iid in item_ids:  # Overlord's: bonus AD counts that health too
-            agg["ad_bonus"] += (effects.get(iid, {}).get("adFromBonusHpPct", 0.0)
-                                / 100.0 * pact_hp)
-    else:
-        ap = agg["ap_flat"] * ap_mult
-    haste = agg["haste"]
-    # ddragon 16.5.1 onward publishes attackdamageperlevel = 0 for every
-    # champion at once (other per-level fields untouched) while Riot's game
-    # files keep the real growth (16.17: Vladimir 3, Kayle 2.5) — a Data
-    # Dragon regression, not a game change. Meraki's per-level AD is the
-    # fallback for exactly that case; meraki lags patches, so re-check any
-    # champion against raw.communitydragon.org when the number matters.
-    ad_growth = dd["attackdamageperlevel"]
-    if ad_growth == 0:
-        ad_growth = mk.get("attackDamage", {}).get("perLevel", 0.0) or 0.0
-    sheet = {
-        "champion": champ["slug"], "level": level, "gold": gold,
-        "items": names,
-        "ad_base": stat_at(dd["attackdamage"], ad_growth, level),
-        "ad_bonus": agg["ad_bonus"],
-        "ap": ap, "ap_flat": agg["ap_flat"], "ap_mult": ap_mult,
-        "attack_speed": attack_speed, "base_as": base_as, "as_ratio": as_ratio,
-        "bonus_as_pct": bonus_as,
-        "crit_chance": min(agg["crit_chance"], 100.0),
-        # 175% base crit damage; items with criticalStrikeDamage add to it
-        "crit_damage": mk.get("criticalStrikeDamage", {}).get("flat", 175.0)
-                       + agg["crit_damage_bonus"],
-        "haste": haste,
-        "cd_mult": 100.0 / (100.0 + haste),
-        # Shojin's Dragonforce: extra haste for basic abilities only
-        "basic_cd_mult": 100.0 / (100.0 + haste + basic_haste),
-        "hp": stat_at(dd["hp"], dd["hpperlevel"], level) + agg["hp"] + pact_hp,
-        "hp_bonus": agg["hp"] + pact_hp,
-        "mana": stat_at(dd["mp"], dd["mpperlevel"], level) + agg["mana"],
-        "mana_bonus": agg["mana"],
-        "armor": stat_at(dd["armor"], dd["armorperlevel"], level) + agg["armor"],
-        "mr": stat_at(dd["spellblock"], dd["spellblockperlevel"], level) + agg["mr"],
-        "lethality": agg["lethality"],
-        "armor_pen_pct": agg["armor_pen_pct"],
-        "magic_pen_flat": agg["magic_pen_flat"],
-        "magic_pen_pct": agg["magic_pen_pct"],
-        "lifesteal": agg["lifesteal"], "omnivamp": agg["omnivamp"],
-        "tenacity": agg["tenacity"],
-        "heal_shield_power": agg["heal_shield_power"],
-        "move_speed": (dd["movespeed"] + agg["ms_flat"])
-                      * (1.0 + agg["ms_pct"] / 100.0),
-        # base (form-independent) range; the kit's passive may override it
-        "base_attack_range": dd["attackrange"],
-        "uncovered": uncovered,
-    }
-    sheet["ad"] = sheet["ad_base"] + sheet["ad_bonus"]
+    sheet = lol_engine.resolve_sheet(champ_base(champ), level, entries, pact)
+    # base (form-independent) range; the kit's passive may override it
+    sheet["base_attack_range"] = champ["dd"]["stats"]["attackrange"]
+    sheet.update(champion=champ["slug"], level=level, gold=gold, items=names,
+                 uncovered=uncovered)
     return sheet
 
 
 # ---------------------------------------------------------------------------
 # combat engine: deterministic expected-value damage timeline
 #
-# The engine owns the clock, the target, the damage pipeline and every item
-# proc; a per-champion driver (KIT_DRIVERS) owns the rotation — what the
-# champion does with its attacks and abilities. Approximations (all chosen
+# The fight itself is engine/src/fight.rs; the rotation of each hand-encoded
+# champion is a driver in engine/src/drivers.rs. Approximations (all chosen
 # to preserve build RANKING, not absolute DPS):
 # - crit is expected value, no RNG anywhere
 # - projectiles land instantly; the target never moves or acts
@@ -569,11 +518,6 @@ def resolve_stats(champ, level, item_ids, pool, effects=None, kit=None):
 # - stacking buffs (Zeal, Seething, Terminus) never expire mid-fight
 # - range-scaled amps (Hexoptics) assume every attack is made at max range
 # ---------------------------------------------------------------------------
-
-ABILITY_LOCKOUT_S = 0.25
-INF = float("inf")
-MELEE_MAX_RANGE = 325  # Riot's split: every melee champion attacks from <= 325
-
 
 def skill_ranks(level, max_order=("Q", "E", "W")):
     """Standard leveling: R at 6/11/16, otherwise the next point goes to the
@@ -601,6 +545,10 @@ SINGLETON_FX = (
 
 
 def merge_effects(item_ids, effects):
+    """A build's item effects as one dict (the engine's fx.rs merges the same
+    way for the enumeration): list-valued effects concatenate in item order;
+    same-named unique passives (two Spellblade items) grant only one instance
+    in game, so the first one wins."""
     fx = {"onhit": [], "onhitCurrentHp": [], "dmgAmps": [], "flatAmps": [],
           "burns": [], "activesOnce": [], "energized": []}
     fx.update({k: None for k in SINGLETON_FX})
@@ -614,279 +562,13 @@ def merge_effects(item_ids, effects):
             if src in e:
                 fx[dst].append(e[src])
         for k in SINGLETON_FX:
-            # first one wins: same-named unique passives (two Spellblade
-            # items) grant only one instance in game
             if k in e and fx[k] is None:
                 fx[k] = e[k]
     return fx
 
 
-# ---------------------------------------------------------------------------
-# kit drivers: one class per hand-encoded champion. The engine calls these
-# hooks at each point of the fight; `e` is the engine handle — fight state
-# `e.st` (drivers keep their own state there too), the stat sheet, merged
-# item effects, the target, and the callbacks an ability cast has to fire:
-# deal, ability_cast_proc, eclipse_hit, prime_spellblade, basic_cd,
-# attack_speed, lockout.
-# ---------------------------------------------------------------------------
-
-class KitDriver:
-    basic_cd_keys = ("q_ready",)  # the cooldowns Navori's on-attack CDR shaves
-
-    def __init__(self, kit, sheet, level, ranks, prestacked):
-        self.kit, self.sheet = kit, sheet
-        self.level, self.ranks, self.prestacked = level, ranks, prestacked
-        self.attack_range = sheet["base_attack_range"]
-        self.ranged = self.attack_range > MELEE_MAX_RANGE
-
-    def init_state(self, st):
-        pass
-
-    def bonus_as(self, st):
-        """Kit-side bonus attack speed (stacking passives), in percent."""
-        return 0.0
-
-    def before_attack(self, e):
-        """On-attack, before the hit lands: stack gains."""
-
-    def attack_riders(self, e):
-        """Ability on-hit riders — reapplied whenever the item on-hits are
-        (Guinsoo phantom hits, Dusk and Dawn)."""
-
-    def after_attack(self, e):
-        """Ability procs delivered by the attack that just landed."""
-
-    def schedule_attack(self, e):
-        e.st["next_attack"] = e.st["t"] + 1.0 / e.attack_speed()
-
-    def q_at(self, e):
-        """Earliest moment Q can be cast; INF when it can't be."""
-        if not self.ranks["Q"]:
-            return INF
-        return max(e.st["q_ready"], e.st["t"])
-
-    def cast_q(self, e):
-        raise NotImplementedError
-
-    def cast_r(self, e):
-        """Kit-side effects of the R cast at t=0 (the engine schedules the
-        delayed damage and the item ult-cast procs itself)."""
-
-    def events(self, e):
-        """Extra timed events as (time, kind) pairs the engine folds into
-        its timeline; `on_event` handles them when they come up."""
-        return ()
-
-    def on_event(self, e, kind):
-        raise NotImplementedError(kind)
-
-
-class KayleDriver(KitDriver):
-    """An auto-attacker: Zealous stacks attack speed per attack, Arisen makes
-    her ranged at 6, Aflame (11) rides a wave on every attack at full stacks,
-    E is an always-on on-hit plus an attack-reset active, Q shreds resists."""
-
-    basic_cd_keys = ("q_ready", "e_ready")
-
-    def __init__(self, kit, sheet, level, ranks, prestacked):
-        super().__init__(kit, sheet, level, ranks, prestacked)
-        p = kit["passive"]
-        self.zeal = p["zealous"]
-        self.zeal_perm = level >= self.zeal["permanentAtLevel"]
-        self.ranged = level >= p["arisen"]["level"]
-        self.aflame = level >= p["aflame"]["level"]
-        self.wave = p["aflame"]["wave"]
-        self.q_cfg, self.e_cfg = kit["abilities"]["Q"], kit["abilities"]["E"]
-        # form passives override the champion's base attack range
-        for form in ("arisen", "transcendent"):
-            f = p.get(form, {})
-            if "attackRange" in f and level >= f["level"]:
-                self.attack_range = f["attackRange"]
-        # per-fight constants: the Q's damage, the E on-hit, the wave's damage
-        self.q_dmg = (ability_hit(self.q_cfg["damage"], ranks["Q"], sheet)
-                      if ranks["Q"] else 0.0)
-        self.e_onhit = (ability_hit(self.e_cfg["onhit"], ranks["E"], sheet)
-                        if ranks["E"] else 0.0)
-        self.wave_dmg = (by_level(self.wave["baseByLevel"], level)
-                         + self.wave["bonusAdRatio"] * sheet["ad_bonus"]
-                         + self.wave["apRatio"] * sheet["ap"])
-
-    def init_state(self, st):
-        st["zeal"] = (self.zeal["maxStacks"]
-                      if (self.zeal_perm or self.prestacked) else 0)
-        st["e_ready"], st["e_pending"] = 0.0, False
-
-    def bonus_as(self, st):
-        return st["zeal"] * self.zeal["asPctPerStack"]
-
-    def before_attack(self, e):
-        if not self.zeal_perm:
-            e.st["zeal"] = min(e.st["zeal"] + 1, self.zeal["maxStacks"])
-
-    def attack_riders(self, e):
-        if self.ranks["E"]:
-            e.deal(self.e_onhit, "magic", "E onhit")
-
-    def after_attack(self, e):
-        st = e.st
-        if st["e_pending"]:
-            act = self.e_cfg["active"]
-            pct = (act["missingHpPct"][self.ranks["E"] - 1]
-                   + act["missingHpPctPer100Ap"] * self.sheet["ap"] / 100.0)
-            e.deal(pct / 100.0 * (e.target_hp - max(st["hp"], 0.0)), "magic",
-                   "E active", crit_mod=self.aflame, ability=True)
-            e.ability_cast_proc()
-            e.eclipse_hit()
-            st["e_pending"] = False
-        if self.aflame and st["zeal"] >= self.zeal["maxStacks"]:
-            e.deal(self.wave_dmg, "magic", "wave", crit_mod=True, ability=True)
-
-    def schedule_attack(self, e):
-        # E weave: cast right after an auto to use the attack reset
-        st, t = e.st, e.st["t"]
-        if self.ranks["E"] and t >= st["e_ready"] and not st["e_pending"]:
-            st["e_pending"] = True
-            st["e_ready"] = t + e.basic_cd(self.e_cfg["cooldownS"][self.ranks["E"] - 1])
-            e.prime_spellblade()
-            st["next_attack"] = t + self.kit["attack"]["windupFraction"] / e.attack_speed()
-        else:
-            st["next_attack"] = t + 1.0 / e.attack_speed()
-
-    def cast_q(self, e):
-        st, q = e.st, self.q_cfg
-        st["q_ready"] = st["t"] + e.basic_cd(q["cooldownS"][self.ranks["Q"] - 1])
-        st["shred_until"] = st["t"] + q.get("shred", {}).get("durationS", 0.0)
-        e.deal(self.q_dmg, "magic", "Q", ability=True)
-        e.ability_cast_proc()
-        e.eclipse_hit()
-        e.prime_spellblade()
-        e.lockout()
-
-
-class VladimirDriver(KitDriver):
-    """A caster who pays health, not mana. The rotation, from the wiki's
-    channel rules: R opens the fight (its amp holds through its own burst);
-    E is charged only as long as its damage grows (1s of its 1.5s) and
-    released — attacks and Q wait, since either would end the charge; W is
-    cast as the charge begins (the E-W combo: the pool blocks attacks and
-    casts for 2s, but a charging E may still release inside it); Q is cast
-    the moment it's castable, and every third cast is Crimson Rush-empowered
-    (a cooldown-cast Q always lands inside the 2.5s surge window)."""
-
-    basic_cd_keys = ("q_ready", "e_ready", "w_ready")
-
-    def __init__(self, kit, sheet, level, ranks, prestacked):
-        super().__init__(kit, sheet, level, ranks, prestacked)
-        ab = kit["abilities"]
-        self.q_cfg, self.w_cfg, self.e_cfg, self.r_cfg = (
-            ab[s] for s in ("Q", "W", "E", "R"))
-        self.rush = self.q_cfg["crimsonRush"]
-        # per-fight constants: each ability's damage and cooldown at its rank
-        q, w, e = ranks["Q"], ranks["W"], ranks["E"]
-        self.q_dmg = ability_hit(self.q_cfg["damage"], q, sheet) if q else 0.0
-        self.q_cd = self.q_cfg["cooldownS"][q - 1] if q else INF
-        self.e_dmg = ability_hit(self.e_cfg["damage"]["max"], e, sheet) if e else 0.0
-        self.e_cd = self.e_cfg["cooldownS"][e - 1] if e else INF
-        self.w_tick = (ability_hit(self.w_cfg["damage"], w, sheet)
-                       / self.w_cfg["damage"]["ticks"]) if w else 0.0
-        self.w_cd = self.w_cfg["cooldownS"][w - 1] if w else INF
-
-    def init_state(self, st):
-        st.update(e_ready=0.0, w_ready=0.0, q_casts=0,
-                  busy_until=0.0,      # a cast animation: the next cast waits
-                  charge_until=INF,    # E release time while charging
-                  pool_until=-1.0,     # W: no attacks or casts until then
-                  w_ticks_left=0, w_next=INF)
-
-    def _castable_at(self, e, ready):
-        st = e.st
-        t = max(ready, st["t"], st["busy_until"], st["pool_until"])
-        if st["charge_until"] != INF:  # a cast would cut the charge short
-            t = max(t, st["charge_until"])
-        return t
-
-    def _cast_done(self, e):
-        st = e.st
-        st["busy_until"] = st["t"] + ABILITY_LOCKOUT_S
-        st["next_attack"] = max(st["next_attack"], st["t"] + ABILITY_LOCKOUT_S)
-
-    def q_at(self, e):
-        return self._castable_at(e, e.st["q_ready"]) if self.ranks["Q"] else INF
-
-    def cast_q(self, e):
-        st = e.st
-        st["q_ready"] = st["t"] + e.basic_cd(self.q_cd)
-        st["q_casts"] += 1
-        amt = self.q_dmg
-        empowered = st["q_casts"] % self.rush["everyNthCast"] == 0
-        if empowered:
-            amt *= 1.0 + self.rush["bonusDamagePct"] / 100.0
-        e.deal(amt, "magic", "Q empowered" if empowered else "Q", ability=True)
-        e.ability_cast_proc()
-        e.eclipse_hit()
-        e.prime_spellblade()
-        self._cast_done(e)
-
-    def cast_r(self, e):
-        st = e.st
-        st["kit_amp_pct"] = self.r_cfg["ampPct"]
-        st["kit_amp_until"] = st["t"] + self.r_cfg["delayS"]
-        st["busy_until"] = st["t"] + ABILITY_LOCKOUT_S
-
-    def events(self, e):
-        st, ev = e.st, []
-        if self.ranks["E"]:
-            if st["charge_until"] != INF:
-                ev.append((st["charge_until"], "e_release"))
-            else:
-                ev.append((self._castable_at(e, st["e_ready"]), "e_charge"))
-        if st["w_ticks_left"]:
-            ev.append((st["w_next"], "w_tick"))
-        return ev
-
-    def on_event(self, e, kind):
-        st = e.st
-        if kind == "e_charge":
-            if self._castable_at(e, st["e_ready"]) > st["t"]:
-                return  # a cast at this instant took priority; try again
-            st["charge_until"] = st["t"] + self.e_cfg["chargeFullS"]
-            st["next_attack"] = max(st["next_attack"], st["charge_until"])
-            if self.ranks["W"] and st["t"] >= st["w_ready"]:
-                self.cast_w(e)
-        elif kind == "e_release":
-            st["charge_until"] = INF
-            st["e_ready"] = st["t"] + e.basic_cd(self.e_cd)
-            e.deal(self.e_dmg, "magic", "E", ability=True)
-            e.ability_cast_proc()
-            e.eclipse_hit()
-            e.prime_spellblade()
-            self._cast_done(e)
-        elif kind == "w_tick":
-            e.deal(self.w_tick, "magic", "W", ability=True)
-            st["w_ticks_left"] -= 1
-            st["w_next"] = (st["t"] + self.w_cfg["damage"]["tickS"]
-                            if st["w_ticks_left"] else INF)
-        else:
-            raise NotImplementedError(kind)
-
-    def cast_w(self, e):
-        st, w = e.st, self.w_cfg
-        st["w_ready"] = st["t"] + e.basic_cd(self.w_cd)
-        st["pool_until"] = st["t"] + w["durationS"]
-        st["next_attack"] = max(st["next_attack"], st["pool_until"])
-        st["w_ticks_left"], st["w_next"] = w["damage"]["ticks"], st["t"]
-        e.prime_spellblade()
-
-
-KIT_DRIVERS = {"kayle": KayleDriver, "vladimir": VladimirDriver}
-
-
-def kit_driver(kit, sheet, level, ranks, prestacked):
-    cls = KIT_DRIVERS.get(kit["champion"])
-    if cls is None:
-        raise ValueError(f"no engine driver for '{kit['champion']}' — a kit "
-                         f"encoding needs matching rotation logic in builds.py")
-    return cls(kit, sheet, level, ranks, prestacked)
+# the champions the engine has a driver for (engine/src/drivers.rs)
+KIT_DRIVERS = tuple(lol_engine.DRIVERS)
 
 
 def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
@@ -897,566 +579,12 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
     `breakdown`: the enumerator skips it and fills it in for the rows that
     place) — or None if the clock passed `stop_after` with the dummy still
     standing (the enumerator stops fights whose outcome can no longer
-    matter)."""
-    drv = kit_driver(kit, sheet, level, ranks, prestacked)
-    ranged, atk_range = drv.ranged, drv.attack_range
-    r_cfg = kit["abilities"]["R"]
-    # kit resist shreds (Kayle Q): reductions that hold while the debuff is up
-    shred_cfg = kit["abilities"]["Q"].get("shred", {})
-    shred_pct = {res: shred_cfg.get("pct", 0.0)
-                 for res in shred_cfg.get("appliesTo", ())}
-
-    crit_c = sheet["crit_chance"] / 100.0
-    crit_ev = 1.0 + crit_c * (sheet["crit_damage"] / 100.0 - 1.0)
-
-    # Hexoptics' Magnification: scales with distance to the target, capped.
-    # We assume attacks are made at max range (see approximations above).
-    auto_amp = 1.0
-    if fx["attackAmp"]:
-        aa = fx["attackAmp"]
-        auto_amp += (aa["maxPct"] / 100.0
-                     * min(1.0, atk_range / aa["maxAtRange"]))
-
-    st = {
-        "t": 0.0, "hp": float(target_hp),
-        "seething": 0, "phantom": 0, "kraken": 0, "dark": 0, "attacks": 0,
-        "phantom_hits": 0,
-        "q_ready": 0.0,
-        "shred_until": -1.0, "mal_shred_until": -1.0,
-        # kit-side damage amp (Vladimir's Hemoplague): pct while t <= until
-        "kit_amp_pct": 0.0, "kit_amp_until": -1.0,
-        "combat_t0": None,  # when the first damage landed: "in combat" since
-        "burns": [{"until": -1.0, "next": INF} for _ in fx["burns"]],
-        "mal_until": -1.0, "next_mal": INF, "mal_tick": 0.0,
-        "sb_primed": False, "sb_icd_until": -1.0,
-        "flurry_until": -1.0, "flurry_ready": 0.0,
-        "dmg_log": [], "ss_at": INF, "ss_done": False, "once_done": False,
-        "energize": 0.0, "en_last": 0.0,
-        "cleaver": 0, "blood": 0, "shojin": 0, "eclipse": 0, "nth": 0,
-        "hz_until": -1.0, "hz_first": False, "ma_until": -1.0,
-        "hex_until": -1.0, "post_r_attacks": 10 ** 9, "sundered_used": False,
-        "r_impact": INF,
-        "next_attack": 0.0,
-        # per-timestamp damage batch, for the interpolated kill time
-        "ev_t": -1.0, "ev_hp0": float(target_hp), "ev_dmg": 0.0,
-        "prev_ev_t": 0.0,
-        "breakdown": {}, "total": 0.0, "ttk": None, "ttk_eff": None,
-        "exec_p": None,
-    }
-    drv.init_state(st)
-    if kit.get("attack", {}).get("never"):
-        # a kit played without autos: nothing that rides an attack ever fires
-        st["next_attack"] = INF
-    if fx["manaActive"]:  # Actualizer: cast on engage, empowered for 8s
-        st["ma_until"] = fx["manaActive"]["durationS"]
-
-    as_stacking, flurry, on_ult, ult_steroid = (
-        fx["asStacking"], fx["flurry"], fx["onUltCast"], fx["ultAttackSteroid"])
-    sheet_bonus_as, base_as, as_ratio = (sheet["bonus_as_pct"], sheet["base_as"],
-                                         sheet["as_ratio"])
-
-    def attack_speed():
-        bonus = sheet_bonus_as + drv.bonus_as(st)
-        if as_stacking:
-            bonus += st["seething"] * as_stacking["pctPerStack"]
-        if flurry and st["t"] < st["flurry_until"]:
-            bonus += flurry["asPct"]
-        if on_ult and st["t"] < st["hex_until"]:
-            bonus += on_ult["asPct"]
-        if ult_steroid and st["post_r_attacks"] < ult_steroid["attacks"]:
-            bonus += ult_steroid["asPct"]
-        return min(base_as + as_ratio * bonus / 100.0, AS_CAP)
-
-    # Everything deal() needs that the build and target fix, resolved once:
-    # the effect fields (most are None for most builds), the sheet's numbers,
-    # the amp a damage type carries after n seconds in combat, and — cached
-    # on the little state that changes it — the resist multiplier.
-    dmg_amps, flat_amps = fx["dmgAmps"], fx["flatAmps"]
-    giant, hyper, shojin_fx, mana_fx = (fx["giantSlayer"], fx["hypershot"],
-                                       fx["abilityAmpStacking"], fx["manaActive"])
-    alt_pen, armor_shred, mr_shred = fx["altPen"], fx["armorShred"], fx["mrShred"]
-    opener, magic_crit, exec_pct = (fx["openerLethality"], fx["magicCrit"],
-                                    fx["executePct"])
-    storm, burn_fx, once_fx, ult_burn = (fx["stormsurge"], fx["burns"],
-                                         fx["abilityProcOnce"], fx["ultBurn"])
-    lethality, armor_pen_pct = sheet["lethality"], sheet["armor_pen_pct"]
-    magic_pen_pct, magic_pen_flat = sheet["magic_pen_pct"], sheet["magic_pen_flat"]
-    crit_damage = sheet["crit_damage"]
-    shred_armor, shred_mr = shred_pct.get("armor", 0.0), shred_pct.get("mr", 0.0)
-    hyper_amp = 1.0 + hyper["ampPct"] / 100.0 if hyper else 1.0
-    mana_amp = (1.0 + (mana_fx["ampBasePct"] + mana_fx["ampPer100BonusMana"]
-                       * sheet["mana_bonus"] / 100.0) / 100.0) if mana_fx else 1.0
-    shojin_per = shojin_fx["pctPerStack"] / 100.0 if shojin_fx else 0.0
-    shojin_max = shojin_fx["maxStacks"] if shojin_fx else 0
-    crit_below = magic_crit["belowTargetHpPct"] if magic_crit else 0.0
-    crit_below_pct = magic_crit["critDmgPct"] if magic_crit else 0.0
-    crit_below_ev = magic_crit["critDmgPct"] / 100.0 if magic_crit else 0.0
-    exec_hp = exec_pct / 100.0 * target_hp if exec_pct else 0.0
-    opener_until = opener["durationS"] if opener else -1.0
-    opener_leth = (opener["ranged"] if ranged else opener["melee"]) if opener else 0.0
-    alt_max = alt_pen["maxStacks"] if alt_pen else 0
-    alt_per = alt_pen["pctPerStack"] if alt_pen else 0.0
-    cleaver_per = armor_shred["pctPerStack"] if armor_shred else 0.0
-    cleaver_max = armor_shred["maxStacks"] if armor_shred else 0
-    blood_per = mr_shred["pctPerStack"] if mr_shred else 0.0
-    blood_max = mr_shred["maxStacks"] if mr_shred else 0
-    mal_reduction = ult_burn["mrReduction"] if ult_burn else 0.0
-    # the resist multiplier depends on more than the Q shred for some builds
-    phys_dyn = bool(armor_shred or alt_pen or opener)
-    magic_dyn = bool(mr_shred or alt_pen or ult_burn)
-    # a build's base amp by damage type — and, with a ramp (Liandry's,
-    # Riftmaker) on the build, by whole seconds in combat
-    def base_amp(dt, secs):
-        amp = 1.0
-        for a in dmg_amps:
-            amp *= 1.0 + a["pctPerStack"] / 100.0 * min(a["maxStacks"], secs)
-        for a in flat_amps:  # Abyssal Mask: always-on, one damage type
-            if a["damageType"] in (dt, "all"):
-                amp *= 1.0 + a["pct"] / 100.0
-        if giant:  # 1% per 100 target bonus HP, capped
-            amp *= 1.0 + min(giant["maxPct"], target_bonus_hp / 100.0) / 100.0
-        return amp
-    amp_base = {}
-    if dmg_amps:
-        n_secs = max(1, int(duration) + 2) if duration < INF else 64
-        for dt in ("physical", "magic", "true"):
-            amp_base[dt] = [base_amp(dt, secs) for secs in range(n_secs)]
-    else:
-        for dt in ("physical", "magic", "true"):
-            amp_base[dt] = [base_amp(dt, 0)]
-    resist_phys, resist_magic = {}, {}
-    bd = st["breakdown"]
-
-    def deal(amount, dtype, source, crit_mod=False, ability=False,
-             ev_floor=1.0):
-        t = st["t"]
-        if st["combat_t0"] is None:  # the first damage dealt opens combat
-            st["combat_t0"] = t
-        # Liandry's Suffering, Riftmaker's Void Corruption: a stack per whole
-        # second in combat. The hair of tolerance keeps a cast that lands on
-        # a second boundary on the right side of it — 4.6 / 1.15 is
-        # 3.9999999999999996 to the machine.
-        amp = amp_base[dtype][int(t - st["combat_t0"] + 1e-9) if dmg_amps else 0]
-        if hyper and t < st["hz_until"]:
-            amp *= hyper_amp
-        if t <= st["kit_amp_until"] and dtype != "true":
-            amp *= 1.0 + st["kit_amp_pct"] / 100.0
-        # "increased basic damage" is the attack itself — not the on-hit
-        # effects it triggers, and not abilities
-        if source == "auto":
-            amp *= auto_amp
-        if ability:
-            if shojin_fx:  # Shojin's Focused Will
-                amp *= 1.0 + shojin_per * st["shojin"]
-            if mana_fx and t < st["ma_until"]:
-                amp *= mana_amp
-        qs_on = t < st["shred_until"]
-        if dtype == "physical":
-            key = ((qs_on, st["cleaver"], st["dark"], t < opener_until)
-                   if phys_dyn else qs_on)
-            mult = resist_phys.get(key)
-            if mult is None:
-                dark_pen = min(st["dark"], alt_max) * alt_per if alt_pen else 0.0
-                shred = shred_armor if qs_on else 0.0
-                if armor_shred:  # Black Cleaver: % armor reduction stacks
-                    shred += st["cleaver"] * cleaver_per
-                leth = lethality
-                if opener and t < opener_until:
-                    leth += opener_leth
-                mult = resist_phys[key] = resist_mult(eff_resist(
-                    target_armor, 0.0, shred,
-                    stack_pct_pen(armor_pen_pct, dark_pen), leth))
-        elif dtype == "true":
-            mult = 1.0
-        else:
-            key = ((qs_on, st["blood"], st["dark"], t < st["mal_shred_until"])
-                   if magic_dyn else qs_on)
-            mult = resist_magic.get(key)
-            if mult is None:
-                dark_pen = min(st["dark"], alt_max) * alt_per if alt_pen else 0.0
-                mal = mal_reduction if ult_burn and t < st["mal_shred_until"] else 0.0
-                shred = shred_mr if qs_on else 0.0
-                if mr_shred:  # Bloodletter's Curse: % MR reduction stacks
-                    shred += st["blood"] * blood_per
-                mult = resist_magic[key] = resist_mult(eff_resist(
-                    target_mr, mal, shred,
-                    stack_pct_pen(magic_pen_pct, dark_pen), magic_pen_flat))
-        # Cinderbloom is a deterministic crit: magic damage below the HP
-        # threshold always deals critDmgPct (120%). A wave that can already
-        # crit rolls real crit first; the non-crit share cinderblooms.
-        hp = st["hp"]
-        below = (magic_crit is not None and dtype == "magic"
-                 and hp / target_hp * 100.0 < crit_below)
-        ev = 1.0
-        if crit_mod:
-            ev = crit_ev
-            if below:
-                ev = (crit_c * crit_damage / 100.0
-                      + (1.0 - crit_c) * crit_below_pct / 100.0)
-            if ev < ev_floor:  # guaranteed-crit attacks (Sundered Sky)
-                ev = ev_floor
-        elif below:
-            ev = crit_below_ev
-        dmg = amount * amp * mult * ev
-        # Damage arrives in batches at discrete times (an attack and all its
-        # on-hits share one timestamp). Track each batch so the killing blow
-        # can be credited only for the share of it that was actually needed.
-        if t != st["ev_t"]:
-            st["prev_ev_t"] = st["ev_t"] if st["ev_t"] > 0.0 else 0.0
-            st["ev_t"], st["ev_hp0"], st["ev_dmg"] = t, hp, 0.0
-        st["ev_dmg"] += dmg
-        hp -= dmg
-        st["hp"] = hp
-        st["total"] += dmg
-        if breakdown:
-            bd[source] = bd.get(source, 0.0) + dmg
-        # stacking shreds/amps build off the damage just dealt
-        if dtype == "physical" and armor_shred:
-            c = st["cleaver"] + 1
-            st["cleaver"] = c if c < cleaver_max else cleaver_max
-        if ability:
-            if mr_shred and dtype == "magic":
-                b = st["blood"] + 1
-                st["blood"] = b if b < blood_max else blood_max
-            if shojin_fx:
-                s = st["shojin"] + 1
-                st["shojin"] = s if s < shojin_max else shojin_max
-            if hyper and not st["hz_first"]:
-                # the opening cast is the one made from 600+ range
-                st["hz_first"] = True
-                st["hz_until"] = t + hyper["durationS"]
-            for i, b in enumerate(burn_fx):
-                sb = st["burns"][i]
-                if sb["next"] == INF:
-                    sb["next"] = t + b["tickS"]
-                sb["until"] = t + b["durationS"]
-            if once_fx and not st["once_done"]:
-                st["once_done"] = True
-                deal(once_fx["base"] + once_fx["apRatio"] * sheet["ap"],
-                     once_fx["damageType"], once_fx["source"])
-        hp = st["hp"]
-        if storm and not st["ss_done"] and st["ss_at"] == INF:
-            st["dmg_log"].append((t, dmg))
-            recent = math.fsum(d for tt, d in st["dmg_log"]
-                               if tt >= t - storm["windowS"])
-            if recent >= storm["thresholdPct"] / 100.0 * target_hp:
-                st["ss_at"] = t + storm["delayS"]
-        exec_amt = 0.0
-        if exec_pct and st["ttk"] is None and 0.0 < hp <= exec_hp:
-            exec_amt = hp
-            if breakdown:
-                bd["execute"] = bd.get("execute", 0.0) + exec_amt
-            st["total"] += exec_amt
-            st["ev_dmg"] += exec_amt
-            st["hp"] = hp = 0.0
-        if hp <= 0 and st["ttk"] is None:
-            st["ttk"] = t
-            # Effective (ranking) kill time. The real kill lands on this
-            # batch, but a blow that overkills 4x shouldn't earn the same
-            # credit as one that barely finishes the job: interpolate back
-            # over the gap by the fraction of the batch actually needed.
-            # Without this, whole-attack rounding hands threshold effects
-            # (Collector's execute) a full attack cycle for a few % of HP.
-            frac = min(1.0, st["ev_hp0"] / st["ev_dmg"]) if st["ev_dmg"] > 0 else 1.0
-            st["ttk_eff"] = st["prev_ev_t"] + frac * (t - st["prev_ev_t"])
-            # With expected-value crit the health curve is fixed, so an
-            # execute window ALWAYS catches the target. With real (random)
-            # crits the health left before the killing attack is spread over
-            # that attack's damage, so a window of W catches it only about
-            # W/D of the time. Record that probability; the caller blends the
-            # executing and non-executing timelines with it.
-            if exec_amt > 0.0:
-                batch = st["ev_dmg"] - exec_amt
-                st["exec_p"] = min(1.0, exec_hp / batch) if batch > 0 else 1.0
-
-    def prime_spellblade():
-        if fx["spellblade"] and st["t"] >= st["sb_icd_until"]:
-            st["sb_primed"] = True
-
-    def ability_cast_proc():
-        """Muramana's Shock: bonus physical damage per damaging ability cast."""
-        if fx["abilityManaProc"]:
-            mp = fx["abilityManaProc"]
-            deal(by_level(mp["pctByLevel"], level) / 100.0 * sheet["mana"],
-                 mp["damageType"], "muramana")
-
-    def eclipse_hit():
-        """Eclipse: attacks and damaging casts each grant one stack; every
-        2nd stack procs (% max HP). No internal cooldown in 16.16."""
-        if not fx["hitPairProc"]:
-            return
-        st["eclipse"] += 1
-        if st["eclipse"] >= 2:
-            st["eclipse"] = 0
-            hp_cfg = fx["hitPairProc"]
-            pct = hp_cfg["maxHpPctRanged"] if ranged else hp_cfg["maxHpPctMelee"]
-            deal(pct / 100.0 * target_hp, hp_cfg["damageType"], "eclipse")
-
-    def basic_cd(base_cd):
-        """Basic-ability cooldown after haste (Shojin) and Actualizer's
-        30%-faster window."""
-        cd = base_cd * sheet["basic_cd_mult"]
-        if fx["manaActive"] and st["t"] < st["ma_until"]:
-            cd /= 1.0 + fx["manaActive"]["basicCdFasterPct"] / 100.0
-        return cd
-
-    def lockout():
-        """A cast just happened: the next auto waits out its animation."""
-        st["next_attack"] = max(st["next_attack"], st["t"]) + ABILITY_LOCKOUT_S
-
-    e = SimpleNamespace(
-        st=st, sheet=sheet, fx=fx, level=level, ranks=ranks,
-        target_hp=target_hp, deal=deal, ability_cast_proc=ability_cast_proc,
-        eclipse_hit=eclipse_hit, prime_spellblade=prime_spellblade,
-        basic_cd=basic_cd, attack_speed=attack_speed, lockout=lockout)
-
-    # on-hit damage is fixed by the sheet: work each entry out once
-    onhits = []
-    for oh in fx["onhit"]:
-        amt = (oh["base"] + oh.get("apRatio", 0.0) * sheet["ap"]
-               + oh.get("bonusAdRatio", 0.0) * sheet["ad_bonus"]
-               + oh.get("maxManaPct", 0.0) / 100.0 * sheet["mana"])
-        if "selfMaxHpPct" in oh:  # Titanic Hydra: % of OWN max health
-            pct = oh["selfMaxHpPct"]["ranged" if ranged else "melee"]
-            amt += pct / 100.0 * sheet["hp"]
-        onhits.append((amt, oh["damageType"], oh.get("source", "onhit")))
-    onhits_current = [((oh["rangedPct"] if ranged else oh["meleePct"]) / 100.0,
-                       oh["damageType"]) for oh in fx["onhitCurrentHp"]]
-
-    def apply_onhits():
-        """Everything riding a basic attack hit (reapplied by a phantom hit)."""
-        for amt, dtype, source in onhits:
-            deal(amt, dtype, source)
-        drv.attack_riders(e)
-        for pct, dtype in onhits_current:
-            deal(pct * max(st["hp"], 0.0), dtype, "botrk")
-
-    navori, phantom, kraken, alt_pen_fx = (fx["navoriCdr"], fx["phantom"],
-                                           fx["kraken"], fx["altPen"])
-    sundered, nth_hit, first_bonus, spellblade, energized = (
-        fx["firstAttackCritFloorEv"], fx["nthHitProc"], fx["firstAttackBonus"],
-        fx["spellblade"], fx["energized"])
-    ad, move_speed = sheet["ad"], sheet["move_speed"]
-    # Energize: 6 stacks per attack (+ item bonuses) plus 1 per 24 units
-    # moved — assumed kiting at full move speed between attacks
-    energize_per_attack = 6.0 + sum(en.get("extraStacksPerAttack", 0.0)
-                                    for en in energized)
-    if kraken:
-        kraken_base = by_level(kraken["baseByLevel"], level)
-        if ranged:
-            kraken_base *= kraken["rangedMult"]
-        kraken_amp = kraken["missingHpAmpMaxPct"]["ranged" if ranged else "melee"]
-    if nth_hit:  # Hullbreaker's Skipper
-        nth_need = (nth_hit["stacksNeededRanged"] if ranged
-                    else nth_hit["stacksNeededMelee"])
-        nth_dmg = ((nth_hit["baseAdRatioRanged"] if ranged
-                    else nth_hit["baseAdRatioMelee"]) * sheet["ad_base"]
-                   + (nth_hit["selfMaxHpPctRanged"] if ranged
-                      else nth_hit["selfMaxHpPctMelee"]) / 100.0 * sheet["hp"])
-    if spellblade:
-        spellblade_dmg = (spellblade["baseAdRatio"] * sheet["ad_base"]
-                          + spellblade["apRatio"] * sheet["ap"]
-                          + spellblade.get("perCritChancePct", 0.0)
-                          * sheet["crit_chance"])
-
-    def do_attack():
-        t = st["t"]
-        st["attacks"] += 1
-        if navori:  # on-attack: shave 15% off remaining basic CDs
-            for key in drv.basic_cd_keys:
-                if st[key] > t:
-                    st[key] = t + (st[key] - t) * (1.0 - navori / 100.0)
-        if flurry:
-            if t >= st["flurry_ready"]:
-                st["flurry_until"] = t + flurry["durationS"]
-                st["flurry_ready"] = t + flurry["cooldownS"]
-            # on-hit refund (1s, 2s on crit -> EV blend) pulls the next window in
-            st["flurry_ready"] -= (flurry["refundOnHitS"]
-                                   + crit_c * flurry["refundCritExtraS"])
-        # on-attack stack machinery first (pre-hit state decides the procs)
-        phantom_now = False
-        if phantom and st["phantom"] >= phantom["stacksNeeded"]:
-            phantom_now, st["phantom"] = True, 0
-        kraken_now = False
-        if kraken and st["kraken"] >= 2:
-            kraken_now, st["kraken"] = True, 0
-        elif kraken:
-            st["kraken"] += 1
-        if as_stacking:
-            st["seething"] = min(st["seething"] + 1, as_stacking["maxStacks"])
-            # the consuming attack grants no Phantom stack: Riot's tooltip is
-            # "every third Attack" at full stacks, not every other
-            if (phantom and not phantom_now
-                    and st["seething"] == as_stacking["maxStacks"]):
-                st["phantom"] = min(st["phantom"] + 1, phantom["stacksNeeded"])
-        if alt_pen_fx:
-            if st["attacks"] % 2 == 0:  # every other hit is a Dark hit
-                st["dark"] = min(st["dark"] + 1, alt_pen_fx["maxStacks"])
-        drv.before_attack(e)
-
-        floor = 1.0
-        if sundered and not st["sundered_used"]:
-            st["sundered_used"] = True  # Sundered Sky: once per target
-            floor = sundered
-        if ult_steroid and st["post_r_attacks"] < ult_steroid["attacks"]:
-            floor = max(floor, ult_steroid.get("critFloorEv", 1.0))
-        deal(ad, "physical", "auto", crit_mod=True, ev_floor=floor)
-        apply_onhits()
-        if energized:
-            st["energize"] += (t - st["en_last"]) * move_speed / 24.0
-            st["en_last"] = t
-            st["energize"] += energize_per_attack
-            if st["energize"] >= 100.0:
-                st["energize"] -= 100.0
-                for en in energized:
-                    deal(en["bonus"], en["damageType"],
-                         en.get("source", "energized"))
-        eclipse_hit()
-        if nth_hit:
-            if st["nth"] >= nth_need:
-                st["nth"] = 0
-                deal(nth_dmg, nth_hit["damageType"], "hullbreaker")
-            else:
-                st["nth"] += 1
-        if first_bonus and st["attacks"] == 1:  # Umbral: opens from unseen
-            deal(first_bonus["base"] + first_bonus["perLethality"] * lethality,
-                 first_bonus["damageType"], first_bonus.get("source", "opener"))
-        st["post_r_attacks"] += 1
-        if st["sb_primed"]:
-            deal(spellblade_dmg, spellblade["damageType"], "spellblade")
-            st["sb_primed"] = False
-            st["sb_icd_until"] = t + spellblade["icdS"]
-            if spellblade.get("reapplyOnhit"):  # Dusk and Dawn: on-hits land twice
-                apply_onhits()
-        if kraken_now:
-            missing = 1.0 - max(st["hp"], 0.0) / target_hp
-            deal(kraken_base * (1.0 + kraken_amp / 100.0 * missing),
-                 kraken["damageType"], "kraken")
-        drv.after_attack(e)
-        if phantom_now:
-            st["phantom_hits"] += 1
-            apply_onhits()
-        drv.schedule_attack(e)
-
-    # opening casts at t=0, before the first auto
-    if use_ult and ranks["R"]:
-        st["r_impact"] = r_cfg["delayS"]
-        prime_spellblade()
-        st["next_attack"] += ABILITY_LOCKOUT_S
-        if fx["onUltCast"]:  # Hexplate Overdrive starts on cast
-            st["hex_until"] = fx["onUltCast"]["durationS"]
-        if fx["ultAttackSteroid"]:  # Fiendhunter's next-3-attacks window
-            st["post_r_attacks"] = 0
-        drv.cast_r(e)
-    # item actives (Rocketbelt, Gunblade, hydra actives) fire on engage;
-    # they're item casts, not abilities — no spellblade/burn interaction
-    for a in fx["activesOnce"]:
-        amt = (a.get("base", 0.0)
-               + (by_level(a["byLevel"], level) if "byLevel" in a else 0.0)
-               + a.get("adRatio", 0.0) * sheet["ad"]
-               + a.get("apRatio", 0.0) * sheet["ap"])
-        deal(amt, a["damageType"], a.get("source", "active"))
-
-    burns = st["burns"]
-    while True:
-        # the next event: the earliest of everything scheduled; at the same
-        # instant, the kind that sorts first (attack, burn, e_charge,
-        # e_release, mal, q, r, ss, w_tick), then the earlier burn
-        t_next, kind, idx = st["next_attack"], "attack", 0
-        x = st["next_mal"]
-        if x < t_next or (x == t_next and "mal" < kind):
-            t_next, kind = x, "mal"
-        for i, b in enumerate(burns):
-            x = b["next"]
-            if x < t_next or (x == t_next and ("burn", i) < (kind, idx)):
-                t_next, kind, idx = x, "burn", i
-        x = st["ss_at"]
-        if x < t_next or (x == t_next and "ss" < kind):
-            t_next, kind, idx = x, "ss", 0
-        x = st["r_impact"]
-        if x < t_next or (x == t_next and "r" < kind):
-            t_next, kind, idx = x, "r", 0
-        q_at = drv.q_at(e)  # so Q casts the moment it's ready, not at the next event
-        if q_at < t_next or (q_at == t_next and "q" < kind):
-            t_next, kind, idx = q_at, "q", 0
-        for x, k in drv.events(e):
-            if x < t_next or (x == t_next and k < kind):
-                t_next, kind, idx = x, k, 0
-        if t_next > duration or st["hp"] <= 0:
-            break
-        if t_next > stop_after:
-            return None
-        st["t"] = t_next
-        # castable now? q_at only grows with the clock, so the answer is
-        # whether the moment it was castable is already here
-        if q_at <= t_next:
-            drv.cast_q(e)
-            if kind == "attack" and st["next_attack"] > st["t"]:
-                continue  # the lockout pushed this auto; re-pick the next event
-        if kind == "attack":
-            do_attack()
-        elif kind == "burn":
-            b = fx["burns"][idx]
-            ticks = b["durationS"] / b["tickS"]
-            if "maxHpPctTotal" in b:  # Liandry's: % of target max HP
-                tick = b["maxHpPctTotal"] / ticks / 100.0 * target_hp
-            else:  # Blackfire Torch: flat + AP ratio, total over the duration
-                tick = (b["totalBase"] + b["totalApRatio"] * sheet["ap"]) / ticks
-            deal(tick, b["damageType"], b.get("source", "burn"))
-            bs = st["burns"][idx]
-            bs["next"] = (st["t"] + b["tickS"]
-                          if st["t"] + b["tickS"] <= bs["until"] else INF)
-        elif kind == "ss":
-            st["ss_at"], st["ss_done"] = INF, True
-            ss = fx["stormsurge"]
-            deal(ss["base"] + ss["apRatio"] * sheet["ap"], ss["damageType"],
-                 "stormsurge")
-        elif kind == "mal":
-            deal(st["mal_tick"], "magic", "malignance")
-            st["next_mal"] = (st["t"] + 0.25
-                              if st["t"] + 0.25 <= st["mal_until"] else INF)
-        elif kind == "r":
-            st["r_impact"] = INF
-            deal(ability_hit(r_cfg["damage"], ranks["R"], sheet), "magic", "R",
-                 ability=True)
-            ability_cast_proc()
-            eclipse_hit()
-            if fx["hypershot"]:  # R is always a 600+ range cast
-                st["hz_until"] = max(st["hz_until"],
-                                     st["t"] + fx["hypershot"]["durationS"])
-            if fx["ultBurn"]:
-                ub = fx["ultBurn"]
-                ticks = ub["durationS"] / 0.25
-                st["mal_tick"] = (ub["totalBase"]
-                                  + ub["totalApRatio"] * sheet["ap"]) / ticks
-                st["mal_until"] = st["t"] + ub["durationS"]
-                st["mal_shred_until"] = st["t"] + ub["durationS"]
-                st["next_mal"] = st["t"] + 0.25
-        elif kind != "q":
-            drv.on_event(e, kind)
-
-    # Expected kill time: blend the executing timeline with the one where the
-    # window was missed, weighted by how often real crit would land in it.
-    # Only execute builds pay for the second pass. If the non-executing run
-    # never kills, the fight length stands in for "no kill this window".
-    ttk_exp = st["ttk"]
-    if _blend and st["ttk"] is not None and (st["exec_p"] or 1.0) < 1.0:
-        alt = simulate(sheet, kit, dict(fx, executePct=None), level, ranks,
-                       target_hp, target_armor, target_mr, duration,
-                       use_ult=use_ult, prestacked=prestacked,
-                       target_bonus_hp=target_bonus_hp, breakdown=False,
-                       _blend=False)
-        p = st["exec_p"]
-        ttk_exp = (p * st["ttk"]
-                   + (1.0 - p) * (alt["ttk"] if alt["ttk"] is not None
-                                  else duration))
-    fight = min(duration, st["ttk"]) if st["ttk"] is not None else duration
-    return {"total": st["total"], "dps": st["total"] / fight if fight else 0.0,
-            "ttk": st["ttk"], "ttk_eff": st["ttk_eff"],
-            "ttk_exp": ttk_exp, "attacks": st["attacks"],
-            "phantom_hits": st["phantom_hits"], "hp_left": max(st["hp"], 0.0),
-            "breakdown": dict(sorted(st["breakdown"].items(),
-                                     key=lambda kv: -kv[1]))}
+    matter). `ttk_exp` blends an execute's deterministic-crit timeline with
+    the one real crit would miss; `_blend=False` skips that second pass."""
+    return lol_engine.simulate(sheet, kit, fx, level, ranks, target_hp,
+                               target_armor, target_mr, duration, use_ult,
+                               prestacked, target_bonus_hp, stop_after,
+                               breakdown, _blend)
 
 
 # ---------------------------------------------------------------------------
@@ -1520,7 +648,7 @@ def kit_champions():
                     continue
             if fn[:-5] not in KIT_DRIVERS:
                 print(f"Warning: data/builds/{fn} has no engine driver — add "
-                      f"one to KIT_DRIVERS to simulate it", file=sys.stderr)
+                      f"one in engine/src/drivers.rs to simulate it", file=sys.stderr)
                 continue
             slugs.append(fn[:-5])
     return slugs
@@ -1606,19 +734,44 @@ def api_builds_meta():
 SCENARIO_CACHE_DIR = os.path.join(BASE_DIR, ".cache", "builds")
 CACHED_ROWS = 500  # rows kept per cell (all the enumerator keeps)
 
-# This module's own source is part of every cache key: a result is only valid
-# for the code that produced it. Hashed once at import, so a serve that keeps
-# running after an edit still recognises the results matching the code it
-# runs — and can report itself stale (source_stale) instead of chasing files
-# it will never see.
+# The code is part of every cache key: a result is only valid for the code
+# that produced it — this module's source and the engine's (lol_engine bakes
+# a hash of engine/src at build time). Hashed once at import, so a serve that
+# keeps running after an edit still recognises the results matching the code
+# it runs — and can report itself stale (source_stale) instead of chasing
+# files it will never see.
+def _code_hash(py_bytes, engine_hash):
+    return hashlib.sha256(py_bytes + engine_hash.encode()).hexdigest()
+
+
 with open(os.path.abspath(__file__), "rb") as _f:
-    SOURCE_HASH = hashlib.sha256(_f.read()).hexdigest()
+    SOURCE_HASH = _code_hash(_f.read(), lol_engine.SOURCE_HASH)
+
+
+def engine_source_hash():
+    """The hash engine/build.rs stamps into the module, recomputed from the
+    sources on disk: Cargo.toml and every file under src/, sorted, each as
+    its path, a NUL, its length and its bytes."""
+    root = ENGINE_DIR
+    files = [os.path.join(root, "Cargo.toml")]
+    for d, _, names in os.walk(os.path.join(root, "src")):
+        files += [os.path.join(d, n) for n in names]
+    h = hashlib.sha256()
+    for path in sorted(files):
+        with open(path, "rb") as f:
+            data = f.read()
+        h.update(os.path.relpath(path, root).encode())
+        h.update(b"\0")
+        h.update(len(data).to_bytes(8, "little"))
+        h.update(data)
+    return h.hexdigest()
 
 
 def source_stale():
-    """Whether builds.py on disk differs from the code this process runs."""
+    """Whether the code on disk differs from what this process runs: builds.py
+    edited, or engine/ edited without a rebuild (jobs/build-engine.sh)."""
     with open(os.path.abspath(__file__), "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest() != SOURCE_HASH
+        return _code_hash(f.read(), engine_source_hash()) != SOURCE_HASH
 
 
 def cells():
@@ -1708,9 +861,10 @@ def rank_key(r):
 
 
 def geo_mean(xs):
-    # fsum: the same bits from every Python (CPython's sum() compensates
-    # float rounding since 3.12; PyPy's doesn't)
-    return math.exp(math.fsum(math.log(max(x, 1e-9)) for x in xs) / len(xs))
+    """exp(mean(log x)), floored at 1e-9 — the engine's, so the workers'
+    ranking keys and the parent's are the same bits (its fsum is a port of
+    math.fsum)."""
+    return lol_engine.geo_mean(list(xs))
 
 
 def overall_key(rs, targets):
@@ -2266,7 +1420,15 @@ def boots_partitions(pool, effects, kit):
 # list nor on the overall list — a survivor ranks below every killer, and a
 # kill still to come lands later than the clock. Both cuts only ever discard
 # builds that lose to one already found, so the lists come out exactly as an
-# unpruned pass ranks them. A stale read of the table is only ever looser.
+# unpruned pass ranks them. A stale read of a list's bound is only ever
+# looser; the fastest-kill column can be stale-tighter, which the checked
+# guess below (second_pass) repairs.
+#
+# The loop itself — the combinations of a block, each boots class's sheet,
+# effects and fights, the cuts, the rows that could still place — is the
+# engine's (engine/src/enumerate.rs, Ctx.run_block). This side splits the
+# work into blocks, hands them to forked workers, merges what comes back and
+# publishes the bounds.
 # ---------------------------------------------------------------------------
 
 # A result row is (sort key, ids, {target key: fight}). Rows are ordered by
@@ -2362,9 +1524,9 @@ class _Bounds:
         return self.table[base], self.table[base + 1], [x for x in ids if x]
 
 
-# slack on the kill-time cuts: a stopped fight must belong to a build that is
-# worse than the keep-th best by more than rounding could account for
-_PRUNE_SLACK = 1.0 + 1e-9
+# (the slack on the kill-time cuts — a stopped fight must belong to a build
+# worse than the keep-th best by more than rounding could account for — is
+# PRUNE_SLACK in engine/src/enumerate.rs)
 # the guess behind the overall list's bound: no build kills a target faster
 # than this share of the fastest kill seen so far (checked at the end; a
 # wrong guess costs a second pass, never a wrong result)
@@ -2373,132 +1535,36 @@ MIN_KILL_GUESS = 0.75
 FORK_ABOVE = 50_000
 
 
+def _engine_ctx(ctx):
+    """The engine's view of an enumeration: every input of the inner loop —
+    the pool's stats, effects and prices, the kit, the targets, Riot's
+    ownership groups, the boots classes, the enumeration order — parsed once
+    into one lol_engine.Ctx that forked workers inherit."""
+    pool, effects = ctx["pool"], ctx["effects"]
+    ids = set(ctx["free"]) | set(ctx["required"]) | set(BOOTS)
+    items = {i: (stat_pairs(pool[i]), effects.get(i, {}),
+                 pool[i]["shop"]["prices"]["total"]) for i in ids}
+    targets = [(k, t["targetHp"], t["armor"], t["mr"], t["duration"],
+                t.get("targetBonusHp", 0.0)) for k, t in ctx["targets"].items()]
+    return lol_engine.Ctx(
+        champ_base(ctx["champ"]), ctx["level"], ctx["ranks"], ctx["kit"], items,
+        {i: list(ctx["groups"].get(i, ())) for i in ids}, dict(ctx["caps"]),
+        targets, ctx["overall"], ctx["keep"], ctx["budget"],
+        list(ctx["required"]), list(ctx["free"]), list(BOOTS),
+        (ctx["classes"][False], ctx["classes"][True]), sorted(ctx["energized"]),
+        dict(ctx["order"]), ctx["use_ult"], ctx["prestacked"])
+
+
 def _enum_task(ctx, task):
     """Simulate one task's builds and return ({key: rows}, ranked count) —
     the rows that could still place, given the bounds when they were
     scored. A task is ("block", size, prefix): every combination of `size`
-    free items whose first indices are `prefix` (the rest enumerate in C);
-    or ("builds", [ids, ...]): explicit builds, the seeds. Each boots class
-    fights every target once and every member of the class is ranked with
-    that fight (boots_partitions)."""
-    import itertools
-    keep, targets, overall = ctx["keep"], ctx["targets"], ctx["overall"]
-    tkeys = list(targets)
-    keys = tkeys + ([overall] if overall else [])
-    n_t = len(tkeys)
-    bounds = _Bounds(keys, overall, ctx["shared"])
-    out = {k: [] for k in keys}
-    n = 0
-    groups, caps, price, budget = (ctx["groups"], ctx["caps"], ctx["price"],
-                                   ctx["budget"])
-    champ, level, pool, effects, kit = (ctx["champ"], ctx["level"], ctx["pool"],
-                                        ctx["effects"], ctx["kit"])
-    ranks, use_ult, prestacked = ctx["ranks"], ctx["use_ult"], ctx["prestacked"]
-    free, partitions, energized = ctx["free"], ctx["classes"], ctx["energized"]
-    order = ctx["order"]
-    place = lambda ids: _place(order, ids)
-    # boots share no ownership group with anything else in the game today,
-    # so a build's legality is its items' — but a boots in a group is checked
-    grouped_boots = {b for b in BOOTS if groups.get(b)}
-    if task[0] == "block":
-        _, size, prefix = task
-        stem = [*ctx["required"], *(free[i] for i in prefix)]
-        tail = free[prefix[-1] + 1:] if prefix else free
-        work = ((stem + list(c), None) for c in
-                itertools.combinations(tail, size - len(prefix)))
-    else:
-        work = ((list(ids[1:]), [[ids[0]]]) for ids in task[1])
-    tv = [(t["targetHp"], t["armor"], t["mr"], t["duration"],
-           t.get("targetBonusHp", 0.0)) for t in targets.values()]
-    for rest, classes in work:
-        if not build_is_legal(rest, groups, caps):
-            continue
-        if classes is None:
-            classes = partitions[energized.isdisjoint(rest)]
-        # the bounds, once per item combination
-        tb = [bounds.target(i) for i in range(n_t)]
-        if overall:
-            o_max, o_g, o_ids = bounds.overall_bound(n_t)
-            o_ids = place(o_ids)
-        for members in classes:
-            legal = [[b, *rest] for b in members
-                     if b not in grouped_boots
-                     or build_is_legal([b, *rest], groups, caps)]
-            if budget:
-                legal = [ids for ids in legal
-                         if sum(price[i] for i in ids) <= budget]
-            if not legal:
-                continue
-            n += len(legal)
-            sheet = resolve_stats(champ, level, legal[0], pool, effects, kit=kit)
-            fx = merge_effects(legal[0], effects)
-            rs, unkilled, prod = {}, 0, 1.0
-            # once the build can no longer make the overall list, each fight
-            # only has its own target's list to make
-            out_of_overall = not overall
-            for i, k in enumerate(tkeys):
-                hp, armor, mr, duration, bonus_hp = tv[i]
-                stop = INF
-                if not out_of_overall:
-                    # a survivor too many, or the same survivors as the
-                    # keep-th row and ids that sort after it (rows with a
-                    # survivor tie on everything but ids)
-                    if unkilled > o_max or (unkilled == o_max and o_max > 0
-                                            and min(map(place, legal)) > o_ids):
-                        out_of_overall = True
-                if out_of_overall:
-                    stop = tb[i][0] * _PRUNE_SLACK
-                elif o_max == 0:
-                    # every target has to die: the geometric mean of the
-                    # kill times bounds this fight — the fights already
-                    # fought by their times, those to come by the fastest
-                    # any build kills them
-                    rem = prod
-                    for j in range(i + 1, n_t):
-                        rem *= tb[j][2]
-                    if rem > 0.0:
-                        stop = max(tb[i][0], o_g ** n_t / rem) * _PRUNE_SLACK
-                r = simulate(sheet, kit, fx, level, ranks, hp, armor, mr,
-                             duration, use_ult=use_ult, prestacked=prestacked,
-                             target_bonus_hp=bonus_hp, stop_after=stop,
-                             breakdown=False)
-                rs[k] = r
-                if r is None:  # cut: off this target's list and the overall
-                    out_of_overall = True
-                    continue
-                if r["ttk"] is None:
-                    unkilled += 1
-                prod *= kill_time(r, duration) or 0.0
-            for i, k in enumerate(tkeys):
-                r = rs[k]
-                if r is None:
-                    continue
-                t_max, tot_min, _ = tb[i]
-                if r["ttk"] is not None:
-                    if r["ttk_exp"] > t_max:
-                        continue
-                elif r["total"] < tot_min:
-                    continue
-                key = rank_key(r)
-                for ids in legal:
-                    out[k].append((key, ids, rs))
-                _keep_best(out[k], keep, order)
-            if overall and not out_of_overall:
-                key = overall_key(rs, targets)
-                lead = (key[0], key[1])
-                if lead < (o_max, o_g):
-                    take = legal
-                elif lead == (o_max, o_g):
-                    take = legal if o_max == 0 else [ids for ids in legal
-                                                     if place(ids) <= o_ids]
-                else:
-                    take = []
-                for ids in take:
-                    out[overall].append((key, ids, rs))
-                _keep_best(out[overall], keep, order)
-    for k in keys:
-        _cut(out[k], keep, order)
-    return out, n
+    free items whose first indices are `prefix` (the rest enumerate in the
+    engine); or ("builds", [ids, ...]): explicit builds, the seeds. Each
+    boots class fights every target once and every member of the class is
+    ranked with that fight (boots_partitions). The engine reads the bounds
+    table live, through its address."""
+    return ctx["engine"].run_block(task, ctypes.addressof(ctx["shared"]))
 
 
 def _enum_worker(task):
@@ -2568,8 +1634,6 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
         classes=boots_partitions(pool, effects, kit),
         order=_enum_order(free, required),
         energized=frozenset(i for i in pool if "energized" in effects.get(i, {})),
-        price={i: pool[i]["shop"]["prices"]["total"]
-               for i in set(free) | set(required) | set(BOOTS)},
         shared=None)
     blocks = _enum_blocks(len(free), sizes)
     total = sum(count for count, _ in blocks)
@@ -2650,12 +1714,15 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
                 f"{len(again)} of {len(tasks)} blocks again with the exact bound")
         return again
 
+    import multiprocessing as mp
+    # the bounds table is shared memory either way: the engine reads it
+    # through its address, so a forked worker sees every tightening live
+    ctx["shared"] = mp.RawArray("d", _Bounds.WIDTH * len(keys))
+    bounds = _Bounds(keys, overall, ctx["shared"])
+    bounds.reset()
+    ctx["engine"] = _engine_ctx(ctx)
     if combos > FORK_ABOVE and workers > 1 and hasattr(os, "fork"):
-        import multiprocessing as mp
         global _ENUM_CTX
-        ctx["shared"] = mp.RawArray("d", _Bounds.WIDTH * len(keys))
-        bounds = _Bounds(keys, overall, ctx["shared"])
-        bounds.reset()
         _ENUM_CTX = ctx
         try:
             # workers on every core, a little nicer than a serve on the same
@@ -2668,9 +1735,6 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
         finally:
             _ENUM_CTX = None
     else:
-        ctx["shared"] = [0.0] * (_Bounds.WIDTH * len(keys))
-        bounds = _Bounds(keys, overall, ctx["shared"])
-        bounds.reset()
         for i, spec in tasks:
             merge(i, *_enum_task(ctx, spec))
         for i, spec in second_pass():

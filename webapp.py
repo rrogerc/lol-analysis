@@ -209,10 +209,10 @@ def cmd_export(args):
 
 def warm_python():
     """The interpreter the background warm runs on: $LOL_WARM_PYTHON if set,
-    else pypy3 when it is on PATH (its JIT runs the pure-Python simulator
-    three to four times as fast as CPython, same results), else this one."""
-    return (os.environ.get("LOL_WARM_PYTHON") or shutil.which("pypy3")
-            or sys.executable)
+    else this one. The simulation is compiled (engine/, imported as
+    lol_engine and built for CPython's stable ABI), so there is nothing left
+    for PyPy to speed up."""
+    return os.environ.get("LOL_WARM_PYTHON") or sys.executable
 
 
 class AutoWarm:

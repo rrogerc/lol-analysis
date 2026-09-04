@@ -18,10 +18,11 @@
   afterwards. If :8321 answers while the unit reports failed, find the
   squatter with `pgrep -af 'lol.py serve'`, kill it, then
   `sudo systemctl restart lol-dashboard` (sudo is Roger's).
-- After editing `builds.py` the Builds tab says it is running older code
-  than is on disk until serve restarts. Restart by committing, or with
-  `sudo systemctl restart lol-dashboard`. systemd stops the whole cgroup,
-  so the background warm and its workers go with it.
+- After editing `builds.py` (or `engine/`, once rebuilt) the Builds tab
+  says it is running older code than is on disk until serve restarts.
+  Restart by committing, or with `sudo systemctl restart lol-dashboard`.
+  systemd stops the whole cgroup, so the background warm and its workers
+  go with it.
 - Other units in that nix file: `lol-items-refresh` (daily item snapshot,
   user timer) and `lol-scaling-sync` (six-hourly, user timer); the
   dashboard's Data tab shows their state.
@@ -32,17 +33,33 @@
   spawns `lol.py builds warm` (log: `.cache/builds/warm.log`, progress
   lines every 30 s). `serve --no-warm` disables that. Killing the warm
   child turns auto-warm off until serve restarts.
-- The warm runs on `pypy3` when it is on the unit's PATH (the nix unit
-  adds it via `path = [ pkgs.pypy3 ];`) or on `$LOL_WARM_PYTHON`; otherwise
-  on the unit's CPython. PyPy is 3–4x faster with bit-identical results.
-- Cells are keyed by a hash of every input including the whole of
-  `builds.py`, so any edit to it recomputes everything: about an hour on
-  CPython, about 20 minutes on PyPy, on this 16-thread box.
-- The enumerator prunes exactly (see `_Bounds` in `builds.py`): results
-  must stay identical to an unpruned pass, and `test_builds` checks that.
-  Any engine change must keep `simulate` bit-identical unless it is a
-  deliberate model change.
+- The numbers come from the compiled engine in `engine/` (Rust, PyO3),
+  imported as `lol_engine` from `lol_engine.abi3.so` at the repo root
+  (gitignored). Build it with `jobs/build-engine.sh`: it uses `cargo` if
+  present, else `nix-shell -p cargo rustc`; ~15 s cold, ~3 s warm. Without
+  it `import builds` fails with a message saying so. The warm runs on the
+  unit's CPython; PyPy is no longer involved (`warm_python()` only honours
+  `$LOL_WARM_PYTHON`).
+- Cells are keyed by a hash of every input including `builds.py` and the
+  engine sources (`lol_engine.SOURCE_HASH`, stamped by `engine/build.rs`),
+  so an edit to either recomputes everything: about 35 s for both
+  champions on this 16-thread box (Kayle 21 s, Vladimir 11 s, measured
+  2026-09-04; the pure-Python engine took 59 min). Editing `engine/src`
+  without rebuilding makes `source_stale()` true — the Builds tab says so;
+  run the build script, then restart serve.
+- The enumerator's inner loop is `engine/src/enumerate.rs` (Ctx.run_block);
+  the parent side — blocks, merge, the shared bounds table `_Bounds`, the
+  checked guess — stays in `builds.py`. It prunes exactly: results must
+  stay identical to an unpruned pass, and `test_builds` checks that.
+- Any engine change must keep the fights bit-identical unless it is a
+  deliberate model change: `test_builds.TestGolden` replays
+  `data/builds/golden` (every fight of ~250 builds and three enumeration
+  passes, as the pre-Rust Python engine computed them). A deliberate
+  change regenerates the fixtures with `jobs/gen_golden.py` in the same
+  commit. Keep the Rust strict: no `target-cpu`, no fast-math, no
+  `mul_add`; floating point has to stay operation-for-operation what the
+  Python engine did.
 
 ## Tests
 
-- `python3 -m unittest test_builds` (also passes under `pypy3`).
+- `python3 -m unittest test_builds` (needs the built engine; ~2 s).

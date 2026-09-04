@@ -30,11 +30,12 @@ module and committed JSON archive:
   text-only item passives live in the hand-curated
   `data/builds/item-effects.json`, and ability kits in hand-encoded
   `data/builds/<champ>.json` — Kayle and Vladimir so far, each paired
-  with a rotation driver in `builds.py` (`KIT_DRIVERS`) that says what
-  the champion does with its attacks and abilities; the engine itself is
+  with a rotation driver (`engine/src/drivers.rs`) that says what the
+  champion does with its attacks and abilities; the engine itself is
   champion-agnostic (clock, target, item procs, damage pipeline). On top:
   a deterministic expected-value combat engine (`builds sim` — event
-  timeline, on-hit procs, Guinsoo phantom hits, pen ordering, EV crit)
+  timeline, on-hit procs, Guinsoo phantom hits, pen ordering, EV crit;
+  compiled Rust in `engine/`, driven from `builds.py`)
   and a build enumerator (`builds optimize` — ranks every item-pool
   combination against a stat dummy; `--budget`/`--require` for partial
   builds). A kit can rule items out of its pool (Vladimir has no mana,
@@ -68,12 +69,13 @@ module and committed JSON archive:
   unless the build carries an Energized item, since move speed only
   charges those; Berserker's Greaves too for a champion who never
   attacks. A previous result's rows are scored first, so the bounds are
-  tight from the start. Under CPython a champion takes on the order of
-  half an hour on 16 cores; `serve` runs the warm on `pypy3` when that is
-  on PATH (or on `$LOL_WARM_PYTHON`), whose JIT makes the pass another
-  three to four times faster with bit-identical results — the NixOS unit
-  puts `pypy3` on its PATH for exactly that (elsewhere: `nix-shell -p
-  pypy3 --run 'python3 lol.py serve …'`). Progress lines land in
+  tight from the start. The sheet, the fight and that inner loop are
+  compiled (`engine/`, Rust through PyO3, imported as `lol_engine`; build
+  it with `jobs/build-engine.sh`): a champion takes 10–20 s on 16 cores,
+  where the pure-Python engine it replaced took half an hour. Its output
+  is pinned bit for bit by the fixtures in `data/builds/golden`
+  (`test_builds.TestGolden`; regenerate with `jobs/gen_golden.py` only
+  after a deliberate model change). Progress lines land in
   `.cache/builds/warm.log`.
   The dashboard never simulates on request: `lol.py builds warm`
   precomputes every (champion, scenario) cell — its
@@ -92,6 +94,7 @@ Shared plumbing lives in `common.py` (DB, paths, patch ordering) and
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+jobs/build-engine.sh   # the builds engine (Rust); uses cargo, or nix-shell -p cargo rustc
 ```
 
 If you're starting from a fresh checkout (no `lol.db`), rebuild it from the
@@ -161,9 +164,10 @@ The tabs:
   warm`, which
   `serve` runs in the background whenever something is cold — `--no-warm`
   turns that off); a cell that isn't computed yet says so and fills in
-  when it lands. Restart serve after editing `builds.py` (on the server:
-  commit, or `sudo systemctl restart lol-dashboard`) — the tab tells you
-  when it is running older code than is on disk.
+  when it lands. Restart serve after editing `builds.py` or `engine/`
+  (rebuild first; on the server: commit, or `sudo systemctl restart
+  lol-dashboard`) — the tab tells you when it is running older code than
+  is on disk.
 - **Data** — systemd unit health, automation job status, and what's in the
   database, per tier and patch.
 
