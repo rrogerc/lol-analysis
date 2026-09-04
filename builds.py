@@ -1501,7 +1501,7 @@ def api_builds_meta():
 # ---------------------------------------------------------------------------
 
 SCENARIO_CACHE_DIR = os.path.join(BASE_DIR, ".cache", "builds")
-CACHED_ROWS = 250  # rows kept per cell (all the enumerator keeps)
+CACHED_ROWS = 500  # rows kept per cell (all the enumerator keeps)
 
 # This module's own source is part of every cache key: a result is only valid
 # for the code that produced it. Hashed once at import, so a serve that keeps
@@ -1523,9 +1523,10 @@ def cells():
     order: tier by tier, cheapest first (a budget preset would reject nearly
     every combination before simulating it). A tier's cells are computed
     together — its targets share one enumeration pass — so one champion's
-    cells of a tier sit side by side. The full-build tier simulates ~30M
-    builds against each of its targets and scales with the fight lengths:
-    about half an hour per champion on 16 cores."""
+    cells of a tier sit side by side. The full-build tier ranks ~130M
+    builds against each of its targets (five simulations per item
+    combination: boots of one class share one) and scales with the fight
+    lengths — one to two hours per champion on 16 cores."""
     champs = kit_champions()
     return [(slug, key) for tier in tiers() for slug in champs
             for key in tier_scenarios(tier)]
@@ -2061,13 +2062,47 @@ DEFAULT_POOL = [
     2517,  # Endless Hunger
     3026,  # Guardian Angel
 ]
-# Berserker's Greaves, Sorcerer's Shoes. Tier-3 upgrades (Spellslinger's et
-# al) are Feats-of-Strength-gated, so they're out by assumption — see
-# "excluded" in item-effects.json.
-BOOTS = [3006, 3020]
+# Every tier-2 boots gold can buy: Berserker's Greaves, Sorcerer's Shoes,
+# Ionian Boots of Lucidity, Boots of Swiftness, Mercury's Treads, Plated
+# Steelcaps, Gluttonous Greaves. Tier-3 upgrades (Spellslinger's et al) are
+# Feats-of-Strength-gated, so they're out by assumption — see "excluded" in
+# item-effects.json. Boots that differ only in stats the engine never reads
+# share one simulation (boots_classes), so the defensive pairs cost little.
+BOOTS = [3006, 3020, 3158, 3009, 3111, 3047, 3008]
 
 
 _ENUM_CTX = None  # set before forking workers; children inherit via fork
+
+
+# Stats the combat engine never reads from the attacker's own sheet: the
+# fight is the same whatever they are. Move speed is NOT one of them —
+# Energized items charge with movement.
+ENGINE_IGNORES = frozenset({"armor", "mr", "tenacity", "lifesteal", "omnivamp",
+                            "heal_shield_power"})
+# item-effects.json fields that describe an entry rather than model anything
+EFFECT_META = ("name", "covers", "note")
+
+
+def boots_classes(pool, effects, boots=None):
+    """Group boots whose damage-relevant stats and modeled effects are
+    identical — a list of member lists, in BOOTS order. Stat resolution sums
+    each item's contributions, so two such boots give the same sheet, and
+    the same fight, alongside any other five items: the enumerator simulates
+    each class once per item combination and ranks every member with the
+    result (Mercury's Treads, Plated Steelcaps and Gluttonous Greaves are
+    one class; Swiftness moves faster, Lucidity casts faster)."""
+    classes = {}
+    for b in (BOOTS if boots is None else boots):
+        stats = tuple(sorted(
+            (key, val) for stat, fields in pool[b]["stats"].items()
+            for field, val in fields.items() if val
+            for key in [ITEM_STAT_MAP.get((stat, field))]
+            if key and key not in ENGINE_IGNORES))
+        modeled = {k: v for k, v in effects.get(b, {}).items()
+                   if k not in EFFECT_META}
+        sig = (stats, json.dumps(modeled, sort_keys=True))
+        classes.setdefault(sig, []).append(b)
+    return list(classes.values())
 
 
 def _keep_best(lst, keep):
@@ -2078,12 +2113,13 @@ def _keep_best(lst, keep):
         del lst[keep:]
 
 
-def _enum_batch(ctx, boots, size, start, step):
+def _enum_batch(ctx, size, start, step):
     """Simulate every `step`-th combination of `size` items (offset `start`)
-    with `boots` against each of ctx["targets"]; returns ({key: top-`keep`
-    results}, simulated count) — one list per target, ranked by rank_key,
-    and, if ctx["overall"] names one, a list under that key ranking every
-    build on all targets at once (overall_key)."""
+    with each boots against each of ctx["targets"]; returns ({key: top-`keep`
+    results}, ranked count) — one list per target, ranked by rank_key, and,
+    if ctx["overall"] names one, a list under that key ranking every build
+    on all targets at once (overall_key). Boots of one class (boots_classes)
+    share a simulation: the same fight, each with its own sheet."""
     import itertools
     keep, targets, overall = ctx["keep"], ctx["targets"], ctx["overall"]
     out = {k: [] for k in targets}
@@ -2093,44 +2129,52 @@ def _enum_batch(ctx, boots, size, start, step):
     groups, caps = ctx["groups"], ctx["caps"]
     for combo in itertools.islice(
             itertools.combinations(ctx["free"], size), start, None, step):
-        ids = [boots, *ctx["required"], *combo]
-        if not build_is_legal(ids, groups, caps):
-            continue
-        if ctx["budget"] and sum(ctx["price"][i] for i in ids) > ctx["budget"]:
-            continue
-        sheet = resolve_stats(ctx["champ"], ctx["level"], ids, ctx["pool"],
-                              ctx["effects"], kit=ctx["kit"])
-        fx = merge_effects(ids, ctx["effects"])
-        rs = {k: simulate(sheet, ctx["kit"], fx, ctx["level"], ctx["ranks"],
-                          t["targetHp"], t["armor"], t["mr"], t["duration"],
-                          use_ult=ctx["use_ult"], prestacked=ctx["prestacked"],
-                          target_bonus_hp=t.get("targetBonusHp", 0.0))
-              for k, t in targets.items()}
-        n += 1
-        for k in targets:
-            out[k].append((rank_key(rs[k]), ids, sheet, rs))
-            _keep_best(out[k], keep)
-        if overall:
-            out[overall].append((overall_key(rs, targets), ids, sheet, rs))
-            _keep_best(out[overall], keep)
+        rest = [*ctx["required"], *combo]
+        for members in ctx["boots_classes"]:
+            rs = None
+            for boots in members:
+                ids = [boots, *rest]
+                if not build_is_legal(ids, groups, caps):
+                    continue
+                if ctx["budget"] and sum(ctx["price"][i] for i in ids) > ctx["budget"]:
+                    continue
+                sheet = resolve_stats(ctx["champ"], ctx["level"], ids, ctx["pool"],
+                                      ctx["effects"], kit=ctx["kit"])
+                if rs is None:
+                    fx = merge_effects(ids, ctx["effects"])
+                    rs = {k: simulate(sheet, ctx["kit"], fx, ctx["level"],
+                                      ctx["ranks"], t["targetHp"], t["armor"],
+                                      t["mr"], t["duration"],
+                                      use_ult=ctx["use_ult"],
+                                      prestacked=ctx["prestacked"],
+                                      target_bonus_hp=t.get("targetBonusHp", 0.0))
+                          for k, t in targets.items()}
+                n += 1
+                for k in targets:
+                    out[k].append((rank_key(rs[k]), ids, sheet, rs))
+                    _keep_best(out[k], keep)
+                if overall:
+                    out[overall].append((overall_key(rs, targets), ids, sheet, rs))
+                    _keep_best(out[overall], keep)
     return out, n
 
 
 def _enum_worker(task):
-    boots, size, start, step = task
-    return _enum_batch(_ENUM_CTX, boots, size, start, step)
+    size, start, step = task
+    return _enum_batch(_ENUM_CTX, size, start, step)
 
 
 def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
                      budget=None, slots=6, required=(), candidates=None,
-                     use_ult=True, prestacked=False, keep=250, overall=None):
-    """Simulate every boots + item combination against each target in one
-    pass — `targets` is {key: scenario-shaped dict: targetHp, armor, mr,
+                     use_ult=True, prestacked=False, keep=500, overall=None):
+    """Rank every boots + item combination against each target in one pass
+    — `targets` is {key: scenario-shaped dict: targetHp, armor, mr,
     duration, targetBonusHp}. Returns ({key: results}, count): per target
     the top-`keep` (ids, sheet, {target key: fight result}) best-first by
     rank_key, plus, with `overall` set, a list under that key ranked by
-    overall_key across every target; and how many builds were simulated.
-    Large pools fan out across CPU cores (fork)."""
+    overall_key across every target; and how many builds were ranked (boots
+    of one class share a simulation, see boots_classes). Large pools fan
+    out across CPU cores (fork)."""
     free = [i for i in (candidates or DEFAULT_POOL) if i not in required]
     n_free = slots - 1 - len(required)  # one slot is always boots
     if n_free < 0:
@@ -2142,6 +2186,7 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
         ranks=ranks, targets=dict(targets), overall=overall, budget=budget,
         required=list(required), free=free, use_ult=use_ult,
         prestacked=prestacked, keep=keep, groups=_groups, caps=_caps,
+        boots_classes=boots_classes(pool, effects),
         price={i: pool[i]["shop"]["prices"]["total"]
                for i in set(free) | set(required) | set(BOOTS)})
     combos = len(BOOTS) * sum(math.comb(len(free), s) for s in sizes)
@@ -2154,13 +2199,12 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
         _ENUM_CTX = ctx
         try:
             with mp.get_context("fork").Pool(workers) as p:
-                tasks = [(b, s, w, workers) for b in BOOTS for s in sizes
-                         for w in range(workers)]
+                tasks = [(s, w, workers) for s in sizes for w in range(workers)]
                 batches = p.map(_enum_worker, tasks)
         finally:
             _ENUM_CTX = None
     else:
-        batches = [_enum_batch(ctx, b, s, 0, 1) for b in BOOTS for s in sizes]
+        batches = [_enum_batch(ctx, s, 0, 1) for s in sizes]
     for out, n in batches:
         for k in keys:
             lists[k] += out[k]

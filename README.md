@@ -42,7 +42,8 @@ module and committed JSON archive:
   declare that the champion never auto-attacks (Vladimir, as played:
   on-hit, crit and spellblade items then rank on their raw stats).
   The enumeration pool covers every mage, marksman, assassin, and
-  bruiser damage item (76 items + 2 boots) — AP, on-hit, crit, executes,
+  bruiser damage item (76 items + the 7 boots gold can buy; the Feats of
+  Strength upgrades are not) — AP, on-hit, crit, executes,
   burns, Energized, shreds, spellblades, item actives, fully-stacked tear
   items; the few items whose passives can't be modeled yet (plus
   support/tank items) are excluded rather than misranked on stats
@@ -55,9 +56,10 @@ module and committed JSON archive:
   build must kill every target to rank above one that leaves any
   standing). That pass simulates ~33M legal builds (~37M combinations
   before Riot's ownership limits prune them) against each target — the
-  enumerator fans out across CPU cores, about half an hour per champion
-  on 16 cores. The dashboard never simulates on request: `lol.py builds
-  warm` precomputes every (champion, scenario) cell — its top 250
+  enumerator fans out across CPU cores, one to two hours per champion on
+  16 cores (boots that differ only in stats the engine never reads, like
+  Mercury's Treads and Plated Steelcaps, share one simulation). The dashboard never simulates on request: `lol.py builds
+  warm` precomputes every (champion, scenario) cell — its top 500
   builds, each with its fight against every target — into
   `.cache/builds/` (gitignored) under a hash of every input, and `serve`
   runs it in the background whenever a cell is cold, so a code or data

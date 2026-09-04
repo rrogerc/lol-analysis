@@ -10,6 +10,7 @@ also catch a meraki schema change sneaking past ITEM_STAT_MAP.
 import copy
 import math
 import os
+import re
 import shutil
 import tempfile
 import unittest
@@ -1231,6 +1232,107 @@ class TestOverallRanking(unittest.TestCase):
                 times = [r["vs"][t]["killTime"] for t in names]
                 self.assertLessEqual((-best["kills"], best["mean"]),
                                      (-kills, round(geo(times), 2) + 0.02))
+
+
+
+class TestBootsClasses(unittest.TestCase):
+    """Every tier-2 boots is enumerated; boots that differ only in stats the
+    engine never reads share one simulation."""
+
+    def setUp(self):
+        _, self.pool = builds.load_items()
+        self.effects = builds.load_item_effects()
+        self.kit = builds.load_kit("kayle")
+
+    def test_shipped_boots_are_every_tier_two_pair_gold_can_buy(self):
+        self.assertEqual(
+            [self.pool[b]["name"] for b in builds.BOOTS],
+            ["Berserker's Greaves", "Sorcerer's Shoes",
+             "Ionian Boots of Lucidity", "Boots of Swiftness",
+             "Mercury's Treads", "Plated Steelcaps", "Gluttonous Greaves"])
+        gated = builds.load_gated_items()
+        for b in builds.BOOTS:
+            self.assertTrue(self.pool[b]["shop"]["purchasable"], b)
+            self.assertNotIn(b, gated)
+
+    def test_classes_merge_only_engine_ignored_stats(self):
+        # Mercury's (MR, tenacity), Steelcaps (armor) and Gluttonous
+        # (omnivamp) are one class: 45 move speed and nothing the engine
+        # reads. Swiftness stays apart — Energized items charge with move
+        # speed — as do the three with an offensive stat.
+        classes = builds.boots_classes(self.pool, self.effects)
+        self.assertEqual(
+            [[self.pool[b]["name"] for b in c] for c in classes],
+            [["Berserker's Greaves"], ["Sorcerer's Shoes"],
+             ["Ionian Boots of Lucidity"], ["Boots of Swiftness"],
+             ["Mercury's Treads", "Plated Steelcaps", "Gluttonous Greaves"]])
+        # any modeled effect on a boots would split it off
+        effects = {**self.effects, 3047: {**self.effects.get(3047, {}),
+                                          "apMult": 0.1}}
+        self.assertEqual(len(builds.boots_classes(self.pool, effects)), 6)
+
+    def test_engine_never_reads_an_ignored_stat(self):
+        # the merge is only sound while the engine (and every kit driver)
+        # leaves these sheet fields alone; move speed it does read
+        with open(builds.__file__) as f:
+            read = set(re.findall(r'sheet\["(\w+)"\]', f.read()))
+        self.assertFalse(read & builds.ENGINE_IGNORES, read & builds.ENGINE_IGNORES)
+        self.assertIn("move_speed", read)
+
+    def test_class_members_fight_identically(self):
+        # with an Energized item in the build, so move speed matters: the
+        # three 45-speed defensive boots fight to the same decimal; their
+        # sheets differ only in the ignored stats, gold and names
+        champ = fake_champ()
+        idx = builds.item_index(self.pool)
+        items = [builds.resolve_item(self.pool, idx, n)
+                 for n in ("Stormrazor", "Infinity Edge", "Kraken Slayer")]
+        ranks = builds.skill_ranks(16)
+
+        def fight(boots):
+            ids = [boots, *items]
+            sheet = builds.resolve_stats(champ, 16, ids, self.pool,
+                                         self.effects, kit=self.kit)
+            fx = builds.merge_effects(ids, self.effects)
+            return sheet, builds.simulate(sheet, self.kit, fx, 16, ranks,
+                                          4800, 220, 160, 15)
+        (sa, a), (sb, b), (sc, c) = fight(3111), fight(3047), fight(3008)
+        for x in (b, c):
+            self.assertEqual((a["total"], a["ttk"], a["ttk_exp"], a["breakdown"]),
+                             (x["total"], x["ttk"], x["ttk_exp"], x["breakdown"]))
+        skip = builds.ENGINE_IGNORES | {"gold", "items", "uncovered"}
+        for x in (sb, sc):
+            self.assertEqual({k: v for k, v in sa.items() if k not in skip},
+                             {k: v for k, v in x.items() if k not in skip})
+        self.assertNotEqual(sa["mr"], sb["mr"])
+        self.assertNotEqual(sa["armor"], sb["armor"])
+
+    def test_enumerator_ranks_every_member_with_the_shared_fight(self):
+        tiny = TestScenarioCache.TINY_POOL
+        champ = builds.load_champion("kayle")
+        target = dict(targetHp=2800, armor=110, mr=60, duration=8)
+        lists, count = builds.enumerate_builds(
+            champ, self.pool, self.effects, self.kit, 16,
+            builds.skill_ranks(16), {"t": target}, candidates=tiny,
+            keep=10_000)
+        rows = lists["t"]
+        self.assertEqual(count, len(builds.BOOTS) * math.comb(len(tiny), 5))
+        self.assertEqual(len(rows), count)
+        cls = {b: i for i, ms in enumerate(builds.boots_classes(self.pool, self.effects))
+               for b in ms}
+        by_rest = {}
+        for ids, sheet, rs in rows:
+            by_rest.setdefault(tuple(ids[1:]), {})[ids[0]] = (
+                sheet["gold"], rs["t"]["total"], rs["t"]["ttk_exp"],
+                rs["t"]["breakdown"])
+        for rest, per_boots in by_rest.items():
+            self.assertEqual(set(per_boots), set(builds.BOOTS), rest)
+            for a in per_boots:
+                for b in per_boots:
+                    if cls[a] == cls[b]:
+                        self.assertEqual(per_boots[a][1:], per_boots[b][1:])
+            # each member keeps its own sheet: Mercury's costs 50 more
+            self.assertEqual(per_boots[3111][0] - per_boots[3047][0], 50)
 
 
 if __name__ == "__main__":
