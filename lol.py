@@ -10,6 +10,7 @@ Usage:
   .venv/bin/python lol.py scaling report [--scaling]
   .venv/bin/python lol.py scaling champion kayle
   .venv/bin/python lol.py items fetch               # snapshot current patch's item data
+  .venv/bin/python lol.py builds warm               # precompute the dashboard's build scenarios
   .venv/bin/python lol.py serve                     # local web dashboard
   .venv/bin/python lol.py status                    # what's in the database
   .venv/bin/python lol.py import-json               # rebuild lol.db from data/
@@ -46,6 +47,8 @@ def main():
     sp.add_argument("--host", default="127.0.0.1")
     sp.add_argument("--port", type=int, default=8321)
     sp.add_argument("--no-open", action="store_true", help="don't auto-open the browser")
+    sp.add_argument("--no-warm", action="store_true",
+                    help="don't precompute cold builds scenarios in the background")
     sp.set_defaults(func=webapp.cmd_serve)
 
     sp = sub.add_parser("export", help="write the web app as a self-contained static site")
@@ -182,6 +185,10 @@ def main():
     sp.add_argument("--items", nargs="*", default=[],
                     help="item names, meraki nicknames, or ids")
     sp.set_defaults(func=builds.cmd_sim)
+
+    sp = bdsub.add_parser("warm",
+                          help="precompute every dashboard scenario that is cold, cheapest first")
+    sp.set_defaults(func=builds.cmd_warm)
 
     sp = bdsub.add_parser("optimize",
                           help="enumerate and rank builds for one scenario")

@@ -47,9 +47,13 @@ module and committed JSON archive:
   alone, each with its reason recorded under `"excluded"` in
   `item-effects.json`. Full-pool scenarios simulate ~33M legal builds
   (~37M combinations before Riot's ownership limits prune them) — the
-  enumerator fans out across CPU cores and scenario results are cached
-  in `.cache/builds/` (gitignored), keyed by a hash of every input, so
-  they compute once per code/data change. Runes are not modeled yet.
+  enumerator fans out across CPU cores, 10-16 minutes per full-build
+  scenario on 16 cores. The dashboard never simulates on request:
+  `lol.py builds warm` precomputes every (champion, scenario) cell into
+  `.cache/builds/` (gitignored) under a hash of every input, cheapest
+  first, and `serve` runs it in the background whenever a cell is cold,
+  so a code or data change just makes cells recompute. Runes are not
+  modeled yet.
   Math is pinned by hand-computed tests: `python3 -m unittest
   test_builds`.
 
@@ -106,9 +110,11 @@ Opens `http://127.0.0.1:8321` — an interactive local dashboard:
 - **Builds** — the theoretical damage model's ranked builds per champion
   and preset scenario (full build / mid-game budget / first item, vs
   squishy / bruiser / tank). Click a build for its damage-source
-  breakdown. Scenarios are simulated on first request and cached on disk
-  under a hash of every input; a running serve also memoizes in-process,
-  so restart it after changing code, kits or item effects.
+  breakdown. Every scenario is precomputed (`lol.py builds warm`, which
+  `serve` runs in the background whenever something is cold — `--no-warm`
+  turns that off); a cell that isn't computed yet says so and fills in
+  when it lands. Restart serve after editing `builds.py` — the tab tells
+  you when it is running older code than is on disk.
 - **Data** — systemd unit health, automation job status, and what's in the
   database, per tier and patch.
 

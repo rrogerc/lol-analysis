@@ -7,7 +7,11 @@ wiki; the integration tests read the committed data/items snapshot, so they
 also catch a meraki schema change sneaking past ITEM_STAT_MAP.
 """
 
+import os
+import shutil
+import tempfile
 import unittest
+from unittest import mock
 
 import builds
 
@@ -245,21 +249,6 @@ class TestEngine(unittest.TestCase):
         r = self.sim(16, ["rageblade"], hp=100_000, duration=10)
         self.assertGreater(r["phantom_hits"], 0)
         self.assertEqual(r["phantom_hits"], (r["attacks"] - 6) // 3 + 1)
-
-    def test_api_scenario_shape(self):
-        # cheapest preset; exercises the full web-API path end to end
-        builds._OPTIMIZE_CACHE.clear()
-        d = builds.api_optimize_scenario("kayle", "first-item", top=5)
-        self.assertEqual(d["champion"], "kayle")
-        self.assertEqual([r["rank"] for r in d["rows"]], [1, 2, 3, 4, 5])
-        for r in d["rows"]:
-            self.assertLessEqual(r["gold"], 4500)
-            self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"],
-                                   delta=len(r["breakdown"]))  # rounding
-        ttks = [r["ttk"] for r in d["rows"] if r["ttk"] is not None]
-        self.assertEqual(ttks, sorted(ttks))
-        self.assertIn("first-item", [s["key"] for s in
-                                     builds.api_builds_meta()["scenarios"]])
 
     def test_liandry_burns(self):
         r = self.sim(16, ["liandry"], hp=10_000, duration=6)
@@ -846,20 +835,112 @@ class TestVladimirEngine(unittest.TestCase):
         exp = [r["ttk_exp"] for r in killers]
         self.assertEqual(exp, sorted(exp))
 
-    def test_api_scenario_shape(self):
-        builds._OPTIMIZE_CACHE.clear()
-        d = builds.api_optimize_scenario("vladimir", "first-item", top=5)
-        self.assertEqual(d["champion"], "vladimir")
-        self.assertEqual(d["championName"], "Vladimir")
-        self.assertEqual([r["rank"] for r in d["rows"]], [1, 2, 3, 4, 5])
-        self.assertEqual(d["ranks"], builds.skill_ranks(9))
+
+
+class TestScenarioCache(unittest.TestCase):
+    """The precomputed-cell layer: warm order, cache paths, read-only access,
+    compute, and the warm lock — on a tiny item pool in a temp cache dir,
+    so every cell is instant and the real .cache/builds/ is never touched."""
+    # Rabadon, Void Staff, Shadowflame, Liandry, Riftmaker, Nashor, Muramana
+    TINY_POOL = [3089, 3135, 4645, 6653, 4633, 3115, 3042]
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        for name, value in (("SCENARIO_CACHE_DIR", self.tmp),
+                            ("DEFAULT_POOL", self.TINY_POOL)):
+            patcher = mock.patch.object(builds, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_cells_cheapest_first(self):
+        cs = builds.cells()
+        champs = builds.kit_champions()
+        self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
+        self.assertEqual(len(set(cs)), len(cs))
+        # every budget preset before any full-build one, shorter fights
+        # first within each group, and scenario-major so all champions get
+        # the cheap cells before anyone gets an expensive one
+        cost = [(builds.SCENARIOS[k].get("budget") is None,
+                 builds.SCENARIOS[k]["duration"]) for _, k in cs]
+        self.assertEqual(cost, sorted(cost))
+        self.assertEqual([slug for slug, _ in cs[:len(champs)]], champs)
+
+    def test_cell_paths_cover_code_and_inputs(self):
+        paths = builds.cell_paths()
+        self.assertEqual(set(paths), set(builds.cells()))
+        self.assertTrue(all(p.startswith(self.tmp) for p in paths.values()))
+        self.assertEqual(len(set(paths.values())), len(paths))
+        self.assertFalse(builds.source_stale())
+        with mock.patch.object(builds, "SOURCE_HASH", "0" * 64):
+            self.assertTrue(builds.source_stale())
+            other = builds.cell_paths()
+        self.assertTrue(set(other.values()).isdisjoint(paths.values()))
+        with mock.patch.dict(builds.SCENARIOS["first-item"], {"armor": 51}):
+            changed = builds.cell_paths()
+        for cell in paths:
+            same = cell[1] != "first-item"
+            self.assertEqual(changed[cell] == paths[cell], same, cell)
+
+    def test_read_only_then_compute(self):
+        cell = ("kayle", "first-item")
+        paths = builds.cell_paths()
+        with mock.patch.object(builds, "enumerate_builds",
+                               side_effect=AssertionError("simulated on read")):
+            self.assertIsNone(builds.cached_scenario(*cell))
+        self.assertRaises(ValueError, builds.cached_scenario, "kayle", "nope")
+        self.assertRaises(ValueError, builds.cached_scenario, "teemo", "first-item")
+        stale = os.path.join(self.tmp, "kayle-first-item-0000000000000000.json")
+        open(stale, "w").close()
+        d = builds.compute_scenario(*cell, paths[cell])
+        self.assertTrue(os.path.exists(paths[cell]))
+        self.assertFalse(os.path.exists(stale))  # older generation retired
+        self.assertFalse(os.path.exists(paths[cell] + ".tmp"))
+        self.assertEqual(builds.cached_scenario(*cell), d)
+        self.assertEqual(d["champion"], "kayle")
+        self.assertEqual(d["scenario"]["key"], "first-item")
+        self.assertEqual([r["rank"] for r in d["rows"]],
+                         list(range(1, len(d["rows"]) + 1)))
+        self.assertTrue(d["rows"])
         for r in d["rows"]:
             self.assertLessEqual(r["gold"], 4500)
-            self.assertNotIn("Muramana", r["items"])
             self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"],
                                    delta=len(r["breakdown"]))  # rounding
         ttks = [r["ttk"] for r in d["rows"] if r["ttk"] is not None]
         self.assertEqual(ttks, sorted(ttks))
+        self.assertIn("computedAt", d)
+        self.assertGreaterEqual(d["computeSeconds"], 0)
+
+    def test_vladimir_cell_drops_mana_items(self):
+        cell = ("vladimir", "first-item")
+        d = builds.compute_scenario(*cell, builds.cell_paths()[cell])
+        self.assertEqual(d["championName"], "Vladimir")
+        self.assertEqual(d["ranks"], builds.skill_ranks(9))
+        self.assertTrue(d["rows"])
+        for r in d["rows"]:
+            self.assertLessEqual(r["gold"], 4500)
+            self.assertNotIn("Muramana", r["items"])
+
+    def test_warm_computes_cold_cells_once_and_respects_lock(self):
+        log = []
+        self.assertEqual(builds.warm(log=log.append), len(builds.cells()))
+        self.assertTrue(all(builds.cell_ready().values()))
+        self.assertEqual(len([l for l in log if l.startswith("[")]),
+                         len(builds.cells()))
+        self.assertEqual(builds.warm(log=log.append), 0)  # nothing cold now
+        lock = builds.warm_lock()
+        try:
+            self.assertTrue(builds.warm_running())
+            self.assertIsNone(builds.warm(log=log.append))
+        finally:
+            lock.close()
+        self.assertFalse(builds.warm_running())
+
+    def test_warm_stops_when_source_changes(self):
+        paths = builds.cell_paths()
+        with mock.patch.object(builds, "source_stale", return_value=True):
+            self.assertEqual(builds.warm(log=lambda _: None), 0)
+        self.assertFalse(any(os.path.exists(p) for p in paths.values()))
 
 
 if __name__ == "__main__":

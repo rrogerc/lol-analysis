@@ -104,6 +104,7 @@
     background: var(--surface-1); color: var(--text-primary);
     border-color: var(--baseline); font-weight: 600;
   }
+  .seg button.cold { opacity: .5; }
   .lane-tag { color: var(--text-secondary); }
   #jobs th, #jobs td, #services th, #services td { text-align: left; }
   #jobs td:nth-child(2), #services td:nth-child(2) { white-space: nowrap; }
@@ -615,7 +616,9 @@ const SRC_COLOR = { auto: "--s3", onhit: "--s2", wave: "--s8", "E onhit": "--s5"
                     ludens: "--s5", muramana: "--s4", energized: "--s3",
                     shiv: "--s3", eclipse: "--s6", hullbreaker: "--s8",
                     titanic: "--s8", active: "--s4", umbral: "--s6" };
-const bstate = { meta: null, champion: null, scenario: null, data: null, sel: 0 };
+const bstate = { meta: null, champion: null, scenario: null, data: null, sel: 0,
+                 status: null, req: 0, timer: null };
+const fmtDur = s => s < 90 ? `${Math.round(s)}s` : `${Math.round(s / 60)} min`;
 
 async function loadBuildsMeta() {
   if (bstate.meta) return true;
@@ -686,6 +689,32 @@ function renderPool() {
     }));
 }
 
+// Scenario cells are precomputed (builds.warm), never simulated on request.
+// The status endpoint says which cells exist and whether a warmer is running.
+async function loadStatus() {
+  bstate.status = await api("api/builds/status.json");
+  markCold();
+  return bstate.status;
+}
+
+// Dim the scenario buttons whose cell isn't computed for the selected champion.
+function markCold() {
+  const ready = bstate.status?.ready;
+  document.querySelectorAll("#scenario-seg button").forEach(b => {
+    const cold = !!ready && !ready[`${bstate.champion}/${b.dataset.key}`];
+    b.classList.toggle("cold", cold);
+    b.title = cold ? "not computed yet" : "";
+  });
+}
+
+function clearBuilds() {
+  bstate.data = null;
+  document.querySelector("#btbl tbody").replaceChildren();
+  document.getElementById("bd-title").textContent = "Damage breakdown";
+  document.getElementById("bd-hint").textContent = "";
+  document.getElementById("bd-bars").replaceChildren();
+}
+
 async function loadScenario() {
   if (!bstate.champion) {
     document.getElementById("builds-note").textContent =
@@ -696,23 +725,62 @@ async function loadScenario() {
     b.classList.toggle("active", b.dataset.key === bstate.champion));
   document.querySelectorAll("#scenario-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.scenario));
-  const desc = document.getElementById("scenario-desc");
-  desc.textContent = "Simulating… (first run of a scenario can take minutes " +
-    "with the full pool; results are cached on disk after that)";
+  markCold();
   updateHash();
-  const d = await api(`api/builds/${bstate.champion}/${bstate.scenario}.json`);
+  const req = ++bstate.req;  // a newer click supersedes this load
+  clearTimeout(bstate.timer);
+  const desc = document.getElementById("scenario-desc");
+  desc.textContent = "Loading…";
+  let d;
+  try {
+    d = await api(`api/builds/${bstate.champion}/${bstate.scenario}.json`);
+  } catch (e) {
+    if (req !== bstate.req) return;
+    clearBuilds();
+    desc.textContent = `Could not load this scenario (${e.message}).`;
+    return;
+  }
+  if (req !== bstate.req) return;
+  if (d.pending) {
+    clearBuilds();
+    showPending(req);
+    return;
+  }
   bstate.data = d;
   bstate.sel = 0;
   const sc = d.scenario, rk = d.ranks;
   document.getElementById("builds-title").textContent =
     `${d.championName || d.champion} — ranked builds, ${sc.label.toLowerCase()}`;
+  const when = d.computedAt
+    ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+    : null;
   desc.textContent =
     `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · target ${fmtInt(sc.targetHp)} HP, ` +
     `${sc.armor} armor, ${sc.mr} MR · ${sc.duration}s fight` +
     (sc.budget ? ` · ${fmtInt(sc.budget)}g budget` : "") +
-    ` · ${fmtInt(d.buildsEvaluated)} builds simulated · ` +
-    `items patch ${d.itemsPatch}, kit ${d.kitPatch} · ${bstate.meta.note}`;
+    ` · ${fmtInt(d.buildsEvaluated)} builds simulated` +
+    (when ? ` · computed ${when} in ${fmtDur(d.computeSeconds)}` : "") +
+    ` · items patch ${d.itemsPatch}, kit ${d.kitPatch} · ${bstate.meta.note}`;
   renderBuildsTable();
+}
+
+// Say why the selected cell is missing, and poll until it lands.
+async function showPending(req) {
+  let st = null;
+  try { st = await loadStatus(); } catch (e) { /* shown as unavailable */ }
+  if (req !== bstate.req) return;
+  if (st?.ready[`${bstate.champion}/${bstate.scenario}`]) { loadScenario(); return; }
+  const n = st ? Object.values(st.ready).filter(Boolean).length : 0;
+  const total = st ? Object.keys(st.ready).length : 0;
+  const why = {
+    running: `warming in the background, ${n} of ${total} scenarios ready — this one will appear when it lands`,
+    idle: "no warmer is running — run `lol.py builds warm`, or restart serve without --no-warm",
+    failed: "the last warm failed or was killed — see .cache/builds/warm.log, then restart serve",
+    stale: "serve is running older code than is on disk — restart it",
+  }[st?.warmer] || "status unavailable";
+  document.getElementById("scenario-desc").textContent =
+    `Not computed yet for the current code and data (${why}).`;
+  bstate.timer = setTimeout(() => showPending(req), 10000);
 }
 
 function renderBuildsTable() {
@@ -763,7 +831,10 @@ function renderBreakdown(r) {
 }
 
 async function openBuilds() {
-  if (await loadBuildsMeta()) loadScenario();
+  if (await loadBuildsMeta()) {
+    loadStatus().catch(() => {});
+    loadScenario();
+  }
 }
 
 // ---------------- data view ----------------
@@ -906,6 +977,7 @@ function showView(v) {
     s.classList.toggle("active", s.id === "view-" + v));
   updateHash();
   if (v === "builds" && !bstate.data) openBuilds();
+  if (v !== "builds") clearTimeout(bstate.timer);  // stop polling off-tab
 }
 document.querySelectorAll("nav button").forEach(b =>
   b.addEventListener("click", () => showView(b.dataset.view)));

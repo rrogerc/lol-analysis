@@ -29,6 +29,8 @@ Stat formulas follow the League wiki ("Champion statistic", "Armor
 penetration"); each is cited at its implementation.
 """
 
+import glob
+import hashlib
 import json
 import os
 import re
@@ -1343,7 +1345,7 @@ def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
 
 
 # ---------------------------------------------------------------------------
-# web API: preset scenarios the dashboard can show (and export can pre-bake)
+# web API: the preset scenarios the dashboard shows
 # ---------------------------------------------------------------------------
 
 # targetBonusHp: the item/rune share of the dummy's HP (drives Giant Slayer)
@@ -1445,68 +1447,104 @@ def api_builds_meta():
     }
 
 
-_OPTIMIZE_CACHE = {}
+# ---------------------------------------------------------------------------
+# scenario results: precomputed, never simulated on request
+#
+# A cell is one (champion, scenario) pair. Its result lives in .cache/builds/
+# under a name that hashes every input it depends on, so a change to code or
+# data simply makes the cell cold — nothing is ever served stale. The
+# dashboard only READS cells (cached_scenario); warm() computes the cold ones,
+# one at a time, cheapest first, and `lol.py serve` runs it in the background
+# whenever something is cold.
+# ---------------------------------------------------------------------------
+
 SCENARIO_CACHE_DIR = os.path.join(BASE_DIR, ".cache", "builds")
+CACHED_ROWS = 20  # rows kept per cell
+
+# This module's own source is part of every cache key: a result is only valid
+# for the code that produced it. Hashed once at import, so a serve that keeps
+# running after an edit still recognises the results matching the code it
+# runs — and can report itself stale (source_stale) instead of chasing files
+# it will never see.
+with open(os.path.abspath(__file__), "rb") as _f:
+    SOURCE_HASH = hashlib.sha256(_f.read()).hexdigest()
 
 
-def _scenario_cache_path(slug, key, sc, patch, champ, pool):
-    """Disk-cache filename whose hash covers every input the result depends
-    on: the scenario, the pool, the loaded snapshot data (champion and item
-    stats — content, not just patch labels, since the daily refresh rewrites
-    a patch's snapshot in place), the item-bin rules that decide which builds
-    are legal, and this module's code."""
-    import hashlib
-    h = hashlib.sha256()
-    paths = [ITEM_EFFECTS_PATH,
-             os.path.join(BUILDS_DATA_DIR, f"{slug}.json"),
-             os.path.abspath(__file__)]
-    gp = groups_path()
-    if gp:
-        paths.append(gp)
-    for p in paths:
-        with open(p, "rb") as f:
-            h.update(f.read())
-    h.update(json.dumps([patch, champ, sc, DEFAULT_POOL, BOOTS, pool],
-                        sort_keys=True).encode())
-    return os.path.join(SCENARIO_CACHE_DIR,
-                        f"{slug}-{key}-{h.hexdigest()[:16]}.json")
+def source_stale():
+    """Whether builds.py on disk differs from the code this process runs."""
+    with open(os.path.abspath(__file__), "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest() != SOURCE_HASH
 
 
-# Every cache entry holds this many rows; a request for fewer is sliced on
-# the way out. `top` therefore stays out of the cache key — one expensive
-# result serves every caller.
-CACHED_ROWS = 20
+def cells():
+    """Every (champion slug, scenario key) the dashboard shows, in warm order:
+    cheapest first, so the tab is usable within a minute. Budget presets
+    reject nearly every combination before simulating it and take seconds;
+    the full-build ones simulate ~30M builds and scale with the fight length
+    (10-16 min each on 16 cores)."""
+    order = sorted(SCENARIOS, key=lambda k: (SCENARIOS[k].get("budget") is None,
+                                             SCENARIOS[k]["duration"]))
+    champs = kit_champions()
+    return [(slug, key) for key in order for slug in champs]
 
 
-def api_optimize_scenario(slug, key, top=20):
-    """Ranked builds for one preset scenario. Cached in-process AND on disk
-    (.cache/builds/, keyed by a hash of all inputs) — big pools take minutes
-    to simulate, and the disk cache survives serve restarts."""
-    out = _optimize_scenario_cached(slug, key)
-    if top >= len(out["rows"]):
-        return out
-    return {**out, "rows": out["rows"][:top]}
+def cell_paths():
+    """{(slug, key): cache path} for every cell. The path's hash covers every
+    input a result depends on: this module's code, the scenario, the pool
+    constants, the loaded item and champion data (content, not just patch
+    labels, since the daily refresh rewrites a patch's snapshot in place),
+    the kit encoding, the hand-curated item passives, and the item-bin rules
+    that decide which builds are legal."""
+    patch, pool = load_items()
+    base = hashlib.sha256(SOURCE_HASH.encode())
+    for path in (ITEM_EFFECTS_PATH, groups_path()):
+        if path and os.path.exists(path):
+            with open(path, "rb") as f:
+                base.update(f.read())
+    base.update(json.dumps([patch, DEFAULT_POOL, BOOTS, pool],
+                           sort_keys=True).encode())
+    paths = {}
+    for slug in kit_champions():
+        h_champ = base.copy()
+        with open(os.path.join(BUILDS_DATA_DIR, f"{slug}.json"), "rb") as f:
+            h_champ.update(f.read())
+        h_champ.update(json.dumps(load_champion(slug), sort_keys=True).encode())
+        for key, sc in SCENARIOS.items():
+            h = h_champ.copy()
+            h.update(json.dumps(sc, sort_keys=True).encode())
+            paths[(slug, key)] = os.path.join(
+                SCENARIO_CACHE_DIR, f"{slug}-{key}-{h.hexdigest()[:16]}.json")
+    return paths
 
 
-def _optimize_scenario_cached(slug, key):
-    """The full CACHED_ROWS-row payload, computed at most once per input set."""
-    if (slug, key) in _OPTIMIZE_CACHE:
-        return _OPTIMIZE_CACHE[(slug, key)]
-    if key not in SCENARIOS:
-        raise ValueError(f"unknown scenario '{key}'")
-    # ValueError (not load_champion's sys.exit) so the web layer can 404
-    if slug not in kit_champions():
-        raise ValueError(f"unknown champion '{slug}'")
-    top = CACHED_ROWS
+def cell_ready():
+    """{"slug/key": computed?} for every cell — the dashboard's status."""
+    return {f"{slug}/{key}": os.path.exists(path)
+            for (slug, key), path in cell_paths().items()}
+
+
+def cached_scenario(slug, key, paths=None):
+    """A cell's precomputed payload, or None if it isn't computed for the
+    current code and data. Never computes — that is warm()'s job."""
+    paths = paths if paths is not None else cell_paths()
+    if (slug, key) not in paths:
+        raise ValueError(f"unknown champion or scenario '{slug}/{key}'")
+    path = paths[(slug, key)]
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
+def compute_scenario(slug, key, path):
+    """Simulate one cell and write its payload to `path` — through a temp
+    file and rename, so a killed run can never leave a truncated file — then
+    retire the cell's older generations. Returns the payload."""
+    import time
+    t0 = time.time()
     sc = SCENARIOS[key]
     champ = load_champion(slug)
     patch, pool = load_items()
-    cache_path = _scenario_cache_path(slug, key, sc, patch, champ, pool)
-    if os.path.exists(cache_path):
-        with open(cache_path) as f:
-            out = json.load(f)
-        _OPTIMIZE_CACHE[(slug, key)] = out
-        return out
     effects = load_item_effects()
     kit = load_kit(slug)
     ranks = skill_ranks(sc["level"], kit_max_order(kit))
@@ -1516,7 +1554,7 @@ def _optimize_scenario_cached(slug, key):
         candidates=champion_pool(kit, effects),
         target_bonus_hp=sc.get("targetBonusHp", 0.0))
     rows = []
-    for n, (ids, sheet, r) in enumerate(results[:top], 1):
+    for n, (ids, sheet, r) in enumerate(results[:CACHED_ROWS], 1):
         rows.append({
             "rank": n, "items": [pool[i]["name"] for i in ids],
             "gold": sheet["gold"],
@@ -1533,12 +1571,86 @@ def _optimize_scenario_cached(slug, key):
            "scenario": {"key": key, **sc},
            "itemsPatch": patch, "championPatch": champ["meta"]["patch"],
            "kitPatch": kit.get("patch"), "buildsEvaluated": count,
-           "ranks": ranks, "rows": rows}
+           "ranks": ranks, "rows": rows,
+           "computedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+           "computeSeconds": round(time.time() - t0, 1)}
     os.makedirs(SCENARIO_CACHE_DIR, exist_ok=True)
-    with open(cache_path, "w") as f:
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(out, f, separators=(",", ":"))
-    _OPTIMIZE_CACHE[(slug, key)] = out
+    os.replace(tmp, path)
+    for old in glob.glob(os.path.join(SCENARIO_CACHE_DIR, f"{slug}-{key}-*.json")):
+        if old != path:
+            os.remove(old)
     return out
+
+
+def warm_lock():
+    """Take the cache-wide warm lock, or return None if another process holds
+    it. One warmer at a time: a single 15-worker pool already saturates the
+    machine, and two would do the same work twice for the same files."""
+    import fcntl
+    os.makedirs(SCENARIO_CACHE_DIR, exist_ok=True)
+    f = open(os.path.join(SCENARIO_CACHE_DIR, "lock"), "w")
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        f.close()
+        return None
+    return f
+
+
+def warm_running():
+    """Whether some process currently holds the warm lock."""
+    lock = warm_lock()
+    if lock is None:
+        return True
+    lock.close()
+    return False
+
+
+def _say(line):
+    print(line, flush=True)
+
+
+def warm(log=_say):
+    """Compute every cold cell, cheapest first. Returns how many were
+    computed, or None if another warmer holds the lock. Stops early if
+    builds.py changes on disk mid-run — the results would belong to code
+    that no longer exists."""
+    import signal
+    lock = warm_lock()
+    if lock is None:
+        return None
+    # SIGTERM (pkill, a serve shutting down) would otherwise end the process
+    # without unwinding the `with Pool` block, orphaning the workers mid-run.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+    try:
+        for tmp in glob.glob(os.path.join(SCENARIO_CACHE_DIR, "*.tmp")):
+            os.remove(tmp)
+        paths = cell_paths()
+        cold = [c for c in cells() if not os.path.exists(paths[c])]
+        for n, (slug, key) in enumerate(cold, 1):
+            if source_stale():
+                log("builds.py changed on disk — stopping; rerun to continue")
+                return n - 1
+            log(f"[{n}/{len(cold)}] {slug}/{key} …")
+            out = compute_scenario(slug, key, paths[(slug, key)])
+            log(f"  {out['buildsEvaluated']:,} builds in {out['computeSeconds']}s")
+        return len(cold)
+    finally:
+        lock.close()
+
+
+def cmd_warm(args):
+    n = warm()
+    if n is None:
+        print("Another warm is already running (it holds .cache/builds/lock).")
+    elif n == 0:
+        print("Nothing to do — every scenario is computed for the current "
+              "code and data.")
+    else:
+        print(f"Computed {n} scenario(s).")
 
 
 # ---------------------------------------------------------------------------
