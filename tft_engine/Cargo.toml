@@ -1,0 +1,28 @@
+[package]
+name = "lol_tft"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Standalone: this crate is deliberately not a member of any workspace, so a
+# Cargo.toml appearing at the repo root later cannot change how it builds.
+[workspace]
+
+[lib]
+name = "lol_tft"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.29.2", features = ["extension-module", "abi3-py310"] }
+
+[build-dependencies]
+sha2 = "0.10"
+
+# No target-cpu, no fast-math, no FMA contraction: results have to stay
+# bit-identical to the Python engine the golden fixtures were made with, so
+# the floating point stays strict.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = false

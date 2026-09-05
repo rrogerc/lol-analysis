@@ -2151,6 +2151,320 @@ def simulate(snap, unit, star, item_apis, geometry, ctx_traits, dummy_spec,
 
 
 # ---------------------------------------------------------------------------
+# the compiled engine: specs that hand Rust every number resolved
+# ---------------------------------------------------------------------------
+
+_ENGINE = None
+
+
+def engine():
+    """The compiled engine (tft_engine/, imported as lol_tft from the
+    repo root); a missing build says how to make one."""
+    global _ENGINE
+    if _ENGINE is None:
+        try:
+            import lol_tft
+        except ImportError as e:
+            raise ImportError("the TFT engine is not built: run jobs/build-engine.sh tft "
+                              f"({e})") from e
+        _ENGINE = lol_tft
+    return _ENGINE
+
+
+_KNOWN_SCALINGS = ("AttackDamage", "AbilityPower", "HealthMax", "Armor", "MagicResist",
+                   "BasicAttackDamage", "Stack")
+
+
+def kit_spec(unit, star, form=None):
+    """A unit's kit for the engine at one star level and form (the merge
+    tft.Sheet did): the stats with health and attack damage already
+    star-scaled, every curve row at the star, and each calc's terms with
+    the star's coefficient — so the engine folds calcs exactly as
+    calc_value did without touching a curve or a power."""
+    calcs, curve, s = unit["calcs"], unit["curve"], unit["stats"]
+    if form is not None and form in unit.get("forms", {}):
+        fm = unit["forms"][form]
+        calcs = {**calcs, **fm["calcs"]}
+        curve = {**curve, **fm["curve"]}
+        if fm["stats"]:
+            s = {**s, **{k: v for k, v in fm["stats"].items() if v is not None}}
+    base_ad = s["ad"]
+    row = {"AD": "AutoAttackDamage", "AP": "AutoAttackDamageAP"}.get(form)
+    if row and row in curve:
+        base_ad = curve_at(curve[row], 1)
+    base_ad = base_ad * AD_PER_STAR ** (star - 1)
+    hp_star = s["hp"] * HP_PER_STAR ** (star - 1)
+    rows = {}
+    for name, r in curve.items():
+        v = curve_at(r, star) if r else None
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            rows[name] = float(v)
+    out_calcs = {}
+    for full, calc in calcs.items():
+        short = full.split(".")[-1]
+        terms = []
+        for term in calc.get("terms") or []:
+            ttype = term.get("type")
+            op = term.get("op")
+            if ttype == "runtime":
+                terms.append({"type": "runtime", "row": term.get("row") or "runtime", "op": op})
+            elif ttype == "flat":
+                r = term.get("row")
+                if r in curve:
+                    v = curve_at(curve[r], star)
+                else:
+                    vals = term.get("coefficient") or term.get("values") or [0.0]
+                    v = float(vals[min(star, len(vals)) - 1] or 0.0)
+                terms.append({"type": "flat", "value": float(v), "op": op})
+            else:
+                coefs = term.get("coefficient")
+                if coefs is None and term.get("row") in curve:
+                    coef = curve_at(curve[term["row"]], star)
+                elif coefs is None:
+                    coef = 0.0
+                else:
+                    coef = coefs[min(star, len(coefs)) - 1]
+                    if coef is None:
+                        coef = 0.0
+                scaling = term.get("scaling")
+                if not (scaling is None or scaling in _KNOWN_SCALINGS
+                        or scaling.endswith(("Calc1", "Calc2", "Calc3", "Calc4"))):
+                    _warn_scaling(unit["name"], full, scaling)
+                    scaling = "unknown"
+                pre = term.get("preAdd")
+                if pre is not None:
+                    pre = float(pre[min(star, len(pre)) - 1] or 0.0)
+                terms.append({"type": "scaled", "coef": float(coef), "scaling": scaling,
+                              "preAdd": pre, "op": op})
+        out_calcs[short] = {"dtype": calc_type(full), "terms": terms}
+    stats = {k: s.get(k) for k in ("hp", "ad", "as", "armor", "mr", "mana", "initialMana",
+                                   "range", "critChance", "critMult")}
+    return {"stats": stats, "baseAd": base_ad, "hpStar": hp_star, "rows": rows, "calcs": out_calcs}
+
+
+def item_spec(snap, api, item_fx, unit):
+    """One item for the engine: its stat line as (key, value) pairs in the
+    line's order and its modeled passive as plain numbers, with the range
+    and role gates of apply_item already applied for `unit`."""
+    item = snap.items[api]
+    spec = (item_fx.get("items") or {}).get(api) or {}
+    c = item["curve"]
+
+    def rv(s):
+        if isinstance(s, list):
+            return sum(rv(x) for x in s)
+        return row_value(c, s)
+    out = {"api": api, "name": item["name"], "unique": bool(item["unique"]),
+           "stats": [[k, v] for k, v in parse_stat_line(item).items()]}
+    if spec.get("precision"):
+        out["precision"] = int(spec["precision"])
+    if "ampVsTank" in spec:
+        out["ampVsTank"] = rv(spec["ampVsTank"])
+    if "asPerSecond" in spec:
+        out["asPerSecond"] = [rv(spec["asPerSecond"]),
+                              rv(spec["asStackDuration"]) if "asStackDuration" in spec else None]
+    if "adPerAttack" in spec:
+        out["adPerAttack"] = [rv(spec["adPerAttack"]), rv(spec["maxStacks"]),
+                              rv(spec["asAtMax"]) if "asAtMax" in spec else 0.0]
+    if "adapPerAttack" in spec:
+        out["adapPerAttack"] = [rv(spec["adapPerAttack"]), rv(spec["maxStacks"]),
+                                rv(spec["ampAtMax"]) if "ampAtMax" in spec else 0.0]
+    if "apPerInterval" in spec:
+        out["apPerInterval"] = [rv(spec["apPerInterval"]), rv(spec["interval"])]
+    if "apAfter" in spec:
+        out["apAfter"] = [rv(spec["apAfter"]), rv(spec["at"])]
+    if "ampPerCrit" in spec:
+        out["ampPerCrit"] = [rv(spec["ampPerCrit"]), rv(spec["ampDuration"]), rv(spec["maxStacks"])]
+    for k in ("manaPerAttack", "manaPerCrit", "manaMult", "adapMult", "startingMana"):
+        if k in spec:
+            out[k] = rv(spec[k])
+    adds = []
+    for k in ("adPct", "ap", "asPct", "crit", "amp", "armor", "mr", "manaRegen"):
+        if k in spec:
+            adds.append([k, rv(spec[k])])
+    if "byRole" in spec:
+        kind = unit_role_kind(unit)
+        branch = spec["byRole"]["tankOrFighter" if kind in ("Tank", "Fighter") else "other"]
+        for k, s in branch.items():
+            adds.append([k, rv(s)])
+    out["adds"] = adds
+    for k in ("sunderOnHit", "shredOnHit", "burnOnHit"):
+        if k in spec:
+            out[k] = [rv(spec[k]["pct"]), rv(spec[k]["duration"])]
+    rng = unit["stats"]["range"]
+    if "sunderAura" in spec and rng <= rv(spec["sunderAura"]["hexes"]):
+        out["sunderAura"] = rv(spec["sunderAura"]["pct"])
+    if "shredAura" in spec and rng <= rv(spec["shredAura"]["hexes"]):
+        out["shredAura"] = rv(spec["shredAura"]["pct"])
+    if "burnAura" in spec and ("hexes" not in spec["burnAura"]
+                               or rng <= rv(spec["burnAura"]["hexes"])):
+        out["burnAura"] = [rv(spec["burnAura"]["pct"]), rv(spec["burnAura"]["duration"])]
+    for k in ("hpMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct"):
+        if k in spec:
+            out[k] = rv(spec[k])
+    if "durabilityByHealth" in spec:
+        db = spec["durabilityByHealth"]
+        out["durabilityByHealth"] = [rv(db["below"]), rv(db["above"]), rv(db["threshold"])]
+    if "thorns" in spec:
+        out["thorns"] = [rv(spec["thorns"]["damage"]), rv(spec["thorns"]["cooldown"])]
+    if "resistsPerAttacker" in spec:
+        out["resistsPerAttacker"] = [rv(spec["resistsPerAttacker"]["armor"]),
+                                     rv(spec["resistsPerAttacker"]["mr"])]
+    if "healPerInterval" in spec:
+        out["healPerInterval"] = [rv(spec["healPerInterval"]["pct"]), rv(spec["healPerInterval"]["interval"])]
+    if "shieldAtHp" in spec:
+        sh = spec["shieldAtHp"]
+        out["shieldAtHp"] = [rv(sh["threshold"]), rv(sh["pct"]),
+                             rv(sh["duration"]) if "duration" in sh else 1e9,
+                             1.0 if sh.get("decays") else 0.0]
+    if "shieldAtStart" in spec:
+        out["shieldAtStart"] = [rv(spec["shieldAtStart"]["pct"]), rv(spec["shieldAtStart"]["duration"])]
+    if "resistsAtStart" in spec:
+        rs = spec["resistsAtStart"]
+        out["resistsAtStart"] = [rv(rs["armor"]), rv(rs["mr"]), rv(rs["duration"])]
+    if "untargetableAtHp" in spec:
+        un = spec["untargetableAtHp"]
+        out["untargetableAtHp"] = [rv(un["threshold"]), rv(un["duration"]), rv(un["healMissing"])]
+    if "manaAtHp" in spec:
+        out["manaAtHp"] = [rv(spec["manaAtHp"]["threshold"]), rv(spec["manaAtHp"]["mana"])]
+    if spec.get("adapPerHit"):
+        out["adapPerHit"] = True
+    if "ionicSpark" in spec and rng <= rv(spec["ionicSpark"]["hexes"]):
+        out["ionicSpark"] = rv(spec["ionicSpark"]["pct"])
+    if "hoj" in spec:
+        h = spec["hoj"]
+        out["hoj"] = [rv(h["adPct"]), rv(h["ap"]), rv(h["omnivamp"]), rv(h["threshold"])]
+    if spec.get("note"):
+        out["note"] = spec["note"]
+    return out
+
+
+def trait_spec(snap, api, col, trait_fx, unit):
+    """One trait at breakpoint column `col` for the engine, per
+    trait-effects.json, every row read at that column."""
+    t = snap.traits[api]
+    spec = trait_fx[api]
+    c = t["curve"]
+
+    def rv(s):
+        if isinstance(s, list):
+            return sum(rv(x) for x in s)
+        if isinstance(s, dict):
+            return row_value(c, dict(s, col=s.get("col", col)))
+        return float(s)
+    own_mult = rv(spec["ownMultiplier"]) if "ownMultiplier" in spec else 1.0
+    out = {"api": api, "name": t["name"],
+           "stats": [[k, rv(s) * own_mult] for k, s in (spec.get("stats") or {}).items()]}
+    if spec.get("precision"):
+        out["precision"] = True
+    if "asPerAttackStack" in spec:
+        out["asPerAttackStack"] = [rv(spec["asPerAttackStack"]), rv(spec["maxStacks"])]
+    if "apPerCast" in spec:
+        out["apPerCast"] = rv(spec["apPerCast"]) * 100.0
+    if "ampAfterSameTarget" in spec:
+        out["ampAfterSameTarget"] = [rv(spec["ampAfterSameTarget"]["amp"]),
+                                     rv(spec["ampAfterSameTarget"]["seconds"])]
+    for k in ("bleed", "burnOnHit", "caustic"):
+        if k in spec:
+            out[k] = [rv(spec[k]["pct"]), rv(spec[k]["duration"])]
+    for k in ("bonusMagicPct", "durability", "omnivamp"):
+        if k in spec:
+            out[k] = rv(spec[k])
+    if "ravager" in spec:
+        out["ravager"] = [rv(spec["ravager"]["amp"]), rv(spec["ravager"]["threshold"]),
+                          rv(spec["ravager"]["multiplier"])]
+    if "pixies" in spec:
+        cnt = spec["pixies"]["count"]
+        n = cnt[col - 1] if col - 1 < len(cnt) else cnt[-1]
+        out["pixies"] = rv(spec["pixies"]["adapPerPixie"]) * n
+    if spec.get("riftbeast"):
+        out["riftbeast"] = True
+    if "shieldAtStart" in spec:
+        out["shieldAtStart"] = [rv(spec["shieldAtStart"]["pct"]), rv(spec["shieldAtStart"]["duration"])]
+    if "shieldAtHp" in spec:
+        sh = spec["shieldAtHp"]
+        out["shieldAtHp"] = [rv(sh["threshold"]), rv(sh["pct"]), rv(sh["duration"])]
+    if "resistsPerAttacker" in spec:
+        out["resistsPerAttacker"] = [rv(spec["resistsPerAttacker"]["armor"]),
+                                     rv(spec["resistsPerAttacker"]["mr"])]
+    if "takedown" in spec:
+        out["takedown"] = [rv(spec["takedown"].get("healPct", 0.0)), rv(spec["takedown"].get("mana", 0.0))]
+    if "faeHeal" in spec:
+        cnt = spec["faeHeal"]["count"]
+        n = cnt[col - 1] if col - 1 < len(cnt) else cnt[-1]
+        out["faeHeal"] = [rv(spec["faeHeal"]["threshold"]), rv(spec["faeHeal"]["healPerPixie"]) * n]
+    if "summoner" in spec:
+        out["summoner"] = {k: rv(s) for k, s in spec["summoner"].items()}
+    if spec.get("note"):
+        out["note"] = spec["note"]
+    return out
+
+
+def driver_name(unit):
+    """The engine driver for a unit, by the unit's api name."""
+    return engine().DRIVERS.get(unit["api"])
+
+
+def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None, pressure=None,
+              item_fx=None, trait_fx=None, pool=(), items=(), driver=None):
+    """Everything the engine needs for one unit's fights: kits per form,
+    dummies (armed and standing for the board per the objective), the
+    role's and the traits' contributions, the item pool for an
+    enumeration or the build's items for one fight."""
+    item_fx = item_fx if item_fx is not None else load_item_effects(snap.set_no)
+    trait_fx = trait_fx if trait_fx is not None else load_trait_effects(snap.set_no)
+    objective = unit.get("objective", "carry")
+    if pressure is None:
+        pressure = objective in PRESSURED
+    if duration is None:
+        duration = fight_duration(unit)
+    board = objective == "tank"
+    streams = dummy_spec.get("board") if board else None
+    slots = [dict(s, streams=int(streams[i]) if streams else 1)
+             for i, s in enumerate(dummy_spec["slots"])]
+    kits = {"base": kit_spec(unit, star, None)}
+    if unit.get("forms"):
+        kits["AD"] = kit_spec(unit, star, "AD")
+        kits["AP"] = kit_spec(unit, star, "AP")
+    kind = unit_role_kind(unit)
+    role = {"manaRegen": CASTER_MANA_REGEN if kind == "Caster" else 0.0,
+            "asPct": FIGHTER_AS_BY_STAGE[STAGE] if kind == "Fighter" else 0.0}
+    return {
+        "unit": {"api": unit["api"], "name": unit["name"], "kind": kind, "attack": bool(unit["attack"]),
+                 "objective": objective, "range": unit["stats"]["range"],
+                 "castTime": unit.get("castTime"), "hasForms": bool(unit.get("forms")),
+                 "extras": {api: e["stats"] for api, e in snap.extras.items()}},
+        "star": star, "kits": kits, "geometry": geometry, "duration": float(duration),
+        "pressure": bool(pressure), "immortal": objective == "tank",
+        "dummies": {"critEv": dummy_spec.get("critEv", 1.1), "slots": slots},
+        "role": role,
+        "traits": [trait_spec(snap, api, col, trait_fx, unit) for api, col in ctx_traits],
+        "pool": [item_spec(snap, api, item_fx, unit) for api in pool],
+        "items": [item_spec(snap, api, item_fx, unit) for api in items],
+        "driver": driver or driver_name(unit),
+    }
+
+
+def simulate_rs(snap, unit, star, item_apis, geometry, ctx_traits, dummy_spec, duration=None,
+                item_fx=None, trait_fx=None, driver=None, pressure=None, trace=False):
+    """One build's fight on the compiled engine: (opening sheet, result),
+    the same shapes simulate returns."""
+    spec = cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration, pressure,
+                     item_fx, trait_fx, items=list(item_apis), driver=driver)
+    return engine().simulate(spec, trace)
+
+
+def enumerate_rs(snap, unit, star, geometry, ctx_traits, dummy_spec, pool, duration=None,
+                 top=None, workers=0, item_fx=None, trait_fx=None):
+    """Every build of `pool` on the compiled engine, sorted best first:
+    ([(combo, sheet, result), ...] for the top rows, build count)."""
+    spec = cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration, None,
+                     item_fx, trait_fx, pool=list(pool))
+    count, rows = engine().run_cell(spec, top or CACHED_ROWS, workers)
+    return [(tuple(pool[i] for i in idx), sheet, res) for idx, sheet, res in rows], count
+
+
+# ---------------------------------------------------------------------------
 # enumeration + ranking
 # ---------------------------------------------------------------------------
 
