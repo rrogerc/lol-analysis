@@ -1,17 +1,176 @@
 {
  "_comment": "Per-unit notes for the dashboard; the ability shapes themselves are the drivers in tft_kits.py.",
  "units": {
-  "TFT18_Ahri": {"note": "The bomb's channel time is taken from the unit data (ChannelTime); dummies in the clump sit one hex from the epicenter."},
-  "TFT18_Alune": {"note": "The Attuned phase cycle is assumed to be four casts, the fourth a full moon; its durability/amp phases are not modeled."},
-  "TFT18_Aphelios": {"note": "Swipes land at the cast; every third one counts as an attack for on-hit effects."},
-  "TFT18_Caitlyn": {"note": "Ammo, not mana: every third attack is a Headshot, and mana items do nothing. Headshots are ability damage (Precision to crit)."},
-  "TFT18_Draven": {"note": "The spinning-axe chance is an expected value; the Bounty Seeker trait is not modeled."},
-  "TFT18_Kayle": {"note": "Manaless: her attacks carry the ascension passives; wave damage needs other dummies in reach."},
-  "TFT18_KhaZix": {"note": "Spread out, every dummy is isolated (the bigger hit and the mana refund); the Rival evolutions are not modeled."},
-  "TFT18_Pebbles": {"note": "The laser drains mana at the data's rate and ticks damage and flat magic-resist reduction; nothing attacks during it."},
-  "TFT18_Sivir": {"note": "Bounces need a second dummy in reach, so spread out the blade only hits its target."},
-  "TFT18_Tristana": {"note": "She keeps attacking through the cast; the explosion is split over the dummies in reach."},
-  "TFT18_Varus": {"note": "The two-second wind-up is taken from the unit data (SpellDuration)."},
-  "TFT18_Xayah": {"note": "Feathers replace the next five attacks and still grant mana."}
+  "TFT18_Ahri": {
+   "note": "The bomb's channel time is taken from the unit data (ChannelTime); dummies in the clump sit one hex from the epicenter."
+  },
+  "TFT18_Akali": {
+   "note": "Adds the ability-power form to the existing attack-damage one, which is unchanged: magic damage multiplied against a tank dummy, recast on a kill at reduced damage, four casts at most."
+  },
+  "TFT18_Alistar": {
+   "note": "Self heal, plus the two ally heals counted (not simulated — the count comes from Riot's text, there is no row for it), then the slam's damage and stun on the target. The cleanse has nothing to remove against stat dummies."
+  },
+  "TFT18_Alune": {
+   "note": "The Attuned phase cycle is assumed to be four casts, the fourth a full moon; its durability/amp phases are not modeled."
+  },
+  "TFT18_Amumu": {
+   "note": "The passive beats every PassiveTickRate second, healing HealthCalc1 and dealing MagicDamageCalc1 to the dummies within a hex; the cast deals MagicDamageCalc3 to everyone in reach and stuns for StunDuration, or for GenericCalc1 when the dummy he is on is Burning (Inferno or a burn item). The burn's own damage is the engine's, not his."
+  },
+  "TFT18_Aphelios": {
+   "note": "Swipes land at the cast; every third one counts as an attack for on-hit effects."
+  },
+  "TFT18_Azir": {
+   "note": "The cast replaces the next NumAttacks attacks with commands: no basic-attack damage, but every soldier's strike (SoldiersToSpawn, plus one per Summoner ExtraSummons above its no-trait value of 1, times damageMult) with its on-hit effects. Mana is not held, so a recast simply refreshes the window."
+  },
+  "TFT18_Brambleback": {
+   "note": "Frenzy's bonus attack damage stacks when casts overlap, and its armor ignore is a sunder on every dummy — exact here, since he is the only thing damaging them; a kill leaps at the next target. Red Buff (Riftbeast, Alpha Mark assumed) burns on every attack and heals him for a share of max health."
+  },
+  "TFT18_Caitlyn": {
+   "note": "Ammo, not mana: every third attack is a Headshot, and mana items do nothing. Headshots are ability damage (Precision to crit)."
+  },
+  "TFT18_Camille": {
+   "note": "Slice plus a shield: AbilityShield is a flat curve row, so the shield does not scale with ability power. Her Coven trait is not modeled."
+  },
+  "TFT18_Cinderling": {
+   "note": "The five leaves converge as one total hit, followed by the burn; Wound does nothing here because the dummies never heal. With the Riftbeast Alpha Mark the Scarlet Buff adds attack damage on every cast."
+  },
+  "TFT18_Diana": {
+   "note": "A shield, then the six orbs dealt round-robin over the dummies in reach (everyone in the clump, the target alone when spread out). The orb targets are chosen once, at the cast."
+  },
+  "TFT18_Draven": {
+   "note": "The spinning-axe chance is an expected value; the Bounty Seeker trait is not modeled."
+  },
+  "TFT18_ElderDragon": {
+   "note": "Attacks splash onto the dummies beside the target. The first cast goes untargetable for the cast time, then stuns everyone, grants omnivamp, ignites and casts Flame Breath at once; later casts are Flame Breath and another Ignite alone — the landing's effects are applied at the start of the cast rather than at the end of the flight. Elder Dragon Buff (Riftbeast, Alpha Mark assumed) executes anything under the threshold, checked after his own damage and every tick."
+  },
+  "TFT18_Elise": {
+   "note": "The first cast transforms: bonus max health, and from then on every attack carries bonus magic damage and heals her. Later casts' decaying Attack Speed row is a multiplier (2.75 = +175%) that falls to zero over the buff, so half of it is applied flat for the duration as the average."
+  },
+  "TFT18_Fiddlesticks": {
+   "note": "Strips flat Magic Resist off the nearest few dummies, then channels for the cast duration — he does not attack through it — spreading the drain's damage over each of them and its healing into himself over the same window. The resist strip is permanent, as the engine's flat-resist strip has no duration and the ability text names none."
+  },
+  "TFT18_Gnar": {
+   "note": "Rage is run by the driver (RagePerSecond every tick, RagePerAttack per attack) until the transform, which grants max health, damages and stuns the group and strips flat armor and magic resist off it. Mega Gnar then casts Grab n' Throw on his 70-mana bar at an assumed Fighter's 10 mana per attack (he is a Specialist, so the engine gives him none), and throws the last dummy left off the board. ADPerRage is not in the ability text and is ignored, as are movement and his Elderwood/Sprykin traits."
+  },
+  "TFT18_Gromp": {
+   "note": "Adds the attack-damage form to the existing ability-power one, which is unchanged: a hit on the target and a splash on the dummies a hex away, the Purple Buff granting attack damage every five seconds instead of ability power. The slow does nothing here."
+  },
+  "TFT18_Hecarim": {
+   "note": "Each cast gives Resists armour and magic resist for three seconds (that duration is spelled out in Riot's text and has no curve row) with HealthCalc1 healed evenly across the window, and sends riders at the NumEnemies nearest dummies for MagicDamageCalc1 and a StunDuration stun. Spread out the riders only reach the dummy he is already on."
+  },
+  "TFT18_Ivern": {
+   "note": "ShieldCalc1 resolves to nothing, so the shield is the ShieldAmount row per 100 ability power, multiplied by the crit expectation with Precision; each of the NumAlliesToShield allies is counted through shield_ally and the damage lands on the dummies in reach. He is a Magic Caster, so he is ranked as a carry on damage — the allies' damage amp and the attack speed after six casts are ally buffs and are not simulated."
+  },
+  "TFT18_Kayle": {
+   "note": "Manaless: her attacks carry the ascension passives; wave damage needs other dummies in reach."
+  },
+  "TFT18_Kennen": {
+   "note": "The charge-up counts the dummies burning at the moment of the cast and its ability power applies to that cast only; then the shield, the rush damage, and the firestorm's total split evenly over the dummies the rush covered and spread over its duration."
+  },
+  "TFT18_KhaZix": {
+   "note": "Spread out, every dummy is isolated (the bigger hit and the mana refund); the Rival evolutions are not modeled."
+  },
+  "TFT18_Kobuko": {
+   "note": "Dance of Life's healing is paid out evenly over its duration, and the next attack is replaced by the bash — Riot's text says replaced, so the bash deals its magic damage instead of, not on top of, the swing. Nothing in the kit is left out."
+  },
+  "TFT18_KogMaw": {
+   "note": "Both Adaptor forms: the attack-damage form hits the target and the next nearest, with the bigger calc against anything below the health threshold; the ability-power form adds its damage over time over the APBonusDOTDuration row (3 s, present in the data's curve values). His base attack damage is a hand override, and Caustic's shred and sunder are the engine's on-hit effects."
+  },
+  "TFT18_Krug": {
+   "note": "Active: gains HealthCalc2 max health (stacking with every cast) and rolls the target for PhysicalDamageCalc1. On death two Kruglettes taunt as bodies with HealthCalc1 health and the Kruglette's own resists from the snapshot ('two' is the ability text's own count; the Summoner trait's extraSummons would add more), and with the Riftbeast Alpha Mark the Slate Buff counts one ally shield of TraitShieldHealth x his max health — the Kruglettes' own on-death shields are not counted."
+  },
+  "TFT18_Leona": {
+   "note": "The passive's bonus Armor and Magic Resist are applied in full at the opening bell and decayed linearly to zero over the decay duration, so the active — whose damage is a multiple of her current Armor — hits hardest early. The stun is modelled; the dummies' swings and casts inside it are credited as denied."
+  },
+  "TFT18_Lillia": {
+   "note": "Heals HealthCalc1 and sends NumEnemiesToFireAt butterflies for MagicDamageCalc1. Assumed: her own attacks wake the dummy she is on at once, so it takes WakeupDamage x max health instead of sleeping, while the other dummies sleep out the full SleepDuration and are never woken (nothing else is hitting them) — DamageNeededToAwaken is therefore never consulted."
+  },
+  "TFT18_Malphite": {
+   "note": "Shields ShieldCalc1 for ShieldDuration; the wave (MagicDamageCalc1, scaling with his armour and magic resist) fires only when the shield is fully absorbed, which against these dummies never happens inside the four seconds, so his damage is all basic attacks. 'Petrified' carries no numbers in the data and is left out."
+  },
+  "TFT18_MamaBeak": {
+   "note": "The beaks stand for GenericCalc1 seconds — a duration that scales with ability power in the data — and while they do, each attack of hers also lands all four beaks' damage on the same target as one hit, multiplied by Summoner's damageMult. The Orange Buff strips flat armor once per physical hit, hers plus each of the beaks'."
+  },
+  "TFT18_Maokai": {
+   "note": "A sapling for every DamageMitigatedPerSapling of damage his resists and durability shave off (the engine's mitigated total, which does not count shield absorption), each MagicDamageCalc1 at the nearest dummy, plus SaplingsOnDeath more the moment he falls; the cast is MagicDamageCalc2 on the target and a HealthCalc1 + ActiveMissingHealthHeal x missing health heal (HealthCalc2/3 resolve to nothing in the data, so the row is read directly). The 3-star big saplings on cast are not modelled."
+  },
+  "TFT18_MasterYi": {
+   "note": "Manaless: every third attack is a Double Strike that hits twice (\"every third\" is Riot's own text and has no curve row). The AD form banks stacking attack speed per Double Strike; the AP form adds bonus magic damage and heals for APForm_HealPercent of it. Note the engine gives an Adaptor's AP form the AutoAttackDamageAP row as base attack damage, which is 15 against the AD form's 65, so AP Yi's autos are small."
+  },
+  "TFT18_Morgana": {
+   "note": "Omnivamp from the first second; the blast curses the nearest three and the withering zone is a damage-over-time on everyone in reach for the same duration (its hex radius is not modeled — area abilities reach the clump). Each live curse adds flat magic damage to her attacks and to the blast, not to the zone's ticks, and curses stack across casts."
+  },
+  "TFT18_Murkwolf": {
+   "note": "Leaps to the lowest-health dummy, then empowered attacks that carry the EmpowerAspd attack-speed multiplier and bonus physical damage, with NumEmpoweredAttacksGainedOnKill more on every kill (an empowered attack on a dummy that dies to its own auto loses the bonus). Grey Buff (Riftbeast, Alpha Mark assumed) gives Precision and crit chance recomputed each tick from his missing health, capped at 100%."
+  },
+  "TFT18_Nidalee": {
+   "note": "Both Adaptor forms. Ability power: javelins replace the empowered attacks, every third thrown at the farthest dummy for the bigger calc (\"the 3rd attack\" is Riot's wording and has no row). Attack damage: the swipe ignores its share of the target's armor for that hit alone (added to armor_flat and taken straight back off), and every third cast heals — only counted, since nothing hits a carry — and adds a bonus read as ThirdAttackBonusDamageMissingHealth of the swipe scaled by the target's missing health before it. The cougar's leap on a target change is not modeled."
+  },
+  "TFT18_Ornn": {
+   "note": "Shield for its duration, then the cone over every dummy in reach (all three in the clump, only the target when spread). The Forge Power quest pays Artifact Anvils out of combat, so it is deliberately ignored."
+  },
+  "TFT18_Pebbles": {
+   "note": "The laser drains mana at the data's rate and ticks damage and flat magic-resist reduction; nothing attacks during it."
+  },
+  "TFT18_Rakan": {
+   "note": "Only the self shield is simulated. The decaying Attack Speed he hands the ally who has dealt the most damage has no ally to land on in this model, so it is dropped rather than counted — his cell is a pure shield-and-body tank."
+  },
+  "TFT18_Rammus": {
+   "note": "The taunt needs no modelling (the dummies have nobody else to attack); the cast shields ShieldCalc1 and buffs ArmorMR armour and magic resist for Duration, and PhysicalDamageCalc1 (scaling with the resists he holds at that instant) goes off only when the shield is fully absorbed, not when it expires. Against these dummies that almost never happens inside the four seconds, so his ability reads as mitigation rather than damage."
+  },
+  "TFT18_RekSai": {
+   "note": "The passive regenerates its health every tick of its own tick rate, tripled for the spell window after each cast; the active damages and stuns the adjacent dummies (all three clumped, only the target when spread) for the knock-up duration."
+  },
+  "TFT18_Rengar": {
+   "note": "Jumps to the dummy with the lowest health share, stabs, then heals on a straight line from the minimum to the maximum by that dummy's missing health measured after the stab. His Rival trait is not modeled."
+  },
+  "TFT18_Scuttlecrab": {
+   "note": "Attacks are the dance: full damage to every adjacent dummy, with on-hit item effects landing only on the one she is facing. The burrow grants its Durability for the duration plus the heal, the initial share up front and the rest over the burrow. The Riftbeast Green Buff heals allies below a health threshold and is not simulated; the burrow's gold is ignored."
+  },
+  "TFT18_Sejuani": {
+   "note": "Shield for its duration, then the cone and the line, each over every dummy in reach (all three in the clump, only the target when spread). Neither shape has a falloff row in the data, so both are applied at full value to everyone hit."
+  },
+  "TFT18_Sentinel": {
+   "note": "Shields ShieldCalc1 for ShieldDuration, then a fissure for MagicDamageCalc1 with a KnockupDuration knock-up and ManaReaveFlat mana stripped from every dummy hit. With the Riftbeast Alpha Mark the Blue Buff's TraitSelfManaRegen is added to his own regen; the allies' share of that regen is not simulated."
+  },
+  "TFT18_Sett": {
+   "note": "The first time he falls below ManaHPThreshold of his max health he gains ManaCalc1 mana; the cast takes HealDuration as its cast time, and the HealthCalc1 heal and the PhysicalDamageCalc1 cone both land at the start of that wind-up rather than being staggered across it."
+  },
+  "TFT18_Shen": {
+   "note": "Self shield and the ally shield (counted, not simulated), and his next few attacks come faster and carry bonus magic damage. The ally's copy of that same attack buff is not simulated."
+  },
+  "TFT18_Sivir": {
+   "note": "Bounces need a second dummy in reach, so spread out the blade only hits its target."
+  },
+  "TFT18_Taric": {
+   "note": "The first time he drops below PassivePercentHealthThreshold of his max health, ShieldCalc1 on himself for PassiveShieldDuration and the same amount counted as one ally shield; the cast heals HealthCalc1 and charges his next NumAttacks attacks with MagicDamageCalc1 bonus magic damage. The paired ally's half of the kit — their own trigger and their charged attacks — is not simulated, and the 3-star percent-health row has no ability text to hang it on."
+  },
+  "TFT18_Teemo": {
+   "note": "Two clusters over the nearest three, then the giant mushroom on the target; the \"2\" is Riot's own text and has no row of its own. Foraging (rerolls, tactician health, XP) is economy and is ignored."
+  },
+  "TFT18_Tristana": {
+   "note": "She keeps attacking through the cast; the explosion is split over the dummies in reach."
+  },
+  "TFT18_Varus": {
+   "note": "The two-second wind-up is taken from the unit data (SpellDuration)."
+  },
+  "TFT18_Veigar": {
+   "note": "The blast uses the low-health calc whenever the target stands below the HPThreshold share of its max health. Every kill of his — not only the blast's — adds the APOnKill row as flat ability power, reading the row as a share of the 100 ability power every unit starts with."
+  },
+  "TFT18_Vi": {
+   "note": "Every attack heals HealthCalc1 (2% of max health); the cast heals HealthCalc3 and then grants SpellAS attack speed (the row is a multiplier, 1.85 = +85%) and SpellDurability durability for SpellDuration. Unstoppable is ignored."
+  },
+  "TFT18_Warwick": {
+   "note": "The bite heals him for GenericCalc1 of the damage it actually lands (post-mitigation), and every cast adds the AttackSpeedBuff multiplier to his attack speed for the rest of the fight. His Blackthorn trait is not modeled."
+  },
+  "TFT18_Xayah": {
+   "note": "Feathers replace the next five attacks and still grant mana."
+  },
+  "TFT18_Yorick": {
+   "note": "The active heals him and strikes the target. On death the Spirit Walker is registered as a taunting body with the ghoul's health (multiplied by the Summoner trait's healthMult when the trait is active) and the summon's own Armor/MR — it soaks for the team, but bodies do not swing, so the Spirit Walker's attacks are not simulated."
+  },
+  "TFT18_Zyra": {
+   "note": "The plants spit at the nearest dummy for the data's number of attacks, one attack per second each — their attack speed is nowhere in the snapshot, so one a second is assumed. Summoner adds plants (ExtraSummons above its no-trait value of 1) and attacks; Thornmaiden's durability is the engine's."
+  }
  }
 }

@@ -105,6 +105,7 @@
     border-color: var(--baseline); font-weight: 600;
   }
   .seg button.cold { opacity: .5; }
+  .seg button .tag { color: var(--muted); margin-left: 5px; font-size: 10px; font-weight: 400; }
   .lane-tag { color: var(--text-secondary); }
   #jobs th, #jobs td, #services th, #services td { text-align: left; }
   #jobs td:nth-child(2), #services td:nth-child(2) { white-space: nowrap; }
@@ -281,7 +282,8 @@
 <section class="view" id="view-tft">
   <div class="card">
     <h2 id="tft-title">TFT — optimal items per unit, theoretical</h2>
-    <div class="hint" id="tft-note">First-principles mana-cycle simulation, no match data. The unit's attacks grant its role's mana, the ability casts when the bar fills, and damage goes through the set's armor and magic-resist formula with sunder, shred, expected-value crit, Precision and post-mitigation damage amp. Every 3-item combination of the craftable completed items is simulated against three stat dummies built from the set's own units at 2★ — two median tanks in front, a median non-tank behind — and ranked by the time to kill all three, then by damage dealt. <em>Spread</em> keeps the dummies out of each other's reach (area abilities hit one); <em>clump</em> puts them together. The trait context switches the unit's own modeled traits off, to their first breakpoint, or to their highest non-prismatic one. Unit numbers come from the set's data with the patch notes reconciled on top; ability shapes are short per-unit drivers. Click a build to see where its damage comes from.</div>
+    <div class="hint" id="tft-note">First-principles mana-cycle simulation, no match data. The unit's attacks grant its role's mana, the ability casts when the bar fills, and damage goes through the set's armor and magic-resist formula with sunder, shred, expected-value crit, Precision and post-mitigation damage amp. Every 3-item combination of the craftable completed items is simulated against three stat dummies built from the set's own units at 2★ — two median tanks in front, a median non-tank behind. What a unit is scored on follows the role Riot gives it: <em>carries</em> (marksmen, casters, specialists) are ranked by the time to kill all three, then damage; <em>fighters</em> and assassins fight dummies that hit back with the set's median attacks and abilities, can die, and are ranked by kill time, then damage dealt before dying; <em>tanks</em> face the same pressure for up to a minute and are ranked by how long they hold the dummies (on-death bodies count), then damage. Shields, heals, durability and stuns therefore matter exactly where the role says they should. <em>Spread</em> keeps the dummies out of each other's reach (area abilities hit one); <em>clump</em> puts them together. The trait context switches the unit's own modeled traits off, to their first breakpoint, or to their highest non-prismatic one. Unit numbers come from the set's data with the patch notes reconciled on top; ability shapes are short per-unit drivers. Click a build to see where its damage comes from.</div>
+    <div class="seg" id="tft-class-seg"></div>
     <div class="seg" id="tft-unit-seg" style="margin-bottom:8px"></div>
     <div class="seg" id="tft-star-seg"></div>
     <div class="seg" id="tft-geo-seg"></div>
@@ -301,7 +303,7 @@
   </div>
   <div class="card">
     <h2 id="tpool-title">Item pool</h2>
-    <div class="hint" id="tpool-hint">Every ranked build is three of these, repeats allowed. Each item's plain stats always count; the tag says which passive the engine models, and a dimmed chip is stats only (its passive heals, shields or protects, which this fight never needs). Hover a chip for its stats.</div>
+    <div class="hint" id="tpool-hint">Every ranked build is three of these, repeats allowed. Each item's plain stats always count; the tag says which passive the engine models, and a dimmed chip is stats only. Defensive passives (shields, heals, durability, thorns) only do something for fighters and tanks, whose dummies hit back. Hover a chip for its stats.</div>
     <div class="chips" id="tpool-chips"></div>
     <div class="hint" id="tpool-note" style="margin-top:10px" hidden></div>
     <details id="tpool-excluded" style="margin-top:12px">
@@ -970,20 +972,40 @@ async function openBuilds() {
 // scenario (star, geometry, trait context), a status endpoint saying which
 // exist, a breakdown card for the selected build.
 const TSRC_COLOR = { auto: "--s3", ability: "--s1", burn: "--s8", bleed: "--s6",
-                     solar: "--s5", trail: "--s2" };
+                     solar: "--s5", trail: "--s2", thorns: "--s7", "ionic spark": "--s4" };
 const tstate = { meta: null, unit: null, star: 2, geo: "clump", traits: "bare",
-                 data: null, sel: 0, status: null, req: 0, timer: null };
+                 data: null, sel: 0, status: null, req: 0, timer: null, cls: "all" };
+const TFT_CLASS = { all: "every unit", carry: "carries: marksmen, casters and specialists — the dummies never hit back",
+                    fighter: "fighters and assassins — the dummies hit back, ranked by kill time then damage before dying",
+                    tank: "tanks — the dummies hit back, ranked by how long the unit holds them" };
 const tkey = (o = {}) => `s${o.star ?? tstate.star}-${o.geo ?? tstate.geo}-${o.traits ?? tstate.traits}`;
 
 function tftSeg(id, opts, set) {
   document.getElementById(id).replaceChildren(...opts.map(o => {
     const btn = document.createElement("button");
     btn.textContent = o.label;
+    if (o.tag) {
+      const t = document.createElement("span");
+      t.className = "tag";
+      t.textContent = o.tag;
+      btn.append(t);
+    }
     btn.dataset.key = o.key;
     if (o.title) btn.title = o.title;
     btn.addEventListener("click", () => { set(o.key); loadTftScenario(); });
     return btn;
   }));
+}
+
+function renderTftUnits() {
+  const m = tstate.meta;
+  const units = m.units.filter(u => tstate.cls === "all" || u.objective === tstate.cls);
+  if (!units.some(u => u.slug === tstate.unit)) tstate.unit = units[0]?.slug;
+  tftSeg("tft-unit-seg", units.map(u => ({
+    key: u.slug, label: `${u.name} (${u.cost})`, tag: u.role,
+    title: `${u.cost}-cost ${u.role} → ${u.objective} fight · ${u.traits.join(", ")} · ${u.ability}` +
+           (u.forms.length ? ` · forms ${u.forms.join("/")}` : "") + (u.note ? ` — ${u.note}` : "") })),
+    k => { tstate.unit = k; renderTftPool(); });
 }
 
 async function loadTftMeta() {
@@ -997,11 +1019,14 @@ async function loadTftMeta() {
     return false;
   }
   const m = tstate.meta;
-  if (!m.units.some(u => u.slug === tstate.unit)) tstate.unit = m.units[0]?.slug;
-  tftSeg("tft-unit-seg", m.units.map(u => ({
-    key: u.slug, label: `${u.name} ${"★".repeat(0)}(${u.cost})`,
-    title: `${u.cost}-cost ${u.role} · ${u.traits.join(", ")} · ${u.ability}` })),
-    k => { tstate.unit = k; renderTftPool(); });
+  const cur = m.units.find(u => u.slug === tstate.unit);
+  if (cur && tstate.cls !== "all" && cur.objective !== tstate.cls) tstate.cls = cur.objective;
+  const counts = {};
+  m.units.forEach(u => { counts[u.objective] = (counts[u.objective] || 0) + 1; });
+  tftSeg("tft-class-seg", Object.keys(TFT_CLASS).map(k => ({
+    key: k, label: k === "all" ? `all (${m.units.length})` : `${k} (${counts[k] || 0})`, title: TFT_CLASS[k] })),
+    k => { tstate.cls = k; renderTftUnits(); renderTftPool(); });
+  renderTftUnits();
   tftSeg("tft-star-seg", m.stars.map(s => ({ key: String(s), label: `${s}★` })),
     k => { tstate.star = +k; });
   tftSeg("tft-geo-seg", Object.entries(m.geometries).map(([k, v]) => ({ key: k, label: k, title: v })),
@@ -1015,7 +1040,8 @@ async function loadTftMeta() {
 const STAT_LABEL = { adPct: v => `+${Math.round(v * 100)}% AD`, ap: v => `+${Math.round(v)} AP`,
                      asPct: v => `+${Math.round(v * 100)}% AS`, crit: v => `+${Math.round(v * 100)}% crit`,
                      amp: v => `+${Math.round(v * 100)}% damage amp`, hp: v => `+${fmtInt(v)} HP`,
-                     armor: v => `+${v} armor`, mr: v => `+${v} MR`, manaRegen: v => `+${v} mana/s` };
+                     armor: v => `+${v} armor`, mr: v => `+${v} MR`, manaRegen: v => `+${v} mana/s`,
+                     omnivamp: v => `+${Math.round(v * 100)}% omnivamp`, durability: v => `+${Math.round(v * 100)}% durability` };
 
 function renderTftPool() {
   const m = tstate.meta;
@@ -1084,6 +1110,7 @@ async function loadTftScenario() {
   }
   const active = (id, key) => document.querySelectorAll(`#${id} button`).forEach(b =>
     b.classList.toggle("active", b.dataset.key === key));
+  active("tft-class-seg", tstate.cls);
   active("tft-unit-seg", tstate.unit);
   active("tft-star-seg", String(tstate.star));
   active("tft-geo-seg", tstate.geo);
@@ -1123,9 +1150,14 @@ async function loadTftScenario() {
     : "none";
   const unmodeled = sc.traitsUnmodeled.length ? ` · not modeled: ${sc.traitsUnmodeled.join(", ")}` : "";
   const notes = (sc.notes || []).length ? ` · ${sc.notes.join("; ")}` : "";
+  const objective = (tstate.meta.objectives || {})[d.objective] || d.objective;
+  const pressure = d.pressured
+    ? ` · they hit back: ` + dm.slots.map(s => `${s.ad} AD at ${s.as}/s + ${fmtInt(s.ability)} per cast (${Math.round(s.physicalShare * 100)}% physical, ${s.manaStart}/${s.manaMax} mana +${s.manaPerAttack}/attack${s.manaFromDamage ? " and from damage taken" : ""})`).join("; ") +
+      ` — about ${fmtInt(dm.pressureDps)} pre-mitigation DPS`
+    : "";
   desc.textContent =
-    `${d.unitName} (${d.cost}-cost ${d.role}) at ${sc.star}★ · ${sc.duration}s fight vs ${dm.count} dummies: ${slots}` +
-    ` — the median ${dm.star}★ units of the set · ${sc.geometry}: ${tstate.meta.geometries[sc.geometry]}` +
+    `${d.unitName} (${d.cost}-cost ${d.role} → ${d.objective}: ${objective}) at ${sc.star}★ · up to ${sc.duration}s vs ${dm.count} dummies: ${slots}` +
+    ` — the median ${dm.star}★ units of the set${pressure} · ${sc.geometry}: ${tstate.meta.geometries[sc.geometry]}` +
     ` · traits active: ${traits}${unmodeled}${notes}` +
     ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
     (when ? ` · computed ${when} in ${d.computeSeconds}s` : "") +
@@ -1152,24 +1184,50 @@ async function showTftPending(req) {
 }
 
 function tftColumns() {
-  return [
-    { th: "#", td: r => cell(String(r.rank)) },
-    { th: "Items", td: r => cell(r.items.join(", ")) },
-    { th: "Kill time", title: "Time until all three dummies are dead; survivors are ranked by damage dealt",
-      td: r => {
-        const td = cell(r.killTime != null ? r.killTime.toFixed(2) + "s" : "survive");
-        if (r.killTime == null) td.title = `${r.left.map(fmtInt).join(" / ")} HP left`;
-        return td;
-      } },
-    { th: "DPS", td: r => cell(fmtInt(r.dps)) },
-    { th: "Damage", td: r => cell(fmtInt(r.total)) },
-    { th: "Casts", td: r => cell(String(r.casts)) },
-    { th: "Attacks", td: r => cell(String(r.attacks)) },
+  const d = tstate.data, objective = d.objective || "carry";
+  const items = { th: "Items", td: r => cell(r.items.join(", ") + (r.form ? ` [${r.form}]` : "")) };
+  const kill = { th: "Kill time", title: "Time until all three dummies are dead; the rest are ranked by damage dealt",
+    td: r => {
+      const td = cell(r.killTime != null ? r.killTime.toFixed(2) + "s" : (r.died ? "died" : "survive"));
+      if (r.killTime == null) td.title = `${r.left.map(fmtInt).join(" / ")} HP left on the dummies`;
+      return td;
+    } };
+  const held = { th: objective === "tank" ? "Held" : "Alive", title: objective === "tank"
+      ? "How long the unit (or its on-death body) kept the dummies busy — the primary ranking for tanks"
+      : "How long the unit lived under the dummies' attacks",
+    td: r => {
+      const td = cell(r.died ? `${r.diedAt.toFixed(1)}s ✝` + (r.aliveTime > r.diedAt ? ` (held ${r.aliveTime.toFixed(1)}s)` : "")
+                             : `${r.aliveTime.toFixed(0)}s`);
+      td.title = r.died ? `died at ${r.diedAt}s` : `alive with ${fmtInt(r.hpLeft)} HP`;
+      return td;
+    } };
+  const dmg = { th: "Damage", td: r => cell(fmtInt(r.total)) };
+  const dps = { th: "DPS", td: r => cell(fmtInt(r.dps)) };
+  const stats = [
     { th: "AD", td: r => cell(fmtInt(r.ad)) },
     { th: "AP", td: r => cell(fmtInt(r.ap)) },
     { th: "AS", td: r => cell(r.attackSpeed.toFixed(2)) },
     { th: "Crit", td: r => cell(r.crit + "%" + (r.precision ? " ✦" : "")) },
   ];
+  const body = [
+    { th: "HP", title: "Max health with items and traits", td: r => cell(fmtInt(r.hp)) },
+    { th: "Armor/MR", td: r => cell(`${fmtInt(r.armor)}/${fmtInt(r.mr)}`) },
+    { th: "Dur", title: "Durability: post-mitigation damage prevented", td: r => cell(r.durability ? r.durability + "%" : "–") },
+  ];
+  const soak = [
+    { th: "Absorbed", title: "Pre-mitigation damage the unit (and its body) took", td: r => cell(fmtInt(r.absorbed)) },
+    { th: "Healed", td: r => cell(fmtInt(r.healed)) },
+    { th: "Shielded", title: "Damage that landed on shields", td: r => cell(fmtInt(r.shielded)) },
+    { th: "Denied", title: "Damage the dummies could not land while stunned or the unit was untargetable",
+      td: r => cell(fmtInt(r.denied)) },
+  ];
+  const ally = { th: "Allies", title: "Healing and shielding given to allies (counted, not simulated)",
+    td: r => cell((r.allyHeal || r.allyShield) ? `${fmtInt(r.allyHeal)} / ${fmtInt(r.allyShield)}` : "–") };
+  const rank = { th: "#", td: r => cell(String(r.rank)) };
+  const counts = [{ th: "Casts", td: r => cell(String(r.casts)) }, { th: "Attacks", td: r => cell(String(r.attacks)) }];
+  if (objective === "tank") return [rank, items, held, dmg, ...soak, ally, ...body, ...counts, ...stats];
+  if (objective === "fighter") return [rank, items, kill, dmg, dps, held, ...soak.slice(0, 3), ...body, ...counts, ...stats];
+  return [rank, items, kill, dps, dmg, ...counts, ...stats];
 }
 
 function renderTftTable() {
@@ -1200,11 +1258,19 @@ function renderTftBreakdown(r) {
   document.getElementById("tbd-title").textContent =
     `Damage breakdown — #${r.rank}: ${r.items.join(", ")}`;
   const fight = r.killTime != null ? `all three dead at ${r.killTime.toFixed(2)}s`
-                                   : `survive with ${r.left.map(fmtInt).join(" / ")} HP left`;
+                                   : `the dummies survive with ${r.left.map(fmtInt).join(" / ")} HP left`;
+  const body = r.aliveTime == null ? "" :
+    ` · ${r.died ? `died at ${r.diedAt}s` : `alive with ${fmtInt(r.hpLeft)} of ${fmtInt(r.hp)} HP`}` +
+    (r.died && r.aliveTime > r.diedAt ? `, its body held on until ${r.aliveTime}s` : "") +
+    ` · took ${fmtInt(r.absorbed)} pre-mitigation (${fmtInt(r.taken)} through ${fmtInt(r.armor)} armor / ${fmtInt(r.mr)} MR` +
+    (r.durability ? ` / ${r.durability}% durability` : "") + `), ${fmtInt(r.shielded)} on shields, healed ${fmtInt(r.healed)}` +
+    (r.denied ? `, denied ${fmtInt(r.denied)} (${r.ccTime}s of stuns)` : "") +
+    (r.allyHeal || r.allyShield ? `, allies healed ${fmtInt(r.allyHeal)} / shielded ${fmtInt(r.allyShield)}` : "");
   document.getElementById("tbd-hint").textContent =
     `${fmtInt(r.ad)} AD · ${fmtInt(r.ap)} AP · ${r.attackSpeed} attack speed · ${r.crit}% crit` +
-    (r.precision ? " with Precision" : "") + ` · ${fmtInt(r.total)} damage · ${fmtInt(r.dps)} DPS · ` +
-    `${r.attacks} attacks · ${r.casts} casts · ${fight}`;
+    (r.precision ? " with Precision" : "") + (r.form ? ` · ${r.form} form` : "") +
+    ` · ${fmtInt(r.total)} damage · ${fmtInt(r.dps)} DPS · ` +
+    `${r.attacks} attacks · ${r.casts} casts · ${fight}${body}`;
   const entries = Object.entries(r.breakdown);
   const max = Math.max(...entries.map(([, x]) => x));
   document.getElementById("tbd-bars").replaceChildren(...entries.map(([src, dmg], i) => {

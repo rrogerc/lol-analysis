@@ -76,27 +76,68 @@
 
 ## The TFT tab (tft.py, tft_kits.py, data/tft/)
 
-- Purely theoretical, no match data (Roger's call 2026-09-04): a carry's
+- Purely theoretical, no match data (Roger's call 2026-09-04): one unit's
   mana-cycle fight against three stat dummies derived from the set's own
   units at 2★ (two median tanks, then a median non-tank), every 3-item
-  multiset of the 35 craftable completed items, ranked by time to kill all
-  three then damage. Twelve cells per unit: 2★/3★ × spread/clump × traits
-  bare/low/high. Pure Python; a fight is ~0.25 ms, a cell ~0.5 s on the
-  16 threads, the whole warm a couple of minutes. Cache `.cache/tft/`,
-  keyed by tft.py + tft_kits.py + the snapshot + the hand files; serve
-  auto-warms it like builds (log `.cache/tft/warm.log`).
+  multiset of the 35 craftable completed items. Every shop unit of the set
+  is modeled (65 in Set 18). Twelve cells per unit: 2★/3★ × spread/clump ×
+  traits bare/low/high. Pure Python; a carry fight is ~0.3 ms, a fight
+  where the dummies hit back ~0.5–1.5 ms, a cell 0.3–3 s on the 16
+  threads, the whole warm (780 cells) about eleven minutes (measured
+  2026-09-04; a `lol.py tft warm` chunked by a 10-minute timeout resumes
+  where it stopped). Cache `.cache/tft/`, keyed by
+  tft.py + tft_kits.py + the snapshot + the hand files; serve auto-warms
+  it like builds (log `.cache/tft/warm.log`).
+- WHAT A UNIT IS SCORED ON FOLLOWS RIOT'S ROLE LABEL (2026-09-05): the
+  data's `role` ("Attack Caster", "Magic Tank", …; `roleData` is the
+  authoritative tag list — the per-unit `roleTags` are inconsistent, Akali
+  lacks Role.Attack and Rengar's tags contradict his role) gives
+  `unit["kind"]` and `unit["objective"]` via `OBJECTIVE_BY_KIND`:
+  Marksman/Caster/Specialist → "carry" (dummies never hit back; ranked by
+  kill time, then damage), Fighter/Assassin → "fighter" (the dummies hit
+  back, the unit can die; ranked by kill time, then damage dealt before
+  dying, 20 s), Tank → "tank" (same pressure, up to `TANK_DURATION` 60 s;
+  ranked by how long the unit holds the dummies — an on-death body such
+  as Yorick's spirit counts — then damage). A unit's `recommendedItems`
+  role wins when it names another role (Master Yi and Gnar itemize as
+  Fighters, Caitlyn as a Marksman). The role also sets mana per attack
+  (10 / caster 7 + 2 regen / tank 5, plus tank mana from damage taken:
+  1% pre + 3% post-mitigation, 42.5 cap — the community formula, Riot
+  publishes none), the fighter attack speed by stage and the assassin's
+  15% off-target reduction (both from Riot's role text).
+- The pressure: in fighter and tank fights each dummy attacks with its
+  group's median attack damage and speed (from one period in), gains mana
+  per attack like a unit (tank dummies also from damage taken) and casts
+  its group's median ability number, split physical/magic by the group's
+  share of Attack-type roles; a stun or untargetability denies those
+  swings and the amount is credited as `denied`. The unit's body: resists,
+  Bramble's attack reduction, durability (sources multiply: 20% and 15%
+  make 32% — the wiki says it is not additive, nobody publishes the
+  formula), shields (oldest first), health, omnivamp, heals; every
+  defensive item and trait passive is in the hand files. Carries are
+  never hit, so those passives are inert for them by design.
+- Adaptor units carry both forms (`unit["forms"]` from the file's
+  `extraAbilities`); `adaptor_form` picks AD when the build's bonus AD
+  fraction beats its bonus AP per 100 (ties → the role's damage type),
+  the trait bonus follows, and the form's stats/calcs/rows replace the
+  base ones (`Sheet`). Riot never documents the actual rule.
 - Numbers are data, mechanics are code. `lol.py tft fetch` archives
   MetaTFT's public lookup JSON (the only machine-readable source of the
   current set's ability numbers — Community Dragon lost them when Set 18
-  moved to curve tables), the cdragon character-bin timings and the
-  patch's "old ⇒ new" lines under `data/tft/set<N>/<patch>/`. The MetaTFT
-  file can be a pre-launch PBE build (its `_metadata.patch` says so), so
-  ALWAYS run `lol.py tft check` after a fetch: it matches the notes to
-  curve rows and base stats, prints an `overrides.json` snippet for
-  anything stale, and exits 2 while anything is. The patch directory's
-  own `overrides.json` carries those corrections with their source (per
-  patch, so a new patch starts clean); a curve override lists per-star
-  values from 1★ (a shorter list leaves higher stars alone).
+  moved to curve tables; cdragon's `cdragon/tft/en_us.json` still has base
+  stats and settled Fiddlesticks/Ivern's health and Kog'Maw's attack
+  damage, which the PBE file lacks — those are overrides with that
+  source), the cdragon character-bin timings and the patch's "old ⇒ new"
+  lines under `data/tft/set<N>/<patch>/`. The MetaTFT file can be a
+  pre-launch PBE build (its `_metadata.patch` says so), so ALWAYS run
+  `lol.py tft check` after a fetch: it matches the notes to curve rows and
+  base stats, prints an `overrides.json` snippet for anything stale, and
+  exits 2 while anything is. The patch directory's own `overrides.json`
+  carries those corrections with their source (per patch, so a new patch
+  starts clean); a curve override lists per-star values from 1★ (a
+  shorter list leaves higher stars alone); `stats` overrides fill missing
+  base stats. Shop units are the file's `shopUnit` flag (cost and traits
+  alone would count Elise's spider form twice).
 - Automated like the item snapshot: `jobs/refresh-tft.sh` (daily 07:41,
   nix user timer `lol-tft-refresh`, declared next to `lol-items-refresh`
   in the dotfiles nix config) refetches the current patch, commits and
@@ -104,27 +145,44 @@
   "failed (exit 2)" in the Automation panel means stale numbers waiting
   for an overrides.json edit, not a broken job.
 - Hand files under `data/tft/set<N>/` reference the data's own rows and
-  never write numbers: `item-effects.json` (which passives the engine
-  models, and `excluded`), `trait-effects.json` (per-breakpoint trait
-  bonuses), `kits.json` (dashboard notes). Item plain stats come from the
-  stat line automatically (`parse_stat_line`, keyed by the icon).
-- `tft_kits.py` is one short driver class per unit (22 carries of Set 18):
-  the ability's shape only, reading `f.calc(...)` and `f.row(...)`. Add a
-  unit = a driver + a `DRIVERS` entry (+ trait-effects entries if its
-  traits are new). A new set = new drivers, new hand files, `DEFAULT_SET`.
+  never write numbers (the two literals, Dragon's Claw's "every 2
+  seconds" and Hecarim's "3 seconds", are in Riot's text with no row):
+  `item-effects.json` (which passives the engine models, and `excluded`),
+  `trait-effects.json` (per-breakpoint trait bonuses), `kits.json`
+  (dashboard notes per unit: what each driver assumes). Item plain stats,
+  omnivamp and durability included, come from the stat line automatically
+  (`parse_stat_line`, keyed by the icon).
+- `tft_kits.py` is one short driver class per unit (the module docstring
+  lists every hook and helper): the ability's shape only, reading
+  `f.calc(...)` and `f.row(...)`; shields/heals/stuns/bodies go through
+  `f.shield`, `f.heal`, `f.stun`, `f.add_body`; ally effects are only
+  counted (`f.heal_ally`, `f.shield_ally`). Riftbeast units apply their
+  named buff when `f.fx.riftbeast`. Add a unit = a driver + a `DRIVERS`
+  entry (+ trait-effects entries if its traits are new). A new set = new
+  drivers, new hand files, `DEFAULT_SET`.
 - Assumptions to remember (all in tft.py constants or noted in the UI):
   AD ×1.5 and HP ×1.8 per star, 1 s mana lock from a cast, curve rows
-  hold the previous star's value, fighters' role attack speed at stage 4,
-  damage amp additive and post-mitigation, negative resists floored at 0,
-  Blossom/Elderwood "high" stops below the 11-unit prismatic tier, Fae
-  pixies 3 and 7, the Riftbeast Alpha Mark on the unit, Primal = Tiger.
-  Tanks, healers and buffers are not modeled yet (no driver).
+  hold the previous star's value, fighters' role attack speed at stage 4
+  (Riot's 15.4 curve: stage 2–6 = 5/10/20/30/30%), damage amp additive
+  and post-mitigation, negative resists floored at 0, Blossom/Elderwood
+  "high" stops below the 11-unit prismatic tier, Fae pixies 3 and 7, the
+  Riftbeast Alpha Mark on the unit, Primal = Tiger, Zyra's plants attack
+  once a second, Mega Gnar casts on 10 mana per attack. Traits that are
+  economy or need a specific board (Coven, Elderwood, Sprykin, Blackthorn,
+  Emerald Aspect, Old Growth, Greenfather, Rival, Attuned, Bounty Seeker,
+  Avatar, Apex Predator) are reported as unmodeled.
 - Per patch, by hand if the job hasn't: `lol.py tft fetch` → `tft check`
   → edit that patch's overrides.json → commit (the reload unit restarts
-  serve, which warms). Tests: `python3 -m unittest test_tft` (~0.1 s,
-  reads the committed snapshot).
+  serve, which warms). Tests: `python3 -m unittest test_tft` (~1 s,
+  reads the committed snapshot; every driver runs through every scenario
+  with damage and tank items).
+- The AttackDamage calc convention was wrong in the first version and is
+  fixed (2026-09-04): a coefficient is the damage at the unit's base
+  attack damage for that star (the rows grow ×1.5 per star like base AD;
+  Warwick's 200/300/450 bite is 500% AD throughout), not a percentage
+  over 100 — the old reading made every AD ability 1.3–2.5× too weak.
 
 ## Tests
 
 - `python3 -m unittest test_builds` (needs the built engine; ~2 s).
-- `python3 -m unittest test_tft` (~0.1 s).
+- `python3 -m unittest test_tft` (~1 s).

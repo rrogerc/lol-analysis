@@ -240,7 +240,8 @@ def main():
         sp.add_argument("--star", type=int, default=2, choices=(1, 2, 3, 4))
         sp.add_argument("--geometry", default="clump", choices=list(tft.GEOMETRIES))
         sp.add_argument("--traits", default="bare", choices=list(tft.TRAIT_CONTEXTS))
-        sp.add_argument("--duration", type=float, default=tft.FIGHT_DURATION)
+        sp.add_argument("--duration", type=float, default=None,
+                        help="fight length in seconds (default: 20, tanks 60)")
         tft_args(sp)
 
     sp = tfsub.add_parser("sim", help="simulate one build against the dummies")
