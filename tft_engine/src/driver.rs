@@ -15,10 +15,9 @@ use crate::kit::Kit;
 use crate::spec::UnitSpec;
 
 pub trait Driver: Clone + Sized + Send {
-    /// The Python driver class's name, as the cell payload reports it.
+    /// The Python driver class's name, as the cell payload reports it and
+    /// `with_driver!` dispatches on it.
     const NAME: &'static str;
-    /// False for a placeholder whose port is still to come.
-    const PORTED: bool = true;
     /// A channel whose driver spreads its effect over the cast itself
     /// (through `tick` and `f.after`): `cast` runs when the cast starts.
     const LANDS_AT_START: bool = false;
@@ -57,18 +56,5 @@ impl Driver for Plain {
 
     fn new(_kit: &Kit, _unit: &UnitSpec) -> Self {
         Plain
-    }
-}
-
-/// A driver whose port is still to come: dispatch refuses it.
-#[derive(Clone, Debug, Default)]
-pub struct Unported;
-
-impl Driver for Unported {
-    const NAME: &'static str = "Unported";
-    const PORTED: bool = false;
-
-    fn new(_kit: &Kit, _unit: &UnitSpec) -> Self {
-        Unported
     }
 }

@@ -238,6 +238,7 @@ pub struct Summoner {
 /// One trait at one breakpoint, resolved (tft.trait_spec).
 #[derive(Clone, Debug, Default)]
 pub struct TraitFx {
+    #[allow(dead_code)]
     pub api: String,
     pub name: String,
     pub stats: Vec<(StatKey, f64)>,

@@ -35,8 +35,9 @@
   child turns auto-warm off until serve restarts.
 - The numbers come from the compiled engine in `engine/` (Rust, PyO3),
   imported as `lol_engine` from `lol_engine.abi3.so` at the repo root
-  (gitignored). Build it with `jobs/build-engine.sh`: it uses `cargo` if
-  present, else `nix-shell -p cargo rustc`; ~15 s cold, ~3 s warm. Without
+  (gitignored). Build it with `jobs/build-engine.sh` (both engines; `builds`
+  or `tft` for one): it uses `cargo` if present, else `nix-shell -p cargo
+  rustc`; ~15 s cold, ~3 s warm. Without
   it `import builds` fails with a message saying so. The warm runs on the
   unit's CPython; PyPy is no longer involved (`warm_python()` only honours
   `$LOL_WARM_PYTHON`).
@@ -74,7 +75,7 @@
   `mul_add`; floating point has to stay operation-for-operation what the
   Python engine did.
 
-## The TFT tab (tft.py, tft_kits.py, data/tft/)
+## The TFT tab (tft.py, tft_engine/, data/tft/)
 
 - Purely theoretical, no match data (Roger's call 2026-09-04): one unit's
   mana-cycle fight against three stat dummies derived from the set's own
@@ -85,13 +86,54 @@
   build question — Roger's call 2026-09-05; `STARS_BY_COST`,
   `unit_scenarios`) × spread/clump × traits bare/low/high: 18 cells for a
   1–3 cost, 12 for a 4–5 cost, 1,026 in all, and the dashboard's star
-  buttons follow the unit. Pure Python; a carry fight is ~0.3 ms, a fight
-  where the dummies hit back ~0.5–1.5 ms, a cell 0.3–3 s on the 16
-  threads, the whole warm about thirteen minutes (1,026 cells, measured
-  2026-09-05; a `lol.py tft warm` chunked by a 10-minute timeout resumes
-  where it stopped). Cache `.cache/tft/`, keyed by
-  tft.py + tft_kits.py + the snapshot + the hand files; serve auto-warms
-  it like builds (log `.cache/tft/warm.log`).
+  buttons follow the unit. The fights run in the compiled engine
+  `tft_engine/` (Rust, PyO3, imported as `lol_tft` from `lol_tft.abi3.so`
+  at the repo root; `jobs/build-engine.sh tft` builds it, `jobs/build-engine.sh`
+  both engines): a cell of 7,770 builds takes 10–20 ms on the 16 threads
+  and the whole warm about 19 s wall (1,026 cells, measured 2026-09-05; the
+  pure-Python engine took 13 minutes, 0.3–3 s a cell). Cache `.cache/tft/`,
+  keyed by tft.py + `lol_tft.SOURCE_HASH` (a sha256 of tft_engine/src
+  stamped by build.rs) + the snapshot + the hand files, so an edit to
+  either recomputes everything; serve auto-warms it like builds (log
+  `.cache/tft/warm.log`). Editing `tft_engine/src` without rebuilding
+  makes `source_stale()` true; run the build script, then restart serve
+  (commit, or `sudo systemctl restart lol-dashboard`). Without the .so,
+  `tft fetch`/`check`/`status` still work; a fight raises with the build
+  command.
+- THE ENGINE IS A PORT OF THE PYTHON ENGINE AND STAYS BIT-IDENTICAL TO IT
+  (2026-09-05): `data/tft/golden/` pins the pre-Rust engine's output
+  (fights.json: 4,446 fights, cells.json: the top 20 rows of every cell)
+  and `test_tft.TestGolden` replays every fight plus a sample of cells
+  (`TFT_GOLDEN_ALL=1` for all 1,026; `jobs/tft_compare.py` prints per-unit
+  detail). A deliberate model change regenerates the fixtures with
+  `jobs/gen_tft_golden.py` from a warm cache in the same commit. The port
+  keeps every float operation in Python's order: `pyf.rs` has Python's
+  `max`/`min` (first wins ties), banker's `round`, truncating `int` and
+  `pysum` — CPython ≥ 3.12 adds floats with Neumaier compensation, so a
+  running total is off by an ulp (Azir with two Striker's Flails caught
+  it); no `powi`, no `mul_add`, no fast-math; Python passes star-scaled
+  health and attack damage. Python resolves every number into a cell spec
+  (`kit_spec`: rows at the star, calc terms with the star's coefficient;
+  `item_spec`: the stat line as ordered pairs plus the passive with the
+  range/role gates applied; `trait_spec`; `cell_spec` with the dummies,
+  role, traits and pool) and Rust composes them per build in apply_item's
+  order. The opening sheet a row reports carries crit, precision, omnivamp
+  and mana as they stand after the fight (what the Python `_sim_task` read
+  off the sheet), the rest from before it.
+- The engine's shape (`tft_engine/src`): `fight.rs` is tft.Fight/Sheet/
+  Dummy (the driver-facing API is its module doc), `fx.rs` Fx +
+  apply_item/apply_trait/build_fx, `kit.rs` calc_value, `enumerate.rs` the
+  per-cell enumeration on std threads with the GIL released (results by
+  build index, ranking = rank_key + the api-name tuple tie-break),
+  `driver.rs` the Driver trait, `drivers/` one file per slice. A `Fight<D>`
+  is generic over the driver; hooks are associated fns taking the whole
+  fight with the driver's state at `f.drv`; rows and calcs are ids resolved
+  once in `D::new(&Kit)` (one instance per form's kit, cloned per fight);
+  targets are indices, `f.after(delay, tag)` queues `D::event`; shields
+  are never removed (a dead flag) so Rammus/Malphite can watch one; a
+  dummy's `mark`/`mark_times` replace Python's `d.marks`. `lol.py tft sim
+  --trace` prints the fight's event timeline (the tests read the same
+  trace and the end-of-fight `probe`).
 - WHAT A UNIT IS SCORED ON FOLLOWS RIOT'S ROLE LABEL (2026-09-05): the
   data's `role` ("Attack Caster", "Magic Tank", …; `roleData` is the
   authoritative tag list — the per-unit `roleTags` are inconsistent, Akali
@@ -156,14 +198,17 @@
   (dashboard notes per unit: what each driver assumes). Item plain stats,
   omnivamp and durability included, come from the stat line automatically
   (`parse_stat_line`, keyed by the icon).
-- `tft_kits.py` is one short driver class per unit (the module docstring
-  lists every hook and helper): the ability's shape only, reading
-  `f.calc(...)` and `f.row(...)`; shields/heals/stuns/bodies go through
+- A driver is one short Rust struct per unit in `tft_engine/src/drivers/`
+  (`driver.rs` lists the hooks, `fight.rs`'s module doc the helpers,
+  `drivers/a.rs` one of every pattern): the ability's shape only, reading
+  `f.calc(id)` and `f.row(id)`; shields/heals/stuns/bodies go through
   `f.shield`, `f.heal`, `f.stun`, `f.add_body`; ally effects are only
   counted (`f.heal_ally`, `f.shield_ally`). Riftbeast units apply their
-  named buff when `f.fx.riftbeast`. Add a unit = a driver + a `DRIVERS`
-  entry (+ trait-effects entries if its traits are new). A new set = new
-  drivers, new hand files, `DEFAULT_SET`.
+  named buff when `f.fx.riftbeast`. Add a unit = a struct + a `DRIVERS`
+  entry, a `NAMES` entry and a `with_driver!` arm in `drivers/mod.rs`
+  (+ trait-effects entries if its traits are new), then the build script.
+  A new set = new drivers, new hand files, `DEFAULT_SET`. Python only
+  knows the drivers through `lol_tft.DRIVERS` (api name → driver name).
 - Assumptions to remember (all in tft.py constants or noted in the UI):
   AD ×1.5 and HP ×1.8 per star, a 1 s mana lock after a cast (the wiki's
   "can't accumulate mana for the second thereafter" — it blocks attack
@@ -185,9 +230,11 @@
   Avatar, Apex Predator) are reported as unmodeled.
 - Per patch, by hand if the job hasn't: `lol.py tft fetch` → `tft check`
   → edit that patch's overrides.json → commit (the reload unit restarts
-  serve, which warms). Tests: `python3 -m unittest test_tft` (~1 s,
-  reads the committed snapshot; every driver runs through every scenario
-  with damage and tank items).
+  serve, which warms). Tests: `python3 -m unittest test_tft` (~2 s, needs
+  the built engine, reads the committed snapshot; every driver runs
+  through every scenario with damage and tank items, and the golden
+  fights replay); `cargo test --no-default-features` in tft_engine/ for
+  the Rust-side unit tests (pyf's Python semantics).
 - The AttackDamage calc convention was wrong in the first version and is
   fixed (2026-09-04): a coefficient is the damage at the unit's base
   attack damage for that star (the rows grow ×1.5 per star like base AD;
@@ -226,4 +273,5 @@
 ## Tests
 
 - `python3 -m unittest test_builds` (needs the built engine; ~2 s).
-- `python3 -m unittest test_tft` (~1 s).
+- `python3 -m unittest test_tft` (needs the built TFT engine; ~2 s;
+  `TFT_GOLDEN_ALL=1` recomputes every golden cell, ~30 s).

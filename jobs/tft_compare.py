@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Replay the golden fights (data/tft/golden/fights.json) on the compiled
-TFT engine and diff every number bit for bit against what the Python
-engine computed.
+TFT engine and diff every number bit for bit against what the pre-Rust
+Python engine computed (test_tft.TestGolden does the same; this prints
+per-unit detail).
 
     python3 jobs/tft_compare.py [--unit Ahri ...] [--driver Ahri ...] [--max-report N] [-v]
 
@@ -95,7 +96,7 @@ def main():
         unit = snap.units[api]
         stats = per_unit.setdefault(api, [0, 0])
         try:
-            sheet, res = tft.simulate_rs(snap, unit, case["star"], case["items"], case["geometry"],
+            sheet, res = tft.simulate(snap, unit, case["star"], case["items"], case["geometry"],
                                          [tuple(x) for x in case["ctxTraits"]], dummy, None,
                                          item_fx, trait_fx)
         except ValueError as e:

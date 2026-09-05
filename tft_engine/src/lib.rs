@@ -17,9 +17,9 @@ mod pyf;
 mod pyget;
 mod spec;
 
-use pyo3::exceptions::{PyKeyError, PyValueError};
+use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
-use pyo3::types::{PyAny, PyDict, PyList};
+use pyo3::types::{PyDict, PyList};
 
 use crate::driver::Driver;
 use crate::fight::{FightResult, Opening};
@@ -91,7 +91,7 @@ fn result_to_py<'py>(py: Python<'py>, r: &FightResult) -> PyResult<Bound<'py, Py
     if let Some(tr) = &r.trace {
         let evs = PyList::empty(py);
         for e in tr {
-            evs.append((e.t, e.kind, e.amount, e.target, e.src))?;
+            evs.append((e.t, e.kind, e.amount, e.target, e.src, e.hp))?;
         }
         d.set_item("trace", evs)?;
     }
@@ -178,11 +178,8 @@ fn run_cell<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, top: usize, workers
     let spec = CellSpec::from_py(spec)?;
     let name = spec.driver.clone();
     let (n, rows) = with_driver!(name.as_str(), D, {
-        if !D::PORTED {
-            Err(PyValueError::new_err(format!("driver {} is not ported yet", name)))
-        } else {
-            Ok(py.detach(|| enumerate::run_cell::<D>(&spec, top, workers)))
-        }
+        debug_assert_eq!(D::NAME, name);
+        Ok::<_, PyErr>(py.detach(|| enumerate::run_cell::<D>(&spec, top, workers)))
     })?;
     let out = PyList::empty(py);
     for row in &rows {
@@ -201,13 +198,10 @@ fn simulate<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, trace: bool)
     let spec = CellSpec::from_py(spec)?;
     let name = spec.driver.clone();
     let (o, r) = with_driver!(name.as_str(), D, {
-        if !D::PORTED {
-            Err(PyValueError::new_err(format!("driver {} is not ported yet", name)))
-        } else {
-            let drivers = enumerate::Drivers::<D>::new(&spec);
-            let items: Vec<&fx::ItemFx> = spec.items.iter().collect();
-            Ok(enumerate::run_fight::<D>(&spec, &drivers, &items, trace))
-        }
+        debug_assert_eq!(D::NAME, name);
+        let drivers = enumerate::Drivers::<D>::new(&spec);
+        let items: Vec<&fx::ItemFx> = spec.items.iter().collect();
+        Ok::<_, PyErr>(enumerate::run_fight::<D>(&spec, &drivers, &items, trace))
     })?;
     Ok((opening_to_py(py, &o)?, result_to_py(py, &r)?))
 }
@@ -259,6 +253,3 @@ fn lol_tft(m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-// Referenced for the docs of the driver-facing API.
-#[allow(dead_code)]
-fn _api_docs(_: &dyn Fn(&Bound<'_, PyAny>)) {}

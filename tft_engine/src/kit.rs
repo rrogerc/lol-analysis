@@ -13,8 +13,6 @@ use pyo3::types::PyDict;
 
 use crate::pyget::*;
 
-pub const AD_PER_STAR: f64 = 1.5;
-pub const HP_PER_STAR: f64 = 1.8;
 pub const BASE_AP: f64 = 100.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,20 +38,6 @@ impl DType {
             "true" => DType::True,
             _ => return Err(pyo3::exceptions::PyValueError::new_err(format!("damage type {s:?}"))),
         })
-    }
-}
-
-/// tft.calc_type: the damage type an ability calc's name implies.
-pub fn calc_type(name: &str) -> DType {
-    let n = name.rsplit('.').next().unwrap_or(name);
-    if n.starts_with("Physical") {
-        DType::Physical
-    } else if n.starts_with("Magic") {
-        DType::Magic
-    } else if n.starts_with("True") {
-        DType::True
-    } else {
-        DType::Magic
     }
 }
 
@@ -127,10 +111,12 @@ pub struct Calc {
     pub terms: Vec<Term>,
 }
 
-/// The base stats of the unit in this form (tft.Sheet's `stats`), with the
-/// star-scaled health and attack damage computed by Python so the engine
-/// never raises a float to a power.
+/// The base stats of the unit in this form (tft.Sheet's `stats`); the
+/// star-scaled health and attack damage are the kit's `hp_star` and
+/// `base_ad`, computed by Python so the engine never raises a float to a
+/// power. Every field is kept for the drivers (Gnar reads `mana`).
 #[derive(Clone, Debug, Default)]
+#[allow(dead_code)]
 pub struct Stats {
     pub hp: f64,
     pub ad: f64,
@@ -280,21 +266,12 @@ impl Kit {
         }
     }
 
-    pub fn has_row(&self, name: &str) -> bool {
-        self.row_names.contains_key(name)
-    }
-
     pub fn calc(&self, name: &str) -> CalcId {
         let short = name.strip_prefix("TFTCalculationAttributes.").unwrap_or(name);
         match self.calc_names.get(short) {
             Some(&i) => CalcId(i),
             None => CalcId::MISSING,
         }
-    }
-
-    pub fn has_calc(&self, name: &str) -> bool {
-        let short = name.strip_prefix("TFTCalculationAttributes.").unwrap_or(name);
-        self.calc_names.contains_key(short)
     }
 
     #[inline]

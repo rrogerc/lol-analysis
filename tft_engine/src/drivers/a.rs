@@ -7,7 +7,7 @@
 
 use crate::driver::Driver;
 use crate::drivers::helpers::{shield_broke, track_shield};
-use crate::fight::{Deal, Fight, Sel};
+use crate::fight::Fight;
 use crate::fx::Form;
 use crate::kit::{CalcId, DType, Kit, RowId};
 use crate::pyf::{pyint, pymax, pymin, pyround};
@@ -494,7 +494,3 @@ impl Driver for Sett {
         }
     }
 }
-
-// Keep the helper imports referenced even when a slice is still empty.
-#[allow(dead_code)]
-fn _unused(_: Sel, _: Deal) {}

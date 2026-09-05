@@ -66,6 +66,7 @@ impl Objective {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]   // api and range name the unit in the spec; the gates that read them run in Python
 pub struct UnitSpec {
     pub api: String,
     pub name: String,

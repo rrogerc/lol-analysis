@@ -63,8 +63,8 @@ pub const NAMES: &[&str] = &[
 ];
 
 /// Run `$body` with `$D` bound to the driver type named by `$name`
-/// (`"Driver"` is the plain base driver). `$body` must evaluate to a
-/// `PyResult<_>`; an unknown name is a ValueError.
+/// (`"Driver"` is the plain base driver: attacks only). `$body` must
+/// evaluate to a `PyResult<_>`; an unknown name is a ValueError.
 #[macro_export]
 macro_rules! with_driver {
     ($name:expr, $D:ident, $body:block) => {{

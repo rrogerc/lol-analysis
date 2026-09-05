@@ -31,6 +31,25 @@ pub fn pyint(x: f64) -> i64 {
     x.trunc() as i64
 }
 
+/// Python `sum()` over floats: CPython adds the items with Neumaier
+/// compensation (`f_result` plus a running correction), so a plain running
+/// total does not reproduce its bits. An empty sum is Python's `0`.
+#[inline]
+pub fn pysum(vals: impl IntoIterator<Item = f64>) -> f64 {
+    let mut f = 0.0f64;
+    let mut c = 0.0f64;
+    for x in vals {
+        let t = f + x;
+        if f.abs() >= x.abs() {
+            c += (f - t) + x;
+        } else {
+            c += (x - t) + f;
+        }
+        f = t;
+    }
+    f + c
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,6 +63,16 @@ mod tests {
         assert_eq!(pyround(-1.5), -2.0);
         assert_eq!(pyround(2.4), 2.0);
         assert_eq!(pyround(2.6), 3.0);
+    }
+
+    #[test]
+    fn sum_is_compensated() {
+        // CPython: sum([0.022500000000000003] * 7) == 0.15750000000000003,
+        // where a running total gives 0.1575.
+        let x = 0.022500000000000003;
+        assert_eq!(pysum(vec![x; 7]), 0.15750000000000003);
+        assert_eq!(pysum(vec![x; 8]), 0.18000000000000002);
+        assert_eq!(pysum(Vec::new()), 0.0);
     }
 
     #[test]

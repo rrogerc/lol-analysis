@@ -13,10 +13,6 @@ pub fn get<'py>(d: &Bound<'py, PyDict>, key: &str) -> PyResult<Option<Bound<'py,
     })
 }
 
-pub fn has(d: &Bound<'_, PyDict>, key: &str) -> PyResult<bool> {
-    Ok(get(d, key)?.is_some())
-}
-
 pub fn getf(d: &Bound<'_, PyDict>, key: &str, default: f64) -> PyResult<f64> {
     match get(d, key)? {
         Some(v) => v.extract::<f64>(),
@@ -47,13 +43,6 @@ pub fn geti(d: &Bound<'_, PyDict>, key: &str, default: i64) -> PyResult<i64> {
     match get(d, key)? {
         Some(v) => as_int(&v, key),
         None => Ok(default),
-    }
-}
-
-pub fn reqi(d: &Bound<'_, PyDict>, key: &str) -> PyResult<i64> {
-    match get(d, key)? {
-        Some(v) => as_int(&v, key),
-        None => Err(PyKeyError::new_err(key.to_string())),
     }
 }
 

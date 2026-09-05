@@ -14,7 +14,9 @@ trait context) the empty build — with the opening sheet numbers and the
 unrounded result. cells.json: the top rows of every cached cell as the
 dashboard shows them (rounded), so the enumeration's order and the row
 formatting are pinned as well. Both files need a fully warm .cache/tft for
-the current code and data (the cells come from there).
+the current code and data (the cells come from there). The files pin the
+pre-Rust Python engine's output; the compiled engine reproduces them bit
+for bit, and a deliberate model change regenerates them from it.
 """
 import argparse
 import itertools
@@ -99,20 +101,16 @@ def gen_fights(snap, cached):
             for items in builds:
                 sheet, res = tft.simulate(snap, u, sc["star"], list(items), sc["geometry"],
                                           ctx, dummy, None, item_fx, trait_fx)
-                o = sheet.opening
                 cases.append({
                     "unit": u["api"], "scenario": key, "star": sc["star"],
                     "geometry": sc["geometry"], "traits": sc["traits"],
                     "ctxTraits": [[a, c] for a, c in ctx],
                     "items": list(items),
-                    "sheet": {"ad": o["ad"], "ap": o["ap"], "as": o["as"],
-                              "crit": sheet.crit_chance, "critMult": sheet.crit_mult,
-                              "precision": sheet.precision, "hp": o["hp"],
-                              "armor": o["armor"], "mr": o["mr"],
-                              "durability": sheet.durability, "omnivamp": sheet.omnivamp,
-                              "form": sheet.form, "manaStart": sheet.mana_start,
-                              "manaMax": sheet.mana_max},
-                    "result": res,
+                    "sheet": {k: sheet[k] for k in ("ad", "ap", "as", "crit", "critMult", "precision",
+                                                    "hp", "armor", "mr", "durability", "omnivamp",
+                                                    "form", "manaStart", "manaMax")},
+                    "result": {k: v for k, v in res.items()
+                               if k not in ("dummyCasts", "dummyAttacks", "probe", "trace")},
                 })
     return cases
 

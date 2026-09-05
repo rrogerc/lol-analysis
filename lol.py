@@ -247,6 +247,7 @@ def main():
     sp = tfsub.add_parser("sim", help="simulate one build against the dummies")
     fight_args(sp)
     sp.add_argument("--items", nargs="*", default=[], help="item names, e.g. 'Infinity Edge'")
+    sp.add_argument("--trace", action="store_true", help="print the fight's timeline")
     sp.set_defaults(func=tft.cmd_sim)
 
     sp = tfsub.add_parser("top", help="rank every 3-item build for one unit and scenario")

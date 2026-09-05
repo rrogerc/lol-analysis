@@ -35,7 +35,7 @@ use std::collections::HashMap;
 use crate::driver::Driver;
 use crate::fx::{combined_durability, Fx};
 use crate::kit::{CalcId, DType, Kit, RowId, Runtime};
-use crate::pyf::{pymax, pymin};
+use crate::pyf::{pymax, pymin, pysum};
 use crate::spec::{CellSpec, DummySpec, Kind};
 
 pub const AS_CAP: f64 = 5.0;
@@ -48,8 +48,6 @@ pub const TANK_MANA_PER_PREMIT: f64 = 0.01;
 pub const TANK_MANA_PER_POSTMIT: f64 = 0.03;
 pub const TANK_MANA_PER_HIT_CAP: f64 = 42.5;
 pub const ASSASSIN_OFFTARGET_REDUCTION: f64 = 0.15;
-pub const FIGHT_DURATION: f64 = 20.0;
-pub const TANK_DURATION: f64 = 60.0;
 pub const MAX_TARGETS: usize = 4;
 pub const MAX_STREAMS: usize = 8;
 const FAR: f64 = 1e18;
@@ -79,7 +77,6 @@ pub struct Sheet {
     pub mana_max: f64,
     pub mana_start: f64,
     pub mana_per_attack: f64,
-    pub range: f64,
     pub omnivamp: f64,
     pub durability: f64,
 }
@@ -110,7 +107,6 @@ impl Sheet {
             mana_max: s.mana,
             mana_start: s.initial_mana + fx.starting_mana,
             mana_per_attack: spec.unit.kind.mana_per_attack(),
-            range: s.range,
             omnivamp: fx.omnivamp,
             durability: fx.durability(),
         }
@@ -190,9 +186,8 @@ pub struct Dummy {
     pub stunned_until: f64,
     pub attacks: i64,
     pub casts: i64,
-    /// Driver scratch (Python's `d.marks`): a flag, a number, a list of times.
+    /// Driver scratch (Python's `d.marks`): a flag and a list of times.
     pub mark: bool,
-    pub mark_n: f64,
     pub mark_times: Vec<f64>,
 }
 
@@ -207,7 +202,7 @@ impl Dummy {
             next_attacks: [0.0; MAX_STREAMS], n_streams: 0, ability: 0.0, phys_share: 1.0,
             mana: 0.0, mana_max: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
             lock_until: 0.0, stunned_until: 0.0, attacks: 0, casts: 0,
-            mark: false, mark_n: 0.0, mark_times: Vec::new(),
+            mark: false, mark_times: Vec::new(),
         }
     }
 
@@ -320,20 +315,12 @@ impl Sel {
         self.ids[i]
     }
 
-    pub fn first(&self) -> Option<usize> {
-        if self.n > 0 { Some(self.ids[0]) } else { None }
-    }
-
     pub fn last(&self) -> Option<usize> {
         if self.n > 0 { Some(self.ids[self.n - 1]) } else { None }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
         self.ids[..self.n].iter().copied()
-    }
-
-    pub fn contains(&self, i: usize) -> bool {
-        self.iter().any(|x| x == i)
     }
 
     /// Python `al[1:]`.
@@ -419,6 +406,8 @@ pub struct Ev {
     pub amount: f64,
     pub target: i64,
     pub src: &'static str,
+    /// The unit's health after the event.
+    pub hp: f64,
 }
 
 pub struct Fight<'a, D: Driver> {
@@ -595,7 +584,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     fn record(&mut self, kind: &'static str, amount: f64, target: Option<usize>, src: &'static str) {
         if let Some(tr) = &mut self.trace {
             tr.push(Ev { t: self.t, kind, amount,
-                         target: target.map(|i| i as i64).unwrap_or(-1), src });
+                         target: target.map(|i| i as i64).unwrap_or(-1), src, hp: self.hp });
         }
     }
 
@@ -717,11 +706,8 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     /// Titan's: each copy's share per stack, each up to its own cap.
     pub fn adap_bonus(&self) -> f64 {
-        let mut s = 0.0;
-        for &(p, mx, _) in &self.fx.adap_per_attack {
-            s += p * pymin(self.adap_stack_n as f64, mx);
-        }
-        s
+        let n = self.adap_stack_n as f64;
+        pysum(self.fx.adap_per_attack.iter().map(|&(p, mx, _)| p * pymin(n, mx)))
     }
 
     fn adap_stack(&mut self) {
@@ -858,7 +844,8 @@ impl<'a, D: Driver> Fight<'a, D> {
             if b.hp <= 0.0 {
                 self.next_body();
             }
-            self.record("take", amount, attacker, "body");
+            let name = self.body.as_ref().map(|b| b.name).unwrap_or("body");
+            self.record("take", amount, attacker, name);
             return amount;
         }
         if self.sheet.kind == Kind::Assassin {
@@ -1292,6 +1279,9 @@ impl<'a, D: Driver> Fight<'a, D> {
         dmg
     }
 
+    /// `hit_ability` with runtime values for the calc's runtime terms (no
+    /// Set 18 driver needs one; the terms exist in the data).
+    #[allow(dead_code)]
     pub fn hit_ability_rt(&mut self, calc: CalcId, target: Option<usize>, src: &'static str,
                           mult: f64, runtime: Runtime<'_>) -> f64 {
         let dtype = self.kit.calc_dtype(calc);
@@ -1377,11 +1367,6 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.seq += 1;
         self.pending.push((self.t + pymax(0.0, delay), self.seq, ev));
         self.pending.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)));
-    }
-
-    /// When the next queued effect lands (tests).
-    pub fn next_pending(&self) -> Option<f64> {
-        self.pending.first().map(|p| p.0)
     }
 
     fn next_incoming(&self) -> f64 {
@@ -1481,9 +1466,13 @@ impl<'a, D: Driver> Fight<'a, D> {
                 self.deal(pct * max_hp * TICK_S, DType::True, Some(di), "burn", Deal::PLAIN);
             }
             if !self.targets[di].dots.is_empty() {
-                let dots = std::mem::take(&mut self.targets[di].dots);
-                let mut keep = Vec::with_capacity(dots.len());
-                for dot in dots {
+                // Python walks the live list, so a bleed this tick's own damage
+                // queues (Executioner) is visited too — at span 0, and kept.
+                let mut keep = Vec::with_capacity(self.targets[di].dots.len());
+                let mut k = 0;
+                while k < self.targets[di].dots.len() {
+                    let dot = self.targets[di].dots[k].clone();
+                    k += 1;
                     let span = pymin(now, dot.until) - pymax(now - TICK_S, dot.start);
                     if span > 0.0 {
                         self.deal(dot.dps * span, dot.dtype, Some(di), dot.src,
@@ -1494,7 +1483,6 @@ impl<'a, D: Driver> Fight<'a, D> {
                         keep.push(dot);
                     }
                 }
-                // a driver may have queued dots meanwhile (none do); keep Python's replace
                 self.targets[di].dots = keep;
             }
         }
@@ -1604,12 +1592,10 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
         for i in 0..self.fx.amp_per_crit.len() {
             let (amp, dur, mx) = self.fx.amp_per_crit[i];
-            let mut live = 0.0;
-            for &(a, u, j) in &self.amp_stacks {
-                if u > self.t && j == i {
-                    live += a;
-                }
-            }
+            let t = self.t;
+            let live = pysum(self.amp_stacks.iter()
+                             .filter(|&&(_, u, j)| u > t && j == i)
+                             .map(|&(a, _, _)| a));
             let add = pymin(amp * self.sheet.crit_chance, pymax(0.0, amp * mx - live));
             if add > 0.0 {
                 self.amp_stacks.push((add, self.t + dur, i));
