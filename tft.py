@@ -127,8 +127,11 @@ OBJECTIVES = {
 }
 PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies attacking
 
-# Scenario axes. A cell is one (star, geometry, trait context).
-STARS = (2, 3)
+# Scenario axes. A cell is one (star, geometry, trait context). Every unit
+# is simulated at 1★ and 2★, the 1–3 costs at 3★ as well: a 3★ 4- or
+# 5-cost is an auto-win, not a build question (Roger's call, 2026-09-05).
+STARS = (1, 2, 3)
+STARS_BY_COST = {1: (1, 2, 3), 2: (1, 2, 3), 3: (1, 2, 3), 4: (1, 2), 5: (1, 2)}
 GEOMETRIES = {
     "spread": "targets out of each other's reach: area abilities hit one",
     "clump": "targets together: area abilities hit every one still standing",
@@ -141,8 +144,9 @@ TRAIT_CONTEXTS = {
 
 
 def scenarios():
-    """{key: scenario} in warm order: two stars, both geometries, three
-    trait contexts — the same twelve cells for every unit."""
+    """{key: scenario} in warm order: every star level any unit is
+    simulated at, both geometries, three trait contexts. `unit_scenarios`
+    picks a unit's own cells out of these."""
     out = {}
     for star in STARS:
         for geo in GEOMETRIES:
@@ -159,6 +163,18 @@ def fight_duration(unit):
 
 
 SCENARIOS = scenarios()
+
+
+def unit_stars(unit):
+    """The star levels a unit is simulated at, by its cost."""
+    return STARS_BY_COST.get(unit["cost"], (1, 2))
+
+
+def unit_scenarios(unit):
+    """The cells a unit has: its star levels × geometries × trait
+    contexts (18 for a 1–3 cost, 12 for a 4–5 cost)."""
+    stars = unit_stars(unit)
+    return {k: sc for k, sc in SCENARIOS.items() if sc["star"] in stars}
 
 
 # ---------------------------------------------------------------------------
@@ -346,6 +362,16 @@ def override_curve(row, vals):
     return [[s, v] for s, v in zip(range(1, 5), have)]
 
 
+def override_trait_curve(row, vals):
+    """A trait row with hand values: `vals` maps breakpoint columns (as
+    strings, column 1 being the first breakpoint; column 0 is the inactive
+    value) to new values; other columns keep what they were."""
+    have = {int(c): v for c, v in (row or [])}
+    for c, v in vals.items():
+        have[int(c)] = v
+    return [[c, have[c]] for c in sorted(have)]
+
+
 class Snapshot:
     """One archived patch of a set, with hand overrides applied."""
 
@@ -420,11 +446,30 @@ class Snapshot:
             curve[row] = override_curve(curve.get(row), vals)
         return curve
 
+    def _calcs(self, calcs, curve, ov):
+        """The ability's calculations, with every overridden curve row
+        written into the terms that carry that row: the data resolves each
+        scaled term's per-star coefficient list from its row (they are
+        identical for every term in the set), and the engine reads the
+        list, so a hand correction has to reach both or it changes the
+        tooltip check and not the damage."""
+        rows = set(ov.get("curve") or {})
+        out = {}
+        for name, calc in (calcs or {}).items():
+            terms = []
+            for term in calc.get("terms") or []:
+                row = term.get("row")
+                if row in rows and row in curve and term.get("coefficient") is not None:
+                    term = dict(term, coefficient=[curve_at(curve[row], s) for s in range(1, 5)])
+                terms.append(term)
+            out[name] = dict(calc, terms=terms)
+        return out
+
     def _unit(self, u):
         s = u.get("stats") or {}
         ov = self.overrides["units"].get(u["apiName"]) or {}
         curve = self._curve(u, ov)
-        calcs = dict((u.get("ability") or {}).get("attributeCalcs") or {})
+        calcs = self._calcs((u.get("ability") or {}).get("attributeCalcs"), curve, ov)
         stats = self._stats(s, curve, ov)
         assets = u.get("assetNames") or []
         b = next((self.bins[a] for a in assets if a in self.bins
@@ -451,7 +496,7 @@ class Snapshot:
             fcurve = self._curve(v, fov)
             forms[v["variant"]] = {
                 "name": v.get("name"), "desc": v.get("desc"),
-                "calcs": dict(v.get("attributeCalcs") or {}), "curve": fcurve,
+                "calcs": self._calcs(v.get("attributeCalcs"), fcurve, fov), "curve": fcurve,
                 "stats": self._stats(v["stats"], fcurve, fov) if v.get("stats") else None,
             }
         return {
@@ -485,7 +530,7 @@ class Snapshot:
         curve = dict(t.get("curveTable") or {})
         ov = self.overrides["traits"].get(t["apiName"]) or {}
         for row, vals in (ov.get("curve") or {}).items():
-            curve[row] = [[i, v] for i, v in enumerate(vals)]
+            curve[row] = override_trait_curve(curve.get(row), vals)
         levels = [e["minUnits"] for e in t.get("effects") or []]
         styles = [e.get("style", 0) for e in t.get("effects") or []]
         return {"api": t["apiName"], "name": t["name"], "type": t.get("type"),
@@ -580,6 +625,8 @@ def row_value(curve, spec, star=1):
         v -= 1.0
     v *= spec.get("scale", 1.0)
     v *= spec.get("mult", 1.0)
+    if "min" in spec:   # a multiplier row that is 0 below its breakpoint
+        v = max(v, spec["min"])
     return v
 
 
@@ -607,18 +654,18 @@ def parse_stat_line(item):
         if not key or row not in item["curve"]:
             continue
         v = curve_at(item["curve"][row], 1)
-        fmt = attrs.get("format", "")
+        fmt = (attrs.get("format") or "").lower()   # the data spells it three ways
         if key == "adPct":
             v = v if fmt == "percent" else v / 100.0
         elif key == "ap":
             v = v * 100.0 if fmt == "percent" else v
         elif key == "asPct":
-            v = v - 1.0 if fmt == "percentMinusOne" else (v if fmt == "percent" else v / 100.0)
+            v = v - 1.0 if fmt == "percentminusone" else (v if fmt == "percent" else v / 100.0)
         elif key in ("crit", "amp", "omnivamp"):
             v = v if fmt == "percent" else v / 100.0
         elif key == "durability":
             # "invertedPercent" rows hold the damage multiplier (0.92 = 8%)
-            v = 1.0 - v if fmt == "invertedPercent" else (v if fmt == "percent" else v / 100.0)
+            v = 1.0 - v if fmt == "invertedpercent" else (v if fmt == "percent" else v / 100.0)
         stats[key] = stats.get(key, 0.0) + v
     return stats
 
@@ -680,21 +727,21 @@ class Fx:
         # --- taking damage (fighters and tanks: the dummies hit back) ---
         self.omnivamp = 0.0
         self.durabilities = []         # fractions of post-mitigation damage prevented; they stack multiplicatively
-        self.durabilityAbove = None    # (extra fraction, health fraction) Steadfast Heart
+        self.durabilityByHealth = []   # [(below, above, health fraction)] Steadfast Heart: one or the other
         self.attackDamageTaken = 1.0   # multiplier on damage from attacks (Bramble Vest)
-        self.thorns = None             # (magic damage, cooldown s) to adjacent attackers
+        self.thorns = []               # [(magic damage, cooldown s)] to adjacent attackers
         self.resistsPerAttacker = [0.0, 0.0]  # armor, mr per enemy attacking (Gargoyle, Monolith)
         self.healPerInterval = []      # [(fraction of max hp, every s)] Dragon's Claw
         self.regenMissingPct = 0.0     # fraction of missing health per second
         self.shieldAtHp = []           # [(health fraction, shield as fraction of max hp, duration, decays)]
         self.shieldAtStart = []        # [(fraction of max hp, duration)]
-        self.resistsAtStart = None     # (armor, mr, duration) Evenshroud
-        self.untargetableAtHp = None   # (health fraction, duration, missing-health heal) Edge of Night
+        self.resistsAtStart = []       # [(armor, mr, duration)] Evenshroud
+        self.untargetableAtHp = []     # [(health fraction, duration, missing-health heal)] Edge of Night
         self.manaAtHp = []             # [(health fraction, mana)] Protector's Vow
         self.adapPerHit = False        # Titan's stacks from being hit too
         self.ionicSpark = 0.0          # magic damage per mana an attacker spends casting
         self.allyHealPct = 0.0         # Gunblade: share of damage dealt healed on an ally
-        self.hoj = None                # (ad, ap, omnivamp, health fraction) Hand of Justice
+        self.hojs = []                 # [(ad, ap, omnivamp, health fraction)] Hand of Justice, per copy
         self.healOnTakedown = 0.0      # fraction of max hp (Flora Fatalis)
         self.manaOnTakedown = 0.0
         self.faeHeal = None            # (health fraction, heal)  once, below the threshold
@@ -714,7 +761,7 @@ class Fx:
 
     @property
     def durability(self):
-        return combined_durability(self.durabilities)
+        return combined_durability(self.durabilities + [low for low, _, _ in self.durabilityByHealth])
 
 
 def combined_durability(fractions):
@@ -784,19 +831,21 @@ def apply_item(fx, item, spec, unit):
         fx.sunderAura = max(fx.sunderAura, rv(spec["sunderAura"]["pct"]))
     if "shredAura" in spec and unit["stats"]["range"] <= rv(spec["shredAura"]["hexes"]):
         fx.shredAura = max(fx.shredAura, rv(spec["shredAura"]["pct"]))
-    if "burnAura" in spec:
+    if "burnAura" in spec and ("hexes" not in spec["burnAura"]
+                               or unit["stats"]["range"] <= rv(spec["burnAura"]["hexes"])):
         fx.burnAura = (rv(spec["burnAura"]["pct"]), rv(spec["burnAura"]["duration"]))
     # --- defensive passives ---
     if "hpMult" in spec:
         fx.hpMult *= rv(spec["hpMult"])
     if "durability" in spec:
         fx.durabilities.append(rv(spec["durability"]))
-    if "durabilityAbove" in spec:
-        fx.durabilityAbove = (rv(spec["durabilityAbove"]["extra"]), rv(spec["durabilityAbove"]["threshold"]))
+    if "durabilityByHealth" in spec:
+        db = spec["durabilityByHealth"]
+        fx.durabilityByHealth.append((rv(db["below"]), rv(db["above"]), rv(db["threshold"])))
     if "attackDamageTaken" in spec:
         fx.attackDamageTaken *= rv(spec["attackDamageTaken"])
     if "thorns" in spec:
-        fx.thorns = (rv(spec["thorns"]["damage"]), rv(spec["thorns"]["cooldown"]))
+        fx.thorns.append((rv(spec["thorns"]["damage"]), rv(spec["thorns"]["cooldown"])))
     if "resistsPerAttacker" in spec:
         fx.resistsPerAttacker[0] += rv(spec["resistsPerAttacker"]["armor"])
         fx.resistsPerAttacker[1] += rv(spec["resistsPerAttacker"]["mr"])
@@ -812,10 +861,10 @@ def apply_item(fx, item, spec, unit):
         fx.shieldAtStart.append((rv(spec["shieldAtStart"]["pct"]), rv(spec["shieldAtStart"]["duration"])))
     if "resistsAtStart" in spec:
         rs = spec["resistsAtStart"]
-        fx.resistsAtStart = (rv(rs["armor"]), rv(rs["mr"]), rv(rs["duration"]))
+        fx.resistsAtStart.append((rv(rs["armor"]), rv(rs["mr"]), rv(rs["duration"])))
     if "untargetableAtHp" in spec:
         un = spec["untargetableAtHp"]
-        fx.untargetableAtHp = (rv(un["threshold"]), rv(un["duration"]), rv(un["healMissing"]))
+        fx.untargetableAtHp.append((rv(un["threshold"]), rv(un["duration"]), rv(un["healMissing"])))
     if "manaAtHp" in spec:
         fx.manaAtHp.append((rv(spec["manaAtHp"]["threshold"]), rv(spec["manaAtHp"]["mana"])))
     if spec.get("adapPerHit"):
@@ -826,7 +875,7 @@ def apply_item(fx, item, spec, unit):
         fx.allyHealPct += rv(spec["allyHealPct"])
     if "hoj" in spec:
         h = spec["hoj"]
-        fx.hoj = (rv(h["adPct"]), rv(h["ap"]), rv(h["omnivamp"]), rv(h["threshold"]))
+        fx.hojs.append((rv(h["adPct"]), rv(h["ap"]), rv(h["omnivamp"]), rv(h["threshold"])))
     if spec.get("note"):
         fx.notes.append(f"{item['name']}: {spec['note']}")
 
@@ -1042,7 +1091,7 @@ class Dummy:
         self.shred = 0.0; self.shred_until = 0.0
         self.armor_flat = 0.0; self.mr_flat = 0.0
         self.burn_pct = 0.0; self.burn_until = 0.0; self.burn_stack = 0.0
-        self.dots = []      # [dps, until, dtype, src]
+        self.dots = []      # [dps, until, dtype, src, start, ability?]
         self.alive = True
         self.marks = {}     # driver scratch (Soraka stars, poison stacks…)
         self.died_at = None
@@ -1109,7 +1158,8 @@ class Fight:
         self.duration = duration
         self.pressure = pressure
         self.t = 0.0
-        self.mana = sheet.mana_start
+        # starting mana fills the bar at most; a full bar casts at once
+        self.mana = min(sheet.mana_start, sheet.mana_max) if sheet.mana_max > 0 else sheet.mana_start
         self.lock_until = 0.0
         self.casting_until = 0.0
         self.next_attack = 0.0
@@ -1127,9 +1177,11 @@ class Fight:
         self.as_attack_stack = 0.0      # Rapidfire
         self.ad_stack = 0.0             # Kraken's
         self.ad_stack_n = 0             # attacks so far, for Kraken's cap
-        self.adap_stack_n = 0.0         # Titan's stacks
+        self.adap_stack_n = 0           # Titan's stacks: attacks and hits, up to the item's cap
         self.ap_stack = 0.0             # Archangel's, Crownguard, Spellweaver
-        self.amp_stacks = []            # [(amp, until)]
+        self.amp_stacks = []            # [(amp, until, source index)]
+        self.pending = []               # [(time, seq, fn)]: effects landing later (a channel's damage)
+        self._seq = 0
         self.amp_extra = 0.0            # driver-set amp (e.g. Titan's full)
         self.as_extra_until = 0.0; self.as_extra = 0.0   # driver buffs
         self.ad_extra = 0.0             # driver-set bonus attack damage (fraction)
@@ -1162,7 +1214,7 @@ class Fight:
         self.dur_buffs = []             # [(fraction, until)]
         self.armor_extra = 0.0; self.mr_extra = 0.0   # permanent, driver-set
         self.fired = set()              # one-shot health triggers already used
-        self.thorns_ready = 0.0
+        self.thorns_ready = [0.0] * len(self.fx.thorns)
         for d in self.targets:
             if self.fx.sunderAura:
                 d.sunder = max(d.sunder, self.fx.sunderAura); d.sunder_until = 1e9
@@ -1170,8 +1222,7 @@ class Fight:
                 d.shred = max(d.shred, self.fx.shredAura); d.shred_until = 1e9
         for pct, dur in self.fx.shieldAtStart:
             self.shield(pct * self.max_hp(), dur, "combat start")
-        if self.fx.resistsAtStart:
-            a, m, dur = self.fx.resistsAtStart
+        for a, m, dur in self.fx.resistsAtStart:
             self.resist_buffs.append((a, m, dur))
 
     # ---- targets ---------------------------------------------------------
@@ -1207,25 +1258,33 @@ class Fight:
 
     # ---- stats now --------------------------------------------------------
     def _hoj(self):
-        """Hand of Justice: its attack damage and ability power double above
-        the health threshold, its omnivamp below."""
-        h = self.fx.hoj
-        if h is None:
-            return 0.0, 0.0, 0.0
-        above = self.hp_frac() >= h[3]
-        return (h[0] * (2 if above else 1), h[1] * (2 if above else 1),
-                h[2] * (1 if above else 2))
+        """Hand of Justice, each copy: its attack damage and ability power
+        double above the health threshold, its omnivamp below."""
+        ad = ap = omni = 0.0
+        frac = self.hp_frac()
+        for h in self.fx.hojs:
+            above = frac >= h[3]
+            ad += h[0] * (2 if above else 1)
+            ap += h[1] * (2 if above else 1)
+            omni += h[2] * (1 if above else 2)
+        return ad, ap, omni
 
     def ad(self):
-        return self.sheet.ad(self.ad_stack + self.ad_extra + self.adap_stack_n * self._adap_per()
-                             + self._hoj()[0])
+        return self.sheet.ad(self.ad_stack + self.ad_extra + self._adap_bonus() + self._hoj()[0])
 
     def ap(self):
-        return self.sheet.ap(self.ap_stack + self.ap_extra + self.adap_stack_n * self._adap_per() * 100.0
-                             + self._hoj()[1])
+        return self.sheet.ap(self.ap_stack + self.ap_extra + self._adap_bonus() * 100.0 + self._hoj()[1])
 
-    def _adap_per(self):
-        return sum(p for p, _, _ in self.fx.adapPerAttack)
+    def _adap_bonus(self):
+        """Titan's: each copy's share per stack, each up to its own cap."""
+        return sum(p * min(self.adap_stack_n, mx) for p, mx, _ in self.fx.adapPerAttack)
+
+    def _adap_stack(self):
+        """One Titan's stack (an attack, or a hit taken): the count is shared
+        by every copy."""
+        if self.fx.adapPerAttack:
+            self.adap_stack_n = min(self.adap_stack_n + 1,
+                                    int(max(mx for _, mx, _ in self.fx.adapPerAttack)))
 
     def omnivamp(self):
         return self.sheet.omnivamp + self._hoj()[2]
@@ -1243,7 +1302,7 @@ class Fight:
         a = self.fx.amp + self.amp_extra
         if target.is_tank:
             a += self.fx.ampVsTank
-        for amp, until in self.amp_stacks:
+        for amp, until, _ in self.amp_stacks:
             if self.t < until:
                 a += amp
         if self.fx.ampAfterSameTarget and target is self.targets[self.cur] \
@@ -1287,8 +1346,9 @@ class Fight:
 
     def durability_now(self):
         ds = list(self.fx.durabilities)
-        if self.fx.durabilityAbove and self.hp_frac() >= self.fx.durabilityAbove[1]:
-            ds.append(self.fx.durabilityAbove[0])
+        frac = self.hp_frac()
+        for below, above, thr in self.fx.durabilityByHealth:
+            ds.append(above if frac >= thr else below)
         for pct, until in self.dur_buffs:
             if self.t < until:
                 ds.append(pct)
@@ -1342,14 +1402,13 @@ class Fight:
             self.gain_mana(min(TANK_MANA_PER_HIT_CAP,
                                pre * TANK_MANA_PER_PREMIT + post * TANK_MANA_PER_POSTMIT))
         if self.fx.adapPerHit:
-            for _, mx, _ in self.fx.adapPerAttack:
-                if self.adap_stack_n < mx:
-                    self.adap_stack_n += 1
-        if attack and self.fx.thorns and self.t >= self.thorns_ready:
-            dmg, cd = self.fx.thorns
-            self.thorns_ready = self.t + cd
-            for d in self.adjacent(attacker):
-                self.deal(dmg, "magic", d, "thorns", ability=False, crit=False)
+            self._adap_stack()
+        if attack:
+            for i, (dmg, cd) in enumerate(self.fx.thorns):
+                if self.t >= self.thorns_ready[i]:
+                    self.thorns_ready[i] = self.t + cd
+                    for d in self.adjacent(attacker):
+                        self.deal(dmg, "magic", d, "thorns", ability=False, crit=False)
         self.driver.hit(self, attacker, post)
         self._health_triggers()
         if self.hp <= 0 and self.alive_unit:
@@ -1366,11 +1425,12 @@ class Fight:
         for i, (thr, mana) in enumerate(fx.manaAtHp):
             if frac < thr and ("mana", i) not in self.fired:
                 self.fired.add(("mana", i))
-                self.mana += mana
-        if fx.untargetableAtHp and frac < fx.untargetableAtHp[0] and "untargetable" not in self.fired:
-            self.fired.add("untargetable")
-            self.untargetable(fx.untargetableAtHp[1])
-            self.heal((self.max_hp() - self.hp) * fx.untargetableAtHp[2], "edge of night")
+                self.gain_mana(mana, lock=False)
+        for i, (thr, dur, heal_missing) in enumerate(fx.untargetableAtHp):
+            if frac < thr and ("untargetable", i) not in self.fired:
+                self.fired.add(("untargetable", i))
+                self.untargetable(dur)
+                self.heal((self.max_hp() - self.hp) * heal_missing, "edge of night")
         if fx.faeHeal and frac < fx.faeHeal[0] and "fae" not in self.fired:
             self.fired.add("fae")
             self.heal(fx.faeHeal[1] * self.max_hp(), "pixies")
@@ -1462,13 +1522,13 @@ class Fight:
         s = self.sheet
         if crit and (not ability or s.precision):
             amount *= s.crit_ev
+        pre = amount                    # before resists: what a tank's mana is fed from
         if dtype == "physical":
             r = target.armor * (1.0 - target.sunder if self.t < target.sunder_until else 1.0) - target.armor_flat
             amount *= resist_mult(max(r, 0.0))
         elif dtype == "magic":
             r = target.mr * (1.0 - target.shred if self.t < target.shred_until else 1.0) - target.mr_flat
             amount *= resist_mult(max(r, 0.0))
-        pre = amount
         if dtype != "true" and not raw:
             amount *= self.amp(target)
         self._apply(amount, target, src, pre)
@@ -1552,14 +1612,17 @@ class Fight:
                 target.burn_pct = pct
                 target.burn_until = self.t + dur
 
-    def dot(self, total, duration, dtype, target, src):
-        """Damage over time: `total` pre-mitigation over `duration` s."""
+    def dot(self, total, duration, dtype, target, src, ability=False):
+        """Damage over time: `total` pre-mitigation over `duration` s, paid
+        out on the ticks for the time elapsed since it started. An
+        ability's DoT is ability damage (it crits with Precision); an
+        item's or a trait's never crits."""
         if target is None or not target.alive:
             return
         if duration <= 0:
-            self.deal(total, dtype, target, src, crit=False)
+            self.deal(total, dtype, target, src, ability=ability, crit=ability)
             return
-        target.dots.append([total / duration, self.t + duration, dtype, src])
+        target.dots.append([total / duration, self.t + duration, dtype, src, self.t, ability])
 
     def hit_attack(self, target, mult=1.0, src="auto"):
         """One basic attack's damage on `target`."""
@@ -1578,7 +1641,7 @@ class Fight:
     def dot_ability(self, calc, target, duration, src="ability", mult=1.0, dtype=None, runtime=None):
         dtype = dtype or calc_type(calc)
         self.on_hit_effects(target, True)
-        self.dot(self.calc(calc, runtime) * mult, duration, dtype, target, src)
+        self.dot(self.calc(calc, runtime) * mult, duration, dtype, target, src, ability=True)
 
     def buff_as(self, pct, duration):
         self.as_extra = pct
@@ -1597,8 +1660,14 @@ class Fight:
         while self.t < self.duration and self.kill_time is None and self.holding():
             t_attack = max(self.next_attack, self.casting_until) if self.alive_unit else 1e18
             t_in = self._next_incoming() if self.pressure else 1e18
-            t_next = min(t_attack, next_tick, t_in)
+            t_fx = self.pending[0][0] if self.pending else 1e18
+            t_next = min(t_attack, next_tick, t_in, t_fx)
             self.t = t_next
+            # effects landing now (a channel's damage) come first
+            while self.pending and self.pending[0][0] <= self.t + 1e-9:
+                self.pending.pop(0)[2]()
+            if self.kill_time is not None:
+                break
             if t_next == next_tick:
                 self._tick(next_tick, next_second, interval_next, ap_after, heal_next)
                 if next_tick >= next_second:
@@ -1608,9 +1677,18 @@ class Fight:
                 self._incoming()
             if self.kill_time is not None or self.t >= self.duration or not self.alive_unit:
                 continue
-            if t_attack <= self.t:
+            # (a cast that started on this tick holds the attack that was due)
+            if t_attack <= self.t and self.t >= self.casting_until:
                 self._attack()
         return self.result()
+
+    def after(self, delay, fn):
+        """Run `fn()` at t + delay: an ability's damage landing when its
+        channel ends, a delayed effect. Due effects run in order before
+        anything else at that instant."""
+        self._seq += 1
+        self.pending.append((self.t + max(0.0, delay), self._seq, fn))
+        self.pending.sort()
 
     def _next_incoming(self):
         t = 1e18
@@ -1660,9 +1738,11 @@ class Fight:
 
     def _tick(self, now, next_second, interval_next, ap_after, heal_next):
         fx = self.fx
-        # mana regen (blocked in the lock)
-        if fx.manaRegen and now >= self.lock_until and self.alive_unit:
-            self.gain_mana(fx.manaRegen * TICK_S)
+        # mana regen for the part of the tick outside the lock
+        if fx.manaRegen and self.alive_unit:
+            free = now - max(now - TICK_S, self.lock_until)
+            if free > 0:
+                self.gain_mana(fx.manaRegen * free)
         # burns: % max hp per second as true damage, applied per tick
         for d in self.targets:
             if not d.alive:
@@ -1675,10 +1755,11 @@ class Fight:
             if d.dots:
                 keep = []
                 for dot in d.dots:
-                    dps, until, dtype, src = dot
-                    span = min(TICK_S, max(0.0, until - (now - TICK_S)))
+                    dps, until, dtype, src, start, ability = dot
+                    span = min(now, until) - max(now - TICK_S, start)
                     if span > 0:
-                        self.deal(dps * span, dtype, d, src, ability=False, crit=False, raw=(src == "bleed"))
+                        self.deal(dps * span, dtype, d, src, ability=ability, crit=ability,
+                                  raw=(src == "bleed"))
                     if until > now:
                         keep.append(dot)
                 d.dots = keep
@@ -1722,10 +1803,42 @@ class Fight:
                 and self.t >= self.casting_until and self.kill_time is None:
             self._cast()
 
-    def gain_mana(self, amount):
-        if self.t < self.lock_until or self.sheet.mana_max <= 0:
+    def gain_mana(self, amount, lock=True):
+        """Mana from any source: none during the lock (unless `lock` is
+        False: a proc that fires regardless), scaled by Adaptive Helm."""
+        if (lock and self.t < self.lock_until) or self.sheet.mana_max <= 0:
             return
         self.mana += amount * self.fx.manaMult
+
+    def on_attack_stacks(self):
+        """What every attack does to the per-attack stacks: Kraken's,
+        Titan's, Rapidfire, Striker's Flail. An ability's simulated attack
+        (Aphelios's every third swipe) goes through here too."""
+        s, fx = self.sheet, self.fx
+        self.ad_stack_n += 1
+        for pct, mx, _ in fx.adPerAttack:
+            if self.ad_stack_n <= mx:
+                self.ad_stack += pct
+        self._adap_stack()
+        for pct, mx in fx.asPerAttackStack:
+            n = self.state.get("rapidfire", 0)
+            if n < mx:
+                self.state["rapidfire"] = n + 1
+                self.as_attack_stack += pct
+        for i, (amp, dur, mx) in enumerate(fx.ampPerCrit):
+            # expected-value crit: each attack adds crit-chance worth of a
+            # stack, each copy up to its own cap
+            live = sum(a for a, u, j in self.amp_stacks if u > self.t and j == i)
+            add = min(amp * s.crit_chance, max(0.0, amp * mx - live))
+            if add > 0:
+                self.amp_stacks.append((add, self.t + dur, i))
+
+    def simulated_attack(self, target):
+        """An ability hit that counts as an attack for on-hit purposes: the
+        per-attack stacks and the on-hit effects, no damage of its own and
+        no mana (the unit is casting)."""
+        self.on_attack_stacks()
+        self.on_hit_effects(target, False)
 
     def _attack(self):
         s, fx = self.sheet, self.fx
@@ -1733,33 +1846,17 @@ class Fight:
         if tgt is None:
             return
         self.attacks += 1
-        self.ad_stack_n += 1
-        for pct, mx, _ in fx.adPerAttack:
-            if self.ad_stack_n <= mx:
-                self.ad_stack += pct
-        for pct, mx, _ in fx.adapPerAttack:
-            if self.adap_stack_n < mx:
-                self.adap_stack_n += 1
-        for pct, mx in fx.asPerAttackStack:
-            n = self.state.get("rapidfire", 0)
-            if n < mx:
-                self.state["rapidfire"] = n + 1
-                self.as_attack_stack += pct
-        for amp, dur, mx in fx.ampPerCrit:
-            # expected-value crit: each attack adds crit-chance worth of a stack
-            live = sum(a for a, u in self.amp_stacks if u > self.t)
-            add = min(amp * s.crit_chance, max(0.0, amp * mx - live))
-            if add > 0:
-                self.amp_stacks.append((add, self.t + dur))
+        self.on_attack_stacks()
         # mana on attack (role + items), before the driver so an attack
         # that fills the bar casts right after
         self.gain_mana(s.mana_per_attack + fx.manaPerAttack
                        + fx.manaPerCrit * s.crit_chance)
         self.driver.attack(self, tgt)
-        period = 1.0 / self.attack_speed()
-        self.next_attack = self.t + period
         if self.mana >= s.mana_max and s.mana_max > 0 and self.alive_unit:
             self._cast()
+        # the next attack a period later, at the attack speed the unit has
+        # now (a cast's attack-speed buff counts from this attack on)
+        self.next_attack = self.t + 1.0 / self.attack_speed()
 
     def _cast(self):
         s = self.sheet
@@ -1770,14 +1867,23 @@ class Fight:
         overflow = max(0.0, self.mana - s.mana_max)
         self.mana = min(overflow, s.mana_max)  # overflow carries up to one cast
         cast_time = self.driver.cast_time(self)
-        self.lock_until = self.t + max(MANA_LOCK_S, cast_time)
         self.casting_until = self.t + cast_time
+        # no mana while casting nor for the second after ("champions can't
+        # accumulate mana for the second thereafter"): a channel the driver
+        # declares locks through its length plus that second; the data's
+        # default animation is inside the second
+        self.lock_until = self.t + MANA_LOCK_S + (cast_time if cast_time > CAST_TIME_DEFAULT else 0.0)
         if self.fx.apPerCast:
             self.ap_stack += self.fx.apPerCast
-        self.driver.cast(self)
+        if cast_time > 0 and self.driver.lands == "end":
+            self.after(cast_time, lambda: self.driver.cast(self))
+        else:
+            self.driver.cast(self)
 
     def result(self):
-        dps = self.total / max(self.t, 1e-9) if self.kill_time is None else self.total / max(self.kill_time, 1e-9)
+        # an ability's damage lands after its animation at the earliest, so
+        # a kill is never at t=0; the tick is the floor all the same
+        dps = self.total / max(self.t, TICK_S) if self.kill_time is None else self.total / max(self.kill_time, TICK_S)
         # how long the unit (or its on-death body) kept the dummies busy: the
         # whole fight unless everything of ours fell first
         alive_time = self.hold_until if self.hold_until is not None else self.duration
@@ -1810,6 +1916,17 @@ def calc_type(name):
 _SCALE_KEYS = {"AttackDamage": "ad_pct", "AbilityPower": "ap",
                "HealthMax": "hp", "Armor": "armor", "MagicResist": "mr",
                "BasicAttackDamage": "ad"}
+_WARNED_SCALINGS = set()
+
+
+def _warn_scaling(unit_name, calc_name, scaling):
+    """A scaling the engine does not know contributes nothing; say so once
+    rather than fold a silent zero into a fight."""
+    key = (unit_name, calc_name, scaling)
+    if key not in _WARNED_SCALINGS:
+        _WARNED_SCALINGS.add(key)
+        print(f"Warning: {unit_name} {calc_name.split('.')[-1]} scales with {scaling!r}, "
+              f"which the engine does not model (read as 0)", file=sys.stderr)
 
 
 def calc_value(unit, name, star, ad, ap, max_hp, armor, mr, runtime, base_ad=None):
@@ -1835,7 +1952,11 @@ def calc_value(unit, name, star, ad, ap, max_hp, armor, mr, runtime, base_ad=Non
             v = float(runtime.get(term.get("row") or "runtime", runtime.get("runtime", 0.0)))
         elif ttype == "flat":
             row = term.get("row")
-            v = curve_at(unit["curve"][row], star) if row in unit["curve"] else float((term.get("coefficient") or [0])[min(star, 4) - 1] or 0)
+            if row in unit["curve"]:
+                v = curve_at(unit["curve"][row], star)
+            else:   # a flat term without a row carries its own per-star values
+                vals = term.get("coefficient") or term.get("values") or [0.0]
+                v = float(vals[min(star, len(vals)) - 1] or 0.0)
         else:
             coefs = term.get("coefficient")
             if coefs is None and term.get("row") in unit["curve"]:
@@ -1847,26 +1968,33 @@ def calc_value(unit, name, star, ad, ap, max_hp, armor, mr, runtime, base_ad=Non
                 if coef is None:
                     coef = 0.0
             scaling = term.get("scaling")
+            # the number the coefficient multiplies (see the docstring);
+            # `preAdd` shifts it first (Rakan: coef × (AP/100 - 1))
             if scaling == "AttackDamage":
-                v = coef * ad / base_ad if base_ad else coef
+                x = ad / base_ad if base_ad else 1.0
             elif scaling == "AbilityPower":
-                v = coef * ap / 100.0
+                x = ap / 100.0
             elif scaling == "HealthMax":
-                v = coef * max_hp
+                x = max_hp
             elif scaling == "Armor":
-                v = coef * armor
+                x = armor
             elif scaling == "MagicResist":
-                v = coef * mr
+                x = mr
             elif scaling == "BasicAttackDamage":
-                v = coef * ad
+                x = ad
             elif scaling == "Stack":
-                v = coef * float(runtime.get("Stack", 0.0))
+                x = float(runtime.get("Stack", 0.0))
             elif scaling and scaling.endswith(("Calc1", "Calc2", "Calc3", "Calc4")):
-                v = coef * calc_value(unit, scaling, star, ad, ap, max_hp, armor, mr, runtime, base_ad)
+                x = calc_value(unit, scaling, star, ad, ap, max_hp, armor, mr, runtime, base_ad)
             elif scaling is None:
-                v = coef
+                x = 1.0
             else:
-                v = 0.0
+                _warn_scaling(unit["name"], name, scaling)
+                x = 0.0
+            pre = term.get("preAdd")
+            if pre is not None:
+                x += float(pre[min(star, len(pre)) - 1] or 0.0)
+            v = coef * x
         op = term.get("op")
         if op == "add":
             acc += v
@@ -1883,8 +2011,13 @@ class Driver:
     """Base rotation: attacks are plain, the cast does nothing. Kits
     override what their ability does; see tft_kits. Hooks: `hit` (the unit
     took damage), `kill` (a dummy died to the unit), `died` (the unit fell:
-    on-death bodies and effects go here)."""
+    on-death bodies and effects go here). `lands` says when `cast` runs:
+    "end" (the default) when the cast time is up — the ability's effect
+    after its animation or wind-up — or "start", for a channel whose
+    driver spreads its effect over the cast itself (through `tick` and
+    `f.after`)."""
     manaless = False
+    lands = "end"
 
     def init(self, f):
         pass
@@ -2130,7 +2263,7 @@ def unit_slug(unit):
 
 def cells(snap=None):
     snap = snap or load_snapshot()
-    return [(unit_slug(u), key) for u in modeled_units(snap) for key in SCENARIOS]
+    return [(unit_slug(u), key) for u in modeled_units(snap) for key in unit_scenarios(u)]
 
 
 def cell_paths(snap=None):
@@ -2147,7 +2280,7 @@ def cell_paths(snap=None):
     paths = {}
     for u in modeled_units(snap):
         slug = unit_slug(u)
-        for key, sc in SCENARIOS.items():
+        for key, sc in unit_scenarios(u).items():
             h = base.copy()
             h.update(json.dumps([u["api"], key, sc], sort_keys=True).encode())
             paths[(slug, key)] = os.path.join(
@@ -2287,7 +2420,7 @@ def warm(log=_say, only=None):
             if m and (m.group(1), m.group(2)) not in paths:
                 os.remove(path)
         units = modeled_units(snap)
-        cold = [(u, key) for u in units for key in SCENARIOS
+        cold = [(u, key) for u in units for key in unit_scenarios(u)
                 if not os.path.exists(paths[(unit_slug(u), key)])
                 and (only is None or unit_slug(u) == only)]
         done = 0
@@ -2323,6 +2456,7 @@ def api_meta():
             "slug": unit_slug(u), "name": u["name"], "api": u["api"],
             "cost": u["cost"], "role": u["roleName"], "kind": u["kind"],
             "attack": u["attack"], "objective": u["objective"],
+            "stars": list(unit_stars(u)),
             "duration": fight_duration(u),
             "traits": u["traits"], "ability": u["ability"]["name"],
             "forms": sorted(u["forms"]) if u.get("forms") else [],
@@ -2499,7 +2633,9 @@ def cmd_sim(args):
           + (f" · form {sheet.form}" if sheet.form else ""))
     print(f"  AD {o['ad']:.1f}  AP {o['ap']:.0f}  AS {o['as']:.2f}  "
           f"crit {sheet.crit_chance*100:.0f}% ×{sheet.crit_mult:.2f}  precision {sheet.precision}  "
-          f"mana {sheet.mana_start:.0f}/{sheet.mana_max:.0f} +{sheet.mana_per_attack + sheet.fx.manaPerAttack:.0f}/attack +{sheet.fx.manaRegen:.1f}/s"
+          f"mana {min(sheet.mana_start, sheet.mana_max) if sheet.mana_max else sheet.mana_start:.0f}/{sheet.mana_max:.0f}"
+          f" +{(sheet.mana_per_attack + sheet.fx.manaPerAttack + sheet.fx.manaPerCrit * sheet.crit_chance) * sheet.fx.manaMult:.1f}/attack"
+          f" +{sheet.fx.manaRegen * sheet.fx.manaMult:.1f}/s"
           f"  HP {o['hp']:.0f} armor {o['armor']:.0f} MR {o['mr']:.0f} durability {sheet.durability*100:.0f}% omnivamp {sheet.omnivamp*100:.0f}%")
     print("  dummies: " + "; ".join(f"{s['hp']} HP / {s['armor']} armor / {s['mr']} MR ({s['kind']})"
                                     for s in dummy["slots"])

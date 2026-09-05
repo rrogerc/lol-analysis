@@ -91,26 +91,22 @@ class Ashe(Driver):
 
 class Akali(Driver):
     """Kunai Strike. Attack-damage form: a volley, more if the target burns.
-    Ability-power form: magic damage, multiplied against a tank. Either way a
-    kill casts it again at reduced damage."""
+    Ability-power form: magic damage, multiplied against a tank, and a kill
+    casts it again at reduced damage (each form's text names the other's
+    bonus as the one it does not have)."""
 
     def cast(self, f):
         (self._ad if f.sheet.form == "AD" else self._ap)(f)
 
     def _ad(self, f):
-        mult = 1.0
-        for _ in range(4):
-            d = f.target()
-            if d is None:
-                break
-            burning = (f.t <= d.burn_until and d.burn_pct > 0) or \
-                (d.burn_stack > 0 and f.t <= d.marks.get("burn_stack_until", 0.0))
-            f.hit_ability("PhysicalDamageCalc1", d, mult=mult)
-            if burning and d.alive:
-                f.hit_ability("PhysicalDamageCalc2", d, src="burning bonus", mult=mult)
-            if d.alive:
-                break
-            mult *= f.row("RecastDamageReduction")
+        d = f.target()
+        if d is None:
+            return
+        burning = (f.t <= d.burn_until and d.burn_pct > 0) or \
+            (d.burn_stack > 0 and f.t <= d.marks.get("burn_stack_until", 0.0))
+        f.hit_ability("PhysicalDamageCalc1", d)
+        if burning and d.alive:
+            f.hit_ability("PhysicalDamageCalc2", d, src="burning bonus")
 
     def _ap(self, f):
         mult = 1.0
@@ -126,26 +122,33 @@ class Akali(Driver):
 
 
 class Alune(Driver):
-    """Moonfall: nine shards over the nearest three; every fourth cast the
-    moon is full and crashes on everyone instead (the Attuned phase cycle
-    is assumed to be four casts long)."""
+    """Moonfall: nine shards over the nearest three (the rest move on when
+    one dies); every fourth cast the moon is full and crashes on the whole
+    board instead, split over everyone standing whatever the geometry (the
+    Attuned phase cycle is assumed to be four casts long)."""
     def cast(self, f):
         n = f.state.get("casts", 0) + 1
         f.state["casts"] = n
         if n % 4 == 0:
-            tg = f.aoe()
+            tg = f.alive()
             for d in tg:
                 f.hit_ability("MagicDamageCalc2", d, src="full moon", mult=1.0 / len(tg))
             return
         tg = f.aoe(count=f.row("NumEnemies"))
         for i in range(int(f.row("NumMoonshards"))):
-            f.hit_ability("MagicDamageCalc1", tg[i % len(tg)], src="moonshards")
+            al = [d for d in tg if d.alive] or f.alive()
+            if not al:
+                break
+            f.hit_ability("MagicDamageCalc1", al[i % len(al)], src="moonshards")
 
 
 class Aphelios(Driver):
-    """Moonlight's Onslaught: swipes for two seconds (more with bonus attack
-    speed), every third one an attack for on-hit purposes, then a blast
-    split among the dummies in reach."""
+    """Moonlight's Onslaught: swipes spread evenly over the two seconds
+    (more with bonus attack speed), every third one an attack for on-hit
+    purposes and the per-attack stacks, then — when the onslaught ends — a
+    blast split among the dummies in reach."""
+    lands = "start"
+
     def cast_time(self, f):
         return f.row("Duration")
 
@@ -153,16 +156,32 @@ class Aphelios(Driver):
         s = f.sheet
         bonus_as = f.attack_speed() / s.base_as - 1.0
         swipes = int(f.row("NumAttacksBase")) + int(max(0.0, bonus_as) / f.row("AS_NeededForExtraSwipe"))
-        d = f.target()
+        dur = f.row("Duration")
+        f.state["onslaught"] = [f.t, f.t + dur, swipes, 0]   # start, end, swipes, done
+        f.after(dur, lambda: self._blast(f))
+
+    def tick(self, f):
+        o = f.state.get("onslaught")
+        if not o:
+            return
+        start, end, swipes, done = o
+        due = int(round(swipes * min(1.0, (f.t - start) / (end - start)))) if end > start else swipes
         per_auto = int(f.row("NumSwipesTriggerSimulatedAutos"))
-        for i in range(swipes):
-            if d is None or not d.alive:
-                d = f.target()
-                if d is None:
-                    return
+        while o[3] < due:
+            d = f.target()
+            if d is None:
+                break
+            o[3] += 1
             f.hit_ability("PhysicalDamageCalc1", d, src="swipes")
-            if (i + 1) % per_auto == 0 and d.alive:
-                f.on_hit_effects(d, False)
+            if o[3] % per_auto == 0 and d.alive:
+                f.simulated_attack(d)
+
+    def _blast(self, f):
+        o = f.state.get("onslaught")
+        if o:   # swipes the ticks have not paid out yet land with the blast
+            o[1] = f.t
+            self.tick(f)
+        f.state["onslaught"] = None
         tg = f.aoe()
         for d in tg:
             f.hit_ability("PhysicalDamageCalc2", d, src="blast", mult=1.0 / len(tg))
@@ -256,11 +275,9 @@ class Gromp(Driver):
 
     def cast(self, f):
         if f.sheet.form == "AD":
-            tgt = f.target()
-            f.hit_ability("PhysicalDamageCalc1", tgt)
-            for d in f.adjacent():
-                if d is not tgt:
-                    f.hit_ability("PhysicalDamageCalc2", d, src="splash")
+            f.hit_ability("PhysicalDamageCalc1", f.target())
+            for d in f.adjacent():   # "within a 1 hex radius": the target too, as the poison cloud does
+                f.hit_ability("PhysicalDamageCalc2", d, src="splash")
             return
         f.hit_ability("MagicDamageCalc1", f.target())
         for d in f.aoe():
@@ -352,6 +369,8 @@ class Pebbles(Driver):
     """Azure Laser: channels while draining mana, ticking damage and flat
     magic-resist reduction on the target. With the Riftbeast Alpha Mark,
     mana regen accrues per seconds channeled."""
+    lands = "start"
+
     def cast_time(self, f):
         return 1.0 / f.row("PercentManaPerSecond")
 
@@ -382,8 +401,9 @@ class Pebbles(Driver):
 
 
 class Sivir(Driver):
-    """Boomerang Blade: a hit, then bounces between nearby dummies; a kill
-    adds bounces. Alone, there is nothing to bounce to."""
+    """Boomerang Blade: a hit, then bounces between nearby dummies (the
+    first bounce leaves the target it just hit); a kill adds bounces.
+    Alone, there is nothing to bounce to."""
     def cast(self, f):
         f.hit_ability("PhysicalDamageCalc1", f.target())
         if not f.clump:
@@ -394,7 +414,7 @@ class Sivir(Driver):
             al = f.alive()
             if len(al) < 2:
                 break
-            d = al[i % len(al)]
+            d = al[(i + 1) % len(al)]
             f.hit_ability("PhysicalDamageCalc2", d, src="bounces")
             if not d.alive:
                 bounces += int(f.row("BonusKillBounces"))
@@ -425,7 +445,9 @@ class Tristana(Driver):
         dur = f.row("Duration")
         f.buff_as(f.calc("AttackSpeedCalc1"), dur)
         f.state["charge"] = [f.t + dur, 0]
-        f.lock_until = max(f.lock_until, f.t + dur)   # mana-locked while the charge ticks
+        # "each attack while casting": mana-locked through the charge and
+        # the second after it
+        f.lock_until = max(f.lock_until, f.t + dur + tft.MANA_LOCK_S)
 
     def attack(self, f, target):
         f.hit_attack(target)
@@ -456,7 +478,11 @@ class Varus(Driver):
 
 class Xayah(Driver):
     """Deadly Plumage: attack speed for five attacks, which become feathers
-    that deal ability damage and strip flat armor."""
+    that deal the ability's damage (with on-hit effects; crit only with
+    Precision, like every attack replacement) and strip flat armor. She is
+    casting for as long as the feathers last — no mana until they are
+    spent and the second after — or a 0/50 marksman at 10 mana an attack
+    would never leave them."""
     def cast_time(self, f):
         return 0.0
 
@@ -464,7 +490,7 @@ class Xayah(Driver):
         f.state["feathers"] = int(f.row("NumAttacks"))
         f.as_extra = f.row("AttackSpeed") - 1.0
         f.as_extra_until = 1e9
-        f.lock_until = 1e9   # mana-locked until the feathers are spent
+        f.lock_until = 1e9
 
     def attack(self, f, target):
         n = f.state.get("feathers", 0)
@@ -476,7 +502,7 @@ class Xayah(Driver):
         target.armor_flat += f.calc("GenericCalc1")
         if n - 1 == 0:
             f.as_extra_until = f.t
-            f.lock_until = f.t
+            f.lock_until = f.t + tft.MANA_LOCK_S
 
 
 class Yunara(Driver):
@@ -642,6 +668,8 @@ class Scuttlecrab(Driver):
     durability plus a heal — a share of it up front, the rest over the
     burrow. The Riftbeast Green Buff heals allies, and the coins are gold."""
     def attack(self, f, target):
+        # ability damage in the attack's place: on-hit effects on the target,
+        # crit only with Precision (the convention for every attack replacement)
         for d in f.adjacent():
             if d is target:
                 f.hit_ability("PhysicalDamageCalc1", d, src="dance")
@@ -696,6 +724,8 @@ class Fiddlesticks(Driver):
     """Harvest: strips flat magic resist off the nearest few dummies, then
     channels for the cast duration, draining that damage out of each of
     them and that healing into himself over the channel."""
+    lands = "start"
+
     def cast_time(self, f):
         return f.row("CastDuration")
 
@@ -744,21 +774,14 @@ class Hecarim(Driver):
     def cast(self, f):
         r = f.row("Resists")
         f.buff_resists(r, r, self.DREAD_S)
-        f.state["dread"] = [f.t + self.DREAD_S, f.calc("HealthCalc1") / self.DREAD_S]
+        _heal_over_time(f, f.calc("HealthCalc1"), self.DREAD_S, "spirit of dread")
         tg = f.aoe(f.row("NumEnemies"))
         for d in tg:
             f.hit_ability("MagicDamageCalc1", d, src="riders")
         f.stun(tg, f.row("StunDuration"))
 
     def tick(self, f):
-        st = f.state.get("dread")
-        if st is None or not f.alive_unit:
-            return
-        span = min(tft.TICK_S, st[0] - (f.t - tft.TICK_S))
-        if span > 0:
-            f.heal(st[1] * span, "spirit of dread")
-        if f.t >= st[0]:
-            f.state["dread"] = None
+        _tick_heal(f)
 
 
 class Krug(Driver):
@@ -776,7 +799,8 @@ class Krug(Driver):
     def died(self, f):
         mini = f.state["mini"]
         hp = f.calc("HealthCalc1")
-        for _ in range(int(2 + f.fx.summoner.get("extraSummons", 0))):
+        # the Summoner row is a total where 1 is the normal count
+        for _ in range(int(2 + max(0, f.fx.summoner.get("extraSummons", 1) - 1))):
             f.add_body(hp, mini["armor"], mini["mr"], "kruglette")
         if f.fx.riftbeast:
             f.shield_ally(f.row("TraitShieldHealth") * f.max_hp())
@@ -826,7 +850,9 @@ class Amumu(Driver):
         if f.t < nxt - 1e-9:
             return
         f.state["beat"] = nxt + rate
-        f.heal(f.calc("HealthCalc1"), "tantrum")
+        # the data folds HealthCalc1 as 2.2% of HealthCalc2 plus 2.2% of max
+        # health; the footer says it is the percentage plus HealthCalc2
+        f.heal(f.row("PassiveHealPercent") * f.max_hp() + f.calc("HealthCalc2"), "tantrum")
         for d in f.adjacent():
             f.hit_ability("MagicDamageCalc1", d, src="tantrum")
 
@@ -901,11 +927,16 @@ class Sett(Driver):
             f.state["mana"] = True
             f.mana += f.calc("ManaCalc1")
 
+    lands = "start"
+
     def cast_time(self, f):
         return f.row("HealDuration")
 
     def cast(self, f):
         f.heal(f.calc("HealthCalc1"), "wind-up")
+        f.after(f.row("HealDuration"), lambda: self._punch(f))
+
+    def _punch(self, f):
         for d in f.aoe():
             f.hit_ability("PhysicalDamageCalc1", d, src="haymaker")
 
@@ -1016,7 +1047,10 @@ class Diana(Driver):
         f.shield(f.calc("ShieldCalc1"), f.row("ShieldDuration"), "barrier")
         tg = f.aoe()
         for i in range(int(f.row("NumOrbs"))):
-            f.hit_ability("MagicDamageCalc1", tg[i % len(tg)], src="orbs")
+            al = [d for d in tg if d.alive] or f.alive()
+            if not al:
+                break
+            f.hit_ability("MagicDamageCalc1", al[i % len(al)], src="orbs")
 
 
 class Morgana(Driver):
@@ -1074,7 +1108,8 @@ class ElderDragon(Driver):
         self._execute(f)
 
     def cast(self, f):
-        if not f.state.get("landed"):
+        landing = not f.state.get("landed")
+        if landing:
             f.state["landed"] = True
             f.untargetable(self.cast_time(f))
             f.stun(f.alive(), f.row("StunDuration"))
@@ -1085,7 +1120,8 @@ class ElderDragon(Driver):
         for i, d in enumerate(tg):
             f.hit_ability("PhysicalDamageCalc2", d, src="flame breath",
                           mult=max(floor, 1.0 - fall * i))
-        self._ignite(f, tg)
+        if not landing:   # the landing's Ignite already covers everyone
+            self._ignite(f, tg)
         self._execute(f)
 
     def tick(self, f):

@@ -1005,7 +1005,17 @@ function renderTftUnits() {
     key: u.slug, label: `${u.name} (${u.cost})`, tag: u.role,
     title: `${u.cost}-cost ${u.role} → ${u.objective} fight · ${u.traits.join(", ")} · ${u.ability}` +
            (u.forms.length ? ` · forms ${u.forms.join("/")}` : "") + (u.note ? ` — ${u.note}` : "") })),
-    k => { tstate.unit = k; renderTftPool(); });
+    k => { tstate.unit = k; renderTftStars(); renderTftPool(); });
+  renderTftStars();
+}
+
+function renderTftStars() {
+  // the star levels this unit is simulated at (no 3★ for 4- and 5-costs)
+  const m = tstate.meta, u = m.units.find(x => x.slug === tstate.unit);
+  const stars = u?.stars || m.stars;
+  if (!stars.includes(tstate.star)) tstate.star = stars.includes(2) ? 2 : stars[0];
+  tftSeg("tft-star-seg", stars.map(s => ({ key: String(s), label: `${s}★` })),
+    k => { tstate.star = +k; });
 }
 
 async function loadTftMeta() {
@@ -1027,8 +1037,6 @@ async function loadTftMeta() {
     key: k, label: k === "all" ? `all (${m.units.length})` : `${k} (${counts[k] || 0})`, title: TFT_CLASS[k] })),
     k => { tstate.cls = k; renderTftUnits(); renderTftPool(); });
   renderTftUnits();
-  tftSeg("tft-star-seg", m.stars.map(s => ({ key: String(s), label: `${s}★` })),
-    k => { tstate.star = +k; });
   tftSeg("tft-geo-seg", Object.entries(m.geometries).map(([k, v]) => ({ key: k, label: k, title: v })),
     k => { tstate.geo = k; });
   tftSeg("tft-trait-seg", Object.entries(m.traitContexts).map(([k, v]) => ({ key: k, label: `traits ${k}`, title: v })),

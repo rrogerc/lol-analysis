@@ -80,11 +80,15 @@
   mana-cycle fight against three stat dummies derived from the set's own
   units at 2★ (two median tanks, then a median non-tank), every 3-item
   multiset of the 35 craftable completed items. Every shop unit of the set
-  is modeled (65 in Set 18). Twelve cells per unit: 2★/3★ × spread/clump ×
-  traits bare/low/high. Pure Python; a carry fight is ~0.3 ms, a fight
+  is modeled (65 in Set 18). Cells per unit: 1★ and 2★ for every cost,
+  3★ only for the 1–3 costs (a 3★ 4- or 5-cost is an auto-win, not a
+  build question — Roger's call 2026-09-05; `STARS_BY_COST`,
+  `unit_scenarios`) × spread/clump × traits bare/low/high: 18 cells for a
+  1–3 cost, 12 for a 4–5 cost, 1,026 in all, and the dashboard's star
+  buttons follow the unit. Pure Python; a carry fight is ~0.3 ms, a fight
   where the dummies hit back ~0.5–1.5 ms, a cell 0.3–3 s on the 16
-  threads, the whole warm (780 cells) about eleven minutes (measured
-  2026-09-04; a `lol.py tft warm` chunked by a 10-minute timeout resumes
+  threads, the whole warm about thirteen minutes (1,026 cells, measured
+  2026-09-05; a `lol.py tft warm` chunked by a 10-minute timeout resumes
   where it stopped). Cache `.cache/tft/`, keyed by
   tft.py + tft_kits.py + the snapshot + the hand files; serve auto-warms
   it like builds (log `.cache/tft/warm.log`).
@@ -161,7 +165,15 @@
   entry (+ trait-effects entries if its traits are new). A new set = new
   drivers, new hand files, `DEFAULT_SET`.
 - Assumptions to remember (all in tft.py constants or noted in the UI):
-  AD ×1.5 and HP ×1.8 per star, 1 s mana lock from a cast, curve rows
+  AD ×1.5 and HP ×1.8 per star, a 1 s mana lock after a cast (the wiki's
+  "can't accumulate mana for the second thereafter" — it blocks attack
+  mana and regen alike; a channel a driver declares, Aphelios's 2 s
+  onslaught, Ahri's 1.75 s, Varus's 2 s wind-up, locks through its length
+  plus that second, and Tristana's charge and Xayah's feathers are locks
+  too, since a 0/50 marksman at 10 mana an attack would otherwise never
+  leave them), an ability's damage landing when its animation (0.25 s, the
+  bins' default for every unit) or its declared channel ends (`Driver.lands`,
+  `Fight.after`; so no kill is ever at t=0), curve rows
   hold the previous star's value, fighters' role attack speed at stage 4
   (Riot's 15.4 curve: stage 2–6 = 5/10/20/30/30%), damage amp additive
   and post-mitigation, negative resists floored at 0, Blossom/Elderwood
@@ -181,6 +193,35 @@
   attack damage for that star (the rows grow ×1.5 per star like base AD;
   Warwick's 200/300/450 bite is 500% AD throughout), not a percentage
   over 100 — the old reading made every AD ability 1.3–2.5× too weak.
+- The 2026-09-05 damage-math audit (prompted by Soraka ranking far below
+  Aphelios; `test_tft.TestAuditFixes` pins each fix): overrides.json curve
+  rows now reach the calcs' coefficient lists (they never did: every
+  patch-note damage correction was silently ignored while `tft check`
+  reported it applied); channelled casts land when they end instead of at
+  the cast (Aphelios's swipes spread over the 2 s, the blast after; that
+  alone was 20–45% of his displayed DPS and made 21 3★ cells "kill at
+  0.0 s, DPS 5e12"); starting mana is capped at the bar (three Protector's
+  Vows made a 30-mana unit start at 60/30 and chain-cast through the
+  lock); regen is blocked for exactly the lock; a second copy of Titan's
+  no longer stacks twice as fast, a second Hand of Justice is no longer
+  dropped, two Striker's Flails no longer share one cap (Bramble,
+  Evenshroud, Edge of Night, Steadfast likewise per copy); an ability's
+  damage-over-time crits with Precision like its direct damage; a DoT pays
+  for elapsed time only; a cast's attack-speed buff applies from the
+  triggering attack; a tick-started cast holds the attack due that
+  instant; Akali's AD form lost the AP form's recast; Alune's full moon
+  splits over everyone whatever the geometry; Sivir's first bounce leaves
+  the target; Elder Dragon's landing no longer ignites twice; Riftbeast's
+  capstone stats are modeled (trait overrides go by breakpoint column,
+  `"traits"` in overrides.json). Open interpretations, deliberately left:
+  attack replacements (Xayah's feathers, Nidalee's javelins, Scuttlecrab's
+  dance) are ability damage that crits only with Precision; "N nearest
+  enemies" targeting hits one dummy spread out; Solar's bonus is 7% of
+  post-mitigation damage, itself mitigated; damage amp does not touch true
+  damage (burns); the 3★ rows of every 4- and 5-cost are the PBE file's
+  enormous values (Sett 5000, Taric 10000), which is one more reason those
+  cells are no longer computed; the K–R fighters and tanks were not
+  re-audited (the agent for that slice hit a rate limit).
 
 ## Tests
 

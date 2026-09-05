@@ -271,8 +271,10 @@ class TestManaCycle(unittest.TestCase):
     20 of 80 to start. Attacks at 0, 1.25, …; regen lands on the quarter
     second ticks. After the attack at 6.25 s she has 20 + 42 + 12.5 =
     74.5; the tick at 7.5 s adds 0.5 and the attack there 7, so the first
-    cast is at 7.5 s. It leaves 4 mana and a one-second lock; the second
-    bar fills on the tick at 18.25 s."""
+    cast is at 7.5 s. It leaves 2 mana and a one-second lock that blocks
+    exactly a second of regen (the tick at 8.5 s pays nothing: its whole
+    quarter second is inside the lock); the second bar fills on the tick
+    at 18.5 s."""
 
     def test_cast_times(self):
         unit = SNAP.unit("Ashe")
@@ -281,7 +283,7 @@ class TestManaCycle(unittest.TestCase):
                                   {}, {}, tft_kits.driver_for(unit))
         self.assertEqual(res["casts"], 2)
         self.assertAlmostEqual(res["castTimes"][0], 7.5)
-        self.assertAlmostEqual(res["castTimes"][1], 18.25)
+        self.assertAlmostEqual(res["castTimes"][1], 18.5)
         self.assertEqual(res["attacks"], 16)
 
     def test_mana_lock_after_cast(self):
@@ -391,7 +393,7 @@ class TestDrivers(unittest.TestCase):
         for u in tft.modeled_units(SNAP):
             ctx, _ = tft.unit_trait_contexts(SNAP, u, trait_fx)
             for items, geo, c, star in itertools.product(([], trio, tanky), ("spread", "clump"),
-                                                          ("bare", "high"), (2, 3)):
+                                                          ("bare", "high"), tft.unit_stars(u)):
                 sheet, res = tft.simulate(SNAP, u, star, items, geo, ctx[c], dummy, None,
                                           item_fx, trait_fx, tft_kits.driver_for(u))
                 self.assertGreater(res["total"], 0, u["name"])
@@ -508,10 +510,11 @@ class TestBody(unittest.TestCase):
 
     def test_durability_stacks_multiplicatively(self):
         self.assertAlmostEqual(tft.combined_durability([0.2, 0.15]), 0.32)
-        f = fight_for("Leona", fx=fx_with(durabilities=[0.2], durabilityAbove=(0.1, 0.5)), pressure=True)
-        self.assertAlmostEqual(f.durability_now(), 1 - 0.8 * 0.9)   # at full health
+        # Steadfast Heart: one value above the threshold, the other below
+        f = fight_for("Leona", fx=fx_with(durabilities=[0.2], durabilityByHealth=[(0.05, 0.15, 0.5)]), pressure=True)
+        self.assertAlmostEqual(f.durability_now(), 1 - 0.8 * 0.85)   # at full health
         f.hp = f.max_hp() * 0.4
-        self.assertAlmostEqual(f.durability_now(), 0.2)
+        self.assertAlmostEqual(f.durability_now(), 1 - 0.8 * 0.95)
 
     def test_tank_mana_from_damage_is_capped(self):
         f = fight_for("Leona", pressure=True)
@@ -617,7 +620,7 @@ class TestBody(unittest.TestCase):
         self.assertEqual(len(f.shields), 1)   # not again
 
     def test_edge_of_night(self):
-        f = fight_for("Leona", fx=fx_with(untargetableAtHp=(0.6, 1.0, 0.2)), pressure=True)
+        f = fight_for("Leona", fx=fx_with(untargetableAtHp=[(0.6, 1.0, 0.2)]), pressure=True)
         f.hp = f.max_hp() * 0.55
         missing = f.max_hp() - f.hp
         f.take(1.0, "true")
@@ -646,7 +649,7 @@ class TestBody(unittest.TestCase):
         self.assertEqual(f.adap_stack_n, 25)
 
     def test_hand_of_justice_doubles_by_health(self):
-        f = fight_for("Warwick", fx=fx_with(hoj=(0.15, 15.0, 0.12, 0.5)), pressure=True)
+        f = fight_for("Warwick", fx=fx_with(hojs=[(0.15, 15.0, 0.12, 0.5)]), pressure=True)
         ad_full = f.ad(); omni_full = f.omnivamp()
         f.hp = f.max_hp() * 0.3
         self.assertLess(f.ad(), ad_full)
@@ -745,7 +748,7 @@ class TestSnapshot(unittest.TestCase):
     def test_meta_shape(self):
         meta = tft.api_meta()
         self.assertEqual(meta["set"], 18)
-        self.assertEqual(len(meta["scenarios"]), 12)
+        self.assertEqual(len(meta["scenarios"]), 18)   # three stars × two geometries × three contexts
         self.assertEqual(len(meta["items"]), 35)
         self.assertGreaterEqual(len(meta["units"]), 20)
         self.assertEqual(set(meta["objectives"]), {"carry", "fighter", "tank"})
@@ -755,10 +758,118 @@ class TestSnapshot(unittest.TestCase):
 
     def test_cells_are_hashed_per_unit_and_scenario(self):
         paths = tft.cell_paths(SNAP)
-        self.assertEqual(len(paths), len(tft.modeled_units(SNAP)) * 12)
+        self.assertEqual(len(paths), sum(len(tft.unit_scenarios(u)) for u in tft.modeled_units(SNAP)))
         self.assertEqual(len(set(paths.values())), len(paths))
         self.assertTrue(all(p.startswith(tft.CACHE_DIR) for p in paths.values()))
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAuditFixes(unittest.TestCase):
+    """Pins from the 2026-09-05 damage-math audit."""
+
+    def test_curve_overrides_reach_the_calcs(self):
+        # overrides.json: Soraka DamageAP 190/285 -> 225/335; the calc's own
+        # coefficient list used to win over the corrected row
+        u = SNAP.unit("Soraka")
+        kit = {"name": u["name"], "calcs": u["calcs"], "curve": u["curve"]}
+        self.assertAlmostEqual(tft.calc_value(kit, "MagicDamageCalc1", 2, 45.0, 100.0, 0, 0, 0, {}, 45.0), 335.0)
+        self.assertAlmostEqual(tft.calc_value(kit, "MagicDamageCalc1", 3, 67.5, 100.0, 0, 0, 0, {}, 67.5), 1000.0)
+
+    def test_trait_curve_override_is_by_breakpoint_column(self):
+        row = [[0, 0], [3, 0.06], [4, 0.06]]
+        self.assertEqual(tft.override_trait_curve(row, {"3": 0.05}), [[0, 0], [3, 0.05], [4, 0.06]])
+
+    def test_riftbeast_capstone_stats_at_high(self):
+        u = SNAP.unit("Murkwolf")
+        trait_fx = tft.load_trait_effects(SNAP.set_no)
+        ctx, _ = tft.unit_trait_contexts(SNAP, u, trait_fx)
+        high = tft.build_fx(SNAP, u, [], ctx["high"], {}, trait_fx)
+        self.assertAlmostEqual(high.adPct, 0.05)     # 6% in the snapshot, 5% per the patch notes
+        self.assertAlmostEqual(high.asPct, 0.05)
+        self.assertAlmostEqual(high.hp, 50.0)
+        low = tft.build_fx(SNAP, u, [], ctx["low"], {}, trait_fx)
+        self.assertAlmostEqual(low.asPct, 0.0)       # a 0 multiplier row is not -100% attack speed
+
+    def test_stat_line_formats_are_case_insensitive(self):
+        item = {"statLine": '<TFTCurveTable row="AS" icon="icon.AS" format="PercentMinusOne" type="stat"/>',
+                "curve": {"AS": [[1, 1.2]]}}
+        self.assertAlmostEqual(tft.parse_stat_line(item)["asPct"], 0.2)
+
+    def test_starting_mana_is_capped_at_the_bar(self):
+        sheet = tft.Sheet(SNAP.unit("Soraka"), 2, fx_with(startingMana=60.0))
+        f = tft.Fight(sheet, tft.make_dummies(tft.dummies_for(SNAP)), "clump", tft.Driver())
+        self.assertAlmostEqual(f.mana, 30.0)
+
+    def test_a_cast_lands_after_its_animation(self):
+        u = SNAP.unit("Soraka")
+        f = fight_for("Soraka", driver=tft_kits.driver_for(u))
+        f.mana = f.sheet.mana_max
+        f._cast()
+        self.assertEqual(f.total, 0.0)                      # nothing yet
+        self.assertAlmostEqual(f.pending[0][0], tft.CAST_TIME_DEFAULT)
+        self.assertAlmostEqual(f.lock_until, tft.MANA_LOCK_S)   # the animation is inside the second
+        f.pending.pop(0)[2]()
+        self.assertGreater(f.total, 0.0)
+
+    def test_a_channel_locks_through_itself_and_the_second_after(self):
+        f = fight_for("Aphelios", driver=tft_kits.driver_for(SNAP.unit("Aphelios")))
+        f.mana = f.sheet.mana_max
+        f._cast()
+        self.assertAlmostEqual(f.casting_until, 2.0)
+        self.assertAlmostEqual(f.lock_until, 3.0)
+
+    def test_aphelios_onslaught_takes_its_two_seconds(self):
+        # 3★ with a full bar from two Protector's Vows: the swipes and the
+        # blast used to land at t=0 (a kill at 0.0 s and a DPS of 5e12)
+        dummy = tft.dummies_for(SNAP)
+        _, res = sim("Aphelios", ("Deathblade", "Protector's Vow", "Protector's Vow"), star=3,
+                     geometry="spread", item_fx=tft.load_item_effects(SNAP.set_no))
+        self.assertAlmostEqual(res["killTime"], 2.0)
+        self.assertAlmostEqual(res["dps"], dummy["totalHp"] / 2.0)
+
+    def test_second_copies_stack(self):
+        # Titan's: one stack per attack shared by both copies, each copy's share
+        f = fight_for("Warwick", fx=fx_with(adapPerAttack=[(0.02, 25, 0.1), (0.02, 25, 0.1)]))
+        for _ in range(10):
+            f.on_attack_stacks()
+        self.assertEqual(f.adap_stack_n, 10)
+        self.assertAlmostEqual(f._adap_bonus(), 0.4)
+        # Hand of Justice: both copies count
+        f = fight_for("Warwick", fx=fx_with(hojs=[(0.15, 15.0, 0.12, 0.5)] * 2), pressure=True)
+        self.assertAlmostEqual(f._hoj()[0], 0.6)
+        # Striker's Flail: each copy fills its own cap
+        f = fight_for("Warwick", fx=fx_with(ampPerCrit=[(0.05, 5.0, 4), (0.05, 5.0, 4)]))
+        f.sheet.crit_chance = 1.0
+        for _ in range(10):
+            f.on_attack_stacks()
+        self.assertAlmostEqual(f.amp(f.targets[0]) - 1.0, 0.4)
+
+    def test_ability_dots_crit_with_precision(self):
+        u = SNAP.unit("Cassiopeia")
+        with_p = fight_for("Cassiopeia", fx=fx_with(precision=1, crit=0.75), driver=tft_kits.driver_for(u), duration=6.0).run()
+        without = fight_for("Cassiopeia", fx=fx_with(crit=0.75), driver=tft_kits.driver_for(u), duration=6.0).run()
+        self.assertAlmostEqual(with_p["breakdown"]["poison"] / without["breakdown"]["poison"], 1.4, places=6)
+
+    def test_a_dot_pays_for_the_time_elapsed_only(self):
+        f = fight_for("Ashe")
+        d = f.targets[0]
+        f.t = 0.1
+        f.dot(100.0, 1.0, "true", d, "test")
+        f.t = 0.25
+        f._tick(0.25, 1.0, [], [], [])
+        self.assertAlmostEqual(f.total, 15.0)    # 0.15 s of a 100-per-second dot, not a whole tick
+
+
+class TestCells(unittest.TestCase):
+    def test_star_levels_by_cost(self):
+        # 1★ and 2★ for everyone, 3★ only for the 1–3 costs
+        for u in SNAP.units.values():
+            self.assertEqual(tft.unit_stars(u), (1, 2, 3) if u["cost"] <= 3 else (1, 2), u["name"])
+        self.assertEqual(len(tft.unit_scenarios(SNAP.unit("Karma"))), 18)
+        self.assertEqual(len(tft.unit_scenarios(SNAP.unit("Soraka"))), 12)
+        self.assertFalse(any(k.startswith("s3-") for k in tft.unit_scenarios(SNAP.unit("Soraka"))))
+        keys = {key for _, key in tft.cells(SNAP)}
+        self.assertEqual(keys, set(tft.SCENARIOS))
