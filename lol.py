@@ -25,6 +25,7 @@ from common import BASE_DIR
 import builds
 import items
 import scaling
+import tft
 import webapp
 
 
@@ -208,6 +209,53 @@ def main():
                     help="candidate items (default: the modeled damage pool)")
     sp.add_argument("--top", type=int, default=15)
     sp.set_defaults(func=builds.cmd_optimize)
+
+    # ----- tft domain -----
+    tf = sub.add_parser("tft", help="Teamfight Tactics: optimal items per unit, from first principles")
+    tfsub = tf.add_subparsers(dest="tft_cmd", required=True)
+
+    def tft_args(sp):
+        sp.add_argument("--set", type=int, default=tft.DEFAULT_SET, help="TFT set number (default 18)")
+        sp.add_argument("--patch", help="archived patch to use (default: newest)")
+
+    sp = tfsub.add_parser("fetch", help="snapshot the set's unit/item/trait data for a patch")
+    sp.add_argument("--set", type=int, default=tft.DEFAULT_SET)
+    sp.add_argument("--patch", help="TFT patch label, e.g. 18.1 (default: newest patch notes)")
+    sp.add_argument("--force", action="store_true", help="refetch even if archived")
+    sp.set_defaults(func=tft.cmd_fetch)
+
+    sp = tfsub.add_parser("status", help="list archived snapshots")
+    sp.set_defaults(func=tft.cmd_status)
+
+    sp = tfsub.add_parser("check", help="compare the snapshot with the patch notes' changes")
+    tft_args(sp)
+    sp.set_defaults(func=tft.cmd_check)
+
+    sp = tfsub.add_parser("units", help="list the set's units and which have a driver")
+    tft_args(sp)
+    sp.set_defaults(func=tft.cmd_units)
+
+    def fight_args(sp):
+        sp.add_argument("name", help="unit name, e.g. ashe")
+        sp.add_argument("--star", type=int, default=2, choices=(1, 2, 3, 4))
+        sp.add_argument("--geometry", default="clump", choices=list(tft.GEOMETRIES))
+        sp.add_argument("--traits", default="bare", choices=list(tft.TRAIT_CONTEXTS))
+        sp.add_argument("--duration", type=float, default=tft.FIGHT_DURATION)
+        tft_args(sp)
+
+    sp = tfsub.add_parser("sim", help="simulate one build against the dummies")
+    fight_args(sp)
+    sp.add_argument("--items", nargs="*", default=[], help="item names, e.g. 'Infinity Edge'")
+    sp.set_defaults(func=tft.cmd_sim)
+
+    sp = tfsub.add_parser("top", help="rank every 3-item build for one unit and scenario")
+    fight_args(sp)
+    sp.add_argument("--top", type=int, default=15)
+    sp.set_defaults(func=tft.cmd_top)
+
+    sp = tfsub.add_parser("warm", help="precompute every dashboard cell that is cold")
+    sp.add_argument("--unit", help="only this unit slug")
+    sp.set_defaults(func=tft.cmd_warm)
 
     args = p.parse_args()
     args.func(args)

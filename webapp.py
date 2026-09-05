@@ -21,6 +21,7 @@ import time
 import builds
 import items
 import scaling
+import tft
 from common import BASE_DIR, WEB_DIR, db_connect
 
 JOBS_DIR = os.path.join(BASE_DIR, "jobs")
@@ -40,6 +41,9 @@ SERVICES = [
     {"unit": "lol-scaling-sync.timer", "svc": "lol-scaling-sync.service",
      "scope": "user", "runs": "every 6h at :30",
      "desc": "triggers jobs/sync-scaling.sh — its own outcome is below"},
+    {"unit": "lol-tft-refresh.timer", "svc": "lol-tft-refresh.service",
+     "scope": "user", "runs": "daily 07:41",
+     "desc": "triggers jobs/refresh-tft.sh — its own outcome is below"},
 ]
 
 
@@ -195,6 +199,17 @@ def cmd_export(args):
     dump("api/builds/status.json",
          {"ready": {f"{slug}/{key}": True for slug, key in paths}, "warmer": "idle"})
     files += 1
+    # the TFT cells likewise
+    if tft.patch_dirs(tft.DEFAULT_SET):
+        dump("api/tft/meta.json", tft.api_meta())
+        if tft.warm() is None:
+            sys.exit("Another TFT warm is running — wait for it, then export again.")
+        tpaths = tft.cell_paths()
+        for slug, key in tpaths:
+            dump(f"api/tft/{slug}/{key}.json", tft.cached_scenario(slug, key, tpaths))
+        dump("api/tft/status.json",
+             {"ready": {f"{slug}/{key}": True for slug, key in tpaths}, "warmer": "idle"})
+        files += 2 + len(tpaths)
     for tier in meta["tiers"]:
         patches = scaling.db_patches(con, tier)
         dump(f"api/rows/{tier}.json", scaling.build_rows(con, tier, patches))
@@ -216,16 +231,19 @@ def warm_python():
 
 
 class AutoWarm:
-    """Keeps the builds cache warm from inside `serve`: once a minute, if any
-    cell is cold, runs `lol.py builds warm` as a subprocess (on warm_python).
-    A subprocess rather than a thread because the enumerator forks a worker
-    pool, which is only safe from a single-threaded process, and because a
-    crash there must not take the dashboard down. The warm lock stops it
-    ever doubling up with a manual run. A warm that exits non-zero — it
-    failed, or someone killed it — turns auto-warm off until serve restarts,
-    so a broken setup can't loop and a deliberate kill sticks."""
+    """Keeps a scenario cache warm from inside `serve`: once a minute, if
+    any cell is cold, runs `lol.py <domain> warm` as a subprocess (on
+    warm_python). A subprocess rather than a thread because the enumerator
+    forks a worker pool, which is only safe from a single-threaded process,
+    and because a crash there must not take the dashboard down. The warm
+    lock stops it ever doubling up with a manual run. A warm that exits
+    non-zero — it failed, or someone killed it — turns auto-warm off until
+    serve restarts, so a broken setup can't loop and a deliberate kill
+    sticks. The domain module (builds, tft) supplies source_stale,
+    warm_running, cell_ready and SCENARIO_CACHE_DIR."""
 
-    def __init__(self, enabled):
+    def __init__(self, enabled, domain=builds, words=("builds", "warm")):
+        self.domain, self.words = domain, words
         self.proc = None
         self.failed = False
         if enabled:
@@ -233,11 +251,11 @@ class AutoWarm:
 
     def state(self):
         """One word for the dashboard: running, idle, failed, or stale."""
-        if builds.source_stale():
+        if self.domain.source_stale():
             return "stale"
         if self.failed:
             return "failed"
-        if builds.warm_running():
+        if self.domain.warm_running():
             return "running"
         return "idle"
 
@@ -247,15 +265,15 @@ class AutoWarm:
                 return
             self.failed = self.proc.returncode != 0
             self.proc = None
-        if self.state() != "idle" or all(builds.cell_ready().values()):
+        if self.state() != "idle" or all(self.domain.cell_ready().values()):
             return
-        os.makedirs(builds.SCENARIO_CACHE_DIR, exist_ok=True)
+        os.makedirs(self.domain.SCENARIO_CACHE_DIR, exist_ok=True)
         python = warm_python()
-        with open(os.path.join(builds.SCENARIO_CACHE_DIR, "warm.log"), "a") as log:
+        with open(os.path.join(self.domain.SCENARIO_CACHE_DIR, "warm.log"), "a") as log:
             log.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] warming with {python}\n")
             log.flush()
             self.proc = subprocess.Popen(
-                [python, os.path.join(BASE_DIR, "lol.py"), "builds", "warm"],
+                [python, os.path.join(BASE_DIR, "lol.py"), *self.words],
                 cwd=BASE_DIR, stdout=log, stderr=subprocess.STDOUT)
 
     def _loop(self):
@@ -279,6 +297,7 @@ def cmd_serve(args):
     from urllib.parse import urlparse, parse_qs
 
     warmer = AutoWarm(enabled=not args.no_warm)
+    twarmer = AutoWarm(enabled=not args.no_warm, domain=tft, words=("tft", "warm"))
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -323,6 +342,23 @@ def cmd_serve(args):
                     else:
                         self._json(out)
                     return
+                if u.path == "/api/tft/meta.json":
+                    self._json(tft.api_meta())
+                    return
+                if u.path == "/api/tft/status.json":
+                    self._json({"ready": tft.cell_ready(), "warmer": twarmer.state()})
+                    return
+                if m := re.fullmatch(r"/api/tft/([a-z0-9]+)/([a-z0-9-]+)\.json", u.path):
+                    try:
+                        out = tft.cached_scenario(m.group(1), m.group(2))
+                    except ValueError as e:
+                        self._json({"error": str(e)}, 404)
+                        return
+                    if out is None:
+                        self._json({"pending": True}, 202)
+                    else:
+                        self._json(out)
+                    return
                 con = db_connect()
                 if u.path == "/api/meta.json":
                     self._json(app_meta(con))
@@ -351,10 +387,10 @@ def cmd_serve(args):
     url = f"http://{args.host}:{args.port}"
     print(f"Serving dashboard at {url}  (Ctrl-C to stop)")
     if args.no_warm:
-        print("Builds auto-warm is off; run `lol.py builds warm` by hand.")
+        print("Auto-warm is off; run `lol.py builds warm` and `lol.py tft warm` by hand.")
     else:
-        print("Cold builds scenarios warm in the background "
-              "(log: .cache/builds/warm.log)")
+        print("Cold builds and TFT scenarios warm in the background "
+              "(logs: .cache/builds/warm.log, .cache/tft/warm.log)")
     if not args.no_open:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     # a restart's SIGTERM must unwind normally so the warm we spawned goes too
@@ -365,3 +401,4 @@ def cmd_serve(args):
         print("\nStopped.")
     finally:
         warmer.stop()
+        twarmer.stop()

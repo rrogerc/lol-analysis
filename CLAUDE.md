@@ -74,6 +74,57 @@
   `mul_add`; floating point has to stay operation-for-operation what the
   Python engine did.
 
+## The TFT tab (tft.py, tft_kits.py, data/tft/)
+
+- Purely theoretical, no match data (Roger's call 2026-09-04): a carry's
+  mana-cycle fight against three stat dummies derived from the set's own
+  units at 2★ (two median tanks, then a median non-tank), every 3-item
+  multiset of the 35 craftable completed items, ranked by time to kill all
+  three then damage. Twelve cells per unit: 2★/3★ × spread/clump × traits
+  bare/low/high. Pure Python; a fight is ~0.25 ms, a cell ~0.5 s on the
+  16 threads, the whole warm a couple of minutes. Cache `.cache/tft/`,
+  keyed by tft.py + tft_kits.py + the snapshot + the hand files; serve
+  auto-warms it like builds (log `.cache/tft/warm.log`).
+- Numbers are data, mechanics are code. `lol.py tft fetch` archives
+  MetaTFT's public lookup JSON (the only machine-readable source of the
+  current set's ability numbers — Community Dragon lost them when Set 18
+  moved to curve tables), the cdragon character-bin timings and the
+  patch's "old ⇒ new" lines under `data/tft/set<N>/<patch>/`. The MetaTFT
+  file can be a pre-launch PBE build (its `_metadata.patch` says so), so
+  ALWAYS run `lol.py tft check` after a fetch: it matches the notes to
+  curve rows and base stats, prints an `overrides.json` snippet for
+  anything stale, and exits 2 while anything is. The patch directory's
+  own `overrides.json` carries those corrections with their source (per
+  patch, so a new patch starts clean); a curve override lists per-star
+  values from 1★ (a shorter list leaves higher stars alone).
+- Automated like the item snapshot: `jobs/refresh-tft.sh` (daily 07:41,
+  nix user timer `lol-tft-refresh`, declared next to `lol-items-refresh`
+  in the dotfiles nix config) refetches the current patch, commits and
+  pushes only when the data changed, then runs `tft check` — a red
+  "failed (exit 2)" in the Automation panel means stale numbers waiting
+  for an overrides.json edit, not a broken job.
+- Hand files under `data/tft/set<N>/` reference the data's own rows and
+  never write numbers: `item-effects.json` (which passives the engine
+  models, and `excluded`), `trait-effects.json` (per-breakpoint trait
+  bonuses), `kits.json` (dashboard notes). Item plain stats come from the
+  stat line automatically (`parse_stat_line`, keyed by the icon).
+- `tft_kits.py` is one short driver class per unit (22 carries of Set 18):
+  the ability's shape only, reading `f.calc(...)` and `f.row(...)`. Add a
+  unit = a driver + a `DRIVERS` entry (+ trait-effects entries if its
+  traits are new). A new set = new drivers, new hand files, `DEFAULT_SET`.
+- Assumptions to remember (all in tft.py constants or noted in the UI):
+  AD ×1.5 and HP ×1.8 per star, 1 s mana lock from a cast, curve rows
+  hold the previous star's value, fighters' role attack speed at stage 4,
+  damage amp additive and post-mitigation, negative resists floored at 0,
+  Blossom/Elderwood "high" stops below the 11-unit prismatic tier, Fae
+  pixies 3 and 7, the Riftbeast Alpha Mark on the unit, Primal = Tiger.
+  Tanks, healers and buffers are not modeled yet (no driver).
+- Per patch, by hand if the job hasn't: `lol.py tft fetch` → `tft check`
+  → edit that patch's overrides.json → commit (the reload unit restarts
+  serve, which warms). Tests: `python3 -m unittest test_tft` (~0.1 s,
+  reads the committed snapshot).
+
 ## Tests
 
 - `python3 -m unittest test_builds` (needs the built engine; ~2 s).
+- `python3 -m unittest test_tft` (~0.1 s).
