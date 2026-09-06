@@ -155,6 +155,148 @@
   svg text { font-family: inherit; }
   .view { display: none; }
   .view.active { display: block; }
+  #view-tft { --cost-color: #697480; color-scheme: light dark; }
+  #view-tft [data-cost="1"] { --cost-color: #697480; }
+  #view-tft [data-cost="2"] { --cost-color: #25834d; }
+  #view-tft [data-cost="3"] { --cost-color: #287bd0; }
+  #view-tft [data-cost="4"] { --cost-color: #9460ce; }
+  #view-tft [data-cost="5"] { --cost-color: #b17c13; }
+  #view-tft button:focus-visible, #view-tft input:focus-visible,
+  #view-tft summary:focus-visible, #view-tft [tabindex]:focus-visible {
+    outline: 2px solid var(--s1); outline-offset: 3px;
+  }
+  #view-tft .seg { margin: 0; gap: 6px; }
+  #view-tft .seg button { min-height: 34px; }
+  #view-tft .seg button.active { background: color-mix(in srgb, var(--s1) 9%, var(--surface-1)); border-color: var(--s1); }
+  .tft-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #view-tft .tft-heading h2 { font-size: 18px; margin: 0; }
+  .tft-intro { margin: 6px 0 14px; line-height: 1.5; }
+  .tft-refresh { margin: 0 0 14px; padding: 9px 12px; border-inline-start: 3px solid var(--s1); background: var(--page); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+  .tft-refresh strong { display: block; font-weight: 600; }
+  .tft-refresh span { color: var(--text-secondary); }
+  .tft-refresh[data-state="needs-review"], .tft-refresh[data-state="stale"] { border-color: var(--s3); }
+  .tft-refresh[data-state="failed"] { border-color: var(--s6); }
+  .tft-label { color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+  .tft-search { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #tft-search { width: 260px; max-width: 100%; min-height: 36px; }
+  .tft-filter-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .tft-filter-row > .tft-label { width: 36px; flex: none; }
+  #tft-cost-seg button[data-cost] { border-inline-start: 3px solid var(--cost-color); }
+  #tft-cost-seg button[data-cost].active { border-color: var(--cost-color); background: color-mix(in srgb, var(--cost-color) 12%, var(--surface-1)); }
+  .tft-browser-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0 8px; }
+  .tft-browser-actions { display: flex; align-items: center; gap: 8px; }
+  #tft-clear-filters { padding: 4px 9px; font-size: 12px; }
+  #tft-jump-to-builds { padding: 4px 9px; font-size: 12px; }
+  #tft-unit-seg { max-height: 400px; overflow-y: auto; padding: 3px; scrollbar-gutter: stable; }
+  #tft-unit-seg, #tft-results .tablewrap { scrollbar-color: var(--baseline) var(--surface-1); }
+  .tft-cost-group { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-top: 1px solid var(--grid); }
+  .tft-cost-group:first-child { border-top: none; padding-top: 2px; }
+  .tft-cost-heading { border-inline-start: 3px solid var(--cost-color); padding: 4px 0 4px 9px; align-self: start; }
+  .tft-cost-heading h3 { font-size: 13px; font-weight: 650; }
+  .tft-cost-heading span { display: block; margin-top: 3px; font-size: 11px; color: var(--text-secondary); }
+  .tft-unit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 7px; align-content: start; }
+  .tft-unit { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 62px; padding: 8px 20px 8px 8px; text-align: left; line-height: 1.3; }
+  .tft-unit:hover { border-color: var(--cost-color); background: color-mix(in srgb, var(--cost-color) 6%, var(--surface-1)); }
+  .tft-unit.active { border-color: var(--cost-color); background: color-mix(in srgb, var(--cost-color) 12%, var(--surface-1)); font-weight: 650; }
+  .tft-unit.active::after { content: "✓"; position: absolute; right: 7px; top: 50%; transform: translateY(-50%); }
+  .tft-unit.cold::before { content: ""; position: absolute; right: 7px; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+  .tft-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: none; overflow: hidden; border-radius: 5px; border: 1px solid var(--cost-color, var(--border)); background: var(--page); color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+  .tft-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tft-icon.has-image .tft-icon-fallback { visibility: hidden; }
+  .tft-trait-icon { width: 24px; height: 24px; background: #2c3540; color: #fff; border-color: #46515f; border-radius: 4px; font-size: 10px; }
+  .tft-trait-icon img { object-fit: contain; padding: 3px; }
+  .tft-unit-text { min-width: 0; }
+  .tft-unit-name { display: block; overflow-wrap: anywhere; }
+  .tft-unit-traits { display: flex; gap: 3px; margin-top: 5px; }
+  .tft-unit-traits .tft-trait-icon { width: 18px; height: 18px; font-size: 8px; }
+  .tft-unit-traits .tft-trait-icon img { padding: 2px; }
+  .tft-empty { padding: 24px 12px; text-align: center; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+  .tft-selected { border-inline-start: 3px solid var(--cost-color); padding-left: 12px; }
+  .tft-selected-heading { display: flex; align-items: center; gap: 12px; }
+  #tft-selected-icon .tft-icon { width: 58px; height: 58px; font-size: 22px; }
+  #tft-selected-name { font-size: 18px; font-weight: 650; }
+  #tft-selected-meta { margin-top: 4px; line-height: 1.5; }
+  #tft-selected-traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tft-trait-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 8px 4px 5px; font-size: 12px; }
+  .tft-trait-chip[data-active="true"] { border-color: var(--s1); background: color-mix(in srgb, var(--s1) 7%, var(--surface-1)); }
+  .tft-trait-chip small { color: var(--text-secondary); font-size: 10px; }
+  .tft-tooltip { position: fixed; z-index: 30; width: 340px; max-width: calc(100vw - 24px); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 6px 24px #0003; font-size: 12px; line-height: 1.55; }
+  .tft-tooltip[hidden] { display: none; }
+  .tft-tooltip-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .tft-tooltip-head strong { display: block; font-size: 14px; }
+  .tft-tooltip p { margin: 8px 0; white-space: pre-line; }
+  .tft-tooltip .sub { font-size: 11px; }
+  .tft-tooltip-trait { display: flex; align-items: center; gap: 7px; margin: 7px 0; }
+  .tft-tooltip-trait .sub { margin-left: auto; white-space: nowrap; }
+  .tft-breakpoints { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 10px; }
+  .tft-breakpoint { padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; font-variant-numeric: tabular-nums; }
+  .tft-breakpoint.active { color: var(--s1); border-color: var(--s1); font-weight: 650; }
+  .tft-breakpoint.prismatic { border-style: dashed; color: var(--muted); }
+  .tft-bonus-note { padding-top: 8px; border-top: 1px solid var(--grid); }
+  .tft-settings { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--grid); }
+  .tft-setting { min-width: 0; }
+  .tft-setting > .tft-label { display: block; margin-bottom: 7px; }
+  #view-tft .tft-setting .hint { margin: 6px 0 0; line-height: 1.5; color: var(--text-secondary); }
+  .tft-fight-preview { margin-top: 18px; border-top: 1px solid var(--grid); padding-top: 16px; }
+  .tft-fight-heading { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tft-fight-heading h3 { font-size: 13px; font-weight: 650; }
+  .tft-fight-layout { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(0, 1.15fr); gap: 18px; }
+  .tft-formation { margin: 0; min-width: 0; border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; background: var(--page); }
+  #tft-formation-diagram { display: block; width: 100%; height: 195px; }
+  #tft-formation-diagram text { fill: var(--text-secondary); font-size: 11px; text-anchor: middle; }
+  #tft-formation-diagram .tft-diagram-number { fill: var(--text-primary); font-size: 13px; font-weight: 650; }
+  #tft-formation-diagram .tft-diagram-you { fill: #fff; font-size: 11px; font-weight: 650; }
+  .tft-formation figcaption { color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+  #tft-dummy-intro { font-size: 12px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 8px; }
+  .tft-dummy { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 12px; line-height: 1.5; }
+  .tft-dummy strong { flex: 1 1 120px; font-weight: 600; }
+  .tft-dummy span { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  #tft-pressure-note { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-secondary); }
+  #tft-targeting-note { margin-top: 10px; color: var(--text-secondary); font-size: 11px; line-height: 1.6; }
+  #tft-pressure-details { margin-top: 8px; }
+  #tft-pressure-details p { margin: 6px 0; }
+  .tft-results-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
+  #tft-result-summary { flex: 1 1 240px; line-height: 1.5; }
+  .tft-stat-toggle { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  #tft-results .tablewrap { border: 1px solid var(--grid); border-radius: 6px; }
+  #ttbl td { white-space: nowrap; }
+  #ttbl td:nth-child(2) { min-width: 250px; white-space: normal; }
+  #ttbl .tft-item-list { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tft-item { padding: 3px 7px; border-radius: 4px; background: var(--page); border: 1px solid var(--border); font-size: 12px; }
+  #ttbl tr.sel td:first-child { color: var(--s1); font-weight: 700; box-shadow: inset 3px 0 var(--s1); }
+  #view-tft .tft-details { margin-top: 12px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  #view-tft .tft-details summary { cursor: pointer; width: fit-content; }
+  #view-tft .tft-details .hint, #tft-desc { margin: 10px 0 0; color: var(--text-secondary); line-height: 1.6; }
+  #view-tft .chip { white-space: normal; overflow-wrap: anywhere; }
+  #tpool-excluded-list { margin: 8px 0 0; padding-left: 20px; }
+  @media (max-width: 700px) {
+    .tft-settings { grid-template-columns: 1fr 1fr; }
+    .tft-setting:last-child { grid-column: 1 / -1; }
+    .tft-cost-group { grid-template-columns: 1fr; gap: 8px; }
+    .tft-cost-heading { display: flex; align-items: center; gap: 8px; }
+    .tft-cost-heading span { margin: 0; }
+    .tft-fight-layout { grid-template-columns: 1fr; gap: 12px; }
+    .tft-search { width: 100%; }
+    #tft-search { flex: 1; width: auto; min-width: 0; }
+    #view-tft .bar-row { flex-wrap: wrap; gap: 6px; }
+    #view-tft .bar-label { width: 76px; font-size: 12px; }
+    #view-tft .bar-val { width: 100%; padding-left: 82px; font-size: 12px; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 12px; }
+    nav { overflow-x: auto; }
+    nav button { padding: 8px 10px; }
+    #view-tft .card { padding: 12px; }
+    #tft-unit-seg { max-height: 350px; }
+    .tft-unit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tft-unit { gap: 6px; padding-left: 6px; font-size: 12px; }
+    .tft-unit > .tft-icon { width: 32px; height: 32px; }
+    .tft-settings { grid-template-columns: 1fr; }
+    .tft-setting:last-child { grid-column: auto; }
+    .tft-filter-row { align-items: flex-start; gap: 8px; }
+    .tft-filter-row > .tft-label { padding-top: 9px; }
+    .tft-filter-row .seg { flex: 1; min-width: 0; }
+  }
 </style>
 </head>
 <body>
@@ -281,20 +423,105 @@
 <!-- ============================ TFT ============================ -->
 <section class="view" id="view-tft">
   <div class="card">
-    <h2 id="tft-title">TFT — optimal items per unit, theoretical</h2>
-    <div class="hint" id="tft-note">First-principles mana-cycle simulation, no match data. The unit's attacks grant its role's mana, the ability casts when the bar fills, and damage goes through the set's armor and magic-resist formula with sunder, shred, expected-value crit, Precision and post-mitigation damage amp. Every 3-item combination of the craftable completed items is simulated against three stat dummies built from the set's own units at 2★ — two median tanks in front, a median non-tank behind. What a unit is scored on follows the role Riot gives it: <em>carries</em> (marksmen, casters, specialists) are ranked by the time to kill all three, then damage; <em>fighters</em> and assassins fight dummies that hit back with the set's median attacks and abilities, can die, and are ranked by kill time, then damage dealt before dying; <em>tanks</em> face the same pressure for up to a minute and are ranked by how long they hold the dummies (on-death bodies count), then damage. Shields, heals, durability and stuns therefore matter exactly where the role says they should. <em>Spread</em> keeps the dummies out of each other's reach (area abilities hit one); <em>clump</em> puts them together. The trait context switches the unit's own modeled traits off, to their first breakpoint, or to their highest non-prismatic one. Unit numbers come from the set's data with the patch notes reconciled on top; ability shapes are short per-unit drivers. Click a build to see where its damage comes from.</div>
-    <div class="seg" id="tft-class-seg"></div>
-    <div class="seg" id="tft-unit-seg" style="margin-bottom:8px"></div>
-    <div class="seg" id="tft-star-seg"></div>
-    <div class="seg" id="tft-geo-seg"></div>
-    <div class="seg" id="tft-trait-seg"></div>
-    <div class="sub" id="tft-desc" style="margin-bottom:10px"></div>
-    <div class="tablewrap">
+    <div class="tft-heading">
+      <h2>TFT item builder</h2>
+      <span class="sub" id="tft-set-label"></span>
+    </div>
+    <p class="sub tft-intro">Choose a champion, set up the fight, and compare ranked three-item builds. Rankings use simulated fights.</p>
+    <div class="tft-refresh" id="tft-refresh" role="status" hidden>
+      <strong id="tft-refresh-title"></strong>
+      <span id="tft-refresh-detail"></span>
+    </div>
+    <div class="hint" id="tft-note" role="status" hidden></div>
+    <div class="tft-search">
+      <label class="tft-label" for="tft-search">Find a champion</label>
+      <input id="tft-search" type="search" placeholder="Search name or trait…" autocomplete="off" aria-controls="tft-unit-seg">
+    </div>
+    <div class="tft-filter-row">
+      <span class="tft-label" id="tft-cost-label">Cost</span>
+      <div class="seg" id="tft-cost-seg" role="group" aria-labelledby="tft-cost-label"></div>
+    </div>
+    <div class="tft-filter-row">
+      <span class="tft-label" id="tft-role-label">Role</span>
+      <div class="seg" id="tft-class-seg" role="group" aria-labelledby="tft-role-label"></div>
+    </div>
+    <div class="tft-browser-meta">
+      <span class="sub" id="tft-unit-count" role="status"></span>
+      <div class="tft-browser-actions">
+        <button id="tft-clear-filters" hidden>Clear filters</button>
+        <button id="tft-jump-to-builds">View builds ↓</button>
+      </div>
+    </div>
+    <div id="tft-unit-seg" role="region" aria-label="Champions grouped by cost" tabindex="0"></div>
+  </div>
+  <div class="card" id="tft-results">
+    <h2 id="tft-title" tabindex="-1">Ranked builds</h2>
+    <div class="tft-results-toolbar">
+      <div class="sub" id="tft-result-summary" role="status">Select a champion to compare builds.</div>
+      <label class="tft-stat-toggle"><input type="checkbox" id="tft-show-stats"> Show all stats</label>
+    </div>
+    <div class="tablewrap" role="region" aria-label="Ranked TFT builds" tabindex="0">
       <table id="ttbl">
         <thead><tr></tr></thead>
         <tbody></tbody>
       </table>
     </div>
+    <details class="tft-details" id="tft-scenario-details" hidden>
+      <summary>Fight details and assumptions</summary>
+      <div class="sub" id="tft-desc"></div>
+    </details>
+  </div>
+  <div class="card">
+    <div class="tft-selected" id="tft-selected">
+      <div class="tft-selected-heading">
+        <div id="tft-selected-icon" aria-hidden="true"></div>
+        <div>
+          <h2 id="tft-selected-name">Select a champion</h2>
+          <div class="sub" id="tft-selected-meta"></div>
+        </div>
+      </div>
+      <div id="tft-selected-traits" role="group" aria-label="Champion trait details"></div>
+      <p class="hint" style="margin:7px 0 0">Hover or tap a trait for its breakpoints and bonuses.</p>
+    </div>
+    <div class="tft-settings">
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-star-label">Star level</span>
+        <div class="seg" id="tft-star-seg" role="group" aria-labelledby="tft-star-label"></div>
+        <p class="hint" id="tft-star-hint"></p>
+      </div>
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-geo-label">Enemy formation</span>
+        <div class="seg" id="tft-geo-seg" role="group" aria-labelledby="tft-geo-label"></div>
+        <p class="hint" id="tft-geo-hint"></p>
+      </div>
+      <div class="tft-setting">
+        <span class="tft-label" id="tft-trait-label">Champion traits</span>
+        <div class="seg" id="tft-trait-seg" role="group" aria-labelledby="tft-trait-label"></div>
+        <p class="hint" id="tft-trait-hint"></p>
+      </div>
+    </div>
+    <section class="tft-fight-preview" aria-labelledby="tft-fight-title" hidden>
+      <div class="tft-fight-heading">
+        <h3 id="tft-fight-title">The test fight</h3>
+        <span class="sub" id="tft-formation-label"></span>
+      </div>
+      <div class="tft-fight-layout">
+        <figure class="tft-formation">
+          <svg id="tft-formation-diagram" viewBox="0 0 340 195" role="img" aria-labelledby="tft-diagram-title tft-diagram-desc"></svg>
+          <figcaption>Schematic layout showing target order and ability coverage. Exact hex positions and movement are not simulated.</figcaption>
+        </figure>
+        <div>
+          <p id="tft-dummy-intro"></p>
+          <div id="tft-dummy-stats"></div>
+          <p id="tft-pressure-note"></p>
+          <details class="tft-details" id="tft-pressure-details" hidden>
+            <summary>Enemy attacks and casts</summary>
+            <div id="tft-dummy-offense"></div>
+          </details>
+        </div>
+      </div>
+      <p id="tft-targeting-note"></p>
+    </section>
   </div>
   <div class="card">
     <h2 id="tbd-title">Damage breakdown</h2>
@@ -310,7 +537,14 @@
       <summary class="hint" style="cursor:pointer;display:inline-block"></summary>
       <ul id="tpool-excluded-list"></ul>
     </details>
+    <details class="tft-details">
+      <summary>How builds are ranked</summary>
+      <p class="hint">Every three-item combination is simulated against three stat dummies: a heavy tank first, a typical tank second, and a non-tank behind them. The first tank has fixed benchmark defenses, shown in the test fight. The other defenses and all enemy attacks and casts use this set's median 2★ stats. Attacks generate mana and abilities cast when the bar fills. Damage accounts for armor, magic resist, sunder, shred, expected-value crit, Precision and damage amplification.</p>
+      <p class="hint">Carries are ranked by time to kill all three dummies, then damage. Fighters and assassins face dummies that hit back, and are ranked by kill time, then damage before dying. Tanks face enemies that cannot die, with a full board's pressure for up to a minute. They are ranked by how long they hold the enemies, then damage denied, then damage dealt. On-death bodies count. Shields, heals, durability and stuns contribute in fights where the dummies hit back.</p>
+      <p class="hint">Spread keeps enemies apart, so most area effects reach only the current target; clumped enemies can take splash damage together, subject to each ability's target limit. Individual abilities can use different targeting. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
+    </details>
   </div>
+  <div class="tft-tooltip" id="tft-tooltip" role="tooltip" hidden></div>
 </section>
 
 <!-- ============================ Data ============================ -->
@@ -328,7 +562,7 @@
   </div>
   <div class="card">
     <h2>Automation</h2>
-    <div class="hint">Recurring jobs, read from the script headers in <code>jobs/</code> — anything added there shows up here. Status is the heartbeat each script writes when it exits.</div>
+    <div class="hint">Recurring jobs and their latest update checks. TFT keeps the current builds available while new patch data is checked and recalculated.</div>
     <table id="jobs">
       <thead><tr><th>Job</th><th>Runs</th><th>Status</th><th>What it does</th></tr></thead>
       <tbody></tbody>
@@ -358,7 +592,7 @@ const fmtInt = n => n.toLocaleString("en-US");
 // 95% CI half-width in percentage points for a win rate over n games.
 const ci95 = (wr, n) => n ? 1.96 * Math.sqrt(wr * (100 - wr) / n) : null;
 const fmtCompact = n => n >= 1e6 ? (n/1e6).toFixed(1) + "M" : n >= 1e3 ? (n/1e3).toFixed(0) + "K" : "" + n;
-const api = (path) => fetch(path).then(r => {
+const api = (path, options) => fetch(path, options).then(r => {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
 });
@@ -974,13 +1208,260 @@ async function openBuilds() {
 const TSRC_COLOR = { auto: "--s3", ability: "--s1", burn: "--s8", bleed: "--s6",
                      solar: "--s5", trail: "--s2", thorns: "--s7", "ionic spark": "--s4" };
 const tstate = { meta: null, unit: null, star: 2, geo: "clump", traits: "bare",
-                 data: null, sel: 0, status: null, req: 0, timer: null, cls: "all" };
+                 data: null, dataRevision: null, sel: 0, status: null, req: 0, timer: null,
+                 polling: null, opening: null, pending: false, statusUnavailable: false,
+                 cls: "all", cost: "all", search: "" };
 const TFT_CLASS = { all: "every unit", carry: "carries: marksmen, casters and specialists — the dummies never hit back",
                     fighter: "fighters and assassins — the dummies hit back, ranked by kill time then damage before dying",
                     tank: "tanks — the dummies hit back, ranked by how long the unit holds them" };
 const tkey = (o = {}) => `s${o.star ?? tstate.star}-${o.geo ?? tstate.geo}-${o.traits ?? tstate.traits}`;
 
-function tftSeg(id, opts, set) {
+function tftText(tag, text, className = "") {
+  const el = document.createElement(tag);
+  el.textContent = text;
+  el.className = className;
+  return el;
+}
+
+function tftIcon(url, name, trait = false) {
+  const wrap = document.createElement("span");
+  wrap.className = "tft-icon" + (trait ? " tft-trait-icon" : "");
+  wrap.setAttribute("aria-hidden", "true");
+  wrap.append(tftText("span", (name || "?").slice(0, 1), "tft-icon-fallback"));
+  if (url) {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.addEventListener("load", () => wrap.classList.add("has-image"));
+    img.addEventListener("error", () => { img.remove(); wrap.classList.remove("has-image"); });
+    img.src = url;
+    wrap.append(img);
+  }
+  return wrap;
+}
+
+function tftUnitTraits(unit) {
+  return (unit.traits || []).map((name, i) =>
+    (tstate.meta.traits || []).find(t => t.api === unit.traitApis?.[i] || t.name === name) ||
+    { api: name, name, icon: null, levels: [], styles: [] });
+}
+
+const tftTip = { anchor: null, timer: null };
+function hideTftTooltip() {
+  clearTimeout(tftTip.timer);
+  tftTip.anchor?.removeAttribute("aria-describedby");
+  tftTip.anchor = null;
+  document.getElementById("tft-tooltip").hidden = true;
+}
+
+function showTftTooltip(anchor, contents) {
+  hideTftTooltip();
+  const tip = document.getElementById("tft-tooltip");
+  tip.replaceChildren(...contents());
+  tip.hidden = false;
+  tftTip.anchor = anchor;
+  anchor.setAttribute("aria-describedby", tip.id);
+  positionTftTooltip();
+}
+
+function positionTftTooltip() {
+  const anchor = tftTip.anchor, tip = document.getElementById("tft-tooltip");
+  if (!anchor || tip.hidden) return;
+  tip.style.maxHeight = `${Math.max(120, innerHeight - 24)}px`;
+  const rect = anchor.getBoundingClientRect();
+  const left = Math.max(12, Math.min(rect.left, innerWidth - tip.offsetWidth - 12));
+  const below = rect.bottom + 8;
+  const preferredTop = below + tip.offsetHeight <= innerHeight - 12 ? below : rect.top - tip.offsetHeight - 8;
+  const top = Math.max(12, Math.min(preferredTop, innerHeight - tip.offsetHeight - 12));
+  tip.style.left = `${left}px`;
+  tip.style.top = `${top}px`;
+}
+
+function deferTftTooltipClose() {
+  clearTimeout(tftTip.timer);
+  tftTip.timer = setTimeout(() => {
+    const tip = document.getElementById("tft-tooltip");
+    if (!tip.matches(":hover") && !tftTip.anchor?.matches(":hover, :focus-visible")) hideTftTooltip();
+  }, 150);
+}
+
+function bindTftTooltip(anchor, contents, tap = false) {
+  anchor.addEventListener("pointerenter", e => {
+    if (e.pointerType === "mouse") showTftTooltip(anchor, contents);
+  });
+  anchor.addEventListener("pointerleave", deferTftTooltipClose);
+  anchor.addEventListener("focus", () => {
+    if (anchor.matches(":focus-visible")) showTftTooltip(anchor, contents);
+  });
+  anchor.addEventListener("blur", deferTftTooltipClose);
+  if (tap) anchor.addEventListener("click", () => {
+    if (tftTip.anchor === anchor && !document.getElementById("tft-tooltip").hidden) hideTftTooltip();
+    else showTftTooltip(anchor, contents);
+  });
+}
+
+const tftTooltip = document.getElementById("tft-tooltip");
+tftTooltip.addEventListener("pointerenter", () => clearTimeout(tftTip.timer));
+tftTooltip.addEventListener("pointerleave", deferTftTooltipClose);
+document.addEventListener("pointerdown", e => {
+  if (!tftTooltip.contains(e.target) && !tftTip.anchor?.contains(e.target)) hideTftTooltip();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !tftTooltip.hidden) { hideTftTooltip(); e.preventDefault(); }
+});
+document.addEventListener("scroll", e => {
+  if (!tftTooltip.contains(e.target)) {
+    if (tftTip.anchor?.matches(":focus-visible")) positionTftTooltip();
+    else hideTftTooltip();
+  }
+}, true);
+window.addEventListener("resize", hideTftTooltip);
+
+function tftTooltipHead(icon, name, subtitle, trait = false) {
+  const head = document.createElement("div");
+  head.className = "tft-tooltip-head";
+  const text = document.createElement("div");
+  text.append(tftText("strong", name));
+  if (subtitle) text.append(tftText("span", subtitle, "sub"));
+  head.append(tftIcon(icon, name, trait), text);
+  return head;
+}
+
+function tftChampionTooltip(unit) {
+  return [tftTooltipHead(unit.icon, unit.name, `${unit.cost} cost · ${unit.role}`),
+    tftText("p", `Ability: ${unit.ability || "—"}`),
+    ...tftUnitTraits(unit).map(trait => {
+      const row = document.createElement("div");
+      row.className = "tft-tooltip-trait";
+      row.append(tftIcon(trait.icon, trait.name, true), tftText("strong", trait.name),
+        tftText("span", (trait.levels || []).join(" / "), "sub"));
+      return row;
+    }),
+    tftText("p", "Select this champion to inspect its trait bonuses below.", "sub")];
+}
+
+function tftTraitTooltip(unit, trait) {
+  const bonus = unit.traitBonuses?.[tstate.traits]?.find(b => b.api === trait.api);
+  const modeled = (unit.traitsModeled || []).includes(trait.name);
+  const content = [tftTooltipHead(trait.icon, trait.name, "Champion trait", true)];
+  if (trait.description) content.push(tftText("p", trait.description));
+  if (trait.levels?.length) {
+    content.push(tftText("p", "Breakpoints · units needed", "sub"));
+    const levels = document.createElement("div");
+    levels.className = "tft-breakpoints";
+    levels.append(...trait.levels.map((level, i) => {
+      const prismatic = trait.styles?.[i] >= 5;
+      const el = tftText("span", String(level), "tft-breakpoint" +
+        (bonus?.breakpoint === level ? " active" : "") + (prismatic ? " prismatic" : ""));
+      el.title = prismatic ? "Prismatic or unique tier; availability depends on the trait model." : `${level} units`;
+      return el;
+    }));
+    content.push(levels);
+  }
+  const heading = bonus ? `Applied in this fight: ${bonus.breakpoint} ${trait.name}`
+    : modeled ? "No bonus applied with the current trait setting."
+    : "This trait is not included in the build calculation.";
+  content.push(tftText("p", heading, "tft-bonus-note"));
+  for (const note of bonus?.notes || []) content.push(tftText("p", note));
+  const preview = !bonus && !trait.description && unit.traitBonuses?.high?.find(b => b.api === trait.api);
+  if (preview) {
+    content.push(tftText("p", `Preview at ${preview.breakpoint} units (currently inactive):`, "sub"));
+    preview.notes.forEach(note => content.push(tftText("p", note)));
+  } else if (!bonus && trait.note) content.push(tftText("p", trait.note, "sub"));
+  return content;
+}
+
+function renderTftSelected(unit) {
+  hideTftTooltip();
+  document.getElementById("tft-selected").dataset.cost = unit.cost;
+  document.getElementById("tft-selected-name").textContent = unit.name;
+  document.getElementById("tft-selected-icon").replaceChildren(tftIcon(unit.icon, unit.name));
+  document.getElementById("tft-selected-meta").textContent = `${unit.cost} cost · ${unit.role} · ${unit.ability}`;
+  document.getElementById("tft-selected-traits").replaceChildren(...tftUnitTraits(unit).map(trait => {
+    const bonus = unit.traitBonuses?.[tstate.traits]?.find(b => b.api === trait.api);
+    const modeled = (unit.traitsModeled || []).includes(trait.name);
+    const btn = document.createElement("button");
+    btn.className = "tft-trait-chip";
+    btn.dataset.trait = trait.api;
+    btn.dataset.active = String(!!bonus);
+    const status = bonus ? `${bonus.breakpoint} active` : modeled ? "inactive" : "not modeled";
+    btn.setAttribute("aria-label", `${trait.name}, ${status}. Show trait details.`);
+    btn.append(tftIcon(trait.icon, trait.name, true), tftText("span", trait.name), tftText("small", status));
+    bindTftTooltip(btn, () => tftTraitTooltip(unit, trait), true);
+    return btn;
+  }));
+}
+
+function renderTftFight(unit, scenario = null) {
+  const dm = scenario?.dummy || tstate.meta.dummy;
+  const preview = document.querySelector(".tft-fight-preview");
+  preview.hidden = !dm?.slots?.length;
+  if (preview.hidden) return;
+  const clump = (scenario?.geometry || tstate.geo) === "clump";
+  const duration = scenario?.duration || unit.duration;
+  const tank = unit.objective === "tank", pressured = unit.objective !== "carry";
+  document.getElementById("tft-formation-label").textContent = `${clump ? "Clumped" : "Spread"} · up to ${duration}s`;
+  const svg = document.getElementById("tft-formation-diagram");
+  svg.replaceChildren();
+  const node = (tag, attrs = {}, text) => {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+    if (text !== undefined) el.textContent = text;
+    svg.append(el);
+    return el;
+  };
+  node("title", { id: "tft-diagram-title" }, `${clump ? "Clumped" : "Spread"} enemy formation`);
+  node("desc", { id: "tft-diagram-desc" }, "Two tank dummies in front and a non-tank dummy behind. Normal attacks start at dummy 1. The shaded area illustrates nearby ability coverage, not an exact ability radius.");
+  const positions = clump ? [[142, 82], [202, 82], [172, 32]] : [[48, 83], [292, 83], [172, 26]];
+  node("ellipse", { cx: clump ? 172 : 48, cy: clump ? 65 : 83,
+    rx: clump ? 67 : 29, ry: clump ? 57 : 31,
+    fill: "color-mix(in srgb, var(--s1) 10%, transparent)", stroke: "var(--s1)", "stroke-dasharray": "4 4" });
+  const [tx, ty] = positions[0];
+  node("path", { d: `M 172 148 L ${tx} ${ty + 23}`, fill: "none", stroke: "var(--baseline)", "stroke-width": 1.5 });
+  node("path", { d: `M ${tx - 4} ${ty + 31} L ${tx} ${ty + 23} L ${tx + 5} ${ty + 30}`, fill: "none", stroke: "var(--baseline)", "stroke-width": 1.5 });
+  positions.forEach(([x, y], i) => {
+    node("circle", { cx: x, cy: y, r: 18, fill: "var(--surface-1)", stroke: i === 2 ? "var(--s3)" : "var(--s1)", "stroke-width": 2 });
+    node("text", { x, y: y + 4, class: "tft-diagram-number" }, String(i + 1));
+    node("text", { x, y: y + 33 }, dm.slots[i]?.fixedDefenses ? "Heavy tank" : i === 2 ? "Non-tank" : "Tank");
+  });
+  node("circle", { cx: 172, cy: 161, r: 18, fill: "var(--s1)" });
+  node("text", { x: 172, y: 165, class: "tft-diagram-you" }, "You");
+  node("text", { x: 172, y: 193 }, unit.name);
+  document.getElementById("tft-dummy-intro").textContent = dm.slots[0].fixedDefenses
+    ? `${dm.count} test targets: a heavy tank first, a typical tank second, and a non-tank behind. The first tank has fixed defenses; the other defenses and all attacks and casts use this set's median ${dm.star}★ stats.`
+    : `${dm.count} test targets: two tanks in front, one non-tank behind. Each uses the median stats of this set's ${dm.star}★ champions in its group.`;
+  const number = n => Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
+  document.getElementById("tft-dummy-stats").replaceChildren(...dm.slots.map((slot, i) => {
+    const row = document.createElement("div");
+    row.className = "tft-dummy";
+    row.append(tftText("strong", `${i + 1} · ${slot.fixedDefenses ? "Heavy front tank" : slot.kind === "tank" ? "Front tank" : "Rear non-tank"}`),
+      tftText("span", `${number(slot.hp)} HP · ${number(slot.armor)} armor · ${number(slot.mr)} MR`));
+    return row;
+  }));
+  document.getElementById("tft-pressure-note").textContent = tank
+    ? `Incoming pressure approximates a ${dm.boardSize}-unit board (~${number(dm.boardPressureDps)} damage/s before defenses). The three enemy dummies stay alive throughout the test; ${unit.name} can die.`
+    : pressured ? `All three dummies attack and cast (~${number(dm.pressureDps)} damage/s before defenses). Defeating one removes its pressure.`
+    : "The dummies do not attack. These carry builds are ranked by how quickly they defeat the targets, then damage dealt.";
+  document.getElementById("tft-pressure-details").hidden = !pressured;
+  document.getElementById("tft-dummy-offense").replaceChildren(...(pressured ? dm.slots.map((slot, i) =>
+    tftText("p", `${i + 1}: ${number(slot.ad)} attack damage at ${number(slot.as)} attacks/s; ${number(slot.ability)} damage per cast (${Math.round(slot.physicalShare * 100)}% physical). Mana: ${number(slot.manaStart)}/${number(slot.manaMax)}, +${number(slot.manaPerAttack)} per attack${slot.manaFromDamage ? " and mana from damage taken" : ""}.${tank ? ` Represents ${dm.board[i]} attackers.` : ""}`)) : []));
+  document.getElementById("tft-targeting-note").textContent =
+    "Normal attacks target the first living dummy: 1 → 2 → 3. " +
+    (clump ? "Splash and nearby-target effects can reach multiple dummies, within each ability's target limit."
+      : "Most area effects reach the current target; nearby splash targets are unavailable.") +
+    " Individual abilities can use different targeting.";
+}
+
+function tftActive(id, key) {
+  document.querySelectorAll(`#${id} button`).forEach(b => {
+    const selected = b.dataset.key === key;
+    b.classList.toggle("active", selected);
+    b.setAttribute("aria-pressed", String(selected));
+  });
+}
+
+function tftSeg(id, opts, set, reload = true) {
   document.getElementById(id).replaceChildren(...opts.map(o => {
     const btn = document.createElement("button");
     btn.textContent = o.label;
@@ -991,57 +1472,159 @@ function tftSeg(id, opts, set) {
       btn.append(t);
     }
     btn.dataset.key = o.key;
-    if (o.title) btn.title = o.title;
-    btn.addEventListener("click", () => { set(o.key); loadTftScenario(); });
+    if (o.cost) btn.dataset.cost = o.cost;
+    btn.dataset.title = btn.title = o.title || "";
+    btn.setAttribute("aria-pressed", "false");
+    btn.addEventListener("click", () => { set(o.key); if (reload) loadTftScenario(); });
     return btn;
   }));
 }
 
 function renderTftUnits() {
   const m = tstate.meta;
-  const units = m.units.filter(u => tstate.cls === "all" || u.objective === tstate.cls);
-  if (!units.some(u => u.slug === tstate.unit)) tstate.unit = units[0]?.slug;
-  tftSeg("tft-unit-seg", units.map(u => ({
-    key: u.slug, label: `${u.name} (${u.cost})`, tag: u.role,
-    title: `${u.cost}-cost ${u.role} → ${u.objective} fight · ${u.traits.join(", ")} · ${u.ability}` +
-           (u.forms.length ? ` · forms ${u.forms.join("/")}` : "") + (u.note ? ` — ${u.note}` : "") })),
-    k => { tstate.unit = k; renderTftStars(); renderTftPool(); });
-  renderTftStars();
+  if (!m) return;
+  hideTftTooltip();
+  const query = tstate.search.trim().toLocaleLowerCase();
+  const units = m.units.filter(u => (tstate.cls === "all" || u.objective === tstate.cls) &&
+    (tstate.cost === "all" || String(u.cost) === tstate.cost) &&
+    (!query || [u.name, ...u.traits].some(s => s.toLocaleLowerCase().includes(query))));
+  const costs = [...new Set(units.map(u => u.cost))].sort((a, b) => a - b);
+  const list = document.getElementById("tft-unit-seg");
+  list.replaceChildren(...costs.map(cost => {
+    const group = document.createElement("section");
+    group.className = "tft-cost-group";
+    group.dataset.cost = cost;
+    group.setAttribute("aria-labelledby", `tft-cost-${cost}`);
+    const heading = document.createElement("div");
+    heading.className = "tft-cost-heading";
+    const title = document.createElement("h3");
+    title.id = `tft-cost-${cost}`;
+    title.textContent = `${cost} cost`;
+    const members = units.filter(u => u.cost === cost).sort((a, b) => a.name.localeCompare(b.name));
+    const count = document.createElement("span");
+    count.textContent = `${members.length} ${members.length === 1 ? "champion" : "champions"}`;
+    heading.append(title, count);
+    const grid = document.createElement("div");
+    grid.className = "tft-unit-grid";
+    grid.append(...members.map(u => {
+      const btn = document.createElement("button");
+      btn.className = "tft-unit";
+      btn.dataset.key = u.slug;
+      btn.dataset.richTooltip = "true";
+      btn.setAttribute("aria-label", `${u.name}, ${u.cost} cost, ${u.role}. Traits: ${u.traits.join(", ")}.`);
+      const text = document.createElement("span");
+      text.className = "tft-unit-text";
+      const traits = document.createElement("span");
+      traits.className = "tft-unit-traits";
+      traits.setAttribute("aria-hidden", "true");
+      traits.append(...tftUnitTraits(u).map(t => tftIcon(t.icon, t.name, true)));
+      text.append(tftText("span", u.name, "tft-unit-name"), traits);
+      btn.append(tftIcon(u.icon, u.name), text);
+      bindTftTooltip(btn, () => tftChampionTooltip(u));
+      btn.addEventListener("click", () => {
+        tstate.unit = u.slug;
+        renderTftStars();
+        loadTftScenario();
+      });
+      return btn;
+    }));
+    group.append(heading, grid);
+    return group;
+  }));
+  if (!units.length) {
+    const empty = document.createElement("p");
+    empty.className = "tft-empty";
+    empty.textContent = "No champions match these filters. Try another name or trait, or clear the filters.";
+    list.append(empty);
+  }
+  list.scrollTop = 0;
+  document.getElementById("tft-unit-count").textContent = `${units.length} of ${m.units.length} champions · grouped by cost`;
+  document.getElementById("tft-clear-filters").hidden = !query && tstate.cost === "all" && tstate.cls === "all";
+  tftActive("tft-class-seg", tstate.cls);
+  tftActive("tft-cost-seg", tstate.cost);
+  tftActive("tft-unit-seg", tstate.unit);
+  markTftCold();
 }
 
 function renderTftStars() {
   // the star levels this unit is simulated at (no 3★ for 4- and 5-costs)
   const m = tstate.meta, u = m.units.find(x => x.slug === tstate.unit);
   const stars = u?.stars || m.stars;
-  if (!stars.includes(tstate.star)) tstate.star = stars.includes(2) ? 2 : stars[0];
+  tstate.star = tftStarFor(u);
   tftSeg("tft-star-seg", stars.map(s => ({ key: String(s), label: `${s}★` })),
     k => { tstate.star = +k; });
+  document.getElementById("tft-star-hint").textContent = stars.includes(3)
+    ? "Compare one, two or three stars." : "Builds available at one and two stars.";
 }
 
-async function loadTftMeta() {
-  if (tstate.meta) return true;
+function tftStarFor(unit) {
+  const stars = unit?.stars || tstate.meta.stars;
+  return stars.includes(tstate.star) ? tstate.star : stars.includes(2) ? 2 : stars[0];
+}
+
+document.getElementById("tft-search").addEventListener("input", e => {
+  tstate.search = e.target.value;
+  renderTftUnits();
+});
+document.getElementById("tft-clear-filters").addEventListener("click", () => {
+  tstate.cls = tstate.cost = "all";
+  tstate.search = "";
+  document.getElementById("tft-search").value = "";
+  renderTftUnits();
+  document.getElementById("tft-search").focus();
+});
+document.getElementById("tft-show-stats").addEventListener("change", () => {
+  if (tstate.data) renderTftTable();
+});
+document.getElementById("tft-jump-to-builds").addEventListener("click", () => {
+  document.getElementById("tft-title").focus();
+  document.getElementById("tft-results").scrollIntoView({ block: "start" });
+});
+
+async function loadTftMeta(force = false) {
+  if (tstate.meta && !force) return true;
   try {
-    tstate.meta = await api("api/tft/meta.json");
+    tstate.meta = await api("api/tft/meta.json", { cache: "no-store" });
   } catch (e) {
-    document.getElementById("tft-note").textContent =
-      "TFT API not reachable — restart `lol.py serve` to pick up the new endpoints, " +
-      "and run `lol.py tft fetch` if there is no snapshot yet.";
+    const note = document.getElementById("tft-note");
+    note.hidden = false;
+    note.textContent = tstate.meta
+      ? "New TFT data could not be loaded yet. Your current builds are still available; the page will retry shortly."
+      : "TFT data is temporarily unavailable. Please try again shortly.";
     return false;
   }
   const m = tstate.meta;
   const cur = m.units.find(u => u.slug === tstate.unit);
-  if (cur && tstate.cls !== "all" && cur.objective !== tstate.cls) tstate.cls = cur.objective;
+  tstate.unit = cur?.slug || m.units[0]?.slug;
+  if (!(tstate.geo in m.geometries)) tstate.geo = Object.keys(m.geometries)[0];
+  if (!(tstate.traits in m.traitContexts)) tstate.traits = Object.keys(m.traitContexts)[0];
+  if (tstate.cost !== "all" && !m.units.some(u => String(u.cost) === tstate.cost)) tstate.cost = "all";
+  if (!(tstate.cls in TFT_CLASS)) tstate.cls = "all";
+  document.getElementById("tft-note").hidden = true;
+  document.getElementById("tft-set-label").textContent = `Set ${m.set} · Patch ${m.patch}`;
+  document.getElementById("tft-set-label").title = m.verifiedAt
+    ? `Patch-note checks passed ${new Date(m.verifiedAt).toLocaleString()}. ` +
+      "MetaTFT game definitions with Riot patch corrections; CommunityDragon supplies asset references and timings."
+    : "";
   const counts = {};
   m.units.forEach(u => { counts[u.objective] = (counts[u.objective] || 0) + 1; });
+  const labels = { all: "All roles", carry: "Carries", fighter: "Fighters", tank: "Tanks" };
   tftSeg("tft-class-seg", Object.keys(TFT_CLASS).map(k => ({
-    key: k, label: k === "all" ? `all (${m.units.length})` : `${k} (${counts[k] || 0})`, title: TFT_CLASS[k] })),
-    k => { tstate.cls = k; renderTftUnits(); renderTftPool(); });
+    key: k, label: labels[k], tag: String(k === "all" ? m.units.length : counts[k] || 0), title: TFT_CLASS[k] })),
+    k => { tstate.cls = k; renderTftUnits(); }, false);
+  tftSeg("tft-cost-seg", [{ key: "all", label: "All costs" },
+    ...[...new Set(m.units.map(u => u.cost))].sort((a, b) => a - b).map(cost => ({
+      key: String(cost), label: `${cost} cost`, cost }))],
+    k => { tstate.cost = k; renderTftUnits(); }, false);
   renderTftUnits();
-  tftSeg("tft-geo-seg", Object.entries(m.geometries).map(([k, v]) => ({ key: k, label: k, title: v })),
+  renderTftStars();
+  tftSeg("tft-geo-seg", Object.entries(m.geometries).map(([k, v]) => ({ key: k, label: k === "clump" ? "Clumped" : "Spread", title: v })),
     k => { tstate.geo = k; });
-  tftSeg("tft-trait-seg", Object.entries(m.traitContexts).map(([k, v]) => ({ key: k, label: `traits ${k}`, title: v })),
+  tftSeg("tft-trait-seg", Object.entries(m.traitContexts).map(([k, v]) => ({
+    key: k, label: { bare: "None", low: "First breakpoint", high: "Max non-prismatic" }[k] || k, title: v })),
     k => { tstate.traits = k; });
   renderTftPool();
+  renderTftRefresh();
   return true;
 }
 
@@ -1083,21 +1666,110 @@ function renderTftPool() {
 }
 
 async function loadTftStatus() {
-  tstate.status = await api("api/tft/status.json");
+  tstate.status = await api("api/tft/status.json", { cache: "no-store" });
+  tstate.statusUnavailable = false;
   markTftCold();
+  renderTftRefresh();
   return tstate.status;
 }
 
-// Dim every option whose cell (with the other axes as selected) isn't computed.
+function refreshMessage(refresh) {
+  const message = typeof refresh?.message === "string" ? refresh.message.trim() : "";
+  // A failed job's technical details belong in its log, not the build picker.
+  return message.length <= 360 && !/[\r\n]|Traceback|\b\w*(?:Error|Exception):/.test(message) ? message : "";
+}
+
+function refreshWhen(refresh) {
+  const stamp = refresh?.checkedAt || refresh?.finishedAt;
+  const date = stamp ? new Date(stamp) : null;
+  return date && Number.isFinite(date.getTime()) ? date : null;
+}
+
+function renderTftRefresh() {
+  const el = document.getElementById("tft-refresh");
+  const refresh = tstate.status?.refresh;
+  if (!refresh?.status && !tstate.statusUnavailable) { el.hidden = true; return; }
+  const patch = tstate.meta?.patch || tstate.status?.patch;
+  const target = refresh?.targetPatch;
+  const when = refreshWhen(refresh);
+  const lastCheck = when ? `Last automatic check: ${when.toLocaleString([], { dateStyle: "short", timeStyle: "short" })}.` : "";
+  const current = patch ? `Patch ${patch} builds remain available.` : "Current builds remain available.";
+  let status = refresh?.status || "failed", title, detail;
+  if (tstate.statusUnavailable) {
+    status = "failed";
+    title = "Update status is temporarily unavailable";
+    detail = `${current} The page will check again shortly.`;
+  } else if (status === "running") {
+    const computing = /warm|calculat|comput/.test(refresh.phase || "");
+    title = computing ? `Recalculating builds${target ? ` for patch ${target}` : ""}…` : "Checking for patch updates…";
+    detail = current;
+  } else if (status === "needs-review") {
+    title = target ? `Patch ${target} needs review` : "New patch data needs review";
+    detail = `${current} ${refreshMessage(refresh) || "Some changes need checking before the updated builds can be used."}`;
+  } else if (status === "failed") {
+    title = "Automatic update did not finish";
+    detail = `${current} The next scheduled check will retry.`;
+  } else if (when && Date.now() - when.getTime() > 18 * 3.6e6) {
+    status = "stale";
+    title = "No recent automatic update check";
+    detail = current;
+  } else {
+    title = "Checked for patch updates";
+    detail = refreshMessage(refresh) || `Using patch ${patch}.`;
+  }
+  el.hidden = false;
+  el.dataset.state = status;
+  document.getElementById("tft-refresh-title").textContent = title;
+  document.getElementById("tft-refresh-detail").textContent = [detail, lastCheck, "Checks every 6 hours."].filter(Boolean).join(" ");
+}
+
+const tftRevision = () => tstate.meta?.revision || tstate.meta?.patch;
+
+function scheduleTftStatus() {
+  clearTimeout(tstate.timer);
+  if (state.view === "tft" && !document.hidden)
+    tstate.timer = setTimeout(pollTftStatus, tstate.pending ? 10000 : 60000);
+}
+
+async function pollTftStatus() {
+  clearTimeout(tstate.timer);
+  if (state.view !== "tft" || document.hidden || !tstate.meta) return;
+  if (tstate.polling) return tstate.polling;
+  tstate.polling = (async () => {
+    try {
+      const st = await loadTftStatus();
+      if (state.view !== "tft" || document.hidden) return;
+      const changed = st.revision && tstate.meta.revision
+        ? st.revision !== tstate.meta.revision : st.patch && st.patch !== tstate.meta.patch;
+      if (changed && !await loadTftMeta(true)) return;
+      if (state.view !== "tft" || document.hidden) return;
+      if (tstate.data && tstate.dataRevision !== tftRevision()) {
+        await loadTftScenario({ preserve: true });
+      } else if (tstate.pending) {
+        if (st.ready?.[`${tstate.unit}/${tkey()}`]) await loadTftScenario();
+        else showTftPending(tstate.req);
+      }
+    } catch {
+      tstate.statusUnavailable = true;
+      renderTftRefresh();
+    } finally {
+      tstate.polling = null;
+      scheduleTftStatus();
+    }
+  })();
+  return tstate.polling;
+}
+
+// Mark unavailable builds without hiding a champion's name or description.
 function markTftCold() {
   const ready = tstate.status?.ready;
   if (!ready) return;
   const mark = (id, keyOf) => document.querySelectorAll(`#${id} button`).forEach(b => {
     const cold = !ready[keyOf(b.dataset.key)];
     b.classList.toggle("cold", cold);
-    b.title = cold ? "not computed yet" : b.title.replace("not computed yet", "");
+    if (!b.dataset.richTooltip) b.title = (b.dataset.title || "") + (cold ? " · not computed yet" : "");
   });
-  mark("tft-unit-seg", k => `${k}/${tkey()}`);
+  mark("tft-unit-seg", k => `${k}/${tkey({ star: tftStarFor(tstate.meta.units.find(u => u.slug === k)) })}`);
   mark("tft-star-seg", k => `${tstate.unit}/${tkey({ star: k })}`);
   mark("tft-geo-seg", k => `${tstate.unit}/${tkey({ geo: k })}`);
   mark("tft-trait-seg", k => `${tstate.unit}/${tkey({ traits: k })}`);
@@ -1105,95 +1777,138 @@ function markTftCold() {
 
 function clearTft() {
   tstate.data = null;
+  document.querySelector("#ttbl thead tr").replaceChildren();
   document.querySelector("#ttbl tbody").replaceChildren();
+  document.getElementById("tft-scenario-details").hidden = true;
+  document.getElementById("tft-desc").textContent = "";
+  document.getElementById("tft-show-stats").disabled = true;
   document.getElementById("tbd-title").textContent = "Damage breakdown";
   document.getElementById("tbd-hint").textContent = "";
   document.getElementById("tbd-bars").replaceChildren();
 }
 
-async function loadTftScenario() {
+async function loadTftScenario({ preserve = false } = {}) {
   if (!tstate.unit) {
-    document.getElementById("tft-note").textContent = "No unit drivers yet — see tft_kits.py.";
+    document.getElementById("tft-note").hidden = false;
+    document.getElementById("tft-note").textContent = "No champions are available in this snapshot.";
     return;
   }
-  const active = (id, key) => document.querySelectorAll(`#${id} button`).forEach(b =>
-    b.classList.toggle("active", b.dataset.key === key));
-  active("tft-class-seg", tstate.cls);
-  active("tft-unit-seg", tstate.unit);
-  active("tft-star-seg", String(tstate.star));
-  active("tft-geo-seg", tstate.geo);
-  active("tft-trait-seg", tstate.traits);
+  tftActive("tft-unit-seg", tstate.unit);
+  tftActive("tft-star-seg", String(tstate.star));
+  tftActive("tft-geo-seg", tstate.geo);
+  tftActive("tft-trait-seg", tstate.traits);
+  const unit = tstate.meta.units.find(u => u.slug === tstate.unit);
+  renderTftSelected(unit);
+  renderTftFight(unit);
+  document.getElementById("tft-geo-hint").textContent = tstate.geo === "clump"
+    ? "Enemies grouped; splash and nearby effects can reach multiple targets."
+    : "Enemies separated; most area effects reach the current target.";
+  document.getElementById("tft-trait-hint").textContent = {
+    bare: "No trait bonuses applied.", low: "Each modeled trait at its first active breakpoint.",
+    high: "Each modeled trait at its highest non-prismatic breakpoint."
+  }[tstate.traits] || "";
   markTftCold();
   updateHash();
   const req = ++tstate.req;
-  clearTimeout(tstate.timer);
+  const revision = tftRevision();
+  const previous = preserve ? tstate.data : null;
+  const selectedItems = previous?.rows[tstate.sel]?.items;
+  tstate.pending = false;
+  if (!previous) clearTft();
+  const formation = tstate.geo === "clump" ? "clumped" : "spread";
+  const traitLabel = { bare: "no traits", low: "first trait breakpoint", high: "max non-prismatic traits" }[tstate.traits];
+  document.getElementById("tft-title").textContent = `${unit.name} — ${tstate.star}★ builds · ${formation} · ${traitLabel}`;
   const desc = document.getElementById("tft-desc");
-  desc.textContent = "Loading…";
+  const summary = document.getElementById("tft-result-summary");
+  summary.textContent = previous ? `Updating ${unit.name}'s builds…` : `Loading ${unit.name}'s builds…`;
+  document.getElementById("tft-results").setAttribute("aria-busy", "true");
   let d;
   try {
-    d = await api(`api/tft/${tstate.unit}/${tkey()}.json`);
+    d = await api(`api/tft/${tstate.unit}/${tkey()}.json`, { cache: "no-store" });
   } catch (e) {
     if (req !== tstate.req) return;
-    clearTft();
-    desc.textContent = `Could not load this cell (${e.message}).`;
+    if (!previous) clearTft();
+    document.getElementById("tft-results").setAttribute("aria-busy", "false");
+    summary.textContent = previous
+      ? "Updated builds could not be loaded yet. Showing the previous results; the page will retry shortly."
+      : "Could not load these builds. Select a champion or fight setting to retry.";
+    scheduleTftStatus();
     return;
   }
   if (req !== tstate.req) return;
+  document.getElementById("tft-results").setAttribute("aria-busy", "false");
   if (d.pending) {
-    clearTft();
+    if (!previous) clearTft();
     showTftPending(req);
     return;
   }
   tstate.data = d;
-  tstate.sel = 0;
-  const sc = d.scenario, dm = sc.dummy;
-  document.getElementById("tft-title").textContent =
-    `${d.unitName} — ranked items, ${sc.label}`;
+  tstate.dataRevision = revision;
+  tstate.sel = selectedItems ? Math.max(0, d.rows.findIndex(r => JSON.stringify(r.items) === JSON.stringify(selectedItems))) : 0;
+  document.getElementById("tft-show-stats").disabled = false;
+  document.getElementById("tft-scenario-details").hidden = false;
+  const sc = d.scenario;
+  renderTftFight(unit, sc);
+  const ranking = d.objective === "tank" ? "Ranked by time holding enemies, then damage denied, then damage dealt"
+    : d.objective === "fighter" ? "Ranked by kill time, then damage before dying" : "Ranked by kill time, then damage";
+  summary.textContent = d.rows.length
+    ? `${fmtInt(d.rows.length)} of ${fmtInt(d.buildsEvaluated)} builds · ${ranking}. Select a row for its damage breakdown.`
+    : "No ranked builds are available for this fight.";
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
-  const slots = dm.slots.map(s => `${fmtInt(s.hp)} HP · ${s.armor} armor · ${s.mr} MR (${s.kind})`).join("; ");
   const traits = sc.traitsActive.length
     ? sc.traitsActive.map(t => `${t.trait} ${t.breakpoint}`).join(", ")
     : "none";
-  const unmodeled = sc.traitsUnmodeled.length ? ` · not modeled: ${sc.traitsUnmodeled.join(", ")}` : "";
-  const notes = (sc.notes || []).length ? ` · ${sc.notes.join("; ")}` : "";
   const objective = (tstate.meta.objectives || {})[d.objective] || d.objective;
-  const pressure = d.pressured
-    ? ` · they hit back: ` + dm.slots.map(s => `${s.ad} AD at ${s.as}/s + ${fmtInt(s.ability)} per cast (${Math.round(s.physicalShare * 100)}% physical, ${s.manaStart}/${s.manaMax} mana +${s.manaPerAttack}/attack${s.manaFromDamage ? " and from damage taken" : ""})`).join("; ") +
-      ` — about ${fmtInt(dm.pressureDps)} pre-mitigation DPS`
-    : "";
-  desc.textContent =
-    `${d.unitName} (${d.cost}-cost ${d.role} → ${d.objective}: ${objective}) at ${sc.star}★ · up to ${sc.duration}s vs ${dm.count} dummies: ${slots}` +
-    ` — the median ${dm.star}★ units of the set${pressure} · ${sc.geometry}: ${tstate.meta.geometries[sc.geometry]}` +
-    ` · traits active: ${traits}${unmodeled}${notes}` +
-    ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
-    (when ? ` · computed ${when} in ${d.computeSeconds}s` : "") +
-    ` · set ${d.set} patch ${d.patch}`;
+  desc.replaceChildren(
+    tftText("p", `${d.unitName} at ${sc.star}★ · ${d.role}. ${objective}.`),
+    tftText("p", `Trait bonuses applied: ${traits}.`),
+    ...(sc.traitsUnmodeled.length ? [tftText("p", `Traits not included: ${sc.traitsUnmodeled.join(", ")}.`)] : []),
+    ...(sc.notes || []).map(note => tftText("p", note)),
+    tftText("p", `${fmtInt(d.buildsEvaluated)} builds evaluated · Set ${d.set}, patch ${d.patch}` +
+      (when ? ` · calculated ${when} in ${d.computeSeconds}s.` : ".")));
+  if (unit.note) {
+    const assumptions = document.createElement("details");
+    assumptions.append(tftText("summary", "Champion ability assumptions"), tftText("p", unit.note));
+    desc.append(assumptions);
+  }
   renderTftTable();
+  scheduleTftStatus();
 }
 
-async function showTftPending(req) {
-  let st = null;
-  try { st = await loadTftStatus(); } catch (e) { /* shown as unavailable */ }
+function showTftPending(req) {
   if (req !== tstate.req) return;
-  if (st?.ready[`${tstate.unit}/${tkey()}`]) { loadTftScenario(); return; }
-  const n = st ? Object.values(st.ready).filter(Boolean).length : 0;
-  const total = st ? Object.keys(st.ready).length : 0;
+  const st = tstate.status;
+  tstate.pending = true;
+  const n = Object.values(st?.ready || {}).filter(Boolean).length;
+  const total = Object.keys(st?.ready || {}).length;
   const why = {
-    running: `warming in the background, ${n} of ${total} cells ready — this one will appear when it lands`,
-    idle: "no warmer is running — run `lol.py tft warm`, or restart serve without --no-warm",
-    failed: "the last warm failed or was killed — see .cache/tft/warm.log, then restart serve",
-    stale: "serve is running older code than is on disk — restart it",
+    running: `Calculating builds in the background: ${n} of ${total} fights ready. These results will appear automatically.`,
+    idle: "These builds are waiting to be calculated.",
+    failed: "The build calculation did not finish. Check the automation status in the Data tab.",
+    stale: "The dashboard needs to restart to finish applying an update.",
   }[st?.warmer] || "status unavailable";
-  document.getElementById("tft-desc").textContent =
-    `Not computed yet for the current code and data (${why}).`;
-  tstate.timer = setTimeout(() => showTftPending(req), 10000);
+  document.getElementById("tft-result-summary").textContent = (tstate.data ? "Showing the previous results. " : "") + why;
+  scheduleTftStatus();
 }
 
 function tftColumns() {
   const d = tstate.data, objective = d.objective || "carry";
-  const items = { th: "Items", td: r => cell(r.items.join(", ") + (r.form ? ` [${r.form}]` : "")) };
+  const items = { th: "Items", td: r => {
+    const td = cell("");
+    const list = document.createElement("div");
+    list.className = "tft-item-list";
+    r.items.forEach(name => {
+      const item = document.createElement("span");
+      item.className = "tft-item";
+      item.textContent = name;
+      list.append(item);
+    });
+    td.append(list);
+    if (r.form) td.append(` ${r.form} form`);
+    return td;
+  } };
   const kill = { th: "Kill time", title: "Time until all three dummies are dead; the rest are ranked by damage dealt",
     td: r => {
       const td = cell(r.killTime != null ? r.killTime.toFixed(2) + "s" : (r.died ? "died" : "survive"));
@@ -1233,6 +1948,11 @@ function tftColumns() {
     td: r => cell((r.allyHeal || r.allyShield) ? `${fmtInt(r.allyHeal)} / ${fmtInt(r.allyShield)}` : "–") };
   const rank = { th: "#", td: r => cell(String(r.rank)) };
   const counts = [{ th: "Casts", td: r => cell(String(r.casts)) }, { th: "Attacks", td: r => cell(String(r.attacks)) }];
+  if (!document.getElementById("tft-show-stats").checked) {
+    if (objective === "tank") return [rank, items, held, soak[3], dmg, ...soak.slice(1, 3)];
+    if (objective === "fighter") return [rank, items, kill, dmg, dps, held];
+    return [rank, items, kill, dps, dmg];
+  }
   if (objective === "tank") return [rank, items, held, dmg, ...soak, ally, ...body, ...counts, ...stats];
   if (objective === "fighter") return [rank, items, kill, dmg, dps, held, ...soak.slice(0, 3), ...body, ...counts, ...stats];
   return [rank, items, kill, dps, dmg, ...counts, ...stats];
@@ -1242,6 +1962,7 @@ function renderTftTable() {
   const rows = tstate.data.rows, cols = tftColumns();
   document.querySelector("#ttbl thead tr").replaceChildren(...cols.map(c => {
     const th = document.createElement("th");
+    th.scope = "col";
     th.textContent = c.th;
     if (c.title) th.title = c.title;
     return th;
@@ -1249,12 +1970,22 @@ function renderTftTable() {
   const body = document.querySelector("#ttbl tbody");
   body.replaceChildren(...rows.map((r, i) => {
     const tr = document.createElement("tr");
-    if (i === tstate.sel) tr.className = "sel";
+    tr.tabIndex = 0;
+    tr.setAttribute("aria-label", `Build ${r.rank}: ${r.items.join(", ")}. Show damage breakdown.`);
+    if (i === tstate.sel) { tr.className = "sel"; tr.setAttribute("aria-current", "true"); }
     tr.append(...cols.map(c => c.td(r)));
-    tr.addEventListener("click", () => {
+    const select = () => {
       tstate.sel = i;
-      [...body.children].forEach((row, j) => row.classList.toggle("sel", j === i));
+      [...body.children].forEach((row, j) => {
+        row.classList.toggle("sel", j === i);
+        if (j === i) row.setAttribute("aria-current", "true");
+        else row.removeAttribute("aria-current");
+      });
       renderTftBreakdown(r);
+    };
+    tr.addEventListener("click", select);
+    tr.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); }
     });
     return tr;
   }));
@@ -1289,10 +2020,15 @@ function renderTftBreakdown(r) {
 }
 
 async function openTft() {
-  if (await loadTftMeta()) {
-    loadTftStatus().catch(() => {});
-    loadTftScenario();
-  }
+  if (tstate.opening) return tstate.opening;
+  tstate.opening = (async () => {
+    if (!await loadTftMeta() || state.view !== "tft" || document.hidden) return;
+    await pollTftStatus();
+    if (!tstate.data && !tstate.pending && state.view === "tft" && !document.hidden)
+      await loadTftScenario();
+  })();
+  try { await tstate.opening; }
+  finally { tstate.opening = null; scheduleTftStatus(); }
 }
 
 // ---------------- data view ----------------
@@ -1363,6 +2099,16 @@ function svcWhen(s) {
 // Local jobs write a heartbeat (jobs/.state/) that serve exposes as
 // lastRun/lastExit; the static export strips it, so "—" on the published site.
 function jobStatus(j) {
+  if (j.status) {
+    const date = refreshWhen({ checkedAt: j.checkedAt, finishedAt: j.lastRun });
+    const when = date ? ` · ${relTime(date.getTime() / 1000)}` : "";
+    const message = refreshMessage(j);
+    if (j.status === "running") return { text: `${/warm|calculat|comput/.test(j.phase || "") ? "recalculating builds" : "checking for updates"}${j.targetPatch ? ` · patch ${j.targetPatch}` : ""}`, cls: "amber" };
+    if (j.status === "needs-review") return { text: `needs review${when}${message ? ` · ${message}` : ""}`, cls: "amber" };
+    if (j.status === "failed") return { text: `update failed${when} · current builds kept`, cls: "neg" };
+    if (date && Date.now() - date.getTime() > 18 * 3.6e6) return { text: `no recent check${when}`, cls: "amber" };
+    if (j.status === "ok") return { text: `ok${when}${message ? ` · ${message}` : ""}`, cls: "pos" };
+  }
   if (j.lastRun == null) return { text: "—" };
   const hrs = (Date.now() - Date.parse(j.lastRun)) / 3.6e6;
   const when = hrs < 1.5 ? "just now" : hrs < 48 ? Math.round(hrs) + "h ago"
@@ -1438,9 +2184,14 @@ function showView(v) {
   updateHash();
   if (v === "builds" && !bstate.data) openBuilds();
   if (v !== "builds") clearTimeout(bstate.timer);  // stop polling off-tab
-  if (v === "tft" && !tstate.data) openTft();
+  if (v === "tft") openTft();
   if (v !== "tft") clearTimeout(tstate.timer);
+  if (v === "data") loadInventory().catch(() => {});
 }
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) clearTimeout(tstate.timer);
+  else if (state.view === "tft") openTft();
+});
 document.querySelectorAll("nav button").forEach(b =>
   b.addEventListener("click", () => showView(b.dataset.view)));
 

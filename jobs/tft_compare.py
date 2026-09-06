@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Replay the golden fights (data/tft/golden/fights.json) on the compiled
-TFT engine and diff every number bit for bit against what the pre-Rust
-Python engine computed (test_tft.TestGolden does the same; this prints
-per-unit detail).
+TFT engine and diff every number bit for bit against the recorded benchmark
+(test_tft.TestGolden does the same; this prints per-unit detail). Fixture
+provenance identifies the generating engine, patch and dummy inputs.
 
     python3 jobs/tft_compare.py [--unit Ahri ...] [--driver Ahri ...] [--max-report N] [-v]
 
@@ -73,12 +73,14 @@ def main():
     ap.add_argument("--max-report", type=int, default=12)
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
-    snap = tft.load_snapshot()
+    with open(GOLDEN) as f:
+        fixture = json.load(f)
+    provenance = fixture["provenance"]
+    snap = tft.load_snapshot(provenance["set"], provenance["patch"])
     item_fx = tft.load_item_effects(snap.set_no)
     trait_fx = tft.load_trait_effects(snap.set_no)
-    dummy = tft.dummies_for(snap)
-    with open(GOLDEN) as f:
-        cases = json.load(f)["cases"]
+    dummy = provenance.get("dummy", tft.dummies_for(snap))
+    cases = fixture["cases"]
     want_units = None
     if args.unit:
         want_units = {snap.unit(x)["api"] for x in args.unit}
@@ -113,7 +115,7 @@ def main():
                 names = [snap.items[a]["name"] for a in case["items"]]
                 print(f"MISMATCH {unit['name']} {case['scenario']} [{', '.join(names) or 'no items'}]")
                 for k, w, g in d[:6]:
-                    print(f"    {k}: python {w!r}\n    {' ' * len(k)}  rust   {g!r}")
+                    print(f"    {k}: expected {w!r}\n    {' ' * len(k)}  actual   {g!r}")
         elif args.verbose:
             print(f"ok {unit['name']} {case['scenario']} {case['items']}")
     bad = 0

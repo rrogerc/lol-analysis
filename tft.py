@@ -7,17 +7,20 @@ Numbers come from data, mechanics from code:
   the set: every unit's base stats, per-star curve tables and ability
   formulas (Riot's own calculation terms), every item's stat line and
   curve table, every trait's per-breakpoint values, and Riot's role tags.
-  Community Dragon stopped carrying the ability numbers when Set 18 moved
-  them into curve tables, so this is the one machine-readable source.
+  The current CommunityDragon export lacks Set 18's ability calculations;
+  this structured lookup supplies them, with live corrections below.
+- communitydragon.json — the archived Set 18 export for asset references
+  and source comparison. Its base stats can lag hotfixes, so they never
+  silently replace the corrected simulation inputs.
 - data/tft/set<N>/<patch>/bins.json — per-unit timings distilled from
   Community Dragon's character bins: ability cast time, attack windup.
 - data/tft/set<N>/<patch>/patchnotes.json — every "old ⇒ new" line of the
   patch's notes, so `lol.py tft check` can flag a snapshot value the notes
   say has changed (MetaTFT's file has lagged the live patch before).
-- data/tft/set<N>/<patch>/overrides.json — hand corrections with
-  provenance, applied on top of that patch's snapshot (typically: patch-
-  note values the snapshot doesn't have yet). Per patch, so a new patch
-  starts clean instead of inheriting pins the notes have since changed.
+- data/tft/set<N>/<patch>/overrides.json — corrections with provenance,
+  applied on top of that patch's snapshot (typically: patch-note values
+  the snapshot doesn't have yet). Automatic refreshes reconcile them
+  against new notes and source changes before carrying them forward.
 - data/tft/set<N>/item-effects.json, trait-effects.json — which item
   passives and trait bonuses the engine models, as references to the
   data's own rows (so a number change in the data flows through).
@@ -64,19 +67,26 @@ import statistics
 import sys
 import time
 import urllib.request
+from urllib.error import HTTPError
+import shutil
+import tempfile
+from types import SimpleNamespace
 from datetime import datetime, timezone
 from html import unescape
+from html.parser import HTMLParser
 
-from common import BASE_DIR, patch_key
+from common import BASE_DIR
 
 TFT_DATA_DIR = os.path.join(BASE_DIR, "data", "tft")
 CACHE_DIR = os.path.join(BASE_DIR, ".cache", "tft")
 SCENARIO_CACHE_DIR = CACHE_DIR   # the name webapp's warmer expects
+REFRESH_STATE_FILE = os.path.join(BASE_DIR, "jobs", ".state", "refresh-tft.json")
 DEFAULT_SET = 18
 
 METATFT_URL = "https://data.metatft.com/lookups/TFTSet{set}_latest_en_us.json"
 CDRAGON_BIN = ("https://raw.communitydragon.org/latest/game/characters/"
                "{name}.cdtb.bin.json")
+CDRAGON_TFT = "https://raw.communitydragon.org/latest/cdragon/tft/en_us.json"
 PATCH_NOTES_INDEX = "https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/"
 PATCH_NOTES_URL = PATCH_NOTES_INDEX + "teamfight-tactics-patch-{slug}/"
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) lol-analysis/0.1 (+github.com/rrogerc/lol-analysis)"
@@ -114,6 +124,8 @@ FIGHT_DURATION = 20.0  # carries and frontliners
 TANK_DURATION = 60.0   # tanks are scored on how long they last, so longer
 N_DUMMIES = 3
 DUMMY_STAR = 2
+# The first enemy is a tougher benchmark; the other slots keep set medians.
+FRONT_TANK_DEFENSES = {"hp": 3000, "armor": 70, "mr": 70}
 BOARD_SIZE = 8         # the enemy board at STAGE: what a tank ("more likely
                        # to be targeted") is hit by; a fighter fights the
                        # three dummies in front of it
@@ -197,6 +209,10 @@ def fetch_json(url):
     return json.loads(fetch_bytes(url))
 
 
+def json_hash(data):
+    return hashlib.sha256(json.dumps(data, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
 def set_dir(set_no):
     return os.path.join(TFT_DATA_DIR, f"set{set_no}")
 
@@ -207,9 +223,116 @@ def patch_dirs(set_no):
     if not os.path.isdir(d):
         return []
     return sorted((p for p in os.listdir(d)
-                   if re.fullmatch(r"\d+\.\d+", p)
-                   and os.path.exists(os.path.join(d, p, "metatft.json"))),
-                  key=patch_key)
+                   if re.fullmatch(r"\d+\.\d+[a-z]?", p)
+                   and os.path.exists(os.path.join(d, p, "metatft.json"))
+                   and os.path.exists(os.path.join(d, p, "meta.json"))),
+                  key=tft_patch_key)
+
+
+def tft_patch_key(patch):
+    """Order TFT hotfixes after their base patch, before the next patch."""
+    match = re.fullmatch(r"(\d+)\.(\d+)([a-z]?)", patch)
+    if not match:
+        raise ValueError(f"invalid TFT patch {patch!r}; expected e.g. 18.1d")
+    major, minor, suffix = match.groups()
+    return int(major), int(minor), ord(suffix) - ord("a") + 1 if suffix else 0
+
+
+class PatchNotesParser(HTMLParser):
+    """Keep update dates, sections and parent item names with each change."""
+
+    def __init__(self):
+        super().__init__()
+        self.major = self.section = self.update = ""
+        self.heading = None
+        self.heading_text = []
+        self.updates = []
+        self.entries = []
+        self.stack = []
+        self.skip = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style"):
+            self.skip += 1
+        if self.skip:
+            return
+        if tag in ("h2", "h3", "h4"):
+            self.heading, self.heading_text = tag, []
+        elif tag == "li":
+            parent = " ".join("".join(self.stack[-1]["text"]).split()).rstrip(":") if self.stack else ""
+            self.stack.append({"text": [], "parent": parent, "section": self.section,
+                               "update": self.update, "major": self.major})
+        elif tag == "br" and self.stack:
+            self.stack[-1]["text"].append(" ")
+
+    def handle_data(self, data):
+        if self.skip:
+            return
+        if self.heading:
+            self.heading_text.append(data)
+        if self.stack:
+            self.stack[-1]["text"].append(data)
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style"):
+            self.skip = max(0, self.skip - 1)
+            return
+        if self.skip:
+            return
+        if tag == self.heading:
+            label = " ".join("".join(self.heading_text).split())
+            if tag == "h2":
+                self.major = self.section = label
+                self.update = ""
+            elif tag == "h3" and self.major.lower() == "mid-patch updates":
+                self.update = label
+                if label and label not in self.updates:
+                    self.updates.append(label)
+            else:
+                self.section = label
+            self.heading = None
+        elif tag == "li" and self.stack:
+            entry = self.stack.pop()
+            entry["text"] = " ".join("".join(entry["text"]).split())
+            self.entries.append(entry)
+
+
+def patch_notes_document(html, base_patch):
+    """Riot lists newest hotfix sections first; first update is B, then C/D."""
+    parser = PatchNotesParser()
+    parser.feed(html)
+    explicit = re.findall(rf"\b{re.escape(base_patch)}([b-z])\b", unescape(html), re.I)
+    suffix = max((s.lower() for s in explicit), default="")
+    if not suffix and parser.updates:
+        suffix = chr(ord("a") + len(parser.updates))
+    patch = base_patch + suffix
+    changes = []
+    # Riot rotates the recommendations beneath the article independently
+    # of patch changes. Only the article's own sections belong to the audit.
+    entries = [entry for entry in parser.entries if entry["major"]
+               and entry["major"].lower() != "related articles" and entry["text"]]
+    for entry in entries:
+        text = entry["text"]
+        if "⇒" not in text:
+            continue
+        # A sentence can contain multiple independent changes. Keep their
+        # labels together instead of treating the first new value as a label.
+        for part in re.split(r"\.\s+(?=[A-Z][^⇒]*?:)", text):
+            match = re.fullmatch(r"(.+?):\s*(.*?)\s*⇒\s*(.+)", part)
+            if not match:
+                continue
+            what, old, new = match.groups()
+            if entry["parent"]:
+                what = entry["parent"] + " " + what
+            changes.append({"what": what, "old": old, "new": new,
+                            "section": entry["section"], "update": entry["update"],
+                            "major": entry["major"]})
+    if not changes:
+        raise ValueError("Riot patch notes contained no readable balance changes")
+    return {"patch": patch, "basePatch": base_patch, "updates": parser.updates,
+            "revisionSource": "explicit label" if explicit else "dated mid-patch update sequence",
+            "url": PATCH_NOTES_URL.format(slug=base_patch.replace(".", "-")),
+            "changes": changes, "notes": entries}
 
 
 def latest_patch_slug(set_no):
@@ -222,22 +345,27 @@ def latest_patch_slug(set_no):
 
 
 def parse_patch_notes(html):
-    """Every 'Something: old ⇒ new' change line of a patch-notes page. The
-    page renders each change as separate spans, so the arrow sits on a
-    line of its own between the label+old and the new value."""
-    text = re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)
-    text = unescape(re.sub(r"<[^>]+>", "\n", text))
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    out = []
-    for i, line in enumerate(lines):
-        if line != "⇒" or i == 0 or i + 1 >= len(lines):
-            continue
-        m = re.match(r"(.+?):\s*(.+)$", lines[i - 1])
-        if not m:
-            continue
-        out.append({"what": m.group(1).strip(), "old": m.group(2).strip(),
-                    "new": lines[i + 1]})
-    return out
+    return patch_notes_document(html, "0.0")["changes"]
+
+
+def fetch_source(url):
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
+    with urllib.request.urlopen(req, timeout=60) as response:
+        raw = response.read()
+        source = {"url": url, "lastModified": response.headers.get("Last-Modified"),
+                  "sha256": hashlib.sha256(raw).hexdigest()}
+    return json.loads(raw), source
+
+
+def communitydragon_set(data, set_no):
+    sets = [s for s in data.get("setData", []) if s.get("number") == set_no]
+    if len(sets) != 1:
+        raise ValueError(f"expected one CommunityDragon set {set_no}, found {len(sets)}")
+    selected = sets[0]
+    item_ids = set(selected.get("items", []))
+    return {"set": set_no, "mutator": selected.get("mutator"),
+            "champions": selected["champions"], "traits": selected["traits"],
+            "items": [item for item in data.get("items", []) if item["apiName"] in item_ids]}
 
 
 def distill_bin(b):
@@ -257,31 +385,68 @@ def distill_bin(b):
     return out
 
 
-def cmd_fetch(args):
+def _exchange_directories(left, right):
+    """Atomically replace an existing archive on Linux, including on SIGKILL."""
+    import ctypes
+    libc = ctypes.CDLL(None, use_errno=True)
+    renameat2 = libc.renameat2
+    renameat2.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int,
+                         ctypes.c_char_p, ctypes.c_uint]
+    renameat2.restype = ctypes.c_int
+    if renameat2(-100, os.fsencode(left), -100, os.fsencode(right), 2):
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error), right)
+
+
+def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
+    """Fetch, validate and publish; prepare can warm staged data first."""
+    report = progress or (lambda **fields: None)
     set_no = args.set
-    patch = args.patch
-    if not patch:
+    previous = load_snapshot(set_no) if automatic else None
+    requested = args.patch
+    if requested:
+        tft_patch_key(requested)
+        base_patch = re.sub(r"[a-z]$", "", requested)
+    else:
         slug = latest_patch_slug(set_no)
         if not slug:
             sys.exit(f"No patch notes found for set {set_no} on the news "
                      "index — pass --patch explicitly (e.g. 18.1).")
-        patch = slug.replace("-", ".")
+        base_patch = slug.replace("-", ".")
+    if int(base_patch.split(".")[0]) != set_no:
+        raise ValueError(f"patch {base_patch} does not belong to set {set_no}")
+    print(f"Fetching Riot's patch {base_patch} notes and mid-patch updates …")
+    notes = patch_notes_document(fetch_bytes(PATCH_NOTES_URL.format(
+        slug=base_patch.replace(".", "-"))).decode("utf-8"), base_patch)
+    patch = notes["patch"]
+    report(phase="fetching", targetPatch=patch, message=f"Downloading data for {patch}.")
+    if automatic and tft_patch_key(patch) < tft_patch_key(previous.patch):
+        from tft_update import ReviewRequired
+        raise ReviewRequired(f"The source reports older patch {patch}; keeping {previous.patch} and retrying on the next check.")
+    if requested and requested not in (base_patch, patch):
+        raise ValueError(f"the current sources describe {patch}, not requested {requested}; "
+                         "use an archived snapshot for historical patches")
     out_dir = os.path.join(set_dir(set_no), patch)
     if os.path.exists(os.path.join(out_dir, "metatft.json")) and not args.force:
         print(f"Set {set_no} patch {patch} is already archived at "
               f"{os.path.relpath(out_dir)} (use --force to refetch).")
         return
-    os.makedirs(out_dir, exist_ok=True)
     print(f"Fetching MetaTFT lookup for set {set_no} …")
-    raw = fetch_bytes(METATFT_URL.format(set=set_no))
-    data = json.loads(raw)
-    with open(os.path.join(out_dir, "metatft.json"), "w") as f:
-        json.dump(data, f, separators=(",", ":"), sort_keys=True)
+    data, lookup_source = fetch_source(METATFT_URL.format(set=set_no))
+    if data.get("_metadata", {}).get("set") != f"TFTSet{set_no}":
+        raise ValueError("the lookup returned the wrong TFT set")
     units = real_units(data)
+    if not units:
+        raise ValueError("the lookup contains no shop champions")
     print(f"  {len(units)} units, {len(data['items'])} items, "
           f"{len(data['traits'])} traits; MetaTFT stamp: "
           f"{data.get('_metadata', {}).get('patch')} generated "
           f"{data.get('_metadata', {}).get('generated')}")
+    print("Fetching CommunityDragon's set export for source comparison and assets …")
+    cdragon_raw, cdragon_source = fetch_source(CDRAGON_TFT)
+    cdragon = communitydragon_set(cdragon_raw, set_no)
+    cdragon_source["use"] = "asset references and cross-checks; ability calculations are incomplete"
+    lookup_source["use"] = "stats, roles and ability/item/trait calculations, with audited corrections"
     print("Fetching character bins from Community Dragon …")
     bins = {}
     for u in units:
@@ -289,31 +454,97 @@ def cmd_fetch(args):
             name = asset.lower()
             try:
                 bins[asset] = distill_bin(fetch_json(CDRAGON_BIN.format(name=name)))
-            except Exception as e:  # a missing bin is data, not a failure
+            except HTTPError as e:
+                if e.code != 404:
+                    raise
                 bins[asset] = {"error": str(e)[:80]}
     ok = sum(1 for b in bins.values() if b.get("castTime") is not None)
     print(f"  {len(bins)} bins, {ok} with a cast time")
-    with open(os.path.join(out_dir, "bins.json"), "w") as f:
-        json.dump(bins, f, indent=1, sort_keys=True)
-    slug = patch.replace(".", "-")
-    notes = []
-    try:
-        notes = parse_patch_notes(fetch_bytes(PATCH_NOTES_URL.format(slug=slug))
-                                  .decode("utf-8", "ignore"))
-        print(f"  patch notes {patch}: {len(notes)} change lines")
-    except Exception as e:
-        print(f"  patch notes {patch}: not fetched ({e})")
-    with open(os.path.join(out_dir, "patchnotes.json"), "w") as f:
-        json.dump({"patch": patch, "url": PATCH_NOTES_URL.format(slug=slug),
-                   "changes": notes}, f, indent=1)
     meta = {"set": set_no, "patch": patch,
             "fetchedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "metatft": data.get("_metadata"),
-            "sources": {"metatft": METATFT_URL.format(set=set_no),
-                        "bins": CDRAGON_BIN, "patchNotes": PATCH_NOTES_URL.format(slug=slug)}}
-    with open(os.path.join(out_dir, "meta.json"), "w") as f:
-        json.dump(meta, f, indent=1)
+            "sources": {"metatft": lookup_source, "communitydragon": cdragon_source,
+                        "bins": CDRAGON_BIN, "patchNotes": notes["url"]},
+            "patchNotesUpdates": notes["updates"]}
+    # Download and check in a staging directory. A failed fetch/check must
+    # never replace the snapshot that the dashboard is currently using.
+    os.makedirs(set_dir(set_no), exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".fetch-", dir=set_dir(set_no)) as staging:
+        for name, content in (("metatft.json", data), ("communitydragon.json", cdragon),
+                              ("bins.json", bins), ("patchnotes.json", notes), ("meta.json", meta)):
+            with open(os.path.join(staging, name), "w") as f:
+                json.dump(content, f, separators=(",", ":"), sort_keys=True)
+        # Corrections and the review are patch-specific. Never copy them
+        # automatically to another patch/hotfix and call it verified.
+        for name in ("overrides.json", "audit.json"):
+            source = os.path.join(out_dir, name)
+            if os.path.exists(source):
+                shutil.copyfile(source, os.path.join(staging, name))
+            elif automatic and name == "overrides.json":
+                source = os.path.join(previous.dir, name)
+                if os.path.exists(source):
+                    # Used only to evaluate the candidate. Reconciliation
+                    # must validate every carried correction before publication.
+                    shutil.copyfile(source, os.path.join(staging, name))
+        report(phase="validating", message=f"Checking {patch} against the active snapshot and patch notes.")
+        candidate = Snapshot(set_no, patch, directory=staging)
+        findings, unmatched = check_patch_notes(candidate)
+        needs_review = [f for f in findings if f["status"] != "current"]
+        if automatic and (not candidate.audit or needs_review):
+            from tft_update import reconcile
+            try:
+                overrides, audit = reconcile(candidate, previous, notes)
+                audit.setdefault("baselineReviewedAt", previous.audit.get("checkedAt"))
+                audit["checkedAt"] = meta["fetchedAt"]
+                for name, content in (("overrides.json", overrides), ("audit.json", audit)):
+                    with open(os.path.join(staging, name), "w") as f:
+                        json.dump(content, f, indent=2)
+                candidate = Snapshot(set_no, patch, directory=staging)
+                findings, unmatched = check_patch_notes(candidate)
+                needs_review = [f for f in findings if f["status"] != "current"]
+            except Exception:
+                pending = os.path.join(set_dir(set_no), ".pending", patch)
+                shutil.copytree(staging, pending, dirs_exist_ok=True)
+                raise
+        if not candidate.audit or needs_review:
+            pending = os.path.join(set_dir(set_no), ".pending", patch)
+            shutil.copytree(staging, pending, dirs_exist_ok=True)
+            raise ValueError(f"{patch} needs a patch audit before it can be published; "
+                             f"add/update {out_dir}/audit.json and overrides.json. "
+                             f"Downloaded candidate: {pending}. The previous snapshot is unchanged.")
+        if len(candidate.units) != len(units) or len(modeled_units(candidate)) != len(units):
+            raise ValueError("The new snapshot has missing champion stats or unsupported champions; keeping current builds.")
+        if prepare:
+            try:
+                prepare(candidate)
+            except BaseException:
+                pending = os.path.join(set_dir(set_no), ".pending", patch)
+                shutil.copytree(staging, pending, dirs_exist_ok=True)
+                raise
+        meta["verifiedAt"] = meta["fetchedAt"]
+        meta["verification"] = "published patch-note checks passed; see audit.json for remaining source limitations"
+        with open(os.path.join(staging, "meta.json"), "w") as f:
+            json.dump(meta, f, indent=1)
+        if os.path.exists(out_dir):
+            # Preserve extra archive files (for example review notes), then
+            # swap the whole directory. An interruption cannot leave a
+            # partly published archive. TemporaryDirectory removes the old
+            # generation after the exchange.
+            for name in os.listdir(out_dir):
+                source, dest = os.path.join(out_dir, name), os.path.join(staging, name)
+                if not os.path.exists(dest):
+                    if os.path.isdir(source):
+                        shutil.copytree(source, dest)
+                    else:
+                        shutil.copy2(source, dest)
+            shutil.copymode(out_dir, staging)
+            _exchange_directories(staging, out_dir)
+        else:
+            os.chmod(staging, 0o755)
+            os.rename(staging, out_dir)
     print(f"Archived under {os.path.relpath(out_dir)}/")
+    _SNAP.pop((set_no, patch), None)
+    return load_snapshot(set_no, patch)
 
 
 def real_units(data):
@@ -380,13 +611,23 @@ def override_trait_curve(row, vals):
 class Snapshot:
     """One archived patch of a set, with hand overrides applied."""
 
-    def __init__(self, set_no, patch):
+    def __init__(self, set_no, patch, directory=None):
         self.set_no, self.patch = set_no, patch
-        self.dir = os.path.join(set_dir(set_no), patch)
+        self.dir = directory or os.path.join(set_dir(set_no), patch)
         with open(os.path.join(self.dir, "metatft.json")) as f:
             self.raw = json.load(f)
         with open(os.path.join(self.dir, "meta.json")) as f:
             self.meta = json.load(f)
+        audit_path = os.path.join(self.dir, "audit.json")
+        self.audit = None
+        if os.path.exists(audit_path):
+            with open(audit_path) as f:
+                self.audit = json.load(f)
+        cdragon_path = os.path.join(self.dir, "communitydragon.json")
+        self.communitydragon = {}
+        if os.path.exists(cdragon_path):
+            with open(cdragon_path) as f:
+                self.communitydragon = json.load(f)
         bins_path = os.path.join(self.dir, "bins.json")
         self.bins = {}
         if os.path.exists(bins_path):
@@ -422,6 +663,9 @@ class Snapshot:
         self.items = {i["apiName"]: self._item(i) for i in self.raw["items"]}
         self.traits = {t["apiName"]: self._trait(t) for t in self.raw["traits"]}
         self.traits_by_name = {t["name"]: t for t in self.traits.values()}
+        # A running dashboard keeps this loaded generation until reload.
+        # Re-reading replaced files here would pair old stats with new caches.
+        self._input_hash = json_hash([self.raw, self.bins, self.overrides])
 
     def _stats(self, s, curve, ov):
         def stat(key, default):
@@ -565,14 +809,8 @@ class Snapshot:
         raise KeyError(f"no item {key!r}")
 
     def hash_inputs(self):
-        """Bytes of everything a result depends on in this snapshot."""
-        h = hashlib.sha256()
-        for fn in ("metatft.json", "bins.json", "overrides.json"):
-            p = os.path.join(self.dir, fn)
-            if os.path.exists(p):
-                with open(p, "rb") as f:
-                    h.update(f.read())
-        return h.hexdigest()
+        """The simulation inputs captured when this snapshot was loaded."""
+        return self._input_hash
 
 
 _SNAP = {}
@@ -746,10 +984,10 @@ def unit_primary_damage(unit, star):
 
 
 def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR):
-    """Stat dummies from the set's own units at `star`: a frontline of
-    median tank-role units (health, armor, magic resist), and a median
-    non-tank behind them — so tank-only effects (Giant Slayer's amp) apply
-    to the frontline, not to everything. Each carries its group's median
+    """A heavy first tank, median tanks after it, then a median non-tank.
+    The first tank uses fixed benchmark health/armor/MR; other defenses
+    come from the set's units at `star`. Tank-only effects (Giant Slayer's
+    amp) apply to the frontline, not to everything. Each carries its group's median
     offense too, for the fights where the dummies hit back: attack damage
     and speed, the ability's biggest number on its mana cadence, split
     physical/magic by the group's share of Attack-type roles."""
@@ -774,7 +1012,10 @@ def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR):
                 "manaPerAttack": med(ROLE_MANA[u["kind"]] for u in casters),
                 "manaFromDamage": kind == "tank"}
     tank, other = median_of(tanks, "tank"), median_of(others, "non-tank")
-    slots = [tank] * (n - 1) + [other]
+    slots = [dict(tank) for _ in range(n - 1)] + [dict(other)]
+    if n > 1:
+        slots[0].update(FRONT_TANK_DEFENSES)
+        slots[0]["fixedDefenses"] = True
     crit_ev = 1.0 + 0.25 * 0.4    # every unit's base crit
     # a tank is hit by the whole enemy board: BOARD_SIZE units split by the
     # set's tank share, the tanks over the tank slots, the rest behind
@@ -1241,6 +1482,7 @@ def cells(snap=None):
 def cell_paths(snap=None):
     snap = snap or load_snapshot()
     base = hashlib.sha256(SOURCE_HASH.encode())
+    base.update(snap.patch.encode())
     base.update(snap.hash_inputs().encode())
     for fn in ("item-effects.json", "trait-effects.json", "kits.json"):
         p = os.path.join(set_dir(snap.set_no), fn)
@@ -1313,7 +1555,7 @@ def cell_rows(snap, unit, out, count=CACHED_ROWS):
     return rows
 
 
-def compute_cell(snap, unit, key, paths, log=None):
+def compute_cell(snap, unit, key, paths, log=None, prune=True):
     sc = SCENARIOS[key]
     t0 = time.time()
     item_fx = load_item_effects(snap.set_no)
@@ -1350,9 +1592,10 @@ def compute_cell(snap, unit, key, paths, log=None):
     with open(tmp, "w") as f:
         json.dump(payload, f, separators=(",", ":"))
     os.replace(tmp, path)
-    for old in glob.glob(os.path.join(CACHE_DIR, f"{slug}-{key}-*.json")):
-        if old != path:
-            os.remove(old)
+    if prune:
+        for old in glob.glob(os.path.join(CACHE_DIR, f"{slug}-{key}-*.json")):
+            if old != path:
+                os.remove(old)
     return payload
 
 
@@ -1380,7 +1623,7 @@ def _say(line):
     print(line, flush=True)
 
 
-def warm(log=_say, only=None):
+def warm(log=_say, only=None, *, snap=None, prune=True):
     """Compute every cold cell. Returns the count, or None if another
     warmer holds the lock."""
     import signal
@@ -1391,12 +1634,12 @@ def warm(log=_say, only=None):
     try:
         for tmp in glob.glob(os.path.join(CACHE_DIR, "*.tmp")):
             os.remove(tmp)
-        snap = load_snapshot()
+        snap = snap or load_snapshot()
         paths = cell_paths(snap)
         for path in glob.glob(os.path.join(CACHE_DIR, "*.json")):
             m = re.fullmatch(r"([a-z0-9]+)-(s\d-[a-z]+-[a-z]+)-[0-9a-f]{16}\.json",
                              os.path.basename(path))
-            if m and (m.group(1), m.group(2)) not in paths:
+            if prune and m and (m.group(1), m.group(2)) not in paths:
                 os.remove(path)
         units = modeled_units(snap)
         cold = [(u, key) for u in units for key in unit_scenarios(u)
@@ -1405,7 +1648,7 @@ def warm(log=_say, only=None):
         done = 0
         for n, (u, key) in enumerate(cold, 1):
             log(f"[{n}/{len(cold)}] {u['name']} {key} …")
-            out = compute_cell(snap, u, key, paths, log=log)
+            out = compute_cell(snap, u, key, paths, log=log, prune=prune)
             best = out["rows"][0] if out["rows"] else None
             score = "" if not best else (
                 f" (held {best['aliveTime']}s)" if out["objective"] == "tank"
@@ -1420,24 +1663,313 @@ def warm(log=_say, only=None):
 
 
 # ---------------------------------------------------------------------------
+# scheduled refresh
+# ---------------------------------------------------------------------------
+
+def snapshot_revision(snap=None):
+    snap = snap or load_snapshot()
+    # Use the same inputs as the build cache, including item/trait models.
+    return json_hash([snap.set_no, snap.patch,
+                      sorted(os.path.basename(p) for p in cell_paths(snap).values())])
+
+
+def refresh_state():
+    try:
+        with open(REFRESH_STATE_FILE) as f:
+            state = json.load(f)
+        return state if isinstance(state, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def write_json_atomic(path, content):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(content, f, sort_keys=True)
+    os.replace(tmp, path)
+
+
+def dashboard_ready(snap):
+    """Signal a complete generation; preserve the previous generation's cache."""
+    path = os.path.join(CACHE_DIR, ".dashboard-ready")
+    try:
+        with open(path) as f:
+            before = json.load(f)
+    except (OSError, ValueError):
+        before = None
+    if not isinstance(before, dict):
+        before = None
+    files = sorted(os.path.basename(p) for p in cell_paths(snap).values())
+    marker = {"revision": snapshot_revision(snap), "patch": snap.patch, "cacheFiles": files}
+    if before != marker:
+        write_json_atomic(path, marker)
+    # The old server may still be answering until systemd's reload runs.
+    # Keep both complete generations; a later successful run reclaims them.
+    if before:
+        keep = set(files) | set(before.get("cacheFiles", []))
+        for filename in os.listdir(CACHE_DIR):
+            if (re.fullmatch(r"[a-z0-9]+-s\d-[a-z]+-[a-z]+-[0-9a-f]{16}\.json", filename)
+                    and filename not in keep):
+                os.remove(os.path.join(CACHE_DIR, filename))
+
+
+def cmd_refresh(args):
+    """Scheduled local update: reconcile, warm, publish, signal and report."""
+    import fcntl
+    import signal
+    from tft_update import ReviewRequired
+
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    with open(os.path.join(CACHE_DIR, "refresh.lock"), "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("A TFT refresh is already running; skipping this duplicate.")
+            return
+        now = lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+        previous_state = refresh_state()
+        state = {"status": "running", "phase": "checking", "startedAt": now(),
+                 "message": "Checking Riot's patch notes and current source data.",
+                 "lastSuccessAt": previous_state.get("lastSuccessAt"), "exit": None}
+
+        def report(**fields):
+            state.update(fields)
+            write_json_atomic(REFRESH_STATE_FILE, state)
+
+        old_term = signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+        try:
+            report(activePatch=load_snapshot(args.set).patch)
+
+            def prepare(candidate):
+                report(phase="warming", message=f"Recalculating changed builds for {candidate.patch}.")
+                with open(os.path.join(CACHE_DIR, "refresh-warm.log"), "a") as log:
+                    def log_line(line):
+                        print(line, file=log, flush=True)
+                    deadline = time.monotonic() + 20 * 60
+                    while True:
+                        count = warm(log=log_line, snap=candidate, prune=False)
+                        if count is not None:
+                            break
+                        if time.monotonic() >= deadline:
+                            raise RuntimeError("Another build calculation did not finish in time; will retry on the next check.")
+                        time.sleep(2)
+                ready = cell_ready(candidate)
+                if not ready or not all(ready.values()):
+                    raise RuntimeError("Some builds did not finish; keeping the previous snapshot.")
+                report(computedCells=count, phase="publishing", message=f"All {len(ready)} scenarios are ready for {candidate.patch}.")
+
+            snap = cmd_fetch(SimpleNamespace(set=args.set, patch=getattr(args, "patch", None), force=True),
+                             automatic=True, prepare=prepare, progress=report)
+            dashboard_ready(snap)
+            finished = now()
+            count = state.get("computedCells", 0)
+            report(status="ok", phase="complete", activePatch=snap.patch, targetPatch=snap.patch,
+                   checkedAt=finished, finishedAt=finished, lastSuccessAt=finished, exit=0,
+                   revision=snapshot_revision(snap),
+                   message=f"Patch {snap.patch} is ready; {count} scenarios recalculated.")
+            print(state["message"])
+        except BaseException as error:
+            needs_review = isinstance(error, ReviewRequired)
+            code = 2 if needs_review else error.code if isinstance(error, SystemExit) and isinstance(error.code, int) else 1
+            finished = now()
+            report(status="needs-review" if needs_review else "failed", phase="stopped",
+                   checkedAt=finished, finishedAt=finished, exit=code,
+                   message=str(error)[:1000] or "Refresh interrupted; the previous builds remain available.")
+            print(state["message"], file=sys.stderr)
+            raise SystemExit(code) from error
+        finally:
+            signal.signal(signal.SIGTERM, old_term)
+
+
+# ---------------------------------------------------------------------------
 # web API
 # ---------------------------------------------------------------------------
+
+def cdragon_image_url(asset):
+    """Resolve an archived game asset without guessing a MetaTFT asset name."""
+    if not isinstance(asset, str):
+        return None
+    path = asset.strip().lower()
+    if (not re.fullmatch(r"assets/[a-z0-9_./-]+\.(?:tex|png)", path)
+            or any(part in (".", "..") for part in path.split("/"))):
+        return None
+    return "https://raw.communitydragon.org/latest/game/" + re.sub(r"\.tex$", ".png", path)
+
+
+def ui_icons(snap):
+    """Prefer exact game IDs; a display-name fallback must be unambiguous."""
+    champions = snap.communitydragon.get("champions", [])
+    by_api = {u["apiName"]: u for u in champions}
+    units = {}
+    for api, unit in snap.units.items():
+        match = next((by_api[a] for a in [api, *unit["assets"]] if a in by_api), None)
+        if match is None:
+            named = [u for u in champions if (u.get("name") or "").casefold() == unit["name"].casefold()]
+            match = named[0] if len(named) == 1 else {}
+        units[api] = next((url for key in ("squareIcon", "tileIcon", "icon")
+                           if (url := cdragon_image_url(match.get(key)))), None)
+    traits = {t["apiName"]: cdragon_image_url(t.get("icon"))
+              for t in snap.communitydragon.get("traits", [])}
+    return units, traits
+
+
+def ui_number(value):
+    """Keep binary float artifacts out of display-only trait summaries."""
+    return f"{round(value, 4):g}"
+
+
+def trait_description(trait):
+    """Render supported tooltip paragraphs from the corrected curve table.
+
+    Dynamic board state and unknown localization tags are omitted with their
+    paragraph. No unresolved template is passed to the browser as prose.
+    """
+    def curve_text(match):
+        attrs = {k.lower(): v for k, v in re.findall(r'(\w+)="([^"]*)"', match[1])}
+        row = trait["curve"].get(attrs.get("row"))
+        if not row:
+            raise ValueError("missing tooltip curve")
+        columns = [int(attrs["column"])] if "column" in attrs else list(range(1, len(trait["levels"]) + 1))
+        values = [curve_at(row, column) for column in columns]
+        fmt = attrs.get("format", "").lower()
+        if fmt not in ("", "percent", "percentminusone", "invertedpercent"):
+            raise ValueError("unknown tooltip format")
+        if fmt:
+            values = [100 * (v - 1 if fmt == "percentminusone" else 1 - v if fmt == "invertedpercent" else v)
+                      for v in values]
+        shown = [ui_number(v) for v in values]
+        if not shown:
+            raise ValueError("missing tooltip columns")
+        if len(set(shown)) == 1:
+            shown = shown[:1]
+        return "/".join(shown) + ("%" if fmt else "")
+
+    paragraphs = []
+    text = (trait.get("desc") or "").replace("\\r\\n", "\n").replace("\r", "\n")
+    for paragraph in re.split(r"\n\s*\n", text):
+        # Runtime trackers appended after a complete sentence are optional;
+        # keep that sentence without inventing a current board-state value.
+        paragraph = re.sub(r"(?<=[.!?])(?:\s*\{[^{}]*\})+\s*$", "", paragraph)
+        try:
+            paragraph = re.sub(r"<TFTCurveTable\s+([^>]*?)/>", curve_text, paragraph, flags=re.I)
+        except (ValueError, TypeError):
+            continue
+        if re.search(r"<(?:TFT|img\b)|[{}]|@[^@]*@|%i:", paragraph, re.I):
+            continue
+        paragraph = re.sub(r"<br\s*/?>", "\n", paragraph, flags=re.I)
+        paragraph = unescape(re.sub(r"<[^>]*>", "", paragraph))
+        paragraph = " ".join(paragraph.split())
+        if paragraph and not paragraph.endswith(":"):
+            paragraphs.append(paragraph)
+    return "\n\n".join(paragraphs) or None
+
+
+def trait_bonus_notes(snap, unit, api, column, trait_fx):
+    """Describe the same resolved values supplied to the combat engine."""
+    fx = trait_spec(snap, api, column, trait_fx, unit)
+    number = ui_number
+    percent = lambda value: number(value * 100) + "%"
+    notes = []
+    flat = {"ap": "Ability Power", "hp": "Health", "armor": "Armor", "mr": "Magic Resist", "manaRegen": "Mana Regen"}
+    ratios = {"adPct": "Attack Damage", "asPct": "Attack Speed", "crit": "Critical Strike Chance", "amp": "Damage Amp"}
+    stats = []
+    for key, value in fx["stats"]:
+        if not value or (key == "hpMult" and value == 1):
+            continue
+        if key in flat:
+            stats.append(f"+{number(value)} {flat[key]}")
+        elif key in ratios:
+            stats.append(f"+{percent(value)} {ratios[key]}")
+        elif key == "hpMult":
+            stats.append(f"+{percent(value - 1)} max Health")
+        elif key in ("adap", "adOrAp"):
+            joiner = "and" if key == "adap" else "or"
+            stats.append(f"+{percent(value)} Attack Damage {joiner} +{number(value * 100)} Ability Power")
+    if stats:
+        notes.append(", ".join(stats) + ".")
+    if fx.get("precision"):
+        notes.append("Abilities can critically strike.")
+    if "asPerAttackStack" in fx:
+        amount, count = fx["asPerAttackStack"]
+        notes.append(f"+{percent(amount)} Attack Speed per attack, up to {number(count)} stacks.")
+    if fx.get("apPerCast"):
+        notes.append(f"+{number(fx['apPerCast'])} Ability Power per cast.")
+    if "ampAfterSameTarget" in fx:
+        amount, seconds = fx["ampAfterSameTarget"]
+        notes.append(f"+{percent(amount)} Damage Amp after {number(seconds)} seconds on the same target.")
+    for key, label in (("durability", "Durability"), ("omnivamp", "Omnivamp")):
+        if fx.get(key):
+            notes.append(f"+{percent(fx[key])} {label}.")
+    if fx.get("bleed", [0])[0]:
+        amount, seconds = fx["bleed"]
+        notes.append(f"Deal {percent(amount)} bonus true damage as bleed over {number(seconds)} seconds.")
+    if "burnOnHit" in fx:
+        amount, seconds = fx["burnOnHit"]
+        notes.append(f"Burn enemies for {percent(amount)} max Health per second for {number(seconds)} seconds.")
+    if "caustic" in fx:
+        amount, seconds = fx["caustic"]
+        notes.append(f"Reduce enemy Armor and Magic Resist by {percent(amount)} for {number(seconds)} seconds.")
+    if fx.get("bonusMagicPct"):
+        notes.append(f"Deal {percent(fx['bonusMagicPct'])} bonus magic damage.")
+    if "ravager" in fx:
+        amount, threshold, multiplier = fx["ravager"]
+        notes.append(f"+{percent(amount)} damage; multiplied by {number(multiplier)} against enemies below {percent(threshold)} Health.")
+    if fx.get("pixies"):
+        notes.append(f"Pixies grant +{percent(fx['pixies'])} Attack Damage and +{number(fx['pixies'] * 100)} Ability Power.")
+    if "faeHeal" in fx:
+        threshold, amount = fx["faeHeal"]
+        notes.append(f"Heal {percent(amount)} max Health after falling below {percent(threshold)} Health.")
+    if "shieldAtStart" in fx:
+        amount, seconds = fx["shieldAtStart"]
+        notes.append(f"Start combat with a {percent(amount)} max Health shield for {number(seconds)} seconds.")
+    if "shieldAtHp" in fx:
+        threshold, amount, seconds = fx["shieldAtHp"]
+        notes.append(f"Below {percent(threshold)} Health, gain a {percent(amount)} max Health shield for {number(seconds)} seconds.")
+    if "resistsPerAttacker" in fx:
+        armor, mr = fx["resistsPerAttacker"]
+        notes.append(f"+{number(armor)} Armor and +{number(mr)} Magic Resist per enemy targeting this champion.")
+    if "takedown" in fx:
+        heal, mana = fx["takedown"]
+        rewards = ([f"heal {percent(heal)} max Health"] if heal else []) + ([f"restore {number(mana)} Mana"] if mana else [])
+        if rewards:
+            notes.append("On takedown, " + " and ".join(rewards) + ".")
+    if "summoner" in fx:
+        bonuses = fx["summoner"]
+        own = {"TFT18_Yorick": ("healthMult", "spirit Health"),
+               "TFT18_Azir": ("damageMult", "soldier damage"),
+               "TFT18_MamaBeak": ("damageMult", "summon damage")}.get(unit["api"])
+        if own:
+            notes.append(f"+{percent(bonuses[own[0]] - 1)} {own[1]}.")
+        if unit["api"] == "TFT18_Zyra":
+            notes.append(f"Plants make {number(bonuses['extraAttacks'])} additional attacks.")
+        if unit["api"] in ("TFT18_Azir", "TFT18_Zyra", "TFT18_Krug") and bonuses.get("extraSummons", 1) > 1:
+            notes.append(f"+{number(bonuses['extraSummons'] - 1)} additional summon.")
+    notes.extend(trait_notes(snap, [(api, column)], trait_fx))
+    return notes
+
 
 def api_meta():
     snap = load_snapshot()
     item_fx = load_item_effects(snap.set_no)
     trait_fx = load_trait_effects(snap.set_no)
     kits = load_kits(snap.set_no)
+    unit_icons, trait_icons = ui_icons(snap)
     units = []
     for u in modeled_units(snap):
         contexts, unmodeled = unit_trait_contexts(snap, u, trait_fx)
         units.append({
             "slug": unit_slug(u), "name": u["name"], "api": u["api"],
+            "icon": unit_icons.get(u["api"]),
             "cost": u["cost"], "role": u["roleName"], "kind": u["kind"],
             "attack": u["attack"], "objective": u["objective"],
             "stars": list(unit_stars(u)),
             "duration": fight_duration(u),
             "traits": u["traits"], "ability": u["ability"]["name"],
+            "traitApis": u["traitApis"],
+            "traitBonuses": {context: [{"api": api, "breakpoint": snap.traits[api]["levels"][column - 1],
+                                       "notes": trait_bonus_notes(snap, u, api, column, trait_fx)}
+                                      for api, column in active] for context, active in contexts.items()},
             "forms": sorted(u["forms"]) if u.get("forms") else [],
             "traitsModeled": [snap.traits[a]["name"] for a, _ in contexts["high"]],
             "traitsUnmodeled": unmodeled,
@@ -1452,12 +1984,22 @@ def api_meta():
                       "stats": parse_stat_line(it),
                       "modeled": [k for k in spec if k not in ("note", "name", "covers")],
                       "note": spec.get("note")})
+    traits = [{"api": api, "name": trait["name"], "icon": trait_icons.get(api),
+               "description": trait_description(trait), "levels": trait["levels"], "styles": trait["styles"],
+               "modeled": api in trait_fx and bool(trait["levels"]),
+               "note": (trait_fx.get(api) or {}).get("note") if api in trait_fx
+                       else "This trait is not modeled in these build results."}
+              for api, trait in sorted(snap.traits.items(), key=lambda pair: pair[1]["name"])]
     return {
         "set": snap.set_no, "patch": snap.patch,
+        "revision": snapshot_revision(snap),
         "metatft": snap.meta.get("metatft"), "fetchedAt": snap.meta.get("fetchedAt"),
+        "sources": snap.meta.get("sources", {}), "verifiedAt": snap.meta.get("verifiedAt"),
+        "verification": snap.meta.get("verification"),
+        "sourceLimitations": (snap.audit or {}).get("unresolved", []),
         "units": units, "scenarios": list(SCENARIOS.values()),
         "stars": list(STARS), "geometries": GEOMETRIES, "traitContexts": TRAIT_CONTEXTS,
-        "dummy": dummies_for(snap), "items": items,
+        "dummy": dummies_for(snap), "items": items, "traits": traits,
         "excluded": item_fx.get("excluded") or {},
         "objectives": OBJECTIVES,
         "rules": {"adPerStar": AD_PER_STAR, "hpPerStar": HP_PER_STAR,
@@ -1478,15 +2020,68 @@ def _nums(s):
     return [float(x) for x in re.findall(r"-?\d+(?:\.\d+)?", s)]
 
 
+def check_audit(snap, notes):
+    """Check explicit patch-note targets, including forms, percentages and items.
+
+    Bind the review to the exact lookup and dated patch-note document so a
+    changed feed or a new hotfix cannot quietly reuse an obsolete review.
+    """
+    audit = snap.audit
+    findings = []
+    for name, have, expected in (
+        ("patch", audit.get("patch"), snap.patch),
+        ("lookupHash", json_hash(snap.raw), audit.get("lookupHash")),
+        ("binsHash", json_hash(snap.bins), audit.get("binsHash")),
+        ("patchNotesHash", json_hash(notes), audit.get("patchNotesHash")),
+    ):
+        if have != expected:
+            findings.append({"unit": "Source review", "api": "", "what": name,
+                             "where": "audit " + name, "have": have, "old": [],
+                             "new": expected, "status": "differs"})
+    if not audit.get("checks"):
+        findings.append({"unit": "Source review", "api": "", "what": "missing numeric checks",
+                         "where": "audit checks", "have": [], "old": [], "new": [], "status": "differs"})
+    entities = {"unit": snap.units, "item": snap.items, "trait": snap.traits}
+    for check in audit.get("checks", []):
+        target = check["target"]
+        entity = entities[target["kind"]].get(target["api"])
+        data = entity
+        if data and target.get("form"):
+            data = entity.get("forms", {}).get(target["form"])
+        have = []
+        where = "stats " + target["stat"] if "stat" in target else "curve " + target["row"]
+        if target.get("form"):
+            where = target["form"] + " " + where
+        if data:
+            if "stat" in target:
+                have = [data.get("stats", {}).get(target["stat"])]
+            else:
+                curve = data.get("curve", {}).get(target["row"])
+                if curve:
+                    have = [curve_at(curve, x) for x in target.get("stars", target.get("columns", [1]))]
+        want = check["expected"]
+        findings.append({"unit": entity["name"] if entity else target["api"],
+                         "api": target["api"], "what": check["what"], "where": where,
+                         "have": have, "old": check.get("observedBefore", []), "new": want,
+                         "status": "current" if have == want else "differs"})
+    normalize = lambda value: re.sub(r"[^a-z0-9]", "", value.lower())
+    covered = {normalize(label) for c in audit.get("checks", [])
+               for label in (c["what"], c.get("patchLine", {}).get("what", c["what"]))}
+    return findings, [ch for ch in notes.get("changes", []) if normalize(ch["what"]) not in covered]
+
+
 def check_patch_notes(snap):
     """Compare the snapshot's numbers with the patch notes' 'new' values.
     Returns (findings, unmatched): a finding says whether the snapshot
     already carries the new value, still has the old one, or neither."""
     path = os.path.join(snap.dir, "patchnotes.json")
     if not os.path.exists(path):
-        return [], []
+        raise ValueError(f"missing patch notes for {snap.patch}; cannot verify the snapshot")
     with open(path) as f:
-        changes = json.load(f).get("changes") or []
+        notes = json.load(f)
+    if snap.audit:
+        return check_audit(snap, notes)
+    changes = notes.get("changes") or []
     findings, unmatched = [], []
     for ch in changes:
         what = ch["what"]
@@ -1561,9 +2156,16 @@ def cmd_check(args):
         print(f"{mark} {f['unit']:<14} {f['what']:<40} {f['where']:<28} "
               f"have {f['have']} → notes say {f['new']}")
     print(f"\n{len(findings)} matched, {len(stale)} need attention, "
-          f"{len(unmatched)} lines not matched to a unit number:")
+          f"{len(unmatched)} patch-note lines outside the numeric checks:")
     for ch in unmatched[:40]:
         print(f"   ? {ch['what']}: {ch['old']} ⇒ {ch['new']}")
+    if snap.audit:
+        unresolved = snap.audit.get("unresolved", [])
+        print(f"\nPatch-note audit: {len(snap.audit.get('checks', []))} explicit checks; "
+              f"{len(unresolved)} source limitations recorded in {snap.dir}/audit.json.")
+        if stale:
+            sys.exit(2)
+        return
     if stale:
         print(f"\nOverride snippet ({os.path.relpath(snap.dir)}/overrides.json):")
         snippet = {"units": {}}

@@ -220,9 +220,14 @@ def main():
 
     sp = tfsub.add_parser("fetch", help="snapshot the set's unit/item/trait data for a patch")
     sp.add_argument("--set", type=int, default=tft.DEFAULT_SET)
-    sp.add_argument("--patch", help="TFT patch label, e.g. 18.1 (default: newest patch notes)")
+    sp.add_argument("--patch", help="TFT patch label, e.g. 18.1d (base labels resolve to the newest hotfix)")
     sp.add_argument("--force", action="store_true", help="refetch even if archived")
     sp.set_defaults(func=tft.cmd_fetch)
+
+    sp = tfsub.add_parser("refresh", help="fetch current patch/hotfix, reconcile known changes, recalculate and activate builds")
+    sp.add_argument("--set", type=int, default=tft.DEFAULT_SET)
+    sp.add_argument("--patch", help="patch to check (default: latest patch and hotfix)")
+    sp.set_defaults(func=tft.cmd_refresh)
 
     sp = tfsub.add_parser("status", help="list archived snapshots")
     sp.set_defaults(func=tft.cmd_status)

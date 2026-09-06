@@ -5,7 +5,7 @@ The fixtures pin the engine's output bit for bit — test_tft.TestGolden
 replays them — so they are regenerated ONLY after a deliberate model change,
 in the same commit, from the live engine:
 
-    python3 jobs/gen_tft_golden.py [--only fights|cells]
+    python3 jobs/gen_tft_golden.py [--only fights|cells] [--reason TEXT]
 
 fights.json: for every modeled unit and every one of its scenario cells, a
 few builds through `tft.simulate` — the cell's two best cached builds, two
@@ -14,11 +14,14 @@ trait context) the empty build — with the opening sheet numbers and the
 unrounded result. cells.json: the top rows of every cached cell as the
 dashboard shows them (rounded), so the enumeration's order and the row
 formatting are pinned as well. Both files need a fully warm .cache/tft for
-the current code and data (the cells come from there). The files pin the
-pre-Rust Python engine's output; the compiled engine reproduces them bit
-for bit, and a deliberate model change regenerates them from it.
+the current code and data (the cells come from there). Each generation
+records the compiled engine, exact dummy specification and input hashes,
+plus the previous fixture's hash/provenance. The initial generation pinned
+the pre-Rust Python engine; deliberate model changes establish new compiled
+engine benchmarks without claiming they are still the historical output.
 """
 import argparse
+import hashlib
 import itertools
 import json
 import math
@@ -56,16 +59,43 @@ def enc(o):
     raise TypeError("cannot encode %r (%s)" % (o, type(o).__name__))
 
 
-def provenance(snap):
+def provenance(snap, reason=None):
     try:
         commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                                 capture_output=True, text=True, check=True,
                                 cwd=tft.BASE_DIR).stdout.strip()
     except Exception:
         commit = None
-    return {"sourceHash": tft.SOURCE_HASH, "commit": commit,
+    try:
+        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--untracked-files=normal"],
+                                    capture_output=True, text=True, check=True,
+                                    cwd=tft.BASE_DIR).stdout.strip())
+    except Exception:
+        dirty = None
+    with open(__file__, "rb") as f:
+        generator_hash = hashlib.sha256(f.read()).hexdigest()
+    return {"sourceHash": tft.SOURCE_HASH, "commit": commit, "worktreeDirty": dirty,
+            "engine": {"implementation": "Rust/PyO3", "module": "lol_tft",
+                       "sourceHash": tft.engine().SOURCE_HASH},
+            "generatorHash": generator_hash, "snapshotHash": snap.hash_inputs(),
+            "effectsHash": tft.json_hash({"items": tft.load_item_effects(snap.set_no),
+                                         "traits": tft.load_trait_effects(snap.set_no)}),
             "set": snap.set_no, "patch": snap.patch,
+            "dummy": tft.dummies_for(snap), "reason": reason,
             "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
+
+def with_history(prov, name):
+    """Retain the exact previous artifact identity before replacing it."""
+    path = os.path.join(GOLDEN_DIR, name)
+    if not os.path.exists(path):
+        return prov
+    with open(path, "rb") as f:
+        raw = f.read()
+    previous = json.loads(raw)
+    return {**prov, "previousFixture": {"kind": previous["kind"],
+                                       "sha256": hashlib.sha256(raw).hexdigest(),
+                                       "provenance": previous["provenance"]}}
 
 
 def legal_combos(snap, pool):
@@ -130,6 +160,7 @@ def gen_cells(snap, cached):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--only", choices=("fights", "cells"))
+    ap.add_argument("--reason", help="deliberate model change recorded in fixture provenance")
     args = ap.parse_args()
     snap = tft.load_snapshot()
     paths = tft.cell_paths(snap)
@@ -141,18 +172,20 @@ def main():
         with open(p) as f:
             cached[(slug, key)] = json.load(f)
     os.makedirs(GOLDEN_DIR, exist_ok=True)
-    prov = provenance(snap)
+    prov = provenance(snap, args.reason)
     if args.only in (None, "fights"):
         t0 = time.time()
         cases = gen_fights(snap, cached)
+        fight_prov = with_history(prov, "fights.json")
         with open(os.path.join(GOLDEN_DIR, "fights.json"), "w") as f:
-            json.dump({"kind": "tft-fights", "provenance": prov, "cases": enc(cases)},
+            json.dump({"kind": "tft-fights", "provenance": fight_prov, "cases": enc(cases)},
                       f, separators=(",", ":"))
         print(f"fights.json: {len(cases)} fights in {time.time() - t0:.1f}s")
     if args.only in (None, "cells"):
         cells = gen_cells(snap, cached)
+        cell_prov = with_history(prov, "cells.json")
         with open(os.path.join(GOLDEN_DIR, "cells.json"), "w") as f:
-            json.dump({"kind": "tft-cells", "provenance": prov, "cells": cells},
+            json.dump({"kind": "tft-cells", "provenance": cell_prov, "cells": cells},
                       f, separators=(",", ":"))
         print(f"cells.json: {len(cells)} cells, {CELL_ROWS} rows each")
 

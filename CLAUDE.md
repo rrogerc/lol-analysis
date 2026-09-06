@@ -9,7 +9,8 @@
   unit — check it with plain `systemctl status lol-dashboard`, never
   `systemctl --user`. Logs: `journalctl -u lol-dashboard -n 50`.
 - `lol-dashboard-reload.path` (same file) restarts it about 10 s after
-  this repo's HEAD moves, so every commit or pull restarts serve.
+  this repo's HEAD moves or `.cache/tft/.dashboard-ready` changes after a
+  successful TFT refresh. Every commit or pull also restarts serve.
 - A hand-started `lol.py serve` on 8321 squats the port: the unit then
   fails with "Address already in use", hits its start limit, and the
   dashboard's Services card shows it failed while the squatter answers.
@@ -77,9 +78,29 @@
 
 ## The TFT tab (tft.py, tft_engine/, data/tft/)
 
+- Live snapshot: `data/tft/set18/18.1d/`. See `data/tft/README.md` for
+  source coverage, hotfix tracking and the staged refresh/audit workflow.
+  `tft refresh` recognizes dated mid-patch updates, reconciles supported
+  numeric changes, checks the audit and calculates staged builds before
+  publishing. Changes needing review remain under `.pending/`. Run
+  `python3 -m unittest test_tft test_tft_data test_tft_update test_tft_refresh`.
+- The champion picker groups by cost and uses CommunityDragon portraits
+  and trait icons. `api_meta` supplies readable trait descriptions and the
+  exact bonuses from `trait_spec` for each selected breakpoint; icons fall
+  back to a letter if unavailable. Trait details work by hover, keyboard
+  focus and tap. The fight diagram is a schematic of the three ordered
+  dummy slots, not a hex board: a heavy first tank (3,000 HP, 70 armor,
+  70 MR), a median 2★ tank, then a median 2★ non-tank. The first tank's
+  offense still uses the tank medians. Geometry changes nearby-target coverage; individual drivers can
+  override the normal target order. The UI shows actual dummy stats and
+  distinguishes the eight-unit incoming pressure in tank scenarios from
+  three attackers for fighters and none for carries. UI metadata checks:
+  `python3 -m unittest test_tft_ui`.
 - Purely theoretical, no match data (Roger's call 2026-09-04): one unit's
   mana-cycle fight against three stat dummies derived from the set's own
-  units at 2★ (two median tanks, then a median non-tank), every 3-item
+  units at 2★ (two tanks, then a median non-tank; the first tank's defenses
+  are fixed at 3,000 HP / 70 armor / 70 MR by `FRONT_TANK_DEFENSES`, per
+  Roger's 2026-09-05 request), every 3-item
   multiset of the 35 craftable completed items. Every shop unit of the set
   is modeled (65 in Set 18). Cells per unit: 1★ and 2★ for every cost,
   3★ only for the 1–3 costs (a 3★ 4- or 5-cost is an auto-win, not a
@@ -100,10 +121,12 @@
   (commit, or `sudo systemctl restart lol-dashboard`). Without the .so,
   `tft fetch`/`check`/`status` still work; a fight raises with the build
   command.
-- THE ENGINE IS A PORT OF THE PYTHON ENGINE AND STAYS BIT-IDENTICAL TO IT
-  (2026-09-05): `data/tft/golden/` pins the pre-Rust engine's output
-  (fights.json: 4,446 fights, cells.json: the top 20 rows of every cell)
-  and `test_tft.TestGolden` replays every fight plus a sample of cells
+- The engine is a port of the Python engine and preserves its float
+  operation order. The original golden fixtures verified the port bit for
+  bit. The current fixtures were deliberately regenerated for patch 18.1d
+  and Roger's 3,000 HP / 70 armor / 70 MR first tank on 2026-09-05; see
+  `data/tft/golden/README.md` for provenance. They pin 4,446 fights and
+  the top 20 rows of every cell. `test_tft.TestGolden` replays every fight plus a sample of cells
   (`TFT_GOLDEN_ALL=1` for all 1,026; `jobs/tft_compare.py` prints per-unit
   detail). A deliberate model change regenerates the fixtures with
   `jobs/gen_tft_golden.py` from a warm cache in the same commit. The port
@@ -168,28 +191,34 @@
   the trait bonus follows, and the form's stats/calcs/rows replace the
   base ones (`Sheet`). Riot never documents the actual rule.
 - Numbers are data, mechanics are code. `lol.py tft fetch` archives
-  MetaTFT's public lookup JSON (the only machine-readable source of the
-  current set's ability numbers — Community Dragon lost them when Set 18
-  moved to curve tables; cdragon's `cdragon/tft/en_us.json` still has base
+  MetaTFT's public lookup JSON (the structured ability source currently
+  used here — the CommunityDragon export checked September 5 lacks Set 18
+  calculations and alternate Adaptor forms; its JSON still has base
   stats and settled Fiddlesticks/Ivern's health and Kog'Maw's attack
   damage, which the PBE file lacks — those are overrides with that
-  source), the cdragon character-bin timings and the patch's "old ⇒ new"
-  lines under `data/tft/set<N>/<patch>/`. The MetaTFT file can be a
+  source), the CommunityDragon set export and character-bin timings, and
+  the patch's dated notes under `data/tft/set<N>/<patch>/`. The MetaTFT file can be a
   pre-launch PBE build (its `_metadata.patch` says so), so ALWAYS run
   `lol.py tft check` after a fetch: it matches the notes to curve rows and
   base stats, prints an `overrides.json` snippet for anything stale, and
   exits 2 while anything is. The patch directory's own `overrides.json`
-  carries those corrections with their source (per patch, so a new patch
-  starts clean); a curve override lists per-star values from 1★ (a
+  carries those corrections with their source. Automatic refreshes validate
+  source changes and patch-note mappings before carrying corrections to a
+  new patch; a curve override lists per-star values from 1★ (a
   shorter list leaves higher stars alone); `stats` overrides fill missing
   base stats. Shop units are the file's `shopUnit` flag (cost and traits
   alone would count Elise's spider form twice).
-- Automated like the item snapshot: `jobs/refresh-tft.sh` (daily 07:41,
-  nix user timer `lol-tft-refresh`, declared next to `lol-items-refresh`
-  in the dotfiles nix config) refetches the current patch, commits and
-  pushes only when the data changed, then runs `tft check` — a red
-  "failed (exit 2)" in the Automation panel means stale numbers waiting
-  for an overrides.json edit, not a broken job.
+- `jobs/refresh-tft.sh` runs `tft refresh` every six hours (00:41, 06:41,
+  12:41, 18:41 local time; persistent Nix user timer `lol-tft-refresh`,
+  next to `lol-items-refresh` in the dotfiles config). It fetches the
+  current patch/hotfix, reconciles known numeric changes in `tft_update.py`,
+  validates and warms all changed scenarios before publication. Unknown
+  mechanics, ambiguous mappings or unverified source changes preserve the
+  working snapshot and report `needs-review` (exit 2). The local job never
+  commits or pushes. `jobs/.state/refresh-tft.json` supplies the UI status;
+  `.cache/tft/.dashboard-ready` signals the existing system reload path
+  only when a complete cache generation changes. The TFT tab polls for new
+  revisions and preserves the user's current selection when reloading.
 - Hand files under `data/tft/set<N>/` reference the data's own rows and
   never write numbers (the two literals, Dragon's Claw's "every 2
   seconds" and Hecarim's "3 seconds", are in Riot's text with no row):
@@ -228,10 +257,12 @@
   economy or need a specific board (Coven, Elderwood, Sprykin, Blackthorn,
   Emerald Aspect, Old Growth, Greenfather, Rival, Attuned, Bounty Seeker,
   Avatar, Apex Predator) are reported as unmodeled.
-- Per patch, by hand if the job hasn't: `lol.py tft fetch` → `tft check`
-  → edit that patch's overrides.json → commit (the reload unit restarts
-  serve, which warms). Tests: `python3 -m unittest test_tft` (~2 s, needs
-  the built engine, reads the committed snapshot; every driver runs
+- Run `lol.py tft refresh` for an immediate local update. If review is
+  needed, inspect `set18/.pending/<patch>/`, update the patch audit and
+  justified overrides (or mechanics code), then rerun. Never just rebind
+  audit hashes to pass a check. Tests: `python3 -m unittest test_tft
+  test_tft_data test_tft_update test_tft_refresh` (needs
+  the built engine, reads the archived snapshot; every driver runs
   through every scenario with damage and tank items, and the golden
   fights replay); `cargo test --no-default-features` in tft_engine/ for
   the Rust-side unit tests (pyf's Python semantics).

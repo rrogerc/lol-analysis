@@ -42,7 +42,7 @@ SERVICES = [
      "scope": "user", "runs": "every 6h at :30",
      "desc": "triggers jobs/sync-scaling.sh — its own outcome is below"},
     {"unit": "lol-tft-refresh.timer", "svc": "lol-tft-refresh.service",
-     "scope": "user", "runs": "daily 07:41",
+     "scope": "user", "runs": "every 6h at :41",
      "desc": "triggers jobs/refresh-tft.sh — its own outcome is below"},
 ]
 
@@ -80,10 +80,19 @@ def local_jobs():
         # — feeds the UI health indicator on the local dashboard.
         state_path = os.path.join(JOBS_DIR, ".state", fn[:-3] + ".json")
         if os.path.exists(state_path):
-            with open(state_path) as f:
-                state = json.load(f)
+            try:
+                with open(state_path) as f:
+                    state = json.load(f)
+                if not isinstance(state, dict):
+                    state = {}
+            except (OSError, ValueError):
+                state = {}
             job["lastRun"] = state.get("finishedAt")
             job["lastExit"] = state.get("exit")
+            for key in ("status", "message", "phase", "checkedAt", "targetPatch",
+                        "activePatch", "computedCells"):
+                if key in state:
+                    job[key] = state[key]
         jobs.append(job)
     return jobs
 
@@ -171,8 +180,9 @@ def cmd_export(args):
     # drop it entirely and let the Services card hide itself.
     meta.pop("services", None)
     for job in meta["jobs"]:
-        job.pop("lastRun", None)
-        job.pop("lastExit", None)
+        for key in ("lastRun", "lastExit", "status", "message", "phase",
+                    "checkedAt", "targetPatch", "activePatch", "computedCells"):
+            job.pop(key, None)
     if not meta["tiers"]:
         sys.exit("Database is empty — run `lol.py scaling sync` or `lol.py import-json` first.")
     out = args.out
@@ -201,14 +211,16 @@ def cmd_export(args):
     files += 1
     # the TFT cells likewise
     if tft.patch_dirs(tft.DEFAULT_SET):
-        dump("api/tft/meta.json", tft.api_meta())
+        tmeta = tft.api_meta()
+        dump("api/tft/meta.json", tmeta)
         if tft.warm() is None:
             sys.exit("Another TFT warm is running — wait for it, then export again.")
         tpaths = tft.cell_paths()
         for slug, key in tpaths:
             dump(f"api/tft/{slug}/{key}.json", tft.cached_scenario(slug, key, tpaths))
         dump("api/tft/status.json",
-             {"ready": {f"{slug}/{key}": True for slug, key in tpaths}, "warmer": "idle"})
+             {"ready": {f"{slug}/{key}": True for slug, key in tpaths}, "warmer": "idle",
+              "patch": tmeta["patch"], "revision": tmeta["revision"], "refresh": {}})
         files += 2 + len(tpaths)
     for tier in meta["tiers"]:
         patches = scaling.db_patches(con, tier)
@@ -346,7 +358,10 @@ def cmd_serve(args):
                     self._json(tft.api_meta())
                     return
                 if u.path == "/api/tft/status.json":
-                    self._json({"ready": tft.cell_ready(), "warmer": twarmer.state()})
+                    snap = tft.load_snapshot()
+                    self._json({"ready": tft.cell_ready(snap), "warmer": twarmer.state(),
+                                "patch": snap.patch, "revision": tft.snapshot_revision(snap),
+                                "refresh": tft.refresh_state()})
                     return
                 if m := re.fullmatch(r"/api/tft/([a-z0-9]+)/([a-z0-9-]+)\.json", u.path):
                     try:
