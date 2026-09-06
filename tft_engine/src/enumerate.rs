@@ -40,15 +40,34 @@ impl<D: Driver> Drivers<D> {
 /// tft.simulate: one build's fight.
 pub fn run_fight<D: Driver>(spec: &CellSpec, drivers: &Drivers<D>, items: &[&ItemFx], trace: bool)
     -> (Opening, FightResult) {
+    let (opening, mut res) = run_fight_raw(spec, drivers, items, trace, 1.0);
+    if spec.unit.objective == Objective::Tank && res.survival_capped {
+        let (_, stress) = run_fight_raw(spec, drivers, items, false, 2.0);
+        res.stress_alive_time = Some(stress.alive_time);
+        res.stress_capped = stress.survival_capped;
+    }
+    (opening, res)
+}
+
+/// One pass of the chosen scenario; the stress run only scales incoming damage.
+fn run_fight_raw<D: Driver>(spec: &CellSpec, drivers: &Drivers<D>, items: &[&ItemFx],
+                            trace: bool, incoming_mult: f64) -> (Opening, FightResult) {
     let fx = build_fx(spec.role, items, &spec.traits, spec.unit.has_forms, spec.unit.attack);
     let kit = spec.kit_for(fx.form);
     let drv = drivers.for_form(fx.form).clone();
     let sheet = Sheet::new(spec, kit, &fx);
-    let dummies = make_dummies(spec);
+    let mut dummies = make_dummies(spec);
+    if incoming_mult != 1.0 {
+        for dummy in &mut dummies {
+            dummy.ad *= incoming_mult;
+            dummy.ability *= incoming_mult;
+        }
+    }
     let mut f = Fight::new(spec, kit, sheet, fx, dummies, drv);
     if trace {
         f.trace = Some(Vec::new());
     }
+    D::init(&mut f);
     // the rows report the opening attack damage, ability power, attack
     // speed, health and resists, but the sheet's crit, precision, omnivamp
     // and mana as they stand after the fight (a driver's init or cast may
@@ -58,7 +77,6 @@ pub fn run_fight<D: Driver>(spec: &CellSpec, drivers: &Drivers<D>, items: &[&Ite
     opening.crit = f.sheet.crit_chance;
     opening.crit_mult = f.sheet.crit_mult;
     opening.precision = f.sheet.precision;
-    opening.durability = f.sheet.durability;
     opening.omnivamp = f.sheet.omnivamp;
     opening.form = f.sheet.form;
     opening.mana_start = f.sheet.mana_start;
@@ -87,20 +105,28 @@ pub fn combos(pool: &[ItemFx]) -> Vec<[usize; 3]> {
 }
 
 /// tft.rank_key: carries and fighters by kill time then the damage to
-/// spare, the rest by damage dealt; tanks by hold time, then denied, then
-/// damage. Compared lexicographically like Python's tuples.
-pub fn rank_key(res: &FightResult, objective: Objective) -> [f64; 4] {
+/// spare, the rest by damage dealt. Capped tanks get a second survival check
+/// at double pressure; tanks capped in both are tied. Other tank ties use
+/// denied damage, then damage dealt. Compared like Python's tuples.
+pub fn rank_key(res: &FightResult, objective: Objective) -> [f64; 6] {
     if objective == Objective::Tank {
-        return [-res.alive_time, -res.denied, -res.total, 0.0];
+        let capped = res.survival_capped;
+        let both_capped = capped && res.stress_capped;
+        return [-res.alive_time,
+                if capped { -1.0 } else { 0.0 },
+                if capped { -res.stress_alive_time.unwrap_or(0.0) } else { 0.0 },
+                if capped && res.stress_capped { -1.0 } else { 0.0 },
+                if both_capped { 0.0 } else { -res.denied },
+                if both_capped { 0.0 } else { -res.total }];
     }
     match res.kill_time {
-        Some(kt) => [0.0, kt, -res.raw_total, 0.0],
-        None => [1.0, 0.0, -res.total, -res.raw_total],
+        Some(kt) => [0.0, kt, -res.raw_total, 0.0, 0.0, 0.0],
+        None => [1.0, 0.0, -res.total, -res.raw_total, 0.0, 0.0],
     }
 }
 
-pub fn cmp_key(a: &[f64; 4], b: &[f64; 4]) -> Ordering {
-    for i in 0..4 {
+pub fn cmp_key(a: &[f64; 6], b: &[f64; 6]) -> Ordering {
+    for i in 0..6 {
         match a[i].partial_cmp(&b[i]) {
             Some(Ordering::Equal) | None => continue,
             Some(o) => return o,
@@ -168,7 +194,7 @@ pub fn run_cell<D: Driver>(spec: &CellSpec, top: usize, workers: usize) -> (usiz
     for (r, (_, i)) in apis.iter().enumerate() {
         api_rank[*i] = r;
     }
-    let keys: Vec<[f64; 4]> = results.iter()
+    let keys: Vec<[f64; 6]> = results.iter()
         .map(|r| rank_key(&r.as_ref().unwrap().1, spec.unit.objective)).collect();
     let mut order: Vec<usize> = (0..n).collect();
     order.sort_by(|&a, &b| {

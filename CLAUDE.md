@@ -93,12 +93,14 @@
   70 MR), a median 2★ tank, then a median 2★ non-tank. The first tank's
   offense still uses the tank medians. Geometry changes nearby-target coverage; individual drivers can
   override the normal target order. The UI shows actual dummy stats and
-  distinguishes the eight-unit incoming pressure in tank scenarios from
+  distinguishes three frontline blockers plus two backline damage dealers
+  with synthetic tank damage presets from
   three attackers for fighters and none for carries. UI metadata checks:
   `python3 -m unittest test_tft_ui`.
 - Purely theoretical, no match data (Roger's call 2026-09-04): one unit's
-  mana-cycle fight against three stat dummies derived from the set's own
-  units at 2★ (two tanks, then a median non-tank; the first tank's defenses
+  mana-cycle fight against stat dummies derived from the set's own
+  units at 2★ (two tanks then a non-tank for carries/fighters; three
+  frontline tanks and two backliners for tanks; the first tank's defenses
   are fixed at 3,000 HP / 70 armor / 70 MR by `FRONT_TANK_DEFENSES`, per
   Roger's 2026-09-05 request), every 3-item
   multiset of the 35 craftable completed items. Every shop unit of the set
@@ -106,7 +108,8 @@
   3★ only for the 1–3 costs (a 3★ 4- or 5-cost is an auto-win, not a
   build question — Roger's call 2026-09-05; `STARS_BY_COST`,
   `unit_scenarios`) × spread/clump × traits bare/low/high: 18 cells for a
-  1–3 cost, 12 for a 4–5 cost, 1,026 in all, and the dashboard's star
+  1–3 cost, 12 for a 4–5 cost, multiplied by three threat presets for tanks
+  (1,770 in all), and the dashboard's star
   buttons follow the unit. The fights run in the compiled engine
   `tft_engine/` (Rust, PyO3, imported as `lol_tft` from `lol_tft.abi3.so`
   at the repo root; `jobs/build-engine.sh tft` builds it, `jobs/build-engine.sh`
@@ -124,10 +127,11 @@
 - The engine is a port of the Python engine and preserves its float
   operation order. The original golden fixtures verified the port bit for
   bit. The current fixtures were deliberately regenerated for patch 18.1d
-  and Roger's 3,000 HP / 70 armor / 70 MR first tank on 2026-09-05; see
-  `data/tft/golden/README.md` for provenance. They pin 4,446 fights and
+  and the tank threat/debuff/EHP model on 2026-09-05, retaining Roger's
+  3,000 HP / 70 armor / 70 MR first tank; see
+  `data/tft/golden/README.md` for provenance. They pin 7,670 fights and
   the top 20 rows of every cell. `test_tft.TestGolden` replays every fight plus a sample of cells
-  (`TFT_GOLDEN_ALL=1` for all 1,026; `jobs/tft_compare.py` prints per-unit
+  (`TFT_GOLDEN_ALL=1` for all 1,770; `jobs/tft_compare.py` prints per-unit
   detail). A deliberate model change regenerates the fixtures with
   `jobs/gen_tft_golden.py` from a warm cache in the same commit. The port
   keeps every float operation in Python's order: `pyf.rs` has Python's
@@ -165,16 +169,33 @@
   Marksman/Caster/Specialist → "carry" (dummies never hit back; ranked by
   kill time, then damage), Fighter/Assassin → "fighter" (the dummies hit
   back, the unit can die; ranked by kill time, then damage dealt before
-  dying, 20 s), Tank → "tank" (same pressure, up to `TANK_DURATION` 60 s;
+  dying, 20 s), Tank → "tank" (frontline and backline pressure, up to `TANK_DURATION` 60 s;
   ranked by how long the unit holds the dummies — an on-death body such
-  as Yorick's spirit counts — then damage). A unit's `recommendedItems`
+  as Yorick's spirit counts). Tank damage profiles are mixed, physical
+  attacks and magic burst, each with three nearby frontline blockers and
+  two distant damage dealers. Nearby AoE/auras reach only the frontline;
+  explicit global/farthest abilities still reach the backline. Hecarim
+  selects three nearest enemies regardless of clumping. Scheduled enemy
+  casts wait through CC, then resume without lost casts or catch-up bursts.
+  The shared damage budget is calibrated from two 2★, three-item reference
+  carries (Aphelios and Ahri), plus three median frontliners: about 1,265
+  raw DPS on 18.1d, 86% from the backline. Calibration uses a 20-second
+  zero-resist immortal-target fight with no traits and is cached by resolved
+  inputs; it does not replay those carry timelines into the tank fight.
+  `api_meta.tankDummies` supplies the five-slot preview before a cell loads.
+  Continuous Wound/Sunder/Shred use corrected item rows
+  (currently 33%/30%/30%). Survivors at 60 s get a second test with twice
+  the incoming damage; surviving both is a tie. Opening EHP includes
+  driver initialization and reduced resists, but excludes shields/heals
+  and attack-only reduction. `test_tft_tanks` pins these interactions;
+  see `data/tft/README.md`. A unit's `recommendedItems`
   role wins when it names another role (Master Yi and Gnar itemize as
   Fighters, Caitlyn as a Marksman). The role also sets mana per attack
   (10 / caster 7 + 2 regen / tank 5, plus tank mana from damage taken:
   1% pre + 3% post-mitigation, 42.5 cap — the community formula, Riot
   publishes none), the fighter attack speed by stage and the assassin's
   15% off-target reduction (both from Riot's role text).
-- The pressure: in fighter and tank fights each dummy attacks with its
+- The legacy pressure (fighters and custom dummy fights): each dummy attacks with its
   group's median attack damage and speed (from one period in), gains mana
   per attack like a unit (tank dummies also from damage taken) and casts
   its group's median ability number, split physical/magic by the group's

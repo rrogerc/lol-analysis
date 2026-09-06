@@ -7,8 +7,8 @@
 //!
 //! Targets: `f.target()` is the dummy being attacked (`Option<usize>`);
 //! `f.alive()` all that stand; `f.aoe(count, exclude_primary)` who an area
-//! ability reaches (every standing dummy, up to `count`, in the clump; only
-//! the current target spread out); `f.adjacent(attacker)` the same for
+//! ability reaches (nearby standing dummies, up to `count`, in the clump;
+//! only the nearby current target spread out); `f.adjacent(attacker)` the same for
 //! melee-range effects; `f.d(i)` / `f.dm(i)` the dummy itself.
 //!
 //! Damage: `f.hit_ability(calc, target, src, mult)` (and `_typed` /
@@ -36,7 +36,7 @@ use crate::driver::Driver;
 use crate::fx::{combined_durability, Fx};
 use crate::kit::{CalcId, DType, Kit, RowId, Runtime};
 use crate::pyf::{pymax, pymin, pysum};
-use crate::spec::{CellSpec, DummySpec, Kind};
+use crate::spec::{CellSpec, DummySpec, EnemyDebuffs, Kind};
 
 pub const AS_CAP: f64 = 5.0;
 pub const CRIT_EXCESS_TO_DAMAGE: f64 = 1.0;
@@ -48,7 +48,7 @@ pub const TANK_MANA_PER_PREMIT: f64 = 0.01;
 pub const TANK_MANA_PER_POSTMIT: f64 = 0.03;
 pub const TANK_MANA_PER_HIT_CAP: f64 = 42.5;
 pub const ASSASSIN_OFFTARGET_REDUCTION: f64 = 0.15;
-pub const MAX_TARGETS: usize = 4;
+pub const MAX_TARGETS: usize = 5;
 pub const MAX_STREAMS: usize = 8;
 const FAR: f64 = 1e18;
 
@@ -78,7 +78,6 @@ pub struct Sheet {
     pub mana_start: f64,
     pub mana_per_attack: f64,
     pub omnivamp: f64,
-    pub durability: f64,
 }
 
 impl Sheet {
@@ -108,7 +107,6 @@ impl Sheet {
             mana_start: s.initial_mana + fx.starting_mana,
             mana_per_attack: spec.unit.kind.mana_per_attack(),
             omnivamp: fx.omnivamp,
-            durability: fx.durability(),
         }
     }
 
@@ -170,12 +168,16 @@ pub struct Dummy {
     pub alive: bool,
     pub died_at: Option<f64>,
     pub is_tank: bool,
+    pub nearby: bool,
     pub immortal: bool,
     pub ad: f64,
     pub as_: f64,
     pub crit_ev: f64,
     pub next_attacks: [f64; MAX_STREAMS],
     pub n_streams: usize,
+    pub targeting_streams: usize,
+    pub cast_interval: f64,
+    pub next_cast: f64,
     pub ability: f64,
     pub phys_share: f64,
     pub mana: f64,
@@ -194,12 +196,13 @@ pub struct Dummy {
 impl Dummy {
     pub fn new(hp: f64, armor: f64, mr: f64, is_tank: bool) -> Dummy {
         Dummy {
-            hp, max_hp: hp, armor, mr, is_tank,
+            hp, max_hp: hp, armor, mr, is_tank, nearby: true,
             sunder: 0.0, sunder_until: 0.0, shred: 0.0, shred_until: 0.0,
             armor_flat: 0.0, mr_flat: 0.0, burn_pct: 0.0, burn_until: 0.0, burn_stack: 0.0,
             burn_stack_until: 0.0, dots: Vec::new(), alive: true, died_at: None,
             immortal: false, ad: 0.0, as_: 0.0, crit_ev: 1.0,
             next_attacks: [0.0; MAX_STREAMS], n_streams: 0, ability: 0.0, phys_share: 1.0,
+            targeting_streams: 0, cast_interval: 0.0, next_cast: FAR,
             mana: 0.0, mana_max: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
             lock_until: 0.0, stunned_until: 0.0, attacks: 0, casts: 0,
             mark: false, mark_times: Vec::new(),
@@ -216,7 +219,10 @@ impl Dummy {
             let n = streams as usize;
             assert!(n <= MAX_STREAMS, "too many attack streams");
             for i in 0..n {
-                self.next_attacks[i] = period * ((i + 1) as f64) / (streams as f64);
+                self.next_attacks[i] = match s.attack_start {
+                    Some(start) => start + period * (i as f64) / (streams as f64),
+                    None => period * ((i + 1) as f64) / (streams as f64),
+                };
             }
             self.n_streams = n;
         } else {
@@ -228,18 +234,25 @@ impl Dummy {
         self.mana = s.mana_start;
         self.mana_per_attack = s.mana_per_attack;
         self.mana_from_damage = s.mana_from_damage;
+        self.cast_interval = s.cast_interval;
+        if self.cast_interval > 0.0 {
+            self.next_cast = s.cast_start.unwrap_or(self.cast_interval);
+            self.targeting_streams = streams as usize;
+        } else {
+            self.targeting_streams = self.n_streams;
+        }
     }
 
     #[inline]
     pub fn gain_mana(&mut self, amount: f64, t: f64) {
-        if t >= self.lock_until && self.mana_max > 0.0 {
+        if self.cast_interval <= 0.0 && t >= self.lock_until && self.mana_max > 0.0 {
             self.mana += amount;
         }
     }
 
     #[inline]
     pub fn streams(&self) -> usize {
-        self.n_streams
+        self.targeting_streams
     }
 
     #[inline]
@@ -252,7 +265,7 @@ impl Dummy {
                 t = x;
             }
         }
-        t
+        pymin(t, self.next_cast)
     }
 
     /// tft.Fight._is_burning as the drivers spell it: an item burn or a
@@ -269,6 +282,7 @@ pub fn make_dummies(spec: &CellSpec) -> Vec<Dummy> {
     let mut out = Vec::with_capacity(spec.dummies.len());
     for s in &spec.dummies {
         let mut d = Dummy::new(s.hp, s.armor, s.mr, s.is_tank);
+        d.nearby = s.nearby;
         d.immortal = spec.immortal;
         if spec.pressure {
             d.arm(s, spec.crit_ev, s.streams);
@@ -419,6 +433,7 @@ pub struct Fight<'a, D: Driver> {
     pub clump: bool,
     pub duration: f64,
     pub pressure: bool,
+    pub enemy_debuffs: EnemyDebuffs,
     pub t: f64,
     pub mana: f64,
     pub lock_until: f64,
@@ -496,6 +511,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             clump: spec.clump,
             duration: spec.duration,
             pressure: spec.pressure,
+            enemy_debuffs: if spec.pressure { spec.enemy_debuffs } else { EnemyDebuffs::default() },
             t: 0.0,
             mana,
             lock_until: 0.0,
@@ -558,7 +574,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         };
         let sunder_aura = f.fx.sunder_aura;
         let shred_aura = f.fx.shred_aura;
-        for d in f.targets.iter_mut() {
+        for d in f.targets.iter_mut().filter(|d| d.nearby) {
             if sunder_aura != 0.0 {
                 d.sunder = pymax(d.sunder, sunder_aura);
                 d.sunder_until = 1e9;
@@ -632,17 +648,36 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.targets.iter().position(|d| d.alive)
     }
 
-    /// Fight.aoe: in the clump, up to `count` of the standing dummies (all
-    /// if None); spread out, only the one being attacked.
+    fn nearby(&self) -> Sel {
+        let mut s = Sel::default();
+        for (i, d) in self.targets.iter().enumerate() {
+            if d.alive && d.nearby {
+                s.push(i);
+            }
+        }
+        s
+    }
+
+    /// Fight.aoe: in the clump, up to `count` nearby standing dummies (all
+    /// if None); spread out, only the current target when it is nearby.
     pub fn aoe(&self, count: Option<f64>, exclude_primary: bool) -> Sel {
-        let al = self.alive();
-        if al.is_empty() {
-            return al;
-        }
         if !self.clump {
-            return if exclude_primary { Sel::default() } else { al.take(1) };
+            return match self.target() {
+                Some(i) if !exclude_primary && self.targets[i].nearby => Sel::one(i),
+                _ => Sel::default(),
+            };
         }
-        let al = if exclude_primary { al.tail() } else { al };
+        let mut al = self.nearby();
+        if exclude_primary {
+            let primary = self.target();
+            let mut others = Sel::default();
+            for i in al.iter() {
+                if Some(i) != primary {
+                    others.push(i);
+                }
+            }
+            al = others;
+        }
         match count {
             None => al,
             Some(c) => al.take(crate::pyf::pyint(c).max(0) as usize),
@@ -653,19 +688,19 @@ impl<'a, D: Driver> Fight<'a, D> {
         self.aoe(None, false)
     }
 
-    /// Fight.adjacent: everyone standing in the clump, only the current
-    /// target (or the given attacker) spread out.
+    /// Fight.adjacent: nearby enemies standing in the clump, only the nearby
+    /// current target (or the given attacker) spread out.
     pub fn adjacent(&self, attacker: Option<usize>) -> Sel {
         if self.clump {
-            return self.alive();
+            return self.nearby();
         }
         let d = match attacker {
             Some(a) if self.targets[a].alive => Some(a),
             _ => self.target(),
         };
         match d {
-            Some(i) => Sel::one(i),
-            None => Sel::default(),
+            Some(i) if self.targets[i].nearby => Sel::one(i),
+            _ => Sel::default(),
         }
     }
 
@@ -791,7 +826,8 @@ impl<'a, D: Driver> Fight<'a, D> {
                 a += ar;
             }
         }
-        a + self.fx.resists_per_attacker[0] * (self.attackers() as f64)
+        (a + self.fx.resists_per_attacker[0] * (self.attackers() as f64))
+            * (1.0 - self.enemy_debuffs.sunder)
     }
 
     pub fn mr_now(&self) -> f64 {
@@ -801,7 +837,8 @@ impl<'a, D: Driver> Fight<'a, D> {
                 m += mr;
             }
         }
-        m + self.fx.resists_per_attacker[1] * (self.attackers() as f64)
+        (m + self.fx.resists_per_attacker[1] * (self.attackers() as f64))
+            * (1.0 - self.enemy_debuffs.shred)
     }
 
     pub fn durability_now(&self) -> f64 {
@@ -969,6 +1006,8 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     /// An on-death body that taunts and keeps the dummies on it.
     pub fn add_body(&mut self, hp: f64, armor: f64, mr: f64, name: &'static str) {
+        let armor = armor * (1.0 - self.enemy_debuffs.sunder);
+        let mr = mr * (1.0 - self.enemy_debuffs.shred);
         self.bodies.push(Body { hp, armor, mr, name });
     }
 
@@ -977,7 +1016,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         if amount <= 0.0 || !self.alive_unit {
             return 0.0;
         }
-        let eff = pymin(amount, self.max_hp() - self.hp);
+        let eff = pymin(amount * (1.0 - self.enemy_debuffs.wound), self.max_hp() - self.hp);
         if eff > 0.0 {
             self.hp += eff;
             self.healed += eff;
@@ -1016,8 +1055,8 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
     }
 
-    /// Stun (sleep, knock up) dummies: their attacks and casts inside the
-    /// window are denied.
+    /// Stun (sleep, knock up) dummies: attacks inside the window are denied;
+    /// scheduled spells wait until the window ends.
     pub fn stun(&mut self, targets: &Sel, duration: f64) {
         for i in targets.iter() {
             let t = self.t;
@@ -1128,22 +1167,13 @@ impl<'a, D: Driver> Fight<'a, D> {
     fn apply(&mut self, amount: f64, target: usize, src: &'static str, pre: f64) {
         self.raw_total += amount;
         let t = self.t;
-        if self.targets[target].immortal {
-            self.total += amount;
-            self.breakdown_add(src, amount);
-            self.record("damage", amount, Some(target), src);
-            let d = &mut self.targets[target];
-            if d.mana_from_damage {
-                d.gain_mana(pymin(TANK_MANA_PER_HIT_CAP,
-                                  pre * TANK_MANA_PER_PREMIT + amount * TANK_MANA_PER_POSTMIT), t);
-            }
-            return;
-        }
         let mut amount = amount;
-        if amount > self.targets[target].hp {
-            amount = self.targets[target].hp;
+        if !self.targets[target].immortal {
+            if amount > self.targets[target].hp {
+                amount = self.targets[target].hp;
+            }
+            self.targets[target].hp -= amount;
         }
-        self.targets[target].hp -= amount;
         self.total += amount;
         self.breakdown_add(src, amount);
         self.record("damage", amount, Some(target), src);
@@ -1163,7 +1193,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         if self.fx.ally_heal_pct != 0.0 {
             self.ally_heal += amount * self.fx.ally_heal_pct;
         }
-        if self.targets[target].hp <= 0.0 && self.targets[target].alive {
+        if !self.targets[target].immortal && self.targets[target].hp <= 0.0 && self.targets[target].alive {
             self.targets[target].alive = false;
             self.targets[target].died_at = Some(t);
             if !self.targets.iter().any(|d| d.alive) {
@@ -1305,7 +1335,6 @@ impl<'a, D: Driver> Fight<'a, D> {
     // ---- the loop ---------------------------------------------------------
 
     pub fn run(&mut self) -> FightResult {
-        D::init(self);
         let mut next_tick = TICK_S;
         let mut next_second = 1.0;
         let mut interval_next: Vec<(f64, f64)> =
@@ -1321,6 +1350,10 @@ impl<'a, D: Driver> Fight<'a, D> {
             let t_in = if self.pressure { self.next_incoming() } else { FAR };
             let t_fx = if !self.pending.is_empty() { self.pending[0].0 } else { FAR };
             let t_next = pymin(pymin(pymin(t_attack, next_tick), t_in), t_fx);
+            if t_next > self.duration {
+                self.t = self.duration;
+                break;
+            }
             self.t = t_next;
             // effects landing now (a channel's damage) come first
             while !self.pending.is_empty() && self.pending[0].0 <= self.t + 1e-9 {
@@ -1382,7 +1415,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         t
     }
 
-    /// Every dummy attack that is due (and the cast it fills the bar for).
+    /// Every due attack and scheduled cast, with mana casts on legacy dummies.
     fn incoming(&mut self) {
         for di in 0..self.targets.len() {
             let n = self.targets[di].n_streams;
@@ -1408,6 +1441,20 @@ impl<'a, D: Driver> Fight<'a, D> {
                     }
                 }
             }
+            let holding = self.holding();
+            let d = &mut self.targets[di];
+            if d.alive && holding && d.cast_interval > 0.0
+               && d.next_cast <= self.t + 1e-9 {
+                let unblocked_at = pymax(d.stunned_until, self.untargetable_until);
+                if self.t < unblocked_at {
+                    // Keep one pending spell; CC delays it without erasing
+                    // its damage or queuing every missed interval.
+                    d.next_cast = unblocked_at;
+                } else {
+                    d.next_cast = self.t + d.cast_interval;
+                    self.dummy_spell(di);
+                }
+            }
         }
     }
 
@@ -1417,18 +1464,26 @@ impl<'a, D: Driver> Fight<'a, D> {
         let t = self.t;
         let holding = self.holding();
         let d = &mut self.targets[di];
-        if !(d.alive && holding && d.mana_max > 0.0 && d.mana >= d.mana_max && t >= d.lock_until) {
+        if !(d.alive && holding && d.cast_interval <= 0.0 && d.mana_max > 0.0
+             && d.mana >= d.mana_max && t >= d.lock_until) {
             return;
         }
         d.mana = pymin(d.mana - d.mana_max, d.mana_max);
         d.lock_until = t + MANA_LOCK_S;
+        self.dummy_spell(di);
+    }
+
+    /// The spell event is shared by periodic and mana-driven casts.
+    fn dummy_spell(&mut self, di: usize) {
+        let t = self.t;
+        let d = &mut self.targets[di];
         d.casts += 1;
         if t < d.stunned_until || t < self.untargetable_until {
             self.denied += d.ability;
             return;
         }
         let (ability, phys_share, mana_max) = (d.ability, d.phys_share, d.mana_max);
-        if self.fx.ionic_spark != 0.0 {
+        if self.fx.ionic_spark != 0.0 && d.nearby {
             let dmg = self.fx.ionic_spark * mana_max;
             self.deal(dmg, DType::Magic, Some(di), "ionic spark", Deal::PLAIN);
         }
@@ -1489,7 +1544,9 @@ impl<'a, D: Driver> Fight<'a, D> {
         if let Some((pct, dur)) = self.fx.burn_aura {
             if self.alive_unit {
                 if let Some(tgt) = self.target() {
-                    self.burn(tgt, pct, dur, false);
+                    if self.targets[tgt].nearby {
+                        self.burn(tgt, pct, dur, false);
+                    }
                 }
             }
         }
@@ -1681,6 +1738,9 @@ impl<'a, D: Driver> Fight<'a, D> {
             left: self.targets.iter().map(|d| pymax(0.0, d.hp)).collect(),
             t: self.t,
             alive_time,
+            survival_capped: self.pressure && self.t >= self.duration && self.holding(),
+            stress_alive_time: None,
+            stress_capped: false,
             died: !self.alive_unit,
             died_at: self.died_at,
             hp_left: pymax(0.0, self.hp),
@@ -1725,6 +1785,9 @@ pub struct FightResult {
     pub left: Vec<f64>,
     pub t: f64,
     pub alive_time: f64,
+    pub survival_capped: bool,
+    pub stress_alive_time: Option<f64>,
+    pub stress_capped: bool,
     pub died: bool,
     pub died_at: Option<f64>,
     pub hp_left: f64,
@@ -1771,6 +1834,8 @@ pub struct Opening {
     pub armor: f64,
     pub mr: f64,
     pub durability: f64,
+    pub physical_ehp: f64,
+    pub magic_ehp: f64,
     pub omnivamp: f64,
     pub form: Option<crate::fx::Form>,
     pub mana_start: f64,
@@ -1779,6 +1844,10 @@ pub struct Opening {
 
 impl<'a, D: Driver> Fight<'a, D> {
     pub fn opening(&self) -> Opening {
+        let hp = self.max_hp();
+        let armor = self.armor_now();
+        let mr = self.mr_now();
+        let durability = self.durability_now();
         Opening {
             ad: self.ad(),
             ap: self.ap(),
@@ -1786,10 +1855,12 @@ impl<'a, D: Driver> Fight<'a, D> {
             crit: self.sheet.crit_chance,
             crit_mult: self.sheet.crit_mult,
             precision: self.sheet.precision,
-            hp: self.max_hp(),
-            armor: self.armor_now(),
-            mr: self.mr_now(),
-            durability: self.sheet.durability,
+            hp,
+            armor,
+            mr,
+            durability,
+            physical_ehp: hp / (resist_mult(pymax(armor, 0.0)) * (1.0 - durability)),
+            magic_ehp: hp / (resist_mult(pymax(mr, 0.0)) * (1.0 - durability)),
             omnivamp: self.sheet.omnivamp,
             form: self.sheet.form,
             mana_start: self.sheet.mana_start,

@@ -1,6 +1,9 @@
 """Display metadata: archived icons and corrected, readable trait details."""
 import copy
+import json
+import os
 from types import SimpleNamespace
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -31,6 +34,39 @@ class TestTftUiMetadata(unittest.TestCase):
                     self.assertIn(bonus["api"], unit["traitApis"])
                     self.assertIn(bonus["breakpoint"], traits[bonus["api"]]["levels"])
                     self.assertTrue(traits[bonus["api"]]["modeled"])
+
+    def test_tank_threats_and_debuffs_match_the_simulation_inputs(self):
+        self.assertEqual(self.meta["tankDebuffs"], {"wound": .33, "sunder": .3, "shred": .3})
+        for threat in self.meta["tankThreats"]:
+            dummy = tft.dummies_for(self.snap, threat=threat["key"])
+            self.assertEqual(dummy["threat"], threat)
+            self.assertEqual(dummy["enemyDebuffs"], self.meta["tankDebuffs"])
+            self.assertEqual(self.meta["tankDummies"][threat["key"]], dummy)
+            self.assertEqual([s["line"] for s in dummy["slots"]],
+                             ["frontline"] * 3 + ["backline"] * 2)
+        tank_keys = set(tft.unit_scenarios(self.snap.unit("Leona")))
+        self.assertIn("s2-clump-bare", tank_keys)
+        self.assertIn("s2-clump-bare-physical", tank_keys)
+        self.assertIn("s2-clump-bare-magic", tank_keys)
+
+    def test_recomputing_mixed_preserves_other_threat_caches(self):
+        unit = self.snap.unit("Leona")
+        key = "s2-clump-bare"
+        pool = tft.pool_items(self.snap, tft.load_item_effects(self.snap.set_no))[:2]
+        with tempfile.TemporaryDirectory() as directory, patch.object(tft, "CACHE_DIR", directory), \
+                patch.object(tft, "pool_items", return_value=pool):
+            paths = tft.cell_paths(self.snap)
+            variant = paths[("leona", key + "-magic")]
+            old = os.path.join(directory, f"leona-{key}-{'0' * 16}.json")
+            for path in (variant, old):
+                with open(path, "w") as f:
+                    json.dump({"sentinel": True}, f)
+            cell = tft.compute_cell(self.snap, unit, key, paths)
+            self.assertEqual(cell["scenario"]["dummy"]["threat"]["key"], "mixed")
+            self.assertTrue(os.path.exists(paths[("leona", key)]))
+            self.assertFalse(os.path.exists(old))
+            with open(variant) as f:
+                self.assertEqual(json.load(f), {"sentinel": True})
 
     def test_exact_asset_mapping_wins_and_ambiguous_names_do_not_guess(self):
         first = {"apiName": "wrong", "name": "Same", "squareIcon": "assets/wrong.tex"}

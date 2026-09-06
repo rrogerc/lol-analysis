@@ -120,6 +120,8 @@ pub struct DummySpec {
     pub armor: f64,
     pub mr: f64,
     pub is_tank: bool,
+    /// Whether local area effects can reach this slot; legacy slots are nearby.
+    pub nearby: bool,
     pub ad: f64,
     pub as_: f64,
     pub ability: f64,
@@ -128,17 +130,39 @@ pub struct DummySpec {
     pub mana_start: f64,
     pub mana_per_attack: f64,
     pub mana_from_damage: bool,
+    /// Optional first attack time; missing keeps the legacy staggered start.
+    pub attack_start: Option<f64>,
+    /// A positive interval replaces mana-driven casts with a fixed schedule.
+    pub cast_interval: f64,
+    pub cast_start: Option<f64>,
     /// How many enemy units this slot stands for (a tank fight's board).
     pub streams: i64,
 }
 
 impl DummySpec {
     fn from_py(d: &Bound<'_, PyDict>) -> PyResult<DummySpec> {
+        let timer = |key: &str| -> PyResult<Option<f64>> {
+            match get(d, key)? {
+                Some(v) => {
+                    let value: f64 = v.extract()?;
+                    if !value.is_finite() || value < 0.0 {
+                        return Err(PyValueError::new_err(format!(
+                            "{key}: expected a finite, nonnegative number")));
+                    }
+                    Ok(Some(value))
+                }
+                None => Ok(None),
+            }
+        };
         Ok(DummySpec {
             hp: reqf(d, "hp")?,
             armor: reqf(d, "armor")?,
             mr: reqf(d, "mr")?,
             is_tank: gets(d, "kind", "tank")? == "tank",
+            nearby: match get(d, "nearby")? {
+                Some(v) => v.extract()?,
+                None => true,
+            },
             ad: getf(d, "ad", 0.0)?,
             as_: getf(d, "as", 0.0)?,
             ability: getf(d, "ability", 0.0)?,
@@ -147,7 +171,36 @@ impl DummySpec {
             mana_start: getf(d, "manaStart", 0.0)?,
             mana_per_attack: getf(d, "manaPerAttack", 0.0)?,
             mana_from_damage: truthy(d, "manaFromDamage")?,
+            attack_start: timer("attackStart")?,
+            cast_interval: timer("castInterval")?.unwrap_or(0.0),
+            cast_start: timer("castStart")?,
             streams: geti(d, "streams", 1)?,
+        })
+    }
+}
+
+/// Constant enemy debuffs for the pressured benchmark, expressed as fractions.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct EnemyDebuffs {
+    pub wound: f64,
+    pub sunder: f64,
+    pub shred: f64,
+}
+
+impl EnemyDebuffs {
+    fn from_py(d: &Bound<'_, PyDict>) -> PyResult<EnemyDebuffs> {
+        let fraction = |key: &str| -> PyResult<f64> {
+            let value = getf(d, key, 0.0)?;
+            if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+                return Err(PyValueError::new_err(format!(
+                    "enemyDebuffs.{key}: expected a finite fraction from 0 to 1")));
+            }
+            Ok(value)
+        };
+        Ok(EnemyDebuffs {
+            wound: fraction("wound")?,
+            sunder: fraction("sunder")?,
+            shred: fraction("shred")?,
         })
     }
 }
@@ -162,6 +215,7 @@ pub struct CellSpec {
     pub clump: bool,
     pub duration: f64,
     pub pressure: bool,
+    pub enemy_debuffs: EnemyDebuffs,
     pub immortal: bool,
     pub dummies: Vec<DummySpec>,
     pub crit_ev: f64,
@@ -216,6 +270,10 @@ impl CellSpec {
             clump: gets(d, "geometry", "clump")? == "clump",
             duration: reqf(d, "duration")?,
             pressure: truthy(d, "pressure")?,
+            enemy_debuffs: match getd(d, "enemyDebuffs")? {
+                Some(debuffs) => EnemyDebuffs::from_py(&debuffs)?,
+                None => EnemyDebuffs::default(),
+            },
             immortal: truthy(d, "immortal")?,
             dummies,
             crit_ev: getf(&dd, "critEv", 1.1)?,

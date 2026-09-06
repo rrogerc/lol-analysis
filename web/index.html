@@ -235,6 +235,7 @@
   .tft-bonus-note { padding-top: 8px; border-top: 1px solid var(--grid); }
   .tft-settings { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--grid); }
   .tft-setting { min-width: 0; }
+  .tft-setting-wide { grid-column: 1 / -1; }
   .tft-setting > .tft-label { display: block; margin-bottom: 7px; }
   #view-tft .tft-setting .hint { margin: 6px 0 0; line-height: 1.5; color: var(--text-secondary); }
   .tft-fight-preview { margin-top: 18px; border-top: 1px solid var(--grid); padding-top: 16px; }
@@ -243,6 +244,7 @@
   .tft-fight-layout { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(0, 1.15fr); gap: 18px; }
   .tft-formation { margin: 0; min-width: 0; border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; background: var(--page); }
   #tft-formation-diagram { display: block; width: 100%; height: 195px; }
+  .tft-fight-preview[data-objective="tank"] #tft-formation-diagram { height: 295px; }
   #tft-formation-diagram text { fill: var(--text-secondary); font-size: 11px; text-anchor: middle; }
   #tft-formation-diagram .tft-diagram-number { fill: var(--text-primary); font-size: 13px; font-weight: 650; }
   #tft-formation-diagram .tft-diagram-you { fill: #fff; font-size: 11px; font-weight: 650; }
@@ -267,11 +269,12 @@
   #view-tft .tft-details { margin-top: 12px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
   #view-tft .tft-details summary { cursor: pointer; width: fit-content; }
   #view-tft .tft-details .hint, #tft-desc { margin: 10px 0 0; color: var(--text-secondary); line-height: 1.6; }
+  #tbd-hint p + p { margin-top: 7px; }
   #view-tft .chip { white-space: normal; overflow-wrap: anywhere; }
   #tpool-excluded-list { margin: 8px 0 0; padding-left: 20px; }
   @media (max-width: 700px) {
     .tft-settings { grid-template-columns: 1fr 1fr; }
-    .tft-setting:last-child { grid-column: 1 / -1; }
+    .tft-setting:nth-child(3) { grid-column: 1 / -1; }
     .tft-cost-group { grid-template-columns: 1fr; gap: 8px; }
     .tft-cost-heading { display: flex; align-items: center; gap: 8px; }
     .tft-cost-heading span { margin: 0; }
@@ -499,6 +502,11 @@
         <div class="seg" id="tft-trait-seg" role="group" aria-labelledby="tft-trait-label"></div>
         <p class="hint" id="tft-trait-hint"></p>
       </div>
+      <div class="tft-setting tft-setting-wide" id="tft-threat-setting" hidden>
+        <span class="tft-label" id="tft-threat-label">Backline damage profile</span>
+        <div class="seg" id="tft-threat-seg" role="group" aria-labelledby="tft-threat-label"></div>
+        <p class="hint" id="tft-threat-hint"></p>
+      </div>
     </div>
     <section class="tft-fight-preview" aria-labelledby="tft-fight-title" hidden>
       <div class="tft-fight-heading">
@@ -508,7 +516,7 @@
       <div class="tft-fight-layout">
         <figure class="tft-formation">
           <svg id="tft-formation-diagram" viewBox="0 0 340 195" role="img" aria-labelledby="tft-diagram-title tft-diagram-desc"></svg>
-          <figcaption>Schematic layout showing target order and ability coverage. Exact hex positions and movement are not simulated.</figcaption>
+          <figcaption id="tft-formation-caption">Schematic layout showing target order and ability coverage. Exact hex positions and movement are not simulated.</figcaption>
         </figure>
         <div>
           <p id="tft-dummy-intro"></p>
@@ -517,6 +525,11 @@
           <details class="tft-details" id="tft-pressure-details" hidden>
             <summary>Enemy attacks and casts</summary>
             <div id="tft-dummy-offense"></div>
+          </details>
+          <details class="tft-details" id="tft-target-defenses" hidden>
+            <summary>Enemy defenses for your tank’s damage</summary>
+            <p>Your tank also deals damage, which can trigger healing and item effects. These defenses apply to that damage; enemies remain alive throughout the survival test.</p>
+            <div id="tft-target-defense-stats"></div>
           </details>
         </div>
       </div>
@@ -539,9 +552,10 @@
     </details>
     <details class="tft-details">
       <summary>How builds are ranked</summary>
-      <p class="hint">Every three-item combination is simulated against three stat dummies: a heavy tank first, a typical tank second, and a non-tank behind them. The first tank has fixed benchmark defenses, shown in the test fight. The other defenses and all enemy attacks and casts use this set's median 2★ stats. Attacks generate mana and abilities cast when the bar fills. Damage accounts for armor, magic resist, sunder, shred, expected-value crit, Precision and damage amplification.</p>
-      <p class="hint">Carries are ranked by time to kill all three dummies, then damage. Fighters and assassins face dummies that hit back, and are ranked by kill time, then damage before dying. Tanks face enemies that cannot die, with a full board's pressure for up to a minute. They are ranked by how long they hold the enemies, then damage denied, then damage dealt. On-death bodies count. Shields, heals, durability and stuns contribute in fights where the dummies hit back.</p>
-      <p class="hint">Spread keeps enemies apart, so most area effects reach only the current target; clumped enemies can take splash damage together, subject to each ability's target limit. Individual abilities can use different targeting. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
+      <p class="hint">Every three-item combination is simulated. Carries and fighters face three stat dummies: a heavy tank first, a typical tank second, and a non-tank behind them. Tanks face three frontline tanks and two protected backline carries. The first enemy tank has fixed benchmark defenses, shown in the test fight; the other defenses use this set's median 2★ stats. Fighters face attacks and casts drawn from those median stats. Tank pressure combines the median frontline damage with damage calibrated from 2★, three-item carry builds. The selected preset sets the backline damage mix and timing. Damage accounts for armor, magic resist, sunder, shred, expected-value crit, Precision and damage amplification.</p>
+      <p class="hint">Carries are ranked by time to kill all three dummies, then damage. Fighters and assassins face dummies that hit back, and are ranked by kill time, then damage before dying. Tanks face five attackers that cannot die for up to a minute, with enemy heal cut, sunder and shred active throughout. The backline keeps attacking through frontline stuns; abilities with explicit long-range or global targeting can still reach it. Enemy casts are delayed by stuns and resume afterward. Tanks rank by how long they hold the enemies, including on-death bodies. Builds that reach 60s are shown as 60s+ and compared in another fight with twice the incoming damage; builds that reach both limits remain tied. Shields, effective healing, durability and stuns contribute to survival.</p>
+      <p class="hint">Tank effective HP (EHP) shows the opening capacity to take physical or magic ability damage after enemy sunder and shred. It excludes healing, shields and protection that applies only to attacks. Team healing, shields and damage are shown separately; survival rankings do not measure how quickly allied carries win the fight.</p>
+      <p class="hint">Spread keeps enemies apart, so most local area effects reach only the current target; clumped enemies can take splash damage together, subject to each ability's target limit. In tank tests, this setting changes the frontline formation; the backline stays outside nearby effects in both formations. Abilities that select several nearest enemies can still reach multiple frontliners when spread. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
     </details>
   </div>
   <div class="tft-tooltip" id="tft-tooltip" role="tooltip" hidden></div>
@@ -1203,18 +1217,43 @@ async function openBuilds() {
 
 // ---------------- tft view ----------------
 // Same shape as the builds tab: precomputed cells keyed by unit and
-// scenario (star, geometry, trait context), a status endpoint saying which
+// scenario (star, geometry, trait context, tank threat), a status endpoint saying which
 // exist, a breakdown card for the selected build.
 const TSRC_COLOR = { auto: "--s3", ability: "--s1", burn: "--s8", bleed: "--s6",
                      solar: "--s5", trail: "--s2", thorns: "--s7", "ionic spark": "--s4" };
-const tstate = { meta: null, unit: null, star: 2, geo: "clump", traits: "bare",
+const tstate = { meta: null, unit: null, star: 2, geo: "clump", traits: "bare", threat: "mixed",
                  data: null, dataRevision: null, sel: 0, status: null, req: 0, timer: null,
                  polling: null, opening: null, pending: false, statusUnavailable: false,
                  cls: "all", cost: "all", search: "" };
 const TFT_CLASS = { all: "every unit", carry: "carries: marksmen, casters and specialists — the dummies never hit back",
                     fighter: "fighters and assassins — the dummies hit back, ranked by kill time then damage before dying",
                     tank: "tanks — the dummies hit back, ranked by how long the unit holds them" };
-const tkey = (o = {}) => `s${o.star ?? tstate.star}-${o.geo ?? tstate.geo}-${o.traits ?? tstate.traits}`;
+function tftThreatFor(unit, requested = tstate.threat) {
+  return unit?.objective === "tank" && tstate.meta?.tankThreats?.some(t => t.key === requested)
+    ? requested : "mixed";
+}
+
+const tkey = (o = {}) => {
+  const unit = tstate.meta?.units.find(u => u.slug === (o.unit ?? tstate.unit));
+  const threat = tftThreatFor(unit, o.threat ?? tstate.threat);
+  return `s${o.star ?? tstate.star}-${o.geo ?? tstate.geo}-${o.traits ?? tstate.traits}` +
+    (threat === "mixed" ? "" : `-${threat}`);
+};
+
+function tftTankDebuffNote(debuffs) {
+  if (!debuffs) return "";
+  const percent = n => Math.round(n * 100);
+  return `Enemy heal cut reduces healing by ${percent(debuffs.wound)}%; sunder reduces armor by ${percent(debuffs.sunder)}%; shred reduces MR by ${percent(debuffs.shred)}%. All three stay active for the entire fight.`;
+}
+
+function renderTftThreat(unit) {
+  tstate.threat = tftThreatFor(unit);
+  document.getElementById("tft-threat-setting").hidden = unit.objective !== "tank" || !tstate.meta.tankThreats?.length;
+  tftActive("tft-threat-seg", tstate.threat);
+  const threat = tstate.meta.tankThreats?.find(t => t.key === tstate.threat);
+  document.getElementById("tft-threat-hint").textContent = threat
+    ? `${threat.description} Heal cut, sunder and shred stay active throughout.` : "";
+}
 
 function tftText(tag, text, className = "") {
   const el = document.createElement(tag);
@@ -1394,15 +1433,24 @@ function renderTftSelected(unit) {
 }
 
 function renderTftFight(unit, scenario = null) {
-  const dm = scenario?.dummy || tstate.meta.dummy;
+  const tank = unit.objective === "tank", pressured = unit.objective !== "carry";
+  const nearestThree = tank && unit.name === "Hecarim";
+  const threatKey = scenario?.threat || tstate.threat;
+  const dm = scenario?.dummy || (tank ? tstate.meta.tankDummies?.[threatKey] : null) || tstate.meta.dummy;
   const preview = document.querySelector(".tft-fight-preview");
   preview.hidden = !dm?.slots?.length;
   if (preview.hidden) return;
   const clump = (scenario?.geometry || tstate.geo) === "clump";
   const duration = scenario?.duration || unit.duration;
-  const tank = unit.objective === "tank", pressured = unit.objective !== "carry";
-  document.getElementById("tft-formation-label").textContent = `${clump ? "Clumped" : "Spread"} · up to ${duration}s`;
+  const changedRole = preview.dataset.objective !== unit.objective;
+  preview.dataset.objective = unit.objective;
+  const threat = tank ? dm.threat || tstate.meta.tankThreats?.find(t => t.key === threatKey) : null;
+  const debuffs = tank ? dm.enemyDebuffs || tstate.meta.tankDebuffs : null;
+  document.getElementById("tft-fight-title").textContent = tank ? "Tank survival test" : "The test fight";
+  document.getElementById("tft-formation-label").textContent =
+    `${clump ? "Clumped" : "Spread"}${tank ? " frontline" : ""}${threat ? ` · ${threat.label}` : ""} · up to ${duration}s`;
   const svg = document.getElementById("tft-formation-diagram");
+  svg.setAttribute("viewBox", tank ? "0 0 340 295" : "0 0 340 195");
   svg.replaceChildren();
   const node = (tag, attrs = {}, text) => {
     const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -1411,43 +1459,119 @@ function renderTftFight(unit, scenario = null) {
     svg.append(el);
     return el;
   };
-  node("title", { id: "tft-diagram-title" }, `${clump ? "Clumped" : "Spread"} enemy formation`);
-  node("desc", { id: "tft-diagram-desc" }, "Two tank dummies in front and a non-tank dummy behind. Normal attacks start at dummy 1. The shaded area illustrates nearby ability coverage, not an exact ability radius.");
-  const positions = clump ? [[142, 82], [202, 82], [172, 32]] : [[48, 83], [292, 83], [172, 26]];
-  node("ellipse", { cx: clump ? 172 : 48, cy: clump ? 65 : 83,
-    rx: clump ? 67 : 29, ry: clump ? 57 : 31,
-    fill: "color-mix(in srgb, var(--s1) 10%, transparent)", stroke: "var(--s1)", "stroke-dasharray": "4 4" });
-  const [tx, ty] = positions[0];
-  node("path", { d: `M 172 148 L ${tx} ${ty + 23}`, fill: "none", stroke: "var(--baseline)", "stroke-width": 1.5 });
-  node("path", { d: `M ${tx - 4} ${ty + 31} L ${tx} ${ty + 23} L ${tx + 5} ${ty + 30}`, fill: "none", stroke: "var(--baseline)", "stroke-width": 1.5 });
-  positions.forEach(([x, y], i) => {
-    node("circle", { cx: x, cy: y, r: 18, fill: "var(--surface-1)", stroke: i === 2 ? "var(--s3)" : "var(--s1)", "stroke-width": 2 });
-    node("text", { x, y: y + 4, class: "tft-diagram-number" }, String(i + 1));
-    node("text", { x, y: y + 33 }, dm.slots[i]?.fixedDefenses ? "Heavy tank" : i === 2 ? "Non-tank" : "Tank");
-  });
-  node("circle", { cx: 172, cy: 161, r: 18, fill: "var(--s1)" });
-  node("text", { x: 172, y: 165, class: "tft-diagram-you" }, "You");
-  node("text", { x: 172, y: 193 }, unit.name);
-  document.getElementById("tft-dummy-intro").textContent = dm.slots[0].fixedDefenses
+  const arrow = (x1, y1, x2, y2, color, direction, { width = 2, line, bend } = {}) => {
+    const [fromX, fromY] = bend || [x1, y1];
+    const length = Math.hypot(x2 - fromX, y2 - fromY);
+    const dx = (x2 - fromX) / length, dy = (y2 - fromY) / length;
+    const path = bend ? `M ${x1} ${y1} Q ${fromX} ${fromY} ${x2} ${y2}` : `M ${x1} ${y1} L ${x2} ${y2}`;
+    node("path", { d: path, fill: "none", stroke: color,
+      "stroke-width": width, "data-direction": direction, ...(line ? { "data-line": line } : {}) });
+    node("path", { d: `M ${x2} ${y2} L ${x2 - 8 * dx + 4 * dy} ${y2 - 8 * dy - 4 * dx} L ${x2 - 8 * dx - 4 * dy} ${y2 - 8 * dy + 4 * dx} Z`, fill: color });
+  };
+  if (tank) {
+    node("title", { id: "tft-diagram-title" }, `Three frontline tanks and two backline carries focus ${unit.name}`);
+    node("desc", { id: "tft-diagram-desc" }, `Three frontline tanks stand between ${unit.name} and two backline carries. Thick arrows show the carries dealing most of the incoming damage. Shading illustrates ${nearestThree ? "Hecarim’s three nearest targets" : "nearby ability coverage on the frontline"}; backline damage continues during frontline stuns. The attackers stay alive throughout the test.`);
+    const backlineShare = threat?.dps > 0 ? Math.round(threat.backlineDps / threat.dps * 100) : null;
+    node("text", { x: 170, y: 18 }, `Backline carries${Number.isFinite(backlineShare) ? ` · ${backlineShare}% of damage` : ""}`);
+    node("text", { x: 170, y: 103 }, "Frontline tanks · nearest targets");
+    arrow(80, 68, 141, 232, "var(--s8)", "incoming", { width: 3.5, line: "backline", bend: [-80, 170] });
+    arrow(260, 68, 199, 232, "var(--s8)", "incoming", { width: 3.5, line: "backline", bend: [420, 170] });
+    const positions = (clump ? [110, 170, 230] : [45, 170, 295]).map(x => [x, 137]);
+    const coverage = clump ? [[170, 94]] : nearestThree ? positions.map(([x]) => [x, 29]) : [[45, 29]];
+    coverage.forEach(([x, radius]) => node("ellipse", { cx: x, cy: 137, rx: radius, ry: 29,
+      fill: "color-mix(in srgb, var(--s1) 10%, transparent)", stroke: "var(--s1)", "stroke-dasharray": "4 4",
+      "data-targeting": nearestThree ? "nearest" : "nearby" }));
+    positions.forEach(([x, y], i) => {
+      arrow(x, y + 20, 155 + i * 15, i === 1 ? 207 : 218, "var(--baseline)", "incoming", { line: "frontline" });
+      node("circle", { cx: x, cy: y, r: 18, fill: "var(--surface-1)", stroke: "var(--s1)", "stroke-width": 2, "data-line": "frontline" });
+      node("text", { x, y: y + 4, class: "tft-diagram-number" }, String(i + 1));
+    });
+    [80, 260].forEach((x, i) => {
+      node("circle", { cx: x, cy: 48, r: 19, fill: "var(--surface-1)", stroke: "var(--s8)", "stroke-width": 2.5, "data-line": "backline" });
+      node("text", { x, y: 52, class: "tft-diagram-number" }, String(i + 4));
+    });
+    node("path", { d: "M 170 215 L 196 224 L 192 248 Q 186 265 170 272 Q 154 265 148 248 L 144 224 Z", fill: "var(--s1)" });
+    node("text", { x: 170, y: 245, class: "tft-diagram-you" }, "Tank");
+    node("text", { x: 170, y: 291, class: "tft-diagram-number" }, unit.name);
+  } else {
+    node("title", { id: "tft-diagram-title" }, `${clump ? "Clumped" : "Spread"} enemy formation`);
+    node("desc", { id: "tft-diagram-desc" }, "Two tank dummies in front and a non-tank dummy behind. Normal attacks start at dummy 1. The shaded area illustrates nearby ability coverage, not an exact ability radius.");
+    const positions = clump ? [[142, 82], [202, 82], [172, 32]] : [[48, 83], [292, 83], [172, 26]];
+    node("ellipse", { cx: clump ? 172 : 48, cy: clump ? 65 : 83,
+      rx: clump ? 67 : 29, ry: clump ? 57 : 31,
+      fill: "color-mix(in srgb, var(--s1) 10%, transparent)", stroke: "var(--s1)", "stroke-dasharray": "4 4" });
+    const [tx, ty] = positions[0];
+    arrow(172, 148, tx, ty + 23, "var(--baseline)", "outgoing");
+    positions.forEach(([x, y], i) => {
+      node("circle", { cx: x, cy: y, r: 18, fill: "var(--surface-1)", stroke: i === 2 ? "var(--s3)" : "var(--s1)", "stroke-width": 2 });
+      node("text", { x, y: y + 4, class: "tft-diagram-number" }, String(i + 1));
+      node("text", { x, y: y + 33 }, dm.slots[i]?.fixedDefenses ? "Heavy tank" : i === 2 ? "Non-tank" : "Tank");
+    });
+    node("circle", { cx: 172, cy: 161, r: 18, fill: "var(--s1)" });
+    node("text", { x: 172, y: 165, class: "tft-diagram-you" }, "You");
+    node("text", { x: 172, y: 193 }, unit.name);
+  }
+  document.getElementById("tft-formation-caption").textContent = tank
+    ? "Thick arrows show incoming backline damage, which continues through frontline stuns. " +
+      `Shading shows ${nearestThree ? "coverage on Hecarim’s three nearest targets" : "nearby ability coverage"}; positions are schematic.`
+    : "Schematic layout showing target order and ability coverage. Exact hex positions and movement are not simulated.";
+  document.getElementById("tft-dummy-intro").textContent = tank
+    ? `${threat?.attackers || 5} attackers focus ${unit.name}: ${threat?.frontlineAttackers || 3} frontline tanks and ${threat?.backlineAttackers || 2} protected backline carries. Most damage comes from the carries. Enemies stay alive while your tank and any on-death body hold them.`
+    : dm.slots[0].fixedDefenses
     ? `${dm.count} test targets: a heavy tank first, a typical tank second, and a non-tank behind. The first tank has fixed defenses; the other defenses and all attacks and casts use this set's median ${dm.star}★ stats.`
     : `${dm.count} test targets: two tanks in front, one non-tank behind. Each uses the median stats of this set's ${dm.star}★ champions in its group.`;
   const number = n => Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
-  document.getElementById("tft-dummy-stats").replaceChildren(...dm.slots.map((slot, i) => {
+  const statRow = (label, value) => {
     const row = document.createElement("div");
     row.className = "tft-dummy";
-    row.append(tftText("strong", `${i + 1} · ${slot.fixedDefenses ? "Heavy front tank" : slot.kind === "tank" ? "Front tank" : "Rear non-tank"}`),
-      tftText("span", `${number(slot.hp)} HP · ${number(slot.armor)} armor · ${number(slot.mr)} MR`));
+    row.append(tftText("strong", label), tftText("span", value));
     return row;
-  }));
+  };
+  const slotLabel = slot => slot.fixedDefenses ? "Heavy front tank" : slot.label
+    || (slot.kind === "tank" ? "Front tank" : tank ? "Backline carry" : "Rear non-tank");
+  const defenseRows = () => dm.slots.map((slot, i) => statRow(
+    `${i + 1} · ${slotLabel(slot)}`,
+    `${number(slot.hp)} HP · ${number(slot.armor)} armor · ${number(slot.mr)} MR`));
+  const physicalShare = threat?.physicalShare;
+  document.getElementById("tft-dummy-stats").replaceChildren(...(tank ? threat ? [
+    statRow("Incoming damage", `${number(threat.dps)} per second on average, before defenses`),
+    statRow("Frontline pressure", `${threat.frontlineAttackers} tanks · ${number(threat.frontlineDps)}/s · ${Math.round(threat.frontlineDps / threat.dps * 100)}% of damage`),
+    statRow("Backline pressure", `${threat.backlineAttackers} carries · ${number(threat.backlineDps)}/s · ${Math.round(threat.backlineDps / threat.dps * 100)}% of damage`),
+    statRow("Damage mix", `${Math.round(physicalShare * 100)}% physical · ${Math.round((1 - physicalShare) * 100)}% magic`),
+    statRow("Backline attacks", `Every ${number(threat.attackInterval)}s per carry · ${Math.round(threat.backlineAttackShare * 100)}% of backline damage`),
+    statRow("Backline casts", threat.burst ? `Both carries cast together every ${number(threat.castInterval)}s`
+      : `Each carry casts every ${number(threat.castInterval)}s, staggered`),
+  ] : [statRow("Incoming damage", "Loading the selected damage profile…")] : defenseRows()));
+  const targetDefenses = document.getElementById("tft-target-defenses");
+  targetDefenses.hidden = !tank;
+  if (changedRole) targetDefenses.open = false;
+  document.getElementById("tft-target-defense-stats").replaceChildren(...(tank ? defenseRows() : []));
   document.getElementById("tft-pressure-note").textContent = tank
-    ? `Incoming pressure approximates a ${dm.boardSize}-unit board (~${number(dm.boardPressureDps)} damage/s before defenses). The three enemy dummies stay alive throughout the test; ${unit.name} can die.`
+    ? tftTankDebuffNote(debuffs)
     : pressured ? `All three dummies attack and cast (~${number(dm.pressureDps)} damage/s before defenses). Defeating one removes its pressure.`
     : "The dummies do not attack. These carry builds are ranked by how quickly they defeat the targets, then damage dealt.";
   document.getElementById("tft-pressure-details").hidden = !pressured;
-  document.getElementById("tft-dummy-offense").replaceChildren(...(pressured ? dm.slots.map((slot, i) =>
-    tftText("p", `${i + 1}: ${number(slot.ad)} attack damage at ${number(slot.as)} attacks/s; ${number(slot.ability)} damage per cast (${Math.round(slot.physicalShare * 100)}% physical). Mana: ${number(slot.manaStart)}/${number(slot.manaMax)}, +${number(slot.manaPerAttack)} per attack${slot.manaFromDamage ? " and mana from damage taken" : ""}.${tank ? ` Represents ${dm.board[i]} attackers.` : ""}`)) : []));
-  document.getElementById("tft-targeting-note").textContent =
-    "Normal attacks target the first living dummy: 1 → 2 → 3. " +
+  const offense = tank ? [
+    ...(threat ? [
+      tftText("p", `The ${threat.frontlineAttackers} frontline tanks contribute ${number(threat.frontlineDps)} damage/s in every preset. Each attacks every ${number(threat.frontlineAttackInterval)}s and casts every ${number(threat.frontlineCastInterval)}s, staggered across the frontline.`),
+      tftText("p", `The ${threat.backlineAttackers} backline carries contribute ${number(threat.backlineDps)} damage/s. ${Math.round(threat.backlineAttackShare * 100)}% comes from physical attacks every ${number(threat.attackInterval)}s per carry; the rest comes from casts every ${number(threat.castInterval)}s (${Math.round(threat.backlineSpellPhysicalShare * 100)}% physical, ${Math.round((1 - threat.backlineSpellPhysicalShare) * 100)}% magic). ${threat.burst ? "Both carries cast together for a burst of damage." : "Backline attacks and casts are staggered."}`),
+      tftText("p", "Frontline stuns leave backline damage running. When an enemy is stunned, its scheduled casts are delayed until the stun ends and then resume."),
+    ] : []),
+    ...(dm.threat ? dm.slots.map((slot, i) => tftText("p", `${i + 1} · ${slotLabel(slot)}: ${number(slot.ad * dm.critEv)} average physical damage per attack including crit, first at ${number(slot.attackStart)}s and then every ${number(1 / slot.as)}s; ${number(slot.ability)} damage per cast (${Math.round(slot.physicalShare * 100)}% physical), first at ${number(slot.castStart)}s and then every ${number(slot.castInterval)}s. Damage is shown before your defenses.`)) : []),
+    ...(threat?.referenceCarries?.length ? [
+      tftText("p", "Backline pressure is calibrated from these 2★, three-item carry builds. Each reference attacks one target with zero armor and MR, no trait bonuses and no enemy deaths. All presets share this damage budget; the selected preset changes the backline damage mix and timing."),
+      ...threat.referenceCarries.map(carry => tftText("p", `${carry.star}★ ${carry.name} with ${carry.items.join(", ")}: ${number(carry.dps)} damage/s over ${number(carry.duration)}s.`)),
+    ] : []),
+  ] : pressured ? dm.slots.map((slot, i) =>
+    tftText("p", `${i + 1}: ${number(slot.ad)} attack damage at ${number(slot.as)} attacks/s; ${number(slot.ability)} damage per cast (${Math.round(slot.physicalShare * 100)}% physical). Mana: ${number(slot.manaStart)}/${number(slot.manaMax)}, +${number(slot.manaPerAttack)} per attack${slot.manaFromDamage ? " and mana from damage taken" : ""}.`)) : [];
+  document.getElementById("tft-dummy-offense").replaceChildren(...offense);
+  document.getElementById("tft-targeting-note").textContent = tank
+    ? (clump ? "Clumped frontliners can share nearby splash and stuns, within each ability’s target limit. "
+        : "Spread frontliners reduce nearby splash and stun coverage. ") +
+      (nearestThree ? "Hecarim still targets the three nearest frontliners in either formation. " : "") +
+      "Backline carries stay outside nearby effects; abilities with explicit long-range or global targeting can still reach them. " +
+      `Builds still holding at ${duration}s are compared again with twice the incoming damage.`
+    : "Normal attacks target the first living dummy: 1 → 2 → 3. " +
     (clump ? "Splash and nearby-target effects can reach multiple dummies, within each ability's target limit."
       : "Most area effects reach the current target; nearby splash targets are unavailable.") +
     " Individual abilities can use different targeting.";
@@ -1623,6 +1747,10 @@ async function loadTftMeta(force = false) {
   tftSeg("tft-trait-seg", Object.entries(m.traitContexts).map(([k, v]) => ({
     key: k, label: { bare: "None", low: "First breakpoint", high: "Max non-prismatic" }[k] || k, title: v })),
     k => { tstate.traits = k; });
+  tftSeg("tft-threat-seg", (m.tankThreats || []).map(t => ({ key: t.key, label: t.label, title: t.description })),
+    k => { tstate.threat = k; });
+  const unit = m.units.find(u => u.slug === tstate.unit);
+  if (unit) renderTftThreat(unit);
   renderTftPool();
   renderTftRefresh();
   return true;
@@ -1769,10 +1897,11 @@ function markTftCold() {
     b.classList.toggle("cold", cold);
     if (!b.dataset.richTooltip) b.title = (b.dataset.title || "") + (cold ? " · not computed yet" : "");
   });
-  mark("tft-unit-seg", k => `${k}/${tkey({ star: tftStarFor(tstate.meta.units.find(u => u.slug === k)) })}`);
+  mark("tft-unit-seg", k => `${k}/${tkey({ unit: k, star: tftStarFor(tstate.meta.units.find(u => u.slug === k)) })}`);
   mark("tft-star-seg", k => `${tstate.unit}/${tkey({ star: k })}`);
   mark("tft-geo-seg", k => `${tstate.unit}/${tkey({ geo: k })}`);
   mark("tft-trait-seg", k => `${tstate.unit}/${tkey({ traits: k })}`);
+  mark("tft-threat-seg", k => `${tstate.unit}/${tkey({ threat: k })}`);
 }
 
 function clearTft() {
@@ -1798,10 +1927,13 @@ async function loadTftScenario({ preserve = false } = {}) {
   tftActive("tft-geo-seg", tstate.geo);
   tftActive("tft-trait-seg", tstate.traits);
   const unit = tstate.meta.units.find(u => u.slug === tstate.unit);
+  renderTftThreat(unit);
   renderTftSelected(unit);
   renderTftFight(unit);
-  document.getElementById("tft-geo-hint").textContent = tstate.geo === "clump"
-    ? "Enemies grouped; splash and nearby effects can reach multiple targets."
+  document.getElementById("tft-geo-hint").textContent = unit.objective === "tank"
+    ? (tstate.geo === "clump" ? "Frontline tanks group up for nearby effects; backline carries stay farther away."
+      : "Frontline tanks spread out; backline carries stay farther away. Nearest-target abilities keep their target count.")
+    : tstate.geo === "clump" ? "Enemies grouped; splash and nearby effects can reach multiple targets."
     : "Enemies separated; most area effects reach the current target.";
   document.getElementById("tft-trait-hint").textContent = {
     bare: "No trait bonuses applied.", low: "Each modeled trait at its first active breakpoint.",
@@ -1817,7 +1949,8 @@ async function loadTftScenario({ preserve = false } = {}) {
   if (!previous) clearTft();
   const formation = tstate.geo === "clump" ? "clumped" : "spread";
   const traitLabel = { bare: "no traits", low: "first trait breakpoint", high: "max non-prismatic traits" }[tstate.traits];
-  document.getElementById("tft-title").textContent = `${unit.name} — ${tstate.star}★ builds · ${formation} · ${traitLabel}`;
+  const threat = unit.objective === "tank" && tstate.meta.tankThreats?.find(t => t.key === tstate.threat);
+  document.getElementById("tft-title").textContent = `${unit.name} — ${tstate.star}★ builds · ${formation} · ${traitLabel}${threat ? ` · ${threat.label}` : ""}`;
   const desc = document.getElementById("tft-desc");
   const summary = document.getElementById("tft-result-summary");
   summary.textContent = previous ? `Updating ${unit.name}'s builds…` : `Loading ${unit.name}'s builds…`;
@@ -1849,10 +1982,10 @@ async function loadTftScenario({ preserve = false } = {}) {
   document.getElementById("tft-scenario-details").hidden = false;
   const sc = d.scenario;
   renderTftFight(unit, sc);
-  const ranking = d.objective === "tank" ? "Ranked by time holding enemies, then damage denied, then damage dealt"
+  const ranking = d.objective === "tank" ? `Ranked by survival; ${sc.duration}s+ builds compared at 2× incoming damage`
     : d.objective === "fighter" ? "Ranked by kill time, then damage before dying" : "Ranked by kill time, then damage";
   summary.textContent = d.rows.length
-    ? `${fmtInt(d.rows.length)} of ${fmtInt(d.buildsEvaluated)} builds · ${ranking}. Select a row for its damage breakdown.`
+    ? `${fmtInt(d.rows.length)} of ${fmtInt(d.buildsEvaluated)} builds · ${ranking}. Select a row for ${d.objective === "tank" ? "survival and damage details" : "its damage breakdown"}.`
     : "No ranked builds are available for this fight.";
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
@@ -1863,6 +1996,11 @@ async function loadTftScenario({ preserve = false } = {}) {
   const objective = (tstate.meta.objectives || {})[d.objective] || d.objective;
   desc.replaceChildren(
     tftText("p", `${d.unitName} at ${sc.star}★ · ${d.role}. ${objective}.`),
+    ...(d.objective === "tank" ? [
+      tftText("p", `${threat?.label || "Mixed"} enemy damage. ${tftTankDebuffNote(sc.dummy?.enemyDebuffs || tstate.meta.tankDebuffs)}`),
+      tftText("p", `Survival includes on-death bodies. ${sc.duration}s+ means the unit or its body is still holding enemies at the fight limit. These builds are compared with twice the incoming damage for the same ${sc.duration}s; builds that reach both limits remain tied.`),
+      tftText("p", "Opening physical/magic EHP uses armor and MR after enemy sunder and shred, plus starting durability. It measures ability damage capacity and excludes heals, shields and attack-only protection. The Armor/MR column also shows reduced values. Effective healing and shields consumed are measured during the regular fight. Team utility is shown separately and does not change the survival ranking."),
+    ] : []),
     tftText("p", `Trait bonuses applied: ${traits}.`),
     ...(sc.traitsUnmodeled.length ? [tftText("p", `Traits not included: ${sc.traitsUnmodeled.join(", ")}.`)] : []),
     ...(sc.notes || []).map(note => tftText("p", note)),
@@ -1893,6 +2031,11 @@ function showTftPending(req) {
   scheduleTftStatus();
 }
 
+function tftHeldTime(time, capped, duration = tstate.data?.scenario?.duration || 60) {
+  if (!Number.isFinite(time)) return "—";
+  return capped ? `${duration}s+` : `${time.toFixed(1)}s`;
+}
+
 function tftColumns() {
   const d = tstate.data, objective = d.objective || "carry";
   const items = { th: "Items", td: r => {
@@ -1916,14 +2059,23 @@ function tftColumns() {
       return td;
     } };
   const held = { th: objective === "tank" ? "Held" : "Alive", title: objective === "tank"
-      ? "How long the unit (or its on-death body) kept the dummies busy — the primary ranking for tanks"
+      ? `How long the unit or its on-death body held enemies. ${d.scenario.duration}s+ means it reached the fight limit.`
       : "How long the unit lived under the dummies' attacks",
     td: r => {
-      const td = cell(r.died ? `${r.diedAt.toFixed(1)}s ✝` + (r.aliveTime > r.diedAt ? ` (held ${r.aliveTime.toFixed(1)}s)` : "")
+      const td = cell(objective === "tank" ? tftHeldTime(r.aliveTime, r.survivalCapped)
+        : r.died ? `${r.diedAt.toFixed(1)}s ✝` + (r.aliveTime > r.diedAt ? ` (held ${r.aliveTime.toFixed(1)}s)` : "")
                              : `${r.aliveTime.toFixed(0)}s`);
-      td.title = r.died ? `died at ${r.diedAt}s` : `alive with ${fmtInt(r.hpLeft)} HP`;
+      td.title = r.died ? `Died at ${r.diedAt}s` + (r.aliveTime > r.diedAt
+        ? `; its body ${r.survivalCapped ? "was still holding enemies at the fight limit" : `held enemies until ${r.aliveTime}s`}` : "")
+        : `Alive with ${fmtInt(r.hpLeft)} HP`;
       return td;
     } };
+  const stress = objective === "tank" && d.rows.some(r => r.stressAliveTime != null) ? [{
+    th: "2× pressure", title: `Survival with twice the incoming damage, for builds reaching ${d.scenario.duration}s in the regular fight. Builds reaching both limits remain tied.`,
+    td: r => cell(tftHeldTime(r.stressAliveTime, r.stressCapped)),
+  }] : [];
+  const ehp = { th: "EHP Phys/Magic", title: "Opening effective HP against physical / magic ability damage, after enemy sunder and shred. Includes starting durability; excludes healing, shields and attack-only protection.",
+    td: r => cell(r.physicalEhp != null && r.magicEhp != null ? `${fmtInt(r.physicalEhp)} / ${fmtInt(r.magicEhp)}` : "—") };
   const dmg = { th: "Damage", td: r => cell(fmtInt(r.total)) };
   const dps = { th: "DPS", td: r => cell(fmtInt(r.dps)) };
   const stats = [
@@ -1934,26 +2086,28 @@ function tftColumns() {
   ];
   const body = [
     { th: "HP", title: "Max health with items and traits", td: r => cell(fmtInt(r.hp)) },
-    { th: "Armor/MR", td: r => cell(`${fmtInt(r.armor)}/${fmtInt(r.mr)}`) },
+    { th: "Armor/MR", title: objective === "tank" ? "Opening armor and MR after enemy sunder and shred" : "Armor and magic resist",
+      td: r => cell(`${fmtInt(r.armor)}/${fmtInt(r.mr)}`) },
     { th: "Dur", title: "Durability: post-mitigation damage prevented", td: r => cell(r.durability ? r.durability + "%" : "–") },
   ];
   const soak = [
     { th: "Absorbed", title: "Pre-mitigation damage the unit (and its body) took", td: r => cell(fmtInt(r.absorbed)) },
-    { th: "Healed", td: r => cell(fmtInt(r.healed)) },
+    { th: "Healed", title: objective === "tank" ? "Health actually restored after enemy heal cut; excludes overhealing" : "Health actually restored; excludes overhealing",
+      td: r => cell(fmtInt(r.healed)) },
     { th: "Shielded", title: "Damage that landed on shields", td: r => cell(fmtInt(r.shielded)) },
     { th: "Denied", title: "Damage the dummies could not land while stunned or the unit was untargetable",
       td: r => cell(fmtInt(r.denied)) },
   ];
-  const ally = { th: "Allies", title: "Healing and shielding given to allies (counted, not simulated)",
+  const ally = { th: "Allies", title: "Potential healing / shielding for allies. Their health and survival are not simulated; these totals do not affect the survival ranking.",
     td: r => cell((r.allyHeal || r.allyShield) ? `${fmtInt(r.allyHeal)} / ${fmtInt(r.allyShield)}` : "–") };
   const rank = { th: "#", td: r => cell(String(r.rank)) };
   const counts = [{ th: "Casts", td: r => cell(String(r.casts)) }, { th: "Attacks", td: r => cell(String(r.attacks)) }];
   if (!document.getElementById("tft-show-stats").checked) {
-    if (objective === "tank") return [rank, items, held, soak[3], dmg, ...soak.slice(1, 3)];
+    if (objective === "tank") return [rank, items, held, ...stress, ehp, ...soak.slice(1, 3), counts[0], soak[3]];
     if (objective === "fighter") return [rank, items, kill, dmg, dps, held];
     return [rank, items, kill, dps, dmg];
   }
-  if (objective === "tank") return [rank, items, held, dmg, ...soak, ally, ...body, ...counts, ...stats];
+  if (objective === "tank") return [rank, items, held, ...stress, ehp, ...soak, ally, ...body, ...counts, dmg, ...stats];
   if (objective === "fighter") return [rank, items, kill, dmg, dps, held, ...soak.slice(0, 3), ...body, ...counts, ...stats];
   return [rank, items, kill, dps, dmg, ...counts, ...stats];
 }
@@ -1971,7 +2125,7 @@ function renderTftTable() {
   body.replaceChildren(...rows.map((r, i) => {
     const tr = document.createElement("tr");
     tr.tabIndex = 0;
-    tr.setAttribute("aria-label", `Build ${r.rank}: ${r.items.join(", ")}. Show damage breakdown.`);
+    tr.setAttribute("aria-label", `Build ${r.rank}: ${r.items.join(", ")}. Show ${tstate.data.objective === "tank" ? "survival and damage details" : "damage breakdown"}.`);
     if (i === tstate.sel) { tr.className = "sel"; tr.setAttribute("aria-current", "true"); }
     tr.append(...cols.map(c => c.td(r)));
     const select = () => {
@@ -1994,8 +2148,9 @@ function renderTftTable() {
 
 function renderTftBreakdown(r) {
   if (!r) return;
+  const tank = tstate.data.objective === "tank";
   document.getElementById("tbd-title").textContent =
-    `Damage breakdown — #${r.rank}: ${r.items.join(", ")}`;
+    `${tank ? "Build details" : "Damage breakdown"} — #${r.rank}: ${r.items.join(", ")}`;
   const fight = r.killTime != null ? `all three dead at ${r.killTime.toFixed(2)}s`
                                    : `the dummies survive with ${r.left.map(fmtInt).join(" / ")} HP left`;
   const body = r.aliveTime == null ? "" :
@@ -2005,11 +2160,28 @@ function renderTftBreakdown(r) {
     (r.durability ? ` / ${r.durability}% durability` : "") + `), ${fmtInt(r.shielded)} on shields, healed ${fmtInt(r.healed)}` +
     (r.denied ? `, denied ${fmtInt(r.denied)} (${r.ccTime}s of stuns)` : "") +
     (r.allyHeal || r.allyShield ? `, allies healed ${fmtInt(r.allyHeal)} / shielded ${fmtInt(r.allyShield)}` : "");
-  document.getElementById("tbd-hint").textContent =
-    `${fmtInt(r.ad)} AD · ${fmtInt(r.ap)} AP · ${r.attackSpeed} attack speed · ${r.crit}% crit` +
+  const stats = `${fmtInt(r.ad)} AD · ${fmtInt(r.ap)} AP · ${r.attackSpeed} attack speed · ${r.crit}% crit` +
     (r.precision ? " with Precision" : "") + (r.form ? ` · ${r.form} form` : "") +
     ` · ${fmtInt(r.total)} damage · ${fmtInt(r.dps)} DPS · ` +
-    `${r.attacks} attacks · ${r.casts} casts · ${fight}${body}`;
+    `${r.attacks} attacks · ${r.casts} casts`;
+  const hint = document.getElementById("tbd-hint");
+  if (tank) {
+    const survival = `${tftHeldTime(r.aliveTime, r.survivalCapped)} holding enemies` +
+      (r.stressAliveTime != null ? ` · ${tftHeldTime(r.stressAliveTime, r.stressCapped)} at 2× pressure` : "");
+    const status = r.died ? `Died at ${r.diedAt}s` + (r.aliveTime > r.diedAt
+      ? r.survivalCapped ? "; its body was still holding enemies at the fight limit" : `; its body held enemies until ${r.aliveTime}s`
+      : "") : `Alive with ${fmtInt(r.hpLeft)} of ${fmtInt(r.hp)} HP`;
+    hint.replaceChildren(
+      tftText("p", `${survival}. ${status}.`),
+      tftText("p", `Opening EHP: ${fmtInt(r.physicalEhp)} physical / ${fmtInt(r.magicEhp)} magic ability damage. ${fmtInt(r.armor)} armor / ${fmtInt(r.mr)} MR after enemy sunder and shred` +
+        (r.durability ? ` · ${r.durability}% starting durability` : "") + ". EHP excludes healing, shields and attack-only protection."),
+      tftText("p", `Regular fight: ${fmtInt(r.healed)} effective healing after heal cut · ${fmtInt(r.shielded)} damage absorbed by shields · ${r.casts} casts · ${fmtInt(r.absorbed)} damage received before defenses (${fmtInt(r.taken)} after defenses)` +
+        (r.denied ? ` · ${fmtInt(r.denied)} damage denied (${r.ccTime}s of stuns)` : "") + "."),
+      ...(r.allyHeal || r.allyShield ? [tftText("p", `Potential team utility: ${fmtInt(r.allyHeal)} ally healing / ${fmtInt(r.allyShield)} ally shielding. Ally health and survival are not simulated; these totals do not affect the ranking.`)] : []),
+      tftText("p", `Damage breakdown for the regular fight: ${stats}.`));
+  } else {
+    hint.textContent = `${stats} · ${fight}${body}`;
+  }
   const entries = Object.entries(r.breakdown);
   const max = Math.max(...entries.map(([, x]) => x));
   document.getElementById("tbd-bars").replaceChildren(...entries.map(([src, dmg], i) => {
@@ -2171,8 +2343,10 @@ function updateHash() {
   if (state.view === "champion" && state.champion) parts.push(`name=${state.champion}`);
   if (state.view === "builds" && bstate.champion) parts.push(`champ=${bstate.champion}`);
   if (state.view === "builds" && bstate.scenario) parts.push(`sc=${bstate.scenario}`);
-  if (state.view === "tft" && tstate.unit)
+  if (state.view === "tft" && tstate.unit) {
     parts.push(`unit=${tstate.unit}`, `star=${tstate.star}`, `geo=${tstate.geo}`, `tr=${tstate.traits}`);
+    if (tstate.threat !== "mixed") parts.push(`threat=${tstate.threat}`);
+  }
   history.replaceState(null, "", "#" + parts.join("&"));
 }
 function showView(v) {
@@ -2245,6 +2419,7 @@ async function init() {
       if (hash.star) tstate.star = +hash.star;
       if (hash.geo) tstate.geo = hash.geo;
       if (hash.tr) tstate.traits = hash.tr;
+      if (hash.threat) tstate.threat = hash.threat;
     }
     showView(hash.tab);
   }

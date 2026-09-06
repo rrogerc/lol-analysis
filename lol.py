@@ -245,6 +245,8 @@ def main():
         sp.add_argument("--star", type=int, default=2, choices=(1, 2, 3, 4))
         sp.add_argument("--geometry", default="clump", choices=list(tft.GEOMETRIES))
         sp.add_argument("--traits", default="bare", choices=list(tft.TRAIT_CONTEXTS))
+        sp.add_argument("--threat", default="mixed", choices=list(tft.TANK_THREATS),
+                        help="incoming damage profile for tanks (default: mixed)")
         sp.add_argument("--duration", type=float, default=None,
                         help="fight length in seconds (default: 20, tanks 60)")
         tft_args(sp)

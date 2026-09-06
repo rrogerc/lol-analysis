@@ -39,6 +39,8 @@ fn opening_to_py<'py>(py: Python<'py>, o: &Opening) -> PyResult<Bound<'py, PyDic
     d.set_item("armor", o.armor)?;
     d.set_item("mr", o.mr)?;
     d.set_item("durability", o.durability)?;
+    d.set_item("physicalEhp", o.physical_ehp)?;
+    d.set_item("magicEhp", o.magic_ehp)?;
     d.set_item("omnivamp", o.omnivamp)?;
     d.set_item("form", o.form.map(|f| f.name()))?;
     d.set_item("manaStart", o.mana_start)?;
@@ -63,6 +65,9 @@ fn result_to_py<'py>(py: Python<'py>, r: &FightResult) -> PyResult<Bound<'py, Py
     d.set_item("left", PyList::new(py, r.left.iter())?)?;
     d.set_item("t", r.t)?;
     d.set_item("aliveTime", r.alive_time)?;
+    d.set_item("survivalCapped", r.survival_capped)?;
+    d.set_item("stressAliveTime", r.stress_alive_time)?;
+    d.set_item("stressCapped", r.stress_capped)?;
     d.set_item("died", r.died)?;
     d.set_item("diedAt", r.died_at)?;
     d.set_item("hpLeft", r.hp_left)?;
@@ -252,4 +257,3 @@ fn lol_tft(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("VERSION", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }
-

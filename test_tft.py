@@ -37,7 +37,9 @@ def one_hitter(pre=100.0, period=1.0, attackers=1):
                  manaMax=0.0, manaStart=0.0, manaPerAttack=0.0, manaFromDamage=False)
         s["as"] = 1.0 / period
         slots.append(s)
-    return dict(DUMMY, slots=slots, critEv=1.0, board=None)
+    # Isolated mitigation fixtures have no enemy debuffs; tank benchmark
+    # defaults and debuff interactions are covered in test_tft_tanks.
+    return dict(DUMMY, slots=slots, critEv=1.0, board=None, enemyDebuffs={})
 
 
 def item(name):
@@ -588,7 +590,7 @@ class TestBody(unittest.TestCase):
         self.assertGreater(res["denied"], 0.0)
         self.assertGreater(res["probe"]["untargetableUntil"], 0.0)
 
-    def test_a_tank_is_hit_by_the_board(self):
+    def test_legacy_board_streams_remain_available_for_custom_fights(self):
         self.assertEqual(sum(DUMMY["board"]), tft.BOARD_SIZE)
         self.assertGreater(DUMMY["boardPressureDps"], 2 * DUMMY["pressureDps"])
         # a tank's fight is the board's; a fighter faces the three in front
@@ -619,27 +621,34 @@ class TestBody(unittest.TestCase):
         self.assertEqual(len(heal), 1)
         t, _, amount, _, _, hp_after = heal[0]
         missing_before = res["probe"]["maxHp"] - (hp_after - amount)
-        self.assertAlmostEqual(amount, missing_before * 0.2)
+        self.assertAlmostEqual(amount, missing_before * 0.2 * (1 - tft.tank_debuffs(SNAP)["wound"]))
         self.assertGreater(res["denied"], 0.0)
 
     def test_gargoyle_counts_attackers(self):
         s, _ = run("Leona", driver="Driver", fx=[{"resistsPerAttacker": [10.0, 5.0]}])
         base, _ = run("Leona", driver="Driver")
-        self.assertAlmostEqual(s["armor"], base["armor"] + 10.0 * tft.BOARD_SIZE)
-        self.assertAlmostEqual(s["mr"], base["mr"] + 5.0 * tft.BOARD_SIZE)
+        debuffs = tft.tank_debuffs(SNAP)
+        self.assertAlmostEqual(s["armor"], base["armor"] + 10.0 * tft.BOARD_SIZE * (1 - debuffs["sunder"]))
+        self.assertAlmostEqual(s["mr"], base["mr"] + 5.0 * tft.BOARD_SIZE * (1 - debuffs["shred"]))
         g, _ = run("Ashe", fx=[{"resistsPerAttacker": [10.0, 5.0]}])   # carry: nobody attacks
         self.assertAlmostEqual(g["armor"], 45.0)
 
     def test_timed_healing(self):
         _, res = run("Leona", driver="Driver", duration=4.0,
+                     dummy=one_hitter(),
                      fx=[{"healPerInterval": [0.025, 2.0]}, {"regenMissingPct": 0.02}])
         claw = events(res, "heal", "dragon's claw")
         self.assertEqual([round(e[0], 2) for e in claw], [2.0, 4.0])
         self.assertTrue(events(res, "heal", "regeneration"))
 
     def test_titans_stacks_from_being_hit(self):
-        _, res = run("Leona", driver="Driver", fx=[{"adapPerAttack": [0.02, 25, 0.1], "adapPerHit": True}])
+        _, res = run("Leona", driver="Driver", duration=3.0, dummy=one_hitter(pre=10.0, period=0.1),
+                     fx=[{"adapPerAttack": [0.02, 25, 0.1], "adapPerHit": True}])
         self.assertEqual(res["probe"]["adapStackN"], 25)
+        _, attacks_only = run("Leona", driver="Driver", duration=3.0,
+                              dummy=one_hitter(pre=10.0, period=0.1),
+                              fx=[{"adapPerAttack": [0.02, 25, 0.1]}])
+        self.assertLess(attacks_only["probe"]["adapStackN"], 25)
 
     def test_hand_of_justice_doubles_by_health(self):
         s, res = run("Warwick", driver="Driver", fx=[{"hoj": [0.15, 15.0, 0.12, 0.5]}])
@@ -748,19 +757,24 @@ class TestSnapshot(unittest.TestCase):
         self.assertEqual({api: unit["stats"] for api, unit in SNAP.units.items()}, before)
 
     def test_enemy_defenses_are_consistent_across_all_scenarios(self):
-        expected = [(3000, 70, 70), (1800, 45, 45), (1440, 40, 40)]
+        legacy = [(3000, 70, 70), (1800, 45, 45), (1440, 40, 40)]
+        frontline = [(3000, 70, 70), (1800, 45, 45), (1800, 45, 45),
+                     (1440, 40, 40), (1440, 40, 40)]
         count = 0
         for unit in tft.modeled_units(SNAP):
             contexts, _ = tft.unit_trait_contexts(SNAP, unit, TRAIT_FX)
             for scenario in tft.unit_scenarios(unit).values():
                 with self.subTest(unit=unit["name"], scenario=scenario["key"]):
+                    dummy = tft.dummies_for(SNAP, threat=scenario["threat"]
+                                            if unit["objective"] == "tank" else None)
                     spec = tft.cell_spec(SNAP, unit, scenario["star"], scenario["geometry"],
-                                         contexts[scenario["traits"]], DUMMY,
+                                         contexts[scenario["traits"]], dummy,
                                          item_fx=ITEM_FX, trait_fx=TRAIT_FX)
                     self.assertEqual([(slot["hp"], slot["armor"], slot["mr"])
-                                      for slot in spec["dummies"]["slots"]], expected)
+                                      for slot in spec["dummies"]["slots"]],
+                                     frontline if unit["objective"] == "tank" else legacy)
                     count += 1
-        self.assertEqual(count, 1026)
+        self.assertEqual(count, 1770)
 
     def test_overrides_are_current_with_the_patch_notes(self):
         findings, unmatched = tft.check_patch_notes(SNAP)
@@ -774,7 +788,7 @@ class TestSnapshot(unittest.TestCase):
     def test_meta_shape(self):
         meta = tft.api_meta()
         self.assertEqual(meta["set"], 18)
-        self.assertEqual(len(meta["scenarios"]), 18)   # three stars × two geometries × three contexts
+        self.assertEqual(len(meta["scenarios"]), 54)   # base scenarios × three tank threats
         self.assertEqual(len(meta["items"]), 35)
         self.assertGreaterEqual(len(meta["units"]), 20)
         self.assertEqual(set(meta["objectives"]), {"carry", "fighter", "tank"})
@@ -944,6 +958,8 @@ class TestGolden(unittest.TestCase):
                     provenance = json.load(f)["provenance"]
                 snap = tft.load_snapshot(provenance["set"], provenance["patch"])
                 self.assertEqual(provenance["dummy"], tft.dummies_for(snap))
+                self.assertEqual(provenance["tankDummies"],
+                                 {key: tft.dummies_for(snap, threat=key) for key in tft.TANK_THREATS})
 
     def test_fights(self):
         with open(os.path.join(GOLDEN_DIR, "fights.json")) as f:
@@ -956,8 +972,9 @@ class TestGolden(unittest.TestCase):
         bad = []
         for case in cases:
             unit = snap.units[case["unit"]]
+            case_dummy = provenance.get("tankDummies", {}).get(case.get("threat"), dummy)
             sheet, res = tft.simulate(snap, unit, case["star"], case["items"], case["geometry"],
-                                      [tuple(x) for x in case["ctxTraits"]], dummy, None,
+                                      [tuple(x) for x in case["ctxTraits"]], case_dummy, None,
                                       ITEM_FX, TRAIT_FX)
             for k, v in case["sheet"].items():
                 if not same_number(v, sheet[k]):
@@ -985,9 +1002,10 @@ class TestGolden(unittest.TestCase):
             _, sc_key = key.split("/")
             unit = snap.units[cells[key]["unit"]]
             sc = tft.SCENARIOS[sc_key]
+            case_dummy = provenance["tankDummies"][sc["threat"]] if unit["objective"] == "tank" else dummy
             contexts, _ = tft.unit_trait_contexts(snap, unit, TRAIT_FX)
             out, count = tft.enumerate_builds(snap, unit, sc["star"], sc["geometry"],
-                                              contexts[sc["traits"]], dummy, pool, item_fx=ITEM_FX,
+                                              contexts[sc["traits"]], case_dummy, pool, item_fx=ITEM_FX,
                                               trait_fx=TRAIT_FX)
             self.assertEqual(count, cells[key]["buildsEvaluated"], key)
             rows = tft.cell_rows(snap, unit, out, len(cells[key]["rows"]))

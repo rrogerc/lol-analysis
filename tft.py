@@ -33,7 +33,7 @@ Numbers come from data, mechanics from code:
   item_spec, trait_spec, cell_spec), so numbers stay data and mechanics
   stay code.
 
-The fight is a unit's mana cycle against three stat dummies derived from
+The fight is a unit's mana cycle against stat dummies derived from
 the set's own units: attacks at the unit's attack speed grant role-based
 mana, the ability casts when the bar fills, damage goes through the
 armor/MR formula with sunder, shred, crit, Precision and post-mitigation
@@ -48,15 +48,17 @@ of "Attack Caster", "Magic Tank", …):
 - Fighter, Assassin — a frontliner: the dummies hit back with the set's
   median attacks and abilities, the unit can die, and the build is ranked
   by kill time, then by damage dealt before dying.
-- Tank — the dummies hit back with a whole board's worth of attackers
-  (tanks are "more likely to be targeted") and cannot die (holding is the
-  job); the build is ranked by how long the unit (and any on-death body
-  it leaves) holds them, then by the damage its stuns deny, then damage.
+- Tank — three frontliners screen two backline damage dealers. Nearby
+  effects reach the frontline; the backline applies physical, mixed, or
+  magic-burst pressure, with continuous Wound, Sunder and Shred. Builds rank by hold
+  time, including on-death bodies. Survivors of the 60-second benchmark
+  are compared again at twice the damage; surviving both is a tie.
 
 Every 3-item combination is simulated and ranked that way.
 """
 
 import glob
+from functools import lru_cache
 import hashlib
 import itertools
 import json
@@ -131,6 +133,39 @@ BOARD_SIZE = 8         # the enemy board at STAGE: what a tank ("more likely
                        # three dummies in front of it
 CACHED_ROWS = 250
 
+# Synthetic comparisons: three nearest frontliners screen two damage dealers.
+# Carry pressure is calibrated with itemized references in the Rust engine;
+# the three presets vary backline damage type/timing at the same DPS budget.
+TANK_FRONTLINERS = 3
+TANK_BACKLINERS = 2
+TANK_REFERENCE_DURATION = 20.0
+TANK_REFERENCE_CARRIES = (
+    ("Aphelios", ("DA_GuinsoosRageblade", "DA_KrakensFury", "DA_InfinityEdge")),
+    ("Ahri", ("DA_SpearOfShojin", "DA_JeweledGauntlet", "DA_ArchangelsStaff")),
+)
+TANK_THREATS = {
+    "mixed": {"label": "Mixed damage", "attackShare": 0.5,
+              "spellPhysicalShare": 0.0, "attackInterval": 1.0,
+              "castInterval": 4.0, "burst": False,
+              "description": "Frontliners screen carries dealing half physical attacks and half staggered magic spells."},
+    "physical": {"label": "Physical attacks", "attackShare": 0.85,
+                 "spellPhysicalShare": 1.0, "attackInterval": 0.75,
+                 "castInterval": 4.0, "burst": False,
+                 "description": "Frontliners screen carries dealing physical damage: 85% attacks and 15% spells."},
+    "magic": {"label": "Magic burst", "attackShare": 0.15,
+              "spellPhysicalShare": 0.0, "attackInterval": 1.5,
+              "castInterval": 4.0, "burst": True,
+              "description": "Frontliners screen carries dealing 15% physical attacks and 85% magic damage in four-second bursts."},
+}
+# Game values come from the corrected snapshot, just like item passives.
+# These benchmark debuffs have full uptime from combat start. They reduce
+# healing and total resists, without reducing shields or granting extra burn.
+TANK_DEBUFF_ROWS = {
+    "wound": ("DA_Morellonomicon", "WoundPercent"),
+    "sunder": ("DA_LastWhisper", "SunderPercent"),
+    "shred": ("DA_VoidStaff", "ShredPercent"),
+}
+
 # What a unit is scored on, from the team-role half of Riot's label
 # ("Attack Fighter" -> Fighter). recommendedItems can point a Specialist
 # at another role's table; that wins (Master Yi and Gnar itemize as Fighters,
@@ -140,7 +175,7 @@ OBJECTIVE_BY_KIND = {"Tank": "tank", "Fighter": "fighter", "Assassin": "fighter"
 OBJECTIVES = {
     "carry": "the dummies never hit back; ranked by time to kill all three, then damage dealt",
     "fighter": "the dummies hit back and the unit can die; ranked by kill time, then damage dealt before dying",
-    "tank": "the dummies hit back with a whole board's worth of attackers and cannot die; ranked by how long the unit holds them (on-death bodies included), then by the damage its stuns deny, then damage dealt",
+    "tank": "three frontliners screen two backline damage dealers, with continuous heal cut, Sunder and Shred; nearby effects reach the frontline while the backline keeps attacking; ranked by hold time including on-death bodies, with 60-second survivors compared at double damage and builds surviving both tied",
 }
 PRESSURED = ("fighter", "tank")   # objectives whose fights have the dummies attacking
 
@@ -170,8 +205,13 @@ def scenarios():
             for ctx in TRAIT_CONTEXTS:
                 key = f"s{star}-{geo}-{ctx}"
                 out[key] = {"key": key, "star": star, "geometry": geo,
-                            "traits": ctx,
+                            "traits": ctx, "threat": "mixed",
                             "label": f"{star}★ · {geo} · traits {ctx}"}
+                for threat, profile in TANK_THREATS.items():
+                    if threat != "mixed":
+                        variant = f"{key}-{threat}"
+                        out[variant] = {**out[key], "key": variant, "threat": threat,
+                                        "label": f"{out[key]['label']} · {profile['label']}"}
     return out
 
 
@@ -189,9 +229,10 @@ def unit_stars(unit):
 
 def unit_scenarios(unit):
     """The cells a unit has: its star levels × geometries × trait
-    contexts (18 for a 1–3 cost, 12 for a 4–5 cost)."""
+    contexts, with three incoming damage profiles for tanks."""
     stars = unit_stars(unit)
-    return {k: sc for k, sc in SCENARIOS.items() if sc["star"] in stars}
+    return {k: sc for k, sc in SCENARIOS.items() if sc["star"] in stars
+            and (unit["objective"] == "tank" or sc["threat"] == "mixed")}
 
 
 # ---------------------------------------------------------------------------
@@ -983,14 +1024,81 @@ def unit_primary_damage(unit, star):
     return best
 
 
-def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR):
+def tank_debuffs(snap):
+    """Continuous enemy debuffs at the corrected snapshot's item values."""
+    return {name: curve_at(snap.items[api]["curve"][row], 1) * 0.01
+            for name, (api, row) in TANK_DEBUFF_ROWS.items()}
+
+
+@lru_cache(maxsize=32)
+def _reference_carry_dps(spec_json):
+    """Cache by the complete resolved inputs, so snapshot/model edits reprice it."""
+    spec = json.loads(spec_json)
+    _, result = engine().simulate(spec, False)
+    return result["total"] / spec["duration"]
+
+
+def tank_threats(snap, star=DUMMY_STAR):
+    """Equal-budget profiles: median frontline damage plus two itemized carries.
+
+    Reference fights measure pre-mitigation damage against one immortal tank
+    with zero resists, no traits, and a fixed 20-second window. We retain the
+    synthetic backline cadence/split to compare tank builds consistently.
+    """
+    references = []
+    for name, items in TANK_REFERENCE_CARRIES:
+        unit = snap.unit(name)
+        dummy = {"slots": [{"hp": FRONT_TANK_DEFENSES["hp"], "armor": 0.0,
+                             "mr": 0.0, "kind": "tank"}]}
+        spec = cell_spec(snap, unit, 2, "spread", [], dummy,
+                         duration=TANK_REFERENCE_DURATION, pressure=False, items=items)
+        spec["immortal"] = True
+        references.append({"name": unit["name"], "api": unit["api"], "star": 2,
+                           "itemApis": list(items), "items": [snap.items[api]["name"] for api in items],
+                           "duration": TANK_REFERENCE_DURATION,
+                           "dps": _reference_carry_dps(json.dumps(spec, sort_keys=True))})
+    dummy = dummies_for(snap, star=star)
+    tank = dummy["tank"]
+    mana_rate = tank["manaPerAttack"] * tank["as"]
+    cast_interval = tank["manaMax"] / mana_rate + MANA_LOCK_S
+    front_attacks = TANK_FRONTLINERS * tank["ad"] * dummy["critEv"] * tank["as"]
+    front_spells = TANK_FRONTLINERS * tank["ability"] / cast_interval
+    frontline_dps = front_attacks + front_spells
+    backline_dps = sum(reference["dps"] for reference in references)
+    total_dps = frontline_dps + backline_dps
+    profiles = []
+    for key, profile in TANK_THREATS.items():
+        back_attacks = backline_dps * profile["attackShare"]
+        back_spells = backline_dps - back_attacks
+        physical_spells = front_spells * tank["physicalShare"] + back_spells * profile["spellPhysicalShare"]
+        profiles.append(dict(profile, key=key,
+                             attackers=TANK_FRONTLINERS + TANK_BACKLINERS,
+                             frontlineAttackers=TANK_FRONTLINERS, backlineAttackers=TANK_BACKLINERS,
+                             dps=total_dps, frontlineDps=frontline_dps, backlineDps=backline_dps,
+                             frontlineAttackInterval=1.0 / tank["as"], frontlineCastInterval=cast_interval,
+                             backlineAttackShare=profile["attackShare"],
+                             backlineSpellPhysicalShare=profile["spellPhysicalShare"],
+                             attackShare=(front_attacks + back_attacks) / total_dps,
+                             spellPhysicalShare=physical_spells / (front_spells + back_spells),
+                             physicalShare=(front_attacks + back_attacks + physical_spells) / total_dps,
+                             referenceCarries=references))
+    return profiles
+
+
+def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR, threat=None):
     """A heavy first tank, median tanks after it, then a median non-tank.
     The first tank uses fixed benchmark health/armor/MR; other defenses
     come from the set's units at `star`. Tank-only effects (Giant Slayer's
     amp) apply to the frontline, not to everything. Each carries its group's median
     offense too, for the fights where the dummies hit back: attack damage
     and speed, the ability's biggest number on its mana cadence, split
-    physical/magic by the group's share of Attack-type roles."""
+    physical/magic by the group's share of Attack-type roles. A tank
+    `threat` uses three frontline targets and two protected backline sources
+    calibrated against itemized carry damage. `n` controls legacy fights."""
+    if threat is not None and threat not in TANK_THREATS:
+        raise ValueError(f"unknown tank threat {threat!r}")
+    if n < 2:
+        raise ValueError("the benchmark requires at least two dummy slots")
     tanks = [u for u in snap.units.values() if u["kind"] == "Tank"]
     others = [u for u in snap.units.values() if u["kind"] != "Tank"]
     if not tanks or not others:
@@ -1032,11 +1140,45 @@ def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR):
             out += k * (s["ad"] * crit_ev * s["as"]
                         + (s["ability"] / (s["manaMax"] / rate + MANA_LOCK_S) if rate else 0.0))
         return round(out)
-    return {"count": n, "star": star, "slots": slots, "tank": tank, "other": other,
-            "tanks": len(tanks), "others": len(others),
-            "totalHp": sum(s["hp"] for s in slots),
-            "critEv": crit_ev, "pressureDps": dps([1] * n),
-            "board": board, "boardSize": BOARD_SIZE, "boardPressureDps": dps(board)}
+    out = {"count": n, "star": star, "slots": slots, "tank": tank, "other": other,
+           "tanks": len(tanks), "others": len(others),
+           "totalHp": sum(s["hp"] for s in slots),
+           "critEv": crit_ev, "pressureDps": dps([1] * n),
+           "board": board, "boardSize": BOARD_SIZE, "boardPressureDps": dps(board)}
+    if threat is not None:
+        profile = next(p for p in tank_threats(snap, star) if p["key"] == threat)
+        front = [dict(tank, nearby=True, line="frontline", label=f"Frontliner {i + 1}")
+                 for i in range(TANK_FRONTLINERS)]
+        front[0].update(FRONT_TANK_DEFENSES, fixedDefenses=True)
+        for i, slot in enumerate(front):
+            slot.update({
+                "attackStart": (i + 1) * profile["frontlineAttackInterval"] / TANK_FRONTLINERS,
+                "castInterval": profile["frontlineCastInterval"],
+                "castStart": (slot["manaMax"] - slot["manaStart"]) / (slot["manaPerAttack"] * slot["as"])
+                             + i * profile["frontlineAttackInterval"] / TANK_FRONTLINERS,
+                "manaStart": 0.0, "manaPerAttack": 0.0, "manaFromDamage": False,
+            })
+        back = [dict(other, nearby=False, line="backline", label=f"Backline carry {i + 1}")
+                for i in range(TANK_BACKLINERS)]
+        per_attacker = profile["backlineDps"] / TANK_BACKLINERS
+        for i, slot in enumerate(back):
+            slot.update({
+                "ad": per_attacker * profile["backlineAttackShare"] * profile["attackInterval"] / crit_ev,
+                "as": 1.0 / profile["attackInterval"],
+                "attackStart": (i + 1) * profile["attackInterval"] / TANK_BACKLINERS,
+                "ability": per_attacker * (1.0 - profile["backlineAttackShare"]) * profile["castInterval"],
+                "physicalShare": profile["backlineSpellPhysicalShare"],
+                "castInterval": profile["castInterval"],
+                "castStart": profile["castInterval"] if profile["burst"]
+                             else (i + 1) * profile["castInterval"] / TANK_BACKLINERS,
+                "manaStart": 0.0, "manaPerAttack": 0.0, "manaFromDamage": False,
+            })
+        slots = front + back
+        out.update(threat=profile, enemyDebuffs=tank_debuffs(snap), slots=slots,
+                   count=len(slots), totalHp=sum(slot["hp"] for slot in slots),
+                   board=[1] * len(slots), boardSize=len(slots),
+                   pressureDps=profile["dps"], boardPressureDps=profile["dps"])
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1392,6 +1534,8 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
                  "extras": {api: e["stats"] for api, e in snap.extras.items()}},
         "star": star, "kits": kits, "geometry": geometry, "duration": float(duration),
         "pressure": bool(pressure), "immortal": objective == "tank",
+        "enemyDebuffs": dummy_spec.get("enemyDebuffs", tank_debuffs(snap))
+                        if board and pressure else {},
         "dummies": {"critEv": dummy_spec.get("critEv", 1.1), "slots": slots},
         "role": role,
         "traits": [trait_spec(snap, api, col, trait_fx, unit) for api, col in ctx_traits],
@@ -1450,9 +1594,16 @@ def rank_key(res, objective="carry"):
     damage they had to spare (the uncapped total, i.e. overkill); the rest
     after them by damage dealt (a fighter's stops when it dies). Tanks: by
     how long they held the dummies, then by the damage their stuns denied,
-    then damage dealt."""
+    then damage dealt. Capped tanks are compared at double pressure before
+    utility; surviving both tests leaves them tied."""
     if objective == "tank":
-        return (-res.get("aliveTime", 0.0), -res.get("denied", 0.0), -res["total"])
+        capped = res.get("survivalCapped", False)
+        stress_capped = capped and res.get("stressCapped", False)
+        return (-res.get("aliveTime", 0.0), -int(capped),
+                -(res.get("stressAliveTime") or 0.0) if capped else 0.0,
+                -int(stress_capped),
+                0.0 if stress_capped else -res.get("denied", 0.0),
+                0.0 if stress_capped else -res["total"])
     if res["killTime"] is not None:
         return (0, res["killTime"], -res.get("rawTotal", res["total"]))
     return (1, 0.0, -res["total"], -res.get("rawTotal", res["total"]))
@@ -1523,9 +1674,13 @@ def cell_rows(snap, unit, out, count=CACHED_ROWS):
     rounded as the dashboard shows them."""
     pressured = unit["objective"] in PRESSURED
     rows = []
+    previous_key, previous_rank = None, None
     for n, (combo, sheet, res) in enumerate(out[:count], 1):
+        key = rank_key(res, unit["objective"])
+        rank = previous_rank if unit["objective"] == "tank" and key == previous_key else n
+        previous_key, previous_rank = key, rank
         row = {
-            "rank": n, "items": [snap.items[a]["name"] for a in combo],
+            "rank": rank, "items": [snap.items[a]["name"] for a in combo],
             "ad": round(sheet["ad"], 1), "ap": round(sheet["ap"]),
             "attackSpeed": round(sheet["as"], 2),
             "crit": round(sheet["crit"] * 100), "precision": sheet["precision"],
@@ -1542,10 +1697,15 @@ def cell_rows(snap, unit, out, count=CACHED_ROWS):
         if pressured:
             row.update({
                 "hp": round(sheet["hp"]), "armor": round(sheet["armor"]), "mr": round(sheet["mr"]),
+                "physicalEhp": round(sheet["physicalEhp"]), "magicEhp": round(sheet["magicEhp"]),
                 "durability": round(sheet["durability"] * 100), "omnivamp": round(sheet["omnivamp"] * 100),
                 "aliveTime": round(res["aliveTime"], 2), "died": res["died"],
                 "diedAt": round(res["diedAt"], 2) if res["diedAt"] is not None else None,
                 "hpLeft": round(res["hpLeft"]),
+                "survivalCapped": res["survivalCapped"],
+                "stressAliveTime": round(res["stressAliveTime"], 2)
+                                   if res["stressAliveTime"] is not None else None,
+                "stressCapped": res["stressCapped"],
                 "absorbed": round(res["absorbed"]), "taken": round(res["taken"]),
                 "healed": round(res["healed"]), "shielded": round(res["shielded"]),
                 "denied": round(res["denied"]), "ccTime": round(res["ccTime"], 1),
@@ -1556,13 +1716,13 @@ def cell_rows(snap, unit, out, count=CACHED_ROWS):
 
 
 def compute_cell(snap, unit, key, paths, log=None, prune=True):
-    sc = SCENARIOS[key]
+    sc = unit_scenarios(unit)[key]
     t0 = time.time()
     item_fx = load_item_effects(snap.set_no)
     trait_fx = load_trait_effects(snap.set_no)
     contexts, unmodeled = unit_trait_contexts(snap, unit, trait_fx)
     ctx_traits = contexts[sc["traits"]]
-    dummy = dummies_for(snap)
+    dummy = dummies_for(snap, threat=sc["threat"] if unit["objective"] == "tank" else None)
     pool = pool_items(snap, item_fx)
     duration = fight_duration(unit)
     out, count = enumerate_builds(snap, unit, sc["star"], sc["geometry"],
@@ -1594,7 +1754,9 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
     os.replace(tmp, path)
     if prune:
         for old in glob.glob(os.path.join(CACHE_DIR, f"{slug}-{key}-*.json")):
-            if old != path:
+            # The mixed key is also a prefix of its physical/magic variants.
+            if old != path and re.fullmatch(re.escape(f"{slug}-{key}-") + r"[0-9a-f]{16}\.json",
+                                            os.path.basename(old)):
                 os.remove(old)
     return payload
 
@@ -1637,7 +1799,7 @@ def warm(log=_say, only=None, *, snap=None, prune=True):
         snap = snap or load_snapshot()
         paths = cell_paths(snap)
         for path in glob.glob(os.path.join(CACHE_DIR, "*.json")):
-            m = re.fullmatch(r"([a-z0-9]+)-(s\d-[a-z]+-[a-z]+)-[0-9a-f]{16}\.json",
+            m = re.fullmatch(r"([a-z0-9]+)-(s\d-[a-z]+-[a-z]+(?:-[a-z]+)?)-[0-9a-f]{16}\.json",
                              os.path.basename(path))
             if prune and m and (m.group(1), m.group(2)) not in paths:
                 os.remove(path)
@@ -1651,7 +1813,7 @@ def warm(log=_say, only=None, *, snap=None, prune=True):
             out = compute_cell(snap, u, key, paths, log=log, prune=prune)
             best = out["rows"][0] if out["rows"] else None
             score = "" if not best else (
-                f" (held {best['aliveTime']}s)" if out["objective"] == "tank"
+                f" (held {best['aliveTime']}s{'+' if best['survivalCapped'] else ''})" if out["objective"] == "tank"
                 else f" ({best['killTime']}s)" if best["killTime"] is not None
                 else f" ({best['total']} dmg)")
             log(f"  {out['buildsEvaluated']:,} builds in {out['computeSeconds']}s"
@@ -1709,7 +1871,7 @@ def dashboard_ready(snap):
     if before:
         keep = set(files) | set(before.get("cacheFiles", []))
         for filename in os.listdir(CACHE_DIR):
-            if (re.fullmatch(r"[a-z0-9]+-s\d-[a-z]+-[a-z]+-[0-9a-f]{16}\.json", filename)
+            if (re.fullmatch(r"[a-z0-9]+-s\d-[a-z]+-[a-z]+(?:-[a-z]+)?-[0-9a-f]{16}\.json", filename)
                     and filename not in keep):
                 os.remove(os.path.join(CACHE_DIR, filename))
 
@@ -1999,6 +2161,8 @@ def api_meta():
         "sourceLimitations": (snap.audit or {}).get("unresolved", []),
         "units": units, "scenarios": list(SCENARIOS.values()),
         "stars": list(STARS), "geometries": GEOMETRIES, "traitContexts": TRAIT_CONTEXTS,
+        "tankThreats": tank_threats(snap), "tankDebuffs": tank_debuffs(snap),
+        "tankDummies": {key: dummies_for(snap, threat=key) for key in TANK_THREATS},
         "dummy": dummies_for(snap), "items": items, "traits": traits,
         "excluded": item_fx.get("excluded") or {},
         "objectives": OBJECTIVES,
@@ -2203,7 +2367,8 @@ def cmd_sim(args):
     trait_fx = load_trait_effects(snap.set_no)
     contexts, unmodeled = unit_trait_contexts(snap, unit, trait_fx)
     ctx = contexts[args.traits]
-    dummy = dummies_for(snap)
+    dummy = dummies_for(snap, threat=getattr(args, "threat", "mixed")
+                        if unit["objective"] == "tank" else None)
     spec = cell_spec(snap, unit, args.star, args.geometry, ctx, dummy, args.duration, None,
                      item_fx, trait_fx, items=items)
     fx = engine().compose_fx(spec)
@@ -2229,22 +2394,33 @@ def cmd_sim(args):
         board = unit["objective"] == "tank"
         streams = dummy["board"] if board else [1] * dummy["count"]
         print("  they hit back: " + "; ".join(
-            f"{k}× {s['ad']} AD at {s['as']}/s, {s['ability']} per cast at {s['manaStart']:.0f}/{s['manaMax']:.0f} mana "
-            f"+{s['manaPerAttack']:.0f}/attack{' + damage taken' if s['manaFromDamage'] else ''} ({s['physicalShare']*100:.0f}% physical)"
+            f"{k}× {s['ad']:.1f} AD at {s['as']:.2f}/s, {s['ability']:.1f} per cast "
+            + (f"every {s['castInterval']:g}s" if board else
+               f"at {s['manaStart']:.0f}/{s['manaMax']:.0f} mana +{s['manaPerAttack']:.0f}/attack"
+               f"{' + damage taken' if s['manaFromDamage'] else ''}")
+            + f" ({s['physicalShare']*100:.0f}% physical)"
             for s, k in zip(dummy["slots"], streams))
-            + f" — about {dummy['boardPressureDps'] if board else dummy['pressureDps']} pre-mitigation DPS"
-            + (f" (a tank is hit by the whole {dummy['boardSize']}-unit board)" if board else ""))
+            + f" — about {dummy['boardPressureDps'] if board else dummy['pressureDps']:.0f} pre-mitigation DPS"
+            + (f" ({dummy['threat']['label']}, {dummy['boardSize']} attackers)" if board else ""))
+        if board:
+            debuffs = dummy["enemyDebuffs"]
+            print(f"  continuous enemy debuffs: {debuffs['wound']:.0%} heal cut, "
+                  f"{debuffs['sunder']:.0%} Sunder, {debuffs['shred']:.0%} Shred; "
+                  f"opening EHP {sheet['physicalEhp']:.0f} physical / {sheet['magicEhp']:.0f} magic")
     kt = f"all dead at {res['killTime']:.2f}s" if res["killTime"] is not None else f"survive ({[round(x) for x in res['left']]} HP left)"
     print(f"  {res['total']:.0f} damage, {res['dps']:.0f} DPS, {res['attacks']} attacks, {res['casts']} casts — {kt}")
     for src, v in sorted(res["breakdown"].items(), key=lambda kv: -kv[1]):
         print(f"    {src:<12} {v:8.0f}  {v / max(res['total'], 1e-9) * 100:5.1f}%")
     if unit["objective"] in PRESSURED:
         fate = f"died at {res['diedAt']:.2f}s" if res["died"] else f"alive with {res['hpLeft']:.0f} HP"
-        print(f"  {fate}; held the dummies {res['aliveTime']:.2f}s; took {res['absorbed']:.0f} pre-mitigation "
+        print(f"  {fate}; held the dummies {res['aliveTime']:.2f}s{'+' if res['survivalCapped'] else ''}; took {res['absorbed']:.0f} pre-mitigation "
               f"({res['taken']:.0f} after resists/durability, {res['shielded']:.0f} on shields), healed {res['healed']:.0f}, "
               f"denied {res['denied']:.0f} by CC/untargetability ({res['ccTime']:.1f} stun-seconds)"
               + (f", allies healed {res['allyHeal']:.0f}" if res["allyHeal"] else "")
               + (f", allies shielded {res['allyShield']:.0f}" if res["allyShield"] else ""))
+        if res["stressAliveTime"] is not None:
+            print(f"  double incoming damage: held {res['stressAliveTime']:.2f}s"
+                  + ("+ (survives both tests; tied)" if res["stressCapped"] else ""))
     if unmodeled or fx["notes"]:
         print("  not modeled: " + "; ".join(unmodeled + fx["notes"]))
     if res.get("trace"):
@@ -2262,16 +2438,27 @@ def cmd_top(args):
     trait_fx = load_trait_effects(snap.set_no)
     contexts, unmodeled = unit_trait_contexts(snap, unit, trait_fx)
     pool = pool_items(snap, item_fx)
-    dummy = dummies_for(snap)
+    dummy = dummies_for(snap, threat=getattr(args, "threat", "mixed")
+                        if unit["objective"] == "tank" else None)
     t0 = time.time()
     out, count = enumerate_builds(snap, unit, args.star, args.geometry,
                                   contexts[args.traits], dummy, pool, args.duration)
     print(f"{unit['name']} {args.star}★ · {args.geometry} · traits {args.traits} · "
           f"{unit['roleName']} → {unit['objective']} fight: {count:,} builds in {time.time() - t0:.1f}s")
+    if unit["objective"] == "tank":
+        print(f"  {dummy['threat']['label']} · {dummy['boardSize']} attackers · "
+              f"{dummy['boardPressureDps']:.0f} pre-mitigation DPS · continuous heal cut, Sunder and Shred")
+    previous_key, previous_rank = None, None
     for n, (combo, sheet, res) in enumerate(out[:args.top], 1):
+        key = rank_key(res, unit["objective"])
+        rank = previous_rank if unit["objective"] == "tank" and key == previous_key else n
+        previous_key, previous_rank = key, rank
         kt = f"{res['killTime']:.2f}s" if res["killTime"] is not None else "survive"
-        held = f"  held {res['aliveTime']:5.1f}s" if unit["objective"] in PRESSURED else ""
-        print(f"{n:3} {', '.join(snap.items[a]['name'] for a in combo):<60} {kt:>8}  "
+        held = (f"  held {res['aliveTime']:5.1f}s{'+' if res['survivalCapped'] else ''}"
+                if unit["objective"] in PRESSURED else "")
+        if res["stressAliveTime"] is not None:
+            held += f" · 2× damage {res['stressAliveTime']:.1f}s{'+' if res['stressCapped'] else ''}"
+        print(f"{rank:3} {', '.join(snap.items[a]['name'] for a in combo):<60} {kt:>8}  "
               f"{res['total']:7.0f} dmg  {res['dps']:5.0f} dps  {res['casts']} casts{held}")
 
 

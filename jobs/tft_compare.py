@@ -23,9 +23,9 @@ GOLDEN = os.path.join(tft.TFT_DATA_DIR, "golden", "fights.json")
 RESULT_KEYS = ("killTime", "total", "dps", "rawTotal", "attacks", "casts", "castTimes",
                "breakdown", "left", "t", "aliveTime", "died", "diedAt", "hpLeft", "absorbed",
                "taken", "mitigated", "healed", "shielded", "denied", "allyHeal", "allyShield",
-               "ccTime", "hitsTaken")
+               "ccTime", "hitsTaken", "survivalCapped", "stressAliveTime", "stressCapped")
 SHEET_KEYS = ("ad", "ap", "as", "crit", "critMult", "precision", "hp", "armor", "mr",
-              "durability", "omnivamp", "form", "manaStart", "manaMax")
+              "durability", "omnivamp", "form", "manaStart", "manaMax", "physicalEhp", "magicEhp")
 
 
 def dec(v):
@@ -96,10 +96,11 @@ def main():
         if want_units is not None and api not in want_units:
             continue
         unit = snap.units[api]
+        case_dummy = provenance.get("tankDummies", {}).get(case.get("threat"), dummy)
         stats = per_unit.setdefault(api, [0, 0])
         try:
             sheet, res = tft.simulate(snap, unit, case["star"], case["items"], case["geometry"],
-                                         [tuple(x) for x in case["ctxTraits"]], dummy, None,
+                                         [tuple(x) for x in case["ctxTraits"]], case_dummy, None,
                                          item_fx, trait_fx)
         except ValueError as e:
             if "not ported" in str(e):

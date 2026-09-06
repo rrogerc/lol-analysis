@@ -81,7 +81,9 @@ def provenance(snap, reason=None):
             "effectsHash": tft.json_hash({"items": tft.load_item_effects(snap.set_no),
                                          "traits": tft.load_trait_effects(snap.set_no)}),
             "set": snap.set_no, "patch": snap.patch,
-            "dummy": tft.dummies_for(snap), "reason": reason,
+            "dummy": tft.dummies_for(snap),
+            "tankDummies": {key: tft.dummies_for(snap, threat=key) for key in tft.TANK_THREATS},
+            "reason": reason,
             "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
@@ -110,7 +112,6 @@ def legal_combos(snap, pool):
 def gen_fights(snap, cached):
     item_fx = tft.load_item_effects(snap.set_no)
     trait_fx = tft.load_trait_effects(snap.set_no)
-    dummy = tft.dummies_for(snap)
     pool = tft.pool_items(snap, item_fx)
     combos = legal_combos(snap, pool)
     cases = []
@@ -119,6 +120,7 @@ def gen_fights(snap, cached):
         slug = tft.unit_slug(u)
         for key, sc in tft.unit_scenarios(u).items():
             cell = cached[(slug, key)]
+            dummy = cell["scenario"]["dummy"]
             builds = []
             for row in cell["rows"][:TOP_PER_CELL]:
                 builds.append(tuple(snap.item(n)["api"] for n in row["items"]))
@@ -134,11 +136,12 @@ def gen_fights(snap, cached):
                 cases.append({
                     "unit": u["api"], "scenario": key, "star": sc["star"],
                     "geometry": sc["geometry"], "traits": sc["traits"],
+                    "threat": sc["threat"] if u["objective"] == "tank" else None,
                     "ctxTraits": [[a, c] for a, c in ctx],
                     "items": list(items),
                     "sheet": {k: sheet[k] for k in ("ad", "ap", "as", "crit", "critMult", "precision",
                                                     "hp", "armor", "mr", "durability", "omnivamp",
-                                                    "form", "manaStart", "manaMax")},
+                                                    "form", "manaStart", "manaMax", "physicalEhp", "magicEhp")},
                     "result": {k: v for k, v in res.items()
                                if k not in ("dummyCasts", "dummyAttacks", "probe", "trace")},
                 })

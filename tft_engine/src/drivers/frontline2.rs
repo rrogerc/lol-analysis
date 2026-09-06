@@ -48,7 +48,9 @@ impl Driver for Hecarim {
         f.buff_resists(r, r, Self::DREAD_S);
         let heal = f.calc(f.drv.heal);
         heal_over_time(f, heal, Self::DREAD_S, "spirit of dread");
-        let tg = f.aoe(Some(f.row(f.drv.n_enemies)), false);
+        // Slots are nearest first. Riders choose distinct nearest enemies
+        // even when spread out, with frontline blockers ahead of backliners.
+        let tg = f.alive().take(pyint(f.row(f.drv.n_enemies)).max(0) as usize);
         for d in tg.iter() {
             f.hit_ability(f.drv.riders, Some(d), "riders", 1.0);
         }
