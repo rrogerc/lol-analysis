@@ -7,6 +7,13 @@ the Rust port bit-identical; when the fixtures were regenerated on 2026-09-07
 to add Twitch (`lol_engine 6979fdd6…`, on top of commit e291d15) every one of
 those 2,565 cases and the three original enumeration runs came out byte for
 byte the same, and the file's provenance now names the Rust engine.
+Regenerated again later on 2026-09-07 for the Fiendhunter Bolts model
+(Opening Barrage's crit-weighted empowered crit and its true-damage rider,
+`lol_engine fb379dd8…`): 167 of the 3,870 fight cases changed, every one of
+them a build holding the item (92 Kayle, 75 Twitch; Vladimir's kit never
+auto-attacks), and every other case came out byte for byte the same. No
+enumeration run's pool holds the item, so `enumerate.json` changed only in
+its provenance header.
 `engine-fights.json` holds one case per (build, target, flag-variant): its
 inputs plus the `sheet`, `fx`, `ranks` and `simulate` result (3,870 cases:
 129 Kayle builds, 126 Vladimir, 129 Twitch). `enumerate.json` holds four

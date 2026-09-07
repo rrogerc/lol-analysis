@@ -657,6 +657,38 @@ class TestEngine(unittest.TestCase):
         # true damage ignores the 300 resists: exactly 50 + 1.5 * 18 lethality
         self.assertAlmostEqual(r["breakdown"]["umbral"], 50 + 1.5 * 18, places=4)
 
+    def test_fiendhunter_opening_barrage(self):
+        # The three attacks after R crit for at least 80% of the crit bonus
+        # (an attack that rolls a crit crits normally) and the crit share
+        # adds 15% of the attack's pre-mitigation damage as true damage —
+        # expected values over crit chance, so Infinity Edge's crit damage
+        # scales both. The old model was a fixed 1.6 floor and no true
+        # damage, which gave a 100%-crit build nothing but the attack speed.
+        ranks = builds.skill_ranks(16)
+        for tokens in (["fiendhunter"], ["fiendhunter", "infinity edge"]):
+            ids, sheet = self.resolve(16, tokens)
+            fx = builds.merge_effects(ids, self.effects)
+            r = builds.simulate(sheet, self.kit, fx, 16, ranks,
+                                100_000, 0, 0, 3.0)
+            self.assertGreaterEqual(r["attacks"], 4, tokens)  # past the window
+            c = sheet["crit_chance"] / 100
+            d = sheet["crit_damage"] / 100
+            ev = 1 + c * (d - 1)
+            window_ev = c * d + (1 - c) * (1 + 0.8 * (d - 1))
+            self.assertGreater(window_ev, ev)
+            ad = sheet["ad"]
+            self.assertAlmostEqual(
+                r["breakdown"]["auto"],
+                ad * (3 * window_ev + (r["attacks"] - 3) * ev), places=6, msg=tokens)
+            self.assertAlmostEqual(r["breakdown"]["barrage"],
+                                   3 * c * 0.15 * ad * d, places=6, msg=tokens)
+            # no ult, no window: plain crit EV on every attack and no rider
+            no_r = builds.simulate(sheet, self.kit, fx, 16, ranks,
+                                   100_000, 0, 0, 3.0, use_ult=False)
+            self.assertNotIn("barrage", no_r["breakdown"])
+            self.assertAlmostEqual(no_r["breakdown"]["auto"],
+                                   ad * no_r["attacks"] * ev, places=6, msg=tokens)
+
     def test_exclusive_groups_come_from_the_game_bin(self):
         # the groups are Riot's own mItemGroups, so assert the memberships
         # that actually bite — including the two that hand-curation missed

@@ -15,10 +15,10 @@ use crate::pyget::*;
 /// kit's own labels take the first ids so the engine can test for "auto".
 pub type SourceId = u16;
 
-pub const KIT_SOURCES: [&str; 20] = [
+pub const KIT_SOURCES: [&str; 21] = [
     "auto", "Q", "Q empowered", "E", "W", "R", "E onhit", "E active", "wave", "execute",
     "muramana", "eclipse", "botrk", "kraken", "hullbreaker", "spellblade", "malignance",
-    "stormsurge", "venom", "E magic",
+    "stormsurge", "venom", "E magic", "barrage",
 ];
 pub const SRC_AUTO: SourceId = 0;
 pub const SRC_Q: SourceId = 1;
@@ -40,6 +40,7 @@ pub const SRC_MALIGNANCE: SourceId = 16;
 pub const SRC_STORMSURGE: SourceId = 17;
 pub const SRC_VENOM: SourceId = 18;
 pub const SRC_E_MAGIC: SourceId = 19;
+pub const SRC_BARRAGE: SourceId = 20;
 
 fn sources() -> &'static RwLock<Vec<String>> {
     static TABLE: OnceLock<RwLock<Vec<String>>> = OnceLock::new();
@@ -225,11 +226,16 @@ pub struct OnUltCast {
     pub duration_s: f64,
 }
 
+/// Fiendhunter's Opening Barrage: after the ult, `attacks` attacks gain
+/// `as_pct` attack speed and are empowered to crit for `crit_dmg_frac` of
+/// the crit bonus; one that would have crit anyway crits normally and adds
+/// `true_dmg_frac` of its pre-mitigation damage as true damage.
 #[derive(Clone, Debug)]
 pub struct UltAttackSteroid {
     pub attacks: i64,
     pub as_pct: f64,
-    pub crit_floor_ev: f64,
+    pub crit_dmg_frac: f64,
+    pub true_dmg_frac: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -553,7 +559,8 @@ fn parse_singletons(d: &Bound<'_, PyDict>) -> PyResult<Singletons> {
         s.ult_attack_steroid = Some(UltAttackSteroid {
             attacks: reqi(&x, "attacks")?,
             as_pct: reqf(&x, "asPct")?,
-            crit_floor_ev: getf(&x, "critFloorEv", 1.0)?,
+            crit_dmg_frac: reqf(&x, "critDmgPct")? / 100.0,
+            true_dmg_frac: reqf(&x, "trueDmgPct")? / 100.0,
         });
     }
     if let Some(x) = getfx(d, "hitPairProc")? {

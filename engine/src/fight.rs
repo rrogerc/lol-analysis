@@ -353,6 +353,14 @@ pub struct Prep<'a> {
     /// `ult_attack_steroid.attacks`, or `i64::MIN` when absent so that
     /// `post_r_attacks < steroid_attacks` is false without probing the item.
     steroid_attacks: i64,
+    /// Opening Barrage's per-attack expectations over the sheet's crit
+    /// chance: the crit multiplier of an attack in the window (one that
+    /// rolls a crit crits normally, one that does not is empowered to crit
+    /// for `crit_dmg_frac` of the bonus), never below `crit_ev`; and the
+    /// true damage per point of attack damage that the crit share adds,
+    /// `crit_c * true_dmg_frac * crit_damage` with the attack-only amp.
+    barrage_ev: f64,
+    barrage_true_per_ad: f64,
     /// `1.0 - armor_pen_pct / 100.0` / `1.0 - magic_pen_pct / 100.0`: the
     /// sheet's percent pen is fixed for the fight, so `stack_pct_pen`'s first
     /// factor is too (see `stack_pct_pen_pre`).
@@ -667,6 +675,14 @@ impl<'a> Prep<'a> {
             Some(u) => u.attacks,
             None => i64::MIN,
         };
+        let (barrage_ev, barrage_true_per_ad) = match &s.ult_attack_steroid {
+            Some(u) => {
+                let d = sheet.crit_damage / 100.0;
+                (crit_c * d + (1.0 - crit_c) * (1.0 + u.crit_dmg_frac * (d - 1.0)),
+                 crit_c * u.true_dmg_frac * auto_amp * d)
+            }
+            None => (1.0, 0.0),
+        };
         // the ult, whose damage and Malignance burn are the kit's and the
         // sheet's; `damage` is only read when the ult is actually cast, so a
         // kit that never casts one is not asked for it here either
@@ -830,6 +846,8 @@ impl<'a> Prep<'a> {
             stormsurge_amt,
             muramana_amt,
             steroid_attacks,
+            barrage_ev,
+            barrage_true_per_ad,
             armor_pen_factor: 1.0 - sheet.armor_pen_pct / 100.0,
             magic_pen_factor: 1.0 - sheet.magic_pen_pct / 100.0,
             exec_frac,
@@ -1538,14 +1556,21 @@ impl<'a, 'p> Engine<'a, 'p> {
                 floor = sundered;
             }
         }
-        if self.flags & F_ULT_STEROID != 0 {
-            let u = s.ult_attack_steroid.as_ref().expect("ult_attack_steroid");
-            if self.st.post_r_attacks < u.attacks {
-                floor = pymax(floor, u.crit_floor_ev);
-            }
+        let mut barrage = false;
+        if self.flags & F_ULT_STEROID != 0 && self.st.post_r_attacks < self.p.steroid_attacks {
+            // Fiendhunter's Opening Barrage: an attack in the window crits
+            // at least for the empowered share of the bonus (`barrage_ev`
+            // is never below `crit_ev`), and the share that rolls a crit
+            // adds true damage right after the attack itself
+            floor = pymax(floor, self.p.barrage_ev);
+            barrage = true;
         }
         let ad = drv.attack_damage(self);
         self.deal(ad, DType::Physical, SRC_AUTO, true, false, floor);
+        if barrage {
+            let amt = ad * self.p.barrage_true_per_ad;
+            self.deal(amt, DType::True, SRC_BARRAGE, false, false, 1.0);
+        }
         self.apply_onhits(drv);
         if self.flags & F_ENERGIZED != 0 {
             self.st.energize += (t - self.st.en_last) * self.p.move_speed / 24.0;

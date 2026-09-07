@@ -75,6 +75,23 @@
   commit. Keep the Rust strict: no `target-cpu`, no fast-math, no
   `mul_add`; floating point has to stay operation-for-operation what the
   Python engine did.
+- Fiendhunter Bolts (2026-09-07): `ultAttackSteroid` in item-effects.json
+  models Opening Barrage as expected values over the sheet's crit chance.
+  The three attacks after R gain 50% AS; one that would not have crit is
+  empowered to crit for `critDmgPct` (80%) of the crit bonus, so Infinity
+  Edge scales it; one that rolls a crit crits normally and adds
+  `trueDmgPct` (15%) of its pre-mitigation attack damage as true damage
+  (`barrage` in the breakdown, dealt in the attack's batch and amped once
+  like any instance; `Prep.barrage_ev` / `barrage_true_per_ad`). The old
+  entry was a fixed 1.6 floor with no true damage, which gave Kayle's
+  100%-crit builds nothing but the attack speed and left the item 171st
+  vs squishy; it now tops squishy (3-attack kill, 1.07–1.16 s vs 1.21 s)
+  and bruiser, is 2nd vs tank. Deliberate model change: the goldens were
+  regenerated and only fights holding the item moved (167 of 3,870).
+  Readings left open: the 15% counts the attack's own crit-inflated damage
+  and no on-hit riders; Kayle's crit-modified waves are not forced to crit
+  by the window; the 8 s window and the ult haste never bind in one fight.
+  Regression: `test_builds.TestEngine.test_fiendhunter_opening_barrage`.
 - The Builds table shows item icons instead of names (2026-09-06):
   `api/builds/meta.json` carries an `items` catalog (`builds.item_catalog`)
   with the ddragon icon URL (version from the snapshot's meta.json), the
