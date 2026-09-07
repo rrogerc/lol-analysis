@@ -83,6 +83,7 @@
   th {
     color: var(--text-secondary); font-weight: 500; user-select: none;
     white-space: nowrap; position: sticky; top: 0; background: var(--surface-1);
+    z-index: 1;  /* above positioned cells: the item and unit icons scroll under it */
   }
   #tbl th { cursor: pointer; }
   th .arrow { color: var(--muted); font-size: 10px; }
@@ -142,6 +143,37 @@
   #btbl tbody tr.sel, #ttbl tbody tr.sel { background: color-mix(in srgb, var(--s1) 10%, transparent); }
   .chip .tag { color: var(--muted); margin-left: 5px; font-size: 11px; }
   .chip.dim { opacity: .6; }
+  /* the ranked table's builds: one icon per item, details on hover/focus/tap */
+  /* full width, but the Build column stays as wide as its icons (width: 1% +
+     nowrap is the shrink-to-content idiom), so the slack spreads over the
+     number columns instead of pooling after the icons */
+  #btbl th:nth-child(2), #btbl td:nth-child(2) { width: 1%; white-space: nowrap; }
+  #btbl td:nth-child(2) { padding-right: 22px; }
+  .build-items { display: inline-flex; gap: 6px; vertical-align: middle; }
+  .item-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; overflow: hidden; border-radius: 5px; border: 1px solid var(--border); background: var(--page); color: var(--text-secondary); font-size: 10px; font-weight: 650; letter-spacing: .02em; cursor: default; }
+  .item-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .item-icon.has-image .item-icon-fallback { visibility: hidden; }
+  .item-icon:hover, .item-icon:focus-visible { border-color: var(--s1); }
+  .item-icon:focus-visible { outline: 2px solid var(--s1); outline-offset: 1px; }
+  .item-tt-stats { margin: 0 0 6px; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
+  .item-tt-effect .item-tt-kind { font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 10px; }
+  .item-tt-model { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--grid); color: var(--text-secondary); }
+  .item-tt-model b { display: block; color: var(--text-primary); margin-bottom: 2px; }
+  /* ddragon's tooltip tags, in the shop's colours */
+  .dd-attention, .dd-keyword, .dd-keywordMajor, .dd-passive, .dd-active, .dd-unique { font-weight: 650; }
+  .dd-physicalDamage, .dd-scaleAD, .dd-OnHit { color: light-dark(#c2511a, #f08a4b); }
+  .dd-magicDamage, .dd-scaleAP { color: light-dark(#2a63c9, #6ea3ff); }
+  .dd-trueDamage { color: light-dark(#7a5c00, #f3d27a); }
+  .dd-healing, .dd-scaleHealth, .dd-health { color: light-dark(#1b7f3b, #4fca6f); }
+  .dd-shield { color: light-dark(#6d5bb8, #b3a6f0); }
+  .dd-speed, .dd-attackSpeed { color: light-dark(#8a6a00, #e0c15c); }
+  .dd-scaleMana { color: light-dark(#1f6fa8, #5fb0e8); }
+  .dd-scaleArmor { color: light-dark(#a06a10, #e6b04a); }
+  .dd-scaleMR { color: light-dark(#5a4fb0, #a99ef0); }
+  .dd-lifeSteal, .dd-omnivamp { color: light-dark(#b0303a, #ef7b83); }
+  .dd-status, .dd-keywordStealth { color: var(--text-secondary); }
+  .dd-gold { color: light-dark(#9a7a00, #e7c64a); }
+  .dd-rules, .dd-flavorText { color: var(--muted); font-style: italic; }
   .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 13px; }
   .bar-label { width: 90px; color: var(--text-secondary); text-align: right; flex: none; }
   .bar-track { flex: 1; height: 16px; background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 4px; overflow: hidden; }
@@ -220,7 +252,7 @@
   .tft-trait-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 8px 4px 5px; font-size: 12px; }
   .tft-trait-chip[data-active="true"] { border-color: var(--s1); background: color-mix(in srgb, var(--s1) 7%, var(--surface-1)); }
   .tft-trait-chip small { color: var(--text-secondary); font-size: 10px; }
-  .tft-tooltip { position: fixed; z-index: 30; width: 340px; max-width: calc(100vw - 24px); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 6px 24px #0003; font-size: 12px; line-height: 1.55; }
+  .tft-tooltip { --cost-color: #697480; color-scheme: light dark; position: fixed; z-index: 30; width: 340px; max-width: calc(100vw - 24px); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 6px 24px #0003; font-size: 12px; line-height: 1.55; }
   .tft-tooltip[hidden] { display: none; }
   .tft-tooltip-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
   .tft-tooltip-head strong { display: block; font-size: 14px; }
@@ -558,7 +590,6 @@
       <p class="hint">Spread keeps enemies apart, so most local area effects reach only the current target; clumped enemies can take splash damage together, subject to each ability's target limit. In tank tests, this setting changes the frontline formation; the backline stays outside nearby effects in both formations. Abilities that select several nearest enemies can still reach multiple frontliners when spread. Trait settings apply the champion's modeled traits at no breakpoint, the first breakpoint, or the highest non-prismatic breakpoint. Unit numbers come from the set's data with patch-note corrections; individual ability assumptions appear in the fight details.</p>
     </details>
   </div>
-  <div class="tft-tooltip" id="tft-tooltip" role="tooltip" hidden></div>
 </section>
 
 <!-- ============================ Data ============================ -->
@@ -595,6 +626,8 @@
     </div>
   </div>
 </section>
+<!-- one tooltip for the TFT tab and the Builds tab's item icons -->
+<div class="tft-tooltip" id="tft-tooltip" role="tooltip" hidden></div>
 
 <script>
 "use strict";
@@ -910,7 +943,7 @@ const SRC_COLOR = { auto: "--s3", onhit: "--s2", wave: "--s8", "E onhit": "--s5"
                     ludens: "--s5", muramana: "--s4", energized: "--s3",
                     shiv: "--s3", eclipse: "--s6", hullbreaker: "--s8",
                     titanic: "--s8", active: "--s4", umbral: "--s6" };
-const bstate = { meta: null, champion: null, scenario: null, data: null, sel: 0,
+const bstate = { meta: null, items: null, champion: null, scenario: null, data: null, sel: 0,
                  status: null, req: 0, timer: null };
 const fmtDur = s => s < 90 ? `${Math.round(s)}s` : `${Math.round(s / 60)} min`;
 
@@ -923,6 +956,7 @@ async function loadBuildsMeta() {
       "Builds API not reachable — restart `lol.py serve` to pick up the new endpoints.";
     return false;
   }
+  bstate.items = buildItemLookup(bstate.meta);
   if (!bstate.meta.champions.some(c => c.slug === bstate.champion))
     bstate.champion = bstate.meta.champions[0]?.slug;
   if (!bstate.meta.scenarios.some(s => s.key === bstate.scenario))
@@ -1112,6 +1146,115 @@ function vsCell(r, t) {
   return td;
 }
 
+// The item catalog behind the table's icons, by the name a row carries. An
+// entry holds the ddragon icon, the in-game tooltip as styled text runs and
+// what the engine models of the item; a serve older than the catalog gives
+// none, and the icons then fall back to initials with the name on hover.
+function buildItemLookup(meta) {
+  return new Map((meta?.items || []).map(it => [it.name, it]));
+}
+
+// Initials shown while an icon has no image: "RD" for Rabadon's Deathcap,
+// "BO" for Boots.
+function itemAbbrev(name) {
+  const words = name.replace(/'s\b/g, "").split(/[\s-]+/)
+    .filter(w => /^[A-Za-z0-9]/.test(w) && !/^(of|the|and|a)$/i.test(w));
+  return (words.length > 1 ? words.slice(0, 2).map(w => w[0]) : [name.slice(0, 2)])
+    .join("").toUpperCase();
+}
+
+// What the engine makes of the item, as sentences: item-effects.json's
+// covered passives and note, and any passive it leaves as text.
+function itemModelText(modeled) {
+  if (!modeled) return ["No model notes for this item."];
+  const lines = [];
+  if (modeled.covers?.length) lines.push(`Accounts for: ${modeled.covers.join(", ")}.`);
+  if (modeled.unmodeled?.length) lines.push(`Text-only passives outside the numbers: ${modeled.unmodeled.join(", ")}.`);
+  if (modeled.note) lines.push(modeled.note.replace(/\.?$/, "."));
+  return lines.length ? lines : ["Stats only."];
+}
+
+// ddragon's styled runs ([tag, text]) as nodes: a span per tag, text otherwise.
+function ddRuns(runs) {
+  return (runs || []).map(([style, text]) => {
+    if (!style) return document.createTextNode(text);
+    return tftText("span", text, "dd-" + style);
+  });
+}
+
+const DD_KIND_LABEL = { passive: "Passive", active: "Active" };
+
+function itemTooltip(it, name) {
+  if (!it) return [tftTooltipHead(null, name, "No item details in this snapshot")];
+  const out = [tftTooltipHead(it.icon, it.name,
+    `${fmtInt(it.gold)}g` + (it.plaintext ? ` · ${it.plaintext}` : ""))];
+  if (it.stats?.length) {
+    const ul = document.createElement("ul");
+    ul.className = "item-tt-stats";
+    ul.append(...it.stats.map(line => tftText("li", line)));
+    out.push(ul);
+  }
+  for (const fx of it.effects || []) {
+    const p = document.createElement("p");
+    p.className = "item-tt-effect";
+    if (fx.name) {
+      const b = document.createElement("b");
+      b.append(fx.name);
+      if (DD_KIND_LABEL[fx.kind]) b.append(" ", tftText("small", DD_KIND_LABEL[fx.kind], "item-tt-kind"));
+      p.append(b, document.createElement("br"));
+    }
+    p.append(...ddRuns(fx.text));
+    out.push(p);
+  }
+  const model = document.createElement("div");
+  model.className = "item-tt-model";
+  model.append(tftText("b", "In this model"), ...itemModelText(it.modeled).map(t => tftText("div", t)));
+  out.push(model);
+  return out;
+}
+
+// One item of a build: its icon, named for assistive tech, with the tooltip
+// on hover, keyboard focus and tap. Clicks still reach the row (selecting
+// the build); Enter or Space on a focused icon selects it too.
+function itemIcon(name) {
+  const it = bstate.items?.get(name);
+  const el = document.createElement("span");
+  el.className = "item-icon";
+  el.tabIndex = 0;
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", name);
+  el.append(tftText("span", itemAbbrev(name), "item-icon-fallback"));
+  if (it?.icon) {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.addEventListener("load", () => el.classList.add("has-image"));
+    img.addEventListener("error", () => { img.remove(); el.classList.remove("has-image"); });
+    img.src = it.icon;
+    el.append(img);
+  }
+  const contents = () => itemTooltip(it, name);
+  bindTftTooltip(el, contents);
+  el.addEventListener("pointerdown", e => { el.dataset.pointer = e.pointerType; });
+  el.addEventListener("click", () => {  // no hover on touch: a tap opens the details
+    if (el.dataset.pointer !== "mouse" && tftTip.anchor !== el) showTftTooltip(el, contents);
+  });
+  el.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.closest("tr")?.click(); }
+  });
+  return el;
+}
+
+function buildCell(names) {
+  const td = document.createElement("td");
+  const list = document.createElement("span");
+  list.className = "build-items";
+  list.append(...names.map(itemIcon));
+  td.append(list);
+  return td;
+}
+
 // Columns depend on the cell: a per-target cell leads with its own fight and
 // adds the build's kill time against the tier's other targets; the overall
 // cell shows every target, then the mean it is ranked by.
@@ -1119,7 +1262,8 @@ function buildColumns(sc) {
   const targets = sc.targets || [];
   const cols = [
     { th: "#", td: r => cell(String(r.rank)) },
-    { th: "Build", td: r => cell(r.items.join(", ")) },
+    { th: "Build", title: "One icon per item — hover, focus or tap an icon for its name and details",
+      td: r => buildCell(r.items) },
   ];
   if (sc.overall) {
     targets.forEach(t => cols.push({ th: `vs ${t.target}`, title: vsTitle(t), td: r => vsCell(r, t) }));

@@ -75,6 +75,15 @@
   commit. Keep the Rust strict: no `target-cpu`, no fast-math, no
   `mul_add`; floating point has to stay operation-for-operation what the
   Python engine did.
+- The Builds table shows item icons instead of names (2026-09-06):
+  `api/builds/meta.json` carries an `items` catalog (`builds.item_catalog`)
+  with the ddragon icon URL (version from the snapshot's meta.json), the
+  in-game tooltip parsed by `parse_dd_description` into styled text runs
+  (never HTML), and item-effects.json's covers/note. The page maps rows to
+  entries by item name; without the catalog (an older serve) icons show
+  initials. The `#tft-tooltip` element is shared by both tabs and sits
+  outside the view sections. Checks: `test_builds.TestItemCatalog`,
+  `node jobs/test-builds-item-ui.cjs`.
 
 ## The TFT tab (tft.py, tft_engine/, data/tft/)
 

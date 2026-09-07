@@ -158,6 +158,35 @@ class TestRealSnapshot(unittest.TestCase):
         self.assertAlmostEqual(s["magic_pen_pct"], 40.0)
         self.assertAlmostEqual(s["magic_pen_flat"], 15.0)
 
+    def test_item_catalog_covers_the_pool(self):
+        # Every item a ranked row can carry has an icon and tooltip entry
+        # under the row's own name, and the model notes agree with the
+        # stat sheet's uncovered-passive report.
+        import items as items_mod
+        meta = builds.api_builds_meta()
+        by_name = {it["name"]: it for it in meta["items"]}
+        version = next(m for m in items_mod.snapshots()
+                       if m["patch"] == self.patch)["ddragonVersion"]
+        effects = builds.load_item_effects()
+        for iid in builds.DEFAULT_POOL + builds.BOOTS:
+            it = by_name[self.pool[iid]["name"]]
+            self.assertEqual(it["id"], iid)
+            self.assertEqual(it["icon"],
+                             f"https://ddragon.leagueoflegends.com/cdn/{version}"
+                             f"/img/item/{iid}.png")
+            self.assertEqual(it["gold"], self.pool[iid]["shop"]["prices"]["total"])
+            self.assertTrue(it["stats"], f"{it['name']} has no stat lines")
+            for fx in it["effects"]:
+                self.assertIn(fx["kind"], ("passive", "active", "text"))
+                self.assertTrue(fx["text"], f"{it['name']}: empty {fx['kind']} block")
+            self.assertEqual(it["modeled"]["covers"],
+                             effects.get(iid, {}).get("covers", []))
+            sheet = builds.resolve_stats(fake_champ(), 18, [iid], self.pool)
+            self.assertEqual([f"{p} ({it['name']})" for p in it["modeled"]["unmodeled"]],
+                             sheet["uncovered"])
+        self.assertEqual(len(meta["items"]), len(set(builds.DEFAULT_POOL + builds.BOOTS)))
+        json.dumps(meta)  # the whole payload serialises
+
     def test_no_unmapped_stats_in_whole_pool(self):
         # Every stat.field in the snapshot is either mapped or ignored;
         # resolve the entire pool at once and rely on the stderr warning
@@ -168,6 +197,70 @@ class TestRealSnapshot(unittest.TestCase):
                     for stat, fields in it["stats"].items()
                     for field, v in fields.items() if v} - known
         self.assertEqual(unmapped, set())
+
+
+class TestItemCatalog(unittest.TestCase):
+    """The dashboard's item tooltips: ddragon's markup parsed into styled
+    text runs, hand-checked against the shapes the 16.17 snapshot uses."""
+
+    def test_stats_and_a_named_passive(self):
+        out = builds.parse_dd_description(
+            "<mainText><stats><attention>130</attention> Ability Power<br>"
+            "<attention>10%</attention> Move Speed</stats><br><br>"
+            "<passive>Magical Opus</passive><br>Increases your total "
+            "<scaleAP>Ability Power by 30%</scaleAP>.</mainText>")
+        self.assertEqual(out["stats"], ["130 Ability Power", "10% Move Speed"])
+        self.assertEqual(out["effects"], [{
+            "kind": "passive", "name": "Magical Opus",
+            "text": [["", "Increases your total "],
+                     ["scaleAP", "Ability Power by 30%"], ["", "."]]}])
+
+    def test_active_label_and_cooldown_placeholder_are_dropped(self):
+        # Gunblade: "<active>ACTIVE</active> (0s)" labels the real name below
+        out = builds.parse_dd_description(
+            "<mainText><stats><attention>80</attention> Ability Power</stats>"
+            "<br><br><br><br><active>ACTIVE</active> (0s)<br>"
+            "<active>Lightning Bolt</active><br>Shocks the target.</mainText>")
+        self.assertEqual([(e["kind"], e["name"]) for e in out["effects"]],
+                         [("active", "Lightning Bolt")])
+        self.assertEqual(out["effects"][0]["text"], [["", "Shocks the target."]])
+
+    def test_heading_after_a_sentence_and_reference_mid_sentence(self):
+        # Ravenous Hydra's active follows the passive on the same line;
+        # Horizon Focus names Hypershot inside a sentence (a reference)
+        out = builds.parse_dd_description(
+            "<mainText><stats><attention>65</attention> Attack Damage</stats>"
+            "<br><br><passive>Cleave</passive><br>Attacks deal "
+            "<physicalDamage>physical damage</physicalDamage> nearby."
+            "<active>Ravenous Crescent</active><br>Deal damage around you. <br>"
+            "Your Life Steal applies.<br><br><passive>Focus</passive><br>When "
+            "<passive>Hypershot</passive> is triggered, Reveal them.</mainText>")
+        self.assertEqual([(e["kind"], e["name"]) for e in out["effects"]],
+                         [("passive", "Cleave"), ("active", "Ravenous Crescent"),
+                          ("passive", "Focus")])
+        cleave, crescent, focus = out["effects"]
+        self.assertEqual(cleave["text"], [["", "Attacks deal "],
+                                          ["physicalDamage", "physical damage"],
+                                          ["", " nearby."]])
+        self.assertEqual(crescent["text"],
+                         [["", "Deal damage around you.\nYour Life Steal applies."]])
+        self.assertEqual(focus["text"], [["", "When "], ["passive", "Hypershot"],
+                                         ["", " is triggered, Reveal them."]])
+
+    def test_bullets_entities_and_unknown_tags(self):
+        out = builds.parse_dd_description(
+            "<mainText><stats><attention>30</attention> Attack Damage</stats><br><br>"
+            "<passive>Juxtaposition</passive><br>Alternate Attacks: "
+            "<li><keywordMajor>Light</keywordMajor> grants Armor. "
+            "<li>Dark grants <font color='#DD2E2E'>Pen &amp; more</font>.</mainText>")
+        self.assertEqual(out["effects"][0]["text"], [
+            ["", "Alternate Attacks:\n• "], ["keywordMajor", "Light"],
+            ["", " grants Armor.\n• Dark grants "], ["font", "Pen & more"], ["", "."]])
+        self.assertEqual(builds.parse_dd_description(""), {"stats": [], "effects": []})
+        # a stats-only item (boots) has no effect blocks at all
+        out = builds.parse_dd_description(
+            "<mainText><stats><attention>45</attention> Move Speed</stats><br><br></mainText>")
+        self.assertEqual(out, {"stats": ["45 Move Speed"], "effects": []})
 
 
 class TestKayleKit(unittest.TestCase):

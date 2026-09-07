@@ -248,6 +248,155 @@ def parse_dd_stats(description):
     return out
 
 
+# ---------------------------------------------------------------------------
+# item tooltips: ddragon's markup as text the dashboard renders itself
+#
+# The item icons in the ranked table open a tooltip with the in-game text.
+# ddragon ships that text as tag soup (<magicDamage>, <passive>, <br>, an
+# unclosed <li>), so it is parsed here into styled runs the page turns into
+# elements — no HTML ever reaches the browser.
+# ---------------------------------------------------------------------------
+
+DD_ICON_URL = "https://ddragon.leagueoflegends.com/cdn/{version}/img/item/{file}"
+_DD_TOKEN = re.compile(r"<(/?)([A-Za-z]+)[^>]*>|([^<]+)")
+# a passive/active name that ends its line (an optional "(0s)" cooldown
+# after it) names the block that follows; one used mid-sentence ("When
+# <passive>Hypershot</passive> is triggered") is a reference, not a heading
+_DD_HEADING = re.compile(
+    r"<(passive|active)>([^<]*)</\1>\s*(?:\([^)]*\))?\s*(?=<br>|<li>|</mainText>|$)")
+_DD_HEADING_STYLE = {"passiveHeading": "passive", "activeHeading": "active"}
+
+
+def parse_dd_description(markup):
+    """A ddragon item description as blocks the page renders without HTML:
+    {"stats": [line, ...], "effects": [block, ...]}. A block is a named
+    passive or active ({"kind", "name", "text"}) or a plain paragraph
+    ({"kind": "text", "name": None, "text"}); `text` is a list of
+    [style, text] runs, the style being the innermost ddragon tag around
+    the run ("" for plain text), with "\n" between the block's lines."""
+    import html as html_mod
+    markup = _DD_HEADING.sub(
+        lambda h: f"<br><{h.group(1)}Heading>{h.group(2)}</{h.group(1)}Heading>",
+        markup)
+    lines, stack, in_stats = [{"runs": [], "stats": False}], [], False
+    for m in _DD_TOKEN.finditer(markup):
+        if m.group(3) is not None:
+            text = re.sub(r"\s+", " ", html_mod.unescape(m.group(3)))
+            if text:
+                lines[-1]["runs"].append([stack[-1] if stack else "", text])
+            continue
+        closing, tag = m.group(1) == "/", m.group(2)
+        if tag == "mainText":
+            continue
+        if tag in ("br", "li", "stats"):
+            if tag == "stats":
+                in_stats = not closing
+            lines.append({"runs": [["", "• "]] if tag == "li" else [],
+                          "stats": in_stats})
+        elif closing:
+            while stack and stack.pop() != tag:
+                pass
+        else:
+            stack.append(tag)
+
+    def runs_text(runs):
+        return " ".join("".join(t for _, t in runs).split())
+
+    def heading(line):
+        styled = [r for r in line["runs"] if r[1].strip()]
+        if len(styled) == 1 and styled[0][0] in _DD_HEADING_STYLE:
+            return _DD_HEADING_STYLE[styled[0][0]], runs_text(styled)
+        return None
+
+    stats, blocks, block = [], [], None
+    for line in lines:
+        text = runs_text(line["runs"])
+        if line["stats"]:
+            if text:
+                stats.append(text)
+            continue
+        if not text:
+            block = None
+            continue
+        if head := heading(line):
+            block = {"kind": head[0], "name": head[1], "text": []}
+            blocks.append(block)
+            continue
+        if block is None:
+            block = {"kind": "text", "name": None, "text": []}
+            blocks.append(block)
+        block["text"].append(line["runs"])
+    effects = []
+    for b in blocks:
+        runs = []
+        for i, line in enumerate(b["text"]):
+            if i:
+                runs.append(["", "\n"])
+            runs += line
+        # merge same-style neighbours, trim the block's ends and each line
+        merged = []
+        for style, text in runs:
+            if merged and merged[-1][0] == style:
+                merged[-1][1] += text
+            else:
+                merged.append([style, text])
+        for r in merged:
+            r[1] = re.sub(r" *\n *", "\n", r[1])
+        if merged:
+            merged[0][1] = merged[0][1].lstrip()
+            merged[-1][1] = merged[-1][1].rstrip()
+        merged = [r for r in merged if r[1]]
+        # "<active>ACTIVE</active>" is a label above the real name: drop it
+        if b["name"] and b["name"].upper() == b["name"] and not merged \
+                and b["name"].lower() == b["kind"]:
+            continue
+        effects.append({"kind": b["kind"], "name": b["name"], "text": merged})
+    return {"stats": stats, "effects": effects}
+
+
+def load_ddragon(patch):
+    """The snapshot's ddragon items and meta for `patch`: (meta, {str id:
+    item}), or (None, None) when the snapshot has no ddragon file."""
+    meta = next((m for m in items.snapshots() if m["patch"] == patch), None)
+    path = os.path.join(items.ITEMS_DATA_DIR, patch, "ddragon.json")
+    if meta is None or not os.path.exists(path):
+        return None, None
+    with open(path) as f:
+        return meta, json.load(f)
+
+
+def item_catalog(patch, pool, effects, ids):
+    """What the dashboard shows for an item beyond its name: the ddragon
+    icon and in-game tooltip, and what the engine makes of it — the
+    passives item-effects.json accounts for, the ones it leaves as text
+    (as resolve_stats reports them), and the file's note."""
+    meta, dd = load_ddragon(patch)
+    out = []
+    for iid in ids:
+        if iid not in pool:
+            continue
+        it = pool[iid]
+        entry = {"id": iid, "name": it["name"],
+                 "gold": it["shop"]["prices"]["total"],
+                 "icon": None, "plaintext": "", "stats": [], "effects": []}
+        d = (dd or {}).get(str(iid))
+        if d:
+            entry["icon"] = DD_ICON_URL.format(version=meta["ddragonVersion"],
+                                               file=d["image"]["full"])
+            entry["plaintext"] = d.get("plaintext", "")
+            entry.update(parse_dd_description(d.get("description", "")))
+        fx = effects.get(iid, {})
+        covered = set(fx.get("covers", []))
+        entry["modeled"] = {
+            "covers": list(fx.get("covers", [])),
+            "unmodeled": [p["name"] for p in it.get("passives", [])
+                          if p.get("name") and p["name"] not in covered],
+            "note": fx.get("note"),
+        }
+        out.append(entry)
+    return out
+
+
 def load_items(patch=None):
     """The item pool as {int id: meraki item}, with each item's `stats`
     replaced by the parsed ddragon <stats> block wherever it parses."""
@@ -713,6 +862,8 @@ def api_builds_meta():
         "pool": sorted((entry(i) for i in DEFAULT_POOL),
                        key=lambda e: e["name"]),
         "boots": [entry(i) for i in BOOTS],
+        # icons and tooltips for every item a row can carry
+        "items": item_catalog(patch, pool, effects, DEFAULT_POOL + BOOTS),
         "excluded": excluded,
         "itemsPatch": patch,
         "note": "Theoretical damage model — deterministic sim, expected-value "
