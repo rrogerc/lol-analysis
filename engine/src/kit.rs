@@ -53,6 +53,33 @@ pub struct CrimsonRush {
     pub bonus_damage_pct: f64,
 }
 
+/// Twitch's Deadly Venom: what one stack deals each second (by level, plus an
+/// AP ratio), how many stack, how long they last, how often they tick.
+#[derive(Clone, Debug)]
+pub struct Venom {
+    /// Level 1 first; a level past the end reads the last entry.
+    pub per_stack_by_level: Vec<f64>,
+    pub ap_ratio: f64,
+    pub max_stacks: i64,
+    pub duration_s: f64,
+    pub tick_s: f64,
+}
+
+/// An attack-speed steroid an ability grants: percent by rank, for a while.
+#[derive(Clone, Debug)]
+pub struct AsBuff {
+    pub pct: Vec<f64>,
+    pub duration_s: f64,
+}
+
+/// A lingering area that stacks the kit's passive on whoever stands in it.
+#[derive(Clone, Debug)]
+pub struct Cloud {
+    pub duration_s: f64,
+    pub tick_s: f64,
+    pub stacks_per_tick: i64,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Ability {
     pub cooldown_s: Vec<f64>,
@@ -70,6 +97,15 @@ pub struct Ability {
     pub tick_s: Option<f64>,
     pub delay_s: Option<f64>,
     pub amp_pct: Option<f64>,
+    // Twitch: Ambush's steroid, Venom Cask's stacks and cloud, Contaminate's
+    // per-stack halves and the stacks it waits for, Spray and Pray's bonus AD
+    pub attack_speed: Option<AsBuff>,
+    pub stacks_on_hit: Option<i64>,
+    pub cloud: Option<Cloud>,
+    pub per_stack_phys: Option<DamageSpec>,
+    pub per_stack_magic: Option<DamageSpec>,
+    pub max_stacks: Option<i64>,
+    pub bonus_ad: Option<Vec<f64>>,
 }
 
 /// Which rotation driver a kit needs (engine/src/drivers.rs). Settled
@@ -78,6 +114,7 @@ pub struct Ability {
 pub enum DriverId {
     Kayle,
     Vladimir,
+    Twitch,
 }
 
 impl DriverId {
@@ -87,6 +124,7 @@ impl DriverId {
         match champion {
             "kayle" => Some(DriverId::Kayle),
             "vladimir" => Some(DriverId::Vladimir),
+            "twitch" => Some(DriverId::Twitch),
             _ => None,
         }
     }
@@ -103,6 +141,7 @@ pub struct Kit {
     pub aflame: Option<Aflame>,
     pub transcendent: Option<Form>,
     pub crimson_pact: Option<Pact>,
+    pub deadly_venom: Option<Venom>,
     pub q: Ability,
     pub w: Ability,
     pub e: Ability,
@@ -189,6 +228,31 @@ fn parse_ability(d: Option<Bound<'_, PyDict>>) -> PyResult<Ability> {
     if has(&d, "ampPct")? {
         ab.amp_pct = Some(reqf(&d, "ampPct")?);
     }
+    if let Some(a) = getd(&d, "attackSpeed")? {
+        ab.attack_speed = Some(AsBuff {
+            pct: getvecf(&a, "pct")?.ok_or_else(|| PyKeyError::new_err("pct"))?,
+            duration_s: reqf(&a, "durationS")?,
+        });
+    }
+    if has(&d, "stacksOnHit")? {
+        ab.stacks_on_hit = Some(reqi(&d, "stacksOnHit")?);
+    }
+    if let Some(c) = getd(&d, "cloud")? {
+        ab.cloud = Some(Cloud { duration_s: reqf(&c, "durationS")?, tick_s: reqf(&c, "tickS")?,
+                                stacks_per_tick: reqi(&c, "stacksPerTick")? });
+    }
+    if let Some(ps) = getd(&d, "perStack")? {
+        if let Some(p) = getd(&ps, "physical")? {
+            ab.per_stack_phys = Some(parse_damage_spec(&p)?);
+        }
+        if let Some(m) = getd(&ps, "magic")? {
+            ab.per_stack_magic = Some(parse_damage_spec(&m)?);
+        }
+    }
+    if has(&d, "maxStacks")? {
+        ab.max_stacks = Some(reqi(&d, "maxStacks")?);
+    }
+    ab.bonus_ad = getvecf(&d, "bonusAd")?;
     Ok(ab)
 }
 
@@ -202,6 +266,7 @@ impl Kit {
         };
         let passive = getd(d, "passive")?;
         let (mut zealous, mut arisen, mut aflame, mut transcendent, mut pact) = (None, None, None, None, None);
+        let mut venom = None;
         if let Some(p) = &passive {
             if let Some(z) = getd(p, "zealous")? {
                 zealous = Some(Zealous {
@@ -231,6 +296,17 @@ impl Kit {
                 pact = Some(Pact { ap_per_30_bonus_hp: reqf(&c, "apPer30BonusHp")?,
                                    bonus_hp_per_ap: reqf(&c, "bonusHpPerAp")? });
             }
+            if let Some(v) = getd(p, "deadlyVenom")? {
+                let per = reqd(&v, "perStackPerSecond")?;
+                venom = Some(Venom {
+                    per_stack_by_level: getvecf(&per, "byLevel")?
+                        .ok_or_else(|| PyKeyError::new_err("byLevel"))?,
+                    ap_ratio: getf(&per, "apRatio", 0.0)?,
+                    max_stacks: reqi(&v, "maxStacks")?,
+                    duration_s: reqf(&v, "durationS")?,
+                    tick_s: reqf(&v, "tickS")?,
+                });
+            }
         }
         let abilities = reqd(d, "abilities")?;
         let champion = reqs(d, "champion")?;
@@ -244,6 +320,7 @@ impl Kit {
             aflame,
             transcendent,
             crimson_pact: pact,
+            deadly_venom: venom,
             q: parse_ability(getd(&abilities, "Q")?)?,
             w: parse_ability(getd(&abilities, "W")?)?,
             e: parse_ability(getd(&abilities, "E")?)?,

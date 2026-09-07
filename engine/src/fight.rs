@@ -23,6 +23,15 @@ pub enum Kind {
     R,
     Ss,
     WTick,
+    /// Twitch's, after every kind the Python engine knew — none of them can
+    /// occur in a Kayle or Vladimir fight, so the old tie order stands: a
+    /// Venom Cask cloud tick, the cask itself, Contaminate, a Deadly Venom
+    /// tick (at one instant the stack lands before the cast, the cast before
+    /// the tick).
+    Cloud,
+    WCast,
+    ECast,
+    Venom,
 }
 
 #[derive(Clone, Debug)]
@@ -180,6 +189,10 @@ const R_Q: u32 = 5 << 16;
 const R_R: u32 = 6 << 16;
 const R_SS: u32 = 7 << 16;
 const R_WTICK: u32 = 8 << 16;
+const R_CLOUD: u32 = 9 << 16;
+const R_WCAST: u32 = 10 << 16;
+const R_ECAST: u32 = 11 << 16;
+const R_VENOM: u32 = 12 << 16;
 
 #[inline(always)]
 fn rank_of(k: Kind) -> u32 {
@@ -196,6 +209,10 @@ fn rank_of(k: Kind) -> u32 {
         Kind::R => R_R,
         Kind::Ss => R_SS,
         Kind::WTick => R_WTICK,
+        Kind::Cloud => R_CLOUD,
+        Kind::WCast => R_WCAST,
+        Kind::ECast => R_ECAST,
+        Kind::Venom => R_VENOM,
     }
 }
 
@@ -210,7 +227,11 @@ fn kind_of(rank: u32) -> Kind {
         5 => Kind::Q,
         6 => Kind::R,
         7 => Kind::Ss,
-        _ => Kind::WTick,
+        8 => Kind::WTick,
+        9 => Kind::Cloud,
+        10 => Kind::WCast,
+        11 => Kind::ECast,
+        _ => Kind::Venom,
     }
 }
 
@@ -221,7 +242,8 @@ fn check_rank_order() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
         let all: Vec<Kind> = [Kind::Attack, Kind::ECharge, Kind::ERelease, Kind::Mal, Kind::Q,
-                              Kind::R, Kind::Ss, Kind::WTick]
+                              Kind::R, Kind::Ss, Kind::WTick, Kind::Cloud, Kind::WCast,
+                              Kind::ECast, Kind::Venom]
             .into_iter()
             .chain((0..9).map(Kind::Burn))
             .collect();
@@ -301,9 +323,13 @@ pub struct Prep<'a> {
     amp_is_one: bool,
     onhits: Vec<(f64, DType, SourceId)>,
     onhits_current: Vec<(f64, DType)>,
-    /// The item actives that fire on engage, amounts already worked out.
-    actives_once: Vec<(f64, DType, SourceId)>,
-    ad: f64,
+    /// The item actives that fire on engage: `(head, ad_ratio, tail, ..)`,
+    /// the amount being `head + ad_ratio * AD + tail` with the attack damage
+    /// of the moment (a kit's opening steroid counts; the sheet's otherwise).
+    actives_once: Vec<(f64, f64, f64, DType, SourceId)>,
+    /// The sheet's attack damage: what a basic attack deals unless the driver
+    /// says otherwise (`Driver::attack_damage`).
+    pub ad: f64,
     move_speed: f64,
     energize_per_attack: f64,
     kraken_base: f64,
@@ -421,9 +447,15 @@ pub trait Driver: Sized {
     fn reset(&mut self);
     fn ranged(&self) -> bool;
     fn attack_range(&self) -> f64;
-    /// Kit-side bonus attack speed (stacking passives), in percent.
-    fn bonus_as(&self) -> f64 {
+    /// Kit-side bonus attack speed at `t` (stacking passives, a steroid's
+    /// window), in percent.
+    fn bonus_as(&self, _t: f64) -> f64 {
         0.0
+    }
+    /// The attack damage a basic attack deals right now: the sheet's, unless
+    /// the kit is running a steroid (Twitch's Spray and Pray).
+    fn attack_damage(&self, e: &Engine) -> f64 {
+        e.p.ad
     }
     /// Navori's on-attack CDR over the basic cooldowns the kit keeps.
     fn shave_cooldowns(&mut self, st: &mut St, t: f64, factor: f64) {
@@ -433,7 +465,7 @@ pub trait Driver: Sized {
     fn attack_riders(&mut self, _e: &mut Engine) {}
     fn after_attack(&mut self, _e: &mut Engine) {}
     fn schedule_attack(&mut self, e: &mut Engine) {
-        let b = self.bonus_as();
+        let b = self.bonus_as(e.st.t);
         e.st.next_attack = e.st.t + e.attack_period(b);
     }
     /// Earliest moment Q can be cast; INF when it can't be.
@@ -445,8 +477,8 @@ pub trait Driver: Sized {
     }
     fn cast_q(&mut self, e: &mut Engine);
     fn cast_r(&mut self, _e: &mut Engine) {}
-    /// Extra timed events, at most two, written into `out`.
-    fn events(&self, _e: &Engine, _out: &mut [(f64, Kind); 2]) -> usize {
+    /// Extra timed events, at most four, written into `out`.
+    fn events(&self, _e: &Engine, _out: &mut [(f64, Kind); 4]) -> usize {
         0
     }
     fn on_event(&mut self, _e: &mut Engine, kind: Kind) {
@@ -539,15 +571,15 @@ impl<'a> Prep<'a> {
         // item actives (Rocketbelt, Gunblade, hydra actives) fire on engage;
         // their amounts are the item's numbers and the sheet's, so they are
         // worked out here rather than at the top of every fight
-        let actives_once: Vec<(f64, DType, SourceId)> = fx
+        // split around the AD term so the fight can read the attack damage of
+        // the moment; the sum is associated exactly as the one expression was
+        let actives_once: Vec<(f64, f64, f64, DType, SourceId)> = fx
             .actives_once
             .iter()
             .map(|a| {
-                let amt = a.base
-                    + (match a.by_level { Some(b) => b.at(level), None => 0.0 })
-                    + a.ad_ratio * sheet.ad
-                    + a.ap_ratio * sheet.ap;
-                (amt, a.dtype, a.source)
+                let head = a.base + (match a.by_level { Some(b) => b.at(level), None => 0.0 });
+                let tail = a.ap_ratio * sheet.ap;
+                (head, a.ad_ratio, tail, a.dtype, a.source)
             })
             .collect();
         // Energize: 6 stacks per attack (+ item bonuses) plus 1 per 24 units
@@ -1512,7 +1544,7 @@ impl<'a, 'p> Engine<'a, 'p> {
                 floor = pymax(floor, u.crit_floor_ev);
             }
         }
-        let ad = self.p.ad;
+        let ad = drv.attack_damage(self);
         self.deal(ad, DType::Physical, SRC_AUTO, true, false, floor);
         self.apply_onhits(drv);
         if self.flags & F_ENERGIZED != 0 {
@@ -1625,7 +1657,10 @@ impl<'a> Prep<'a> {
         let mut e = Engine::new(self, target, opts.breakdown, no_execute, std::mem::take(log));
         // opening casts at t=0, before the first auto
         if opts.use_ult && self.ranks.r > 0 {
-            e.st.r_impact = self.r_delay_s.ok_or("kit R needs delayS")?;
+            if self.r_dmg.is_some() {
+                // a pure steroid (Spray and Pray) has no impact to land
+                e.st.r_impact = self.r_delay_s.ok_or("kit R needs delayS")?;
+            }
             e.prime_spellblade();
             e.st.next_attack += ABILITY_LOCKOUT_S;
             if let Some(u) = &fx.s.on_ult_cast {
@@ -1640,7 +1675,11 @@ impl<'a> Prep<'a> {
         }
         // item actives (Rocketbelt, Gunblade, hydra actives) fire on engage
         for i in 0..self.actives_once.len() {
-            let (amt, dtype, source) = self.actives_once[i];
+            let (head, ad_ratio, tail, dtype, source) = self.actives_once[i];
+            // the AD ratio reads the attack damage of the moment: the sheet's,
+            // plus whatever the kit's opening cast just added
+            let ad = drv.attack_damage(&e);
+            let amt = head + ad_ratio * ad + tail;
             e.deal(amt, dtype, source, false, false, 1.0);
         }
 
@@ -1653,7 +1692,7 @@ impl<'a> Prep<'a> {
         let has_mal = e.flags & F_ULT_BURN != 0;
         let has_ss = e.flags & F_STORMSURGE != 0;
         let n_burns = self.n_burns;
-        let mut evs = [(INF, Kind::ECharge); 2];
+        let mut evs = [(INF, Kind::ECharge); 4];
         loop {
             // the next event: the earliest of everything scheduled; at the same
             // instant, the kind that sorts first, then the earlier burn. The
@@ -1827,6 +1866,7 @@ pub fn prepare<'a, D: Driver>(sheet: &'a Sheet, kit: &'a Kit, fx: &'a Fx, level:
 enum Rotation {
     Kayle(crate::drivers::KayleDriver),
     Vladimir(crate::drivers::VladimirDriver),
+    Twitch(crate::drivers::TwitchDriver),
 }
 
 /// One build's fights: the target-independent setup and its driver, built
@@ -1854,6 +1894,11 @@ impl<'a> Sim<'a> {
                                                                        ranks, prestacked)?;
                 (p, Rotation::Vladimir(d))
             }
+            Some(crate::kit::DriverId::Twitch) => {
+                let (p, d) = prepare::<crate::drivers::TwitchDriver>(sheet, kit, fx, level, ranks,
+                                                                     prestacked)?;
+                (p, Rotation::Twitch(d))
+            }
             None => return Err(no_driver(kit)),
         };
         #[cfg(debug_assertions)]
@@ -1877,6 +1922,7 @@ impl<'a> Sim<'a> {
         let r = match &mut self.drv {
             Rotation::Kayle(d) => prep.fight(d, target, opts, log),
             Rotation::Vladimir(d) => prep.fight(d, target, opts, log),
+            Rotation::Twitch(d) => prep.fight(d, target, opts, log),
         };
         #[cfg(debug_assertions)]
         self.check_reset();
@@ -1897,6 +1943,10 @@ impl<'a> Sim<'a> {
             (Rotation::Vladimir(d), Rotation::Vladimir(f)) => {
                 d.reset();
                 debug_assert!(d == f, "VladimirDriver::reset left a field behind:\n{d:?}\n{f:?}");
+            }
+            (Rotation::Twitch(d), Rotation::Twitch(f)) => {
+                d.reset();
+                debug_assert!(d == f, "TwitchDriver::reset left a field behind:\n{d:?}\n{f:?}");
             }
             _ => unreachable!("the rotation never changes"),
         }
@@ -1919,6 +1969,9 @@ pub fn simulate(sheet: &Sheet, kit: &Kit, fx: &Fx, level: i64, ranks: Ranks, tar
         Some(crate::kit::DriverId::Vladimir) =>
             simulate_with::<crate::drivers::VladimirDriver>(sheet, kit, fx, level, ranks, target,
                                                             opts),
+        Some(crate::kit::DriverId::Twitch) =>
+            simulate_with::<crate::drivers::TwitchDriver>(sheet, kit, fx, level, ranks, target,
+                                                          opts),
         None => Err(no_driver(kit)),
     }
 }
@@ -1934,4 +1987,4 @@ pub fn simulate_with<D: Driver>(sheet: &Sheet, kit: &Kit, fx: &Fx, level: i64, r
 }
 
 
-pub const DRIVERS: [&str; 2] = ["kayle", "vladimir"];
+pub const DRIVERS: [&str; 3] = ["kayle", "vladimir", "twitch"];

@@ -71,7 +71,7 @@ SEED_COVERAGE = 20260905    # >=2 builds per pool item
 SEED_LOWLEVEL = 20260906    # level 9 / 11 / 13 builds
 SEED_ENUM_POOL = 20260907   # the 12-item pools for enumerate runs B and C
 
-CHAMPIONS = ("kayle", "vladimir")
+CHAMPIONS = ("kayle", "vladimir", "twitch")
 LOW_LEVELS = (9, 11, 13)
 LOW_PER_LEVEL = 10
 VARIANT_EVERY = 5           # every 5th build also gets the flag variants
@@ -86,36 +86,36 @@ EXTRA_TARGETS = {
 # Hand-picked interaction builds (5 items, no boots).  Ids resolved by name
 # through item_index/resolve_item at run time so a rename is caught loudly.
 HANDPICKED = [
-    ("collector-execute", ("kayle", "vladimir"),
+    ("collector-execute", ("kayle", "vladimir", "twitch"),
      ["The Collector", "Infinity Edge", "Yun Tal Wildarrows",
       "Lord Dominik's Regards", "Navori Flickerblade"]),
-    ("ap-burst", ("kayle", "vladimir"),
+    ("ap-burst", ("kayle", "vladimir", "twitch"),
      ["Stormsurge", "Shadowflame", "Rabadon's Deathcap", "Luden's Echo",
       "Horizon Focus"]),
-    ("on-hit", ("kayle", "vladimir"),
+    ("on-hit", ("kayle", "vladimir", "twitch"),
      ["Guinsoo's Rageblade", "Terminus", "Kraken Slayer", "Wit's End",
       "Nashor's Tooth"]),
-    ("burn-amp", ("kayle", "vladimir"),
+    ("burn-amp", ("kayle", "vladimir", "twitch"),
      ["Liandry's Torment", "Riftmaker", "Blackfire Torch", "Malignance",
       "Cosmic Drive"]),
     # Muramana + Essence Reaver + Trinity Force is illegal (two Spellblade):
-    ("mana-crit", ("kayle",),
+    ("mana-crit", ("kayle", "twitch"),
      ["Muramana", "Essence Reaver", "Yun Tal Wildarrows",
       "Navori Flickerblade", "Infinity Edge"]),
-    ("actives", ("kayle", "vladimir"),
+    ("actives", ("kayle", "vladimir", "twitch"),
      ["Experimental Hexplate", "Fiendhunter Bolts", "Sundered Sky", "Eclipse",
       "Hullbreaker"]),
-    ("energized", ("kayle", "vladimir"),
+    ("energized", ("kayle", "vladimir", "twitch"),
      ["Rapid Firecannon", "Statikk Shiv", "Stormrazor", "Voltaic Cyclosword",
       "Runaan's Hurricane"]),
-    ("shred-mana", ("kayle",),
+    ("shred-mana", ("kayle", "twitch"),
      ["Black Cleaver", "Bloodletter's Curse", "Spear of Shojin",
       "Abyssal Mask", "Actualizer"]),
     # Titanic + Rocketbelt + Gunblade + Stridebreaker is illegal (hydra group):
-    ("hydra-hextech", ("kayle", "vladimir"),
+    ("hydra-hextech", ("kayle", "vladimir", "twitch"),
      ["Titanic Hydra", "Hextech Rocketbelt", "Hextech Gunblade",
       "Umbral Glaive", "Dusk and Dawn"]),
-    ("hp-ap", ("kayle",),
+    ("hp-ap", ("kayle", "twitch"),
      ["Overlord's Bloodmail", "Endless Hunger", "Rod of Ages",
       "Seraph's Embrace", "Rabadon's Deathcap"]),
     ("hp-ap", ("vladimir",),
@@ -123,10 +123,10 @@ HANDPICKED = [
       "Zhonya's Hourglass", "Rabadon's Deathcap"]),
     # Lich Bane + Nashor's + Rabadon's + Void Staff + Cryptbloom is illegal
     # (two VoidPen), so Horizon Focus replaces Cryptbloom:
-    ("lich-bane-ap", ("kayle", "vladimir"),
+    ("lich-bane-ap", ("kayle", "vladimir", "twitch"),
      ["Lich Bane", "Nashor's Tooth", "Rabadon's Deathcap", "Void Staff",
       "Horizon Focus"]),
-    ("hexoptics-as", ("kayle", "vladimir"),
+    ("hexoptics-as", ("kayle", "vladimir", "twitch"),
      ["Hexoptics C44", "Guinsoo's Rageblade", "Kraken Slayer",
       "Phantom Dancer", "Statikk Shiv"]),
 ]
@@ -138,6 +138,9 @@ ENUM_FORCED = {
               "Navori Flickerblade"],
     "vladimir": ["Rabadon's Deathcap", "Void Staff", "Shadowflame",
                  "Blackfire Torch", "Horizon Focus", "Liandry's Torment"],
+    "twitch": ["Infinity Edge", "Kraken Slayer", "Blade of the Ruined King",
+               "Guinsoo's Rageblade", "Lord Dominik's Regards",
+               "Yun Tal Wildarrows"],
 }
 ENUM_POOL_SIZE = 12
 
@@ -414,7 +417,9 @@ def gen_enumerate(ctxs, patch):
             ("B-kayle-12", "kayle",
              enum_pool(ctxs["kayle"], random.Random(SEED_ENUM_POOL)), 200),
             ("C-vladimir-12", "vladimir",
-             enum_pool(ctxs["vladimir"], random.Random(SEED_ENUM_POOL)), 200)]
+             enum_pool(ctxs["vladimir"], random.Random(SEED_ENUM_POOL)), 200),
+            ("D-twitch-12", "twitch",
+             enum_pool(ctxs["twitch"], random.Random(SEED_ENUM_POOL)), 200)]
 
     for name, slug, cand, keep in plan:
         c = ctxs[slug]
@@ -447,8 +452,8 @@ def dump(path, obj):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--random", type=int, default=56,
-                    help="random builds per champion; 56 keeps the "
-                         "fixture just under 6 MB")
+                    help="random builds per champion; 56 kept the two-champion "
+                         "fixture just under 6 MB (three make it 9 MB)")
     ap.add_argument("--out", default=GOLDEN_DIR)
     ap.add_argument("--only", choices=("fights", "enumerate"))
     args = ap.parse_args()

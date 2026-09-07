@@ -169,7 +169,7 @@ def main():
 
     def sim_args(sp):
         sp.add_argument("name",
-                        help="champion with a kit encoding: kayle, vladimir")
+                        help="champion with a kit encoding: kayle, vladimir, twitch")
         sp.add_argument("--level", type=int, default=16)
         sp.add_argument("--patch", help="patch to use (default: newest snapshots)")
         sp.add_argument("--target-hp", type=int, default=2800)

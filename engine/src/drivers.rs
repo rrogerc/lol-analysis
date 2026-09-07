@@ -121,7 +121,7 @@ impl Driver for KayleDriver {
         self.attack_range
     }
 
-    fn bonus_as(&self) -> f64 {
+    fn bonus_as(&self, _t: f64) -> f64 {
         self.s.zeal as f64 * self.as_pct_per_stack
     }
 
@@ -163,10 +163,10 @@ impl Driver for KayleDriver {
             self.s.e_pending = true;
             self.s.e_ready = t + e.basic_cd(self.e_cd_base);
             e.prime_spellblade();
-            let b = self.bonus_as();
+            let b = self.bonus_as(t);
             e.st.next_attack = t + e.attack_windup(b, self.windup_fraction);
         } else {
-            let b = self.bonus_as();
+            let b = self.bonus_as(t);
             e.st.next_attack = t + e.attack_period(b);
         }
     }
@@ -360,7 +360,7 @@ impl Driver for VladimirDriver {
         self.s.busy_until = t + ABILITY_LOCKOUT_S;
     }
 
-    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 2]) -> usize {
+    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 4]) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
             if self.s.charge_until != INF {
@@ -403,6 +403,325 @@ impl Driver for VladimirDriver {
                 e.deal(self.w_tick, DType::Magic, SRC_W, false, true, 1.0);
                 self.s.w_ticks_left -= 1;
                 self.s.w_next = if self.s.w_ticks_left != 0 { t + self.w_tick_s } else { INF };
+            }
+            other => panic!("unhandled event {other:?}"),
+        }
+    }
+}
+
+/// A marksman whose poison keeps the books: every on-hit stacks Deadly Venom
+/// on the target (six at most, ticking true damage once a second), Ambush is
+/// cast before the fight and its attack speed starts when the camouflage
+/// breaks, Spray and Pray opens the fight with bonus attack damage, Venom
+/// Cask is thrown while the stacks are short of six and Contaminate is cast
+/// the moment they are not.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TwitchDriver {
+    ranks: Ranks,
+    attack_range: f64,
+    /// Ambush's attack speed (percent) and how long it runs once the
+    /// camouflage breaks.
+    q_as_pct: f64,
+    q_as_duration: f64,
+    /// One second of one venom stack at this level and AP.
+    venom_per_stack: f64,
+    venom_max: i64,
+    venom_duration: f64,
+    venom_tick: f64,
+    w_cd: f64,
+    w_stacks_on_hit: i64,
+    cloud_ticks: i64,
+    cloud_tick_s: f64,
+    cloud_stacks: i64,
+    e_cd: f64,
+    e_base: f64,
+    /// The per-stack physical part without its bonus-AD term, which reads the
+    /// bonus attack damage of the moment at `e_stack_bad` per point.
+    e_stack_static: f64,
+    e_stack_bad: f64,
+    /// The per-stack magic part, settled by the sheet's AP.
+    e_stack_magic: f64,
+    e_stacks_needed: i64,
+    r_bonus_ad: f64,
+    r_duration: f64,
+    /// The sheet's bonus attack damage, for Contaminate's ratio.
+    ad_bonus: f64,
+    /// The rotation state, and a pristine copy of it (see `KayleDriver`).
+    s: TwitchState,
+    s0: TwitchState,
+}
+
+/// Everything of Twitch's rotation a fight moves.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct TwitchState {
+    /// Deadly Venom stacks on the target, when they lapse, and the next tick
+    /// (INF while nothing is ticking).
+    stacks: i64,
+    venom_until: f64,
+    venom_next: f64,
+    /// Ambush's camouflage is still up (the fight opens from it); once it
+    /// breaks the attack speed runs until `q_until`.
+    q_pending: bool,
+    q_until: f64,
+    w_ready: f64,
+    cloud_left: i64,
+    cloud_next: f64,
+    e_ready: f64,
+    r_until: f64,
+}
+
+impl TwitchDriver {
+    /// The venom stacks on the target at `t`: none once they have lapsed.
+    fn stacks_at(&self, t: f64) -> i64 {
+        if t > self.s.venom_until {
+            0
+        } else {
+            self.s.stacks
+        }
+    }
+
+    /// Bonus attack damage at `t`: the sheet's, plus Spray and Pray's while
+    /// it runs.
+    fn bonus_ad_at(&self, t: f64) -> f64 {
+        if t < self.s.r_until {
+            self.ad_bonus + self.r_bonus_ad
+        } else {
+            self.ad_bonus
+        }
+    }
+
+    /// `n` applications of Deadly Venom at `t`: lapsed stacks are gone first,
+    /// the count is capped, the duration refreshed, and the once-a-second
+    /// tick started if it is not already running (a refresh never moves it).
+    fn add_stacks(&mut self, t: f64, n: i64) {
+        if t > self.s.venom_until {
+            self.s.stacks = 0;
+        }
+        self.s.stacks = imin(self.s.stacks + n, self.venom_max);
+        self.s.venom_until = t + self.venom_duration;
+        if self.s.venom_next == INF {
+            self.s.venom_next = t + self.venom_tick;
+        }
+    }
+
+    /// The camouflage breaks (an attack, or a cask): Ambush's attack speed
+    /// starts now.
+    fn break_stealth(&mut self, t: f64) {
+        if self.s.q_pending {
+            self.s.q_pending = false;
+            self.s.q_until = t + self.q_as_duration;
+        }
+    }
+}
+
+impl Driver for TwitchDriver {
+    fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
+        -> Result<Self, String> {
+        let venom = kit.deadly_venom.as_ref().ok_or("twitch kit needs passive.deadlyVenom")?;
+        let table = &venom.per_stack_by_level;
+        if table.is_empty() {
+            return Err("twitch kit needs passive.deadlyVenom.perStackPerSecond.byLevel".into());
+        }
+        let lv = imin(imax(level, 1), table.len() as i64) as usize;
+        let venom_per_stack = table[lv - 1] + venom.ap_ratio * sheet.ap;
+        let (q_as_pct, q_as_duration) = if ranks.q > 0 {
+            let a = kit.q.attack_speed.as_ref().ok_or("twitch kit needs Q.attackSpeed")?;
+            (a.pct[(ranks.q - 1) as usize], a.duration_s)
+        } else {
+            (0.0, 0.0)
+        };
+        let (w_cd, w_stacks_on_hit, cloud_ticks, cloud_tick_s, cloud_stacks) = if ranks.w > 0 {
+            let c = kit.w.cloud.as_ref().ok_or("twitch kit needs W.cloud")?;
+            (kit.w.cooldown_s[(ranks.w - 1) as usize],
+             kit.w.stacks_on_hit.ok_or("twitch kit needs W.stacksOnHit")?,
+             (c.duration_s / c.tick_s) as i64, c.tick_s, c.stacks_per_tick)
+        } else {
+            (INF, 0, 0, 0.0, 0)
+        };
+        let (e_cd, e_base, e_stack_static, e_stack_bad, e_stack_magic, e_stacks_needed) =
+            if ranks.e > 0 {
+                let r = (ranks.e - 1) as usize;
+                let base = kit.e.damage.as_ref().ok_or("twitch kit needs E.damage")?;
+                let phys = kit.e.per_stack_phys.as_ref()
+                    .ok_or("twitch kit needs E.perStack.physical")?;
+                let magic = kit.e.per_stack_magic.as_ref()
+                    .ok_or("twitch kit needs E.perStack.magic")?;
+                (kit.e.cooldown_s[r], base.hit(ranks.e, sheet),
+                 phys.base[r] + phys.ap_ratio * sheet.ap, phys.bonus_ad_ratio,
+                 magic.hit(ranks.e, sheet),
+                 kit.e.max_stacks.ok_or("twitch kit needs E.maxStacks")?)
+            } else {
+                (INF, 0.0, 0.0, 0.0, 0.0, i64::MAX)
+            };
+        let (r_bonus_ad, r_duration) = if ranks.r > 0 {
+            let b = kit.r.bonus_ad.as_ref().ok_or("twitch kit needs R.bonusAd")?;
+            (b[(ranks.r - 1) as usize], kit.r.duration_s.ok_or("twitch kit needs R.durationS")?)
+        } else {
+            (0.0, 0.0)
+        };
+        let state = TwitchState {
+            stacks: 0,
+            venom_until: -1.0,
+            venom_next: INF,
+            q_pending: ranks.q > 0,
+            q_until: -1.0,
+            w_ready: 0.0,
+            cloud_left: 0,
+            cloud_next: INF,
+            e_ready: 0.0,
+            r_until: -1.0,
+        };
+        Ok(TwitchDriver {
+            ranks,
+            attack_range: sheet.base_attack_range,
+            q_as_pct,
+            q_as_duration,
+            venom_per_stack,
+            venom_max: venom.max_stacks,
+            venom_duration: venom.duration_s,
+            venom_tick: venom.tick_s,
+            w_cd,
+            w_stacks_on_hit,
+            cloud_ticks,
+            cloud_tick_s,
+            cloud_stacks,
+            e_cd,
+            e_base,
+            e_stack_static,
+            e_stack_bad,
+            e_stack_magic,
+            e_stacks_needed,
+            r_bonus_ad,
+            r_duration,
+            ad_bonus: sheet.ad_bonus,
+            s: state,
+            s0: state,
+        })
+    }
+
+    fn reset(&mut self) {
+        self.s = self.s0;
+    }
+
+    fn ranged(&self) -> bool {
+        self.attack_range > MELEE_MAX_RANGE
+    }
+
+    fn attack_range(&self) -> f64 {
+        self.attack_range
+    }
+
+    fn bonus_as(&self, t: f64) -> f64 {
+        if t < self.s.q_until {
+            self.q_as_pct
+        } else {
+            0.0
+        }
+    }
+
+    fn attack_damage(&self, e: &Engine) -> f64 {
+        if e.st.t < self.s.r_until {
+            e.p.ad + self.r_bonus_ad
+        } else {
+            e.p.ad
+        }
+    }
+
+    fn shave_cooldowns(&mut self, st: &mut St, t: f64, factor: f64) {
+        shave(&mut st.q_ready, t, factor);
+        shave(&mut self.s.w_ready, t, factor);
+        shave(&mut self.s.e_ready, t, factor);
+    }
+
+    fn before_attack(&mut self, e: &mut Engine) {
+        // an attack breaks the camouflage at the start of its windup
+        let t = e.st.t;
+        self.break_stealth(t);
+    }
+
+    fn attack_riders(&mut self, e: &mut Engine) {
+        // on-hit: the main hit, a phantom hit, Dusk and Dawn's second pass
+        let t = e.st.t;
+        self.add_stacks(t, 1);
+    }
+
+    /// Ambush is never recast inside a fight (see the kit's note).
+    fn q_at(&self, _e: &Engine) -> f64 {
+        INF
+    }
+
+    fn cast_q(&mut self, _e: &mut Engine) {
+        unreachable!("Twitch's q_at is INF: the engine never casts his Q")
+    }
+
+    fn cast_r(&mut self, e: &mut Engine) {
+        // Spray and Pray, from camouflage: bonus AD (and range) for a while,
+        // no damage of its own; the engine already primed Spellblade and
+        // applied the cast lockout
+        self.s.r_until = e.st.t + self.r_duration;
+    }
+
+    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 4]) -> usize {
+        let t = e.st.t;
+        let mut n = 0;
+        if self.s.venom_next != INF {
+            out[n] = (self.s.venom_next, Kind::Venom);
+            n += 1;
+        }
+        if self.s.cloud_left > 0 {
+            out[n] = (self.s.cloud_next, Kind::Cloud);
+            n += 1;
+        } else if self.ranks.w > 0 && self.stacks_at(t) < self.venom_max {
+            out[n] = (pymax(self.s.w_ready, t), Kind::WCast);
+            n += 1;
+        }
+        if self.ranks.e > 0 && self.stacks_at(t) >= self.e_stacks_needed {
+            out[n] = (pymax(self.s.e_ready, t), Kind::ECast);
+            n += 1;
+        }
+        n
+    }
+
+    fn on_event(&mut self, e: &mut Engine, kind: Kind) {
+        let t = e.st.t;
+        match kind {
+            Kind::Venom => {
+                let amt = self.stacks_at(t) as f64 * self.venom_per_stack;
+                e.deal(amt, DType::True, SRC_VENOM, false, false, 1.0);
+                self.s.venom_next = if t + self.venom_tick <= self.s.venom_until {
+                    t + self.venom_tick
+                } else {
+                    INF
+                };
+            }
+            Kind::WCast => {
+                self.s.w_ready = t + e.basic_cd(self.w_cd);
+                self.add_stacks(t, self.w_stacks_on_hit);
+                self.s.cloud_left = self.cloud_ticks;
+                self.s.cloud_next = if self.cloud_ticks > 0 { t + self.cloud_tick_s } else { INF };
+                self.break_stealth(t);
+                e.prime_spellblade();
+                e.lockout();
+            }
+            Kind::Cloud => {
+                self.add_stacks(t, self.cloud_stacks);
+                self.s.cloud_left -= 1;
+                self.s.cloud_next = if self.s.cloud_left > 0 { t + self.cloud_tick_s } else { INF };
+            }
+            Kind::ECast => {
+                self.s.e_ready = t + e.basic_cd(self.e_cd);
+                let stacks = self.stacks_at(t) as f64;
+                let per = self.e_stack_static + self.e_stack_bad * self.bonus_ad_at(t);
+                e.deal(self.e_base + stacks * per, DType::Physical, SRC_E, false, true, 1.0);
+                let magic = stacks * self.e_stack_magic;
+                if magic != 0.0 {
+                    e.deal(magic, DType::Magic, SRC_E_MAGIC, false, true, 1.0);
+                }
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                e.prime_spellblade();
+                e.lockout();
+                self.break_stealth(t);
             }
             other => panic!("unhandled event {other:?}"),
         }

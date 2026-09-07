@@ -27,7 +27,10 @@ can lag patches behind:
 - Champion base stats: data/builds/champions/<patch>/<slug>/ddragon.json
   (`builds fetch-champion` snapshots it). Meraki's champion file rides along
   for what ddragon lacks — attack-speed ratio and windup (meta.json records
-  how far behind it is).
+  how far behind it is) — and riot.json, the base-stat record of Riot's own
+  character file (CommunityDragon), stands in for the AD growth ddragon has
+  published as 0 for everyone since 16.5.1 (meraki lags patches; Twitch's
+  25.08 entry still says 3.1 where Riot's 16.17 file says 3).
 - Kit encodings were verified against Riot's actual game files
   (raw.communitydragon.org/<patch>/game/data/characters/<champ>/) — spell
   base damages, ratios, cooldowns and mana as of 16.16.
@@ -65,6 +68,19 @@ ITEM_EFFECTS_PATH = os.path.join(BUILDS_DATA_DIR, "item-effects.json")
 DDRAGON_CHAMP_INDEX = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json"
 DDRAGON_CHAMP = "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion/{cid}.json"
 MERAKI_CHAMP = "https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions/{cid}.json"
+# Riot's own character file for the patch, as CommunityDragon publishes it
+RIOT_CHAMP_BIN = ("https://raw.communitydragon.org/{patch}/game/data/characters/"
+                  "{name}/{name}.bin.json")
+# its CharacterRecords/Root base-stat fields -> riot.json keys
+RIOT_BASE_STATS = {
+    "baseHPModifiable": "baseHP", "hpPerLevelModifiable": "hpPerLevel",
+    "baseDamageModifiable": "baseDamage", "damagePerLevelModifiable": "damagePerLevel",
+    "baseArmorModifiable": "baseArmor", "armorPerLevelModifiable": "armorPerLevel",
+    "baseMR": "baseMR", "mrPerLevel": "mrPerLevel",
+    "baseMoveSpeedModifiable": "baseMoveSpeed", "attackRangeModifiable": "attackRange",
+    "attackSpeedModifiable": "attackSpeed", "attackSpeedRatioModifiable": "attackSpeedRatio",
+    "attackSpeedPerLevelModifiable": "attackSpeedPerLevel",
+}
 
 AS_CAP = 2.5  # attack speed is hard-capped in game (the engine's num.rs agrees)
 INF = float("inf")
@@ -181,14 +197,18 @@ def load_champion(slug, patch=None):
             continue
         with open(os.path.join(cdir, "ddragon.json")) as f:
             dd = json.load(f)
-        mk = None
+        mk, riot = None, None
         mk_path = os.path.join(cdir, "meraki.json")
         if os.path.exists(mk_path):
             with open(mk_path) as f:
                 mk = json.load(f)
+        riot_path = os.path.join(cdir, "riot.json")
+        if os.path.exists(riot_path):
+            with open(riot_path) as f:
+                riot = json.load(f)
         with open(os.path.join(cdir, "meta.json")) as f:
             meta = json.load(f)
-        return {"slug": slug, "dd": dd, "mk": mk, "meta": meta}
+        return {"slug": slug, "dd": dd, "mk": mk, "riot": riot, "meta": meta}
     sys.exit(f"No snapshot for '{slug}'"
              + (f" at patch {patch}" if patch else "")
              + f" — run `lol.py builds fetch-champion {slug}` first.")
@@ -582,14 +602,18 @@ def champ_base(champ):
     riding along, and the AD-growth fallback resolved — ddragon 16.5.1 onward
     publishes attackdamageperlevel = 0 for every champion at once (a Data
     Dragon regression, not a game change; Riot's files keep the real growth,
-    16.17: Vladimir 3, Kayle 2.5), so meraki's per-level AD stands in for
-    exactly that case. Meraki lags patches: re-check a champion against
-    raw.communitydragon.org when the number matters."""
+    16.17: Vladimir 3, Kayle 2.5, Twitch 3), so for exactly that case the
+    snapshot's riot.json (Riot's own file, see riot_base_stats) stands in,
+    and meraki's per-level AD where a snapshot predates riot.json. Meraki
+    lags patches (Twitch's 25.08 entry still says 3.1): re-check a champion
+    against raw.communitydragon.org when the number matters."""
     dd = champ["dd"]["stats"]
     mk = (champ["mk"] or {}).get("stats", {})
+    riot = champ.get("riot") or {}
     ad_growth = dd["attackdamageperlevel"]
     if ad_growth == 0:
-        ad_growth = mk.get("attackDamage", {}).get("perLevel", 0.0) or 0.0
+        ad_growth = (riot.get("damagePerLevel")
+                     or mk.get("attackDamage", {}).get("perLevel", 0.0) or 0.0)
     return dict(
         hp=dd["hp"], hp_per=dd["hpperlevel"], mp=dd["mp"], mp_per=dd["mpperlevel"],
         armor=dd["armor"], armor_per=dd["armorperlevel"],
@@ -821,7 +845,9 @@ def api_builds_meta():
         name = kit.get("name", slug)
         dropped = [pool[i]["name"] for i in DEFAULT_POOL
                    if i not in ids and i in pool]
-        notes = []
+        # what the kit's rotation assumes, in the kit's own words, then the
+        # flags the pool rules read
+        notes = list(kit.get("notes", []))
         if kit.get("attack", {}).get("never"):
             notes.append(f"{name} never auto-attacks in this model, as played: "
                          "on-hit, crit, energized and spellblade passives never "
@@ -1256,6 +1282,32 @@ def cmd_warm(args):
 # commands
 # ---------------------------------------------------------------------------
 
+def riot_base_stats(patch, cid):
+    """A champion's base stats as Riot's own game files have them: the
+    CharacterRecords/Root entry of the character bin CommunityDragon publishes
+    per patch — the one source that kept AD growth after ddragon 16.5.1
+    started publishing 0 for everyone, and current where meraki lags. Values
+    are the bin's 32-bit floats rounded to six places (1.100000023841858 is
+    1.1); the attack cast offset (30% + it is the windup share) rides along
+    for the kit encoder."""
+    name = cid.lower()
+    url = RIOT_CHAMP_BIN.format(patch=patch, name=name)
+    doc = items.fetch_json(url)
+    root = next((v for k, v in doc.items()
+                 if k.endswith("/CharacterRecords/Root")), None)
+    if root is None:
+        raise ValueError("no CharacterRecords/Root entry in the character bin")
+    out = {"source": url}
+    for field, key in RIOT_BASE_STATS.items():
+        v = root.get(field)
+        if isinstance(v, dict) and "baseValue" in v:
+            out[key] = round(v["baseValue"], 6)
+    offset = root.get("basicAttack", {}).get("mAttackDelayCastOffsetPercent")
+    if offset is not None:
+        out["attackDelayCastOffsetPercent"] = round(offset, 6)
+    return out
+
+
 def cmd_fetch_champion(args):
     versions = items.fetch_json(items.DDRAGON_VERSIONS)
     version = (items.resolve_version(versions, args.version)
@@ -1288,6 +1340,13 @@ def cmd_fetch_champion(args):
     except Exception as e:
         mk_note = f"meraki fetch failed: {e} (stat sheets fall back to base AS as ratio)"
         print(f"Warning: {mk_note}")
+    riot, riot_note = None, None
+    try:
+        riot = riot_base_stats(patch, cid)
+    except Exception as e:
+        riot_note = (f"Riot character file fetch failed: {e} (AD growth falls back "
+                     f"to meraki where ddragon publishes 0)")
+        print(f"Warning: {riot_note}")
 
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "ddragon.json"), "w") as f:
@@ -1295,19 +1354,25 @@ def cmd_fetch_champion(args):
     if mk:
         with open(os.path.join(out_dir, "meraki.json"), "w") as f:
             json.dump(mk, f, separators=(",", ":"))
+    if riot:
+        with open(os.path.join(out_dir, "riot.json"), "w") as f:
+            json.dump(riot, f, indent=2)
     meta = {
         "slug": slug, "championId": cid, "patch": patch,
         "ddragonVersion": version,
         "fetchedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "merakiPatchLastChanged": mk.get("patchLastChanged") if mk else None,
+        "riotSource": riot["source"] if riot else None,
     }
-    if mk_note:
-        meta["note"] = mk_note
+    notes = [n for n in (mk_note, riot_note) if n]
+    if notes:
+        meta["note"] = "; ".join(notes)
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
 
     print(f"data/builds/champions/{patch}/{slug}: ddragon {version}"
-          + (f", meraki (last changed {meta['merakiPatchLastChanged']})" if mk else ""))
+          + (f", meraki (last changed {meta['merakiPatchLastChanged']})" if mk else "")
+          + (", Riot character file" if riot else ""))
     if mk and mk.get("patchLastChanged") != patch:
         print(f"  Note: meraki's champion data is from patch "
               f"{mk['patchLastChanged']}; ddragon is used for base stats, "

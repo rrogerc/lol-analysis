@@ -1,0 +1,111 @@
+{
+  "_provenance": [
+    "Hand-encoded on 2026-09-07 from wiki.leagueoflegends.com/en-us/Twitch",
+    "(V26.17 era), cross-checked against ddragon 16.17.1 and Riot's own 16.17",
+    "game files (raw.communitydragon.org/16.17/game/data/characters/twitch/",
+    "twitch.bin.json): every base, ratio, cooldown, stack count and duration",
+    "below agrees between the wiki and the bin (the bin's DataValues carry a",
+    "rank-0 entry ahead of ranks 1-5; the passive's DamagePerSecond calc has",
+    "breakpoints at levels 5/9/13/17). The meraki snapshot is from 25.08 and",
+    "stale on two counts the stat layer works around: AD growth 3.1 (3 since",
+    "V26.01 - the snapshot's riot.json, read from the same bin, wins over",
+    "meraki when ddragon publishes its 0) and an attack windup of 18.75%",
+    "(Riot's cast offset -0.098084 gives 20.192%, the wiki's figure).",
+    "Season-2026 history: V26.01 AD growth 3.1 -> 3, AS growth 3.38% -> 3%,",
+    "Ambush attack speed 45-65% -> 40-60%; V26.04 health growth 104 -> 98,",
+    "armor growth 4.2 -> 4; V26.09 Deadly Venom applies on-hit again (so",
+    "phantom hits and a second Spellblade on-hit apply a stack); V26.16 base",
+    "MR 30 -> 33, growth 1.3 -> 1.1. Skill order E > Q > W is the guide",
+    "sites' consensus; Riot's files carry no recommended order for him.",
+    "Modeling choices the sources do not settle are in the notes below and",
+    "in `notes` (shown by the dashboard): Ambush is cast before the fight",
+    "and never recast; Venom Cask is thrown at the opening and only while",
+    "the stacks are short of six; Contaminate waits for six stacks; the",
+    "venom ticks once a second from its first application.",
+    "Base stats are NOT duplicated here - the stat layer reads them from",
+    "data/builds/champions/<patch>/twitch/. This file is only what no",
+    "structured source has: the kit's damage logic and its timing rules."
+  ],
+  "champion": "twitch",
+  "name": "Twitch",
+  "patch": "16.17",
+  "maxOrder": ["E", "Q", "W"],
+  "notes": [
+    "Twitch opens from Ambush's camouflage: its 40-60% attack speed runs for 6 s from the first attack or cask that breaks it, and Ambush is never recast (the 1 s fade would cost more attacks than the buff returns in a fight this long).",
+    "Spray and Pray is cast at t=0 from camouflage: +30/45/60 bonus AD and +300 range for 6 s, no damage of its own; a lone dummy takes every bolt in full.",
+    "Venom Cask is thrown at the opening (a stack on impact, one a second for 3 s from the cloud) and only while the target is short of six stacks; Contaminate is cast the moment six stacks are up and it is off cooldown, never earlier to finish a kill.",
+    "Deadly Venom ticks once a second (true damage, 1-5 by level plus 3% AP per stack) and every on-hit refreshes it, phantom hits included."
+  ],
+  "attack": {
+    "windupFraction": 0.20192,
+    "critModified": true,
+    "ranged": true,
+    "note": "windup = 30% + Riot's attack cast offset -0.098084 (the wiki's 20.192%); kept for the record, nothing reads it. Spray and Pray's bolts use a slower animation (0.389 / 1.333 s in the bin) that the engine does not model: attacks land at their tick"
+  },
+  "passive": {
+    "name": "Deadly Venom",
+    "deadlyVenom": {
+      "perStackPerSecond": {
+        "byLevel": [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5],
+        "apRatio": 0.03,
+        "damageType": "true",
+        "note": "1/2/3/4/5 at levels 1/5/9/13/17 (the bin's breakpoints), +3% AP, per stack each second"
+      },
+      "maxStacks": 6,
+      "durationS": 6,
+      "tickS": 1,
+      "note": "applied on-hit by basic attacks (Guinsoo phantom hits and Dusk and Dawn's second on-hit included, V26.09) and by Venom Cask; every application refreshes the 6 s and all stacks lapse together. Modeled as one true-damage instance of stacks x per-stack every second from the first application (the last tick at expiry), the cadence unbroken by refreshes; not ability damage, so no burns, Shojin or Muramana ride it"
+    }
+  },
+  "abilities": {
+    "Q": {
+      "name": "Ambush",
+      "cooldownS": [16, 16, 16, 16, 16],
+      "mana": [40, 40, 40, 40, 40],
+      "fadeS": 1,
+      "camouflageS": [10, 11, 12, 13, 14],
+      "attackSpeed": {
+        "pct": [40, 45, 50, 55, 60],
+        "durationS": 6
+      },
+      "note": "cast before the fight: the buff starts when the camouflage breaks - the first attack, or the opening cask (Spray and Pray does not break it). Never recast: the attack speed is granted only on breaking stealth, so a recast means a 1 s fade without attacking (the wiki: attacking during it ends Ambush), which costs more than the 6 s buff returns inside a 15 s fight"
+    },
+    "W": {
+      "name": "Venom Cask",
+      "cooldownS": [13, 12, 11, 10, 9],
+      "mana": [70, 70, 70, 70, 70],
+      "castTimeS": 0.25,
+      "stacksOnHit": 1,
+      "cloud": { "durationS": 3, "tickS": 1, "stacksPerTick": 1 },
+      "slowPct": [30, 35, 40, 45, 50],
+      "note": "no damage of its own: a stack on impact (the cask lands as it is thrown), then one a second for 3 s from the cloud, which the dummy never leaves. Thrown when ready while the target is short of six stacks - at the opening and, in a fight this length, never again; the slow is damage-irrelevant"
+    },
+    "E": {
+      "name": "Contaminate",
+      "cooldownS": [12, 11, 10, 9, 8],
+      "mana": [50, 60, 70, 80, 90],
+      "castTimeS": 0.25,
+      "damage": {
+        "base": [20, 30, 40, 50, 60],
+        "damageType": "physical"
+      },
+      "perStack": {
+        "physical": { "base": [15, 20, 25, 30, 35], "bonusAdRatio": 0.35 },
+        "magic": { "base": [0, 0, 0, 0, 0], "apRatio": 0.35 }
+      },
+      "maxStacks": 6,
+      "consumesStacks": false,
+      "note": "one physical instance (base plus the per-stack physical) and one magic instance (the per-stack AP part, skipped at 0 AP), both ability damage. Cast the moment six stacks are up and it is off cooldown, never earlier to finish a kill. Spray and Pray's bonus AD counts as bonus AD here"
+    },
+    "R": {
+      "name": "Spray and Pray",
+      "cooldownS": [90, 90, 90],
+      "mana": [100, 100, 100],
+      "durationS": 6,
+      "bonusAd": [30, 45, 60],
+      "bonusRange": 300,
+      "falloff": { "perTargetPct": 10, "minPct": 60 },
+      "note": "no damage of its own: bonus AD (it feeds attacks, Contaminate's ratio and the AD ratio of item actives) and range for 6 s from the cast at t=0, made from camouflage without breaking it. A lone dummy takes each bolt in full; the engine's standard 0.25 s cast lockout still delays the first attack"
+    }
+  }
+}

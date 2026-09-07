@@ -85,6 +85,31 @@
   outside the view sections. Checks: `test_builds.TestItemCatalog`,
   `node jobs/test-builds-item-ui.cjs`.
 
+- Twitch (2026-09-07): the third kit (`data/builds/twitch.json`, `TwitchDriver`
+  in `engine/src/drivers.rs`), numbers from the wiki cross-checked against
+  Riot's 16.17 character bin. Model: Ambush is cast before the fight and never
+  recast — its 40–60% attack speed runs 6 s from the first attack or cask that
+  breaks the camouflage (the wiki grants it only on breaking stealth, so a
+  recast's 1 s fade costs more than it returns inside 15 s); Spray and Pray at
+  t=0 from camouflage, +30/45/60 bonus AD for 6 s and no damage (a damage-less
+  ult schedules no impact; `Driver::attack_damage` feeds the bonus to attacks,
+  Contaminate's ratio and AD-ratio item actives); Venom Cask at the opening
+  and only while the target is short of six stacks (a stack on impact, one a
+  second for 3 s); Contaminate the moment six stacks are up and it is off
+  cooldown, never early to finish a kill (physical base + per-stack, the AP
+  half a separate "E magic" instance); Deadly Venom ticks once a second per
+  stack (true damage, 1–5 by level + 3% AP, refreshed by every on-hit, phantom
+  hits included, not ability damage). Skill order E > Q > W. Champion
+  snapshots now carry `riot.json` (Riot's CharacterRecords/Root via
+  CommunityDragon, fetched by `fetch-champion`): `champ_base` reads its AD
+  growth where ddragon publishes 0 (Twitch 3; meraki's 25.08 entry still says
+  3.1). The engine hooks added for him (`bonus_as(t)`, `attack_damage`, four
+  driver events, new `Kind`s after the old ones) left Kayle's and Vladimir's
+  fights bit-identical: the golden fixtures were regenerated with his cases
+  added and the old 2,565 cases and three runs verified unchanged. A cold
+  Twitch tier warms in ~41 s. Tests: `test_builds.TestTwitchKit`,
+  `TestTwitchEngine`; the dashboard shows the kit's `notes`.
+
 ## The TFT tab (tft.py, tft_engine/, data/tft/)
 
 - Live snapshot: `data/tft/set18/18.1d/`. See `data/tft/README.md` for

@@ -29,7 +29,7 @@ module and committed JSON archive:
   every champion since 16.5 while Riot's game files still carry it);
   text-only item passives live in the hand-curated
   `data/builds/item-effects.json`, and ability kits in hand-encoded
-  `data/builds/<champ>.json` — Kayle and Vladimir so far, each paired
+  `data/builds/<champ>.json` — Kayle, Vladimir and Twitch so far, each paired
   with a rotation driver (`engine/src/drivers.rs`) that says what the
   champion does with its attacks and abilities; the engine itself is
   champion-agnostic (clock, target, item procs, damage pipeline). On top:

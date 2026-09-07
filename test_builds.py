@@ -760,7 +760,8 @@ class TestVladimirKit(unittest.TestCase):
         self.assertEqual(builds.kit_max_order(self.kit, "e,q,w"), ("E", "Q", "W"))
 
     def test_registered(self):
-        self.assertEqual(builds.kit_champions(), ["kayle", "vladimir"])
+        self.assertEqual(builds.kit_champions(), ["kayle", "twitch", "vladimir"])
+        self.assertEqual(sorted(builds.KIT_DRIVERS), ["kayle", "twitch", "vladimir"])
 
     def test_own_health_ratios(self):
         # E at full charge, rank 5: 180 + 80% AP + 6% of OWN max health
@@ -1014,6 +1015,271 @@ class TestVladimirEngine(unittest.TestCase):
         exp = [r["ttk_exp"] for r in killers]
         self.assertEqual(exp, sorted(exp))
 
+
+
+def fake_twitch(riot=True):
+    """A Twitch-shaped champion snapshot (patch 16.17 ddragon values), with
+    meraki's stale 25.08 AD growth and Riot's own file alongside."""
+    dd = {"name": "Twitch", "stats": {
+        "hp": 630, "hpperlevel": 98, "mp": 300, "mpperlevel": 40,
+        "armor": 27, "armorperlevel": 4,
+        "spellblock": 33, "spellblockperlevel": 1.1,
+        "attackdamage": 59, "attackdamageperlevel": 0,
+        "attackspeed": 0.679, "attackspeedperlevel": 3,
+        "movespeed": 330, "attackrange": 550,
+    }}
+    mk = {"stats": {"attackSpeedRatio": {"flat": 0.679},
+                    "criticalStrikeDamage": {"flat": 175.0},
+                    "attackDamage": {"flat": 59, "perLevel": 3.1}}}
+    return {"slug": "twitch", "dd": dd, "mk": mk, "meta": {"patch": "16.17"},
+            "riot": {"damagePerLevel": 3.0} if riot else None}
+
+
+class TestTwitchKit(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = builds.load_kit("twitch")
+
+    def test_shape(self):
+        for slot, ranks in [("Q", 5), ("W", 5), ("E", 5), ("R", 3)]:
+            self.assertEqual(len(self.kit["abilities"][slot]["cooldownS"]), ranks)
+        e = self.kit["abilities"]["E"]
+        self.assertEqual(e["damage"]["base"], [20, 30, 40, 50, 60])
+        self.assertEqual(e["perStack"]["physical"]["base"], [15, 20, 25, 30, 35])
+        self.assertEqual(e["perStack"]["physical"]["bonusAdRatio"], 0.35)
+        self.assertEqual(e["perStack"]["magic"]["apRatio"], 0.35)
+        self.assertEqual(e["maxStacks"], 6)
+        self.assertFalse(e["consumesStacks"])
+        self.assertEqual(self.kit["abilities"]["R"]["bonusAd"], [30, 45, 60])
+        self.assertEqual(self.kit["abilities"]["R"]["durationS"], 6)
+        self.assertNotIn("damage", self.kit["abilities"]["R"])
+        q = self.kit["abilities"]["Q"]["attackSpeed"]
+        self.assertEqual((q["pct"], q["durationS"]), ([40, 45, 50, 55, 60], 6))
+        w = self.kit["abilities"]["W"]
+        self.assertEqual((w["stacksOnHit"], w["cloud"]["durationS"], w["cloud"]["tickS"]), (1, 3, 1))
+        venom = self.kit["passive"]["deadlyVenom"]
+        table = venom["perStackPerSecond"]["byLevel"]
+        self.assertEqual(len(table), 18)
+        # 1/2/3/4/5 at levels 1/5/9/13/17: Riot's breakpoints
+        self.assertEqual([table[lv - 1] for lv in (1, 4, 5, 9, 13, 16, 17, 18)],
+                         [1, 1, 2, 3, 4, 4, 5, 5])
+        self.assertEqual((venom["maxStacks"], venom["durationS"], venom["tickS"]), (6, 6, 1))
+        self.assertFalse(self.kit.get("manaless"))
+        self.assertFalse(self.kit["attack"].get("never"))
+        self.assertEqual(builds.kit_max_order(self.kit), ("E", "Q", "W"))
+        self.assertEqual(builds.skill_ranks(16, builds.kit_max_order(self.kit)),
+                         {"Q": 5, "W": 3, "E": 5, "R": 3})
+        self.assertTrue(self.kit["notes"])
+
+
+class TestTwitchEngine(unittest.TestCase):
+    """Twitch's rotation, hand-computed. Level 16 naked: attack speed 0.679 x
+    (1 + 43.4% growth + 60% Ambush) = 1.381, a 0.724 s period; AD 59 + 3 x
+    growth(16) = 102.425; the venom deals 4 true damage per stack per
+    second; Contaminate (rank 5) is 60 + 6 x (35 + 35% bonus AD) at six
+    stacks, its magic half 6 x 35% AP."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = builds.load_kit("twitch")
+        cls.patch, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+        cls.order = builds.kit_max_order(cls.kit)
+        cls.ad16 = 59 + 3 * builds.growth(16)
+
+    def resolve(self, level, tokens, effects=None):
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        return ids, builds.resolve_stats(fake_twitch(), level, ids, self.pool,
+                                         effects or self.effects, kit=self.kit)
+
+    def sim(self, level, tokens, hp=100_000, armor=0, mr=0, duration=3.0,
+            use_ult=False, kit=None, effects=None, **kw):
+        fx = effects or self.effects
+        ids, sheet = self.resolve(level, tokens, fx)
+        return builds.simulate(sheet, kit or self.kit,
+                               builds.merge_effects(ids, fx), level,
+                               builds.skill_ranks(level, self.order), hp, armor,
+                               mr, duration, use_ult=use_ult, **kw)
+
+    def test_ad_growth_prefers_riot_file_over_stale_meraki(self):
+        # ddragon says 0 (its 16.5.1 regression), meraki's 25.08 entry 3.1,
+        # Riot's 16.17 file 3: the file wins; meraki stands in only for a
+        # snapshot without one; a real ddragon number beats both
+        g = builds.growth(16)
+        s = builds.resolve_stats(fake_twitch(), 16, [], {}, effects={}, kit=self.kit)
+        self.assertAlmostEqual(s["ad"], 59 + 3 * g)
+        s = builds.resolve_stats(fake_twitch(riot=False), 16, [], {}, effects={},
+                                 kit=self.kit)
+        self.assertAlmostEqual(s["ad"], 59 + 3.1 * g)
+        champ = fake_twitch()
+        champ["dd"]["stats"]["attackdamageperlevel"] = 2
+        s = builds.resolve_stats(champ, 16, [], {}, effects={}, kit=self.kit)
+        self.assertAlmostEqual(s["ad"], 59 + 2 * g)
+        # the archived snapshot carries the file, which agrees with ddragon
+        # on everything ddragon publishes
+        champ = builds.load_champion("twitch")
+        self.assertEqual(champ["riot"]["damagePerLevel"], 3.0)
+        self.assertAlmostEqual(builds.champ_base(champ)["ad_per"], 3.0)
+        dd = champ["dd"]["stats"]
+        for dk, rk in (("hp", "baseHP"), ("hpperlevel", "hpPerLevel"),
+                       ("armor", "baseArmor"), ("armorperlevel", "armorPerLevel"),
+                       ("spellblock", "baseMR"), ("spellblockperlevel", "mrPerLevel"),
+                       ("attackdamage", "baseDamage"), ("attackspeed", "attackSpeed"),
+                       ("attackspeedperlevel", "attackSpeedPerLevel"),
+                       ("attackrange", "attackRange"), ("movespeed", "baseMoveSpeed")):
+            self.assertAlmostEqual(dd[dk], champ["riot"][rk], msg=dk)
+
+    def test_level1_hand_computed(self):
+        # Level 1 is one point in Contaminate, which never sees six stacks:
+        # autos at 0 and 1/0.679 = 1.473 for 59 each, the one venom stack
+        # ticking 1 true damage at 1.0. No Ambush rank, so no buff.
+        r = self.sim(1, [], duration=1.5)
+        self.assertEqual(r["attacks"], 2)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 118.0)
+        self.assertAlmostEqual(r["breakdown"]["venom"], 1.0)
+        self.assertAlmostEqual(r["total"], 119.0)
+        self.assertNotIn("E", r["breakdown"])
+
+    def test_rotation_hand_computed(self):
+        # Level 16 naked, no ult, 0 resists. The auto at 0 breaks the
+        # camouflage (stack 1); the cask at 0 (stack 2; cloud stacks at 1, 2,
+        # 3 s) delays the next auto to 0.974 (stack 3); the cloud's 1.0 tick
+        # (stack 4) lands before the venom's first: 4 x 4 = 16. An auto at
+        # 1.698 (5), the cloud at 2.0 (6): Contaminate at 2.0 for 60 + 6 x 35
+        # = 270 (no bonus AD), its lockout pushing the auto due at 2.422 to
+        # 2.672; venom ticks of 24 at 2.0 and 3.0.
+        r = self.sim(16, [], duration=1.0)
+        self.assertEqual(r["attacks"], 2)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 2 * self.ad16)
+        self.assertAlmostEqual(r["breakdown"]["venom"], 16.0)
+        self.assertNotIn("W", r["breakdown"])  # the cask deals nothing itself
+        r = self.sim(16, [], duration=3.0)
+        self.assertEqual(r["attacks"], 4)
+        self.assertAlmostEqual(r["breakdown"]["E"], 270.0)
+        self.assertNotIn("E magic", r["breakdown"])  # no AP: no magic half
+        self.assertAlmostEqual(r["breakdown"]["venom"], 64.0)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 4 * self.ad16)
+        self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"], places=6)
+        # over 12 s: the buff ends at 6 (the auto scheduled at 5.568 still
+        # lands at 6.292, then 1.027 s apart), Contaminate again at 10.0
+        # (8 s cooldown, no haste) with the stacks still at six, the cask
+        # never again (its 11 s cooldown is up with six stacks on the
+        # target): 14 autos, 540 from E, venom 16 + 11 x 24
+        r = self.sim(16, [], duration=12.0)
+        self.assertEqual(r["attacks"], 14)
+        self.assertAlmostEqual(r["breakdown"]["E"], 540.0)
+        self.assertAlmostEqual(r["breakdown"]["venom"], 280.0)
+
+    def test_ambush_attack_speed_runs_six_seconds(self):
+        # eight autos in 5.6 s with the buff (0, 0.974, then every 0.724 s
+        # around Contaminate's lockout); with the buff zeroed the period is
+        # 1.027 s and five land
+        self.assertEqual(self.sim(16, [], duration=5.6)["attacks"], 8)
+        calm = copy.deepcopy(self.kit)
+        calm["abilities"]["Q"]["attackSpeed"]["pct"] = [0, 0, 0, 0, 0]
+        self.assertEqual(self.sim(16, [], duration=5.6, kit=calm)["attacks"], 5)
+
+    def test_spray_and_pray_adds_bonus_ad_for_six_seconds(self):
+        # R at 0 from camouflage (the standard 0.25 s lockout), the cask at 0
+        # (another): the first auto at 0.5 deals base AD + 60. Contaminate at
+        # 2.0 reads the bonus AD too: 60 + 6 x (35 + 0.35 x 60) = 396; its
+        # lockout moves the auto due at 2.672 to 2.922.
+        r = self.sim(16, [], duration=0.5, use_ult=True)
+        self.assertEqual(r["attacks"], 1)
+        self.assertAlmostEqual(r["breakdown"]["auto"], self.ad16 + 60)
+        self.assertNotIn("R", r["breakdown"])  # no damage of its own
+        r = self.sim(16, [], duration=3.0, use_ult=True)
+        self.assertEqual(r["attacks"], 4)
+        self.assertAlmostEqual(r["breakdown"]["E"], 396.0)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 4 * (self.ad16 + 60))
+        # past 6 s the autos are back to the sheet's AD (the one at 6.542
+        # already is) and the second Contaminate at 10.0 reads no bonus
+        r = self.sim(16, [], duration=12.0, use_ult=True)
+        self.assertEqual(r["attacks"], 14)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 8 * (self.ad16 + 60) + 6 * self.ad16)
+        self.assertAlmostEqual(r["breakdown"]["E"], 396.0 + 270.0)
+
+    def test_venom_is_true_damage(self):
+        # 300 armor and MR leave the venom untouched while the autos and
+        # Contaminate shrink; the stack timeline is the same, so it is the
+        # same number
+        a = self.sim(16, [], duration=3.0)
+        b = self.sim(16, [], duration=3.0, armor=300, mr=300)
+        self.assertAlmostEqual(a["breakdown"]["venom"], b["breakdown"]["venom"])
+        self.assertLess(b["breakdown"]["auto"], a["breakdown"]["auto"])
+        self.assertLess(b["breakdown"]["E"], a["breakdown"]["E"])
+
+    def test_contaminate_magic_half_scales_with_ap(self):
+        # Rabadon's: the physical half is unchanged, "E magic" is 6 x 35% AP,
+        # and the venom is 4 + 3% AP per stack over the same 16 stack-ticks
+        ids, sheet = self.resolve(16, ["rabadons"])
+        r = self.sim(16, ["rabadons"], duration=3.0)
+        self.assertAlmostEqual(r["breakdown"]["E"], 270.0)
+        self.assertAlmostEqual(r["breakdown"]["E magic"], 6 * 0.35 * sheet["ap"])
+        self.assertAlmostEqual(r["breakdown"]["venom"], 16 * (4 + 0.03 * sheet["ap"]))
+
+    def test_phantom_hits_apply_stacks(self):
+        # Guinsoo's phantom hits are on-hits, so each adds a stack: with the
+        # cap lifted (a kit copy stacking without limit, Contaminate never
+        # due) the venom counts every one, and Wrath's phantom switched off
+        # leaves the attack speed stacks alone but loses those stacks
+        loose = copy.deepcopy(self.kit)
+        loose["passive"]["deadlyVenom"]["maxStacks"] = 1000
+        loose["abilities"]["E"]["maxStacks"] = 1000
+        r = self.sim(16, ["guinsoo"], duration=6.0, kit=loose)
+        self.assertGreater(r["phantom_hits"], 0)
+        self.assertNotIn("E", r["breakdown"])
+        calm = copy.deepcopy(self.effects)
+        del calm[3124]["phantom"]
+        off = self.sim(16, ["guinsoo"], duration=6.0, kit=loose, effects=calm)
+        self.assertEqual(off["phantom_hits"], 0)
+        self.assertEqual(off["attacks"], r["attacks"])
+        self.assertGreater(r["breakdown"]["venom"], off["breakdown"]["venom"])
+
+    def test_ability_items_ride_contaminate_not_the_venom(self):
+        # Liandry's burn and Luden's ride Contaminate (ability damage); the
+        # venom, the cask and the ult are not ability damage, so with
+        # Contaminate never due nothing of theirs fires
+        r = self.sim(16, ["liandry", "ludens echo"], duration=3.0, use_ult=True)
+        for src in ("burn", "ludens"):
+            self.assertIn(src, r["breakdown"])
+        quiet = copy.deepcopy(self.kit)
+        quiet["abilities"]["E"]["maxStacks"] = 1000
+        r = self.sim(16, ["liandry", "ludens echo"], duration=3.0, use_ult=True,
+                     kit=quiet)
+        for src in ("E", "burn", "ludens"):
+            self.assertNotIn(src, r["breakdown"])
+        self.assertIn("venom", r["breakdown"])
+
+    def test_item_actives_read_the_ult_ad(self):
+        # Profane Hydra's Cleave at 80% AD fires on engage, after Spray and
+        # Pray: 0.8 x (AD + 60) with the ult, 0.8 x AD without (Kayle's and
+        # Vladimir's actives keep the sheet's AD: the golden fixtures pin it)
+        ids, sheet = self.resolve(16, ["profane hydra"])
+        r = self.sim(16, ["profane hydra"], duration=0.1, use_ult=True)
+        self.assertAlmostEqual(r["breakdown"]["active"], 0.8 * (sheet["ad"] + 60))
+        r = self.sim(16, ["profane hydra"], duration=0.1, use_ult=False)
+        self.assertAlmostEqual(r["breakdown"]["active"], 0.8 * sheet["ad"])
+
+    def test_full_pool_and_dashboard_notes(self):
+        self.assertEqual(builds.champion_pool(self.kit, self.effects), builds.DEFAULT_POOL)
+        meta = builds.api_builds_meta()
+        by_slug = {c["slug"]: c for c in meta["champions"]}
+        self.assertEqual(by_slug["twitch"]["name"], "Twitch")
+        self.assertEqual(by_slug["twitch"]["excluded"], [])
+        self.assertEqual(by_slug["twitch"]["notes"], self.kit["notes"])
+        self.assertTrue(any("Ambush" in n for n in by_slug["twitch"]["notes"]))
+
+    def test_ranking_prefers_kill_time(self):
+        cands = [3031, 6672, 3153, 3124, 3036, 3032, 3046, 6675]
+        results, _ = enum_one(
+            fake_twitch(), self.pool, self.effects, self.kit, 16,
+            builds.skill_ranks(16, self.order), 2800, 110, 60, 8, candidates=cands)
+        killers = [r for _, _, r in results if r["ttk"] is not None]
+        self.assertTrue(killers)
+        exp = [r["ttk_exp"] for r in killers]
+        self.assertEqual(exp, sorted(exp))
 
 
 class TestScenarioCache(unittest.TestCase):
@@ -1709,6 +1975,11 @@ class TestBootsPartitions(unittest.TestCase):
         self.assertEqual(self.classes(self.kayle, False),
                          [[self.pool[b]["name"] for b in c]
                           for c in builds.boots_classes(self.pool, self.effects)])
+
+    def test_twitch_attacks_so_his_boots_partition_like_kayles(self):
+        twitch = builds.load_kit("twitch")
+        for calm in (True, False):
+            self.assertEqual(self.classes(twitch, calm), self.classes(self.kayle, calm))
 
     def test_vladimir_never_attacks_so_only_pen_and_haste_tell_boots_apart(self):
         for calm in (True, False):

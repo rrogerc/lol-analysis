@@ -15,10 +15,10 @@ use crate::pyget::*;
 /// kit's own labels take the first ids so the engine can test for "auto".
 pub type SourceId = u16;
 
-pub const KIT_SOURCES: [&str; 18] = [
+pub const KIT_SOURCES: [&str; 20] = [
     "auto", "Q", "Q empowered", "E", "W", "R", "E onhit", "E active", "wave", "execute",
     "muramana", "eclipse", "botrk", "kraken", "hullbreaker", "spellblade", "malignance",
-    "stormsurge",
+    "stormsurge", "venom", "E magic",
 ];
 pub const SRC_AUTO: SourceId = 0;
 pub const SRC_Q: SourceId = 1;
@@ -38,6 +38,8 @@ pub const SRC_HULLBREAKER: SourceId = 14;
 pub const SRC_SPELLBLADE: SourceId = 15;
 pub const SRC_MALIGNANCE: SourceId = 16;
 pub const SRC_STORMSURGE: SourceId = 17;
+pub const SRC_VENOM: SourceId = 18;
+pub const SRC_E_MAGIC: SourceId = 19;
 
 fn sources() -> &'static RwLock<Vec<String>> {
     static TABLE: OnceLock<RwLock<Vec<String>>> = OnceLock::new();
