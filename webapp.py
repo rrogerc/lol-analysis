@@ -4,12 +4,13 @@
 Both expose the same API shape — serve answers JSON per request, export
 pre-bakes the identical paths as files — so web/index.html runs unchanged in
 either mode. New analysis domains plug in by adding their endpoints here in
-both places. The builds scenarios are precomputed either way (builds.warm):
-serve keeps them warm in the background and never simulates on request.
+both places. TFT responses are prepared by the scheduled refresh and served
+from its last complete publication. LoL builds retain their background warmer.
 """
 
 import json
 import os
+from pathlib import Path
 import re
 import shutil
 import signal
@@ -22,6 +23,7 @@ import builds
 import items
 import scaling
 import tft
+import tft_comps
 from common import BASE_DIR, WEB_DIR, db_connect
 
 JOBS_DIR = os.path.join(BASE_DIR, "jobs")
@@ -211,17 +213,34 @@ def cmd_export(args):
     files += 1
     # the TFT cells likewise
     if tft.patch_dirs(tft.DEFAULT_SET):
-        tmeta = tft.api_meta()
+        tsnap = tft.load_snapshot()
+        tmeta = tft.api_meta(tsnap)
         dump("api/tft/meta.json", tmeta)
-        if tft.warm() is None:
+        if tft.warm(snap=tsnap, prune=False) is None:
             sys.exit("Another TFT warm is running — wait for it, then export again.")
-        tpaths = tft.cell_paths()
+        tpaths = tft.cell_paths(tsnap)
         for slug, key in tpaths:
             dump(f"api/tft/{slug}/{key}.json", tft.cached_scenario(slug, key, tpaths))
+        tslugs = sorted({slug for slug, _ in tpaths})
+        for slug in tslugs:
+            dump(f"api/tft/{slug}/cores.json", tft.cached_core_contexts(slug, tpaths, snap=tsnap))
+        leaderboards = tft.leaderboard_scenarios()
+        for key in leaderboards:
+            dump(f"api/tft/leaderboard/{key}.json", tft.cached_leaderboard(key, tpaths, snap=tsnap))
         dump("api/tft/status.json",
              {"ready": {f"{slug}/{key}": True for slug, key in tpaths}, "warmer": "idle",
               "patch": tmeta["patch"], "revision": tmeta["revision"], "refresh": {}})
-        files += 2 + len(tpaths)
+        files += 2 + len(tpaths) + len(tslugs) + len(leaderboards)
+        # Composition artifacts share the exact same underlying TFT snapshot.
+        if tft_comps.warm(snap=tsnap) is None:
+            sys.exit("Another composition warm is running — wait for it, then export again.")
+        cmeta = tft_comps.api_meta(tsnap)
+        dump("api/tft/compositions/meta.json", cmeta)
+        for key in tft_comps.scenarios():
+            dump(f"api/tft/compositions/{key}.json", tft_comps.cached_scenario(key, snap=tsnap))
+        dump("api/tft/compositions/status.json", {"revision": cmeta["revision"],
+             "ready": tft_comps.cell_ready(tsnap), "warmer": "idle", "progress": {}})
+        files += 2 + len(tft_comps.scenarios())
     for tier in meta["tiers"]:
         patches = scaling.db_patches(con, tier)
         dump(f"api/rows/{tier}.json", scaling.build_rows(con, tier, patches))
@@ -303,13 +322,86 @@ class AutoWarm:
             self.proc.terminate()
 
 
+def _accepts_gzip(value):
+    preferences = {}
+    for part in value.lower().split(","):
+        encoding, *parameters = part.strip().split(";")
+        encoding = encoding.strip()
+        if encoding not in ("gzip", "*"):
+            continue
+        quality = 1.0
+        for parameter in parameters:
+            name, _, setting = parameter.strip().partition("=")
+            if name == "q":
+                try:
+                    quality = float(setting)
+                except ValueError:
+                    quality = 0.0
+        preferences[encoding] = quality if 0 <= quality <= 1 else 0.0
+    return preferences.get("gzip", preferences.get("*", 0.0)) > 0
+
+
+class TftResponses:
+    """Pin one complete publication; requests only read prepared files."""
+    def __init__(self):
+        import tft_site
+
+        self.bundle = None
+        self.statuses = {}
+        try:
+            marker = json.loads(Path(tft.CACHE_DIR, ".dashboard-ready").read_text())
+            bundle = tft_site.load(marker["site"])
+            if (marker["revision"] != bundle.manifest["baselineRevision"]
+                    or marker["compositionRevision"] != bundle.manifest["compositionRevision"]):
+                raise ValueError("TFT publication revisions do not match the ready marker")
+            self.statuses = {url: bundle.json(url) for url in (
+                "/api/tft/status.json", "/api/tft/compositions/status.json")}
+            self.bundle = bundle
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"TFT saved responses are unavailable: {error}", file=sys.stderr)
+
+    def send(self, handler, url):
+        if url in ("/api/tft/status.json", "/api/tft/compositions/status.json"):
+            payload = dict(self.statuses.get(url, {"revision": None, "ready": {}, "warmer": "idle", "pending": True}))
+            # The refresh state is small operational metadata. It does not
+            # change the revision or readiness of the files being served.
+            payload["refresh"] = tft.refresh_state()
+            handler._json(payload)
+            return
+        if self.bundle is None:
+            handler._json({"pending": True, "revision": None,
+                           "message": "Saved TFT results will be available after the scheduled refresh."}, 202)
+            return
+        asset = self.bundle.asset(url, compressed=_accepts_gzip(handler.headers.get("Accept-Encoding", "")))
+        if asset is None:
+            handler._json({"error": "not found"}, 404)
+            return
+        tags = [tag.strip().removeprefix("W/") for tag in handler.headers.get("If-None-Match", "").split(",")]
+        unchanged = "*" in tags or asset["etag"] in tags
+        # Open before sending headers so a missing file produces an error,
+        # never an apparently successful truncated response or simulation.
+        with asset["path"].open("rb") as stream:
+            handler.send_response(304 if unchanged else 200)
+            handler.send_header("ETag", asset["etag"])
+            handler.send_header("Cache-Control", "no-cache")
+            handler.send_header("Vary", "Accept-Encoding")
+            if not unchanged:
+                handler.send_header("Content-Type", "application/json")
+                handler.send_header("Content-Length", str(asset["size"]))
+                if asset["encoding"]:
+                    handler.send_header("Content-Encoding", asset["encoding"])
+            handler.end_headers()
+            if not unchanged:
+                shutil.copyfileobj(stream, handler.wfile)
+
+
 def cmd_serve(args):
     import webbrowser
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     from urllib.parse import urlparse, parse_qs
 
     warmer = AutoWarm(enabled=not args.no_warm)
-    twarmer = AutoWarm(enabled=not args.no_warm, domain=tft, words=("tft", "warm"))
+    tft_responses = TftResponses()
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -320,6 +412,7 @@ def cmd_serve(args):
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(body)
 
@@ -354,25 +447,8 @@ def cmd_serve(args):
                     else:
                         self._json(out)
                     return
-                if u.path == "/api/tft/meta.json":
-                    self._json(tft.api_meta())
-                    return
-                if u.path == "/api/tft/status.json":
-                    snap = tft.load_snapshot()
-                    self._json({"ready": tft.cell_ready(snap), "warmer": twarmer.state(),
-                                "patch": snap.patch, "revision": tft.snapshot_revision(snap),
-                                "refresh": tft.refresh_state()})
-                    return
-                if m := re.fullmatch(r"/api/tft/([a-z0-9]+)/([a-z0-9-]+)\.json", u.path):
-                    try:
-                        out = tft.cached_scenario(m.group(1), m.group(2))
-                    except ValueError as e:
-                        self._json({"error": str(e)}, 404)
-                        return
-                    if out is None:
-                        self._json({"pending": True}, 202)
-                    else:
-                        self._json(out)
+                if u.path.startswith("/api/tft/"):
+                    tft_responses.send(self, u.path)
                     return
                 con = db_connect()
                 if u.path == "/api/meta.json":
@@ -402,10 +478,10 @@ def cmd_serve(args):
     url = f"http://{args.host}:{args.port}"
     print(f"Serving dashboard at {url}  (Ctrl-C to stop)")
     if args.no_warm:
-        print("Auto-warm is off; run `lol.py builds warm` and `lol.py tft warm` by hand.")
+        print("LoL auto-warm is off; run `lol.py builds warm` when needed.")
     else:
-        print("Cold builds and TFT scenarios warm in the background "
-              "(logs: .cache/builds/warm.log, .cache/tft/warm.log)")
+        print("Cold LoL builds warm in the background (log: .cache/builds/warm.log).")
+    print("TFT serves saved results; `lol.py tft refresh` prepares both analyses on the scheduled timer.")
     if not args.no_open:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     # a restart's SIGTERM must unwind normally so the warm we spawned goes too
@@ -416,4 +492,3 @@ def cmd_serve(args):
         print("\nStopped.")
     finally:
         warmer.stop()
-        twarmer.stop()

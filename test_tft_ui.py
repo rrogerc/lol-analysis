@@ -35,6 +35,18 @@ class TestTftUiMetadata(unittest.TestCase):
                     self.assertIn(bonus["breakpoint"], traits[bonus["api"]]["levels"])
                     self.assertTrue(traits[bonus["api"]]["modeled"])
 
+    def test_item_recipes_preserve_component_identity_and_duplicate_ingredients(self):
+        for item in self.meta["items"]:
+            with self.subTest(item=item["name"]):
+                recipe = self.snap.items[item["api"]]["composition"]
+                self.assertEqual([c["api"] for c in item["components"]], recipe)
+                self.assertEqual([c["name"] for c in item["components"]],
+                                 [self.snap.items[api]["name"] for api in recipe])
+                self.assertEqual(len(recipe), 2)
+        blue = next(item for item in self.meta["items"] if item["name"] == "Blue Buff")
+        self.assertEqual(blue["components"][0], blue["components"][1])
+        self.assertIn("Tear", blue["components"][0]["name"])
+
     def test_tank_threats_and_debuffs_match_the_simulation_inputs(self):
         self.assertEqual(self.meta["tankDebuffs"], {"wound": .33, "sunder": .3, "shred": .3})
         for threat in self.meta["tankThreats"]:
@@ -48,6 +60,35 @@ class TestTftUiMetadata(unittest.TestCase):
         self.assertIn("s2-clump-bare", tank_keys)
         self.assertIn("s2-clump-bare-physical", tank_keys)
         self.assertIn("s2-clump-bare-magic", tank_keys)
+
+    def test_offensive_targets_have_team_resistance_reduction_from_corrected_rows(self):
+        expected = {"sunder": .3, "shred": .3}
+        self.assertEqual(tft.target_debuffs(self.snap), expected)
+        self.assertEqual(self.meta["targetDebuffs"], expected)
+        self.assertEqual(self.meta["dummy"]["targetDebuffs"], expected)
+        for name in ("Ahri", "Ashe", "Warwick"):
+            with self.subTest(unit=name):
+                spec = tft.cell_spec(self.snap, self.snap.unit(name), 2, "clump", [], self.meta["dummy"])
+                self.assertEqual(spec["targetDebuffs"], expected)
+                # All slots retain base defenses; the engine applies the
+                # shared status once, including the rear non-tank target.
+                self.assertEqual([s["armor"] for s in spec["dummies"]["slots"]], [110, 45, 40])
+                self.assertEqual([s["mr"] for s in spec["dummies"]["slots"]], [110, 45, 40])
+        for threat, dummy in self.meta["tankDummies"].items():
+            with self.subTest(threat=threat):
+                self.assertEqual(dummy["targetDebuffs"], {})
+                spec = tft.cell_spec(self.snap, self.snap.unit("Leona"), 2, "clump", [], dummy)
+                self.assertEqual(spec["targetDebuffs"], {})
+                self.assertEqual(spec["enemyDebuffs"], self.meta["tankDebuffs"])
+
+    def test_custom_offensive_fights_default_to_debuffs_but_can_isolate_mechanics(self):
+        unit = self.snap.unit("Ahri")
+        custom = {"slots": [{"hp": 1000, "armor": 100, "mr": 100, "kind": "tank"}]}
+        spec = tft.cell_spec(self.snap, unit, 2, "spread", [], custom)
+        self.assertEqual(spec["targetDebuffs"], {"sunder": .3, "shred": .3})
+        for override in ({}, {"sunder": .2, "shred": .4}):
+            spec = tft.cell_spec(self.snap, unit, 2, "spread", [], dict(custom, targetDebuffs=override))
+            self.assertEqual(spec["targetDebuffs"], override)
 
     def test_recomputing_mixed_preserves_other_threat_caches(self):
         unit = self.snap.unit("Leona")

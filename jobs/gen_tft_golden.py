@@ -173,7 +173,12 @@ def main():
             sys.exit(f"cell {slug}/{key} is not cached for the current code and data — "
                      "run `lol.py tft warm` first")
         with open(p) as f:
-            cached[(slug, key)] = json.load(f)
+            cell = json.load(f)
+        # Core completions are not fixture inputs. Retain only the rows
+        # these generators use instead of holding the whole dashboard cache.
+        cell.pop("coreAnalysis", None)
+        cell["rows"] = cell["rows"][:max(CELL_ROWS, TOP_PER_CELL)]
+        cached[(slug, key)] = cell
     os.makedirs(GOLDEN_DIR, exist_ok=True)
     prov = provenance(snap, args.reason)
     if args.only in (None, "fights"):

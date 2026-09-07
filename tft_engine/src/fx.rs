@@ -146,6 +146,8 @@ pub struct ItemFx {
     pub adap_per_hit: bool,
     pub ionic_spark: Option<f64>,
     pub ally_heal_pct: Option<f64>,
+    pub cc_immune_duration: Option<f64>,
+    pub unstoppable_at_max_stacks: bool,
     pub hoj: Option<(f64, f64, f64, f64)>,
     pub note: Option<String>,
 }
@@ -206,6 +208,8 @@ impl ItemFx {
             adap_per_hit: truthy(d, "adapPerHit")?,
             ionic_spark: getopt(d, "ionicSpark")?,
             ally_heal_pct: getopt(d, "allyHealPct")?,
+            cc_immune_duration: getopt(d, "ccImmuneDuration")?,
+            unstoppable_at_max_stacks: truthy(d, "unstoppableAtMaxStacks")?,
             hoj: match vecf(d, "hoj")? {
                 Some(v) => Some((v[0], v[1], v[2], v[3])),
                 None => None,
@@ -373,6 +377,8 @@ pub struct Fx {
     pub adap_per_hit: bool,
     pub ionic_spark: f64,
     pub ally_heal_pct: f64,
+    pub cc_immune_duration: f64,
+    pub unstoppable_at_max_stacks: bool,
     pub hojs: Vec<(f64, f64, f64, f64)>,
     pub heal_on_takedown: f64,
     pub mana_on_takedown: f64,
@@ -402,6 +408,7 @@ impl Default for Fx {
             shield_at_start: Vec::new(), resists_at_start: Vec::new(),
             untargetable_at_hp: Vec::new(), mana_at_hp: Vec::new(), adap_per_hit: false,
             ionic_spark: 0.0, ally_heal_pct: 0.0, hojs: Vec::new(), heal_on_takedown: 0.0,
+            cc_immune_duration: 0.0, unstoppable_at_max_stacks: false,
             mana_on_takedown: 0.0, fae_heal: None, summoner: None, caustic: None,
             notes: Vec::new(),
         }
@@ -570,6 +577,10 @@ impl Fx {
         if let Some(v) = it.ally_heal_pct {
             self.ally_heal_pct += v;
         }
+        if let Some(duration) = it.cc_immune_duration {
+            self.cc_immune_duration = pymax(self.cc_immune_duration, duration);
+        }
+        self.unstoppable_at_max_stacks |= it.unstoppable_at_max_stacks;
         if let Some(x) = it.hoj {
             self.hojs.push(x);
         }

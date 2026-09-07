@@ -1,8 +1,10 @@
 //! The TFT engine: the fight, the item and trait effects, every unit's
 //! driver and the enumeration of a cell, compiled. tft.py keeps the data
 //! loading, the cache, the warm and the CLI, resolves every number into a
-//! cell spec and calls in here through `run_cell`, `simulate`,
-//! `compose_fx` and `calc_value`.
+//! cell spec and calls in here through `run_cell`, `analyze_cell`, `score_pairs`,
+//! `optimize_loadouts`, `simulate`, `compose_fx` and `calc_value`. Shared
+//! matches also accept immutable `prepare_actor` inputs through
+//! `simulate_match` and the GIL-free `simulate_matches` batch API.
 //!
 //! `SOURCE_HASH` is a sha256 over these sources (build.rs), part of every
 //! cache key: a result is only valid for the code that produced it.
@@ -16,6 +18,8 @@ mod kit;
 mod pyf;
 mod pyget;
 mod spec;
+mod team;
+mod symmetric;
 
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
@@ -161,6 +165,8 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("adapPerHit", fx.adap_per_hit)?;
     d.set_item("ionicSpark", fx.ionic_spark)?;
     d.set_item("allyHealPct", fx.ally_heal_pct)?;
+    d.set_item("ccImmuneDuration", fx.cc_immune_duration)?;
+    d.set_item("unstoppableAtMaxStacks", fx.unstoppable_at_max_stacks)?;
     d.set_item("hojs", fx.hojs.clone())?;
     d.set_item("healOnTakedown", fx.heal_on_takedown)?;
     d.set_item("manaOnTakedown", fx.mana_on_takedown)?;
@@ -186,10 +192,83 @@ fn run_cell<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, top: usize, workers
         debug_assert_eq!(D::NAME, name);
         Ok::<_, PyErr>(py.detach(|| enumerate::run_cell::<D>(&spec, top, workers)))
     })?;
+    Ok((n, rows_to_py(py, &rows)?))
+}
+
+fn rows_to_py<'py>(py: Python<'py>, rows: &[enumerate::Row]) -> PyResult<Bound<'py, PyList>> {
     let out = PyList::empty(py);
-    for row in &rows {
+    for row in rows {
         let combo = PyList::new(py, row.combo.iter())?;
         out.append((combo, opening_to_py(py, &row.opening)?, result_to_py(py, &row.res)?))?;
+    }
+    Ok(out)
+}
+
+/// One enumeration, returning (build count, top rich rows, all scores).
+/// Scores follow exactly the same best-first order as run_cell and contain
+/// (pool indices, kill time or None, total damage, alive time,
+/// survival capped, stress alive time or None, stress capped), unrounded.
+#[pyfunction]
+#[pyo3(signature = (spec, top=250, workers=0))]
+fn analyze_cell<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, top: usize, workers: usize)
+    -> PyResult<(usize, Bound<'py, PyList>, Bound<'py, PyList>)> {
+    let spec = CellSpec::from_py(spec)?;
+    let name = spec.driver.clone();
+    let (n, rows, scores) = with_driver!(name.as_str(), D, {
+        debug_assert_eq!(D::NAME, name);
+        Ok::<_, PyErr>(py.detach(|| enumerate::analyze_cell::<D>(&spec, top, workers)))
+    })?;
+    Ok((n, rows_to_py(py, &rows)?, scores_to_py(py, &scores)?))
+}
+
+fn scores_to_py<'py, const N: usize>(py: Python<'py>, scores: &[enumerate::Score<N>])
+    -> PyResult<Bound<'py, PyList>> {
+    let compact = PyList::empty(py);
+    for score in scores {
+        let combo = PyList::new(py, score.combo.iter())?;
+        compact.append((combo, score.kill_time, score.total, score.alive_time,
+                        score.survival_capped, score.stress_alive_time, score.stress_capped))?;
+    }
+    Ok(compact)
+}
+
+/// Compact scores for every legal pair from the spec's pool, with no third
+/// item. Uses the same scenario, score fields and best-first ranking as
+/// analyze_cell; `workers` 0 uses the available cores, bounded by batches.
+#[pyfunction]
+#[pyo3(signature = (spec, workers=0))]
+fn score_pairs<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, workers: usize)
+    -> PyResult<Bound<'py, PyList>> {
+    let spec = CellSpec::from_py(spec)?;
+    let name = spec.driver.clone();
+    let scores = with_driver!(name.as_str(), D, {
+        debug_assert_eq!(D::NAME, name);
+        Ok::<_, PyErr>(py.detach(|| enumerate::score_pairs::<D>(&spec, workers)))
+    })?;
+    scores_to_py(py, &scores)
+}
+
+/// Exhaustively optimize zero through three items from the spec's pool.
+/// Returns (build count, [rows0, rows1, rows2, rows3]); each inner row uses
+/// run_cell's (pool indices, opening sheet, result) shape and ranking.
+#[pyfunction]
+#[pyo3(signature = (spec, top=4, workers=0))]
+fn optimize_loadouts<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, top: usize, workers: usize)
+    -> PyResult<(usize, Bound<'py, PyList>)> {
+    let spec = CellSpec::from_py(spec)?;
+    let name = spec.driver.clone();
+    let (n, groups) = with_driver!(name.as_str(), D, {
+        debug_assert_eq!(D::NAME, name);
+        Ok::<_, PyErr>(py.detach(|| enumerate::optimize_loadouts::<D>(&spec, top, workers)))
+    })?;
+    let out = PyList::empty(py);
+    for rows in groups {
+        let group = PyList::empty(py);
+        for row in rows {
+            let combo = PyList::new(py, row.combo.iter())?;
+            group.append((combo, opening_to_py(py, &row.opening)?, result_to_py(py, &row.res)?))?;
+        }
+        out.append(group)?;
     }
     Ok((n, out))
 }
@@ -244,7 +323,15 @@ fn calc_value(kit: &Bound<'_, PyDict>, name: &str, ad: f64, ap: f64, max_hp: f64
 #[pymodule]
 fn lol_tft(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_cell, m)?)?;
+    m.add_function(wrap_pyfunction!(analyze_cell, m)?)?;
+    m.add_function(wrap_pyfunction!(score_pairs, m)?)?;
+    m.add_function(wrap_pyfunction!(optimize_loadouts, m)?)?;
     m.add_function(wrap_pyfunction!(simulate, m)?)?;
+    m.add_function(wrap_pyfunction!(team::simulate_team, m)?)?;
+    m.add_function(wrap_pyfunction!(symmetric::simulate_match, m)?)?;
+    m.add_function(wrap_pyfunction!(symmetric::prepare_actor, m)?)?;
+    m.add_function(wrap_pyfunction!(symmetric::simulate_matches, m)?)?;
+    m.add_class::<symmetric::PreparedActor>()?;
     m.add_function(wrap_pyfunction!(compose_fx, m)?)?;
     m.add_function(wrap_pyfunction!(calc_value, m)?)?;
     let drivers = PyDict::new(m.py());

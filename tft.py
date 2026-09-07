@@ -39,6 +39,9 @@ mana, the ability casts when the bar fills, damage goes through the
 armor/MR formula with sunder, shred, crit, Precision and post-mitigation
 damage amp. "spread" puts the dummies out of each other's reach (area
 abilities hit one), "clump" puts them together (area abilities hit all).
+Carry and fighter targets start with permanent Sunder and Shred supplied
+by the rest of the team. Reapplying the same effect does not reduce their
+resistances again; the strongest active percentage applies.
 
 What a unit is scored on follows Riot's role label for it (the second word
 of "Attack Caster", "Magic Tank", …):
@@ -127,11 +130,13 @@ TANK_DURATION = 60.0   # tanks are scored on how long they last, so longer
 N_DUMMIES = 3
 DUMMY_STAR = 2
 # The first enemy is a tougher benchmark; the other slots keep set medians.
-FRONT_TANK_DEFENSES = {"hp": 3000, "armor": 70, "mr": 70}
+FRONT_TANK_DEFENSES = {"hp": 3000, "armor": 110, "mr": 110}
 BOARD_SIZE = 8         # the enemy board at STAGE: what a tank ("more likely
                        # to be targeted") is hit by; a fighter fights the
                        # three dummies in front of it
 CACHED_ROWS = 250
+CORE_TOLERANCE_PCT = 5.0
+CORE_CANDIDATES = 6
 
 # Synthetic comparisons: three nearest frontliners screen two damage dealers.
 # Carry pressure is calibrated with itemized references in the Rust engine;
@@ -555,6 +560,11 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
                              f"Downloaded candidate: {pending}. The previous snapshot is unchanged.")
         if len(candidate.units) != len(units) or len(modeled_units(candidate)) != len(units):
             raise ValueError("The new snapshot has missing champion stats or unsupported champions; keeping current builds.")
+        meta["verifiedAt"] = meta["fetchedAt"]
+        meta["verification"] = "published patch-note checks passed; see audit.json for remaining source limitations"
+        # Prepared HTTP metadata describes the same snapshot that will be
+        # activated. The active archive is still untouched if preparation fails.
+        candidate.meta = dict(meta)
         if prepare:
             try:
                 prepare(candidate)
@@ -562,8 +572,6 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
                 pending = os.path.join(set_dir(set_no), ".pending", patch)
                 shutil.copytree(staging, pending, dirs_exist_ok=True)
                 raise
-        meta["verifiedAt"] = meta["fetchedAt"]
-        meta["verification"] = "published patch-note checks passed; see audit.json for remaining source limitations"
         with open(os.path.join(staging, "meta.json"), "w") as f:
             json.dump(meta, f, indent=1)
         if os.path.exists(out_dir):
@@ -753,6 +761,23 @@ class Snapshot:
                     term = dict(term, coefficient=[curve_at(curve[row], s) for s in range(1, 5)])
                 terms.append(term)
             out[name] = dict(calc, terms=terms)
+        # A reviewed additive AD/AP formula can replace malformed lookup
+        # terms. Resolve both combat coefficients and card values from the
+        # corrected rows, so future numeric patches reach both consumers.
+        for name, formula in (ov.get("damageFormulas") or {}).items():
+            if name not in out or not formula:
+                raise ValueError(f"damage formula override names missing calculation {name}")
+            terms = []
+            for term in formula:
+                row, scaling = term.get("row"), term.get("scaling")
+                if row not in curve or scaling not in ("AttackDamage", "AbilityPower"):
+                    raise ValueError(f"unsupported damage formula override for {name}: {term}")
+                terms.append({"type": "scaled", "op": "add", "row": row,
+                              "scaling": scaling,
+                              "coefficient": [curve_at(curve[row], s) for s in range(1, 5)]})
+            # On the source's base-stat card, AD/base AD and AP/100 are 1.
+            out[name] = dict(out[name], terms=terms,
+                             values=[sum(t["coefficient"][s] for t in terms) for s in range(4)])
         return out
 
     def _unit(self, u):
@@ -1030,6 +1055,16 @@ def tank_debuffs(snap):
             for name, (api, row) in TANK_DEBUFF_ROWS.items()}
 
 
+def target_debuffs(snap):
+    """Team-supplied resistance reduction on every carry/fighter target.
+    Read the same corrected item rows as the tank benchmark, without Wound.
+    The dummy's armor/MR remain base values; Rust applies the strongest
+    active reduction once, including these permanent baseline percentages.
+    """
+    return {name: value for name, value in tank_debuffs(snap).items()
+            if name in ("sunder", "shred")}
+
+
 @lru_cache(maxsize=32)
 def _reference_carry_dps(spec_json):
     """Cache by the complete resolved inputs, so snapshot/model edits reprice it."""
@@ -1049,7 +1084,7 @@ def tank_threats(snap, star=DUMMY_STAR):
     for name, items in TANK_REFERENCE_CARRIES:
         unit = snap.unit(name)
         dummy = {"slots": [{"hp": FRONT_TANK_DEFENSES["hp"], "armor": 0.0,
-                             "mr": 0.0, "kind": "tank"}]}
+                             "mr": 0.0, "kind": "tank"}], "targetDebuffs": {}}
         spec = cell_spec(snap, unit, 2, "spread", [], dummy,
                          duration=TANK_REFERENCE_DURATION, pressure=False, items=items)
         spec["immortal"] = True
@@ -1141,6 +1176,7 @@ def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR, threat=None):
                         + (s["ability"] / (s["manaMax"] / rate + MANA_LOCK_S) if rate else 0.0))
         return round(out)
     out = {"count": n, "star": star, "slots": slots, "tank": tank, "other": other,
+           "targetDebuffs": target_debuffs(snap) if threat is None else {},
            "tanks": len(tanks), "others": len(others),
            "totalHp": sum(s["hp"] for s in slots),
            "critEv": crit_ev, "pressureDps": dps([1] * n),
@@ -1370,7 +1406,7 @@ def item_spec(snap, api, item_fx, unit):
     if "burnAura" in spec and ("hexes" not in spec["burnAura"]
                                or rng <= rv(spec["burnAura"]["hexes"])):
         out["burnAura"] = [rv(spec["burnAura"]["pct"]), rv(spec["burnAura"]["duration"])]
-    for k in ("hpMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct"):
+    for k in ("hpMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct", "ccImmuneDuration"):
         if k in spec:
             out[k] = rv(spec[k])
     if "durabilityByHealth" in spec:
@@ -1400,6 +1436,8 @@ def item_spec(snap, api, item_fx, unit):
         out["manaAtHp"] = [rv(spec["manaAtHp"]["threshold"]), rv(spec["manaAtHp"]["mana"])]
     if spec.get("adapPerHit"):
         out["adapPerHit"] = True
+    if spec.get("unstoppableAtMaxStacks"):
+        out["unstoppableAtMaxStacks"] = True
     if "ionicSpark" in spec and rng <= rv(spec["ionicSpark"]["hexes"]):
         out["ionicSpark"] = rv(spec["ionicSpark"]["pct"])
     if "hoj" in spec:
@@ -1536,6 +1574,7 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
         "pressure": bool(pressure), "immortal": objective == "tank",
         "enemyDebuffs": dummy_spec.get("enemyDebuffs", tank_debuffs(snap))
                         if board and pressure else {},
+        "targetDebuffs": dummy_spec.get("targetDebuffs", target_debuffs(snap)) if not board else {},
         "dummies": {"critEv": dummy_spec.get("critEv", 1.1), "slots": slots},
         "role": role,
         "traits": [trait_spec(snap, api, col, trait_fx, unit) for api, col in ctx_traits],
@@ -1558,15 +1597,22 @@ def simulate(snap, unit, star, item_apis, geometry, ctx_traits, dummy_spec, dura
 
 
 def enumerate_builds(snap, unit, star, geometry, ctx_traits, dummy_spec, pool, duration=None,
-                     top=None, workers=0, item_fx=None, trait_fx=None, log=None):
+                     top=None, workers=0, item_fx=None, trait_fx=None, log=None, *, include_scores=False):
     """Every multiset of three pool items (unique items at most once),
     simulated on every core and sorted best first (rank_key, ties by the
     build's api names): ([(combo, sheet, result), ...] for the top rows,
-    build count)."""
+    build count). With `include_scores`, also return full-precision compact
+    scores for every legal build, from the same enumeration pass."""
     spec = cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration, None,
                      item_fx, trait_fx, pool=list(pool))
-    count, rows = engine().run_cell(spec, top or CACHED_ROWS, workers)
-    return [(tuple(pool[i] for i in idx), sheet, res) for idx, sheet, res in rows], count
+    if include_scores:
+        count, rows, scores = engine().analyze_cell(spec, top or CACHED_ROWS, workers)
+        if len(scores) != count:
+            raise ValueError("core analysis requires every enumerated build")
+    else:
+        count, rows = engine().run_cell(spec, top or CACHED_ROWS, workers)
+    out = [(tuple(pool[i] for i in idx), sheet, res) for idx, sheet, res in rows]
+    return (out, count, scores) if include_scores else (out, count)
 
 
 # ---------------------------------------------------------------------------
@@ -1607,6 +1653,239 @@ def rank_key(res, objective="carry"):
     if res["killTime"] is not None:
         return (0, res["killTime"], -res.get("rawTotal", res["total"]))
     return (1, 0.0, -res["total"], -res.get("rawTotal", res["total"]))
+
+
+def _core_metric(score, objective):
+    """Choose a comparable primary outcome, respecting the fight limits.
+
+    Compact scores are (item indices, kill time, damage, hold time, regular
+    survival cap, stress hold time, stress survival cap), in engine rank order.
+    Secondary ranking tie-breaks do not turn equal primary outcomes into an
+    item requirement.
+    """
+    if objective != "tank":
+        return "killTime" if score[1] is not None else "damage"
+    if not score[4]:
+        return "aliveTime"
+    return "capped" if score[6] else "stressAliveTime"
+
+
+def _core_gap(score, baseline, metric):
+    """(status, value, loss percent). A missing clear or survival cap is a
+    different outcome, not a made-up kill time or exact survival penalty."""
+    if metric == "killTime":
+        if score[1] is None:
+            return "noClear", None, None
+        value, reference = score[1], baseline[1]
+        loss = 100.0 * (value - reference) / reference if reference > 0 else None
+    elif metric == "damage":
+        value, reference = score[2], baseline[2]
+        loss = 100.0 * (reference - value) / reference if reference > 0 else None
+    elif metric == "aliveTime":
+        value, reference = score[3], baseline[3]
+        loss = 100.0 * (reference - value) / reference if reference > 0 else None
+    elif metric == "stressAliveTime":
+        if not score[4]:
+            return "shortSurvival", score[3], None
+        value, reference = score[5], baseline[5]
+        loss = (100.0 * (reference - value) / reference
+                if reference and value is not None else None)
+    else:  # both survival tests capped: only other double survivors tie
+        if not (score[4] and score[6]):
+            return "belowCap", score[5] if score[4] else score[3], None
+        return "comparable", score[5], 0.0
+    return ("comparable", value, max(0.0, loss)) if loss is not None else ("unavailable", value, None)
+
+
+def _core_performance(score, baseline, metric):
+    status, value, loss = _core_gap(score, baseline, metric)
+    return {"status": status, "lossPct": loss, "metric": metric, "value": value,
+            "killTime": score[1], "total": score[2], "aliveTime": score[3],
+            "survivalCapped": score[4], "stressAliveTime": score[5], "stressCapped": score[6]}
+
+
+def analyze_cores(snap, unit, pool, scores, threshold_pct=CORE_TOLERANCE_PCT, limit=CORE_CANDIDATES,
+                  *, pair_scores=None, min_completions=None):
+    """Find flexible foundations in ALL full three-item fights, never in
+    the truncated display table. Carries/fighters fix two slots; tanks one.
+
+    A completion qualifies when its primary outcome is within the stated
+    tolerance of the scenario's best. Carry/fighter cores need at least two
+    qualifying third items, before any grouping or display limit is applied;
+    tanks need one qualifying completion. With actual two-item `pair_scores`,
+    carry/fighter cores sort by that two-item primary outcome, then flexibility.
+    We keep only the strongest pair among cores sharing a near-optimal full
+    three-item completion. Only kept pairs suppress later suggestions, so
+    overlaps do not merge unrelated choices through a chain of weaker pairs.
+    Without pair scores (and for tanks), selection uses completion counts.
+    These counts describe options, not drop probabilities or match frequency.
+    Removing an item bans every copy and reoptimizes the entire build. A
+    duplicate core also tests the best build with one fewer copy allowed.
+    """
+    size = 1 if unit["objective"] == "tank" else 2
+    if min_completions is None:
+        min_completions = 2 if size == 2 else 1
+    if min_completions < 1:
+        raise ValueError("core analysis requires at least one qualifying completion")
+    use_pairs = size == 2 and pair_scores is not None
+    result = {"thresholdPct": threshold_pct, "coreSize": size, "minCompletions": min_completions,
+              "metric": None, "status": "empty", "buildsEvaluated": len(scores),
+              "nearBuildCount": 0, "qualifyingCoreCount": 0,
+              "selectionMode": "twoItemSpike" if use_pairs else "completions",
+              "pairBuildsEvaluated": len(pair_scores) if use_pairs else 0,
+              "groupedCoreCount": 0,
+              "optimal": None, "essentialItems": [], "requiredItems": [], "candidates": [], "coreStats": {}}
+    if not scores:
+        return result
+    baseline = scores[0]
+    metric = _core_metric(baseline, unit["objective"])
+    result.update(metric=metric, status="noDamage" if metric == "damage" and baseline[2] <= 0 else "ok")
+    gaps = [_core_gap(score, baseline, metric) for score in scores]
+    near = [status == "comparable" and loss <= threshold_pct + 1e-9
+            for status, _, loss in gaps]
+    result["nearBuildCount"] = sum(near)
+
+    def core_id(core):
+        return "|".join(sorted(pool[i] for i in core))
+
+    def build(index):
+        if index is None:
+            return None
+        score = scores[index]
+        apis = [pool[i] for i in score[0]]
+        return {"items": [snap.items[api]["name"] for api in apis], "itemApis": apis,
+                "performance": _core_performance(score, baseline, metric)}
+
+    def replacement_verdict(index):
+        if index is None:
+            return False, None
+        status = gaps[index][0]
+        # A missed clear/cap is observable, but its percentage cost is
+        # censored. For example, 59.999s versus 60s+ cannot prove a >5% loss.
+        return (status == "comparable" and not near[index],
+                {"noClear": "clear", "shortSurvival": "survivalLimit",
+                 "belowCap": "bothSurvivalLimits"}.get(status))
+
+    result["optimal"] = build(0)
+    groups = {}
+    without, fewer = {}, {}
+    remaining = set(range(len(pool)))
+    remaining_fewer = set(remaining)
+    for index, score in enumerate(scores):
+        combo = tuple(score[0])
+        # AAB contributes AA and AB once apiece, not two votes for AB.
+        for core in sorted(set(itertools.combinations(combo, size))):
+            groups.setdefault(core, []).append(index)
+        if remaining:
+            absent = remaining.difference(combo)
+            without.update((i, index) for i in absent)
+            remaining.difference_update(absent)
+        if remaining_fewer:
+            allowed = {i for i in remaining_fewer if combo.count(i) < 2}
+            fewer.update((i, index) for i in allowed)
+            remaining_fewer.difference_update(allowed)
+
+    exclusions = {}
+    for i, api in enumerate(pool):
+        alternative = without.get(i)
+        essential, required_for = replacement_verdict(alternative)
+        exclusions[i] = {"item": snap.items[api]["name"], "itemApi": api,
+                         "essential": essential, "requiredFor": required_for,
+                         "without": build(alternative)}
+    ordered = [exclusions[i] for i in sorted(exclusions, key=lambda i: pool[i])]
+    result["essentialItems"] = [record for record in ordered if record["essential"]]
+    result["requiredItems"] = [record for record in ordered if record["requiredFor"]]
+
+    candidates = []
+    for core, indices in groups.items():
+        best = indices[0]
+        count = sum(near[i] for i in indices)
+        stats = {"best": _core_performance(scores[best], baseline, metric),
+                 "nearCount": count, "totalCount": len(indices)}
+        result["coreStats"][core_id(core)] = stats
+        if count >= min_completions:
+            candidates.append((core, indices, stats))
+    result["qualifyingCoreCount"] = len(candidates)
+    if use_pairs:
+        pairs = {tuple(sorted(score[0])): score for score in pair_scores}
+        if len(pairs) != len(pair_scores) or any(len(core) != 2 for core in pairs):
+            raise ValueError("two-item spike analysis requires distinct two-item scores")
+        if groups.keys() - pairs.keys():
+            raise ValueError("two-item spike analysis requires scores for every candidate pair")
+
+        def pair_rank(score):
+            # Compare genuine two-item fights, never their eventual three-item
+            # results. Secondary overkill tie-breaks do not imply a better spike.
+            return (0, score[1]) if score[1] is not None else (1, -score[2])
+
+        pair_baseline = min(pair_scores, key=pair_rank)
+        pair_metric = _core_metric(pair_baseline, unit["objective"])
+        candidates.sort(key=lambda entry: (*pair_rank(pairs[entry[0]]), -entry[2]["nearCount"],
+                                           entry[2]["best"]["lossPct"], core_id(entry[0])))
+        grouped, covered = [], set()
+        for entry in candidates:
+            near_indices = {i for i in entry[1] if near[i]}
+            if not near_indices.isdisjoint(covered):
+                continue
+            grouped.append(entry)
+            covered.update(near_indices)
+        candidates = grouped
+    else:
+        candidates.sort(key=lambda entry: (-entry[2]["nearCount"], entry[2]["best"]["lossPct"], core_id(entry[0])))
+    result["groupedCoreCount"] = len(candidates)
+    for core, indices, stats in candidates[:limit]:
+        best_score = scores[indices[0]]
+        local_metric = _core_metric(best_score, unit["objective"])
+        completions = []
+        for i in indices:
+            flex = list(scores[i][0])
+            for item in core:
+                flex.remove(item)
+            apis = [pool[j] for j in flex]
+            completions.append({**build(i), "flexItems": [snap.items[api]["name"] for api in apis],
+                                "flexApis": apis,
+                                "vsCore": _core_performance(scores[i], best_score, local_metric)})
+        members = []
+        for i in sorted(set(core)):
+            record = dict(exclusions[i], copies=core.count(i))
+            if core.count(i) > 1:
+                alternative = fewer.get(i)
+                essential, required_for = replacement_verdict(alternative)
+                record.update(fewerCopies=build(alternative),
+                              copiesEssential=essential, copiesRequiredFor=required_for)
+            members.append(record)
+        apis = [pool[i] for i in core]
+        candidate = {"id": core_id(core), "items": [snap.items[a]["name"] for a in apis],
+                     "itemApis": apis, "best": build(indices[0]),
+                     "nearCount": stats["nearCount"], "totalCount": stats["totalCount"],
+                     "completions": completions, "exclusions": members}
+        if use_pairs:
+            candidate["spike"] = _core_performance(pairs[core], pair_baseline, pair_metric)
+        result["candidates"].append(candidate)
+    return result
+
+
+def cached_core_contexts(slug, paths=None, *, snap=None):
+    """Read scenario comparisons for a champion from the current cache.
+    No request-time simulation; missing cells stay explicitly missing.
+    coreStats includes every foundation, including those outside a cell's
+    six displayed suggestions, so coverage never depends on a display limit.
+    """
+    snap = snap or load_snapshot()
+    paths = paths if paths is not None else cell_paths(snap)
+    keys = [key for unit_slug, key in paths if unit_slug == slug]
+    if not keys:
+        raise ValueError(f"unknown unit {slug}")
+    scenarios = []
+    for key in keys:
+        cell = cached_scenario(slug, key, paths)
+        if cell is not None and "coreAnalysis" in cell:
+            sc = cell["scenario"]
+            analysis = cell["coreAnalysis"]
+            scenarios.append({**{k: sc[k] for k in ("key", "label", "star", "geometry", "traits", "threat")},
+                              "coreStats": analysis["coreStats"]})
+    return {"unit": slug, "revision": snapshot_revision(snap), "thresholdPct": CORE_TOLERANCE_PCT,
+            "totalScenarios": len(keys), "scenarios": scenarios}
 
 
 
@@ -1669,6 +1948,107 @@ def cached_scenario(slug, key, paths=None):
         return json.load(f)
 
 
+def leaderboard_scenarios():
+    """Fixed comparison conditions; `best` uses each unit's highest legal star."""
+    out = {}
+    for star, geometry, traits, threat in itertools.product(
+            ("best", "s1", "s2", "s3"), GEOMETRIES, TRAIT_CONTEXTS, TANK_THREATS):
+        key = f"{star}-{geometry}-{traits}-{threat}"
+        out[key] = {"key": key, "star": star, "geometry": geometry,
+                    "traits": traits, "threat": threat}
+    return out
+
+
+def leaderboard_rank_key(performance, objective):
+    """Compare primary outcomes across champions without awarding overkill.
+
+    The winning items still follow the unit's full build ranking. Equal
+    champion outcomes share a rank; tanks surviving both limits stay tied.
+    """
+    if objective == "tank":
+        capped = performance["survivalCapped"]
+        return (-performance["aliveTime"], -int(capped),
+                -(performance["stressAliveTime"] or 0.0) if capped else 0.0,
+                -int(capped and performance["stressCapped"]))
+    if performance["killTime"] is not None:
+        return (0, performance["killTime"])
+    return (1, -performance["total"])
+
+
+@lru_cache(maxsize=2048)
+def _leaderboard_best(path, mtime_ns, size):
+    """Retain only a compact winner from each version of a scenario file.
+
+    Request handlers never simulate. File metadata invalidates replaced
+    cells, and missing files are checked before calling this cache.
+    """
+    with open(path) as f:
+        payload = json.load(f)
+    if not payload.get("rows"):
+        return None
+    if not payload.get("best"):
+        raise ValueError("scenario lacks an exact leaderboard result; recalculate its cache")
+    return {"best": payload["best"], "buildsEvaluated": payload["buildsEvaluated"],
+            "computedAt": payload["computedAt"]}
+
+
+def cached_leaderboard(key, paths=None, *, snap=None):
+    """One optimized build per eligible champion under matching conditions.
+
+    Damage keeps the existing protected carry / pressured fighter models.
+    Tanks use the selected shared pressure preset. Cold winners are listed
+    explicitly instead of being replaced with zeroes or another scenario.
+    """
+    selection = leaderboard_scenarios().get(key)
+    if selection is None:
+        raise ValueError(f"unknown leaderboard scenario {key}")
+    snap = snap or load_snapshot()
+    paths = cell_paths(snap) if paths is None else paths
+    boards = {"damage": [], "tanks": []}
+    pending, expected = [], 0
+    for unit in modeled_units(snap):
+        stars = unit_stars(unit)
+        star = max(stars) if selection["star"] == "best" else int(selection["star"][1:])
+        if star not in stars:
+            continue
+        slug = unit_slug(unit)
+        scenario = f"s{star}-{selection['geometry']}-{selection['traits']}"
+        if unit["objective"] == "tank" and selection["threat"] != "mixed":
+            scenario += "-" + selection["threat"]
+        identity = {"unit": slug, "unitName": unit["name"], "cost": unit["cost"],
+                    "star": star, "scenario": scenario, "objective": unit["objective"]}
+        expected += 1
+        path = paths.get((slug, scenario))
+        cached = None
+        if path:
+            try:
+                stat = os.stat(path)
+                cached = _leaderboard_best(path, stat.st_mtime_ns, stat.st_size)
+            except FileNotFoundError:
+                pass
+        if cached is None:
+            pending.append(identity)
+            continue
+        best = cached["best"]
+        entry = {**identity, "unitApi": unit["api"], "role": unit["roleName"],
+                 "kind": unit["kind"], "items": [snap.items[a]["name"] for a in best["itemApis"]],
+                 "itemApis": list(best["itemApis"]), "performance": dict(best["performance"]),
+                 "score": list(leaderboard_rank_key(best["performance"], unit["objective"])),
+                 "buildsEvaluated": cached["buildsEvaluated"], "computedAt": cached["computedAt"]}
+        boards["tanks" if unit["objective"] == "tank" else "damage"].append(entry)
+    for rows in boards.values():
+        rows.sort(key=lambda row: (row["score"], row["unitName"], row["unitApi"]))
+        previous_score, rank = None, 0
+        for position, row in enumerate(rows, 1):
+            if row["score"] != previous_score:
+                rank = position
+            row["rank"] = rank
+            previous_score = row["score"]
+    return {"set": snap.set_no, "patch": snap.patch, "revision": snapshot_revision(snap),
+            "selection": selection, "complete": not pending, "expectedCount": expected,
+            "readyCount": expected - len(pending), "pending": pending, **boards}
+
+
 def cell_rows(snap, unit, out, count=CACHED_ROWS):
     """The cached rows of a cell: the top `count` builds of an enumeration,
     rounded as the dashboard shows them."""
@@ -1725,8 +2105,18 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
     dummy = dummies_for(snap, threat=sc["threat"] if unit["objective"] == "tank" else None)
     pool = pool_items(snap, item_fx)
     duration = fight_duration(unit)
-    out, count = enumerate_builds(snap, unit, sc["star"], sc["geometry"],
-                                  ctx_traits, dummy, pool, duration, log=log)
+    out, count, scores = enumerate_builds(snap, unit, sc["star"], sc["geometry"],
+                                          ctx_traits, dummy, pool, duration, log=log, include_scores=True)
+    pair_scores = None
+    if scores and unit["objective"] != "tank":
+        spec = cell_spec(snap, unit, sc["star"], sc["geometry"], ctx_traits, dummy, duration,
+                         item_fx=item_fx, trait_fx=trait_fx, pool=pool)
+        pair_scores = engine().score_pairs(spec)
+        pair_count = sum(i != j or not snap.items[pool[i]]["unique"]
+                         for i in range(len(pool)) for j in range(i, len(pool)))
+        if len(pair_scores) != pair_count:
+            raise ValueError("two-item spike analysis requires every legal pair")
+    core_analysis = analyze_cores(snap, unit, pool, scores, pair_scores=pair_scores)
     secs = round(time.time() - t0, 3)
     pressured = unit["objective"] in PRESSURED
     rows = cell_rows(snap, unit, out, CACHED_ROWS)
@@ -1742,6 +2132,13 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
                      "driver": driver_name(unit)},
         "set": snap.set_no, "patch": snap.patch, "buildsEvaluated": count,
         "rows": rows,
+        # The leaderboard must not rank different champions using rounded
+        # display times. Keep the actual winning build and its raw metrics.
+        "best": {"itemApis": list(out[0][0]),
+                 "performance": {field: out[0][2][field] for field in (
+                     "killTime", "total", "dps", "aliveTime", "survivalCapped",
+                     "stressAliveTime", "stressCapped")}} if out else None,
+        "coreAnalysis": core_analysis,
         "computedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "computeSeconds": secs,
     }
@@ -1852,8 +2249,22 @@ def write_json_atomic(path, content):
     os.replace(tmp, path)
 
 
-def dashboard_ready(snap):
-    """Signal a complete generation; preserve the previous generation's cache."""
+def dashboard_ready(snap, *, prepared_site=None):
+    """Activate a complete TFT publication, retaining the previous generation."""
+    import tft_comps
+    import tft_site
+
+    baseline_ready, compositions_ready = cell_ready(snap), tft_comps.cell_ready(snap)
+    if (not baseline_ready or not all(baseline_ready.values())
+            or not compositions_ready or not all(compositions_ready.values())):
+        raise RuntimeError("TFT publication requires complete champion and composition results.")
+    if tft_comps.source_stale():
+        raise RuntimeError("TFT source changed before publication; keeping the previous results.")
+    site = prepared_site if prepared_site is not None else tft_site.prepare(snap)
+    if (site.get("baselineRevision") != snapshot_revision(snap)
+            or site.get("compositionRevision") != tft_comps.revision(snap)):
+        raise RuntimeError("Prepared TFT responses do not match the completed calculations.")
+    tft_site.load(site)
     path = os.path.join(CACHE_DIR, ".dashboard-ready")
     try:
         with open(path) as f:
@@ -1863,7 +2274,8 @@ def dashboard_ready(snap):
     if not isinstance(before, dict):
         before = None
     files = sorted(os.path.basename(p) for p in cell_paths(snap).values())
-    marker = {"revision": snapshot_revision(snap), "patch": snap.patch, "cacheFiles": files}
+    marker = {"revision": snapshot_revision(snap), "patch": snap.patch, "cacheFiles": files,
+              "compositionRevision": tft_comps.revision(snap), "site": site}
     if before != marker:
         write_json_atomic(path, marker)
     # The old server may still be answering until systemd's reload runs.
@@ -1874,6 +2286,42 @@ def dashboard_ready(snap):
             if (re.fullmatch(r"[a-z0-9]+-s\d-[a-z]+-[a-z]+(?:-[a-z]+)?-[0-9a-f]{16}\.json", filename)
                     and filename not in keep):
                 os.remove(os.path.join(CACHE_DIR, filename))
+
+
+def prepare_dashboard(snap, *, log=_say, progress=None):
+    """Prepare both TFT analyses and their HTTP responses before activation."""
+    import tft_comps
+    import tft_site
+
+    report = progress or (lambda **fields: None)
+
+    def calculate(run, label):
+        deadline = time.monotonic() + 20 * 60
+        while True:
+            count = run()
+            if count is not None:
+                return count
+            if time.monotonic() >= deadline:
+                raise RuntimeError(f"Another {label} calculation did not finish in time; will retry on the next check.")
+            time.sleep(2)
+
+    report(phase="warming-builds", message=f"Preparing champion builds for {snap.patch}.")
+    count = calculate(lambda: warm(log=log, snap=snap, prune=False), "champion build")
+    ready = cell_ready(snap)
+    if not ready or not all(ready.values()):
+        raise RuntimeError("Some champion builds did not finish; keeping the previous snapshot.")
+    report(computedCells=count, baselineCellsReady=len(ready), phase="warming-compositions",
+           message=f"Preparing compositions for {snap.patch}.")
+    compositions = calculate(lambda: tft_comps.warm(log=log, snap=snap, prune=False,
+                             workers=tft_comps.DEFAULT_WARM_WORKERS), "composition")
+    comp_ready = tft_comps.cell_ready(snap)
+    if not comp_ready or not all(comp_ready.values()):
+        raise RuntimeError("Some compositions did not finish; keeping the previous snapshot.")
+    report(computedCompositionScenarios=compositions, compositionScenariosReady=len(comp_ready),
+           phase="preparing-responses", message="Preparing saved responses for the TFT dashboard.")
+    site = tft_site.prepare(snap)
+    report(phase="publishing", message=f"Champion builds and compositions are ready for {snap.patch}.")
+    return {"computedCells": count, "computedCompositionScenarios": compositions, "site": site}
 
 
 def cmd_refresh(args):
@@ -1902,34 +2350,28 @@ def cmd_refresh(args):
         old_term = signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
         try:
             report(activePatch=load_snapshot(args.set).patch)
+            prepared = None
 
             def prepare(candidate):
-                report(phase="warming", message=f"Recalculating changed builds for {candidate.patch}.")
+                nonlocal prepared
                 with open(os.path.join(CACHE_DIR, "refresh-warm.log"), "a") as log:
                     def log_line(line):
                         print(line, file=log, flush=True)
-                    deadline = time.monotonic() + 20 * 60
-                    while True:
-                        count = warm(log=log_line, snap=candidate, prune=False)
-                        if count is not None:
-                            break
-                        if time.monotonic() >= deadline:
-                            raise RuntimeError("Another build calculation did not finish in time; will retry on the next check.")
-                        time.sleep(2)
-                ready = cell_ready(candidate)
-                if not ready or not all(ready.values()):
-                    raise RuntimeError("Some builds did not finish; keeping the previous snapshot.")
-                report(computedCells=count, phase="publishing", message=f"All {len(ready)} scenarios are ready for {candidate.patch}.")
+                    prepared = prepare_dashboard(candidate, log=log_line, progress=report)
 
             snap = cmd_fetch(SimpleNamespace(set=args.set, patch=getattr(args, "patch", None), force=True),
                              automatic=True, prepare=prepare, progress=report)
-            dashboard_ready(snap)
+            if prepared is None:
+                raise RuntimeError("TFT refresh did not prepare a complete dashboard generation.")
+            dashboard_ready(snap, prepared_site=prepared["site"])
             finished = now()
             count = state.get("computedCells", 0)
+            compositions = state.get("computedCompositionScenarios", 0)
             report(status="ok", phase="complete", activePatch=snap.patch, targetPatch=snap.patch,
                    checkedAt=finished, finishedAt=finished, lastSuccessAt=finished, exit=0,
                    revision=snapshot_revision(snap),
-                   message=f"Patch {snap.patch} is ready; {count} scenarios recalculated.")
+                   compositionRevision=prepared["site"]["compositionRevision"],
+                   message=f"Patch {snap.patch} is ready; {count} champion scenarios and {compositions} composition contexts recalculated.")
             print(state["message"])
         except BaseException as error:
             needs_review = isinstance(error, ReviewRequired)
@@ -2111,8 +2553,8 @@ def trait_bonus_notes(snap, unit, api, column, trait_fx):
     return notes
 
 
-def api_meta():
-    snap = load_snapshot()
+def api_meta(snap=None):
+    snap = snap or load_snapshot()
     item_fx = load_item_effects(snap.set_no)
     trait_fx = load_trait_effects(snap.set_no)
     kits = load_kits(snap.set_no)
@@ -2144,6 +2586,8 @@ def api_meta():
         spec = (item_fx.get("items") or {}).get(api) or {}
         items.append({"api": api, "name": it["name"],
                       "stats": parse_stat_line(it),
+                      "components": [{"api": component, "name": snap.items[component]["name"]}
+                                     for component in it["composition"]],
                       "modeled": [k for k in spec if k not in ("note", "name", "covers")],
                       "note": spec.get("note")})
     traits = [{"api": api, "name": trait["name"], "icon": trait_icons.get(api),
@@ -2162,6 +2606,7 @@ def api_meta():
         "units": units, "scenarios": list(SCENARIOS.values()),
         "stars": list(STARS), "geometries": GEOMETRIES, "traitContexts": TRAIT_CONTEXTS,
         "tankThreats": tank_threats(snap), "tankDebuffs": tank_debuffs(snap),
+        "targetDebuffs": target_debuffs(snap),
         "tankDummies": {key: dummies_for(snap, threat=key) for key in TANK_THREATS},
         "dummy": dummies_for(snap), "items": items, "traits": traits,
         "excluded": item_fx.get("excluded") or {},
@@ -2387,9 +2832,15 @@ def cmd_sim(args):
           f" +{fx['manaRegen'] * fx['manaMult']:.1f}/s"
           f"  HP {sheet['hp']:.0f} armor {sheet['armor']:.0f} MR {sheet['mr']:.0f} "
           f"durability {sheet['durability']*100:.0f}% omnivamp {sheet['omnivamp']*100:.0f}%")
-    print("  dummies: " + "; ".join(f"{s['hp']} HP / {s['armor']} armor / {s['mr']} MR ({s['kind']})"
+    target_fx = spec["targetDebuffs"]
+    print("  dummies: " + "; ".join(f"{s['hp']} HP / {s['armor'] * (1 - target_fx.get('sunder', 0)):g} armor / "
+                                    f"{s['mr'] * (1 - target_fx.get('shred', 0)):g} MR ({s['kind']})"
                                     for s in dummy["slots"])
           + f" — median {dummy['star']}★ of {dummy['tanks']} tanks and {dummy['others']} others")
+    if target_fx:
+        print(f"  all targets: {target_fx.get('sunder', 0):.0%} Sunder and "
+              f"{target_fx.get('shred', 0):.0%} Shred active from combat start; "
+              "the defenses above include this reduction; repeated effects do not stack")
     if unit["objective"] in PRESSURED:
         board = unit["objective"] == "tank"
         streams = dummy["board"] if board else [1] * dummy["count"]

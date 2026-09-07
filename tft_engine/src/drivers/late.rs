@@ -131,6 +131,7 @@ impl Driver for Zyra {
 pub struct Ivern {
     amount: RowId,
     n_allies: RowId,
+    shield_dur: RowId,
     burst: CalcId,
 }
 
@@ -139,6 +140,7 @@ impl Driver for Ivern {
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
         Ivern { amount: k.row("ShieldAmount"), n_allies: k.row("NumAlliesToShield"),
+                shield_dur: k.row("ShieldDuration"),
                 burst: k.calc("MagicDamageCalc1") }
     }
 
@@ -147,8 +149,9 @@ impl Driver for Ivern {
         if f.sheet.precision {
             shield *= f.sheet.crit_ev();
         }
+        let dur = f.row(f.drv.shield_dur);
         for _ in 0..pyint(f.row(f.drv.n_allies)) {
-            f.shield_ally(shield);
+            f.shield_ally_for(shield, dur);
         }
         let tg = f.aoe_all();
         for d in tg.iter() {
@@ -283,7 +286,7 @@ impl Driver for MamaBeak {
 /// Arise!: attack speed and soldiers for the next few attacks, each of which
 /// becomes a command — the basic attack is replaced by every soldier's
 /// strike, its on-hit effects still landing. Summoner adds a soldier and
-/// multiplies their damage.
+/// multiplies their damage. Mana stays locked until all commands are spent.
 #[derive(Clone)]
 pub struct Azir {
     commands: i64,
@@ -311,6 +314,11 @@ impl Driver for Azir {
         f.drv.soldiers = soldiers;
         f.as_extra = f.row(f.drv.attack_speed) - 1.0;
         f.as_extra_until = 1e9;
+        if commands > 0 {
+            // Hold both attack mana and regeneration for the command window.
+            // The ordinary cast lock already covers the animation before this.
+            f.lock_until = 1e9;
+        }
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
@@ -324,6 +332,9 @@ impl Driver for Azir {
         f.hit_ability(f.drv.strike, Some(target), "soldiers", mult);
         if n == 1 {
             f.as_extra_until = f.t;
+            // Attack mana is processed before this hook, so the sixth command
+            // grants none. Regen resumes only for time after this release.
+            f.lock_until = f.t;
         }
     }
 }

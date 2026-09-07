@@ -20,7 +20,10 @@ SNAP = tft.load_snapshot()
 ENGINE = tft.engine()
 ITEM_FX = tft.load_item_effects(SNAP.set_no)
 TRAIT_FX = tft.load_trait_effects(SNAP.set_no)
-DUMMY = tft.dummies_for(SNAP)
+# Isolated mechanics fixtures start without team-supplied target debuffs.
+# The default carry/fighter benchmark is covered in test_tft_target_debuffs
+# and test_tft_ui, including redundancy of item resistance reduction.
+DUMMY = dict(tft.dummies_for(SNAP), targetDebuffs={})
 
 
 def immortal(spec):
@@ -228,7 +231,7 @@ class TestSheet(unittest.TestCase):
 
 class TestDamage(unittest.TestCase):
     """Ashe 2★ with the plain driver: 112.5 attack damage, a 25% chance to
-    crit for 1.4 (an expected 1.1), against the first target's 70 armor."""
+    crit for 1.4 (an expected 1.1), against the first target's 110 armor."""
 
     def first_auto(self, **kw):
         kw.setdefault("dummy", immortal(DUMMY))
@@ -236,21 +239,21 @@ class TestDamage(unittest.TestCase):
         return events(res, "damage", "auto")[0][2]
 
     def test_attacks_always_crit_by_expected_value(self):
-        self.assertAlmostEqual(self.first_auto(), 112.5 * (1 + 0.25 * 0.4) * 100 / 170)
+        self.assertAlmostEqual(self.first_auto(), 112.5 * (1 + 0.25 * 0.4) * 100 / 210)
 
     def test_physical_through_armor_and_health(self):
         _, res = run("Ashe", driver="Driver", duration=0.1)
         hit = events(res, "damage", "auto")[0][2]
-        self.assertAlmostEqual(hit, 112.5 * 1.1 * 100 / 170)
+        self.assertAlmostEqual(hit, 112.5 * 1.1 * 100 / 210)
         self.assertAlmostEqual(res["left"][0], 3000 - hit)
         self.assertAlmostEqual(res["total"], hit)
 
     def test_magic_damage_through_first_target_resist(self):
         # Ahri's 2★ orb deals 640 magic damage before the first target's
-        # 70 MR. Its primary hit has no secondary-target falloff.
+        # 110 MR. Its primary hit has no secondary-target falloff.
         _, res = run("Ahri", fx=[{"startingMana": 100}], dummy=immortal(DUMMY), duration=2.0)
         hit = events(res, "damage", "ability", target=0)[0][2]
-        self.assertAlmostEqual(hit, 640 * 100 / 170)
+        self.assertAlmostEqual(hit, 640 * 100 / 210)
 
     def test_true_damage_ignores_everything(self):
         # a burn ticks true damage: no resists, no amp
@@ -262,7 +265,7 @@ class TestDamage(unittest.TestCase):
 
     def test_amp_is_post_mitigation_and_additive(self):
         fx = [{"adds": [["amp", 0.1]], "ampVsTank": 0.15}]
-        self.assertAlmostEqual(self.first_auto(fx=fx), 112.5 * 1.1 * 100 / 170 * 1.25)
+        self.assertAlmostEqual(self.first_auto(fx=fx), 112.5 * 1.1 * 100 / 210 * 1.25)
         # the tank-only amp does not apply to the non-tank dummy
         other = DUMMY["slots"][2]
         first = dict(DUMMY, slots=[other] + DUMMY["slots"][:2])
@@ -273,16 +276,16 @@ class TestDamage(unittest.TestCase):
         u = SNAP.unit("Ashe")
         _, plain = run("Ashe", dummy=immortal(DUMMY))
         arrow = tft.calc_value(u, "PhysicalDamageCalc1", 2, 112.5, 100, 1620, 45, 45)
-        self.assertAlmostEqual(events(plain, "damage", "ability")[0][2], arrow * 100 / 170)
+        self.assertAlmostEqual(events(plain, "damage", "ability")[0][2], arrow * 100 / 210)
         _, prec = run("Ashe", fx=[{"precision": 1}], dummy=immortal(DUMMY))
         self.assertAlmostEqual(events(prec, "damage", "ability")[0][2],
-                               arrow * 100 / 170 * (1 + 0.25 * 0.4))
+                               arrow * 100 / 210 * (1 + 0.25 * 0.4))
 
     def test_sunder_on_hit(self):
         _, res = run("Ashe", driver="Driver", fx=[{"sunderOnHit": [0.3, 3.0]}], dummy=immortal(DUMMY))
         autos = events(res, "damage", "auto")
-        self.assertAlmostEqual(autos[0][2], 112.5 * 1.1 * 100 / 170)               # sundered after the hit
-        self.assertAlmostEqual(autos[1][2], 112.5 * 1.1 * 100 / (100 + 70 * 0.7))  # 1.25 s later, inside 3 s
+        self.assertAlmostEqual(autos[0][2], 112.5 * 1.1 * 100 / 210)                # sundered after the hit
+        self.assertAlmostEqual(autos[1][2], 112.5 * 1.1 * 100 / (100 + 110 * 0.7))  # 1.25 s later, inside 3 s
 
     def test_burn_ticks_true_damage(self):
         _, res = run("Ashe", driver="Driver", fx=[{"burnOnHit": [0.01, 5.0]}], duration=1.0)
@@ -746,7 +749,7 @@ class TestSnapshot(unittest.TestCase):
         dummy = tft.dummies_for(SNAP)
         defenses = lambda slot: (slot["hp"], slot["armor"], slot["mr"])
         self.assertEqual([defenses(slot) for slot in dummy["slots"]],
-                         [(3000, 70, 70), (1800, 45, 45), (1440, 40, 40)])
+                         [(3000, 110, 110), (1800, 45, 45), (1440, 40, 40)])
         self.assertEqual(dummy["totalHp"], 6240)
         self.assertEqual(defenses(dummy["tank"]), (1800, 45, 45))
         self.assertEqual(dummy["slots"][1], dummy["tank"])
@@ -757,8 +760,8 @@ class TestSnapshot(unittest.TestCase):
         self.assertEqual({api: unit["stats"] for api, unit in SNAP.units.items()}, before)
 
     def test_enemy_defenses_are_consistent_across_all_scenarios(self):
-        legacy = [(3000, 70, 70), (1800, 45, 45), (1440, 40, 40)]
-        frontline = [(3000, 70, 70), (1800, 45, 45), (1800, 45, 45),
+        legacy = [(3000, 110, 110), (1800, 45, 45), (1440, 40, 40)]
+        frontline = [(3000, 110, 110), (1800, 45, 45), (1800, 45, 45),
                      (1440, 40, 40), (1440, 40, 40)]
         count = 0
         for unit in tft.modeled_units(SNAP):

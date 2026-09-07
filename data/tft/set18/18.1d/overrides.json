@@ -5,9 +5,19 @@
     "`stats` replace a base stat. Unit `curve` lists begin at 1 star: multiple values replace those stars only; one value makes a row constant.",
     "Adaptor-form stats are independent of base stats and need explicit form overrides when a correction applies to both.",
     "Item `curve` values are constants. Trait `curve` maps address breakpoint columns, not star levels.",
+    "Unit `damageFormulas` replace named calculations with additive AD/AP terms read from their curve rows; combat coefficients and base-stat card values are resolved together.",
     "Riftbeast column 3 (7 units) uses the published 5% growth correction. Column 4 (10 units) inherits that corrected growth because its tooltip only adds team size; this inheritance is an explicit inference recorded in audit.json."
   ],
   "units": {
+    "TFT18_Murkwolf": {
+      "damageFormulas": {
+        "TFTCalculationAttributes.PhysicalDamageCalc1": [
+          {"row": "LeapDamageAD", "scaling": "AttackDamage"},
+          {"row": "LeapDamageAP", "scaling": "AbilityPower"}
+        ]
+      },
+      "_source": "Formula correction reviewed 2026-09-06: the archived MetaTFT ability.footer[1].desc defines leap damage as LeapDamageAD + LeapDamageAP, each scaled once. Its attributeCalcs incorrectly multiplies the already AP-scaled GenericCalc1 by LeapDamageAP again (30 x 30 at 2 stars). Use the footer's additive AD/AP formula; retain both source curves. Source: https://data.metatft.com/lookups/TFTSet18_latest_en_us.json (TFT18_Murkwolf). Independently corroborated by https://www.tftraits.com/champions/murkwolf/; live runtime formula is not exposed in the archived character bin."
+    },
     "TFT18_Cinderling": {
       "curve": {
         "SpellDamageAD": [

@@ -13,6 +13,7 @@ use crate::spec::{CellSpec, Objective};
 
 /// A driver instance per kit (the form's rows and calcs differ), cloned
 /// for every fight.
+#[derive(Clone)]
 pub struct Drivers<D> {
     base: D,
     ad: Option<D>,
@@ -141,13 +142,230 @@ pub struct Row {
     pub res: FightResult,
 }
 
+/// One exact zero-, one-, two- or three-item build for composition budgets.
+pub struct LoadoutRow {
+    pub combo: Vec<usize>,
+    pub opening: Opening,
+    pub res: FightResult,
+}
+
+/// Every legal loadout with at most three items, including the empty build.
+/// No placeholder item fills an unused slot; unique items remain per-holder.
+fn loadout_combos(pool: &[ItemFx]) -> Vec<Vec<usize>> {
+    let mut out = vec![Vec::new()];
+    for i in 0..pool.len() {
+        out.push(vec![i]);
+    }
+    for i in 0..pool.len() {
+        for j in i..pool.len() {
+            if i != j || !pool[i].unique {
+                out.push(vec![i, j]);
+            }
+        }
+    }
+    out.extend(combos(pool).into_iter().map(|combo| combo.to_vec()));
+    out
+}
+
+/// Exhaustive item-budget options under one fully resolved trait context.
+/// Each item count has its own best-first rows; the existing fight, stress
+/// pass and API-name tie-break remain the same as ordinary full builds.
+pub fn optimize_loadouts<D: Driver>(spec: &CellSpec, top: usize, workers: usize)
+    -> (usize, [Vec<LoadoutRow>; 4]) {
+    let combos = loadout_combos(&spec.pool);
+    let n = combos.len();
+    const CHUNK: usize = 32;
+    let workers = if workers == 0 {
+        std::thread::available_parallelism().map(|x| x.get()).unwrap_or(1)
+    } else {
+        workers
+    }.clamp(1, n.div_ceil(CHUNK));
+    let drivers = Drivers::<D>::new(spec);
+    let evaluate = |idx: usize, drivers: &Drivers<D>| {
+        let combo = &combos[idx];
+        let items: Vec<&ItemFx> = combo.iter().map(|&i| &spec.pool[i]).collect();
+        let (opening, res) = run_fight::<D>(spec, drivers, &items, false);
+        (rank_key(&res, spec.unit.objective),
+         LoadoutRow { combo: combo.clone(), opening, res })
+    };
+    // A composition warmer can parallelize unit contexts itself. A request
+    // for one worker stays on the calling thread; other calls share bounded
+    // batches rather than starting one OS thread for every combination.
+    let evaluated: Vec<_> = if workers == 1 {
+        (0..n).map(|idx| evaluate(idx, &drivers)).collect()
+    } else {
+        let counter = AtomicUsize::new(0);
+        std::thread::scope(|s| {
+            let handles: Vec<_> = (0..workers).map(|_| {
+                let drivers = drivers.clone();
+                let counter = &counter;
+                let evaluate = &evaluate;
+                s.spawn(move || {
+                    let mut local = Vec::new();
+                    loop {
+                        let start = counter.fetch_add(CHUNK, AtomicOrdering::Relaxed);
+                        if start >= n {
+                            break;
+                        }
+                        for idx in start..(start + CHUNK).min(n) {
+                            local.push(evaluate(idx, &drivers));
+                        }
+                    }
+                    local
+                })
+            }).collect();
+            handles.into_iter().flat_map(|h| h.join().expect("a fight panicked")).collect()
+        })
+    };
+
+    let mut apis: Vec<(&str, usize)> = spec.pool.iter().enumerate()
+        .map(|(i, item)| (item.api.as_str(), i)).collect();
+    apis.sort();
+    let mut api_rank = vec![0usize; spec.pool.len()];
+    for (rank, (_, i)) in apis.iter().enumerate() {
+        api_rank[*i] = rank;
+    }
+    let mut groups: [Vec<_>; 4] = std::array::from_fn(|_| Vec::new());
+    for evaluated in evaluated {
+        groups[evaluated.1.combo.len()].push(evaluated);
+    }
+    let rows = groups.map(|mut group| {
+        group.sort_by(|(a_key, a), (b_key, b)| {
+            cmp_key(a_key, b_key).then_with(|| {
+                a.combo.iter().map(|&i| api_rank[i])
+                    .cmp(b.combo.iter().map(|&i| api_rank[i]))
+            })
+        });
+        group.truncate(top);
+        group.into_iter().map(|(_, row)| row).collect()
+    });
+    (n, rows)
+}
+
+/// The unrounded measurements needed to compare item cores across every
+/// legal completion, including builds below the displayed rows.
+pub struct Score<const N: usize = 3> {
+    pub combo: [usize; N],
+    pub kill_time: Option<f64>,
+    pub total: f64,
+    pub alive_time: f64,
+    pub survival_capped: bool,
+    pub stress_alive_time: Option<f64>,
+    pub stress_capped: bool,
+}
+
+impl<const N: usize> Score<N> {
+    fn from_result(combo: [usize; N], res: &FightResult) -> Self {
+        Score {
+            combo,
+            kill_time: res.kill_time,
+            total: res.total,
+            alive_time: res.alive_time,
+            survival_capped: res.survival_capped,
+            stress_alive_time: res.stress_alive_time,
+            stress_capped: res.stress_capped,
+        }
+    }
+}
+
 /// tft.enumerate_builds: every build of the pool, sorted best first; the
 /// top `top` rows come back with the build count.
 pub fn run_cell<D: Driver>(spec: &CellSpec, top: usize, workers: usize) -> (usize, Vec<Row>) {
+    let mut rows = ranked_rows::<D>(spec, workers);
+    let n = rows.len();
+    rows.truncate(top);
+    (n, rows)
+}
+
+/// The same fights and ranking as run_cell, with compact scores for every
+/// legal build. Scores are captured before the rich rows are truncated.
+pub fn analyze_cell<D: Driver>(spec: &CellSpec, top: usize, workers: usize)
+    -> (usize, Vec<Row>, Vec<Score>) {
+    let mut rows = ranked_rows::<D>(spec, workers);
+    let n = rows.len();
+    let scores = rows.iter().map(|row| Score::from_result(row.combo, &row.res)).collect();
+    rows.truncate(top);
+    (n, rows, scores)
+}
+
+/// Every legal two-item multiset, fought with exactly those two items in
+/// the cell's unchanged scenario. Keep the same ranking as full builds so
+/// a core's actual two-item spike can decide between shared completions.
+pub fn score_pairs<D: Driver>(spec: &CellSpec, workers: usize) -> Vec<Score<2>> {
+    let mut pairs = Vec::new();
+    for i in 0..spec.pool.len() {
+        for j in i..spec.pool.len() {
+            if i != j || !spec.pool[i].unique {
+                pairs.push([i, j]);
+            }
+        }
+    }
+    let n = pairs.len();
+    if n == 0 {
+        return Vec::new();
+    }
+    const CHUNK: usize = 32;
+    let workers = if workers == 0 {
+        std::thread::available_parallelism().map(|x| x.get()).unwrap_or(1)
+    } else {
+        workers
+    }.clamp(1, n.div_ceil(CHUNK));
+    let drivers = Drivers::<D>::new(spec);
+    let evaluate = |idx: usize, drivers: &Drivers<D>| {
+        let combo = pairs[idx];
+        let items = [&spec.pool[combo[0]], &spec.pool[combo[1]]];
+        let (_, res) = run_fight::<D>(spec, drivers, &items, false);
+        (rank_key(&res, spec.unit.objective), Score::from_result(combo, &res))
+    };
+    // Cell workers already run in parallel during a warm. Avoid starting
+    // another OS thread when this call requests one worker or one batch.
+    let mut scores: Vec<_> = if workers == 1 {
+        (0..n).map(|idx| evaluate(idx, &drivers)).collect()
+    } else {
+        let counter = AtomicUsize::new(0);
+        std::thread::scope(|s| {
+            let handles: Vec<_> = (0..workers).map(|_| {
+                let drivers = drivers.clone();
+                let counter = &counter;
+                let evaluate = &evaluate;
+                s.spawn(move || {
+                    let mut local = Vec::new();
+                    loop {
+                        let start = counter.fetch_add(CHUNK, AtomicOrdering::Relaxed);
+                        if start >= n {
+                            break;
+                        }
+                        for idx in start..(start + CHUNK).min(n) {
+                            local.push(evaluate(idx, &drivers));
+                        }
+                    }
+                    local
+                })
+            }).collect();
+            handles.into_iter().flat_map(|h| h.join().expect("a fight panicked")).collect()
+        })
+    };
+    let mut apis: Vec<(&str, usize)> = spec.pool.iter().enumerate()
+        .map(|(i, it)| (it.api.as_str(), i)).collect();
+    apis.sort();
+    let mut api_rank = vec![0usize; spec.pool.len()];
+    for (rank, (_, i)) in apis.iter().enumerate() {
+        api_rank[*i] = rank;
+    }
+    scores.sort_by(|(a_key, a), (b_key, b)| {
+        cmp_key(a_key, b_key).then_with(|| {
+            a.combo.map(|i| api_rank[i]).cmp(&b.combo.map(|i| api_rank[i]))
+        })
+    });
+    scores.into_iter().map(|(_, score)| score).collect()
+}
+
+/// Shared enumeration and sorting for both public cell entry points.
+fn ranked_rows<D: Driver>(spec: &CellSpec, workers: usize) -> Vec<Row> {
     let combos = combos(&spec.pool);
     let n = combos.len();
     if n == 0 {
-        return (0, Vec::new());
+        return Vec::new();
     }
     let workers = if workers == 0 {
         std::thread::available_parallelism().map(|x| x.get()).unwrap_or(1)
@@ -204,9 +422,58 @@ pub fn run_cell<D: Driver>(spec: &CellSpec, top: usize, workers: usize) -> (usiz
             ra.cmp(&rb)
         })
     });
-    let rows = order.iter().take(top).map(|&i| {
+    order.iter().map(|&i| {
         let (opening, res) = results[i].take().unwrap();
         Row { combo: combos[i], opening, res }
-    }).collect();
-    (n, rows)
+    }).collect()
+}
+
+#[cfg(test)]
+mod loadout_tests {
+    use super::loadout_combos;
+    use crate::fx::ItemFx;
+    use std::collections::BTreeSet;
+
+    fn item(unique: bool) -> ItemFx {
+        ItemFx { unique, ..ItemFx::default() }
+    }
+
+    fn counts(pool: &[ItemFx]) -> [usize; 4] {
+        let mut counts = [0; 4];
+        for combo in loadout_combos(pool) {
+            counts[combo.len()] += 1;
+        }
+        counts
+    }
+
+    #[test]
+    fn full_craftable_pool_counts_every_item_budget_once() {
+        let pool = vec![item(false); 35];
+        let combos = loadout_combos(&pool);
+        assert_eq!(counts(&pool), [1, 35, 630, 7770]);
+        assert_eq!(combos.len(), 8436);
+        assert_eq!(combos.iter().collect::<BTreeSet<_>>().len(), combos.len());
+        assert!(combos.iter().all(|combo| combo.windows(2).all(|p| p[0] <= p[1])));
+    }
+
+    #[test]
+    fn unique_items_do_not_repeat_at_any_item_budget() {
+        let pool = vec![item(true), item(false), item(true)];
+        let combos = loadout_combos(&pool);
+        assert_eq!(counts(&pool), [1, 3, 4, 4]);
+        assert!(combos.contains(&vec![1, 1, 1]));
+        assert!(combos.contains(&vec![0, 1, 2]));
+        for combo in combos {
+            assert!(combo.iter().filter(|&&i| i == 0).count() <= 1);
+            assert!(combo.iter().filter(|&&i| i == 2).count() <= 1);
+        }
+    }
+
+    #[test]
+    fn empty_and_small_pools_keep_an_actual_empty_build() {
+        assert_eq!(loadout_combos(&[]), vec![Vec::<usize>::new()]);
+        assert_eq!(counts(&[item(true)]), [1, 1, 0, 0]);
+        assert_eq!(counts(&[item(false)]), [1, 1, 1, 1]);
+        assert_eq!(counts(&[item(true), item(true)]), [1, 2, 1, 0]);
+    }
 }

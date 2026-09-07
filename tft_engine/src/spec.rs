@@ -140,7 +140,7 @@ pub struct DummySpec {
 }
 
 impl DummySpec {
-    fn from_py(d: &Bound<'_, PyDict>) -> PyResult<DummySpec> {
+    pub(crate) fn from_py(d: &Bound<'_, PyDict>) -> PyResult<DummySpec> {
         let timer = |key: &str| -> PyResult<Option<f64>> {
             match get(d, key)? {
                 Some(v) => {
@@ -205,6 +205,31 @@ impl EnemyDebuffs {
     }
 }
 
+/// Permanent team-applied resistance reductions on every enemy target.
+/// Separate from EnemyDebuffs, which reduces the simulated unit's defenses.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TargetDebuffs {
+    pub sunder: f64,
+    pub shred: f64,
+}
+
+impl TargetDebuffs {
+    fn from_py(d: &Bound<'_, PyDict>) -> PyResult<TargetDebuffs> {
+        let fraction = |key: &str| -> PyResult<f64> {
+            let value = getf(d, key, 0.0)?;
+            if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+                return Err(PyValueError::new_err(format!(
+                    "targetDebuffs.{key}: expected a finite fraction from 0 to 1")));
+            }
+            Ok(value)
+        };
+        Ok(TargetDebuffs {
+            sunder: fraction("sunder")?,
+            shred: fraction("shred")?,
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct CellSpec {
     pub unit: UnitSpec,
@@ -216,6 +241,7 @@ pub struct CellSpec {
     pub duration: f64,
     pub pressure: bool,
     pub enemy_debuffs: EnemyDebuffs,
+    pub target_debuffs: TargetDebuffs,
     pub immortal: bool,
     pub dummies: Vec<DummySpec>,
     pub crit_ev: f64,
@@ -273,6 +299,10 @@ impl CellSpec {
             enemy_debuffs: match getd(d, "enemyDebuffs")? {
                 Some(debuffs) => EnemyDebuffs::from_py(&debuffs)?,
                 None => EnemyDebuffs::default(),
+            },
+            target_debuffs: match getd(d, "targetDebuffs")? {
+                Some(debuffs) => TargetDebuffs::from_py(&debuffs)?,
+                None => TargetDebuffs::default(),
             },
             immortal: truthy(d, "immortal")?,
             dummies,

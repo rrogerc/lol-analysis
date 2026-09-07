@@ -352,12 +352,18 @@ impl Driver for Kayle {
         f.hit_ability(f.drv.ascension, Some(target), "ascension", 1.0);
         if star >= 2 && f.d(target).alive {
             let (pct, dur) = (f.row(f.drv.shred_level) / 100.0, f.row(f.drv.shred_dur));
-            let t = f.t;
-            let d = f.dm(target);
-            if t >= d.shred_until || pct >= d.shred {
-                d.shred = pct;
+            if f.team_mode {
+                f.shred(target, pct, dur);
+            } else {
+                let t = f.t;
+                let d = f.dm(target);
+                if d.baseline_shred == 0.0 || pct > d.baseline_shred {
+                    if t >= d.shred_until || pct >= d.shred {
+                        d.shred = pct;
+                    }
+                    d.shred_until = pymax(d.shred_until, t + dur);
+                }
             }
-            d.shred_until = pymax(d.shred_until, t + dur);
         }
         if star >= 3 {
             let others = f.aoe(None, true);

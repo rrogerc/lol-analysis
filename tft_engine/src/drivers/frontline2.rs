@@ -72,6 +72,7 @@ pub struct Krug {
     mini_armor: f64,
     mini_mr: f64,
     trait_shield: RowId,
+    trait_shield_dur: RowId,
     mini_hp: CalcId,
     bonus_hp: CalcId,
     roll: CalcId,
@@ -83,6 +84,7 @@ impl Driver for Krug {
     fn new(k: &Kit, u: &UnitSpec) -> Self {
         let s = u.extra_stats("TFT18_KrugMini");
         Krug { mini_armor: s.armor, mini_mr: s.mr, trait_shield: k.row("TraitShieldHealth"),
+               trait_shield_dur: k.row("TraitShieldDuration"),
                mini_hp: k.calc("HealthCalc1"), bonus_hp: k.calc("HealthCalc2"),
                roll: k.calc("PhysicalDamageCalc1") }
     }
@@ -103,14 +105,15 @@ impl Driver for Krug {
         }
         if f.fx.riftbeast {
             let amount = f.row(f.drv.trait_shield) * f.max_hp();
-            f.shield_ally(amount);
+            let dur = f.row(f.drv.trait_shield_dur);
+            f.shield_ally_for(amount, dur);
         }
     }
 }
 
 /// Furious Fists: every attack heals a share of her max health; the cast
 /// heals a lump, then attack speed (a multiplier row) and durability for a
-/// few seconds. Unstoppable does nothing here.
+/// few seconds; the same window prevents incoming crowd control.
 #[derive(Clone)]
 pub struct Vi {
     duration: RowId,
@@ -143,6 +146,7 @@ impl Driver for Vi {
         f.buff_as(as_pct, dur);
         let durability = f.row(f.drv.spell_dur);
         f.buff_durability(durability, dur);
+        f.cc_immune_until = pymax(f.cc_immune_until, f.t + dur);
     }
 }
 
@@ -328,8 +332,7 @@ impl Driver for Sentinel {
         let reave = f.row(f.drv.reave);
         for i in tg.iter() {
             if f.d(i).alive {
-                let d = f.dm(i);
-                d.mana = pymax(0.0, d.mana - reave);
+                f.reave_mana(i, reave);
             }
         }
     }
@@ -415,7 +418,7 @@ impl Driver for Taric {
             let amt = f.calc(f.drv.shield);
             let dur = f.row(f.drv.shield_dur);
             f.shield(amt, dur, "emerald radiance", false);
-            f.shield_ally(amt);
+            f.shield_ally_for(amt, dur);
         }
     }
 

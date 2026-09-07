@@ -61,8 +61,7 @@ impl Driver for Warwick {
 }
 
 /// Crimson Fury: bonus attack damage for a spell of frenzy, during which
-/// he ignores part of every dummy's armor — modelled as a sunder, which is
-/// exactly his own armor ignore since nothing else damages them. A kill
+/// he personally ignores a share of armor remaining after reductions. A kill
 /// leaps at the next target. With the Riftbeast Alpha Mark (Red Buff) his
 /// attacks burn and heal him for a share of his max health.
 #[derive(Clone)]
@@ -95,10 +94,7 @@ impl Driver for Brambleback {
         let t = f.t;
         f.drv.frenzy.push((t + dur, ad));
         let ignore = f.calc(f.drv.ignore);
-        let al = f.alive();
-        for d in al.iter() {
-            f.sunder(d, ignore, dur);
-        }
+        f.ignore_armor(ignore, dur);
     }
 
     fn tick(f: &mut Fight<Self>) {
@@ -298,7 +294,7 @@ impl ElderDragon {
         for d in al.iter() {
             let (hp, max_hp) = (f.d(d).hp, f.d(d).max_hp);
             if hp < thr * max_hp {
-                f.deal(hp, DType::True, Some(d), "execute", Deal::PLAIN);
+                f.execute(d, "execute");
             }
         }
     }
@@ -625,8 +621,7 @@ impl Driver for Gnar {
         let d = f.target();
         if f.alive().len() == 1 {
             if let Some(i) = d {
-                let hp = f.d(i).hp;
-                f.deal(hp, DType::True, Some(i), "thrown off", Deal::PLAIN);
+                f.execute(i, "thrown off");
             }
             return;
         }

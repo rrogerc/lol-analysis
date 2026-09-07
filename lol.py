@@ -26,6 +26,7 @@ import builds
 import items
 import scaling
 import tft
+import tft_comps
 import webapp
 
 
@@ -49,7 +50,7 @@ def main():
     sp.add_argument("--port", type=int, default=8321)
     sp.add_argument("--no-open", action="store_true", help="don't auto-open the browser")
     sp.add_argument("--no-warm", action="store_true",
-                    help="don't precompute cold builds scenarios in the background")
+                    help="don't precompute cold LoL build scenarios in the background; TFT uses the refresh timer")
     sp.set_defaults(func=webapp.cmd_serve)
 
     sp = sub.add_parser("export", help="write the web app as a self-contained static site")
@@ -214,6 +215,15 @@ def main():
     tf = sub.add_parser("tft", help="Teamfight Tactics: optimal items per unit, from first principles")
     tfsub = tf.add_subparsers(dest="tft_cmd", required=True)
 
+    comps = tfsub.add_parser("comps", help="eight-unit composition search")
+    comps_sub = comps.add_subparsers(dest="comps_cmd", required=True)
+    sp = comps_sub.add_parser("warm", help="calculate composition candidates and shared item allocations")
+    sp.add_argument("--only", choices=list(tft_comps.scenarios()), help="calculate one composition scenario")
+    sp.add_argument("--workers", type=int, choices=range(1, tft_comps.MAX_WARM_WORKERS + 1),
+                    default=tft_comps.DEFAULT_WARM_WORKERS,
+                    help="parallel composition scenarios (default: half the CPUs, up to 8; --only runs serially)")
+    sp.set_defaults(func=tft_comps.cmd_warm)
+
     def tft_args(sp):
         sp.add_argument("--set", type=int, default=tft.DEFAULT_SET, help="TFT set number (default 18)")
         sp.add_argument("--patch", help="archived patch to use (default: newest)")
@@ -224,7 +234,7 @@ def main():
     sp.add_argument("--force", action="store_true", help="refetch even if archived")
     sp.set_defaults(func=tft.cmd_fetch)
 
-    sp = tfsub.add_parser("refresh", help="fetch current patch/hotfix, reconcile known changes, recalculate and activate builds")
+    sp = tfsub.add_parser("refresh", help="fetch current patch/hotfix, prepare champion builds and compositions, and publish saved dashboard responses")
     sp.add_argument("--set", type=int, default=tft.DEFAULT_SET)
     sp.add_argument("--patch", help="patch to check (default: latest patch and hotfix)")
     sp.set_defaults(func=tft.cmd_refresh)

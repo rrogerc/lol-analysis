@@ -230,8 +230,8 @@ impl Driver for Alistar {
     fn cast(f: &mut Fight<Self>) {
         let heal = f.calc(f.drv.heal);
         f.heal(heal, "roar");
-        let ally = f.calc(f.drv.ally) * 2.0;
-        f.heal_ally(ally);
+        let ally = f.calc(f.drv.ally);
+        f.heal_allies(ally, 2);
         let d = f.target();
         f.hit_ability(f.drv.dmg, d, "slam", 1.0);
         if let Some(i) = d {
@@ -289,7 +289,8 @@ impl Driver for Elise {
 /// Can You Dig It?: attacks are a dance hitting every adjacent dummy (on-hit
 /// effects land on the one it is facing), and the active burrows for
 /// durability plus a heal — a share of it up front, the rest over the
-/// burrow. The Riftbeast Green Buff heals allies, and the coins are gold.
+/// burrow, without attacking. The Riftbeast Green Buff heals allies, and
+/// the coins are gold.
 #[derive(Clone)]
 pub struct Scuttlecrab {
     hot: Option<Hot>,
@@ -334,6 +335,11 @@ impl Driver for Scuttlecrab {
         let total = f.calc(f.drv.heal);
         let up = f.row(f.drv.up);
         let durability = f.row(f.drv.durability);
+        // The animation has already landed: healing and durability begin
+        // now, while the burrow holds attacks and recasts for its duration.
+        // Do not turn this into a longer cast_time: that would delay the
+        // healing and also introduce an unconfirmed longer mana lock.
+        f.casting_until = pymax(f.casting_until, f.t + dur);
         f.buff_durability(durability, dur);
         f.heal(total * up, "burrow");
         heal_over_time(f, total * (1.0 - up), dur, "burrow");
@@ -404,7 +410,7 @@ impl Driver for Shen {
         let amount = f.calc(f.drv.shield);
         f.shield(amount, dur, "ability", false);
         let ally = f.calc(f.drv.ally);
-        f.shield_ally(ally);
+        f.shield_ally_for(ally, dur);
         f.drv.ki = pyint(f.row(f.drv.n_attacks));
         f.as_extra = f.row(f.drv.as_buff);
         f.as_extra_until = 1e9;

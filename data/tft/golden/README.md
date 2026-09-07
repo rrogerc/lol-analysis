@@ -1,16 +1,46 @@
 # Golden fixtures — compiled TFT benchmark, Set 18 patch 18.1d
 
 `fights.json` and `cells.json` pin the **exact** output of the compiled
-Rust/PyO3 engine. They were deliberately regenerated on 2026-09-05 for
-the protected-backline tank model, itemized reference damage calibration,
-nearest-enemy targeting and delayed enemy casts, using the audited
-18.1d snapshot. The first enemy tank retains **3,000 HP, 70 armor and
-70 MR**. Tanks face two more frontliners at 1,800 HP / 45 armor / 45 MR
+Rust/PyO3 engine. They are deliberately regenerated on 2026-09-06 for
+Brambleback's personal armor ignore, using the audited 18.1d snapshot.
+During Frenzy, his armor ignore applies to the armor remaining after Sunder;
+it does not reduce armor for teammates. Before regeneration, the same
+recorded inputs changed 52 of 7,670 fights, all Brambleback, and his 12 ranked
+cells. The other champions' standalone results were unchanged. Symmetric
+composition combat has separate regressions in `test_tft_symmetric.py` and
+`test_tft_symmetric_regressions.py`.
+
+Scuttlecrab's confirmed burrow attack lock is retained.
+The heal and durability start at ability land; attacks and recasts remain
+blocked for the resolved burrow duration. The existing one-second mana lock
+is retained. Shared composition fights have separate deterministic regressions
+in `test_tft_team_engine.py`; their new API preserves other standalone results.
+
+Murkwolf's previously corrected leap is retained. His AD and AP
+contributions each apply once, following the archived ability footer. The
+corrected base-stat card values also lower the non-tank dummy's median
+ability damage from 335 to 318. These are deliberate changes to both
+Murkwolf's damage and the derived benchmark; see `../README.md`.
+
+Azir's adopted six-command mana lock is retained.
+Attack mana and regeneration remain blocked until the sixth command ends,
+then resume without an extra delay. The first tank's higher base defenses
+are retained. Permanent team-supplied Sunder and Shred remain active on every
+carry/fighter target. Both are currently 30% and apply once;
+matching item or native effects cannot stack or prolong a stronger timed
+effect. The first enemy tank now has **3,000 HP, 110 base armor and
+110 base MR**, reduced to **77 armor / 77 MR** in damage tests. The other
+carry/fighter targets' 45/45 and 40/40 become 31.5/31.5 and 28/28.
+
+The protected-backline tank model, itemized reference damage calibration,
+nearest-enemy targeting and delayed enemy casts are retained. Tanks face
+two more frontliners at 1,800 HP / 45 armor / 45 MR
 and two backliners at 1,440 HP / 40 armor / 40 MR. All five remain alive.
 The three tank profiles have equal average damage budgets, calibrated
 against itemized carries, with most damage coming from protected backliners.
-Carries and fighters retain the existing three-target defenses and fighter
-offense keeps the median attack/mana model. See `../README.md`.
+Tank survival tests use the same first tank's new base defenses without
+outgoing team resistance reduction; fighter offense keeps the median
+attack/mana model. See `../README.md`.
 
 Earlier generations fixed omnivamp against immortal targets, reported
 opening stats after driver initialization, and stopped at the exact requested
