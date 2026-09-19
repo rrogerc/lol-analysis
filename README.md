@@ -9,6 +9,13 @@ module and committed JSON archive:
   crawl in `../lol-quant`. Champions are tracked per role: every lane with
   more than 10% play rate gets its own entry, so flex picks like Gragas have
   separate top/jungle/mid stats.
+- **onetricks** (`onetricks.py`) — how many one-tricks every champion has,
+  from the same crawl. A player one-tricks a champion in a role when it is
+  more than 85% of their ranked solo games *in that role* this season (at
+  least 20 games on it), not of all their games as onetricks.gg counts, so
+  one-tricks who also fill other roles still count. The players are
+  everyone on each crawled region's latest Master+ ladder, whose whole
+  season the crawl collects. Counts only, in lol.db; nothing is archived.
 - **items** (`items.py`, `data/items/`) — static item data for build math.
   `lol.py items fetch` snapshots the current patch's Summoner's Rift items
   from three sources: Riot's Data Dragon (canonical, but key offensive stats
@@ -29,7 +36,7 @@ module and committed JSON archive:
   every champion since 16.5 while Riot's game files still carry it);
   text-only item passives live in the hand-curated
   `data/builds/item-effects.json`, and ability kits in hand-encoded
-  `data/builds/<champ>.json` — Kayle, Vladimir and Twitch so far, each paired
+  `data/builds/<champ>.json` — Kayle, Vladimir, Twitch and Kassadin so far, each paired
   with a rotation driver (`engine/src/drivers.rs`) that says what the
   champion does with its attacks and abilities; the engine itself is
   champion-agnostic (clock, target, item procs, damage pipeline). On top:
@@ -111,14 +118,16 @@ Scaling data comes from the `../lol-quant` Riot-API crawl, read in place —
 nothing is copied between the repos, but `lol.db` is an aggregate that has
 to be rebuilt from the crawl's parquet. On the home server a systemd user
 timer runs `jobs/sync-scaling.sh` every six hours (`scaling sync
---db-only`), so the Scaling tab follows the crawler on its own and its
-subtitle shows when it last synced. To refresh by hand:
+--db-only`, then `onetricks sync`), so the Scaling and One-tricks tabs
+follow the crawler on its own and show when they last synced. To refresh by
+hand:
 
 ```bash
 python3 lol.py scaling sync
+python3 lol.py onetricks sync   # ~20 s, ~8 GB peak (the crawl's parquet metadata)
 ```
 
-This refreshes all three tiers with their canonical definitions:
+`scaling sync` refreshes all three tiers with their canonical definitions:
 
 - `soloq_masters_plus` — every game
 - `soloq_mastery` — pilot has ≥ 20 season games on the champion
@@ -156,12 +165,19 @@ The tabs:
   with tier/lane/min-games filters. Click table rows to chart champions.
 - **Champion** — any champion's win-rate curve per lane, plus their win rate
   across patches.
+- **One-tricks** — one table: every champion's number of one-tricks on the
+  Master+ ladder, and how many of them in each role (someone who one-tricks
+  a champion in two roles counts once in the total and in both roles).
 - **Builds** — the theoretical damage model's ranked full builds per
   champion, vs a squishy, a bruiser, a tank, or overall. Every row shows
   the build's expected kill time against each target and how far behind
   that target's best it is; the overall scenario ranks by the geometric
   mean of those times. Click a build for its damage-source breakdown
-  against each target. Every scenario is precomputed (`lol.py builds
+  against each target. The top 10 builds of each scenario number their
+  items in a suggested buy order (boots early): the order whose partial
+  builds, fought at earlier levels against earlier-game targets, kill
+  fastest along the way, each stage weighted by the gold to the next item.
+  Every scenario is precomputed (`lol.py builds
   warm`, which
   `serve` runs in the background whenever something is cold — `--no-warm`
   turns that off); a cell that isn't computed yet says so and fills in

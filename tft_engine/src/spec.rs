@@ -7,10 +7,10 @@ use std::collections::HashMap;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyBool, PyDict};
 
 use crate::fx::{Form, ItemFx, RoleFx, TraitFx};
-use crate::kit::{Kit, Stats};
+use crate::kit::{Kit, RowId, Stats};
 use crate::pyget::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -24,6 +24,13 @@ pub enum Kind {
 }
 
 impl Kind {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Assassin => "Assassin", Self::Fighter => "Fighter", Self::Marksman => "Marksman",
+            Self::Caster => "Caster", Self::Tank => "Tank", Self::Specialist => "Specialist",
+        }
+    }
+
     pub fn parse(s: &str) -> PyResult<Kind> {
         Ok(match s {
             "Assassin" => Kind::Assassin,
@@ -55,6 +62,10 @@ pub enum Objective {
 }
 
 impl Objective {
+    pub fn name(self) -> &'static str {
+        match self { Self::Carry => "carry", Self::Fighter => "fighter", Self::Tank => "tank" }
+    }
+
     pub fn parse(s: &str) -> PyResult<Objective> {
         Ok(match s {
             "carry" => Objective::Carry,
@@ -239,7 +250,13 @@ pub struct CellSpec {
     pub kit_ap: Option<Kit>,
     pub clump: bool,
     pub duration: f64,
+    /// Explicit finite-benchmark approximation, in seconds per engagement.
+    /// Missing/zero retains stationary fixtures and immortal theory probes.
+    pub melee_reposition_seconds: f64,
     pub pressure: bool,
+    /// Infer standalone pressure from the equipped form only when the
+    /// caller did not explicitly select a pressure condition.
+    pub auto_pressure: bool,
     pub enemy_debuffs: EnemyDebuffs,
     pub target_debuffs: TargetDebuffs,
     pub immortal: bool,
@@ -254,6 +271,14 @@ pub struct CellSpec {
 
 impl CellSpec {
     pub fn from_py(d: &Bound<'_, PyDict>) -> PyResult<CellSpec> {
+        let melee_reposition_seconds = match get(d, "meleeRepositionSeconds")? {
+            Some(value) if !value.is_instance_of::<PyBool>() => value.extract::<f64>()?,
+            Some(_) => return Err(PyValueError::new_err("meleeRepositionSeconds must be a finite nonnegative number")),
+            None => 0.0,
+        };
+        if !melee_reposition_seconds.is_finite() || melee_reposition_seconds < 0.0 {
+            return Err(PyValueError::new_err("meleeRepositionSeconds must be a finite nonnegative number"));
+        }
         let unit = UnitSpec::from_py(&reqd(d, "unit")?)?;
         let kits = reqd(d, "kits")?;
         let kit_base = Kit::from_py(&reqd(&kits, "base")?, &unit.name)?;
@@ -295,7 +320,9 @@ impl CellSpec {
             kit_ap,
             clump: gets(d, "geometry", "clump")? == "clump",
             duration: reqf(d, "duration")?,
+            melee_reposition_seconds,
             pressure: truthy(d, "pressure")?,
+            auto_pressure: truthy(d, "autoPressure")?,
             enemy_debuffs: match getd(d, "enemyDebuffs")? {
                 Some(debuffs) => EnemyDebuffs::from_py(&debuffs)?,
                 None => EnemyDebuffs::default(),
@@ -324,5 +351,37 @@ impl CellSpec {
             Some(Form::AP) => self.kit_ap.as_ref().unwrap_or(&self.kit_base),
             None => &self.kit_base,
         }
+    }
+
+    pub fn kind_for(&self, form: Option<Form>) -> Kind {
+        if self.unit.api == "TFT18_Nidalee" {
+            match form { Some(Form::AD) => Kind::Assassin, Some(Form::AP) => Kind::Marksman,
+                         None => self.unit.kind }
+        } else { self.unit.kind }
+    }
+
+    pub fn objective_for(&self, form: Option<Form>) -> Objective {
+        if self.unit.api == "TFT18_Nidalee" {
+            match form { Some(Form::AD) => Objective::Fighter, Some(Form::AP) => Objective::Carry,
+                         None => self.unit.objective }
+        } else { self.unit.objective }
+    }
+
+    pub fn range_for(&self, form: Option<Form>) -> f64 {
+        let kit = self.kit_for(form);
+        let range = if self.unit.has_forms && form.is_some() { kit.stats.range } else { self.unit.range };
+        if self.unit.api == "TFT18_Nidalee" && form == Some(Form::AP) {
+            // The pinned AP kit names this intrinsic bonus explicitly;
+            // the melee AD form must not inherit it from merged rows.
+            let bonus = kit.row("AdditionalAttackRange");
+            range + if bonus == RowId::MISSING { 0.0 } else { kit.row_value(bonus) }
+        } else { range }
+    }
+
+    pub fn pressure_for(&self, form: Option<Form>) -> bool {
+        if self.auto_pressure && self.objective_for(form) != self.unit.objective {
+            self.objective_for(form) != Objective::Carry
+        }
+        else { self.pressure }
     }
 }

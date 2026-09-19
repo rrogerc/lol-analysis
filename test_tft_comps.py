@@ -14,11 +14,73 @@ from unittest.mock import Mock
 
 import tft
 import tft_comps as comps
+import tft_theory
 from tft_board import BOARD_PLAN_MODEL, ELDER_DRAGON, slots_used
 
 
+def _theory_fixture(snap, score, geometry="clump", dps=8.0, *, frontline=(), tank=None):
+    """Arithmetic-consistent pressure rows without expensive unit curves."""
+    rows = []
+    for scenario in tft_theory.scenarios(geometry):
+        metrics = tft_theory.capacity_metrics(score / dps, dps, scenario["incomingDps"])
+        order = sorted(frontline, key=lambda api: (api != tank, api))
+        if scenario["targeting"] == "secondary-first" and len(order) > 1:
+            order[0], order[1] = order[1], order[0]
+        targets = [order[0], order[min(1, len(order) - 1)], order[0]] if order else [None] * 3
+        rows.append({**scenario, **metrics, "score": score,
+                     "pressureTargetOrder": order, "initialPressureTargets": targets,
+                     "measurementWindow": metrics["protectionTime"],
+                     "plannedMeasurementWindow": metrics["protectionTime"], "frontlineCollapsed": True,
+                     "incomingBudget": metrics["frontlineEhp"], "spentPressure": metrics["frontlineEhp"],
+                     "deniedPressure": 0.0, "unspentPressure": 0.0})
+    return {"evaluationModel": tft_theory.MODEL, "modelRevision": tft_theory.revision(snap),
+            "profileCount": len(rows), "scenarios": rows,
+            "metrics": {**tft_theory.summarize(rows), "theoryScore": score}}
+
+
+class TestPressureTargetPublication(unittest.TestCase):
+    def rows(self):
+        return _theory_fixture(tft.load_snapshot(18, "18.1d"), 100.0,
+            frontline=("main", "secondary", "reserve"), tank="main")["scenarios"]
+
+    def validate(self, rows):
+        tft_theory.validate_pressure_targets(rows, ("main", "secondary", "reserve"), "main")
+
+    def test_complete_mirrored_assignments_are_valid(self):
+        self.validate(self.rows())
+
+    def test_missing_or_corrupt_source_diagnostics_are_rejected(self):
+        mutations = [lambda row: row.pop("initialPressureTargets"),
+                     lambda row: row.update(pressureTargetOrder=["main", "main", "reserve"]),
+                     lambda row: row.update(pressureTargetOrder=["main", "secondary"]),
+                     lambda row: row.update(initialPressureTargets=["main", "backline", "main"]),
+                     lambda row: row.update(initialPressureTargets=["main", ["secondary"], "main"]),
+                     lambda row: row.update(initialPressureTargets=["main", None, "main"]),
+                     lambda row: row.update(initialPressureTargets=["main", "secondary", "reserve"])]
+        for mutate in mutations:
+            rows = self.rows()
+            mutate(rows[0])
+            with self.subTest(row=rows[0]), self.assertRaises(ValueError):
+                self.validate(rows)
+
+    def test_profiles_cannot_silently_change_formation(self):
+        rows = self.rows()
+        rows[2]["pressureTargetOrder"][1:] = reversed(rows[2]["pressureTargetOrder"][1:])
+        order = rows[2]["pressureTargetOrder"]
+        rows[2]["initialPressureTargets"] = [order[0], order[1], order[0]]
+        with self.assertRaisesRegex(ValueError, "neutral formation"):
+            self.validate(rows)
+
+    def test_secondary_orientation_must_swap_the_first_two(self):
+        rows = self.rows()
+        rows[1].update(pressureTargetOrder=rows[0]["pressureTargetOrder"],
+                       initialPressureTargets=rows[0]["initialPressureTargets"])
+        with self.assertRaises(ValueError):
+            self.validate(rows)
+
+
 class _PipelineFixtureSearch(comps.Search):
-    """Tiny deterministic fights; retain the real phase and board assembly code."""
+    """Tiny deterministic capacities; retain the real phase and board assembly code."""
     def prepare(self):
         self.screened = 3
         self.states_screened = 7
@@ -34,14 +96,14 @@ class _PipelineFixtureSearch(comps.Search):
         members = comps.board_members(self.snap, roster, carry, tank, self.profile)
         selected = {api: {"items": (), "count": 0, "dps": 1.0, "frontline": 0.0,
                           "alpha": False, "itemBurn": False, "infernoBurn": False} for api in roster}
-        selected[carry] = dict(selected[carry], items=("DA_Deathblade",) * 3, count=3)
+        selected[carry] = dict(selected[carry], items=("DA_Deathblade",) * 2 + ("DA_RedBuff",), count=3)
         selected[tank] = dict(selected[tank], items=("DA_WarmogsArmor",) * 3, count=3)
         index = self.candidates().index(candidate)
-        wins = 8 if index < 2 else 7
-        allocation = {"selected": selected, "metrics": {"benchmarkWins": wins, "benchmarkCount": 12,
-            "benchmarkWinRate": wins / 12, "damageDps": 8.0, "frontlineTime": 10.0, "hpMargin": index / 10},
+        score = 8 if index < 2 else 7
+        fronts = [api for api in roster if comps._frontliner(self.snap.units[api])]
+        allocation = {**_theory_fixture(self.snap, score, self.geometry, frontline=fronts, tank=tank), "selected": selected,
             "units": {api: {"damage": 10.0, "dps": 1.0, "aliveTime": 10.0} for api in roster},
-            "matchups": [], "screening": {}}
+            "screening": {}}
         result = {"members": members, "traits": comps.resolve_board_traits(self.snap, members),
                   "allocations": {"6": {"single": [allocation]}}}
         self.refined[candidate] = result
@@ -63,24 +125,17 @@ class _PipelineFixtureSearch(comps.Search):
 
     def validate_boards(self, rows):
         rows = list(rows)
-        assert all("rank" in row for row in rows), "validation started before final ranks were fixed"
+        assert all("rank" in row for row in rows), "consistency checks started before final ranks were fixed"
         assert [row["rank"] for row in rows] == [1, 1, 3]
-        def evaluate(members, effects, selected, carry, tank, *, split, healing_policy="broad"):
-            assert split == "validation"
-            wins = 0 if self.snap.unit("Leona")["api"] in selected else 6
-            return {"metrics": {"benchmarkWins": wins, "benchmarkCount": 6}, "matchups": [],
-                    "poolRevision": "fixture-pool", "poolSplit": split, "opponentCount": 3,
-                    "itemBudget": 6, "healingPolicy": healing_policy}
-        with patch.object(self.team, "evaluate", side_effect=evaluate):
-            super().validate_boards(rows)
+        super().validate_boards(rows)
 
     def level9_upgrade(self, row):
-        assert "rank" in row and "validation" in row, "cap started before the parent was finalized"
+        assert "rank" in row and "consistency" in row, "cap started before the parent was finalized"
         # Make the weakest parent's cap strongest. Parent ordering must stay
         # based on the actual level-eight result in both execution paths.
-        wins = 12 if row["metrics"]["benchmarkWins"] == 7 else 0
+        score = 12 if row["metrics"]["theoryScore"] == 7 else 0
         return {"parentId": row["id"], "board": {"id": "cap-" + row["id"],
-                "level": 9, "metrics": {"benchmarkWins": wins, "benchmarkCount": 12}}}
+                "level": 9, "metrics": {"theoryScore": score}}}
 
 
 _REAL_WORKER_TASK = comps._worker_task
@@ -161,7 +216,8 @@ class TestCompositions(unittest.TestCase):
 
     def options(self, api):
         tank = self.snap.units[api]["objective"] == "tank"
-        return [{"items": ("test-item",) * count, "count": count,
+        return [{"items": (("DA_RedBuff",) + ("DA_WarmogsArmor" if tank else "DA_Deathblade",) * (count - 1))
+                 if count else (), "count": count,
                  "dps": 10 + count * (5 if tank else 25),
                  "frontline": 5 + count * 20 if tank else 0,
                  "stress": 0, "capped": False, "itemBurn": False,
@@ -185,6 +241,34 @@ class TestCompositions(unittest.TestCase):
         self.assertFalse(comps.valid_board(self.snap, with_two_fours, self.carry, self.tank, self.profile))
         with_one_four = self.roster[:-1] + self.apis("Amumu")
         self.assertTrue(comps.valid_board(self.snap, with_one_four, self.carry, self.tank, self.profile))
+
+    def test_each_plan_accepts_three_same_cost_units_and_rejects_two(self):
+        fixtures = {
+            "c1": ("Akali", "Yorick", "Karma", "Alistar", "Caitlyn", "Kayle", "Diana", "Cassiopeia"),
+            "c2": ("Kayle", "Sejuani", "Caitlyn", "Akali", "Yorick", "Karma", "Diana", "Cassiopeia"),
+            "c3": ("Diana", "Hecarim", "Cassiopeia", "Akali", "Yorick", "Karma", "Kayle", "Caitlyn"),
+            "c4": ("Ahri", "Amumu", "Aphelios", "Akali", "Yorick", "Karma", "Kayle", "Caitlyn"),
+        }
+        metadata = {profile["key"]: profile for profile in comps.api_meta(self.snap)["profiles"]}
+        for key, names in fixtures.items():
+            with self.subTest(plan=key):
+                profile = comps.PROFILES[key]
+                roster = self.apis(*names)
+                carry, tank = roster[:2]
+                self.assertEqual(sum(self.snap.units[api]["cost"] == profile["cost"] for api in roster), 3)
+                self.assertTrue(comps.valid_board(self.snap, roster, carry, tank, profile))
+                partial = roster[:2] + roster[3:]
+                self.assertTrue(comps.valid_board(self.snap, partial, carry, tank, profile, complete=False))
+                replacement = "Teemo" if key == "c1" else "Varus"
+                too_few = partial + self.apis(replacement)
+                self.assertFalse(comps.valid_board(self.snap, too_few, carry, tank, profile))
+                self.assertFalse(comps.valid_board(self.snap, too_few, carry, tank, profile, complete=False))
+                search = comps.Search(self.snap, profile, "spread", "mixed")
+                search.units = {api: self.snap.units[api] for api in roster}
+                with patch.object(search, "guide", return_value=1.0):
+                    self.assertIn((tuple(sorted(roster)), carry, tank), search.candidates())
+                self.assertEqual(metadata[key]["minSameCost"], 3)
+                self.assertIn(f"at least 3 {profile['cost']}-cost champions", metadata[key]["description"])
 
     def test_four_cost_level_eight_never_requires_five_costs(self):
         roster = self.apis("Ahri", "Sett", "Aphelios", "Amumu", "Ashe", "Taric", "Leona", "Karma")
@@ -325,10 +409,10 @@ class TestCompositions(unittest.TestCase):
         self.assertTrue(all(option["utility"] & 4 for option in bare))
 
     def test_search_is_deterministic_and_all_candidates_obey_the_plan(self):
-        def baseline(_self, api, star):
-            unit = self.snap.units[api]
-            return unit["stats"]["ad"] * star, unit["stats"]["hp"] / 100 if comps._frontliner(unit) else 0
-        with patch.object(comps.Evaluator, "baseline", baseline):
+        def guide(search, roster, carry, tank):
+            members = comps.board_members(self.snap, roster, carry, tank, search.profile)
+            return sum(self.snap.units[m["api"]]["stats"]["ad"] * m["star"] for m in members)
+        with patch.object(comps.Search, "guide", guide):
             searches = [comps.Search(self.snap, self.profile, "clump", "mixed") for _ in range(2)]
             found = []
             for search in searches:
@@ -369,7 +453,7 @@ class TestCompositions(unittest.TestCase):
         self.assertTrue(any(option["items"] == ("defense",) * 3 for option in options))
         self.assertTrue(any(option.get("utility") == 7 for option in options))
 
-    def test_actual_team_outcome_selects_seed_over_protected_dps(self):
+    def test_theoretical_capacity_selects_seed_over_damage_screening(self):
         search = comps.Search(self.snap, self.profile, "clump", "mixed")
         selected = {api: self.options(api)[0] for api in self.roster}
         offense = dict(self.options(self.tank)[3], items=("offense",) * 3, dps=10000, frontline=1)
@@ -379,15 +463,13 @@ class TestCompositions(unittest.TestCase):
         libraries[self.tank] = [offense, defense]
         calls = []
         def evaluate(_members, _effects, choices, _carry, _tank, *, split, details):
-            self.assertEqual(split, "search")
+            self.assertEqual(split, "theory")
             self.assertFalse(details)
             results = []
             for choice in choices:
                 tank_items = choice[self.tank]["items"]
                 calls.append(tank_items)
-                results.append({"metrics": {"benchmarkWins": 4 if tank_items == defense["items"] else 0,
-                    "benchmarkCount": 4, "benchmarkWinRate": 1.0 if tank_items == defense["items"] else 0},
-                    "matchups": []})
+                results.append(_theory_fixture(self.snap, 4 if tank_items == defense["items"] else 0))
             return results
         with patch.object(search.team, "evaluate_many", side_effect=evaluate):
             defensive = dict(selected, **{self.tank: defense})
@@ -395,9 +477,9 @@ class TestCompositions(unittest.TestCase):
         self.assertEqual(rows[0]["selected"][self.tank]["items"], defense["items"])
         self.assertIn(offense["items"], calls)
         self.assertIn(defense["items"], calls)
-        self.assertEqual(rows[0]["metrics"]["benchmarkWins"], 4)
+        self.assertEqual(rows[0]["metrics"]["theoryScore"], 4)
 
-    def test_published_unit_contributions_come_from_the_shared_fights(self):
+    def test_published_metrics_and_resolved_forms_come_from_theoretical_evaluation(self):
         search = comps.Search(self.snap, self.profile, "clump", "mixed")
         selected = {api: dict(self.options(api)[0], items=()) for api in self.roster}
         selected[self.carry] = dict(self.options(self.carry)[3], items=("DA_Deathblade",) * 3)
@@ -407,17 +489,28 @@ class TestCompositions(unittest.TestCase):
         shared = {api: {"damage": 60.0, "dps": 6.0, "aliveTime": 8.0, "damageTaken": 20.0,
                         "healing": 0.0, "shielding": 0.0, "allyHealing": 0.0, "allyShielding": 0.0}
                   for api in self.roster}
-        allocation = {"selected": selected, "metrics": {"benchmarkWins": 1, "benchmarkCount": 4,
-                      "benchmarkScore": 25.0, "damageDps": 48.0, "frontlineTime": 8.0,
-                      "hpMargin": -.5, "clearTime": 10.0}, "units": shared,
-                      "matchups": [{"key": "fixture"}], "screening": {"damageDps": 9999.0, "frontlineIndex": 200.0}}
+        shared[self.carry].update(frontline=True, form="AD", kind="Assassin", abilityName="Resolved form")
+        allocation = {**_theory_fixture(self.snap, 384.0, dps=48.0),
+                      "selected": selected, "units": shared,
+                      "sharedUtility": {"sunder": 0.3, "shred": 0.0,
+                                        "itemBurnHolder": self.tank, "infernoBurnHolder": None},
+                      "screening": {"damageDps": 9999.0, "frontlineIndex": 200.0}}
         row = search.compose((tuple(self.roster), self.carry, self.tank),
                              {"members": members, "traits": traits}, 6, "single", allocation)
-        self.assertEqual(row["metrics"]["damageDps"], 48)
+        self.assertAlmostEqual(row["metrics"]["damageDps"], 48)
         self.assertEqual(sum(unit["dps"] for unit in row["units"]), 48)
         self.assertTrue(all(unit["aliveTime"] == 8 for unit in row["units"]))
         self.assertTrue(all(type(unit["frontline"]) is bool for unit in row["units"]))
-        self.assertEqual(row["matchups"], [{"key": "fixture"}])
+        carry = next(unit for unit in row["units"] if unit["api"] == self.carry)
+        self.assertTrue(carry["frontline"])
+        self.assertEqual((carry["form"], carry["kind"], carry["abilityName"]), ("AD", "Assassin", "Resolved form"))
+        self.assertEqual(row["scenarios"], allocation["scenarios"])
+        self.assertEqual(row["modelRevision"], tft_theory.revision(self.snap))
+        self.assertEqual(row["itemBurnHolder"], tft.unit_slug(self.snap.units[self.tank]))
+        self.assertEqual(row["burnHolder"], row["itemBurnHolder"])
+        self.assertIsNone(row["infernoBurnHolder"])
+        self.assertEqual(row["sharedUtility"], allocation["sharedUtility"])
+        self.assertNotIn("matchups", row)
         self.assertNotIn("balanceScore", row["metrics"])
 
     def test_compact_item_winner_gets_full_diagnostics_before_publication(self):
@@ -427,7 +520,7 @@ class TestCompositions(unittest.TestCase):
         selected[self.tank] = dict(selected[self.tank], items=("DA_WarmogsArmor",) * 3, count=3)
         refined = {"members": self.members(), "traits": {"effects": {api: [] for api in self.roster}},
                    "allocations": {"6": {"single": [{"selected": selected}]}}}
-        compact = {"metrics": {"benchmarkWins": 8, "benchmarkCount": 12}, "matchups": []}
+        compact = _theory_fixture(self.snap, 8.0)
         full = {**compact, "units": {api: {"damage": 12.0, "dps": 1.2} for api in self.roster}}
         optimizer = Mock(stats={"singleItemComparisons": 204})
         optimizer.optimize.return_value = selected, compact, {"evidence": "all legal replacements"}
@@ -436,51 +529,107 @@ class TestCompositions(unittest.TestCase):
                 patch.object(search.evaluator, "loadout", side_effect=lambda api, *args: selected[api]):
             result = search.final_items((tuple(self.roster), self.carry, self.tank), refined, 6, "single", anchors={})
         evaluate.assert_called_once_with(refined["members"], refined["traits"]["effects"], selected,
-                                         self.carry, self.tank, split="search")
+                                         self.carry, self.tank, split="theory")
         self.assertIs(result["units"], full["units"])
         self.assertEqual(result["itemAnalysis"], {"evidence": "all legal replacements"})
         self.assertEqual(search.team.stats["singleItemComparisons"], 204)
 
-    def test_held_out_results_are_added_after_selection_and_never_change_ranks(self):
+    def test_consistency_check_does_not_run_opponent_fights_or_change_ranks(self):
         search = comps.Search(self.snap, self.profile, "clump", "mixed")
-        other = self.roster[:-1] + self.apis("Pebbles")
-        candidates = [(tuple(sorted(roster)), self.carry, self.tank) for roster in (self.roster, other)]
-        evaluations = []
-        def refine(candidate):
-            roster, carry, tank = candidate
-            members = comps.board_members(self.snap, roster, carry, tank, self.profile)
-            selected = {api: dict(self.options(api)[0], items=()) for api in roster}
-            selected[carry] = dict(selected[carry], items=("DA_Deathblade",) * 3, count=3)
-            selected[tank] = dict(selected[tank], items=("DA_WarmogsArmor",) * 3, count=3)
-            wins = 8 if candidate == candidates[0] else 7
-            allocation = {"selected": selected, "metrics": {"benchmarkWins": wins, "benchmarkCount": 12,
-                          "benchmarkWinRate": wins / 12, "damageDps": 0, "frontlineTime": 0},
-                          "units": {api: {} for api in roster}, "matchups": [], "screening": {}}
-            result = {"members": members, "traits": comps.resolve_board_traits(self.snap, members),
-                      "allocations": {"6": {"single": [allocation]}}}
-            search.refined[candidate] = result
-            return result
-        def validate(members, effects, selected, carry, tank, *, split, healing_policy="broad"):
-            self.assertEqual(split, "validation")
-            evaluations.append(tuple(sorted(m["api"] for m in members)))
-            # The weaker selected board gets a perfect held-out result;
-            # this must not improve its rank or trigger another item search.
-            wins = 0 if self.apis("Leona")[0] in selected else 6
-            return {"metrics": {"benchmarkWins": wins, "benchmarkCount": 6}, "matchups": [],
-                    "poolRevision": "pool", "poolSplit": "validation", "opponentCount": 3, "itemBudget": 6,
-                    "healingPolicy": healing_policy}
-        with patch.object(comps, "ITEM_BUDGETS", (6,)), \
-                patch.object(comps, "STRUCTURES", ({"key": "single"},)), \
-                patch.object(search, "prepare"), patch.object(search, "candidates", return_value=candidates), \
-                patch.object(search, "refine", side_effect=refine), patch.object(search, "swaps", return_value=[]), \
-                patch.object(search, "final_items", side_effect=lambda c, r, b, s: r["allocations"][str(b)][s][0]) as final_items, \
-                patch.object(search.team, "evaluate", side_effect=validate):
-            rows = search.run()["6"]["single"]
-        self.assertEqual([row["metrics"]["benchmarkWins"] for row in rows], [8, 7])
-        self.assertEqual([row["validation"]["metrics"]["benchmarkWins"] for row in rows], [0, 6])
-        self.assertEqual([row["rank"] for row in rows], [1, 2])
-        self.assertEqual(len(evaluations), 4)
-        self.assertEqual(final_items.call_count, 2)
+        board = {"level": 8, "mainCarry": tft.unit_slug(self.snap.units[self.carry]),
+                 "mainTank": tft.unit_slug(self.snap.units[self.tank]),
+                 "units": [{**member, "slug": tft.unit_slug(self.snap.units[member["api"]]),
+                            "frontline": comps._frontliner(self.snap.units[member["api"]]),
+                            "itemApis": list(self.options(member["api"])[2 if member["api"] in
+                                              (self.carry, self.tank) else 0]["items"])}
+                           for member in self.members()]}
+        fronts = [unit["api"] for unit in board["units"] if unit["frontline"]]
+        rows = [{**deepcopy(board), "id": "high", "rank": 1,
+                 **_theory_fixture(self.snap, 12.5, frontline=fronts, tank=self.tank)},
+                {**deepcopy(board), "id": "low", "rank": 2,
+                 **_theory_fixture(self.snap, 12.4, frontline=fronts, tank=self.tank)}]
+        before = deepcopy(rows)
+        with patch.object(search.team, "evaluate") as evaluate:
+            search.validate_boards(rows)
+        evaluate.assert_not_called()
+        for row, original in zip(rows, before, strict=True):
+            self.assertEqual(row["consistency"]["status"], "passed")
+            self.assertEqual({key: value for key, value in row.items() if key != "consistency"}, original)
+            self.assertNotIn("validation", row)
+            self.assertNotIn("assumptionCheck", row)
+
+    def test_consistency_rejects_wrong_inputs_nonfinite_and_incorrect_aggregate(self):
+        search = comps.Search(self.snap, self.profile, "clump", "mixed")
+        mutations = [lambda row: row.update(modelRevision="old"),
+                     lambda row: row.update(profileCount=1),
+                     lambda row: row["scenarios"][0].update(targetCount=8),
+                     lambda row: row["scenarios"][0].update(score=-1),
+                     lambda row: row["scenarios"][0].update(damageCapacity=99),
+                     lambda row: row["scenarios"][0].update(spentPressure=0),
+                     lambda row: row["scenarios"][0].update(incomingBudget=float("nan")),
+                     lambda row: row["scenarios"][0].update(plannedMeasurementWindow=0),
+                     lambda row: row["scenarios"][0].update(frontlineCollapsed="yes"),
+                     lambda row: row["metrics"].update(theoryScore=float("nan")),
+                     lambda row: row["metrics"].update(theoryScore=999)]
+        for mutate in mutations:
+            row = _theory_fixture(self.snap, 12.0)
+            mutate(row)
+            with self.subTest(row=row), self.assertRaises(ValueError):
+                search.validate_boards([row])
+
+    def test_roster_screening_uses_resolved_traits_and_native_score_without_extra_points(self):
+        search = comps.Search(self.snap, self.profile, "clump", "mixed")
+        members = self.members()
+        resolved = comps.resolve_board_traits(self.snap, members)
+        with patch.object(search.team, "evaluate_many", return_value=[{"metrics": {"theoryScore": 123.0}}]) as score:
+            self.assertEqual(search.guide(self.roster, self.carry, self.tank), 123.0)
+            self.assertEqual(search.guide(list(reversed(self.roster)), self.carry, self.tank), 123.0)
+        score.assert_called_once()
+        args, kwargs = score.call_args
+        self.assertEqual(args[:2], (members, resolved["effects"]))
+        self.assertEqual(args[2], [{m["api"]: {"items": (), "alpha": False} for m in members}])
+        self.assertEqual(args[3:], (self.carry, self.tank))
+        self.assertEqual(kwargs, {"details": False})
+        self.assertTrue(any(effect["name"] == "Rapidfire" for effects in args[1].values() for effect in effects))
+
+    def test_roster_screening_compares_every_eligible_alpha_holder(self):
+        roster = self.apis("Cinderling", "Yorick", "Pebbles", "Scuttlecrab", "Karma", "Varus", "Rakan", "Leona")
+        carry, tank = roster[:2]
+        search = comps.Search(self.snap, self.profile, "clump", "mixed")
+        with patch.object(search.team, "evaluate_many", return_value=[
+                {"metrics": {"theoryScore": score}} for score in (10, 30, 20)]) as score:
+            self.assertEqual(search.guide(roster, carry, tank), 30)
+        allocations = score.call_args.args[2]
+        holders = [next(api for api, option in selected.items() if option["alpha"]) for selected in allocations]
+        self.assertEqual(set(holders), set(self.apis("Cinderling", "Pebbles", "Scuttlecrab")))
+        self.assertTrue(all(sum(option["alpha"] for option in selected.values()) == 1 for selected in allocations))
+
+    def test_one_cost_trait_support_can_beat_an_extra_four_cost_during_screening(self):
+        search = comps.Search(self.snap, comps.PROFILES["c4"], "clump", "mixed")
+        common = self.apis("Zyra", "Amumu", "Brambleback", "Krug", "Mama Beak", "Sett", "Vi")
+        carry, tank = common[:2]
+        cheap, expensive = self.apis("Varus", "Aphelios")
+        # Both alternatives activate the same Rapidfire tier. Varus also
+        # activates Inferno with Amumu, a benefit the old standalone sum
+        # could not see before throwing his roster away.
+        old = {api: search.evaluator.baseline(api, 2) for api in (*common, cheap, expensive)}
+        old_score = lambda support: (sum(old[api][0] for api in (*common, support))
+                                    * sum(old[api][1] for api in (*common, support)))
+        self.assertGreater(old_score(expensive), old_score(cheap))
+        self.assertGreater(search.guide(common + [cheap], carry, tank),
+                           search.guide(common + [expensive], carry, tank))
+        self.assertTrue(all(comps.valid_board(self.snap, common + [support], carry, tank,
+                                             search.profile) for support in (cheap, expensive)))
+
+    def test_continuous_capacity_orders_close_scores_and_shares_exact_ties(self):
+        results = {"9": {"single": [
+            {"id": "b", "metrics": {"theoryScore": 100.0, "damageDps": 900.0}},
+            {"id": "a", "metrics": {"theoryScore": 100.0001, "damageDps": 1.0}},
+            {"id": "c", "metrics": {"theoryScore": 100.0, "damageDps": 1000.0}}]}}
+        comps._rank_results(results)
+        rows = results["9"]["single"]
+        self.assertEqual([row["id"] for row in rows], ["a", "b", "c"])
+        self.assertEqual([row["rank"] for row in rows], [1, 2, 2])
 
     def test_single_item_screening_retains_competing_self_sustain(self):
         evaluator = comps.Evaluator(self.snap, "clump", "mixed")
@@ -510,14 +659,19 @@ class TestCompositions(unittest.TestCase):
         self.assertEqual(comps.progress_state()["status"], "failed")
         self.assertFalse(comps.warm_running())
 
-    def test_ready_artifact_carries_shared_model_marker_and_opponent_budget(self):
+    def test_ready_artifact_carries_theory_marker_and_declared_pressure_inputs(self):
         with patch.object(comps.Search, "run", return_value={}), patch.object(comps.signal, "signal"):
             self.assertEqual(comps.warm(log=lambda _: None, only="c1-clump-mixed", snap=self.snap), 1)
         ready = comps.cached_scenario("c1-clump-mixed", snap=self.snap)
-        self.assertEqual(ready["methodology"]["evaluationModel"], "symmetric-reference-pool-v1")
+        self.assertEqual(ready["methodology"]["evaluationModel"], tft_theory.MODEL)
         self.assertEqual(ready["baselineRevision"], tft.snapshot_revision(self.snap))
-        self.assertEqual(ready["opponentPool"]["searchBoards"], 6)
-        self.assertEqual(ready["opponentPool"]["validationBoards"], 3)
+        self.assertEqual(ready["modelRevision"], tft_theory.revision(self.snap))
+        self.assertEqual(ready["scenarios"], tft_theory.scenarios("clump"))
+        self.assertNotIn("opponentPool", ready)
+        meta = comps.api_meta(self.snap)
+        self.assertEqual(meta["scenarios"], tft_theory.scenarios())
+        self.assertTrue(meta["methodology"]["screening"]["approximation"])
+        self.assertNotIn("opponentPool", meta)
 
     def test_atomic_cache_writes_are_concurrent_safe_and_clean_up_failures(self):
         target = Path(self.tmp.name, "bench", "shared.json")
@@ -552,7 +706,7 @@ class TestCompositions(unittest.TestCase):
         with patch.object(comps, "_WORKER_SNAPSHOT", self.snap), \
                 patch.object(tft.engine(), "optimize_loadouts", return_value=(0, [[], [], [], []])) as optimize:
             evaluator.optimal(spec)
-        optimize.assert_called_once_with(spec, top=comps.LOADOUT_TOP, workers=1)
+        optimize.assert_called_once_with(spec, top=comps.LOADOUT_TOP, workers=1, preserve_forms=True)
 
     def test_parallel_runner_collects_every_failure_and_success(self):
         keys = ["c1-clump-mixed", "c2-clump-mixed", "c3-clump-mixed"]
@@ -603,7 +757,7 @@ class TestCompositions(unittest.TestCase):
             self.assertEqual(without_runtime(published[key]), without_runtime(serial[key]))
             rows = published[key]["results"]["6"]["single"]
             self.assertEqual([row["rank"] for row in rows], [1, 1, 3])
-            self.assertEqual([row["metrics"]["benchmarkWins"] for row in rows], [8, 8, 7])
+            self.assertEqual([row["metrics"]["theoryScore"] for row in rows], [8, 8, 7])
             self.assertIs(published[key]["search"]["exhaustive"], False)
             recorded = [json.loads(message.removeprefix("fixture:")) for context, message in events
                         if context == key and message.startswith("fixture:")]
@@ -646,8 +800,8 @@ class TestCompositions(unittest.TestCase):
         self.assertEqual(published[key]["results"], serial["results"])
         rows = published[key]["results"]["6"]["single"]
         self.assertEqual([row["rank"] for row in rows], [1, 1, 3])
-        self.assertEqual([row["metrics"]["benchmarkWins"] for row in rows], [8, 8, 7])
-        self.assertEqual([row["level9Upgrade"]["board"]["metrics"]["benchmarkWins"] for row in rows], [0, 0, 12])
+        self.assertEqual([row["metrics"]["theoryScore"] for row in rows], [8, 8, 7])
+        self.assertEqual([row["level9Upgrade"]["board"]["metrics"]["theoryScore"] for row in rows], [0, 0, 12])
         self.assertTrue(all(row["level9Upgrade"]["parentId"] == row["id"] for row in rows))
         recorded = [json.loads(message.removeprefix("fixture:")) for message in events if message.startswith("fixture:")]
         validation_done = next(i for i, event in enumerate(recorded)
@@ -664,14 +818,14 @@ class TestCompositions(unittest.TestCase):
         self.assertIn("level-9 result does not match", errors["c4-clump-mixed"])
         publish.assert_not_called()
 
-    def test_real_spawn_cannot_attach_validation_to_a_different_final_board_order(self):
+    def test_real_spawn_cannot_attach_consistency_to_a_different_final_board_order(self):
         publish = Mock()
         with patch.object(comps, "ITEM_BUDGETS", (6,)), \
                 patch.object(comps, "STRUCTURES", ({"key": "single"},)), \
                 patch.object(comps, "_worker_task", _fixture_wrong_order_task):
             errors = comps._parallel_scenarios(["c1-clump-mixed"], self.snap, 2, comps.revision(self.snap),
                                               lambda *_: None, publish)
-        self.assertIn("held-out results do not match", errors["c1-clump-mixed"])
+        self.assertIn("consistency results do not match", errors["c1-clump-mixed"])
         publish.assert_not_called()
 
     def test_real_spawn_rejects_a_result_for_the_wrong_item_job(self):
@@ -768,8 +922,8 @@ class TestCompositions(unittest.TestCase):
         self.assertEqual(next(profile["level9FiveCostStar"] for profile in meta["profiles"] if profile["key"] == "c4"), 2)
         self.assertEqual(meta["baselineRevision"], tft.snapshot_revision(self.snap))
         self.assertEqual(len(comps.scenarios()), 8)
-        self.assertTrue(any("not win probability" in limitation for limitation in meta["limitations"]))
-        self.assertEqual(meta["methodology"]["evaluationModel"], "symmetric-reference-pool-v1")
+        self.assertTrue(any("not a win probability" in limitation for limitation in meta["limitations"]))
+        self.assertEqual(meta["methodology"]["evaluationModel"], tft_theory.MODEL)
         self.assertNotIn("balanceScore", meta["methodology"])
 
 

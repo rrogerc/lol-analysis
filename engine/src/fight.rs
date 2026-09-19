@@ -32,6 +32,10 @@ pub enum Kind {
     WCast,
     ECast,
     Venom,
+    /// Kassadin's, after Twitch's: a Riftwalk after the opening one (the
+    /// engine makes that one at t=0). Last at an instant, so the cheaper
+    /// casts due then go first.
+    RCast,
 }
 
 #[derive(Clone, Debug)]
@@ -193,6 +197,7 @@ const R_CLOUD: u32 = 9 << 16;
 const R_WCAST: u32 = 10 << 16;
 const R_ECAST: u32 = 11 << 16;
 const R_VENOM: u32 = 12 << 16;
+const R_RCAST: u32 = 13 << 16;
 
 #[inline(always)]
 fn rank_of(k: Kind) -> u32 {
@@ -213,6 +218,7 @@ fn rank_of(k: Kind) -> u32 {
         Kind::WCast => R_WCAST,
         Kind::ECast => R_ECAST,
         Kind::Venom => R_VENOM,
+        Kind::RCast => R_RCAST,
     }
 }
 
@@ -231,7 +237,8 @@ fn kind_of(rank: u32) -> Kind {
         9 => Kind::Cloud,
         10 => Kind::WCast,
         11 => Kind::ECast,
-        _ => Kind::Venom,
+        12 => Kind::Venom,
+        _ => Kind::RCast,
     }
 }
 
@@ -243,7 +250,7 @@ fn check_rank_order() {
     ONCE.call_once(|| {
         let all: Vec<Kind> = [Kind::Attack, Kind::ECharge, Kind::ERelease, Kind::Mal, Kind::Q,
                               Kind::R, Kind::Ss, Kind::WTick, Kind::Cloud, Kind::WCast,
-                              Kind::ECast, Kind::Venom]
+                              Kind::ECast, Kind::Venom, Kind::RCast]
             .into_iter()
             .chain((0..9).map(Kind::Burn))
             .collect();
@@ -1476,6 +1483,42 @@ impl<'a, 'p> Engine<'a, 'p> {
         self.st.next_attack = pymax(self.st.next_attack, self.st.t) + ABILITY_LOCKOUT_S;
     }
 
+    /// An ultimate's cooldown after ability haste and ultimate ability haste.
+    /// Only a driver that casts its ult more than once reads it.
+    pub fn ult_cd(&self, base_cd: f64) -> f64 {
+        base_cd * self.p.sheet.ult_cd_mult
+    }
+
+    /// Malignance's Hatefog from an ult a driver lands itself (the engine's
+    /// own R impact does this inline), called after the ult's damage so that
+    /// hit misses the zone's shred as the wiki says the first one does. One
+    /// zone at a time: ult damage on a target already standing in one only
+    /// refreshes its timer, and the ticks keep their cadence.
+    pub fn ult_hatefog(&mut self) {
+        let fx: &'a Fx = self.p.fx;
+        if let Some(ub) = &fx.s.ult_burn {
+            let t = self.st.t;
+            if self.st.next_mal == INF {
+                self.st.mal_tick = self.p.mal_tick_amt;
+                self.st.next_mal = t + 0.25;
+            }
+            self.st.mal_until = t + ub.duration_s;
+            self.st.mal_shred_until = t + ub.duration_s;
+        }
+    }
+
+    /// Actualizer's Mana Made Real: while its window runs, a spell's mana
+    /// cost is raised by this factor (1.0 otherwise, and without the item).
+    /// Only a driver that keeps a mana pool reads it.
+    pub fn mana_cost_mult(&self) -> f64 {
+        if self.flags & F_MANA_ACTIVE != 0 && self.st.t < self.st.ma_until {
+            let m = self.p.fx.s.mana_active.as_ref().expect("mana_active");
+            1.0 + m.cost_increase_pct / 100.0
+        } else {
+            1.0
+        }
+    }
+
     /// Everything riding a basic attack hit (reapplied by a phantom hit).
     fn apply_onhits<D: Driver>(&mut self, drv: &mut D) {
         // indexed, not zipped: `self.deal` needs `&mut self`, which an
@@ -1892,6 +1935,7 @@ enum Rotation {
     Kayle(crate::drivers::KayleDriver),
     Vladimir(crate::drivers::VladimirDriver),
     Twitch(crate::drivers::TwitchDriver),
+    Kassadin(crate::drivers::KassadinDriver),
 }
 
 /// One build's fights: the target-independent setup and its driver, built
@@ -1924,6 +1968,11 @@ impl<'a> Sim<'a> {
                                                                      prestacked)?;
                 (p, Rotation::Twitch(d))
             }
+            Some(crate::kit::DriverId::Kassadin) => {
+                let (p, d) = prepare::<crate::drivers::KassadinDriver>(sheet, kit, fx, level,
+                                                                       ranks, prestacked)?;
+                (p, Rotation::Kassadin(d))
+            }
             None => return Err(no_driver(kit)),
         };
         #[cfg(debug_assertions)]
@@ -1948,6 +1997,7 @@ impl<'a> Sim<'a> {
             Rotation::Kayle(d) => prep.fight(d, target, opts, log),
             Rotation::Vladimir(d) => prep.fight(d, target, opts, log),
             Rotation::Twitch(d) => prep.fight(d, target, opts, log),
+            Rotation::Kassadin(d) => prep.fight(d, target, opts, log),
         };
         #[cfg(debug_assertions)]
         self.check_reset();
@@ -1973,6 +2023,10 @@ impl<'a> Sim<'a> {
                 d.reset();
                 debug_assert!(d == f, "TwitchDriver::reset left a field behind:\n{d:?}\n{f:?}");
             }
+            (Rotation::Kassadin(d), Rotation::Kassadin(f)) => {
+                d.reset();
+                debug_assert!(d == f, "KassadinDriver::reset left a field behind:\n{d:?}\n{f:?}");
+            }
             _ => unreachable!("the rotation never changes"),
         }
     }
@@ -1997,6 +2051,9 @@ pub fn simulate(sheet: &Sheet, kit: &Kit, fx: &Fx, level: i64, ranks: Ranks, tar
         Some(crate::kit::DriverId::Twitch) =>
             simulate_with::<crate::drivers::TwitchDriver>(sheet, kit, fx, level, ranks, target,
                                                           opts),
+        Some(crate::kit::DriverId::Kassadin) =>
+            simulate_with::<crate::drivers::KassadinDriver>(sheet, kit, fx, level, ranks, target,
+                                                            opts),
         None => Err(no_driver(kit)),
     }
 }
@@ -2012,4 +2069,4 @@ pub fn simulate_with<D: Driver>(sheet: &Sheet, kit: &Kit, fx: &Fx, level: i64, r
 }
 
 
-pub const DRIVERS: [&str; 3] = ["kayle", "vladimir", "twitch"];
+pub const DRIVERS: [&str; 4] = ["kayle", "vladimir", "twitch", "kassadin"];

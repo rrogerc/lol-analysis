@@ -2,6 +2,7 @@
 
 Domains (each is a module with an archive under data/ and, if needed, tables in lol.db):
   scaling    champion win rates by game length from the ../lol-quant soloq crawl
+  onetricks  one-tricks per champion (by role share) among Master+ ladder players
   items      static item data snapshots (ddragon + meraki + item-bin shop rules)
   builds     theoretical build math: stat sheets, damage sim, build optimizer
 
@@ -9,6 +10,7 @@ Usage:
   .venv/bin/python lol.py scaling sync              # refresh soloq tiers from ../lol-quant
   .venv/bin/python lol.py scaling report [--scaling]
   .venv/bin/python lol.py scaling champion kayle
+  .venv/bin/python lol.py onetricks sync            # count one-tricks from ../lol-quant
   .venv/bin/python lol.py items fetch               # snapshot current patch's item data
   .venv/bin/python lol.py builds warm               # precompute the dashboard's build scenarios
   .venv/bin/python lol.py serve                     # local web dashboard
@@ -24,6 +26,7 @@ import sys
 from common import BASE_DIR
 import builds
 import items
+import onetricks
 import scaling
 import tft
 import tft_comps
@@ -125,6 +128,14 @@ def main():
                     help="refresh lol.db but leave the data/scaling JSON archive untouched")
     sp.set_defaults(func=scaling.cmd_import_soloq)
 
+    # ----- onetricks domain -----
+    ot = sub.add_parser("onetricks", help="one-tricks per champion on the Master+ ladder")
+    otsub = ot.add_subparsers(dest="onetricks_cmd", required=True)
+
+    sp = otsub.add_parser("sync", help="count one-tricks from ../lol-quant into the DB")
+    quant_args(sp)
+    sp.set_defaults(func=onetricks.cmd_sync)
+
     # ----- items domain -----
     it = sub.add_parser("items", help="static item data snapshots (for build math)")
     itsub = it.add_subparsers(dest="items_cmd", required=True)
@@ -170,7 +181,7 @@ def main():
 
     def sim_args(sp):
         sp.add_argument("name",
-                        help="champion with a kit encoding: kayle, vladimir, twitch")
+                        help="champion with a kit encoding: kayle, vladimir, twitch, kassadin")
         sp.add_argument("--level", type=int, default=16)
         sp.add_argument("--patch", help="patch to use (default: newest snapshots)")
         sp.add_argument("--target-hp", type=int, default=2800)

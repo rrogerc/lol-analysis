@@ -16,6 +16,7 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
     def setUpClass(cls):
         cls.snap = tft.load_snapshot(18, "18.1d")
         cls.board = team.opponent_suite(cls.snap, budget=9)[0]
+        cls.search_count = team.pool_metadata(cls.snap)["searchEncounters"]
 
     def allocation(self, item):
         selected = deepcopy(self.board["selected"])
@@ -37,7 +38,7 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
                 actual = self.evaluate_many(native, selections, details=True)
                 self.assertEqual(actual, expected)
                 self.assertIs(actual[0], actual[3])
-                self.assertEqual(native.stats["sharedFightsSimulated"], 36)
+                self.assertEqual(native.stats["sharedFightsSimulated"], 3 * self.search_count)
                 self.assertEqual(native.stats["nativeMatchBatches"], 1)
                 self.assertGreater(native.stats["preparedActorsReused"], 0)
 
@@ -50,7 +51,7 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
         self.assertEqual(len(full["units"]), 8)
         self.assertIs(self.evaluate_many(evaluator, selections)[0], compact)
         self.assertIs(self.evaluate_many(evaluator, selections, details=True)[0], full)
-        self.assertEqual(evaluator.stats["sharedFightsSimulated"], 24)
+        self.assertEqual(evaluator.stats["sharedFightsSimulated"], 2 * self.search_count)
 
     def test_result_eviction_during_a_batch_preserves_all_input_ordered_answers(self):
         selections = [self.board["selected"], self.allocation("DA_HextechGunblade"),
@@ -61,7 +62,7 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
             actual = self.evaluate_many(evaluator, selections)
         self.assertEqual(actual, expected)
         self.assertEqual(len(evaluator.results), 1)
-        self.assertEqual(evaluator.stats["sharedFightsSimulated"], 36)
+        self.assertEqual(evaluator.stats["sharedFightsSimulated"], 3 * self.search_count)
 
     def test_prepared_handles_are_immutable_across_policies_and_item_changes(self):
         native = team.Evaluator(self.snap, "clump")
@@ -97,15 +98,15 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
         with TemporaryDirectory() as directory:
             first = team.Evaluator(self.snap, "clump", prepared=False, score_cache_dir=directory)
             expected = self.evaluate_many(first, selections)
-            self.assertEqual(first.stats["sharedFightsSimulated"], 24)
+            self.assertEqual(first.stats["sharedFightsSimulated"], 2 * self.search_count)
             first._score_cache.close()
             second = team.Evaluator(self.snap, "clump", prepared=False, score_cache_dir=directory)
             with patch.object(second, "_simulate_matches", side_effect=AssertionError("cached fights were rerun")):
                 self.assertEqual(self.evaluate_many(second, selections), expected)
             self.assertEqual(second.stats["sharedFightsSimulated"], 0)
-            self.assertEqual(second.stats["cachedFightsReused"], 24)
+            self.assertEqual(second.stats["cachedFightsReused"], 2 * self.search_count)
             full = self.evaluate_many(second, selections, details=True)
-            self.assertEqual(second.stats["sharedFightsSimulated"], 24)
+            self.assertEqual(second.stats["sharedFightsSimulated"], 2 * self.search_count)
             self.assertEqual([dict(row, units={}) for row in full], expected)
             self.assertTrue(all(len(row["units"]) == 8 for row in full))
             second._score_cache.close()
@@ -128,7 +129,9 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
             other_tank = next(m["api"] for m in b["members"] if m["api"] not in (b["carry"], b["tank"]))
             second.evaluate_many(b["members"], b["effects"], [selection], b["carry"], other_tank)
             self.assertEqual(second.stats["cachedFightsReused"], 0)
-            self.assertEqual(second.stats["sharedFightsSimulated"], 36)
+            pool = team.pool_metadata(self.snap)
+            self.assertEqual(second.stats["sharedFightsSimulated"],
+                             2 * self.search_count + pool["validationEncounters"] + pool["screenEncounters"])
             second._score_cache.close()
 
     def test_cached_wrong_fight_count_is_rejected_and_recomputed(self):
@@ -145,9 +148,9 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
             self.assertEqual(self.evaluate_many(second, [self.board["selected"]]), expected)
             self.assertEqual(second.stats["cachedFightsReused"], 0)
             self.assertEqual(second.stats["scoreCacheCorruptRows"], 1)
-            self.assertEqual(second.stats["sharedFightsSimulated"], 12)
+            self.assertEqual(second.stats["sharedFightsSimulated"], self.search_count)
             key, blob = second._score_cache.connection.execute("SELECT signature,result FROM scores").fetchone()
-            self.assertEqual(len(tft_match_cache.decode(key, blob)), 12)
+            self.assertEqual(len(tft_match_cache.decode(key, blob)), self.search_count)
             second._score_cache.close()
 
     def test_persistent_inputs_include_resolved_stats_even_with_same_archive_stamp(self):
@@ -161,7 +164,7 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
             second = team.Evaluator(changed, "clump", prepared=False, score_cache_dir=directory)
             self.evaluate_many(second, [self.board["selected"]])
             self.assertEqual(second.stats["cachedFightsReused"], 0)
-            self.assertEqual(second.stats["sharedFightsSimulated"], 12)
+            self.assertEqual(second.stats["sharedFightsSimulated"], self.search_count)
             second._score_cache.close()
 
     def capped_candidate(self, added="TFT18_Gnar"):
@@ -183,7 +186,7 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
                 actual = native.evaluate(members, effects, selected, board["carry"], board["tank"])
                 self.assertEqual(actual, expected)
                 self.assertEqual(len(actual["units"]), 9)
-                self.assertEqual(actual["metrics"]["benchmarkCount"], 12)
+                self.assertEqual(actual["metrics"]["benchmarkCount"], self.search_count)
                 actors = raw.allies(members, effects, selected, board["carry"], board["tank"])
                 self.assertEqual(len({(actor["frontline"], actor["lane"]) for actor in actors}), 9)
                 for encounter in actual["matchups"]:
@@ -201,13 +204,13 @@ class TestPreparedTeamEvaluation(unittest.TestCase):
             cap = team.Evaluator(self.snap, "clump", score_cache_dir=directory)
             expected = cap.evaluate_many(members, effects, [selected], board["carry"], board["tank"])
             self.assertEqual(cap.stats["cachedFightsReused"], 0)
-            self.assertEqual(cap.stats["sharedFightsSimulated"], 12)
+            self.assertEqual(cap.stats["sharedFightsSimulated"], self.search_count)
             cap._score_cache.close()
             replay = team.Evaluator(self.snap, "clump", score_cache_dir=directory)
             with patch.object(replay, "_simulate_matches", side_effect=AssertionError("cached capped board reran")):
                 actual = replay.evaluate_many(members[::-1], effects, [selected], board["carry"], board["tank"])
             self.assertEqual(actual, expected)
-            self.assertEqual(replay.stats["cachedFightsReused"], 12)
+            self.assertEqual(replay.stats["cachedFightsReused"], self.search_count)
             replay._score_cache.close()
 
     def test_candidate_capacity_uses_slots_and_accepts_eight_actors_with_elder_at_nine(self):

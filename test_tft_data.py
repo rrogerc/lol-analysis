@@ -78,7 +78,7 @@ class TestLivePatchAudit(unittest.TestCase):
 
     def test_live_patch_targets_pass(self):
         findings, _ = tft.check_patch_notes(self.snap)
-        self.assertEqual(len(findings), 64)
+        self.assertEqual(len(findings), 65)
         self.assertTrue(all(f["status"] == "current" for f in findings))
 
     def test_amumu_heal_and_yi_ap_resists_reach_engine_inputs(self):

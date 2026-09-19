@@ -1,10 +1,12 @@
 # TFT snapshots and live patches
 
 The active snapshot is the newest archived TFT patch, including hotfix
-suffixes (`18.1 < 18.1b < 18.1d < 18.2`). Patch 18.1d is checked against
-Riot's 18.1 article through the August 31 balance changes and September 1
-bug-fix update. Riot labels those sections by date; D is the third
-mid-patch update after the initial release.
+suffixes (`18.1 < 18.1b < 18.1d < 18.2`). Patch 18.2 was reviewed against
+Riot's September 9 article, rebuilt and published on September 10. The
+[18.2 review](set18/patch-reviews/18.2-review.md) records the source mappings,
+remaining modeling limitations and publication verification. The archived
+18.1d snapshot retains its earlier review through the August 31 balance
+changes and September 1 bug-fix update.
 
 ## Sources
 
@@ -19,7 +21,8 @@ mid-patch update after the initial release.
   Adaptor forms, and retains several pre-hotfix stats. It cannot safely
   replace the full simulation input.
 - `bins.json` contains CommunityDragon's per-unit timings. Missing bins
-  are recorded as 404s; transport/server errors abort a refresh.
+  are recorded as stable 404 entries; exhausted transport/server errors stop
+  a refresh without being mistaken for missing timing data.
 - `patchnotes.json` retains Riot's dated update headings, categories and
   parent item names instead of flattening away their context.
 - `audit.json` maps published values to specific unit/form/item/trait
@@ -52,6 +55,31 @@ the new audit. Unknown mechanics, ambiguous values, changed timing data,
 unsupported champions and source rollbacks stop the refresh for review.
 This automates supported balance changes, not arbitrary engine changes or
 new TFT sets.
+
+Riot bullets retain nested form/star headings and separately labeled numeric
+statements. XP purchase costs are outside the fixed-level combat model; this
+does not exempt other system changes. Reviewed exceptions live in
+`set18/patch-reviews/<patch>.json`. A manifest binds the exact lookup, timing
+and parsed-note hashes plus the previous audit. Every correction identifies
+its source entry, target coordinates, observed baseline, expected values and
+reason. It can resolve a stale old value or a compound formula without
+relaxing normal continuity checks. Overlapping checks retain untouched stars
+and their history. Simple verified encodings can be reused later; decomposed
+formulas require another review if changed. Exact mechanics dispositions
+document retained approximations, rather than claiming those mechanics were
+implemented. See [the 18.2 review](set18/patch-reviews/18.2-review.md).
+
+Downloads use `tft_http.py`: at most four attempts within a 90-second overall
+deadline, including DNS and body reads. Temporary DNS/network failures and
+429/500/502/503/504 responses retry with bounded backoff; permanent HTTP,
+certificate, parsing and validation failures do not. The user service allows
+four hours for a full rebuild. Only exhausted temporary download failures
+(exit 75) trigger its five-minute retry, with at most three starts per
+30 minutes. Review-required (exit 2) and other failures (exit 1) do not restart
+immediately. The checked-in drop-in under `jobs/systemd/` matches the Nix unit;
+installing it does not require switching unrelated NixOS configuration.
+Longer server-requested `Retry-After` delays are saved as `retryNotBefore`;
+the job skips fetching until that time instead of retrying early.
 
 Each refresh uses the same staged snapshot to prepare all missing champion
 build scenarios and all eight composition contexts, using the bounded
@@ -86,6 +114,8 @@ Fetch/check timestamps alone do not rebuild the response bundle; the live
 refresh status supplies the latest check time.
 
 The job records progress and results in `jobs/.state/refresh-tft.json`.
+It retains recent terminal runs and the last unresolved review blocker, so
+a later network failure cannot hide the original patch-review problem.
 The TFT tab shows the last check, calculation progress, failures and changes
 that need review. Open tabs check for a new revision every minute and reload
 their current champion/scenario when it is ready. Logs:
@@ -96,15 +126,25 @@ systemctl --user list-timers lol-tft-refresh.timer
 ```
 
 Review candidates are retained under `set18/.pending/<patch>/`. To resolve
-one, inspect the changed sources and mechanics, add justified patch-specific
-`audit.json`/`overrides.json`, then rerun `tft refresh`. Never update audit
-hashes merely to pass validation. Manual `tft fetch --patch 18.1d --force`
-still requires an existing matching audit; `tft check --patch 18.1d` reports
+one, inspect the changed sources and mechanics, add a justified, source-bound
+manifest in `set18/patch-reviews/`, then rerun `tft refresh`. The reconciler
+produces the staged `audit.json`/`overrides.json`. Never update audit
+hashes merely to pass validation. Manual `tft fetch --patch 18.2 --force`
+still requires an existing matching audit; `tft check --patch 18.2` reports
 its numeric checks. Supplying a base version such as `18.1` resolves to its
 current hotfix. Restart the dashboard after code changes so it loads the
 new engine and cache generation. Prefer `tft refresh`, which prepares the
 complete publication before signaling that reload; a manual individual-cache
 warm does not activate new dashboard responses on its own.
+
+## Percentage-health stacking
+
+Ordinary item and trait HP bonuses add their percentages together before
+applying to star-scaled champion HP plus flat bonus HP. Three Warmogs therefore
+give +54% HP, with Brawler and Blossom contributing to that same pool. This is
+the adopted model interpretation, supported by historical in-game evidence;
+the current Set 18 runtime's aggregation has not been independently decoded.
+See [the HP stacking record](set18/hp-stacking.md) for equations, scope and checks.
 
 ## Verification
 
@@ -112,6 +152,12 @@ warm does not activate new dashboard responses on its own.
 python3 -m unittest test_tft test_tft_tanks test_tft_data test_tft_update test_tft_refresh test_tft_ui test_tft_scores test_tft_cores test_tft_core_cache test_tft_target_debuffs test_tft_pairs test_tft_pair_cores test_tft_azir test_tft_murkwolf test_tft_leaderboard test_tft_loadouts test_tft_comp_traits test_tft_comps
 python3 jobs/tft_compare.py
 python3 -m unittest test_tft_refresh test_tft_site test_tft_serving
+python3 -m unittest test_tft_http test_tft_patch_parser test_tft_patch_review test_tft_update
+python3 -m unittest test_tft_unit_profiles test_tft_theory test_tft_theory_native test_tft_comp_items test_tft_comps test_tft_caps
+python3 -m unittest test_tft_model_quality test_tft_mana_reave test_tft_opponents test_tft_team_batch
+python3 -m unittest test_tft_equipped_forms test_tft_execute test_tft_theory_auras test_tft_carry_policy test_tft_comp_utility
+node jobs/test-tft-composition-ui.cjs
+node jobs/test-tft-damage-ui.cjs
 ```
 
 Golden fixtures record their patch and concrete dummy setup. They were
@@ -130,22 +176,354 @@ Refresh regressions cover supported hotfixes, rejected ambiguous or mechanical
 changes, source catch-up, staged calculation failures, rollback prevention,
 overlapping jobs and cache continuity during publication.
 
+The [65-champion mechanics audit](set18/champion-audit.md) reviews every
+current driver and Adaptor form. It records source/code discrepancies,
+missing support effects and unresolved timing, targeting and proc rules;
+passing regression tests do not establish complete live-game accuracy.
+The subsequent [repair report](set18/champion-audit/repairs.md) records implemented
+corrections for 18 champions and the remaining limitations for all 65. Shared
+repairs separate target population from adjacency, preserve impact recipients,
+apply Lillia's damage-threshold sleep and share flat resistance reductions in
+composition scoring. No unverified Android balance or timing values were adopted.
+
 ## Composition cores and level-nine upgrades
 
-The Compositions subview fills eight team slots with distinct shop champions around a
-same-cost main carry/fighter and main tank. It compares one carry/one tank,
-two carries, two tanks, and two of each under the **same completed-item
-budget**. The default is nine items; all budgets from six through twelve
-are available. Every shown allocation spends that exact budget with at most
-three items per champion. The main pair receive at least two items; a second
-carry/tank means another unit of that category receives at least two, and
-cannot receive more items than its corresponding main. Other items go to
-supports. Main means the upgrade target and formation anchor, not necessarily
-the highest damage contributor. Item categories remain unrestricted; their
-value is judged by the whole team's encounter outcomes.
+Composition ranking uses the `tft_theory.Evaluator` adapter to native
+`lol_tft.TheoryScorer` in `tft_engine/src/theory.rs`, with
+`evaluationModel=ehp-damage-capacity-v3`. Its continuous score is **frontline
+EHP × team DPS**, evaluated across explicit generic pressure assumptions.
+The score is a theoretical capacity index, not a percentage or live-game win
+probability. Named enemy boards, win counts and a 30-second fight deadline
+are absent from this objective.
 
-The initial planning rules encode Roger's preferences explicitly; they are
-not derived shop probabilities:
+Each composition and expanded level-nine upgrade has a **Copy to TFT** button.
+Paste its code into the in-game Team Planner. The code carries champions only;
+items, stars, positions, Alpha marks and Lux origins are not included. If the
+browser blocks clipboard access, the page exposes a selected code for manual
+copying.
+
+[team-planner.json](set18/team-planner.json) pins all 65 champion IDs from
+[Riot's client planner export](https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json).
+The combat lookup's `code` fields are stale for Ivern and Lux and must not be
+used as a fallback. The [version-two encoder](https://github.com/nkhoit/tftkit/blob/1c0025d6883ae96d842e5fadaa9d3f28bc543899/web/traits/team-code.js)
+uses `02`, ten three-digit hexadecimal champion IDs (empty entries `000`), and
+`TFTSet18`. Elder Dragon appears once. `tft_site.py` includes this catalog in
+composition presentation metadata, so copying needs no new simulations and
+catalog corrections republish without changing calculation revisions.
+
+### What is measured
+
+Each formation uses the following Cartesian product: **48 sensitivity
+profiles**, with equal weights rather than estimated opponent frequencies.
+
+| Input | Default values |
+| --- | --- |
+| Total raw incoming DPS | 1,000 and 2,000 |
+| Physical share | 0%, 50%, 100%; the remainder is magic |
+| Incoming antiheal | 0% and 33% |
+| Enemy control | None; or a 1.5-second frontline stun every 8 seconds |
+| Incoming targeting | Main-first and secondary-first focus orientations |
+| Generic target defenses | 3,000 HP, 100 armor, 100 MR |
+| Target population | Three targets in both spread and clump |
+| Area coverage | Spread separates adjacent areas; independent nearest-N spells still select multiple enemies |
+| Incoming source channels | Three, independent of outgoing target coverage |
+| Pressure cadence | One shared raw budget in half-second pulses, including a proportional final pulse |
+
+`TheoryScorer` advances persistent champion actors on one shared clock against
+immortal generic targets. Three incoming sources retain individual frontline
+targets. Their initial owners are the first, second and first eligible
+frontliner in the declared priority, or all three focus the only eligible
+frontliner. Each whole packet goes to its source's owner; a source retargets
+only when its owner dies or becomes untargetable. Lethal excess follows the
+same source to its next target, conserving the shared budget.
+Equipped forms determine the measured combat role: Nidalee's AD Assassin form
+contributes frontline capacity, while her AP Marksman form receives backline
+protection. Holding bodies continue to count as frontline protection.
+
+The three incoming source channels rotate every half second. A single-target
+stun can suppress its one channel, while area control can cover up to three;
+changing spread/clump does not change the total incoming source count or raw
+budget. Gargoyle and Monolith count **all assigned incoming sources**, including
+sources currently stunned, from before champion initialization onward. A tank
+can start with one or two attackers and gain more after another frontliner dies;
+a lone tank has three. Sources keep their new target when a formerly
+untargetable unit returns, while holding bodies retain their assignments.
+
+The main tank leads a fixed formation priority. Other actual frontliners follow
+in descending unfocused opening 50/50 EHP, with champion API breaking exact ties.
+This priority uses the first profile's other conditions and is fixed across the
+allocation's pressure/mix/control profiles. The second focus orientation swaps
+the first two entries. Remaining frontliners wait for retargeting. Both
+orientations have equal weight; they are a visible formation sensitivity
+assumption, not a full hex-position model or measured enemy target distribution.
+Opening EHP uses exactly the same initial source assignments as measurement.
+
+Flat resistance reductions applied by champions are shared at the time they
+occur, using each actor's new contribution so previously shared reductions are
+not added again. Lillia's Sleep also shares a target damage threshold: allied
+damage can wake the target, the wake damage belongs to Lillia, and independent
+stuns remain active. The generic enemies still have immortal independent HP
+probes; sharing these effects does not introduce named opponent boards.
+
+The control schedule is an explicit stress condition with equal weight, not an
+estimate of lobby frequency. Control immunity is respected by the native actors;
+no movement or target-access penalty is inferred. Duplicate items receive no
+artificial repetition penalty beyond their actual modeled behavior and legality.
+
+For each profile, let `P` be incoming raw DPS:
+
+1. Sum opening frontline EHP after the actual stats, items and resolved traits.
+   Derive the planned window `W = opening frontline EHP / P`.
+2. Measure damage, effective self sustain, raw pressure spent and remaining EHP
+   with the shared live pressure budget. Stop at `W`, or earlier when the last
+   frontline holder dies. All protected output stops at that collapse; the
+   observed window is `min(W, collapse time)`. The final pressure pulse is
+   proportional to the remaining observation interval.
+3. Adjust frontline EHP to **raw pressure spent excluding lethal overkill +
+   observed damage denied + remaining health/shield/body EHP**. Each pool's
+   physical/magic defenses are mixed before capacities are added. Effective
+   self healing and consumed shields are already reflected in this accounting;
+   adding them again would double count them.
+4. Compute team DPS as protected damage divided by the observed time. Dead
+   units stop acting, and every protected contribution stops at frontline
+   collapse. The profile's score is `adjusted EHP × DPS`, estimated protection
+   is `adjusted EHP / P`, and estimated protected damage is `score / P`.
+
+The displayed EHP, DPS, protection time and damage capacity are geometric means
+across the profiles; any zero input yields zero. The final `theoryScore` is the
+aggregate EHP multiplied by aggregate DPS, equivalent to the geometric mean of
+profile scores. Exact score ties share a rank. Individual DPS contributions are
+allocated by mean damage shares so that they sum to aggregate DPS;
+`measuredDps` separately records each unit's arithmetic mean measured DPS.
+`damageTaken` reports raw pressure spent, and ally healing/shielding fields
+report potential output. Each scenario exposes `plannedMeasurementWindow`,
+actual `measurementWindow`, `frontlineCollapsed`, and the raw accounting fields
+`incomingBudget`, `spentPressure`, `deniedPressure`, `unspentPressure`.
+Detailed board profiles also expose `pressureTargetOrder` (frontline champion
+APIs after the orientation swap) and `initialPressureTargets` (three nullable
+champion APIs, one per source). Compact search results omit these two diagnostics.
+The budget
+equals spent plus denied plus unspent pressure. Inputs also include
+`controlInterval`, `controlDuration`, `pressureInterval`, `pressureAllocation`
+and `incomingSourceCount=3`, `targeting`, and
+`pressureAllocation=persistent-source-targets`. Metadata, rows and cap comparisons must agree on
+these inputs.
+
+Only a frontline that survives the planned workload receives a **first response
+extension** using remaining EHP and measured throughput. This approximates
+future ramping, burst and temporary defenses; it is not an exact future fight
+prediction. Collapsed rows retain the same algebraic score identities, while
+their observations end at collapse. Pulse-boundary overkill and unused pressure
+can make capacity estimates differ slightly from actual observed damage; the
+table distinguishes observations from estimates. Unsupported derived windows
+beyond the native implementation limit fail explicitly rather than receiving
+a cutoff score.
+
+Ally healing and shields receive no team-EHP credit until a recipient-utilization
+model exists. Actual providers share the strongest Sunder/Shred as an opening
+uptime approximation. One provider owns each nonstacking ordinary/Inferno burn
+channel; provider timing and replacement after death remain approximate. Target
+healing, target deaths, takedowns and executes are not modeled. Incoming
+antiheal tests the board's self sustain. Critical strikes use expected values.
+Generic magic pressure is timed and has no mana cost, so Mana Reave and
+mana-cost retaliation such as Ionic Spark's damage receive no value here.
+Area coverage does not reproduce movement, hex targeting or a real lobby.
+Per-kit/trait omissions still apply. These assumptions should be challenged as
+assumptions, not tuned to force a particular item category to win.
+
+Brambleback's current policy uses one active eight-second Frenzy, refreshed by
+recasts. This is a conservative model choice: stacking and recast-mana semantics
+remain unverified, and the generic mana-lock rules are unchanged.
+
+The previous v1 model used independent unit curves, fixed frontline pressure
+shares and no incoming control. V2 shared pressure equally among all eligible
+frontliners at each pulse and exposed each frontliner to one current attacker
+for per-attacker defenses. V3 adds persistent ownership and two focus orientations.
+The UI can display pinned v1/v2 generations during rollout with their original
+explanations. Scores, metadata and cached results from different model versions
+must never be mixed or silently relabeled.
+
+The [persistent-targeting report](set18/pressure-targeting.md) records the v3
+change, controlled tank comparisons, complete rebuild and remaining HP-stacking
+question. The source-count correction did not reduce overall Warmog preference
+in the regenerated search; no item stats or HP stacking rules were changed.
+
+### Native execution and performance checks
+
+The production calculation stays in Rust from prepared loadouts through final
+scenario aggregation. Python loads the snapshot, resolves board traits and
+legal candidates, and registers each distinct champion/star/traits/item spec
+with `TheoryScorer.register(spec)`. Registration parses an immutable loadout
+once and returns a reusable integer ID. `evaluate_many` accepts batches of
+allocation ID lists, the main carry/tank indices and a `details` flag.
+
+Rust determines equipped roles, shared-provider ownership and burn suppression,
+prepares opening values and advances a persistent actor cohort through each
+declared pressure/control schedule. It handles targetability, pressure
+redistribution, observed frontline collapse, EHP/DPS accounting and geometric
+aggregation. Independent cached response curves are no longer the production
+board-scoring path. Prepared loadouts and reusable results still avoid repeated
+input parsing; `stats()` exposes execution/cache diagnostics. Requested score
+summaries or detailed observations return to Python; the event loop remains
+native.
+
+Python still owns legal roster and item search orchestration, persistence,
+metadata, API responses and the UI. This execution change preserves the
+EHP × DPS score identities while changing pressure, control and observation
+semantics under a new model revision. `tft_theory.ReferenceEvaluator` independently
+aggregates raw native shared-pressure observations through
+`UnitProfiles.measure_team` and `theory_opening`. It also supports analytic
+providers that independently solve a conserved pressure budget. Production
+batches use `TheoryScorer`; the reference implementation is a verification
+oracle, not an automatic fallback for native failures.
+
+Before a full rebuild after scorer changes:
+
+1. Rebuild the native extension and run `test_tft_theory_native`, including
+   native/reference parity and relevant failure cases, plus the affected
+   theory/search tests below.
+2. Benchmark representative allocation batches with the same snapshot,
+   candidates and scenarios on both paths. Measure cold and repeated batches,
+   distinguish preparation cost and report native cache counters. Check numerical
+   parity alongside timings; smaller scenarios or a reduced search are not a
+   performance comparison of the same workload.
+3. Use those observed results to decide whether to launch the complete build.
+   Prepare and validate all eight contexts before publishing; retain the
+   previous dashboard generation throughout calculation or interruption.
+
+No speedup or full-build completion estimate is assumed merely because this
+path runs in Rust. Record measured workload, cache state and wall time when
+reporting performance.
+
+**Current v2 optimizer measurements after champion repairs (2026-09-08):**
+engine `9640b491f083`, CPU 2, all 24 profiles and three outgoing targets in both
+layouts. Complete native searches compared 3,080 allocations in 11.876 s cold /
+12.138 s repeated for the reported nine-item board, and 5,583 in 28.086 s /
+27.731 s for the dense twelve-item board. Both converged, with the same winners,
+complete item evidence and search counts as the frozen independent reference.
+The reference was captured on `de68a37fe8fe`, before the final pending-spell timer
+repair, which the replay confirms leaves these optimizer results unchanged.
+Snapshot and shared anchor preparation are outside these measurements.
+
+The complete champion-repair rebuild took **4,083.247 s (68 min 3 s)** for
+1,770 champion cells, eight composition contexts and saved HTTP responses.
+Generation `g-e855e95ca90b` passed the actual-payload UI checks for 1,664 cores,
+416 four-cost level-nine upgrades and all 2,080 planner-code roster round trips.
+The published service was observed serving the new complete generation. The
+[repair record](set18/champion-audit/repairs.json) contains full revisions and
+verification details; these regression checks do not establish live-game accuracy.
+
+**Earlier v2 optimizer measurements (2026-09-07):** native engine
+`3adc7dc4a3f2a5f14fd4c8c78d9b8b9ef3e7471b61312e5777cee1c515622f36`,
+pinned to CPU 2, evaluated all 24 pressure/control profiles per allocation:
+
+| Complete production item search | Allocations per pass | Native cold | Native repeated |
+| --- | ---: | ---: | ---: |
+| Reported nine-item board | 3,496 | 10.427 s | 10.270 s |
+| Dense twelve-item board | 6,265 | 23.561 s | 23.287 s |
+
+Both searches converged. Cold and repeated passes selected exactly the same
+winner and item evidence, with identical search counts. These timed optimizer
+sections exclude snapshot loading and shared anchor preparation; they do not
+measure a complete dashboard warm. The model and search workloads differ from
+v1, so these tables do not establish a speed ratio across model versions.
+
+The subsequent full v2 preparation took **3,182.05 s (53 min 2 s)**, including
+1,770 baseline champion cells, all eight composition contexts and immutable
+HTTP response preparation. The resulting generation (prefix `g-c61847a87553`) passed
+the real-payload UI harness for all 1,664 cores and 416 level-nine caps. All
+2,080 Team Planner codes decoded to the displayed champion rosters.
+
+**Historical v1 timings, not v2 performance:** on the saved 18.1d snapshot
+(2026-09-07), complete two-seed item searches pinned to one CPU measured the
+following cold-cache times without a profiler:
+
+| Workload | Allocations compared | Python reference | Native scorer | Speedup |
+| --- | ---: | ---: | ---: | ---: |
+| Reported nine-item board | 3,376 | 28.44 s | 0.735 s | 38.7× |
+| Dense twelve-item board | 4,533 | 43.68 s | 0.987 s | 44.3× |
+
+Both selected the same items and Alpha holder, with matching replacement
+evidence and identical search coverage. Shared anchor preparation is excluded
+from these timings; these are v1 optimizer benchmarks, not v2 or full rebuild
+timings.
+
+`jobs/tft_theory_verify.py capture --out PATH` freezes reference cases before a
+scorer rewrite. Reuse that corpus to check every result field and ranking after
+the rewrite; do not replace expected values to resolve a parity failure. With
+the frozen corpus available, run:
+
+```sh
+python3 jobs/tft_theory_verify.py replay --corpus .cache/tft-theory-native-verify/corpus.json
+python3 jobs/tft_theory_verify.py benchmark --out .cache/tft-theory-native-verify/benchmark.json --cpu 2 --repeats 1
+```
+
+The benchmark pins one allowed CPU and runs complete production `ItemSearch`
+for the reported nine-item board and a dense twelve-item board on both
+implementations. It preserves the two seeds, full item pool, screened anchors,
+legal moves, interaction limit and convergence bound. Timed optimizer sections
+start with a fresh evaluator cache, then repeat using the same evaluator;
+snapshot loading and shared anchor preparation happen before those sections.
+Winner identities, detailed results, item evidence and search counts must agree.
+Progress is printed and the JSON report retains cold/repeated timings and
+reference results. Choose a permitted CPU ID if CPU 2 is unavailable.
+
+### Board and item planning
+
+The Compositions view fills eight team slots with distinct shop champions and a
+same-cost main carry/fighter and main tank. It compares one carry/one tank,
+two carries, two tanks, and two of each under the **same completed-item budget**.
+The default is nine items; all budgets from six through twelve are available.
+Every allocation spends its exact budget, with at most three items per champion.
+The main pair receive at least two items. A secondary carry/tank receives at
+least two and cannot receive more than its corresponding main. Other items go
+to supports. Item categories are unrestricted; damage and protection determine
+their joint value. Main denotes the upgrade target, not necessarily the largest
+damage contributor.
+
+There is **no melee-carry limit** at level eight or nine. The existing one/two-carry
+arrangements still define item allocation. Equipped forms determine actual roles
+and pressure: AD Nidalee is melee and AP Nidalee is ranged. Both forms survive
+loadout shortlisting, and double-melee boards are legal throughout allocation,
+item refinement and publication.
+
+Primal boards compare every legal blessing choice for each allocation and keep
+one choice across the full pressure aggregate. Cards show the selected blessing;
+details show alternative scores and their limitations. Level-nine plans retain
+earlier choices and may add a second when eligible; reset behavior after losing
+and regaining the trait is unverified. See the [current trait models](set18/trait-models.md)
+for all 36 traits, Blossom AD/AP, shared Spellweaver casts, Solar conversion and
+the score's remaining blind spots.
+
+Every core and level-nine upgrade also requires a usable **antiheal source**.
+Active trait effects, item application conditions and native champion sources
+are checked against the selected roster, items and Alpha holder. Changing
+items or selling a support cannot remove the team's last source. Each board
+lists its sources in `antihealSources`. This is a required utility constraint;
+the nonhealing target probes do not award a guessed damage bonus for Wound.
+The pinned 18.1d sources are Inferno from two units, Morellonomicon, Red Buff,
+and Sunfire Cape (33% Wound), plus Cinderling's base ability (20% Wound,
+without Alpha). Sunfire must be usable from the holder's resolved range.
+Brambleback's Alpha burn and Elder Dragon's Ignite do not explicitly specify
+Wound and do not satisfy this requirement. Radiant items are outside the
+legal item pool. Source presence does not promise full coverage or uptime.
+
+Native `optimize_loadouts(..., preserve_forms=True)` retains the best builds
+separately for each equipped form before truncation. Composition shortlists
+also preserve melee/ranged roles and antiheal availability; allocation states
+track both requirements. This keeps a high-scoring illegal AD build from
+discarding the legal AP option before final team evaluation. The native
+function's default behavior remains unchanged for other callers.
+
+The complete rebuilt generation took 2,824.90 seconds (47 minutes 5 seconds)
+to prepare. Validation checked all 1,664 cores and 416 upgrades: every board
+had antiheal, every core had at most one melee carry, and 14 upgrades used two.
+All 49,920 pressure rows passed the arithmetic/conservation checks, all item
+searches converged within their configured bound, and all 2,080 planner-code
+round trips passed. The restored finite results matched all 1,770 previous
+winners and 442,500 displayed builds exactly.
+
+Planning rules encode Roger's preferences, not shop probabilities:
 
 | Plan | Main pair | 4-cost cap | 5-cost cap |
 | --- | --- | --- | --- |
@@ -154,264 +532,179 @@ not derived shop probabilities:
 | 3-cost reroll | Both 3★ | 3 supports | 1 support at 1★ |
 | 4-cost level-8 core | Both 2★ | 8 | None |
 
-Every level-8 board has at least four champions of its target cost, three to five
-frontliners, and at least two damage units. Supports are 2★ except the
-explicit 1★ 5-costs; same-cost supports are not automatically upgraded to
-3★. Purchase gold is the cost of the copies fielded (1/3/9 copies per star),
-excluding XP and rerolls. Component demand comes from the chosen item
-recipes; actual drops are not constrained. Cost density is a planning rule;
-only search-pool win rate determines the reported rank. Equal rates share a rank.
+Each level-8 board has at least three target-cost champions, three to five
+frontliners under the roster-planning roles, and at least two damage units.
+Supports are 2★ except the permitted 1★ 5-cost support. Purchase gold counts
+fielded copies and excludes XP, rerolls and contesting. Component demand is
+shown, but actual drops and inventory are not constrained.
 
-Elder Dragon occupies **two team slots** and contributes **two Riftbeast in
-total**, as stated in [Riot's Enchanted Wilds overview](https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/enchanted-wilds-overview/).
-A level-8 Elder board therefore has seven champions; a level-9 Elder board has
-eight. The shared `tft_board.py` rules apply to roster search, resolved traits,
-reference validation and the displayed occupancy. Apex Predator's slot/trait
-effect is structural; Elder's combat ability remains in its champion driver.
+`tft_board.py` makes Elder Dragon occupy two slots and contribute two Riftbeast
+in total, producing seven champions at level 8 or eight at level 9.
+`tft_comp_traits.resolve_board_traits` resolves the selected board's actual
+breakpoints, team shares and one eligible Alpha holder. Eclipse's placeholder
+never activates automatically. Blackthorn uses no sacrifice. Unmodeled plants,
+BFF/Rider effects, histories and positional bonuses remain listed per board.
 
-Four-cost plans select and rank their **level-8 cores without any 5-costs**.
-Only after these decisions are fixed does `tft_caps.py` choose an optional
-level-9 upgrade for each result. It keeps the main carry and tank, then compares
-selling one support and buying two distinct ordinary 5-costs, or selling one
-support and buying Elder Dragon. Adding one ordinary 5-cost without selling
-anyone is also a fallback. All new legendaries, including Elder Dragon, are **2★**.
-Their purchase cost includes three copies each. The cap keeps at least
-three target-cost champions and three to six frontliners. Traits may change;
-all active Riftbeast Alpha choices are compared again.
+`tft_comps.Search` starts from legal main pairs, uses beam width four, refines
+sixteen diverse boards and checks up to four support swaps. Initial roster
+screening uses **unitemized native EHP × DPS with the actual board traits**,
+including team recipients and every eligible Alpha holder. It uses the same
+pressure assumptions and derived window as final scoring. Trait counts and
+same-cost counts receive no score bonuses. This replaces the isolated-unit
+sum that discarded inexpensive trait supports before evaluating their bonuses.
+The beam remains approximate: unitemized screening and its limited width can
+still miss strong completed or itemized rosters. The compiled standalone
+loadout search supplies diverse item seeds, retaining every one-item option
+and offensive/defensive/utility alternatives.
 
-Upgrades use the **same completed items**. Surviving units keep their stars and
-items; only the sold support's items can transfer, and only onto newly added
-units. Every legal split of those freed items is compared. The allocation may
-move between the existing single/duo carry/tank arrangements, but the usual
-holder limits still apply. No free additional items, item reforging or wholesale
-reitemization is assumed. A cap carries `itemPolicy` and transfer details instead
-of the core's full item-replacement analysis.
+The [36-trait audit](set18/trait-audit.md) records source evidence, corrected
+mechanics and remaining gaps, including the ten Riftbeast Alpha variants.
+Composition trait records expose `coverage` and `coverageNotes` so supported
+stats, partial effects, missing mechanics, structural rules and economy can be
+distinguished. The compatibility flag `modeled` only means some engine support;
+it does not establish that the theoretical score credits all of that trait.
+Elderwood plants, Sprykin riders, shared Spellweaver casts and historical trait
+state still need explicit inputs or interaction support. A missing effect is
+not evidence that its composition is weak in an actual game.
 
-Caps are chosen by search wins, with two legendary slots preferred on ties
-(Elder fills both). Remaining ties prefer selling fewer invested champion
-copies, then stable champion IDs. Every legal transition under this policy is
-compared unless a preferred cap wins all twelve search fights: unseen candidates
-cannot improve its score or slot preference. Held-out and healing-sensitivity
-checks follow selection. Cap results never select, suppress or rank a level-8
-core. Both levels face the **same level-8 reference boards and item budget** to
-show the effect of the transition; this is not a benchmark against level-9
-opponents or an estimate of the chance of reaching the cap.
+`ItemSearch` refines two selected seeds using every legal single-item
+replacement, transfers, equipped-item exchanges and up to 64 screened loadout
+or paired-change interactions per round. Only strictly higher theoretical
+capacity accepts a move. Each seed is limited to 24 accepted improvements;
+`itemAnalysis.converged=false` discloses hitting that limit and still includes
+a complete final single-replacement pass. Convergence only means no tested
+local move improved the score, not a global optimum. Every final item slot
+reports replacement score/percentage deltas and improved/degraded pressure
+profiles under the same model revision; exact ties remain alternatives.
 
-`tft_comp_traits.resolve_board_traits` counts the selected champions and
-resolves actual breakpoint columns instead of the item builder's generic
-bare/low/high contexts. Brawler, Defender, Juggernaut, Invoker, Rapidfire and
-Spellweaver team shares reach nonmembers once; members retain their own
-effect. Solar's modeled shield, bonus magic damage and 3★ bonuses are
-teamwide. Exactly one eligible Riftbeast receives the Alpha Mark. Eclipse's
-zero-level placeholder never activates automatically. Blackthorn uses no
-sacrifice and grants no sacrifice bonus, preserving every selected combat unit.
-Unmodeled plants, BFF/Rider effects, histories, positional bonuses and other
-limitations are listed on each relevant board.
+Four-cost boards are selected and ranked at **level 8 without 5-costs**.
+`tft_caps.py` then compares optional level-9 transitions: sell one support and
+add two distinct ordinary 2★ legendaries, sell one support for 2★ Elder Dragon,
+or add one ordinary 2★ legendary without selling anyone. Main carry/tank,
+retained stars/items and total item count stay fixed. Only the sold holder's
+completed items can transfer onto new units; all legal splits and eligible
+Alpha holders are compared. Caps retain at least three target-cost champions.
 
-`tft_comps.Search` seeds every legal main pair, screens partial and full
-boards with a deterministic beam, refines sixteen diverse boards, and checks
-four support swaps. Slot-preserving swaps can exchange two ordinary supports
-for Elder or Elder for two supports. Every swap resolves traits and initial allocations again.
-The screening heuristic does not determine the displayed combat score.
+Every legal cap transition is evaluated; continuous capacity has no perfect-win
+early-stop bound. Exact score ties prefer two legendary slots, then lower
+purchase gold sold and stable IDs. Caps use their parent's same pressure inputs,
+report `theoryScoreDelta`, and never affect the parent's rank. Their `itemPolicy`
+and transfer details replace the core's item-replacement evidence. This models
+a transition, not the probability of reaching it.
 
-`lol_tft.simulate_match` in `tft_engine/src/symmetric.rs` runs champion drivers
-on both sides. Both teams use actual items, traits, mana, incoming damage,
-shields, healing, crowd control, reactive effects and death behavior. Damage
-is resolved through the recipient's own defenses and health before the donor
-receives damage/healing credit. Reciprocal damage uses a deterministic queue.
-Symmetric fights support up to nine champions per side. Existing fights with
-eight or fewer actors retain exactly the same combat results; standalone dummy
-limits are unchanged. Positions remain fixed front/back rows and lanes with simple targeting.
-The older synthetic `simulate_team` API remains available for diagnostic tests;
-composition rankings no longer use synthetic damage sources.
+### Revisions, publication and checks
 
-`data/tft/set18/composition-opponents.json` declares a versioned, independently
-authored pool: six search boards and three distinct held-out boards. Every
-reference fills eight team slots, including when testing a level-9 upgrade.
-References follow the level-8 cost/star rules and have exactly the candidate's item budget,
-using predeclared item priorities. Every opponent is tested with both equal-time
-initiative orders. A full search comparison therefore contains twelve fights;
-the independent held-out check contains six. Opponent rosters, positions, items,
-traits and source/model limitations are included in the matchup data. The pool
-is fixed during optimization and never loaded from the optimizer's own winners.
-Its version, data hash, snapshot and item budget identify the evaluated inputs.
-Version `18-reference-v2-level8` replaces the four-cost Ezreal board's unitemized
-1★ Gnar with 2★ Kobuko, preserving its Sprykin/Brawler traits while removing its
-5-cost. Other reference champions and item priorities are unchanged.
+Eight canonical contexts cover four cost plans × two formations, each containing
+all seven budgets and four arrangements. API keys retain `-mixed` for the
+theoretical pressure range; standalone champion threat controls remain separate.
+Endpoints are `/api/tft/compositions/meta.json`, `status.json` and
+`<c1–c4>-<spread|clump>-mixed.json`. Metadata and artifacts include `modelRevision`,
+`evaluationModel`, declared scenarios and methodology, plus
+`boardPlanModel=level8-core-level9-cap-v1`. New theory payloads have no opponent
+pool, matchup wins or held-out validation fields.
 
-Ranks compare search-pool wins divided by test fights. Draws and timeouts are
-not wins. Exact ties share a competition rank; remaining HP, damage and clear
-time are diagnostics. Held-out boards are evaluated only after all published
-rosters, allocations and ranks are fixed. Their results never select items,
-replace boards or reorder the ranking. These benchmark rates are not estimates
-of live-game win probability.
+`python3 lol.py tft comps warm` uses up to eight spawned workers. A context's
+roster screening precedes its independent finalist item jobs. The parent
+restores original result order before ranking; declared-input and arithmetic
+consistency checks follow the fixed ranking. Level-9 jobs run after their parent
+cores are finalized. `--workers 1` or explicit `--only c1-clump-mixed` runs
+serially. Workers use the parent's loaded snapshot, and source/data revision
+checks reject mixed generations. Missing/failed work cannot publish a partial
+context or mark the warm complete.
 
-The compiled `optimize_loadouts` still screens initial zero-to-three-item
-loadouts. Every one-item candidate is retained; Gunblade has no special
-ally-healing category. `tft_comp_items.ItemSearch` then refines finalists from
-multiple seeds, comparing every legal single-item replacement against the full
-search pool. It also checks transfers between champions, exchanges of equipped
-items, and selected paired replacements. Only additional benchmark wins accept
-a change. Refinement stops when none of these tested changes improves wins;
-it does not claim a global optimum over all boards and item combinations.
+Composition revisions cover search, items, board/trait/cap code, the theory and
+unit-profile wrappers, and native engine/data inputs. Legacy opponent definitions
+and `tft_team.py` do not enter the active composition revision. Prepared loadout
+IDs and bounded typed response/result caches live in each native scorer;
+allocation batches reuse them within that scorer. The legacy SQLite fight-score
+cache does not cache this objective. A cache warm alone does not
+activate dashboard responses. `tft refresh` prepares champion cells, all
+composition contexts and the immutable site bundle before publication signals a
+reload. TFT HTTP requests only read the saved generation; missing response
+artifacts return 202 rather than calculating on request. Old and new analysis
+payloads must never be mixed or relabeled during handoff.
 
-Each final allocation carries `itemAnalysis`, tied to its search pool and exact
-holder/item slots. Every legal replacement reports its win difference and the
-specific winning matchups gained or lost while the rest of the board stays
-fixed. Equal total wins may exchange matchups. The UI previews three alternatives
-and lets the user expand the rest. A preferred-item label requires every tested
-replacement to lose wins; equal outcomes remain alternatives within this pool.
+```sh
+python3 -m unittest test_tft_unit_profiles test_tft_theory test_tft_theory_native test_tft_comp_items test_tft_comps test_tft_caps
+python3 -m unittest test_tft_refresh test_tft_site test_tft_serving
+node jobs/test-tft-composition-ui.cjs
+node jobs/test-tft-item-ui.cjs
+```
 
-Gunblade heals one lowest-percentage-HP living ally and discards excess healing.
-Self omnivamp is separate; damage is capped before healing. Quicksilver's archived
-immunity duration, Titan's full-stack Unstoppable and Vi's spell immunity
-affect incoming crowd control. Sentinel's Mana Reave reduces actual opposing
-mana and can delay enemy casts. Shred, Sunder and Wound come from actual providers; ordinary and Inferno
-burns each have one independently refreshing channel, with Wound applied once.
+These check capacity arithmetic and failure cases, native/reference parity,
+shared-actor pressure/control behavior and self sustain,
+item tradeoffs/convergence limits, slot/item conservation, process ordering,
+revision/publication guards and saved UI contracts. Passing them establishes
+consistency with the implemented model, not validation against live fights.
+Standalone champion golden fixtures remain a separate regression suite.
 
-Current-set eligibility of burn/trait/item-proc healing and post-death ally
-healing is not fully established. The main model retains the previous broad
-convention and explicitly passes it to the engine. Final boards additionally
-receive `assumptionCheck`: held-out fights repeated with those healing paths
-disabled. This is a sensitivity experiment, not a claim that the restricted
-rules are correct. It never changes the selected items or rank, and its changed
-wins/outcomes are shown beside the held-out results.
-Multiple Gunblades on one holder currently combine their ally-healing amount
-before selecting that recipient. Independent per-copy recipient timing remains
-unverified and is not covered by the restricted-healing experiment.
-
-The displayed unit contributions use actual whole-fight time, including time
-after a unit dies. Their DPS sums to the team figure. Frontline time ends when
-the last frontliner or its active on-death body falls, capped at fight end.
-Heals received, shields absorbed, effective ally healing provided and raw ally
-shields granted remain distinct diagnostic fields.
-
-The model retains coarse positions, expected critical strikes, approximated ally
-targeting and declared per-kit/trait omissions. Some channel, in-flight and
-post-death ability behavior is approximated. A bounded search and a small authored
-opponent pool can still favor particular strategies; the separate held-out and
-healing-assumption checks expose some of that sensitivity. Full movement and a
-calibrated distribution of real player boards are not simulated.
-The selected clump/spread coverage assumption applies to both teams; fixed rows
-and lanes determine their target preferences.
-
-Eight canonical composition contexts cover four cost plans and two formations,
-each with all seven item budgets and four arrangements. The reference pool
-replaces synthetic physical/magic pressure presets; canonical API keys retain
-`-mixed`, and the UI normalizes older pressure links. Individual champion threat
-settings are separate. APIs are `/api/tft/compositions/meta.json`, `status.json`
-and `<c1–c4>-<spread|clump>-mixed.json`. Missing artifacts return 202. Requests
-never run simulations, and static exports include the same artifacts.
-
-`python3 lol.py tft comps warm` uses a bounded pool of up to eight spawned
-workers. Each context first completes its dependent roster screening, then its
-independent finalist item searches share the pool. This keeps several workers
-useful even when a single context remains. The parent restores original result
-order before ranking and schedules held-out validation only after selection is
-finished. Independent level-9 jobs follow the finalized four-cost cores, using
-otherwise available workers while remaining core calculations have priority.
-A context publishes only after its upgrades finish. `--workers 1` or explicit
-`--only c1-clump-mixed` runs serially.
-Workers receive the parent's loaded snapshot, and the parent validates
-source/data revisions before atomic publication. A failed or missing context
-never marks the warm complete. Cache revisions include composition code,
-item-search code, trait resolution, exact-score cache code, opponent data and
-the baseline engine/data revision. Metadata/artifacts carry
-`evaluationModel=symmetric-reference-pool-v1` and
-`boardPlanModel=level8-core-level9-cap-v1`. Every board includes its level,
-capacity, used slots and champion count; units include their slot costs.
-Four-cost rows have a linked `level9Upgrade` with the full board, sold/added
-champions, item transfers and trait changes. The UI shows the core first and
-opens the optional cap on demand. Legacy metadata/artifacts are accepted only
-together during a publication handoff, without labeling them as the new policy.
-
-The native `prepare_actor` API resolves immutable champion and item inputs once;
-`simulate_matches` runs ordered batches with fresh mutable state for every
-fight. Search scoring requests compact results, preserving all scalar values
-while avoiding unused per-unit report construction. Selected builds get full
-diagnostic replays. Native workers default to one inside the process pool to
-avoid nested parallelism. Allocation and eligibility-scan optimizations retain
-the same floating-point operation and combat event order.
-
-Identical compact fights can also be reused across searches and processes from
-`.cache/tft-comps/fight-scores/`. SQLite WAL stores exact binary doubles with
-checksums. Cache identity covers resolved actor/item/opponent inputs, positions,
-formation, search/held-out selection, duration and healing policy, plus the
-engine/data/model revision. Changed inputs miss the cache; corrupt records are
-discarded and recomputed. This changes neither the comparisons performed nor
-the winner-selection rule. Full diagnostic requests still run full fights.
-
-On 2026-09-06, fixed one-worker workloads with caching disabled took 0.416 to
-0.215 seconds for 240 fights, 4.462 to 2.314 seconds and 6.559 to 3.397 seconds
-for complete spread/clump replacement passes, and 15.148 to 8.507 seconds for a
-non-perfect board's full 642-allocation refinement (1.78–1.94× faster). Reused
-results are a separate benchmark condition. `jobs/tft_exact_verify.py` captures
-an independent frozen implementation, replays raw/prepared/compact APIs, times
-fixed workloads and compares complete generated artifacts. The performance
-change preserves the existing golden fixtures; it does not regenerate them.
-
-Before adding the level-9 planner, the complete eight-context composition rebuild from an empty cache took
-1,117.4 seconds (18 min 37 s), compared with the previous generation's
-3,287.7 seconds (54 min 48 s), using eight workers on the same host. It still
-compares 547,267 item allocations and 521,526 single-item trials. All 1,664
-published boards, 520,064 per-slot replacement records and logical search
-counts match exactly. First-run reuse was small: 49,956 identical fights were
-reused while 6,949,632 were simulated. The 1,770 standalone champion cells
-rebuilt separately in 126.2 seconds; their full builds, core analyses and
-diagnostics also match, with only calculation timestamps/timings differing.
-
-A separate repeat rebuild removed the eight generated result files but kept
-the unit-benchmark and exact-score caches. It took 79.5 seconds, reusing
-6,959,652 identical fights while still running 39,936 full diagnostic fights
-and 162,561 standalone loadout samples. It performs the same logical search
-comparisons. This measures reuse of previous work, not first-time combat
-throughput; existing ready artifacts already load directly without rebuilding.
-
-With slot-aware level-8 cores and the original 1★ level-9 upgrades, the full scheduled
-refresh on 2026-09-07 took **23 minutes 34 seconds**, including source checks,
-1,770 champion cells, all eight composition contexts and compressed publication.
-It produced 1,664 level-8 cores and 416 level-9 variants. The cap phase compared
-618 legal rosters and 1,121 allocations; all 416 selections reached the exact
-perfect-score bound. The final audit checked every board, transition, all
-520,064 core item alternatives and all 1,919 published response files.
-
-Relevant regressions are `test_tft_symmetric.py`, `test_tft_team_engine.py`,
-`test_tft_team.py`, `test_tft_opponents.py`, `test_tft_comp_items.py` and
-`test_tft_comps.py`, `test_tft_caps.py`, `test_tft_nine_units.py`, plus `test_tft_prepared.py`, `test_tft_team_batch.py`,
-`test_tft_match_cache.py` and `test_tft_exact_verify.py`. The persistent UI checks are
-`node jobs/test-tft-composition-ui.cjs` and `node jobs/test-tft-item-ui.cjs`.
+The previous `tft_team.py` / `lol_tft.simulate_match` named-opponent evaluator,
+`composition-opponents.json`, prepared/compact match APIs and SQLite exact-score
+cache remain available for **legacy combat diagnostics only**. Their win counts,
+held-out checks and historical timings do not describe current composition
+ranking. Mechanics fixes remain: equipped Nidalee forms use their actual roles,
+and Sentinel Mana Reave raises the next cast's cost while preserving mana and
+clears on cast. Repeated reaves retain the strongest increase; fixed-interval
+synthetic spells remain timed. Relevant diagnostic regressions include
+`test_tft_symmetric`, `test_tft_team`, `test_tft_opponents`,
+`test_tft_model_quality`, `test_tft_adaptor_positions` and `test_tft_mana_reave`.
 
 ## Champion leaderboards
 
-The TFT Leaderboard compares each champion's optimal three-item build under
-one selected formation, trait context and tank pressure profile. Damage
-includes carries and fighters; tanks have a separate survival leaderboard.
-The default star setting uses 3★ for 1–3 costs and 2★ for 4–5 costs. Fixed
-1★, 2★ and 3★ comparisons are also available, with 4–5 costs excluded from
-3★. Each champion appears once in an eligible comparison. Clicking a
-champion opens the exact build scenario used by that row.
+The Damage view again compares each champion's optimal three-item build in
+the finite-target clear test, ranked by clear time and then damage for
+uncleared targets. The experimental time-slider damage curves and their
+native enumeration API have been removed at the user's request. Composition
+capacity remains the separate EHP × DPS model described above.
 
-Damage ranks successful clears by time, followed by non-clears by total
-damage. The existing models remain in effect: carries are protected while
-fighters take incoming damage. The role filter allows comparisons within
-either group. Tanks rank by hold time, then the double-pressure test for
-survivors of the normal 60-second limit. Equal primary outcomes share a
-competition rank, including tanks that survive both limits. Overkill and
-utility do not manufacture a cross-champion advantage for tied outcomes;
-the winning items still use the existing full build ranking.
+The default stars are 3★ for 1–3 costs and 2★ for 4–5 costs. Fixed 1★, 2★
+and 3★ comparisons remain available, with 4–5 costs excluded from 3★.
+Formation and trait context are shared across each comparison. Tanks retain
+their survival ranking and secondary test at double pressure. Rows open the
+same finite champion build scenario used by the leaderboard.
 
-Each cached scenario includes a compact `best` record with the winning
-item IDs and unrounded performance. The leaderboard reads those records
-without running simulations, and caches the small extracted records by
-file path, modification time and size. Missing cells are reported as
-pending; another star or scenario is never substituted. All 72 selection
-paths at `/api/tft/leaderboard/<star>-<geometry>-<traits>-<threat>.json` are
-also included in static exports. `star` is `best`, `s1`, `s2` or `s3`, and
-the threat suffix is always explicit, including `mixed`.
+The finite damage benchmark now uses a shared **0.5-second engagement delay**
+for equipped attack ranges1–2, at the first engagement and after the current
+target dies. This is an explicitly accepted approximation for walking/jumps,
+not recovered per-champion timing. The native clock overlaps attack cooldowns
+with movement, delays new attacks/casts until arrival, and continues existing
+damage, regeneration and incoming pressure. Akali's cross-target recasts,
+Brambleback's leaps and Master Yi's transferred second hit also wait for
+arrival. The same target incurs no recurring penalty; collateral kills do
+not force a move. Ranged forms remain unchanged. The displayed movement time
+can overlap cooldowns and is not a direct count of extra fight seconds.
+The [movement record](set18/melee-movement.md) describes the inputs, tests and
+sensitivity results. Tank survival presets and immortal composition workloads
+retain their existing behavior; the latter do not produce target-death walks.
 
-`test_tft_leaderboard` covers star restrictions, precision, ties, capped
-survival, selected conditions, missing/replaced cells and the exact winning
-build. This feature does not change combat math or the golden rankings.
+The equipped-form corrections remain. AD Nidalee resolves as an exposed
+melee Assassin and AP as a protected Marksman before combat initialization;
+explicit pressure overrides still apply. Item auras are gated after form
+resolution, including shared Sunder, Shred and burn-provider credit. AP range
+is interpreted as base range plus the pinned `AdditionalAttackRange` row:
+1 + 4 = 5; AD uses its own one-hex kit. The runtime application of that range
+row has not been independently observed; the champion's model note records
+this source interpretation. Each finite build carries its actual form,
+role, range and pressure metadata.
+
+The Gnar execute correction also remains: an immortal theory probe grants
+no damage or healing from last-enemy removal. Gnar cannot repeatedly cash
+out its unchanged HP as true damage. Finite removal, ordinary multi-target
+throws and legitimate true damage are preserved. These checks do not
+establish real-game accuracy; the separate movement approximation is described
+above and does not simulate hex paths or body blocking.
+
+Cells retain their unrounded finite `best` record. Leaderboards no longer
+compute or save extra damage-curve payloads. Requests only read prepared
+results; missing cells remain pending. All 72 selection paths remain at
+`/api/tft/leaderboard/<star>-<geometry>-<traits>-<threat>.json`. During a
+publication transition the UI can read an older generation's
+`finiteDiagnostic`, recalculate finite ranks, and avoid using its damage
+potential metrics as clear-test results.
+
+Tests: `test_tft_leaderboard`, `test_tft_equipped_forms`, `test_tft_execute`,
+`test_tft_theory_auras` and `jobs/test-tft-damage-ui.cjs`. Heavy enumeration
+and fight calculations remain in Rust.
 
 ## Murkwolf leap correction
 
@@ -604,9 +897,10 @@ These replace the earlier no-lock results of 10.1723 s and 10.6667 s.
 Vow still advances the first cast, but it no longer sustains soldiers by
 refilling mana during the empowered attacks.
 
-## Tank benchmarks
+## Standalone tank benchmarks
 
-Tanks compare three synthetic threats: mixed damage, physical attacks and
+The champion item analysis compares tanks against three synthetic threats:
+mixed damage, physical attacks and
 magic burst. Each has **three frontline blockers and two backline damage
 dealers**. Slots are ordered nearest first. Local area effects and nearby
 item auras reach the frontline; explicit global or distant targeting can

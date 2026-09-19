@@ -15,7 +15,7 @@ use pyo3::types::{PyDict, PyList};
 
 use crate::driver::Driver;
 use crate::fight::{make_dummies, Deal, Dummy, Ev, Fight, Sheet, TeamClock, TeamEffect, TICK_S};
-use crate::fx::{build_fx, Fx};
+use crate::fx::{build_fx_for, Fx};
 use crate::kit::DType;
 use crate::pyget::{dict_of, getf, geti, getlist, gets, reqd, truthy};
 use crate::spec::{CellSpec, DummySpec, EnemyDebuffs};
@@ -104,7 +104,7 @@ impl Entry {
         let mut spec = CellSpec::from_py(&cell_data)?;
         let lane = geti(&entry, "lane", 3)?;
         if !(0..=6).contains(&lane) { return Err(PyValueError::new_err("match lanes must be between 0 and 6")); }
-        spec.pressure = true; spec.immortal = false;
+        spec.pressure = true; spec.auto_pressure = false; spec.immortal = false;
         spec.enemy_debuffs = EnemyDebuffs::default(); spec.target_debuffs = Default::default();
         spec.dummies = vec![DummySpec {
             hp: 1.0, armor: 0.0, mr: 0.0, is_tank: false, nearby: true,
@@ -113,7 +113,7 @@ impl Entry {
             attack_start: None, cast_interval: 0.0, cast_start: None, streams: 1,
         }];
         let items = spec.items.iter().collect::<Vec<_>>();
-        let fx = build_fx(spec.role, &items, &spec.traits, spec.unit.has_forms, spec.unit.attack);
+        let fx = build_fx_for(&spec, &items);
         let kit = spec.kit_for(fx.form);
         let sheet = Sheet::new(&spec, kit, &fx);
         let clock = TeamClock::new(&fx);
@@ -206,7 +206,7 @@ impl TargetProjection {
         target.targeting_streams = usize::from(self.focused);
         target.cast_interval = 0.0; target.next_cast = crate::fight::FAR;
         target.ability = 0.0; target.phys_share = 1.0;
-        target.mana = 0.0; target.mana_max = self.mana_max;
+        target.mana = 0.0; target.mana_max = self.mana_max; target.mana_reave = 0.0;
         target.mana_per_attack = 0.0; target.mana_from_damage = false;
         target.lock_until = 0.0; target.stunned_until = self.stunned_until;
         target.attacks = 0; target.casts = 0;
@@ -236,6 +236,8 @@ trait Actor<'a> {
     fn receive(&mut self, hit: &CombatHit) -> CombatDamage;
     fn credit(&mut self, hit: &CombatHit, damage: CombatDamage);
     fn damage(&mut self, target: usize, amount: f64, dtype: DType, source: &'static str);
+    fn wake_sleep(&mut self, wake: crate::fight::SleepWake);
+    fn allied_spellweaver_cast(&mut self, time: f64);
     fn heal(&mut self, amount: f64) -> f64;
     fn shield(&mut self, amount: f64, duration: f64) -> f64;
     fn reave(&mut self, amount: f64);
@@ -334,11 +336,16 @@ impl<'a, D: Driver> Actor<'a> for Champion<'a, D> {
     fn damage(&mut self, target: usize, amount: f64, dtype: DType, source: &'static str) {
         self.fight.deal(amount, dtype, Some(target), source, Deal::PLAIN);
     }
+    fn wake_sleep(&mut self, wake: crate::fight::SleepWake) { self.fight.wake_sleep(wake); }
+    fn allied_spellweaver_cast(&mut self, time: f64) {
+        self.fight.t = time;
+        self.fight.allied_spellweaver_cast();
+    }
     fn heal(&mut self, amount: f64) -> f64 { self.fight.heal(amount, "ally healing") }
     fn shield(&mut self, amount: f64, duration: f64) -> f64 {
         if self.fight.shield(amount, duration, "ally shield", false).is_some() { amount } else { 0.0 }
     }
-    fn reave(&mut self, amount: f64) { self.fight.mana = (self.fight.mana - amount).max(0.0); }
+    fn reave(&mut self, amount: f64) { self.fight.receive_mana_reave(amount); }
     fn on_hit(&mut self, target: usize) { self.fight.on_hit_effects(Some(target), true); }
     fn finish(&mut self) -> (Vec<Ev>, [(u64, f64, f64); MAX_ACTORS]) {
         self.fight.combat_flush();
@@ -375,6 +382,8 @@ enum Deferred {
     Proc { side: usize, source: usize, target: usize, amount: f64, dtype: DType, name: &'static str },
     Reave { side: usize, target: usize, amount: f64 },
     OnHit { side: usize, source: usize, target: usize, generation: u64 },
+    Wake { side: usize, wake: crate::fight::SleepWake },
+    SpellweaverCast { side: usize, target: usize },
 }
 struct Trace { side: usize, source: usize, event: Ev }
 type ActorCell<'a> = RefCell<Box<dyn Actor<'a> + 'a>>;
@@ -385,6 +394,7 @@ struct World<'a> {
     // them. Repeated eligibility scans need no fresh target copies.
     alive: [Cell<ActorMask>; 2], holding: [Cell<ActorMask>; 2], fronts: [ActorMask; 2],
     primary: [Vec<Cell<Option<usize>>>; 2], ledgers: [Vec<RefCell<Ledger>>; 2],
+    sleeps: [Option<RefCell<crate::fight::SleepTracker>>; 2],
     frontline: [Cell<Option<f64>>; 2], healing: [Vec<Cell<f64>>; 2], shielding: [Vec<Cell<f64>>; 2],
     time: Cell<f64>, pending: RefCell<VecDeque<Deferred>>, traces: RefCell<Vec<Trace>>, trace: bool,
     targeting_dirty: Cell<bool>, targeting_expires: Cell<f64>,
@@ -439,7 +449,10 @@ impl<'a> World<'a> {
         let ledgers = std::array::from_fn(|side| actors[side].iter().map(|_| RefCell::new(Ledger::default())).collect());
         let healing = std::array::from_fn(|side| actors[side].iter().map(|_| Cell::new(0.0)).collect());
         let shielding = std::array::from_fn(|side| actors[side].iter().map(|_| Cell::new(0.0)).collect());
-        let world = Rc::new(Self { spec, actors, states, alive, holding, fronts, primary, ledgers, healing, shielding,
+        let sleeps = std::array::from_fn(|side| spec.sides[1-side].iter()
+            .any(|entry| entry.prepared.spec.driver == "Lillia")
+            .then(|| RefCell::new(crate::fight::SleepTracker::new(actors[side].len()))));
+        let world = Rc::new(Self { spec, actors, states, alive, holding, fronts, primary, ledgers, healing, shielding, sleeps,
             frontline: [Cell::new(None), Cell::new(None)], time: Cell::new(0.0),
             pending: RefCell::new(VecDeque::new()), traces: RefCell::new(Vec::new()), trace,
             targeting_dirty: Cell::new(true), targeting_expires: Cell::new(f64::INFINITY) });
@@ -530,7 +543,9 @@ impl<'a> World<'a> {
                 debuffs.sunder = debuffs.sunder.max(state.sunder_aura);
             }
         }
-        (debuffs, ledger.stun_until, ledger.armor_flat, ledger.mr_flat)
+        let sleep = self.sleeps[side].as_ref().map_or(0.0, |sleeps|
+            sleeps.borrow().until(source, self.state(side, source).generation, time));
+        (debuffs, ledger.stun_until.max(sleep), ledger.armor_flat, ledger.mr_flat)
     }
     fn schedule(&self, side: usize, source: usize, actor: &mut dyn Actor<'a>) {
         self.retarget();
@@ -596,13 +611,37 @@ impl<'a> World<'a> {
         let mut incoming = hit.clone(); incoming.target = source;
         let damage = recipient.receive(&incoming);
         self.finish(1-side, target, recipient.as_mut());
+        if let Some(sleeps) = &self.sleeps[1-side] {
+            sleeps.borrow_mut().damage(target, hit.generation, self.time.get(), damage.amount,
+                damage.state.generation == hit.generation && damage.state.holding);
+        }
         Some(damage)
     }
     fn settle(&self) {
         loop {
+            for side in 0..2 {
+                if let Some(sleeps) = &self.sleeps[side] {
+                    for wake in sleeps.borrow_mut().wakes.drain(..) {
+                        self.pending.borrow_mut().push_back(Deferred::Wake { side: 1-side, wake });
+                    }
+                }
+            }
             let pending = self.pending.borrow_mut().pop_front();
             let Some(pending) = pending else { break; };
             match pending {
+                Deferred::SpellweaverCast { side, target } => {
+                    let mut actor = self.actors[side][target].borrow_mut();
+                    actor.sync(&self.context(side, target));
+                    actor.allied_spellweaver_cast(self.time.get());
+                    self.finish(side, target, actor.as_mut());
+                }
+                Deferred::Wake { side, wake } => {
+                    if self.state(1-side, wake.target).generation != wake.generation { continue; }
+                    let mut actor = self.actors[side][wake.source].borrow_mut();
+                    actor.sync(&self.context(side, wake.source));
+                    actor.wake_sleep(wake);
+                    self.finish(side, wake.source, actor.as_mut());
+                }
                 Deferred::Damage { side, source, hit } => {
                     if let Some(damage) = self.resolve(side, source, hit.clone()) {
                         let mut actor = self.actors[side][source].borrow_mut();
@@ -612,7 +651,11 @@ impl<'a> World<'a> {
                     }
                 }
                 Deferred::Support { side, source, target, amount, duration } => self.support(side, source, target, amount, duration),
-                Deferred::Reave { side, target, amount } => self.actors[side][target].borrow_mut().reave(amount),
+                Deferred::Reave { side, target, amount } => {
+                    let mut actor = self.actors[side][target].borrow_mut();
+                    actor.reave(amount);
+                    self.publish(side, target, actor.state());
+                }
                 Deferred::OnHit { side, source, target, generation } => {
                     if self.state(1-side,target).generation != generation { continue; }
                     let mut actor = self.actors[side][source].borrow_mut();
@@ -685,6 +728,18 @@ impl<'a> World<'a> {
                     let mut ledger = self.ledgers[1-side][target].borrow_mut();
                     ledger.stun_until = ledger.stun_until.max(time+duration);
                 }
+                TeamEffect::Sleep(target, duration, threshold, fraction) => {
+                    if let Ok(mut actor) = self.actors[1-side][target].try_borrow_mut() {
+                        actor.sync(&self.context(1-side, target));
+                        self.publish(1-side, target, actor.state());
+                    }
+                    let state = self.state(1-side, target);
+                    if state.cc_immune || !state.holding { continue; }
+                    if let Some(sleeps) = &self.sleeps[1-side] {
+                        sleeps.borrow_mut().apply(target, source, state.generation, time,
+                                                   duration, threshold, fraction);
+                    }
+                }
                 TeamEffect::Burn(target, pct, duration, inferno) => {
                     if pct <= 0.0 || duration <= 0.0 { continue; }
                     let mut ledger = self.ledgers[1-side][target].borrow_mut();
@@ -694,7 +749,19 @@ impl<'a> World<'a> {
                     } else { ledger.burns.push(Burn { source, inferno, pct, start: time, until: time+duration }); }
                     ledger.wound_until = ledger.wound_until.max(time+duration);
                 }
-                TeamEffect::Cast(mana) => {
+                TeamEffect::Cast(mana, spellweaver) => {
+                    if spellweaver {
+                        for ally in 0..self.actors[side].len() {
+                            if ally == source { continue; }
+                            if let Ok(mut actor) = self.actors[side][ally].try_borrow_mut() {
+                                actor.sync(&self.context(side, ally));
+                                actor.allied_spellweaver_cast(time);
+                                self.finish(side, ally, actor.as_mut());
+                            } else {
+                                self.pending.borrow_mut().push_back(Deferred::SpellweaverCast { side, target: ally });
+                            }
+                        }
+                    }
                     for enemy in 0..self.actors[1-side].len() {
                         let state = self.state(1-side, enemy);
                         if !state.alive || state.ionic_spark <= 0.0 || !self.nearby(1-side, enemy, source) { continue; }
@@ -711,6 +778,7 @@ impl<'a> World<'a> {
                 TeamEffect::ManaReave(target, amount) => {
                     if let Ok(mut actor) = self.actors[1-side][target].try_borrow_mut() {
                         actor.reave(amount);
+                        self.publish(1-side, target, actor.state());
                     } else {
                         self.pending.borrow_mut().push_back(Deferred::Reave { side: 1-side, target, amount });
                     }

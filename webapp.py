@@ -21,6 +21,7 @@ import time
 
 import builds
 import items
+import onetricks
 import scaling
 import tft
 import tft_comps
@@ -199,6 +200,8 @@ def cmd_export(args):
 
     dump("api/meta.json", meta)
     files = 1
+    dump("api/onetricks.json", onetricks.api_onetricks(con))
+    files += 1
     dump("api/builds/meta.json", builds.api_builds_meta())
     files += 1
     # scenario cells are precomputed: warm whatever is cold, then copy
@@ -453,6 +456,8 @@ def cmd_serve(args):
                 con = db_connect()
                 if u.path == "/api/meta.json":
                     self._json(app_meta(con))
+                elif u.path == "/api/onetricks.json":
+                    self._json(onetricks.api_onetricks(con))
                 elif m := re.fullmatch(r"/api/rows/([a-z0-9_]+)\.json", u.path):
                     tier = m.group(1)
                     patches = scaling.db_patches(con, tier)

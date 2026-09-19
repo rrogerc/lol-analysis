@@ -15,10 +15,10 @@ use crate::pyget::*;
 /// kit's own labels take the first ids so the engine can test for "auto".
 pub type SourceId = u16;
 
-pub const KIT_SOURCES: [&str; 21] = [
+pub const KIT_SOURCES: [&str; 22] = [
     "auto", "Q", "Q empowered", "E", "W", "R", "E onhit", "E active", "wave", "execute",
     "muramana", "eclipse", "botrk", "kraken", "hullbreaker", "spellblade", "malignance",
-    "stormsurge", "venom", "E magic", "barrage",
+    "stormsurge", "venom", "E magic", "barrage", "W onhit",
 ];
 pub const SRC_AUTO: SourceId = 0;
 pub const SRC_Q: SourceId = 1;
@@ -41,6 +41,7 @@ pub const SRC_STORMSURGE: SourceId = 17;
 pub const SRC_VENOM: SourceId = 18;
 pub const SRC_E_MAGIC: SourceId = 19;
 pub const SRC_BARRAGE: SourceId = 20;
+pub const SRC_W_ONHIT: SourceId = 21;
 
 fn sources() -> &'static RwLock<Vec<String>> {
     static TABLE: OnceLock<RwLock<Vec<String>>> = OnceLock::new();
@@ -218,6 +219,9 @@ pub struct ManaActive {
     pub amp_per_100_bonus_mana: f64,
     pub duration_s: f64,
     pub basic_cd_faster_pct: f64,
+    /// How much more a spell costs while the window runs: only a kit that
+    /// keeps a mana pool (Kassadin) pays it.
+    pub cost_increase_pct: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -329,6 +333,7 @@ pub struct ItemFx {
     pub ad_from_max_mana_pct: f64,
     pub crit_chance_stacked_pct: f64,
     pub basic_ability_haste: f64,
+    pub ultimate_ability_haste: f64,
     pub haste_from_bonus_ad: Option<(f64, f64)>, // (base, perBonusAdPct)
     pub needs_mana: bool,
     // fight side, list-valued
@@ -550,6 +555,7 @@ fn parse_singletons(d: &Bound<'_, PyDict>) -> PyResult<Singletons> {
             amp_per_100_bonus_mana: reqf(&x, "ampPer100BonusMana")?,
             duration_s: reqf(&x, "durationS")?,
             basic_cd_faster_pct: reqf(&x, "basicCdFasterPct")?,
+            cost_increase_pct: getf(&x, "costIncreasePct", 0.0)?,
         });
     }
     if let Some(x) = getfx(d, "onUltCast")? {
@@ -640,6 +646,7 @@ impl ItemFx {
             ad_from_max_mana_pct: getf(d, "adFromMaxManaPct", 0.0)?,
             crit_chance_stacked_pct: getf(d, "critChanceStackedPct", 0.0)?,
             basic_ability_haste: getf(d, "basicAbilityHaste", 0.0)?,
+            ultimate_ability_haste: getf(d, "ultimateAbilityHaste", 0.0)?,
             haste_from_bonus_ad: haste,
             needs_mana: truthy(d, "needsMana")?,
             onhit,

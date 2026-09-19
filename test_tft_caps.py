@@ -7,7 +7,7 @@ from unittest.mock import patch
 import tft
 import tft_caps as caps
 import tft_comps as comps
-import tft_team
+import tft_theory
 from tft_board import ELDER_DRAGON
 from tft_comp_traits import RIFTBEAST, resolve_board_traits
 
@@ -15,37 +15,47 @@ from tft_comp_traits import RIFTBEAST, resolve_board_traits
 class _Team:
     def __init__(self, snap, score=None):
         self.snap = snap
-        self.score = score or (lambda members, selected, split, policy: 10 if split == "search" else 5)
+        self.score = score or (lambda members, selected, split, policy: 10.0)
         self.calls = []
         self.stats = Counter()
 
-    def result(self, members, selected, split, policy):
-        count = 12 if split == "search" else 6
+    def result(self, members, selected, split="theory", policy="broad", *, tank="TFT18_Amumu"):
         score = self.score(members, selected, split, policy)
-        extra = score if isinstance(score, dict) else {"benchmarkWins": score}
-        wins = extra["benchmarkWins"]
-        return {"metrics": {"benchmarkWins": wins, "benchmarkCount": count,
-                            "benchmarkWinRate": wins / count, "benchmarkScore": 100 * wins / count,
-                            "damageDps": 9.0, "frontlineTime": 7.0, "hpMargin": 0.0,
-                            "clearTime": 8.0, **extra},
-                "units": {member["api"]: {"damage": 10.0, "dps": 1.0, "aliveTime": 7.0}
+        extra = score if isinstance(score, dict) else {"theoryScore": score}
+        score, dps = extra["theoryScore"], extra.get("damageDps", 9.0)
+        rows = []
+        for scenario in tft_theory.scenarios("clump"):
+            metrics = tft_theory.capacity_metrics(score / dps, dps, scenario["incomingDps"])
+            order = sorted((m["api"] for m in members if comps._frontliner(self.snap.units[m["api"]])),
+                           key=lambda api: (api != tank, api))
+            if scenario["targeting"] == "secondary-first" and len(order) > 1:
+                order[0], order[1] = order[1], order[0]
+            targets = [order[0], order[min(1, len(order) - 1)], order[0]] if order else [None] * 3
+            rows.append({**scenario, **metrics, "score": score,
+                         "pressureTargetOrder": order, "initialPressureTargets": targets,
+                         "plannedMeasurementWindow": metrics["protectionTime"],
+                         "measurementWindow": metrics["protectionTime"], "frontlineCollapsed": True,
+                         "incomingBudget": metrics["frontlineEhp"],
+                         "spentPressure": metrics["frontlineEhp"],
+                         "deniedPressure": 0.0, "unspentPressure": 0.0})
+        return {"metrics": {**tft_theory.summarize(rows), "theoryScore": score, "damageDps": dps},
+                "units": {member["api"]: {"damage": 10.0, "dps": dps / len(members), "aliveTime": 7.0}
                           for member in members},
-                "matchups": [{"key": f"{split}-{i}", "outcome": "win" if i < wins else "loss"}
-                             for i in range(count)],
-                "poolRevision": "fixture-pool", "poolSplit": split,
-                "opponentCount": count // 2, "itemBudget": sum(len(o["items"]) for o in selected.values()),
-                "healingPolicy": policy}
+                "evaluationModel": tft_theory.MODEL, "modelRevision": tft_theory.revision(self.snap),
+                "scenarios": rows, "profileCount": len(rows),
+                "itemBudget": sum(len(o["items"]) for o in selected.values())}
 
     def evaluate_many(self, members, effects, allocations, carry, tank, *, split, details):
-        assert split == "search" and details is False
+        assert split == "theory" and details is False
         self.calls.append({"kind": "compact", "split": split, "members": deepcopy(members),
                            "allocations": deepcopy(allocations)})
-        return [self.result(members, selected, split, "broad") for selected in allocations]
+        return [self.result(members, selected, split, tank=tank) for selected in allocations]
 
-    def evaluate(self, members, effects, selected, carry, tank, *, split, healing_policy="broad"):
-        self.calls.append({"kind": "full", "split": split, "policy": healing_policy,
+    def evaluate(self, members, effects, selected, carry, tank, *, split):
+        assert split == "theory"
+        self.calls.append({"kind": "full", "split": split,
                            "members": deepcopy(members), "selected": deepcopy(selected)})
-        return self.result(members, selected, split, healing_policy)
+        return self.result(members, selected, split, tank=tank)
 
 
 class _Loadouts:
@@ -66,8 +76,8 @@ class TestCaps(unittest.TestCase):
     def api(self, name):
         return self.snap.unit(name)["api"]
 
-    def fixture(self, *, score=None, extra_items=(), rift=0, main_count=3):
-        names = ["Ahri", "Amumu", "Aphelios", "Lillia", "Leona", "Karma", "Varus", "Rakan"]
+    def fixture(self, *, score=None, extra_items=(), rift=0, main_count=3, fourth_unit="Lillia"):
+        names = ["Ahri", "Amumu", "Aphelios", fourth_unit, "Leona", "Karma", "Varus", "Rakan"]
         if rift:
             names[2] = "Brambleback"
         if rift > 1:
@@ -78,22 +88,24 @@ class TestCaps(unittest.TestCase):
         search.snap = self.snap
         search.profile = dict(comps.PROFILES["c4"], level=8, boardSlots=8, maxFiveCosts=0)
         search.progress = lambda message: None
+        search.geometry = "clump"
         search.units = {api: unit for api, unit in self.snap.units.items() if unit["cost"] < 5}
         search.team = _Team(self.snap, score)
         search.evaluator = _Loadouts()
         members = [{"api": api, "star": 2} for api in roster]
         selected = {api: search.evaluator.loadout(api, 2, [], ()) for api in roster}
-        selected[carry] = search.evaluator.loadout(carry, 2, [], ("DA_Deathblade",) * main_count)
+        selected[carry] = search.evaluator.loadout(carry, 2, [],
+            ("DA_RedBuff",) + ("DA_Deathblade",) * (main_count - 1))
         selected[tank] = search.evaluator.loadout(tank, 2, [], ("DA_WarmogsArmor",) * main_count)
         selected[self.api("Karma")] = search.evaluator.loadout(self.api("Karma"), 2, [], extra_items)
         resolved = resolve_board_traits(self.snap, members)
         budget = sum(option["count"] for option in selected.values())
-        result = _Team(self.snap).result(members, selected, "search", "broad")
+        result = _Team(self.snap).result(members, selected)
         row = search.compose((roster, carry, tank), {"members": members, "traits": resolved},
                              budget, caps.arrangement(self.snap, selected, carry, tank),
                              search.allocation(selected, result))
-        row.update(rank=4, itemAnalysis={"parentOnly": [1, 2, 3]},
-                   validation={"metrics": {"benchmarkWins": 0, "benchmarkCount": 6}})
+        row.update(rank=4, itemAnalysis={"parentOnly": [1, 2, 3]})
+        search.validate_boards([row])
         search.evaluator.calls.clear()
         return search, row
 
@@ -104,9 +116,33 @@ class TestCaps(unittest.TestCase):
         def limited(*args):
             return [(removed, added) for removed, added in transitions(*args) if set(added) <= allowed]
 
-        # Narrow the fixture's transitions, not the global modeled champion
-        # catalog used to validate independently authored reference opponents.
+        # Narrow the fixture's transitions while retaining real legality checks.
         return patch.object(caps, "_transitions", side_effect=limited)
+
+    def test_cap_preserves_primal_history_and_passes_it_to_both_score_paths(self):
+        search, parent = self.fixture()
+        # The trait is currently inactive on this roster, but a previously
+        # chosen blessing must not disappear from the upgrade plan's history.
+        parent["primalHistory"] = ["turtle"]
+        original = deepcopy(parent)
+
+        class RetainedTeam(_Team):
+            def evaluate_many(self, *args, required_primal=None, **kwargs):
+                self.required_compact = required_primal
+                return super().evaluate_many(*args, **kwargs)
+
+            def evaluate(self, *args, required_primal=None, **kwargs):
+                self.required_full = required_primal
+                return super().evaluate(*args, **kwargs)
+
+        search.team = RetainedTeam(self.snap)
+        with self.five_pool("Taric"):
+            result = caps.build_upgrade(search, parent)
+        self.assertEqual(search.team.required_compact, ["turtle"])
+        self.assertEqual(search.team.required_full, ["turtle"])
+        self.assertEqual(result["board"]["primalHistory"], ["turtle"])
+        self.assertNotIn("primal", result["board"], "inactive trait grants no combat blessing")
+        self.assertEqual(parent, original)
 
     @staticmethod
     def items(row):
@@ -140,7 +176,7 @@ class TestCaps(unittest.TestCase):
         for call in search.team.calls:
             self.assertTrue(all(member["star"] == 2 for member in call["members"]
                                 if self.snap.units[member["api"]]["cost"] == 5),
-                            "Search, final diagnostics and both validation policies simulate two-star five-costs")
+                            "Every capacity comparison and final measurement uses two-star five-costs")
         self.assertTrue(all(star == 2 for api, star, _, _ in search.evaluator.calls if api in added))
         self.assertNotIn("rank", board)
         self.assertNotIn("level9Upgrade", board)
@@ -149,13 +185,15 @@ class TestCaps(unittest.TestCase):
         self.assertEqual(board["metrics"]["damageDps"], 9.0)
         self.assertGreater(board["screening"]["damageDps"], 10000)
         self.assertEqual(len(search.evaluator.calls), 9)
-        self.assertTrue(all(call["kind"] == "compact" for call in search.team.calls[:-3]))
-        self.assertEqual([(call["split"], call.get("policy")) for call in search.team.calls[-3:]],
-                         [("search", "broad"), ("validation", "broad"), ("validation", "restricted")])
+        self.assertTrue(all(call["kind"] == "compact" for call in search.team.calls[:-1]))
+        self.assertEqual(search.team.calls[-1]["split"], "theory")
+        self.assertEqual(board["consistency"]["status"], "passed")
+        self.assertNotIn("validation", board)
+        self.assertNotIn("assumptionCheck", board)
 
     def test_elder_is_one_champion_using_two_slots_and_two_riftbeasts(self):
         def score(members, selected, split, policy):
-            if split != "search":
+            if split != "theory":
                 return 5
             return 12 if selected.get(ELDER_DRAGON, {}).get("alpha") else 9
         search, parent = self.fixture(score=score, rift=1)
@@ -179,7 +217,7 @@ class TestCaps(unittest.TestCase):
         freed = ("DA_JeweledGauntlet", "DA_NashorsTooth", "DA_SpearOfShojin")
         karma, alune, taric = (self.api(name) for name in ("Karma", "Alune", "Taric"))
         def score(members, selected, split, policy):
-            if split != "search":
+            if split != "theory":
                 return 2
             return 11 if (karma not in selected and selected.get(taric, {}).get("items") == ("DA_NashorsTooth",)) else 6
         search, parent = self.fixture(score=score, extra_items=freed)
@@ -203,7 +241,7 @@ class TestCaps(unittest.TestCase):
     def test_sold_items_can_change_the_secondary_role_structure(self):
         karma, taric = self.api("Karma"), self.api("Taric")
         def score(members, selected, split, policy):
-            if split != "search":
+            if split != "theory":
                 return 3
             return 11 if karma not in selected and len(selected.get(taric, {}).get("items", ())) == 3 else 6
         search, parent = self.fixture(score=score, extra_items=("DA_JeweledGauntlet", "DA_NashorsTooth", "DA_SpearOfShojin"))
@@ -235,12 +273,12 @@ class TestCaps(unittest.TestCase):
         self.assertEqual(len(choices), 4)
         self.assertEqual({len(trial[added[0]]["items"]) for trial in choices}, {0, 1, 2, 3})
 
-    def test_more_search_wins_override_two_legendary_slot_preference(self):
+    def test_greater_capacity_overrides_two_legendary_slot_preference(self):
         def score(members, selected, split, policy):
-            if split != "search":
+            if split != "theory":
                 return 1
             fives = sum(self.snap.units[m["api"]]["cost"] == 5 for m in members)
-            return {"benchmarkWins": 11 if fives == 1 else 10, "hpMargin": -1 if fives == 1 else 1}
+            return {"theoryScore": 11 if fives == 1 else 10, "damageDps": 1.0 if fives == 1 else 100.0}
         search, parent = self.fixture(score=score)
         with self.five_pool("Alune", "Taric"):
             upgrade = caps.build_upgrade(search, parent)
@@ -250,61 +288,49 @@ class TestCaps(unittest.TestCase):
         self.assertEqual(upgrade["transition"]["added"][0]["star"], 2)
         self.assertEqual(upgrade["transition"]["itemTransfers"], [])
         self.assertEqual(set(upgrade["transition"]["retained"]), {u["slug"] for u in parent["units"]})
-        self.assertEqual(upgrade["benchmarkWinDelta"], 1)
+        self.assertEqual(upgrade["theoryScoreDelta"], 1)
 
-    def test_equal_wins_prefer_two_slots_then_cheaper_sale_and_deterministic_order(self):
+    def test_equal_capacity_prefers_two_slots_then_cheaper_sale_and_deterministic_order(self):
         karma = self.api("Karma")
         def score(members, selected, split, policy):
-            return {"benchmarkWins": 10 if split == "search" else 6,
-                    "hpMargin": -1.0 if karma not in selected else 1.0,
+            return {"theoryScore": 10,
                     "damageDps": 1.0 if karma not in selected else 999999.0}
         search, parent = self.fixture(score=score)
         with self.five_pool("Taric", "Alune"):
             upgrade = caps.build_upgrade(search, parent)
         self.assertEqual(upgrade["selection"]["fiveCostSlots"], 2)
         self.assertEqual(upgrade["transition"]["removed"][0]["api"], karma)
-        self.assertEqual(upgrade["board"]["metrics"]["hpMargin"], -1.0)
         self.assertEqual(upgrade["board"]["metrics"]["damageDps"], 1.0)
-        self.assertFalse(upgrade["selection"]["perfectScoreBoundReached"])
+        self.assertNotIn("perfectScoreBoundReached", upgrade["selection"])
         self.assertEqual(upgrade["selection"]["rostersCompared"], upgrade["selection"]["candidatesAvailable"])
 
-    def test_perfect_preferred_score_is_an_exact_early_stop(self):
-        search, parent = self.fixture(score=lambda members, selected, split, policy: 12 if split == "search" else 0)
+    def test_continuous_scores_have_no_perfect_score_early_stop(self):
+        karma = self.api("Karma")
+        def score(members, selected, split, policy):
+            # The first preferred transition scores above the old win ceiling;
+            # a later roster still improves it by a small continuous amount.
+            return 100.0 if karma not in selected else 100.001
+        search, parent = self.fixture(score=score)
         with self.five_pool("Alune", "Taric", "Ashe"):
             upgrade = caps.build_upgrade(search, parent)
-        self.assertTrue(upgrade["selection"]["perfectScoreBoundReached"])
-        self.assertEqual(upgrade["selection"]["rostersCompared"], 1)
-        self.assertGreater(upgrade["selection"]["candidatesAvailable"], 1)
-        self.assertEqual(upgrade["board"]["validation"]["metrics"]["benchmarkWins"], 0)
-        self.assertEqual(upgrade["benchmarkWinDelta"], 2)
+        self.assertEqual(upgrade["board"]["metrics"]["theoryScore"], 100.001)
+        self.assertEqual(upgrade["selection"]["rostersCompared"], upgrade["selection"]["candidatesAvailable"])
+        self.assertGreater(upgrade["selection"]["rostersCompared"], 1)
+        self.assertNotIn("perfectScoreBoundReached", upgrade["selection"])
+        self.assertEqual(upgrade["selection"]["evaluatedOn"], "theory")
+        self.assertEqual(upgrade["selection"]["parentRanking"], "level8")
+        self.assertEqual(upgrade["theoryScoreDelta"], 90.001)
         self.assertEqual(parent["rank"], 4)
 
-    def test_perfect_fallback_does_not_claim_the_preferred_upper_bound(self):
+    def test_fallback_is_compared_after_all_preferred_transitions(self):
         def score(members, selected, split, policy):
-            if split != "search":
-                return 0
-            return 12 if sum(self.snap.units[m["api"]]["cost"] == 5 for m in members) == 1 else 11
+            return 1000.1 if sum(self.snap.units[m["api"]]["cost"] == 5 for m in members) == 1 else 1000.0
         search, parent = self.fixture(score=score)
         with self.five_pool("Alune", "Taric"):
             upgrade = caps.build_upgrade(search, parent)
         self.assertEqual(upgrade["selection"]["fiveCostSlots"], 1)
-        self.assertFalse(upgrade["selection"]["perfectScoreBoundReached"])
         self.assertEqual(upgrade["selection"]["rostersCompared"], upgrade["selection"]["candidatesAvailable"])
-
-    def test_held_out_and_restricted_healing_cannot_change_selected_cap(self):
-        outputs = []
-        for held_out in (0, 6):
-            def score(members, selected, split, policy):
-                return 10 if split == "search" else max(0, held_out - int(policy == "restricted"))
-            search, parent = self.fixture(score=score)
-            with self.five_pool("Alune", "Taric"):
-                outputs.append(caps.build_upgrade(search, parent))
-        self.assertEqual(outputs[0]["board"]["id"], outputs[1]["board"]["id"])
-        self.assertEqual(outputs[0]["selection"], outputs[1]["selection"])
-        self.assertEqual(outputs[0]["transition"], outputs[1]["transition"])
-        self.assertEqual(outputs[0]["board"]["validation"]["metrics"]["benchmarkWins"], 0)
-        self.assertEqual(outputs[1]["board"]["validation"]["metrics"]["benchmarkWins"], 6)
-        self.assertEqual(outputs[1]["board"]["assumptionCheck"]["winDelta"], -1)
+        self.assertTrue(all(call["split"] == "theory" for call in search.team.calls))
 
     def test_alpha_states_include_all_eligible_holders_only_when_active(self):
         for five_names, active in ((("Alune", "Taric"), False), (("Elder Dragon",), True)):
@@ -326,7 +352,7 @@ class TestCaps(unittest.TestCase):
     def test_removing_one_four_cost_is_allowed_but_mains_never_change(self):
         aphelios = self.api("Aphelios")
         def score(members, selected, split, policy):
-            return (11 if aphelios not in selected else 10) if split == "search" else 4
+            return (11 if aphelios not in selected else 10) if split == "theory" else 4
         search, parent = self.fixture(score=score)
         with self.five_pool("Alune", "Taric"):
             upgrade = caps.build_upgrade(search, parent)
@@ -334,6 +360,20 @@ class TestCaps(unittest.TestCase):
         self.assertEqual(upgrade["board"]["sameCostCount"], 3)
         self.assertEqual(upgrade["board"]["mainCarry"], parent["mainCarry"])
         self.assertEqual(upgrade["board"]["mainTank"], parent["mainTank"])
+
+    def test_level_nine_upgrade_retains_three_target_cost_units(self):
+        aphelios = self.api("Aphelios")
+        def score(members, selected, split, policy):
+            return 100 if aphelios not in selected else 10
+        search, parent = self.fixture(score=score, fourth_unit="Alistar")
+        self.assertEqual(parent["sameCostCount"], 3)
+        with self.five_pool("Alune", "Taric"):
+            upgrade = caps.build_upgrade(search, parent)
+        self.assertIsNotNone(upgrade)
+        self.assertEqual(upgrade["board"]["sameCostCount"], 3)
+        self.assertIn(aphelios, {unit["api"] for unit in upgrade["board"]["units"]})
+        for call in search.team.calls:
+            self.assertIn(aphelios, {member["api"] for member in call["members"]})
 
     def test_empty_five_cost_pool_and_other_cost_plans_do_no_work(self):
         search, parent = self.fixture()
@@ -354,36 +394,48 @@ class TestCaps(unittest.TestCase):
         with self.five_pool("Alune", "Taric"), patch.object(search.team, "evaluate_many", return_value=[]):
             with self.assertRaisesRegex(RuntimeError, "incomplete"):
                 caps.build_upgrade(search, parent)
-        for bad in ({"benchmarkWins": 6, "benchmarkCount": 6}, {"benchmarkWins": 13, "benchmarkCount": 12}):
-            with self.assertRaisesRegex(ValueError, "complete search"):
-                caps._search_wins({"metrics": bad}, 12, parent)
-        result = {"metrics": {"benchmarkWins": 6, "benchmarkCount": 12}, "poolSplit": "validation"}
-        with self.assertRaisesRegex(ValueError, "held-out"):
-            caps._search_wins(result, 12, parent)
-        result.update(poolSplit="search", poolRevision="different-pool")
-        with self.assertRaisesRegex(ValueError, "opponent revision"):
-            caps._search_wins(result, 12, parent)
+        for bad in (dict(parent, profileCount=6), dict(parent, metrics={"theoryScore": -1}),
+                    dict(parent, metrics={"theoryScore": float("nan")}),
+                    dict(parent, evaluationModel="symmetric-reference-pool-v1"),
+                    dict(parent, modelRevision="different-model")):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                caps._theory_score(bad, parent["profileCount"], parent)
+        for field, value in {"targetCount": 1, "incomingSourceCount": 1,
+                             "controlInterval": 4.0, "controlDuration": 1.5,
+                             "pressureInterval": 1.0,
+                             "pressureAllocation": "independent-frontline", "targeting": "invalid-focus"}.items():
+            for omitted in (False, True):
+                changed = deepcopy(parent)
+                if omitted:
+                    del changed["scenarios"][0][field]
+                else:
+                    changed["scenarios"][0][field] = value
+                with self.subTest(field=field, omitted=omitted), self.assertRaisesRegex(ValueError, "scenario inputs"):
+                    caps._theory_score(changed, parent["profileCount"], parent)
 
-    def test_native_nine_actor_cap_uses_the_same_opponents_and_item_budget(self):
+    def test_native_nine_actor_cap_uses_the_same_pressure_inputs_and_item_budget(self):
         search, parent = self.fixture()
-        search.team = tft_team.Evaluator(self.snap, "clump")
+        search.team = tft_theory.Evaluator(self.snap, "clump")
         search.evaluator = comps.Evaluator(self.snap, "clump", "mixed")
         members = [{"api": unit["api"], "star": unit["star"]} for unit in parent["units"]]
         effects = resolve_board_traits(self.snap, members)["effects"]
         selected = {unit["api"]: {"items": tuple(unit["itemApis"]), "alpha": False} for unit in parent["units"]}
         result = search.team.evaluate(members, effects, selected, self.api("Ahri"), self.api("Amumu"))
-        parent.update(metrics=result["metrics"], poolRevision=result["poolRevision"], matchups=result["matchups"])
+        parent.update({field: result[field] for field in
+                       ("metrics", "modelRevision", "evaluationModel", "scenarios", "profileCount")})
         with patch.object(caps, "_transitions", return_value=[(None, (self.api("Alune"),))]):
             upgrade = caps.build_upgrade(search, parent)
         board = upgrade["board"]
         self.assertEqual(len(board["units"]), 9)
         alune = next(unit for unit in board["units"] if unit["api"] == self.api("Alune"))
         self.assertEqual(alune["star"], 2)
-        self.assertEqual(board["poolRevision"], parent["poolRevision"])
+        self.assertEqual(board["modelRevision"], parent["modelRevision"])
         self.assertEqual(board["itemCount"], parent["itemCount"])
-        self.assertEqual([fight["key"] for fight in board["matchups"]], [fight["key"] for fight in parent["matchups"]])
-        self.assertEqual((board["metrics"]["benchmarkCount"], board["validation"]["metrics"]["benchmarkCount"]), (12, 6))
-        self.assertEqual(board["assumptionCheck"]["healingPolicy"], "restricted")
+        self.assertEqual([row["key"] for row in board["scenarios"]], [row["key"] for row in parent["scenarios"]])
+        self.assertEqual(board["profileCount"], len(tft_theory.scenarios("clump")))
+        self.assertEqual(board["consistency"]["status"], "passed")
+        self.assertEqual(upgrade["selection"]["profilesPerAllocation"], parent["profileCount"])
+        self.assertNotIn("matchups", board)
 
 
 if __name__ == "__main__":

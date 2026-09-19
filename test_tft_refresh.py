@@ -5,14 +5,18 @@ import json
 import shutil
 import tempfile
 import unittest
+import socket
+from datetime import datetime, timedelta, timezone
 from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+from urllib.error import HTTPError, URLError
 
 import tft
 import tft_comps
 import tft_site
+import tft_http
 
 
 class TestRefreshPublication(unittest.TestCase):
@@ -338,6 +342,171 @@ class TestRefreshPublication(unittest.TestCase):
                 tft.cmd_refresh(self.args)
         fetch.assert_not_called()
         self.assertEqual(tft.refresh_state(), {"status": "running", "phase": "warming"})
+
+    def failing_download(self, args, *, automatic, prepare, progress):
+        progress(phase="fetching", targetPatch="18.2")
+        tft.fetch_bytes("https://user:password@example.invalid/source?token=secret#private")
+
+    def test_exhausted_transient_download_exits_75_with_safe_transport_context(self):
+        with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
+             patch.object(tft.urllib.request, "urlopen", side_effect=URLError(
+                 socket.gaierror(socket.EAI_NONAME, "DNS failure with token=secret"))) as opener, \
+             patch.object(tft_http.time, "sleep"), patch.object(tft, "warm") as warm:
+            with self.assertRaises(SystemExit) as caught:
+                tft.cmd_refresh(self.args)
+        self.assertEqual(caught.exception.code, 75)
+        self.assertEqual(opener.call_count, 4)
+        warm.assert_not_called()
+        state = tft.refresh_state()
+        self.assertEqual((state["status"], state["phase"], state["failedPhase"]), ("failed", "stopped", "fetching"))
+        self.assertEqual(state["transport"]["attempts"], 4)
+        self.assertTrue(state["transport"]["automaticRetry"])
+        self.assertEqual(state["transport"]["url"], "https://example.invalid/source")
+        self.assertEqual(state["history"][-1]["exit"], 75)
+        for secret in ("password", "token=secret", "#private"):
+            self.assertNotIn(secret, json.dumps(state))
+        self.assertIsNone(tft._FETCH_PROGRESS.get())
+
+    def test_permanent_http_error_does_not_trigger_service_retry(self):
+        with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
+             patch.object(tft.urllib.request, "urlopen", side_effect=HTTPError(
+                 "https://example.invalid/source?token=secret", 403, "secret", {}, None)) as opener:
+            with self.assertRaises(SystemExit) as caught:
+                tft.cmd_refresh(self.args)
+        self.assertEqual(caught.exception.code, 1)
+        self.assertEqual(opener.call_count, 1)
+        self.assertFalse(tft.refresh_state()["transport"]["automaticRetry"])
+        self.assertEqual(tft.refresh_state()["transport"]["httpStatus"], 403)
+
+    def test_non_fetch_timeouts_and_arbitrary_exit_75_are_permanent_failures(self):
+        for failure, expected in ((TimeoutError("warm timeout"), 1), (SystemExit(75), 1), (SystemExit(143), 143)):
+            with self.subTest(failure=type(failure).__name__), \
+                 patch.object(tft, "cmd_fetch", side_effect=failure):
+                with self.assertRaises(SystemExit) as caught:
+                    tft.cmd_refresh(self.args)
+            self.assertEqual(caught.exception.code, expected)
+            self.assertEqual(tft.refresh_state()["failedPhase"], "checking")
+
+    def test_review_blocker_and_terminal_history_survive_later_network_failure(self):
+        from tft_update import ReviewRequired
+
+        def review(args, **kwargs):
+            kwargs["progress"](phase="validating", targetPatch="18.2")
+            raise ReviewRequired("A new mechanic needs review.")
+
+        with patch.object(tft, "cmd_fetch", side_effect=review):
+            with self.assertRaises(SystemExit) as caught:
+                tft.cmd_refresh(self.args)
+        self.assertEqual(caught.exception.code, 2)
+        blocker = tft.refresh_state()["reviewBlocker"]
+        self.assertEqual((blocker["targetPatch"], blocker["failedPhase"]), ("18.2", "validating"))
+        with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
+             patch.object(tft.urllib.request, "urlopen", side_effect=URLError(TimeoutError("network"))), \
+             patch.object(tft_http.time, "sleep"):
+            with self.assertRaises(SystemExit):
+                tft.cmd_refresh(self.args)
+        state = tft.refresh_state()
+        self.assertEqual(state["reviewBlocker"], blocker)
+        self.assertEqual([entry["exit"] for entry in state["history"]], [2, 75])
+        self.assertEqual(state["history"][0]["message"], "A new mechanic needs review.")
+
+    def test_legacy_review_state_migrates_to_blocker_and_history(self):
+        old = {"status": "needs-review", "phase": "stopped", "message": "Review existing blocker.",
+               "targetPatch": "18.2", "activePatch": "18.1d", "finishedAt": "2026-09-10T10:00:00+00:00", "exit": 2}
+        tft.write_json_atomic(tft.REFRESH_STATE_FILE, old)
+        with patch.object(tft, "cmd_fetch", side_effect=RuntimeError("later failure")):
+            with self.assertRaises(SystemExit):
+                tft.cmd_refresh(self.args)
+        state = tft.refresh_state()
+        self.assertEqual(state["reviewBlocker"]["message"], old["message"])
+        self.assertEqual(state["history"][0]["message"], old["message"])
+        self.assertEqual(state["reviewBlocker"]["detectedAt"], old["finishedAt"])
+
+    def test_validated_preparation_clears_old_blocker_even_if_warming_fails(self):
+        tft.write_json_atomic(tft.REFRESH_STATE_FILE, {"status": "needs-review", "message": "Old review.", "exit": 2})
+        with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
+             patch.object(tft, "warm", side_effect=RuntimeError("new warm failure")):
+            with self.assertRaises(SystemExit):
+                tft.cmd_refresh(self.args)
+        state = tft.refresh_state()
+        self.assertIsNone(state["reviewBlocker"])
+        self.assertEqual(state["failedPhase"], "warming-builds")
+        self.assertEqual(state["history"][0]["message"], "Old review.")
+
+    def test_success_clears_blocker_and_preserves_history(self):
+        tft.write_json_atomic(tft.REFRESH_STATE_FILE, {"status": "needs-review", "message": "Old review.", "exit": 2})
+        with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch), \
+             patch.object(tft, "warm", return_value=0), \
+             patch.object(tft, "cell_ready", return_value={"cell": True}):
+            tft.cmd_refresh(self.args)
+        state = tft.refresh_state()
+        self.assertIsNone(state["reviewBlocker"])
+        self.assertEqual([entry["status"] for entry in state["history"]], ["needs-review", "ok"])
+
+    def test_terminal_history_is_bounded_and_does_not_duplicate_previous_run(self):
+        history = [{"status": "failed", "message": f"old {i}", "exit": 1} for i in range(15)]
+        tft.write_json_atomic(tft.REFRESH_STATE_FILE, {**history[-1], "history": history})
+        with patch.object(tft, "cmd_fetch", side_effect=RuntimeError("new failure")):
+            with self.assertRaises(SystemExit):
+                tft.cmd_refresh(self.args)
+        history = tft.refresh_state()["history"]
+        self.assertEqual(len(history), tft.REFRESH_HISTORY_LIMIT)
+        self.assertEqual([entry["message"] for entry in history], [f"old {i}" for i in range(6, 15)] + ["new failure"])
+
+    def test_long_retry_after_persists_guard_without_immediate_service_retry(self):
+        with patch.object(tft, "cmd_fetch", side_effect=self.failing_download), \
+             patch.object(tft.urllib.request, "urlopen", side_effect=HTTPError(
+                 "https://example.invalid/source", 429, "limited", {"Retry-After": "600"}, None)) as opener, \
+             patch.object(tft_http.time, "sleep") as sleep:
+            with self.assertRaises(SystemExit) as caught:
+                tft.cmd_refresh(self.args)
+        state = tft.refresh_state()
+        self.assertEqual(caught.exception.code, 1)
+        self.assertEqual(opener.call_count, 1)
+        sleep.assert_not_called()
+        self.assertFalse(state["transport"]["automaticRetry"])
+        self.assertEqual(state["transport"]["retryAfterSeconds"], 600)
+        self.assertGreater(datetime.fromisoformat(state["retryNotBefore"]), datetime.now(timezone.utc) + timedelta(seconds=590))
+
+    def test_retry_not_before_skips_fetch_and_expired_guard_allows_recovery(self):
+        deadline = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        blocker = {"message": "Still needs review.", "targetPatch": "18.2"}
+        tft.write_json_atomic(tft.REFRESH_STATE_FILE, {"status": "failed", "exit": 1,
+            "activePatch": "18.1d", "lastSuccessAt": "old success", "retryNotBefore": deadline,
+            "reviewBlocker": blocker, "transport": {"url": "https://example.invalid/source"}})
+        with patch.object(tft, "cmd_fetch") as fetch:
+            with self.assertRaises(SystemExit) as caught:
+                tft.cmd_refresh(self.args)
+        fetch.assert_not_called()
+        state = tft.refresh_state()
+        self.assertEqual(caught.exception.code, 1)
+        self.assertEqual((state["status"], state["phase"]), ("waiting-not-before", "waiting-not-before"))
+        self.assertEqual(state["lastSuccessAt"], "old success")
+        self.assertEqual(state["reviewBlocker"], blocker)
+        state["retryNotBefore"] = (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()
+        tft.write_json_atomic(tft.REFRESH_STATE_FILE, state)
+        with patch.object(tft, "cmd_fetch", side_effect=self.fake_fetch) as fetch, \
+             patch.object(tft, "warm", return_value=0), \
+             patch.object(tft, "cell_ready", return_value={"cell": True}):
+            tft.cmd_refresh(self.args)
+        self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(tft.refresh_state()["status"], "ok")
+        self.assertIsNone(tft.refresh_state()["retryNotBefore"])
+        self.assertIsNone(tft.refresh_state()["reviewBlocker"])
+
+    def test_optional_bin_404_preserves_historical_evidence_literal(self):
+        missing = next(api for api, value in self.snap.bins.items() if "error" in value)
+        self.mock_downloads()
+        original = tft.fetch_json
+
+        def fetched(url):
+            if url.rsplit("/", 1)[-1].removesuffix(".cdtb.bin.json") == missing.lower():
+                raise HTTPError(url, 404, "Not Found; GET context; attempt 1/4", {}, None)
+            return original(url)
+
+        with patch.object(tft, "fetch_json", side_effect=fetched):
+            result = tft.cmd_fetch(self.args)
+        self.assertEqual(result.bins[missing], {"error": "HTTP Error 404: Not Found"})
 
 
 if __name__ == "__main__":

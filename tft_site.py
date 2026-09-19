@@ -39,6 +39,34 @@ def _generation(baseline, composition, publisher, presentation=None):
     return "g-" + hashlib.sha256(_json_bytes(inputs)).hexdigest()
 
 
+def _team_planner(snap):
+    """Riot's import IDs belong to presentation, not simulation cache keys.
+
+    These are a separate client catalog: the combat lookup's `code` fields
+    disagree for some champions (including Ivern and Lux in Set 18).
+    Unknown sets/units stay unavailable rather than exporting a partial board.
+    """
+    if not getattr(snap, "units", None):
+        return None
+    import tft
+    path = Path(tft.set_dir(snap.set_no)) / "team-planner.json"
+    try:
+        catalog = json.loads(path.read_bytes())
+    except FileNotFoundError:
+        return None
+    codes = catalog.get("unitCodes")
+    if (catalog.get("schemaVersion") != 1 or catalog.get("set") != snap.set_no
+            or catalog.get("format") != "tft-team-planner-v2" or catalog.get("slots") != 10
+            or not isinstance(codes, dict) or not codes
+            or any(not isinstance(api, str) or not isinstance(code, str)
+                   or not re.fullmatch(r"[0-9a-f]{3}", code) or code == "000"
+                   for api, code in codes.items())
+            or len(set(codes.values())) != len(codes)):
+        raise ValueError("invalid TFT Team Planner catalog")
+    return {"set": snap.set_no, "format": catalog["format"], "slots": catalog["slots"],
+            "unitCodes": {api: codes[api] for api in sorted(snap.units) if api in codes}}
+
+
 def _presentation_hash(snap):
     """Inputs to saved metadata that do not affect the calculation revisions.
 
@@ -51,7 +79,7 @@ def _presentation_hash(snap):
     meta = {key: value for key, value in snap.meta.items()
             if key not in ("fetchedAt", "verifiedAt", "checkedAt")}
     return hashlib.sha256(_json_bytes([
-        meta, (snap.audit or {}).get("unresolved", []), snap.communitydragon,
+        meta, (snap.audit or {}).get("unresolved", []), snap.communitydragon, _team_planner(snap),
     ])).hexdigest()
 
 
@@ -298,6 +326,9 @@ def prepare(snap):
         if (meta.get("revision") != baseline or comp_meta.get("revision") != composition
                 or comp_meta.get("baselineRevision") != baseline):
             raise ValueError("TFT metadata does not match its calculation generation")
+        planner = _team_planner(snap)
+        if planner is not None:
+            comp_meta = dict(comp_meta, teamPlanner=planner)
         _write(stage, "/api/tft/meta.json", dict(meta, publicationRevision=generation))
         _write(stage, "/api/tft/compositions/meta.json", dict(comp_meta, publicationRevision=generation))
         # Read through linked files so all derived responses use the exact

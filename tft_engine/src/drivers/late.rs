@@ -66,7 +66,7 @@ impl Driver for Teemo {
 
     fn cast(f: &mut Fight<Self>) {
         for _ in 0..2 {
-            let tg = f.aoe(Some(f.row(f.drv.n_enemies)), false);
+            let tg = f.nearest(f.row(f.drv.n_enemies));
             for d in tg.iter() {
                 f.hit_ability(f.drv.shroom, Some(d), "mushrooms", 1.0);
             }
@@ -76,9 +76,9 @@ impl Driver for Teemo {
 }
 
 /// Rampant Growth: plants that spit at the nearest dummy a fixed number of
-/// times each, one attack a second (their attack speed is nowhere in the
-/// data). Summoner adds plants and attacks; her Thornmaiden durability is
-/// the engine's.
+/// times each, one attack a second (the pinned model has no verified plant
+/// cadence). Summoner adds its documented attacks; her Thornmaiden
+/// durability is the engine's.
 #[derive(Clone)]
 pub struct Zyra {
     /// One plant patch: (the second its next volley is due, volleys left,
@@ -122,8 +122,8 @@ impl Driver for Zyra {
     }
 }
 
-/// Triggerseed: a shield on several allies — counted, not simulated, and
-/// able to crit with Precision — then magic damage around them. The
+/// Triggerseed: a shield on several allies, applied in shared fights and
+/// otherwise reported as potential shielding, then magic damage. The
 /// shield's calc resolves to nothing, so its amount is the curve row per
 /// 100 ability power. The allies' damage amp and the attack speed after six
 /// casts are ally buffs: not simulated.
@@ -218,7 +218,7 @@ impl Driver for KogMaw {
     }
 
     fn cast(f: &mut Fight<Self>) {
-        let tg = f.aoe(Some(2.0), false);
+        let tg = f.nearest(2.0);
         if f.sheet.form == Some(Form::AD) {
             let thr = f.row(f.drv.threshold);
             for d in tg.iter() {
@@ -285,8 +285,8 @@ impl Driver for MamaBeak {
 
 /// Arise!: attack speed and soldiers for the next few attacks, each of which
 /// becomes a command — the basic attack is replaced by every soldier's
-/// strike, its on-hit effects still landing. Summoner adds a soldier and
-/// multiplies their damage. Mana stays locked until all commands are spent.
+/// strike, its ability-hit effects still landing. Summoner multiplies their
+/// damage. The adopted model locks mana until all commands are spent.
 #[derive(Clone)]
 pub struct Azir {
     commands: i64,
@@ -343,8 +343,8 @@ impl Driver for Azir {
 /// next few attacks, which become javelins — every third one is thrown at
 /// the farthest dummy for the bigger calc ("the 3rd attack" is Riot's own
 /// wording, with no row). Attack-damage form: a swipe that ignores a share
-/// of the target's armor, and every third cast a heal (only counted:
-/// nothing hits her) plus a bonus scaled by the target's missing health.
+/// of the target's armor, and every third cast a heal capped to missing
+/// health plus a bonus scaled by the target's missing health.
 #[derive(Clone)]
 pub struct Nidalee {
     casts: i64,

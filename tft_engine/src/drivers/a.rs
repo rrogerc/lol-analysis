@@ -90,6 +90,7 @@ impl Driver for Ashe {
 /// casts it again at reduced damage.
 #[derive(Clone)]
 pub struct Akali {
+    pending_recast: Option<(f64, usize)>,
     phys1: CalcId,
     phys2: CalcId,
     magic1: CalcId,
@@ -110,9 +111,8 @@ impl Akali {
         }
     }
 
-    fn ap(f: &mut Fight<Self>) {
-        let mut mult = 1.0;
-        for _ in 0..4 {
+    fn ap(f: &mut Fight<Self>, mut mult: f64, remaining: usize) {
+        for index in 0..remaining {
             let d = match f.target() {
                 Some(d) => d,
                 None => break,
@@ -123,6 +123,14 @@ impl Akali {
                 break;
             }
             mult *= f.row(f.drv.recast);
+            let left = remaining - index - 1;
+            if left > 0 && f.target().is_some() && f.movement_ready_at() > f.t {
+                // The shared approximate movement window also applies to
+                // this cross-target continuation. Resume on arrival without
+                // starting another cast or adding a second animation delay.
+                f.drv.pending_recast = Some((mult, left));
+                break;
+            }
         }
     }
 }
@@ -131,7 +139,8 @@ impl Driver for Akali {
     const NAME: &'static str = "Akali";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Akali { phys1: k.calc("PhysicalDamageCalc1"), phys2: k.calc("PhysicalDamageCalc2"),
+        Akali { pending_recast: None,
+                phys1: k.calc("PhysicalDamageCalc1"), phys2: k.calc("PhysicalDamageCalc2"),
                 magic1: k.calc("MagicDamageCalc1"), tank_mult: k.row("TankDamageMultiplierAP"),
                 recast: k.row("RecastDamageReduction") }
     }
@@ -140,7 +149,13 @@ impl Driver for Akali {
         if f.sheet.form == Some(Form::AD) {
             Self::ad(f);
         } else {
-            Self::ap(f);
+            Self::ap(f, 1.0, 4);
+        }
+    }
+
+    fn target_changed(f: &mut Fight<Self>, _old_target: usize, _new_target: usize) {
+        if let Some((mult, remaining)) = f.drv.pending_recast.take() {
+            Self::ap(f, mult, remaining);
         }
     }
 }
@@ -176,7 +191,9 @@ impl Driver for Alune {
             }
             return;
         }
-        let tg = f.aoe(Some(f.row(f.drv.n_enemies)), false);
+        // Each shard chooses among the nearest enemies independently of
+        // whether those enemies share an area with the primary target.
+        let tg = f.nearest(f.row(f.drv.n_enemies));
         let shards = pyint(f.row(f.drv.n_shards));
         for i in 0..shards {
             let mut al = f.alive_of(&tg);
@@ -345,11 +362,14 @@ impl Driver for Kayle {
 
     fn attack(f: &mut Fight<Self>, target: usize) {
         let star = f.sheet.star;
+        // The wave belongs to this attack and its original primary. A
+        // lethal auto must neither cancel it nor exclude the next target
+        // from its secondary recipients after the target pointer advances.
+        let others = if star >= 3 { f.aoe(None, true) } else { Default::default() };
         f.hit_attack(target, 1.0, "auto");
-        if !f.d(target).alive {
-            return;
+        if f.d(target).alive {
+            f.hit_ability(f.drv.ascension, Some(target), "ascension", 1.0);
         }
-        f.hit_ability(f.drv.ascension, Some(target), "ascension", 1.0);
         if star >= 2 && f.d(target).alive {
             let (pct, dur) = (f.row(f.drv.shred_level) / 100.0, f.row(f.drv.shred_dur));
             if f.team_mode {
@@ -366,7 +386,6 @@ impl Driver for Kayle {
             }
         }
         if star >= 3 {
-            let others = f.aoe(None, true);
             for d in others.iter() {
                 f.hit_ability(f.drv.waves, Some(d), "waves", 1.0);
             }

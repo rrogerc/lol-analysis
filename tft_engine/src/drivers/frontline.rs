@@ -464,7 +464,10 @@ impl Driver for Fiddlesticks {
 
     fn cast(f: &mut Fight<Self>) {
         let dur = f.row(f.drv.cast_dur);
-        let tg = f.aoe(Some(f.row(f.drv.n_targets)), false);
+        // Harvest chooses the nearest living enemies, not enemies sharing
+        // the primary target's area. The shared nearest selector preserves
+        // the current victim first; spreading does not reduce the count.
+        let tg = f.nearest(f.row(f.drv.n_targets));
         for d in tg.iter() {
             let red = f.row(f.drv.mr_red);
             f.dm(d).mr_flat += red;

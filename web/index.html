@@ -96,6 +96,8 @@
   .tablewrap { max-height: 560px; overflow-y: auto; overflow-x: auto; }
   #tbl th:nth-child(3), #tbl td:nth-child(3) { text-align: left; }
   #tbl td:first-child { color: var(--muted); }
+  #otbl th { cursor: pointer; }
+  #otbl td:first-child, #otbl td.none { color: var(--muted); }
   .seg { display: flex; gap: 4px; flex-wrap: wrap; margin: 10px 0 12px; }
   .seg button {
     border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px;
@@ -155,6 +157,7 @@
   .item-icon.has-image .item-icon-fallback { visibility: hidden; }
   .item-icon:hover, .item-icon:focus-visible { border-color: var(--s1); }
   .item-icon:focus-visible { outline: 2px solid var(--s1); outline-offset: 1px; }
+  .item-step { position: absolute; right: 0; bottom: 0; z-index: 1; min-width: 12px; padding: 0 2px; border-top-left-radius: 4px; background: var(--text-primary); color: var(--page); font-size: 9px; font-weight: 700; line-height: 12px; text-align: center; }
   .item-tt-stats { margin: 0 0 6px; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
   .item-tt-effect .item-tt-kind { font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 10px; }
   .item-tt-model { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--grid); color: var(--text-secondary); }
@@ -381,8 +384,13 @@
   .tft-comp-heading h3 { font-size: 15px; font-weight: 650; flex: 1 1 220px; line-height: 1.5; }
   .tft-comp-rank { color: var(--text-secondary); font-weight: 400; margin-right: 8px; }
   .tft-comp-structure { color: var(--text-secondary); font-size: 12px; }
+  .tft-comp-copy { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-left: auto; max-width: 100%; }
+  .tft-comp-copy button { font-size: 12px; white-space: nowrap; }
+  .tft-comp-copy-status { font-size: 11px; color: var(--text-secondary); }
+  .tft-comp-copy-code { width: 100%; min-width: 0; font-family: var(--mono, monospace); font-size: 12px; }
   .tft-comp-meta { font-size: 12px; line-height: 1.6; color: var(--text-secondary); margin: 4px 0 12px; }
   .tft-comp-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; background: var(--page); border-radius: 5px; padding: 10px 12px; margin-bottom: 14px; }
+  .tft-comp-metrics[data-model="ehp-damage-capacity-v3"], .tft-comp-metrics[data-model="ehp-damage-capacity-v2"], .tft-comp-metrics[data-model="ehp-damage-capacity-v1"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .tft-comp-metric { min-width: 0; }
   .tft-comp-metric strong { display: block; font-size: 18px; font-weight: 600; line-height: 1.4; font-variant-numeric: tabular-nums; }
   .tft-comp-metric span { display: block; font-size: 11px; line-height: 1.5; color: var(--text-secondary); }
@@ -412,10 +420,18 @@
   .tft-comp-trait .tft-trait-icon { width: 18px; height: 18px; }
   .tft-comp-trait .tft-trait-icon img { padding: 2px; }
   .tft-comp-trait[data-modeled="false"] { border-style: dashed; }
+  .tft-comp-trait[data-coverage="partial"] { border-style: dashed; }
   .tft-comp-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
   .tft-comp-detail-grid h4 { font-size: 12px; color: var(--text-primary); font-weight: 600; margin: 0 0 6px; }
   .tft-comp-detail-grid ul { margin: 0; padding-left: 18px; }
   .tft-comp-matchups { grid-column: 1 / -1; }
+  .tft-comp-theory-scenarios { grid-column: 1 / -1; min-width: 0; }
+  .tft-comp-scenario-scroll { overflow-x: auto; margin-top: 10px; }
+  .tft-comp-scenario-table { width: 100%; border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .tft-comp-scenario-table th, .tft-comp-scenario-table td { padding: 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+  .tft-comp-scenario-table th:first-child, .tft-comp-scenario-table td:first-child { text-align: left; white-space: normal; min-width: 110px; }
+  .tft-comp-scenario-table caption { text-align: left; color: var(--text-secondary); padding-bottom: 6px; }
+  .tft-comp-scenario-table .tft-comp-initial-targets { min-width: 170px; max-width: 260px; white-space: normal; text-align: left; }
   .tft-comp-matchup-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .tft-comp-matchup { padding: 8px 10px; border: 1px solid var(--grid); border-radius: 4px; min-width: 0; }
   .tft-comp-matchup-head { display: flex; align-items: baseline; gap: 8px; justify-content: space-between; }
@@ -470,6 +486,7 @@
     .tft-comp-unit-head { flex-direction: column; align-items: start; }
     .tft-comp-unit-name { font-size: 11px; }
     .tft-comp-metrics { gap: 8px; padding: 9px; }
+    .tft-comp-metrics[data-model="ehp-damage-capacity-v2"], .tft-comp-metrics[data-model="ehp-damage-capacity-v1"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .tft-comp-metric strong { font-size: 16px; }
     .tft-comp-item-list { gap: 2px; }
     .tft-comp-item { width: 20px; height: 20px; }
@@ -534,6 +551,7 @@
 <nav>
   <button data-view="overview" class="active">Overview</button>
   <button data-view="champion">Champion</button>
+  <button data-view="onetricks">One-tricks</button>
   <button data-view="builds">Builds</button>
   <button data-view="tft">TFT</button>
   <button data-view="data">Data</button>
@@ -555,6 +573,7 @@
       <option>bottom</option><option>support</option>
     </select>
     <select id="mingames" aria-label="Minimum games">
+      <option value="500">≥ 500 games</option>
       <option value="1000" selected>≥ 1,000 games</option>
       <option value="2500">≥ 2,500 games</option>
       <option value="5000">≥ 5,000 games</option>
@@ -607,11 +626,34 @@
   </div>
 </section>
 
+<!-- ============================ One-tricks ============================ -->
+<section class="view" id="view-onetricks">
+  <div class="card">
+    <h2>One-tricks by champion</h2>
+    <div class="hint" id="ot-hint">Loading…</div>
+    <div class="tablewrap">
+      <table id="otbl">
+        <thead><tr>
+          <th data-k="rank"># <span class="arrow"></span></th>
+          <th data-k="c">Champion <span class="arrow"></span></th>
+          <th data-k="n">One-tricks <span class="arrow"></span></th>
+          <th data-k="top">Top <span class="arrow"></span></th>
+          <th data-k="jungle">Jungle <span class="arrow"></span></th>
+          <th data-k="middle">Middle <span class="arrow"></span></th>
+          <th data-k="bottom">Bottom <span class="arrow"></span></th>
+          <th data-k="support">Support <span class="arrow"></span></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <!-- ============================ Builds ============================ -->
 <section class="view" id="view-builds">
   <div class="card">
     <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
-    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target.</div>
+    <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
     <div class="seg" id="scenario-seg"></div>
     <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
@@ -707,6 +749,7 @@
       </div>
     </div>
     <p id="tft-board-context"></p>
+    <p id="tft-board-movement-note" class="hint" hidden></p>
     <div class="seg" id="tft-board-role-seg" role="group" aria-label="Damage champion roles"></div>
     <div class="tft-board-filters">
       <label class="tft-label" for="tft-board-cost">Cost <select id="tft-board-cost"></select></label>
@@ -763,7 +806,7 @@
         </div>
       </div>
     </details>
-    <p id="tft-comp-context">Compare boards in the same shared benchmark fights.</p>
+    <p id="tft-comp-context">Compare boards under the same declared scoring assumptions.</p>
     <p class="hint">Hover a champion for details; select one to explore its item cores and alternatives. Boards assume the best available items.</p>
     <div class="tft-comp-status-row">
       <span class="sub" id="tft-comp-status" role="status">Loading composition plans…</span>
@@ -776,16 +819,28 @@
       <summary>How these boards are scored</summary>
       <div id="tft-comp-method-note">
         <p id="tft-comp-plan-note">Boards have a main carry and tank of the chosen cost, and one shared budget for completed items.</p>
-        <p>The allies share one fight clock, with the board’s actual trait counts and items. Enemies target individual champions, then change targets after a death. Champions attack and cast only while alive and able to act; burns and on-death bodies can persist. Healing, shields and crowd control affect the same fight.</p>
-        <p>Both teams use actual champions, traits and items in the same combat engine. Every candidate faces the same fixed reference boards twice, once with each side acting first at simultaneous events. These simplified formations and targeting rules do not reproduce every live-game interaction. Results are benchmark comparisons, not live win rates.</p>
-        <p>The selected clumped or spread formation applies to both teams. This is a coarse positioning assumption; full hex movement is not simulated.</p>
+        <p class="tft-comp-legacy-note" hidden>The allies share one fight clock, with the board’s actual trait counts and items. Enemies target individual champions, then change targets after a death. Champions attack and cast only while alive and able to act; burns and on-death bodies can persist. Healing, shields and crowd control affect the same fight.</p>
+        <p class="tft-comp-legacy-note" hidden>Both teams use actual champions, traits and items in the same combat engine. Every candidate faces the same fixed reference boards twice, once with each side acting first at simultaneous events. These simplified formations and targeting rules do not reproduce every live-game interaction. Results are benchmark comparisons, not live win rates.</p>
+        <p class="tft-comp-legacy-note" hidden>The selected clumped or spread formation applies to both teams. This is a coarse positioning assumption; full hex movement is not simulated.</p>
+        <p class="tft-comp-theory-note" hidden>Frontline effective health (EHP) buys time for the team to deal damage. At constant pressure, protection time = frontline EHP ÷ incoming DPS. Damage capacity estimates the damage the team can deliver during that protection time.</p>
+        <p class="tft-comp-theory-note" hidden>The model varies incoming pressure, physical versus magic damage, target resistances and healing reduction. These are explicit assumptions, not recorded games or predictions of how often an opponent appears. Expand a board to inspect every input and result.</p>
+        <p class="tft-comp-theory-note" hidden>Each condition scores frontline EHP × team DPS. The ranking score is the geometric mean across conditions: multiply their scores, then take the corresponding root. EHP and DPS use the same averaging, so the score equals their product before display rounding. Estimated damage capacity is this product divided by incoming DPS for each condition.</p>
+        <p class="tft-comp-shared-pressure-note" hidden>One shared damage budget reaches the live frontline in half-second pulses, including a proportional final pulse. Pressure is reassigned after deaths or untargetability. Planned measurement time is opening frontline EHP ÷ incoming DPS; observation and all protected damage stop early when the last frontline champion or holding body dies.</p>
+        <p class="tft-comp-persistent-pressure-note" hidden>Three generic attackers keep their targets until death or untargetability. Each pressure condition compares main-tank-first and second-frontliner-first targeting. Starting assignments and the order for choosing replacement targets are shown with each board’s pressure assumptions. Targeting-dependent armor and MR use the actual assigned attacker count.</p>
+        <p class="tft-comp-distributed-pressure-note" hidden>These saved v2 results divide each pulse across all targetable frontliners and use one targeting slot per frontliner. Their targeting assumptions and scores differ from v3.</p>
+        <p class="tft-comp-shared-pressure-note" hidden>Each of the 12 pressure and healing conditions is checked without enemy control and with a 1.5-second frontline stun every 8 seconds: 24 equally weighted conditions. Crowd-control immunity is respected. This control schedule is an explicit stress assumption; movement and actual opponent frequency are not modeled.</p>
+        <p class="tft-comp-shared-pressure-note" hidden>DPS uses the observed protection time. Usable EHP includes pressure spent, damage denied and remaining health, shields or holding bodies. Only a frontline that survives the planned window receives an extension based on remaining EHP. The score applies no item-duplicate penalty.</p>
+        <p class="tft-comp-previous-theory-note" hidden>These saved results use the previous v1 model: independent frontline responses over opening EHP ÷ incoming DPS, without shared pressure redistribution or enemy control. Their scores are not comparable with later models.</p>
+        <p class="tft-comp-theory-note" hidden>Ally healing and shields are shown as potential output and do not add to the score, because their recipients and utilization are not modeled.</p>
+        <p class="tft-comp-theory-note" hidden>Generic targets remain alive throughout the response measurements. Effects that require killing a target or crossing an execute threshold are therefore not measured. Any extension from remaining EHP is a first response estimate, not unlimited future healing or an exact fight length.</p>
+        <p class="tft-comp-theory-note" hidden>The selected clumped or spread setting describes assumed target coverage for damage. Actual hex movement and opponent rosters are outside this calculation.</p>
         <p id="tft-comp-pool-note"></p>
-        <p>Reference boards use the same completed-item budget as your board. Their champions, stars and item priorities are fixed before the search.</p>
-        <p>Held-out checks use separate opponent boards after the items have been chosen. Those results do not influence item selection or composition ranks.</p>
-        <p>The current healing assumptions allow burn, trait and item damage to trigger healing, and persistent effects can heal allies after their source dies. Expanded held-out results show sensitivity to stricter, unverified healing rules.</p>
-        <p>Multiple Hextech Gunblades on one holder combine ally healing before selecting a recipient. Per-copy recipient timing is unverified and is not covered by the held-out healing check.</p>
-        <p>Encounter DPS averages actual damage over each whole fight, including time lost to deaths. Frontline held is the time until the last allied frontliner dies or the fight ends, averaged across opponents. Expand a board to see individual fights and each champion’s contribution.</p>
-        <p id="tft-comp-ranking-note">Boards rank only by their win rate in the ranking tests. Equal win rates share a rank; remaining health, damage and clear time explain the fights without breaking ties. The search compares promising boards and item allocations; it does not prove a global optimum.</p>
+        <p class="tft-comp-legacy-note" hidden>Reference boards use the same completed-item budget as your board. Their champions, stars and item priorities are fixed before the search.</p>
+        <p class="tft-comp-legacy-note" hidden>Held-out checks use separate opponent boards after the items have been chosen. Those results do not influence item selection or composition ranks.</p>
+        <p class="tft-comp-legacy-note" hidden>The current healing assumptions allow burn, trait and item damage to trigger healing, and persistent effects can heal allies after their source dies. Expanded held-out results show sensitivity to stricter, unverified healing rules.</p>
+        <p class="tft-comp-legacy-note" hidden>Multiple Hextech Gunblades on one holder combine ally healing before selecting a recipient. Per-copy recipient timing is unverified and is not covered by the held-out healing check.</p>
+        <p class="tft-comp-legacy-note" hidden>Encounter DPS averages actual damage over each whole fight, including time lost to deaths. Frontline held is the time until the last allied frontliner dies or the fight ends, averaged across opponents. Expand a board to see individual fights and each champion’s contribution.</p>
+        <p id="tft-comp-ranking-note">The search compares promising boards and item allocations; it does not prove a global optimum.</p>
         <p>Purchase gold counts the copies on the finished board. It does not include leveling costs or the gold and odds required to roll the board.</p>
       </div>
     </details>
@@ -794,7 +849,7 @@
   <div class="card" id="tft-results">
     <button id="tft-leaderboard-back" hidden>← Back to leaderboard</button>
     <button id="tft-composition-back" hidden>← Back to compositions</button>
-    <p class="sub" id="tft-composition-note" hidden>These are individual champion item tests. Composition rankings use shared team fights with the board’s actual traits, targeting and deaths, so the best items can differ.</p>
+    <p class="sub" id="tft-composition-note" hidden>These are individual champion item tests. Composition item choices consider the whole board’s offense, protection and actual trait counts, so the best items can differ.</p>
     <h2 id="tft-title" tabindex="-1">Ranked builds</h2>
     <section class="tft-core-panel" id="tft-core-panel" aria-labelledby="tft-core-title">
       <h3 id="tft-core-title">Core items and flexible slots</h3>
@@ -1100,6 +1155,18 @@ function openChampion(name) {
   document.getElementById("champ-search").value = name;
   loadChampion(name);
 }
+// A table cell with the champion's icon and slug.
+function champCell(c) {
+  const icon = document.createElement("img");
+  icon.className = "champ-icon";
+  icon.src = iconUrl(c);
+  icon.alt = "";
+  icon.loading = "lazy";
+  icon.onerror = () => { icon.style.visibility = "hidden"; };
+  const td = document.createElement("td");
+  td.append(icon, document.createTextNode(c));
+  return td;
+}
 
 // Bucket 0 (0-15 min) is excluded: games that end that early are too rare
 // for the win rate to mean much.
@@ -1151,16 +1218,8 @@ function renderTable() {
   });
   document.querySelector("#tbl tbody").replaceChildren(...rows.map(r => {
     const tr = document.createElement("tr");
-    const icon = document.createElement("img");
-    icon.className = "champ-icon";
-    icon.src = iconUrl(r.c);
-    icon.alt = "";
-    icon.loading = "lazy";
-    icon.onerror = () => { icon.style.visibility = "hidden"; };
-    const tdName = document.createElement("td");
-    tdName.append(icon, document.createTextNode(r.c));
     tr.append(
-      cell(String(rankOf.get(rid(r)))), tdName, cell(r.l, "lane-tag"),
+      cell(String(rankOf.get(rid(r)))), champCell(r.c), cell(r.l, "lane-tag"),
       metricCell(r.wr[rankBucket].toFixed(2) + "%",
                  ci95(r.wr[rankBucket], r.g[rankBucket])),
       cell(fmtInt(gamesOf(r))));
@@ -1242,6 +1301,68 @@ async function loadChampionList() {
     o.value = n;
     return o;
   }));
+}
+
+// ---------------- one-tricks view ----------------
+const OT_LANES = ["top", "jungle", "middle", "bottom", "support"];
+let OT = null, otSortKey = "rank", otSortDir = 1;
+// Champions ranked by one-trick count (equal counts share a rank), then
+// ordered by the chosen column, ties in rank order.
+function onetrickRows(rows, key, dir) {
+  const byName = (a, b) => a.c < b.c ? -1 : a.c > b.c ? 1 : 0;
+  const byCount = rows.slice().sort((a, b) => b.n - a.n || byName(a, b));
+  const ranked = [];
+  byCount.forEach((r, i) => ranked.push({ ...r,
+    rank: i && r.n === byCount[i - 1].n ? ranked[i - 1].rank : i + 1 }));
+  return ranked.sort((a, b) => {
+    const va = a[key], vb = b[key];
+    return (va < vb ? -1 : va > vb ? 1 : 0) * dir || a.rank - b.rank || byName(a, b);
+  });
+}
+function renderOnetricks() {
+  if (!OT?.synced) return;
+  document.querySelector("#otbl tbody").replaceChildren(
+    ...onetrickRows(OT.rows, otSortKey, otSortDir).map(r => {
+      const tr = document.createElement("tr");
+      tr.append(cell(String(r.rank)), champCell(r.c), cell(fmtInt(r.n)),
+        ...OT_LANES.map(l => r[l] ? cell(fmtInt(r[l])) : cell("–", "none")));
+      return tr;
+    }));
+  document.querySelectorAll("#otbl th").forEach(th => {
+    th.querySelector(".arrow").textContent =
+      th.dataset.k === otSortKey ? (otSortDir === 1 ? "▲" : "▼") : "";
+  });
+}
+async function loadOnetricks() {
+  const hint = document.getElementById("ot-hint");
+  try {
+    OT = await api("api/onetricks.json");
+  } catch (e) {
+    OT = null;
+    hint.textContent = `One-trick counts are unavailable (${e.message}). ` +
+      "A dashboard started before this tab existed needs a restart.";
+    document.querySelector("#otbl tbody").replaceChildren();
+    return;
+  }
+  if (!OT.synced) {
+    hint.textContent = "No one-trick counts yet: run lol.py onetricks sync " +
+      "(the six-hourly crawl sync runs it too).";
+    document.querySelector("#otbl tbody").replaceChildren();
+    return;
+  }
+  // Some locales end a time with a period ("p.m."): the times get their own
+  // line rather than ending a sentence.
+  const when = t => new Date(t).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+  hint.replaceChildren(
+    `A player one-tricks a champion in a role when it is more than ${OT.minShare}% of ` +
+    `their ranked solo games in that role this season (${OT.firstPatch}–${OT.lastPatch}), ` +
+    `with at least ${OT.minGames} games on it. Of the ${fmtInt(OT.ladderPlayers)} players ` +
+    `on the Master+ ladders of ${OT.platforms.map(regionName).join(", ")}, ` +
+    `${fmtInt(OT.onetrickPlayers)} one-trick at least one champion. Someone who ` +
+    "one-tricks a champion in two roles counts once under One-tricks and in both role columns.",
+    document.createElement("br"),
+    (OT.ladderAt ? `Ladder as of ${when(OT.ladderAt)} · ` : "") + `synced ${when(OT.synced)}`);
+  renderOnetricks();
 }
 
 // ---------------- builds view ----------------
@@ -1557,11 +1678,35 @@ function itemIcon(name) {
   return el;
 }
 
-function buildCell(names) {
+// The top rows of a cell carry a suggested buy order (builds.py buy_order)
+// of the items after the boots; null for the other rows, for cells computed
+// before orders existed, and for an order that isn't the row's own items.
+function buyOrderItems(row) {
+  const rest = row.items.slice(1);
+  const order = row.buyOrder;
+  const same = Array.isArray(order) && order.length === rest.length &&
+    [...order].sort().join("\n") === [...rest].sort().join("\n");
+  return same ? order : null;
+}
+
+// Boots first (bought early), then the items numbered in buy order when
+// the row has one, else in the enumeration's order.
+function buildCell(row) {
   const td = document.createElement("td");
   const list = document.createElement("span");
   list.className = "build-items";
-  list.append(...names.map(itemIcon));
+  const order = buyOrderItems(row);
+  list.append(...(order ? [row.items[0], ...order] : row.items).map((name, i) => {
+    const icon = itemIcon(name);
+    if (order && i > 0) {
+      const step = document.createElement("span");
+      step.className = "item-step";
+      step.textContent = i;
+      icon.append(step);
+      icon.setAttribute("aria-label", `${name}, buy ${i} of ${order.length}`);
+    }
+    return icon;
+  }));
   td.append(list);
   return td;
 }
@@ -1574,7 +1719,7 @@ function buildColumns(sc) {
   const cols = [
     { th: "#", td: r => cell(String(r.rank)) },
     { th: "Build", title: "One icon per item — hover, focus or tap an icon for its name and details",
-      td: r => buildCell(r.items) },
+      td: r => buildCell(r) },
   ];
   if (sc.overall) {
     targets.forEach(t => cols.push({ th: `vs ${t.target}`, title: vsTitle(t), td: r => vsCell(r, t) }));
@@ -1901,8 +2046,9 @@ function renderTftSelected(unit) {
   }));
 }
 
-function renderTftFight(unit, scenario = null) {
-  const tank = unit.objective === "tank", pressured = unit.objective !== "carry";
+function renderTftFight(unit, scenario = null, build = null) {
+  const objective = build?.objective || unit.objective;
+  const tank = objective === "tank", pressured = typeof build?.pressure === "boolean" ? build.pressure : objective !== "carry";
   const nearestThree = tank && unit.name === "Hecarim";
   const threatKey = scenario?.threat || tstate.threat;
   const dm = scenario?.dummy || (tank ? tstate.meta.tankDummies?.[threatKey] : null) || tstate.meta.dummy;
@@ -1911,12 +2057,13 @@ function renderTftFight(unit, scenario = null) {
   if (preview.hidden) return;
   const clump = (scenario?.geometry || tstate.geo) === "clump";
   const duration = scenario?.duration || unit.duration;
-  const changedRole = preview.dataset.objective !== unit.objective;
-  preview.dataset.objective = unit.objective;
+  const changedRole = preview.dataset.objective !== objective || preview.dataset.pressure !== String(pressured);
+  preview.dataset.objective = objective;
+  preview.dataset.pressure = String(pressured);
   const threat = tank ? dm.threat || tstate.meta.tankThreats?.find(t => t.key === threatKey) : null;
   const debuffs = tank ? dm.enemyDebuffs || tstate.meta.tankDebuffs : null;
   const targetDebuffs = tank ? {} : dm.targetDebuffs || tstate.meta.targetDebuffs || {};
-  document.getElementById("tft-fight-title").textContent = tank ? "Tank survival test" : "The test fight";
+  document.getElementById("tft-fight-title").textContent = tank ? "Tank survival test" : "Finite-target clear diagnostic";
   document.getElementById("tft-formation-label").textContent =
     `${clump ? "Clumped" : "Spread"}${tank ? " frontline" : ""}${threat ? ` · ${threat.label}` : ""} · up to ${duration}s`;
   const svg = document.getElementById("tft-formation-diagram");
@@ -1981,10 +2128,18 @@ function renderTftFight(unit, scenario = null) {
     node("text", { x: 172, y: 165, class: "tft-diagram-you" }, "You");
     node("text", { x: 172, y: 193 }, unit.name);
   }
+  const movementDelay = !tank && Number.isFinite(dm.meleeRepositionSeconds) && dm.meleeRepositionSeconds > 0
+    ? dm.meleeRepositionSeconds : null;
   document.getElementById("tft-formation-caption").textContent = tank
     ? "Thick arrows show incoming backline damage, which continues through frontline stuns. " +
       `Shading shows ${nearestThree ? "coverage on Hecarim’s three nearest targets" : "nearby ability coverage"}; positions are schematic.`
-    : "Schematic layout showing target order and ability coverage. Exact hex positions and movement are not simulated.";
+    : movementDelay !== null
+      ? "Schematic layout showing target order and ability coverage. " +
+        (Number.isFinite(build?.range) && build.range > 2
+          ? `This ${build.range}-range build has no movement delay. `
+          : `Builds with 1–2 attack range use an approximate ${movementDelay}s movement delay. `) +
+        "Exact hex paths are not simulated."
+      : "Schematic layout showing target order and ability coverage. Exact hex positions and movement are not simulated.";
   document.getElementById("tft-dummy-intro").textContent = tank
     ? `${threat?.attackers || 5} attackers focus ${unit.name}: ${threat?.frontlineAttackers || 3} frontline tanks and ${threat?.backlineAttackers || 2} protected backline carries. Most damage comes from the carries. Enemies stay alive while your tank and any on-death body hold them.`
     : dm.slots[0].fixedDefenses
@@ -2019,7 +2174,7 @@ function renderTftFight(unit, scenario = null) {
   document.getElementById("tft-pressure-note").textContent = tank
     ? tftTankDebuffNote(debuffs)
     : (pressured ? `All three dummies attack and cast (~${number(dm.pressureDps)} damage/s before defenses). Defeating one removes its pressure.`
-      : "The dummies do not attack. These carry builds are ranked by how quickly they defeat the targets, then damage dealt.")
+      : "The dummies do not attack this protected build. Clear-test builds rank by how quickly they defeat the targets, then damage dealt.")
       + " " + tftTargetDebuffNote(targetDebuffs);
   document.getElementById("tft-pressure-details").hidden = !pressured;
   const offense = tank ? [
@@ -2045,7 +2200,9 @@ function renderTftFight(unit, scenario = null) {
     : "Normal attacks target the first living dummy: 1 → 2 → 3. " +
     (clump ? "Splash and nearby-target effects can reach multiple dummies, within each ability's target limit."
       : "Most area effects reach the current target; nearby splash targets are unavailable.") +
-    " Individual abilities can use different targeting.";
+    " Individual abilities can use different targeting." +
+    (movementDelay !== null && !(Number.isFinite(build?.range) && build.range > 2)
+      ? ` Movement takes ${movementDelay}s at initial engagement and after the current target dies. Attack cooldowns overlap movement; ongoing damage and incoming pressure continue.` : "");
 }
 
 function tftActive(id, key) {
@@ -2159,6 +2316,45 @@ function tftStarFor(unit) {
 
 const tftLeaderboardKey = () => `${tboard.star}-${tboard.geo}-${tboard.traits}-${tboard.threat}`;
 
+function tftMovementSummary(performance, range) {
+  if (!Number.isFinite(range) || range > 2 || !Number.isFinite(performance?.movementTime)
+      || performance.movementTime < 0) return "";
+  const moves = Number.isInteger(performance.repositions) && performance.repositions >= 0
+    ? ` · ${performance.repositions} ${performance.repositions === 1 ? "move" : "moves"}` : "";
+  return `${performance.movementTime.toFixed(2)}s moving${moves}`;
+}
+
+function tftFiniteLeaderboardValid(data) {
+  return (data.damage || []).every(entry => {
+    // A pinned generation may still carry potential curves. Only its saved
+    // finite diagnostic belongs in the restored clear-time leaderboard.
+    if (entry.damageCurve && !entry.finiteDiagnostic) return false;
+    const row = entry.finiteDiagnostic || entry, p = row.performance;
+    return Array.isArray(row.items) && Array.isArray(row.itemApis) &&
+      Number.isFinite(p?.total) && p.total >= 0 && Number.isFinite(p?.dps) && p.dps >= 0 &&
+      (p.killTime === null || Number.isFinite(p.killTime) && p.killTime >= 0);
+  });
+}
+
+function tftLeaderboardDamageRows(data) {
+  const entries = data?.damage || [];
+  if (!entries.some(entry => entry.finiteDiagnostic)) return entries;
+  const rows = entries.map(entry => ({ ...entry, ...(entry.finiteDiagnostic || {}) }));
+  const key = row => Number.isFinite(row.performance.killTime)
+    ? [0, row.performance.killTime] : [1, -row.performance.total];
+  rows.sort((a, b) => {
+    const ka = key(a), kb = key(b);
+    return ka[0] - kb[0] || ka[1] - kb[1] || a.unitName.localeCompare(b.unitName) || a.unit.localeCompare(b.unit);
+  });
+  let previous = null, rank = 0;
+  return rows.map((row, index) => {
+    const current = key(row);
+    if (!previous || current.some((value, i) => value !== previous[i])) rank = index + 1;
+    previous = current;
+    return { ...row, rank };
+  });
+}
+
 function renderTftMode() {
   const board = tstate.mode === "leaderboard";
   document.getElementById("tft-champion-browser").hidden = tstate.mode !== "builds";
@@ -2247,7 +2443,7 @@ function renderTftLeaderboard() {
   const focusedUnit = document.activeElement?.matches("#tft-board-table .tft-board-champion")
     ? document.activeElement.dataset.unit : null;
   const query = tboard.search.trim().toLocaleLowerCase();
-  const allRows = d?.[tboard.mode] || [];
+  const allRows = tank ? d?.tanks || [] : tftLeaderboardDamageRows(d);
   const units = new Map((tstate.meta?.units || []).map(u => [u.slug, u]));
   const rows = allRows.filter(r => (tank || tboard.role === "all" || r.objective === tboard.role) &&
     (tboard.cost === "all" || String(r.cost) === tboard.cost) && (!query ||
@@ -2271,6 +2467,13 @@ function renderTftLeaderboard() {
       : tboard.role === "carry" ? "Protected carries; ranked by clear time, then damage."
       : tboard.role === "fighter" ? "Fighters take incoming damage; ranked by clear time, then damage."
       : "Carries are protected; fighters take incoming damage. Ranked by clear time, then damage.");
+  const movementDelays = tank ? [] : [...new Set(rows.filter(row => Number.isFinite(row.range) && row.range <= 2
+    && Number.isFinite(row.meleeRepositionSeconds) && row.meleeRepositionSeconds > 0)
+    .map(row => row.meleeRepositionSeconds))];
+  const movementNote = document.getElementById("tft-board-movement-note");
+  movementNote.hidden = !movementDelays.length;
+  movementNote.textContent = movementDelays.length
+    ? `Builds with 1–2 attack range use an approximate ${movementDelays.map(delay => `${delay}s`).join(" / ")} delay at initial engagement and after their current target dies. Attack cooldowns overlap movement; ongoing damage and incoming pressure continue. Hex paths are not simulated.` : "";
   const filtered = !!query || tboard.cost !== "all" || (!tank && tboard.role !== "all");
   document.getElementById("tft-board-clear").hidden = !filtered;
   const label = tank ? "tanks" : "damage champions";
@@ -2308,7 +2511,9 @@ function renderTftLeaderboard() {
     champion.setAttribute("aria-label", `${r.unitName}, ${r.star} stars, ${r.cost} cost. Open this champion’s builds.`);
     const text = document.createElement("span");
     text.append(tftText("span", r.unitName, "tft-unit-name"),
-      tftText("span", `${r.star}★ · ${r.cost} cost · ${r.objective === "fighter" ? "Fighter" : tank ? "Tank" : "Carry"}`, "tft-board-unit-meta"));
+      tftText("span", `${r.star}★ · ${r.cost} cost · ${r.form
+        ? `${r.form} form · ${r.role || r.objective}${Number.isFinite(r.range) ? ` · ${r.range} range` : ""}`
+        : r.objective === "fighter" ? "Fighter" : tank ? "Tank" : "Carry"}`, "tft-board-unit-meta"));
     champion.append(tftIcon(unit?.icon, r.unitName), text);
     champion.addEventListener("click", () => openTftLeaderboardEntry(r));
     const championCell = document.createElement("td"), items = document.createElement("td");
@@ -2327,7 +2532,8 @@ function renderTftLeaderboard() {
       if (stress) row.append(metric("2× pressure", tftHeldTime(p.stressAliveTime, p.stressCapped, 60), "", p.stressCapped ? null : p.stressAliveTime));
     } else {
       row.append(metric("Clear time", Number.isFinite(p.killTime) ? `${p.killTime.toFixed(2)}s` : "Did not clear",
-        p.killTime == null ? `${number(p.total)} damage` : "", p.killTime), metric("DPS", number(p.dps)));
+        p.killTime == null ? `${number(p.total)} damage` : "", p.killTime), metric("DPS", number(p.dps),
+        Number.isFinite(r.meleeRepositionSeconds) && r.meleeRepositionSeconds > 0 ? tftMovementSummary(p, r.range) : ""));
     }
     return row;
   }));
@@ -2369,7 +2575,7 @@ async function loadTftLeaderboard({ preserve = false } = {}) {
       }
       if (d.revision !== tftRevision()) throw new Error("Revision changed during leaderboard request");
     }
-    if (d.selection?.key !== key || !Array.isArray(d.damage) || !Array.isArray(d.tanks))
+    if (d.selection?.key !== key || !Array.isArray(d.damage) || !Array.isArray(d.tanks) || !tftFiniteLeaderboardValid(d))
       throw new Error("Unexpected leaderboard response");
     tboard.data = d;
     tboard.pending = !d.complete;
@@ -2390,19 +2596,211 @@ const TFT_COMP_STRUCTURES = { single: "1 carry · 1 tank", duoCarry: "2 carries 
   duoTank: "1 carry · 2 tanks", both: "2 carries · 2 tanks" };
 const TFT_COMP_ASSIGNMENTS = { mainCarry: "Main carry", mainTank: "Main tank", carry: "Second carry",
   tank: "Second tank", support: "Support" };
-const TFT_COMP_EVALUATION_MODEL = "symmetric-reference-pool-v1";
+const TFT_COMP_EVALUATION_MODEL = "ehp-damage-capacity-v3";
+const TFT_COMP_PREVIOUS_THEORY_MODEL = "ehp-damage-capacity-v2";
+const TFT_COMP_INDEPENDENT_THEORY_MODEL = "ehp-damage-capacity-v1";
+const TFT_COMP_THEORY_MODELS = [TFT_COMP_EVALUATION_MODEL, TFT_COMP_PREVIOUS_THEORY_MODEL, TFT_COMP_INDEPENDENT_THEORY_MODEL];
+const TFT_COMP_LEGACY_MODEL = "symmetric-reference-pool-v1";
 const TFT_COMP_BOARD_PLAN_MODEL = "level8-core-level9-cap-v1";
+
+function tftCompositionTeamCode(composition, planner) {
+  if (planner?.format !== "tft-team-planner-v2" || planner.slots !== 10 ||
+      !Number.isInteger(planner.set) || planner.set < 1)
+    throw new Error("In-game copying is unavailable for this set.");
+  const units = composition?.units;
+  if (!Array.isArray(units) || !units.length || units.length > planner.slots ||
+      units.some(unit => typeof unit?.api !== "string") ||
+      new Set(units.map(unit => unit.api)).size !== units.length)
+    throw new Error("This board cannot be represented by a TFT Team Planner code.");
+  const codes = units.map(unit => planner.unitCodes?.[unit.api]);
+  if (codes.some(code => typeof code !== "string" || !/^[0-9a-f]{3}$/.test(code) || code === "000") ||
+      new Set(codes).size !== codes.length)
+    throw new Error("An in-game champion ID is unavailable for this board.");
+  // Planner slots are champions, not occupied team slots: Elder appears once.
+  // V2 contains roster IDs only, without items, stars, positions or Alpha marks.
+  return `02${codes.join("").padEnd(30, "0")}TFTSet${planner.set}`;
+}
+
+async function tftCopyTeamCode(code) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(code);
+      return;
+    } catch (_) { /* Local HTTP or browser permissions may require the fallback. */ }
+  }
+  const previous = document.activeElement;
+  const field = document.createElement("textarea");
+  field.value = code;
+  field.readOnly = true;
+  field.setAttribute("aria-label", "TFT Team Planner code");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  field.style.top = "0";
+  field.style.left = "0";
+  document.body.append(field);
+  try {
+    field.focus({ preventScroll: true });
+    field.select();
+    field.setSelectionRange(0, code.length);
+    if (!document.execCommand?.("copy")) throw new Error("Clipboard copying was blocked.");
+  } finally {
+    field.remove();
+    previous?.focus({ preventScroll: true });
+  }
+}
+
+function tftCompositionCopyButton(composition) {
+  const control = document.createElement("div");
+  control.className = "tft-comp-copy";
+  const button = tftText("button", "Copy to TFT");
+  button.type = "button";
+  const carry = composition.units.find(unit => unit.slug === composition.mainCarry);
+  const tank = composition.units.find(unit => unit.slug === composition.mainTank);
+  button.setAttribute("aria-label", `Copy level ${composition.level || 8} board for ${carry?.name || composition.mainCarry} and ${tank?.name || composition.mainTank} to TFT Team Planner`);
+  button.title = "Paste into TFT’s Team Planner. Copies champions; items, stars, positions and Alpha marks are not included.";
+  const status = tftText("span", "", "tft-comp-copy-status");
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  control.append(button, status);
+  let code;
+  try {
+    code = tftCompositionTeamCode(composition, tcomp.meta?.teamPlanner);
+  } catch (error) {
+    button.disabled = true;
+    button.title = error.message;
+    return control;
+  }
+  let manual;
+  button.addEventListener("click", async () => {
+    if (button.disabled) return;
+    button.disabled = true;
+    status.textContent = "";
+    try {
+      await tftCopyTeamCode(code);
+      status.textContent = "Copied! Paste in Team Planner.";
+      manual?.remove();
+      manual = null;
+    } catch (_) {
+      status.textContent = "Copy blocked. Copy the selected code manually.";
+      if (!manual) {
+        manual = document.createElement("input");
+        manual.type = "text";
+        manual.className = "tft-comp-copy-code";
+        manual.readOnly = true;
+        manual.value = code;
+        manual.setAttribute("aria-label", "TFT Team Planner code to copy manually");
+        control.append(manual);
+      }
+      manual.focus({ preventScroll: true });
+      manual.select();
+    } finally {
+      button.disabled = false;
+    }
+  });
+  return control;
+}
+
 const tftCompositionValidated = new WeakMap();
 const tftCompNumber = (value, digits = 0) => Number.isFinite(value)
   ? value.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits }) : "—";
 const tftCompSeconds = value => Number.isFinite(value) ? `${tftCompNumber(value, 1)}s` : "—";
 const tftCompWins = metrics => `${metrics.benchmarkWins} / ${metrics.benchmarkCount}`;
 const tftCompHpMargin = value => Number.isFinite(value) ? `${value >= 0 ? "+" : ""}${tftCompNumber(value * 100, 1)}%` : "—";
+const tftCompClose = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+const tftCompGeomean = values => values.some(value => value === 0) ? 0 : Math.exp(values.reduce((sum, value) => sum + Math.log(value), 0) / values.length);
+const tftCompTheoryUnitMetrics = unit => `${tftCompNumber(unit.dps)} DPS contribution` +
+  (Number.isFinite(unit.measuredDps) ? ` · ${tftCompNumber(unit.measuredDps)} mean measured DPS` : "") +
+  ` · ${tftCompNumber(unit.damage)} mean measured damage · ${tftCompNumber(unit.damageTaken)} raw pressure spent` +
+  (Number.isFinite(unit.ehp) ? ` · ${tftCompNumber(unit.ehp)} EHP` : "");
+const tftCompPercentDelta = (delta, baseline) => baseline > 0
+  ? delta !== 0 && Math.abs(100 * delta / baseline) < .05 ? `${delta > 0 ? "+" : "−"}<0.1%`
+    : `${delta > 0 ? "+" : ""}${tftCompNumber(100 * delta / baseline, 1)}%`
+  : delta === 0 ? "0.0%" : `${delta > 0 ? "+" : ""}${tftCompNumber(delta, 1)} (zero baseline)`;
+const tftCompositionModel = value => value?.evaluationModel || value?.methodology?.evaluationModel ||
+  tcomp.meta?.methodology?.evaluationModel || tcomp.data?.methodology?.evaluationModel || TFT_COMP_LEGACY_MODEL;
+const tftCompositionTheory = value => TFT_COMP_THEORY_MODELS.includes(tftCompositionModel(value));
+const tftCompositionSharedPressure = value => [TFT_COMP_EVALUATION_MODEL, TFT_COMP_PREVIOUS_THEORY_MODEL].includes(tftCompositionModel(value));
+const tftCompositionPersistentTargets = value => tftCompositionModel(value) === TFT_COMP_EVALUATION_MODEL;
+const tftCompositionModelRevision = value => value?.modelRevision || value?.methodology?.modelRevision;
+const tftCompositionScenarioDefinitions = value => value?.scenarios || value?.methodology?.scenarios;
+const TFT_COMP_SCENARIO_INPUTS = ["incomingDps", "physicalShare", "armor", "mr", "wound", "targetHp", "targetCount",
+  "controlInterval", "controlDuration", "pressureInterval", "pressureAllocation", "incomingSourceCount", "targeting"];
+const tftCompositionScenarioInputs = scenario => [scenario.key, ...TFT_COMP_SCENARIO_INPUTS.map(key => scenario[key])];
+const tftCompositionSameScenarios = (a, b) => Array.isArray(a) && Array.isArray(b) &&
+  tftCompositionSameValues(a.map(scenario => JSON.stringify(tftCompositionScenarioInputs(scenario))),
+    b.map(scenario => JSON.stringify(tftCompositionScenarioInputs(scenario))));
+const tftCompositionScenariosMatchDefinitions = (scenarios, definitions) => Array.isArray(scenarios) && Array.isArray(definitions) &&
+  scenarios.length === definitions.length && definitions.every(definition => {
+    const scenario = scenarios.find(scenario => scenario.key === definition.key);
+    return scenario && TFT_COMP_SCENARIO_INPUTS.every(key => definition[key] === undefined || scenario[key] === definition[key]);
+  });
+const tftCompositionModelsMatch = (data, meta) => {
+  const model = data?.methodology?.evaluationModel;
+  if (![...TFT_COMP_THEORY_MODELS, TFT_COMP_LEGACY_MODEL].includes(model) || model !== meta?.methodology?.evaluationModel) return false;
+  if (data.evaluationModel != null && data.evaluationModel !== model || meta.evaluationModel != null && meta.evaluationModel !== model) return false;
+  if (model === TFT_COMP_LEGACY_MODEL) return data.opponentPool?.hash === meta.opponentPool?.hash && data.opponentPool?.version === meta.opponentPool?.version;
+  const revision = tftCompositionModelRevision(meta);
+  return typeof revision === "string" && !!revision && revision === tftCompositionModelRevision(data) &&
+    (!tftCompositionScenarioDefinitions(meta) || tftCompositionScenariosMatchDefinitions(tftCompositionScenarioDefinitions(data), tftCompositionScenarioDefinitions(meta)));
+};
 const tftCompositionPlanModel = () => tcomp.meta?.boardPlanModel || tcomp.data?.boardPlanModel;
 const tftCompositionHasLevels = () => tftCompositionPlanModel() === TFT_COMP_BOARD_PLAN_MODEL;
 const tftCompositionCapStar = (meta = tcomp.meta) => meta?.profiles?.find(profile => profile.key === "c4")?.level9FiveCostStar ?? 1;
 const tftCompositionSameValues = (a, b) => Array.isArray(a) && Array.isArray(b) &&
   JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort());
+const tftCompositionSharedPressureInputsValid = (scenario, model) =>
+  Number.isFinite(scenario.controlInterval) && scenario.controlInterval > 0 &&
+  Number.isFinite(scenario.controlDuration) && scenario.controlDuration >= 0 &&
+  Number.isFinite(scenario.pressureInterval) && scenario.pressureInterval > 0 &&
+  scenario.incomingSourceCount === 3 &&
+  (model === TFT_COMP_EVALUATION_MODEL
+    ? scenario.pressureInterval === 0.5 && scenario.pressureAllocation === "persistent-source-targets" &&
+      ["main-first", "secondary-first"].includes(scenario.targeting)
+    : scenario.pressureAllocation === "shared-live-frontline");
+
+const tftCompositionTargetingGroup = scenario => JSON.stringify(
+  TFT_COMP_SCENARIO_INPUTS.filter(key => key !== "targeting").map(key => scenario[key]));
+
+function tftCompositionTargetingProfilesValid(scenarios) {
+  if (!Array.isArray(scenarios) || scenarios.length !== 48) return false;
+  const groups = new Map();
+  for (const scenario of scenarios) {
+    if (!scenario || !["main-first", "secondary-first"].includes(scenario.targeting)) return false;
+    const key = tftCompositionTargetingGroup(scenario), modes = groups.get(key) || new Set();
+    if (modes.has(scenario.targeting)) return false;
+    modes.add(scenario.targeting);
+    groups.set(key, modes);
+  }
+  return groups.size === 24 && [...groups.values()].every(modes => modes.size === 2);
+}
+
+function tftCompositionTargetAssignmentsValid(row) {
+  if (!Array.isArray(row.units) || !row.units.every(unit => unit && typeof unit.api === "string" && typeof unit.frontline === "boolean") ||
+      !tftCompositionTargetingProfilesValid(row.scenarios)) return false;
+  const fronts = row.units.filter(unit => unit.frontline).map(unit => unit.api);
+  if (!fronts.length) return false;
+  const main = row.units.find(unit => unit.slug === row.mainTank)?.api;
+  let priority = null;
+  for (const scenario of row.scenarios) {
+    const order = scenario.pressureTargetOrder, targets = scenario.initialPressureTargets;
+    if (!tftCompositionSameValues(order, fronts) || new Set(order).size !== fronts.length ||
+        !Array.isArray(targets) || targets.length !== 3 ||
+        !targets.every(api => api === null || typeof api === "string" && fronts.includes(api))) return false;
+    if (targets.some(api => api === null)) {
+      if (!targets.every(api => api === null)) return false;
+    } else if (targets[0] !== targets[2] ||
+      (targets[0] !== targets[1] && order.indexOf(targets[0]) >= order.indexOf(targets[1]))) return false;
+    // Initial targetability is verified by the native scorer. The browser
+    // can verify the roster, priority order and first/second/first pattern.
+    const neutral = order.slice();
+    if (scenario.targeting === "secondary-first" && neutral.length > 1)
+      [neutral[0], neutral[1]] = [neutral[1], neutral[0]];
+    if (fronts.includes(main) && neutral[0] !== main) return false;
+    if (priority && neutral.some((api, index) => api !== priority[index])) return false;
+    priority = neutral;
+  }
+  return true;
+}
 
 function tftCompositionRosterValid(units, board, level) {
   return Array.isArray(units) && board.level === level && board.boardSlots === level &&
@@ -2419,11 +2817,17 @@ function tftCompositionRosterValid(units, board, level) {
 
 function tftCompositionResultValid(result, split) {
   const m = result?.metrics;
+  const offsets = result?.laneOffsets ?? [0];
+  const expectedOpponents = tcomp.meta?.opponentPool?.[split === "search" ? "searchBoards" : "validationBoards"];
   const nonnegative = value => Number.isFinite(value) && value >= 0;
   const fraction = value => Number.isFinite(value) && value >= 0 && value <= 1;
   if (!m || result.poolSplit !== split || typeof result.poolRevision !== "string" || !result.poolRevision ||
-      !Number.isInteger(result.opponentCount) || result.opponentCount < 1) return false;
-  if (!(Number.isInteger(m.benchmarkCount) && m.benchmarkCount === result.opponentCount * 2 &&
+      !Number.isInteger(result.opponentCount) || result.opponentCount < 1 ||
+      (expectedOpponents !== undefined && result.opponentCount !== expectedOpponents)) return false;
+  if (!Array.isArray(offsets) || !offsets.length || new Set(offsets).size !== offsets.length ||
+      !offsets.every(offset => Number.isInteger(offset) && offset >= 0 && offset <= 6) ||
+      !tftCompositionSameValues(offsets, tcomp.meta?.opponentPool?.laneOffsets ?? [0])) return false;
+  if (!(Number.isInteger(m.benchmarkCount) && m.benchmarkCount === result.opponentCount * offsets.length * 2 &&
     Number.isInteger(m.benchmarkWins) && m.benchmarkWins >= 0 && m.benchmarkWins <= m.benchmarkCount &&
     fraction(m.benchmarkWinRate) && Math.abs(m.benchmarkWinRate - m.benchmarkWins / m.benchmarkCount) < 1e-10 &&
     Number.isFinite(m.benchmarkScore) && Number.isFinite(m.hpMargin) && Math.abs(m.hpMargin) <= 1 &&
@@ -2433,6 +2837,7 @@ function tftCompositionResultValid(result, split) {
     result.matchups.filter(matchup => matchup.outcome === "win").length === m.benchmarkWins &&
     result.matchups.every(matchup => ["win", "loss", "timeout", "draw"].includes(matchup.outcome) &&
       typeof matchup.opponentId === "string" && [0, 1].includes(matchup.initiative) &&
+      offsets.includes(matchup.laneOffset ?? 0) &&
       [matchup.duration, matchup.damage, matchup.frontlineTime].every(nonnegative) &&
       fraction(matchup.allyHpFraction) && fraction(matchup.enemyHpFraction) &&
       Array.isArray(matchup.roster) && (tftCompositionHasLevels()
@@ -2444,14 +2849,101 @@ function tftCompositionResultValid(result, split) {
   const opponents = new Map();
   for (const matchup of result.matchups) {
     const initiatives = opponents.get(matchup.opponentId) || [];
-    initiatives.push(matchup.initiative);
+    initiatives.push(`${matchup.laneOffset ?? 0}:${matchup.initiative}`);
     opponents.set(matchup.opponentId, initiatives);
   }
   return opponents.size === result.opponentCount && [...opponents.values()].every(values =>
-    values.length === 2 && new Set(values).size === 2);
+    values.length === offsets.length * 2 && new Set(values).size === offsets.length * 2);
+}
+
+function tftCompositionTheoryResultValid(row) {
+  const nonnegative = value => Number.isFinite(value) && value >= 0;
+  const fraction = value => nonnegative(value) && value <= 1;
+  const metrics = row?.metrics, revision = tftCompositionModelRevision(row);
+  if (!tftCompositionTheory(row) || (tcomp.meta?.methodology && !tftCompositionTheory(tcomp.meta)) ||
+      typeof revision !== "string" || !revision ||
+      (tftCompositionModelRevision(tcomp.meta) && revision !== tftCompositionModelRevision(tcomp.meta)) ||
+      !metrics || ![metrics.theoryScore, metrics.frontlineEhp, metrics.damageDps, metrics.damageCapacity, metrics.protectionTime].every(nonnegative) ||
+      ["benchmarkWins", "benchmarkCount", "benchmarkWinRate", "benchmarkScore"].some(key => key in metrics) ||
+      row.matchups != null || row.validation != null || row.assumptionCheck != null ||
+      !Number.isInteger(row.profileCount) || row.profileCount < 1 || !Array.isArray(row.scenarios) ||
+      row.scenarios.length !== row.profileCount || new Set(row.scenarios.map(scenario => scenario.key)).size !== row.profileCount) return false;
+  if (tftCompositionScenarioDefinitions(tcomp.meta) &&
+      !tftCompositionScenariosMatchDefinitions(row.scenarios, tftCompositionScenarioDefinitions(tcomp.meta))) return false;
+  if (tftCompositionPersistentTargets(row) && !tftCompositionTargetAssignmentsValid(row)) return false;
+  if (!row.scenarios.every(scenario => typeof scenario.key === "string" && !!scenario.key && typeof scenario.label === "string" &&
+    Number.isFinite(scenario.incomingDps) && scenario.incomingDps > 0 && fraction(scenario.physicalShare) && fraction(scenario.wound) &&
+    (scenario.targetHp === undefined || Number.isFinite(scenario.targetHp) && scenario.targetHp > 0) &&
+    (scenario.targetCount === undefined || Number.isInteger(scenario.targetCount) && scenario.targetCount > 0) &&
+    (scenario.measurementWindow === undefined || nonnegative(scenario.measurementWindow)) &&
+    (!tftCompositionSharedPressure(row) || tftCompositionSharedPressureInputsValid(scenario, tftCompositionModel(row)) &&
+      [scenario.plannedMeasurementWindow, scenario.measurementWindow, scenario.incomingBudget, scenario.unspentPressure,
+        scenario.spentPressure, scenario.deniedPressure].every(nonnegative) &&
+      typeof scenario.frontlineCollapsed === "boolean" &&
+      (scenario.measurementWindow <= scenario.plannedMeasurementWindow || tftCompClose(scenario.measurementWindow, scenario.plannedMeasurementWindow)) &&
+      (scenario.frontlineCollapsed || tftCompClose(scenario.measurementWindow, scenario.plannedMeasurementWindow)) &&
+      tftCompClose(scenario.incomingBudget, scenario.incomingDps * scenario.measurementWindow) &&
+      tftCompClose(scenario.incomingBudget, scenario.spentPressure + scenario.deniedPressure + scenario.unspentPressure)) &&
+    [scenario.armor, scenario.mr, scenario.frontlineEhp, scenario.damageDps, scenario.protectionTime, scenario.damageCapacity, scenario.score].every(nonnegative) &&
+    tftCompClose(scenario.score, scenario.frontlineEhp * scenario.damageDps) &&
+    tftCompClose(scenario.damageCapacity, scenario.score / scenario.incomingDps) &&
+    tftCompClose(scenario.protectionTime, scenario.frontlineEhp / scenario.incomingDps))) return false;
+  return [["theoryScore", "score"], ["frontlineEhp", "frontlineEhp"], ["damageDps", "damageDps"],
+    ["damageCapacity", "damageCapacity"], ["protectionTime", "protectionTime"]].every(([metric, scenario]) =>
+    tftCompClose(metrics[metric], tftCompGeomean(row.scenarios.map(value => value[scenario]))));
+}
+
+function tftCompositionMetadataModelValid(meta) {
+  if (!tftCompositionPrimalCatalogValid(meta.primalBlessings)) return false;
+  const model = meta.methodology?.evaluationModel;
+  if (meta.evaluationModel != null && meta.evaluationModel !== model) return false;
+  if (TFT_COMP_THEORY_MODELS.includes(model)) {
+    const revision = tftCompositionModelRevision(meta), scenarios = tftCompositionScenarioDefinitions(meta);
+    if (model !== TFT_COMP_INDEPENDENT_THEORY_MODEL && !Array.isArray(scenarios)) return false;
+    if (model === TFT_COMP_EVALUATION_MODEL && !tftCompositionTargetingProfilesValid(scenarios)) return false;
+    return typeof revision === "string" && !!revision &&
+      (scenarios == null || Array.isArray(scenarios) && scenarios.length > 0 &&
+        new Set(scenarios.map(scenario => scenario.key)).size === scenarios.length && scenarios.every(scenario =>
+          typeof scenario.key === "string" && typeof scenario.label === "string" &&
+          Number.isFinite(scenario.incomingDps) && scenario.incomingDps > 0 &&
+          (model === TFT_COMP_INDEPENDENT_THEORY_MODEL || tftCompositionSharedPressureInputsValid(scenario, model)) &&
+          [scenario.physicalShare, scenario.wound].every(value => Number.isFinite(value) && value >= 0 && value <= 1) &&
+          [scenario.armor, scenario.mr].every(value => Number.isFinite(value) && value >= 0)));
+  }
+  const pool = meta.opponentPool;
+  return model === TFT_COMP_LEGACY_MODEL && !!pool?.hash &&
+    Number.isInteger(pool.searchBoards) && Number.isInteger(pool.validationBoards) &&
+    (pool.laneOffsets === undefined || Array.isArray(pool.laneOffsets) && pool.laneOffsets.length > 0 &&
+      new Set(pool.laneOffsets).size === pool.laneOffsets.length &&
+      pool.laneOffsets.every(offset => Number.isInteger(offset) && offset >= 0 && offset <= 6)) &&
+    Array.isArray(pool.initiatives) && pool.initiatives.length === 2 && [0, 1].every(value => pool.initiatives.includes(value));
+}
+
+function tftCompositionTheoryItemAnalysisValid(row) {
+  const analysis = row.itemAnalysis;
+  if (!analysis || analysis.model !== "theory-item-replacements-v1" || analysis.evaluatedOn !== "theory" ||
+      analysis.modelRevision !== row.modelRevision || !tftCompClose(analysis.baselineScore, row.metrics.theoryScore) ||
+      !Array.isArray(analysis.holders) || new Set(analysis.holders.map(holder => holder.api)).size !== analysis.holders.length) return false;
+  const scenarios = new Set(row.scenarios.map(scenario => scenario.key));
+  return analysis.holders.every(holder => {
+    const unit = row.units.find(unit => unit.api === holder.api && unit.slug === holder.slug);
+    return unit && Array.isArray(holder.items) && new Set(holder.items.map(item => item.slot)).size === holder.items.length &&
+      holder.items.every(item => Number.isInteger(item.slot) && item.slot >= 0 && item.slot < unit.itemApis.length &&
+        item.itemApi === unit.itemApis[item.slot] && Array.isArray(item.alternatives) &&
+        item.testedAlternatives === item.alternatives.length && item.testedAlternatives > 0 &&
+        item.equivalentAlternatives === item.alternatives.filter(alt => alt.scoreDelta === 0).length &&
+        tftCompClose(item.bestScoreDelta, Math.max(...item.alternatives.map(alt => alt.scoreDelta))) &&
+        item.alternatives.every(alt => typeof alt.itemApi === "string" && typeof alt.item === "string" && alt.itemApi !== item.itemApi &&
+          Number.isFinite(alt.score) && alt.score >= 0 && tftCompClose(alt.scoreDelta, alt.score - analysis.baselineScore) &&
+          (analysis.baselineScore > 0 ? tftCompClose(alt.pctDelta, 100 * alt.scoreDelta / analysis.baselineScore) : alt.pctDelta == null) &&
+          Array.isArray(alt.improvedScenarios) && Array.isArray(alt.degradedScenarios) &&
+          new Set([...alt.improvedScenarios, ...alt.degradedScenarios]).size === alt.improvedScenarios.length + alt.degradedScenarios.length &&
+          [...alt.improvedScenarios, ...alt.degradedScenarios].every(key => scenarios.has(key))));
+  });
 }
 
 function tftCompositionItemAnalysisValid(row) {
+  if (tftCompositionTheory(row)) return tftCompositionTheoryItemAnalysisValid(row);
   const analysis = row.itemAnalysis;
   if (!analysis || analysis.model !== "team-item-replacements-v1" || analysis.evaluatedOn !== "search" ||
       analysis.poolRevision !== row.poolRevision || analysis.matches !== row.metrics.benchmarkCount ||
@@ -2476,7 +2968,59 @@ function tftCompositionItemAnalysisValid(row) {
   });
 }
 
+const TFT_COMP_PRIMAL_KEYS = ["tiger", "turtle", "bear", "phoenix"];
+
+function tftCompositionPrimalCatalogValid(catalog) {
+  if (catalog === undefined) return true;
+  return Array.isArray(catalog) && catalog.length === TFT_COMP_PRIMAL_KEYS.length &&
+    new Set(catalog.map(blessing => blessing?.key)).size === catalog.length &&
+    catalog.every(blessing => blessing && TFT_COMP_PRIMAL_KEYS.includes(blessing.key) &&
+      typeof blessing.name === "string" && !!blessing.name.trim() &&
+      typeof blessing.description === "string" &&
+      (blessing.scoreLimitation == null || typeof blessing.scoreLimitation === "string"));
+}
+
+function tftCompositionPrimalValid(row) {
+  if (row?.primal === undefined) return true;
+  const primal = row.primal, catalog = tcomp.meta?.primalBlessings;
+  const trait = Array.isArray(row.traits) && row.traits.find(trait => trait?.api === "DA_Primal18" && trait.active);
+  if (!tftCompositionTheory(row) || !Array.isArray(catalog) || !tftCompositionPrimalCatalogValid(catalog) ||
+      !trait || ![2, 4].includes(trait.breakpoint) ||
+      !primal || !Array.isArray(primal.selected) || ![1, 2].includes(primal.selected.length)) return false;
+  const count = primal.selected.length;
+  if (count !== (trait.breakpoint === 4 ? 2 : 1) ||
+      (trait.blessings !== undefined && !tftCompositionSameValues(trait.blessings, primal.selected))) return false;
+  const required = primal.required === undefined ? [] : primal.required;
+  if (!Array.isArray(required) || required.length > 2 || new Set(required).size !== required.length ||
+      !required.every(key => TFT_COMP_PRIMAL_KEYS.includes(key))) return false;
+  const activeRequired = required.slice(0, count);
+  const validChoice = choice => Array.isArray(choice) && choice.length === count &&
+    new Set(choice).size === count && choice.every(key => TFT_COMP_PRIMAL_KEYS.includes(key)) &&
+    activeRequired.every(key => choice.includes(key));
+  const choiceKey = choice => choice.slice().sort().join("+");
+  const legalChoices = (count === 1 ? TFT_COMP_PRIMAL_KEYS.map(key => [key])
+    : TFT_COMP_PRIMAL_KEYS.flatMap((key, index) => TFT_COMP_PRIMAL_KEYS.slice(index + 1).map(next => [key, next])))
+    .filter(validChoice);
+  if (!validChoice(primal.selected) || !Array.isArray(primal.alternatives) ||
+      primal.alternatives.length !== legalChoices.length ||
+      !primal.alternatives.every(alternative => alternative && validChoice(alternative.blessings) &&
+        Number.isFinite(alternative.score) && alternative.score >= 0) ||
+      !tftCompositionSameValues(primal.alternatives.map(alternative => choiceKey(alternative.blessings)),
+        legalChoices.map(choiceKey))) return false;
+  const selected = primal.alternatives.find(alternative => choiceKey(alternative.blessings) === choiceKey(primal.selected));
+  return !!selected && tftCompClose(selected.score, row.metrics?.theoryScore) &&
+    primal.alternatives.every(alternative => alternative.score <= selected.score);
+}
+
 function tftCompositionBoardValid(row, level, itemEvidence) {
+  if (!tftCompositionPrimalValid(row)) return false;
+  if (tcomp.meta?.methodology?.evaluationModel && tftCompositionModel(row) !== tcomp.meta.methodology.evaluationModel) return false;
+  if (tftCompositionTheory(row)) return tftCompositionTheoryResultValid(row) &&
+    Array.isArray(row.units) && tftCompositionRosterValid(row.units, row, level) &&
+    row.units.some(unit => unit.slug === row.mainCarry) && row.units.some(unit => unit.slug === row.mainTank) &&
+    row.mainCarry !== row.mainTank && row.itemCount === row.units.reduce((count, unit) => count + unit.items.length, 0) &&
+    (itemEvidence ? tftCompositionItemAnalysisValid(row) : row.itemAnalysis == null);
+  if (row?.evaluationModel && row.evaluationModel !== TFT_COMP_LEGACY_MODEL) return false;
   if (!tftCompositionResultValid(row, "search") || !tftCompositionResultValid(row.validation, "validation")) return false;
   const assumption = row.assumptionCheck;
   if (!tftCompositionResultValid(assumption, "validation") || assumption.healingPolicy !== "restricted" ||
@@ -2502,14 +3046,20 @@ function tftCompositionUpgradeValid(parent) {
   if (upgrade == null) return true;
   const board = upgrade.board, transition = upgrade.transition, selection = upgrade.selection;
   const fiveCostStar = tftCompositionCapStar();
+  const theory = tftCompositionTheory(parent);
+  const sameEvaluation = board && (theory
+    ? tftCompositionModel(board) === tftCompositionModel(parent) && board.modelRevision === parent.modelRevision &&
+      tftCompositionSameScenarios(board.scenarios, parent.scenarios) &&
+      tftCompClose(upgrade.theoryScoreDelta, board.metrics?.theoryScore - parent.metrics.theoryScore)
+    : !tftCompositionTheory(board) && board.poolRevision === parent.poolRevision &&
+      board.metrics?.benchmarkCount === parent.metrics.benchmarkCount &&
+      Array.isArray(board.matchups) && tftCompositionSameValues(board.matchups.map(matchup => matchup.key), parent.matchups.map(matchup => matchup.key)) &&
+      upgrade.benchmarkWinDelta === board.metrics.benchmarkWins - parent.metrics.benchmarkWins);
   if (![1, 2].includes(fiveCostStar) || tcomp.profile !== "c4" || upgrade.parentId !== parent.id || !board || typeof board.id !== "string" ||
       board.id === parent.id || board.level9Upgrade != null ||
       !tftCompositionBoardValid(board, 9, false) || board.mainCarry !== parent.mainCarry || board.mainTank !== parent.mainTank ||
-      board.itemCount !== parent.itemCount || board.poolRevision !== parent.poolRevision ||
-      board.metrics.benchmarkCount !== parent.metrics.benchmarkCount ||
-      !tftCompositionSameValues(board.matchups.map(matchup => matchup.key), parent.matchups.map(matchup => matchup.key)) ||
-      upgrade.benchmarkWinDelta !== board.metrics.benchmarkWins - parent.metrics.benchmarkWins ||
-      selection?.evaluatedOn !== "search" || selection.parentRanking !== "level8" || selection.preferredFiveCostSlots !== 2 ||
+      board.itemCount !== parent.itemCount || !sameEvaluation ||
+      selection?.evaluatedOn !== (theory ? "theory" : "search") || selection.parentRanking !== "level8" || selection.preferredFiveCostSlots !== 2 ||
       (selection.fiveCostStar !== undefined && selection.fiveCostStar !== fiveCostStar) ||
       !Number.isInteger(selection.rostersCompared) || selection.rostersCompared < 1 ||
       !Number.isInteger(selection.allocationsCompared) || selection.allocationsCompared < 1 ||
@@ -2568,13 +3118,34 @@ function tftCompositionHealingSummary(composition) {
 }
 
 function tftCompositionItemVerdict(item, composition) {
+  if (tftCompositionTheory(composition)) {
+    if (item.bestScoreDelta < 0) return `Every tested replacement lowers the score; the closest is ${tftCompPercentDelta(item.bestScoreDelta, composition.metrics.theoryScore)}.`;
+    if (item.bestScoreDelta === 0) return `${item.equivalentAlternatives} tested alternatives have the same EHP × DPS score.`;
+    return `A tested replacement improves the score by ${tftCompPercentDelta(item.bestScoreDelta, composition.metrics.theoryScore)}.`;
+  }
   if (composition.metrics.benchmarkWins === 0 && item.bestWinDelta === 0)
     return "Unresolved in these tests. No tested replacement wins a search fight, so these results do not establish which item is core.";
+  if (item.testedAlternatives > 0 && item.alternatives.every(alt =>
+      alt.winDelta === 0 && !alt.lostMatchups.length && !alt.gainedMatchups.length))
+    return "Inconclusive: every legal replacement wins the same matchups. These tests provide no preference for this item.";
   return item.bestWinDelta < 0
     ? `Preferred in these tests: every replacement loses at least ${Math.abs(item.bestWinDelta)} ${item.bestWinDelta === -1 ? "win" : "wins"}.`
     : item.bestWinDelta === 0
       ? `${item.equivalentAlternatives} alternatives tie its win count; the matchups can differ.`
       : `A tested replacement gains ${item.bestWinDelta} ${item.bestWinDelta === 1 ? "win" : "wins"}.`;
+}
+
+function tftCompositionEvidenceSummary(composition) {
+  const items = composition.itemAnalysis?.holders.flatMap(holder => holder.items) || [];
+  const unresolved = items.filter(item => item.equivalentAlternatives > 0).length;
+  if (tftCompositionTheory(composition)) {
+    const scores = composition.scenarios.map(scenario => scenario.damageCapacity);
+    return `Estimated damage capacity ranges from ${tftCompNumber(Math.min(...scores))} to ${tftCompNumber(Math.max(...scores))} across ${composition.profileCount} pressure assumptions.` +
+      (unresolved ? ` ${unresolved} of ${items.length} item slots have equally scoring alternatives.` : "");
+  }
+  const saturated = composition.metrics.benchmarkWins === composition.metrics.benchmarkCount;
+  return [saturated ? "Benchmark ceiling reached; a perfect score does not establish a best build." : "",
+    unresolved ? `${unresolved} of ${items.length} item slots have equally scoring alternatives.` : ""].filter(Boolean).join(" ");
 }
 
 async function loadTftCompositionMeta(force = false) {
@@ -2591,10 +3162,7 @@ async function loadTftCompositionMeta(force = false) {
             !meta.profiles.every(profile => profile.level === 8 && profile.boardSlots === 8 &&
               (profile.cost !== 4 || profile.maxFiveCosts === 0 &&
                 (profile.level9FiveCostStar === undefined || [1, 2].includes(profile.level9FiveCostStar)))))) ||
-          meta.methodology?.evaluationModel !== TFT_COMP_EVALUATION_MODEL || !meta.opponentPool?.hash ||
-          !Number.isInteger(meta.opponentPool.searchBoards) || !Number.isInteger(meta.opponentPool.validationBoards) ||
-          !Array.isArray(meta.opponentPool.initiatives) || meta.opponentPool.initiatives.length !== 2 ||
-          ![0, 1].every(value => meta.opponentPool.initiatives.includes(value)))
+          !tftCompositionMetadataModelValid(meta))
         throw new Error("Unexpected composition metadata");
       if ((meta.baselineRevision && meta.baselineRevision !== tftRevision()) ||
           tftPublicationChanged(meta, tstate.meta)) {
@@ -2652,10 +3220,33 @@ function renderTftCompositionControls() {
     key => changeFight("geo", key), false);
   const method = document.getElementById("tft-comp-method-note");
   const pool = m.opponentPool;
-  document.getElementById("tft-comp-pool-note").textContent = pool
-    ? `${pool.searchBoards * pool.initiatives.length} ranking fights cover ${pool.searchBoards} reference boards. ${pool.validationBoards * pool.initiatives.length} held-out fights cover ${pool.validationBoards} separate boards. Reference pool ${pool.version}.`
+  const theory = tftCompositionTheory(m), scenarios = tftCompositionScenarioDefinitions(m);
+  const sharedPressure = tftCompositionSharedPressure(m);
+  const persistentTargets = tftCompositionPersistentTargets(m);
+  document.getElementById("tft-comp-geo-label").textContent = theory ? "Target coverage" : "Fight formation";
+  method.querySelectorAll(".tft-comp-legacy-note").forEach(note => { note.hidden = theory; });
+  method.querySelectorAll(".tft-comp-theory-note").forEach(note => { note.hidden = !theory; });
+  method.querySelectorAll(".tft-comp-shared-pressure-note").forEach(note => { note.hidden = !sharedPressure; });
+  method.querySelectorAll(".tft-comp-persistent-pressure-note").forEach(note => { note.hidden = !persistentTargets; });
+  method.querySelectorAll(".tft-comp-distributed-pressure-note").forEach(note => { note.hidden = !sharedPressure || persistentTargets; });
+  method.querySelectorAll(".tft-comp-previous-theory-note").forEach(note => { note.hidden = !theory || sharedPressure; });
+  document.getElementById("tft-comp-ranking-note").textContent = theory
+    ? "Boards rank by the geometric mean of frontline EHP × team DPS across the pressure assumptions. Equal scores share a rank. The search compares promising boards and item allocations; it does not prove a global optimum."
+    : "Boards rank only by their win rate in the ranking tests. Equal win rates share a rank; remaining health, damage and clear time explain the fights without breaking ties. The search compares promising boards and item allocations; it does not prove a global optimum.";
+  const inputValues = (key, percent = false) => [...new Set((scenarios || []).map(scenario => scenario[key]))]
+    .sort((a, b) => a - b).map(value => `${tftCompNumber(value * (percent ? 100 : 1))}${percent ? "%" : ""}`).join(" / ");
+  document.getElementById("tft-comp-pool-note").textContent = theory
+    ? `${scenarios?.length || m.profileCount || "Several"} pressure assumptions.` +
+      (scenarios?.length ? ` Raw incoming DPS: ${inputValues("incomingDps")}; physical damage share: ${inputValues("physicalShare", true)}; healing reduction: ${inputValues("wound", true)}.` : "") +
+      (sharedPressure ? " The conditions include no enemy control and a frontline stun schedule; each scenario label shows the control assumption."
+        : " These saved v1 results use independent frontline responses.") +
+      (persistentTargets ? " Each condition compares main-tank-first and second-frontliner-first targeting." : "") +
+      " Result ranges measure sensitivity to these inputs, not statistical confidence."
+    : pool
+    ? `${pool.searchBoards * (pool.laneOffsets?.length || 1) * pool.initiatives.length} ranking fights cover ${pool.searchBoards} reference boards. ${pool.validationBoards * (pool.laneOffsets?.length || 1) * pool.initiatives.length} held-out fights cover ${pool.validationBoards} separate boards. Each board uses ${pool.laneOffsets?.length || 1} opposing ${pool.laneOffsets?.length > 1 ? "positions" : "position"}, tested with both initiative orders. Reference pool ${pool.version}.`
     : "";
-  document.getElementById("tft-comp-pool-note").title = pool?.hash ? `Reference pool revision: ${pool.hash}` : "";
+  document.getElementById("tft-comp-pool-note").title = theory ? `Capacity model revision: ${tftCompositionModelRevision(m)}`
+    : pool?.hash ? `Reference pool revision: ${pool.hash}` : "";
   method.querySelectorAll(".tft-comp-model-limit").forEach(p => p.remove());
   (m.limitations || []).forEach(note => method.append(tftText("p", note, "tft-comp-model-limit")));
   renderTftCompositions();
@@ -2666,7 +3257,7 @@ function tftCompositionRows() {
   if (!groups) return [];
   const rows = (tcomp.structure === "auto" ? Object.values(groups).flat() : groups[tcomp.structure] || [])
     .filter(tftCompositionValid);
-  if (tcomp.structure !== "auto") return rows.slice();
+  if (tcomp.structure !== "auto") return tftCompositionTheory() ? rows.slice().sort((a, b) => tftCompositionWinOrder(a, b) || a.id.localeCompare(b.id)) : rows.slice();
   const seen = new Set();
   return rows.slice().sort((a, b) => tftCompositionWinOrder(a, b) || a.id.localeCompare(b.id)).filter(row => {
     const key = row.units.map(unit => unit.slug).sort().join("|");
@@ -2677,6 +3268,7 @@ function tftCompositionRows() {
 }
 
 function tftCompositionWinOrder(a, b) {
+  if (tftCompositionTheory(a) && tftCompositionTheory(b)) return b.metrics.theoryScore - a.metrics.theoryScore;
   return b.metrics.benchmarkWins * a.metrics.benchmarkCount - a.metrics.benchmarkWins * b.metrics.benchmarkCount;
 }
 
@@ -2711,12 +3303,13 @@ function tftCompositionItem(name, api, unit) {
 
 function tftCompositionChampionTooltip(unit, composition = null) {
   const meta = tstate.meta?.units.find(info => info.api === unit.api && info.slug === unit.slug);
-  const subtitle = [`${unit.star}★`, `${unit.cost} cost`, meta?.role,
+  const subtitle = [`${unit.star}★`, `${unit.cost} cost`, unit.form ? `${unit.form} form · ${unit.kind}` : meta?.role,
     unit.slotCost > 1 ? `${unit.slotCost} slots` : null].filter(Boolean).join(" · ");
   const content = [tftTooltipHead(meta?.icon, unit.name, subtitle)];
   const assignment = TFT_COMP_ASSIGNMENTS[unit.assignment] || (unit.frontline ? "Frontline" : "Backline");
   content.push(tftText("p", assignment + (composition?.alphaHolder === unit.slug || unit.alpha ? " · Alpha" : ""), "sub"));
-  if (meta?.ability) content.push(tftText("p", `Ability: ${meta.ability}`));
+  const ability = unit.abilityName || meta?.ability;
+  if (ability) content.push(tftText("p", `Ability: ${ability}`));
   for (const trait of meta ? tftUnitTraits(meta) : []) {
     const active = composition?.traits?.find(entry => entry.api === trait.api);
     const status = composition ? `${active?.count || 0} · ${active?.active ? `${active.breakpoint} active` : "inactive"}`
@@ -2728,13 +3321,19 @@ function tftCompositionChampionTooltip(unit, composition = null) {
   }
   if (unit.items?.length) content.push(tftText("p", `Items: ${unit.items.join(" · ")}`));
   if (composition && Number.isFinite(unit.dps)) {
-    content.push(tftText("p", "Averages in this board’s ranking fights", "sub"),
-      tftText("p", `${tftCompNumber(unit.dps)} DPS · ${tftCompNumber(unit.damage)} damage dealt\n` +
-        `${tftCompSeconds(unit.aliveTime)} alive · ${tftCompNumber(unit.damageTaken)} damage taken`));
-    const healing = [[unit.healing, "healing received"], [unit.shielding, "shields absorbed"],
-      [unit.allyHealing, "ally healing provided"], [unit.allyShielding, "ally shields granted"]].filter(([value]) => value > 0)
+    content.push(tftText("p", tftCompositionTheory(composition) ? "Contributions under this board’s pressure assumptions" : "Averages in this board’s ranking fights", "sub"),
+      tftText("p", tftCompositionTheory(composition)
+        ? tftCompTheoryUnitMetrics(unit)
+        : `${tftCompNumber(unit.dps)} DPS · ${tftCompNumber(unit.damage)} damage dealt\n` +
+          `${tftCompSeconds(unit.aliveTime)} alive · ${tftCompNumber(unit.damageTaken)} damage taken`));
+    const healing = (tftCompositionTheory(composition)
+      ? [[unit.healing, "effective self healing"], [unit.shielding, "shields absorbed"],
+        [unit.allyHealing, "potential ally healing (uncredited)"], [unit.allyShielding, "potential ally shields (uncredited)"]]
+      : [[unit.healing, "healing received"], [unit.shielding, "shields absorbed"],
+        [unit.allyHealing, "ally healing provided"], [unit.allyShielding, "ally shields granted"]]).filter(([value]) => value > 0)
       .map(([value, label]) => `${tftCompNumber(value)} ${label}`);
     if (healing.length) content.push(tftText("p", healing.join(" · ")));
+    if (tftCompositionTheory(composition)) content.push(tftText("p", "DPS contribution allocates the board’s geometric mean DPS by each champion’s mean share. Other measured unit figures are arithmetic means across pressure assumptions; raw pressure spent excludes overkill.", "sub"));
   }
   if (composition) content.push(tftText("p", "Click to explore this champion’s item cores and alternatives.", "sub"));
   return content;
@@ -2781,13 +3380,23 @@ function tftCompositionTraits(traits) {
     chip.className = "tft-comp-trait";
     chip.dataset.trait = trait.api;
     chip.dataset.modeled = String(trait.modeled);
-    chip.append(tftIcon(meta?.icon, trait.name, true), tftText("span", `${trait.count} ${trait.name}`));
+    const coverage = ["supported", "partial", "unmodeled", "structural", "economy"].includes(trait.coverage)
+      ? trait.coverage : trait.modeled ? "supported" : "unmodeled";
+    const notes = Array.isArray(trait.coverageNotes) ? trait.coverageNotes.filter(note => typeof note === "string" && note) : [];
+    chip.dataset.coverage = coverage;
+    chip.append(tftIcon(meta?.icon, trait.name, true), tftText("span", `${trait.count} ${trait.name}${coverage === "partial" ? " · Partial" : ""}`));
     const breakpoint = `Count ${trait.count} · ${trait.breakpoint} breakpoint active`;
-    chip.setAttribute("aria-label", `${trait.name}: ${breakpoint}${trait.modeled ? "" : ". Combat effect not modeled"}`);
+    const status = { supported: "Supported scoring effects", partial: "Partial scoring coverage",
+      unmodeled: "Combat effect not modeled", structural: "Board slots or trait counts modeled", economy: "Economy effect; no direct combat score" }[coverage];
+    chip.setAttribute("aria-label", `${trait.name}: ${breakpoint}. ${status}${notes.length ? `. ${notes.join(". ")}` : ""}`);
+    const description = { supported: "This board’s active breakpoint contributes to the calculations.",
+      partial: "This trait has partial scoring coverage. Some effects or conditions are omitted from this calculation.",
+      unmodeled: "This trait is active on the board, but its combat effect is not included in the score.",
+      structural: "This trait contributes through board slots or trait counts.",
+      economy: "This trait affects progression or rewards and has no direct combat score." }[coverage];
     bindTftTooltip(chip, () => [tftTooltipHead(meta?.icon, trait.name, breakpoint, true),
       ...(meta?.description ? [tftText("p", meta.description)] : []),
-      tftText("p", trait.modeled ? "This board’s active breakpoint contributes to the calculations."
-        : "This trait is active on the board, but its combat effect is not included in the score.", "sub")], true);
+      tftText("p", description, "sub"), ...notes.map(note => tftText("p", note, "sub"))], true);
     list.append(chip);
   }
   return list;
@@ -2838,13 +3447,14 @@ function tftCompositionMatchupList(result) {
     header.append(tftText("strong", matchups[0].label),
       tftText("span", `${matchups.filter(matchup => matchup.outcome === "win").length} / ${matchups.length} wins`));
     row.append(header);
-    for (const matchup of matchups.slice().sort((a, b) => a.initiative - b.initiative)) {
+    for (const matchup of matchups.slice().sort((a, b) => (a.laneOffset ?? 0) - (b.laneOffset ?? 0) || a.initiative - b.initiative)) {
       const trial = document.createElement("div"), heading = document.createElement("div");
       trial.className = "tft-comp-matchup-trial";
       trial.dataset.matchup = matchup.key;
       trial.dataset.outcome = matchup.outcome;
       heading.className = "tft-comp-matchup-head";
-      heading.append(tftText("span", matchup.initiative === 0 ? "Allies act first" : "Opponents act first"), tftText("span",
+      const position = matchup.laneOffset === undefined ? "" : `Position ${result.laneOffsets.indexOf(matchup.laneOffset) + 1} · `;
+      heading.append(tftText("span", position + (matchup.initiative === 0 ? "Allies act first" : "Opponents act first")), tftText("span",
         { win: "Win", loss: "Loss", timeout: "Time limit", draw: "Draw" }[matchup.outcome], "tft-comp-matchup-outcome"));
       trial.append(heading, tftText("p", `${tftCompSeconds(matchup.duration)} · Allies ${tftCompNumber(matchup.allyHpFraction * 100)}% HP · Enemies ${tftCompNumber(matchup.enemyHpFraction * 100)}% HP`));
       row.append(trial);
@@ -2864,7 +3474,7 @@ function tftCompositionMatchups(composition) {
   const section = document.createElement("div");
   section.className = "tft-comp-matchups";
   section.append(tftText("h4", `Ranking fights · ${tftCompWins(composition.metrics)} wins`),
-    tftText("p", `${composition.metrics.benchmarkCount} fights against ${composition.opponentCount} reference boards. Each opponent is tested with both initiative orders.`, "tft-comp-contribution-note"),
+    tftText("p", `${composition.metrics.benchmarkCount} fights against ${composition.opponentCount} reference boards. Each opposing position is tested with both initiative orders.`, "tft-comp-contribution-note"),
     tftCompositionMatchupList(composition), tftText("p", tftCompositionDiagnostics(composition), "tft-comp-contribution-note"));
   const heldOut = document.createElement("details");
   heldOut.className = "tft-details tft-comp-validation";
@@ -2883,10 +3493,89 @@ function tftCompositionMatchups(composition) {
   return section;
 }
 
+function tftCompositionTheoryScenarios(composition) {
+  const section = document.createElement("section"), scroll = document.createElement("div"), table = document.createElement("table");
+  section.className = "tft-comp-theory-scenarios";
+  section.append(tftText("h4", "Pressure assumptions and damage capacity"),
+    tftText("p", "Each condition scores frontline EHP × measured team DPS. Estimated protection is EHP ÷ incoming DPS; estimated damage capacity is score ÷ incoming DPS. The headline metrics use geometric means across these conditions.", "tft-comp-contribution-note"),
+    tftText("p", "Compare the rows to see sensitivity: the range is not a confidence interval. These conditions are assumptions, not observed opponents or a forecast of lobby frequency. Incoming DPS is measured before allied resistances; target HP, armor and MR describe generic targets receiving your damage.", "tft-comp-contribution-note"));
+  scroll.className = "tft-comp-scenario-scroll";
+  table.className = "tft-comp-scenario-table";
+  table.append(tftText("caption", `${composition.profileCount} conditions applied equally to every candidate`));
+  const head = document.createElement("thead"), headings = document.createElement("tr");
+  const hasTargets = composition.scenarios.some(scenario => Number.isFinite(scenario.targetHp));
+  const hasWindow = composition.scenarios.some(scenario => Number.isFinite(scenario.measurementWindow));
+  const sharedPressure = tftCompositionSharedPressure(composition);
+  const persistentTargets = tftCompositionPersistentTargets(composition);
+  const names = new Map((composition.units || []).map(unit => [unit.api, unit.name]));
+  const initialTargets = scenario => {
+    const counts = new Map();
+    for (const api of scenario.initialPressureTargets) if (api !== null) counts.set(api, (counts.get(api) || 0) + 1);
+    return [...counts].map(([api, count]) => `${names.get(api)}: ${count} attacker${count === 1 ? "" : "s"}`).join(" · ") || "No target available at start";
+  };
+  const labels = ["Condition", ...(persistentTargets ? ["Focus assumption", "Initial attackers"] : []), "Incoming DPS", "Physical / magic", ...(hasTargets ? ["Generic targets"] : []), "Target armor / MR", "Healing reduction", ...(sharedPressure ? ["Planned window"] : []), ...(hasWindow ? ["Measured over"] : []), ...(sharedPressure ? ["Frontline", "Incoming budget", "Unspent pressure"] : []), "Frontline EHP", "Est. protection", "Team DPS", "EHP × DPS", "Est. damage capacity"];
+  for (const label of labels) {
+    const cell = tftText("th", label); cell.scope = "col"; headings.append(cell);
+  }
+  head.append(headings);
+  const body = document.createElement("tbody");
+  for (const scenario of composition.scenarios) {
+    const row = document.createElement("tr");
+    row.dataset.scenario = scenario.key;
+    if (persistentTargets) row.dataset.targeting = scenario.targeting;
+    const cells = [scenario.label,
+      ...(persistentTargets ? [scenario.targeting === "main-first" ? "Main tank first" : "Second frontliner first", initialTargets(scenario)] : []),
+      tftCompNumber(scenario.incomingDps),
+      `${tftCompNumber(scenario.physicalShare * 100)}% / ${tftCompNumber((1 - scenario.physicalShare) * 100)}%`,
+      ...(hasTargets ? [`${tftCompNumber(scenario.targetCount)} × ${tftCompNumber(scenario.targetHp)} HP`] : []),
+      `${tftCompNumber(scenario.armor)} / ${tftCompNumber(scenario.mr)}`, `${tftCompNumber(scenario.wound * 100)}%`,
+      ...(sharedPressure ? [tftCompSeconds(scenario.plannedMeasurementWindow)] : []),
+      ...(hasWindow ? [tftCompSeconds(scenario.measurementWindow)] : []),
+      ...(sharedPressure ? [scenario.frontlineCollapsed ? "Collapsed" : "Held through window",
+        tftCompNumber(scenario.incomingBudget), tftCompNumber(scenario.unspentPressure)] : []),
+      tftCompNumber(scenario.frontlineEhp), tftCompSeconds(scenario.protectionTime),
+      tftCompNumber(scenario.damageDps), tftCompNumber(scenario.score), tftCompNumber(scenario.damageCapacity)].map(value => tftText("td", value));
+    if (sharedPressure) cells[labels.indexOf("Incoming budget")].title =
+      `${tftCompNumber(scenario.spentPressure)} spent + ${tftCompNumber(scenario.deniedPressure)} denied + ${tftCompNumber(scenario.unspentPressure)} unspent = ${tftCompNumber(scenario.incomingBudget)} raw pressure budget`;
+    if (persistentTargets) {
+      const cell = cells[labels.indexOf("Initial attackers")];
+      cell.className = "tft-comp-initial-targets";
+      cell.title = scenario.initialPressureTargets.map((api, index) =>
+        `Attacker ${index + 1}: ${api === null ? "No target" : names.get(api)}`).join("\n") +
+        `\nTarget priority: ${scenario.pressureTargetOrder.map(api => names.get(api)).join(" → ")}`;
+      cell.setAttribute("aria-label", cell.title);
+    }
+    row.append(...cells);
+    body.append(row);
+  }
+  table.append(head, body);
+  scroll.append(table);
+  section.append(scroll);
+  if (hasWindow) section.append(tftText("p", sharedPressure
+    ? "Planned window is opening frontline EHP ÷ incoming DPS. Measured over is the observed time, ending early when the last frontline holder dies; all protected damage stops there. DPS uses this observed time. Estimated protection is derived from usable EHP and can extend the observation only if the frontline survives the planned window."
+    : "These saved v1 results measured independent unit responses over opening frontline EHP ÷ incoming DPS. Estimated protection uses the resulting EHP; it is not an observed frontline collapse time.", "tft-comp-contribution-note"));
+  if (persistentTargets) section.append(tftText("p", "Three generic attackers keep their targets until death or untargetability. The table shows their starting assignments. Main-tank-first starts with the main tank, followed by the other frontliners in decreasing opening effective health before targeting bonuses; second-frontliner-first swaps the first two. That priority stays fixed across the pressure conditions. The three starting targets alternate between the first two available frontliners. Targeting-dependent armor and MR count each champion’s assigned attackers, including between hits.", "tft-comp-contribution-note"));
+  if (sharedPressure) section.append(tftText("p", (persistentTargets
+    ? "Each half-second pulse belongs to one attacker and goes to its current target. Control suppresses that attacker’s pressure; death or untargetability redirects its targeting. "
+    : "These saved v2 results divide each half-second pulse across all targetable frontliners and use one targeting slot per frontliner. ") +
+    "The proportional final pulse preserves the total raw budget, which consists of spent, denied and unspent pressure. Control immunity is respected; the stun schedule is a stress assumption and does not model walking or real lobby frequency. Ally healing and shields remain uncredited potential.", "tft-comp-contribution-note"));
+  return section;
+}
+
 function tftCompositionReplacement(alt, composition) {
   const row = document.createElement("div");
   row.className = "tft-comp-replacement";
   row.dataset.item = alt.itemApi;
+  if (tftCompositionTheory(composition)) {
+    row.dataset.score = alt.score;
+    row.dataset.scoreDelta = alt.scoreDelta;
+    row.append(tftText("strong", alt.item), tftText("span", `${tftCompNumber(alt.score)} EHP × DPS · ${tftCompPercentDelta(alt.scoreDelta, composition.itemAnalysis.baselineScore)}`));
+    const labels = keys => keys.map(key => composition.scenarios.find(scenario => scenario.key === key)?.label || key).join("; ");
+    if (alt.improvedScenarios.length) row.append(tftText("span", `Improves: ${labels(alt.improvedScenarios)}.`));
+    if (alt.degradedScenarios.length) row.append(tftText("span", `Reduces: ${labels(alt.degradedScenarios)}.`));
+    if (!alt.improvedScenarios.length && !alt.degradedScenarios.length) row.append(tftText("span", "Same score in every pressure condition."));
+    return row;
+  }
   row.dataset.wins = alt.wins;
   row.dataset.winDelta = alt.winDelta;
   const difference = alt.winDelta === 0 ? "Same win count"
@@ -2898,7 +3587,7 @@ function tftCompositionReplacement(alt, composition) {
     changes.append(tftText("summary", `Changed winning matchups · ${alt.gainedMatchups.length} gained · ${alt.lostMatchups.length} lost`));
     const labels = keys => keys.map(key => {
       const matchup = composition.matchups.find(matchup => matchup.key === key);
-      return `${matchup.label} (${matchup.initiative === 0 ? "allies first" : "opponents first"})`;
+      return `${matchup.label} (${matchup.laneOffset === undefined ? "" : `position ${composition.laneOffsets.indexOf(matchup.laneOffset) + 1}, `}${matchup.initiative === 0 ? "allies first" : "opponents first"})`;
     }).join("; ");
     if (alt.gainedMatchups.length) changes.append(tftText("p", `Gained wins: ${labels(alt.gainedMatchups)}.`));
     if (alt.lostMatchups.length) changes.append(tftText("p", `Lost wins: ${labels(alt.lostMatchups)}.`));
@@ -2916,7 +3605,9 @@ function tftCompositionItemEvidence(unit, composition) {
   details.append(tftText("summary", "Item replacement tests"));
   details.addEventListener("toggle", () => {
     if (!details.open || details.querySelector(".tft-comp-item-evidence")) return;
-    details.append(tftText("p", `One item on ${unit.name} changes at a time; the other ${composition.units.length - 1} champions and all remaining items stay fixed. These are ${composition.itemAnalysis.matches} team ranking fights, with held-out opponents excluded.`, "tft-comp-contribution-note"));
+    details.append(tftText("p", `One item on ${unit.name} changes at a time; the other ${composition.units.length - 1} champions and all remaining items stay fixed. ` +
+      (tftCompositionTheory(composition) ? `Each replacement recalculates team EHP × DPS across the same ${composition.profileCount} pressure assumptions.`
+        : `These are ${composition.itemAnalysis.matches} team ranking fights, with held-out opponents excluded.`), "tft-comp-contribution-note"));
     for (const item of holder.items) {
       const evidence = document.createElement("section");
       evidence.className = "tft-comp-item-evidence";
@@ -2949,10 +3640,62 @@ function tftCompositionItemEvidence(unit, composition) {
   return details;
 }
 
+function tftCompositionPrimalLabel(keys) {
+  const catalog = tcomp.meta?.primalBlessings || [];
+  return keys.map(key => catalog.find(blessing => blessing.key === key)?.name || key).join(" + ");
+}
+
+function tftCompositionPrimalChoice(composition) {
+  if (!composition.primal) return null;
+  const choice = tftText("p", `Primal: ${tftCompositionPrimalLabel(composition.primal.selected)}`,
+    "tft-comp-primal-choice tft-comp-contribution-note");
+  choice.dataset.blessings = composition.primal.selected.join("+");
+  const catalog = tcomp.meta?.primalBlessings || [];
+  choice.title = composition.primal.selected.map(key => catalog.find(blessing => blessing.key === key))
+    .filter(Boolean).map(blessing => [blessing.description, blessing.scoreLimitation].filter(Boolean).join(" ")).join("\n");
+  return choice;
+}
+
+function tftCompositionPrimalDetails(composition) {
+  if (!composition.primal) return null;
+  const section = document.createElement("section"), table = document.createElement("table");
+  section.className = "tft-comp-primal-details";
+  table.className = "tft-comp-scenario-table tft-comp-primal-alternatives";
+  section.append(tftText("h4", "Primal blessings"), tftCompositionPrimalChoice(composition));
+  const required = composition.primal.required || [];
+  if (required.length) section.append(tftText("p",
+    `Retained from level 8: ${tftCompositionPrimalLabel(required)}. Only options that keep the active earlier choices are compared.` +
+      (required.length > composition.primal.selected.length ? " At this breakpoint, only the first retained choice is active." : "") +
+      " Choice retention after Primal deactivates and returns is a conservative model assumption; the game’s reset behavior is unverified.",
+    "tft-comp-contribution-note tft-comp-primal-retained"));
+  table.append(tftText("caption", `One choice across all ${composition.profileCount} pressure assumptions`));
+  const head = document.createElement("thead"), headings = document.createElement("tr");
+  for (const label of ["Blessings", "EHP × DPS score"]) {
+    const cell = tftText("th", label); cell.scope = "col"; headings.append(cell);
+  }
+  head.append(headings);
+  const body = document.createElement("tbody");
+  for (const alternative of composition.primal.alternatives) {
+    const row = document.createElement("tr");
+    const selected = tftCompositionSameValues(alternative.blessings, composition.primal.selected);
+    row.className = "tft-comp-primal-alternative";
+    row.dataset.blessings = alternative.blessings.join("+");
+    row.dataset.selected = String(selected);
+    row.append(tftText("td", tftCompositionPrimalLabel(alternative.blessings) + (selected ? " · selected" : "")),
+      tftText("td", tftCompNumber(alternative.score)));
+    body.append(row);
+  }
+  table.append(head, body);
+  section.append(table, tftText("p",
+    "Bear’s executes are not valued against immortal targets. Phoenix’s component rewards are not valued with a fixed item budget. Those benefits can still matter in a real game.",
+    "tft-comp-contribution-note"));
+  return section;
+}
+
 function tftCompositionDetails(composition) {
   const details = document.createElement("details");
   details.className = "tft-details";
-  details.append(tftText("summary", "Fights, items and board details"));
+  details.append(tftText("summary", tftCompositionTheory(composition) ? "Assumptions, items and board details" : "Fights, items and board details"));
   details.addEventListener("toggle", () => {
     if (!details.open || details.dataset.built) return;
     details.append(tftCompositionDetailContents(composition));
@@ -2965,8 +3708,13 @@ function tftCompositionDetailContents(composition) {
   const grid = document.createElement("div");
   grid.className = "tft-comp-detail-grid";
   const items = document.createElement("div"), notes = document.createElement("div");
+  const theory = tftCompositionTheory(composition);
   items.append(tftText("h4", "Items and champion contributions"),
-    tftText("p", `Averages across the ${composition.metrics.benchmarkCount} ranking fights. DPS uses the whole encounter’s duration; attacks and casts stop after death, while burns and on-death bodies can persist.`, "tft-comp-contribution-note"));
+    tftText("p", theory ? `Response measurements across ${composition.profileCount} pressure assumptions. Effective self healing and consumed shields contribute to usable EHP. Ally healing and shields show potential output and receive no score credit. These estimates do not describe a particular fight.`
+      : `Averages across the ${composition.metrics.benchmarkCount} ranking fights. DPS uses the whole encounter’s duration; attacks and casts stop after death, while burns and on-death bodies can persist.`, "tft-comp-contribution-note"));
+  if (theory) items.append(tftText("p", (tcomp.data?.methodology?.unitDps || tcomp.meta?.methodology?.unitDps ||
+    "DPS contributions allocate the board’s geometric mean DPS by each champion’s mean share of measured DPS across pressure assumptions.") +
+    " Other measured unit figures are arithmetic means. Raw pressure spent excludes overkill.", "tft-comp-contribution-note"));
   const builds = document.createElement("div");
   builds.className = "tft-comp-build-list";
   for (const unit of composition.units) {
@@ -2975,9 +3723,13 @@ function tftCompositionDetailContents(composition) {
     row.dataset.unit = unit.slug;
     row.append(tftText("strong", `${unit.name} · ${unit.star}★`));
     if (unit.items?.length) row.append(tftCoreItems(unit.items, unit.itemApis));
-    row.append(tftText("span", `${tftCompNumber(unit.damage)} damage · ${tftCompNumber(unit.dps)} DPS · Alive ${tftCompSeconds(unit.aliveTime)} · ${tftCompNumber(unit.damageTaken)} damage taken`, "tft-core-components"));
-    const sustain = [[unit.healing, "healing received"], [unit.shielding, "shield absorbed"],
-      [unit.allyHealing, "ally healing provided"], [unit.allyShielding, "ally shields granted"]]
+    row.append(tftText("span", theory ? tftCompTheoryUnitMetrics(unit)
+      : `${tftCompNumber(unit.damage)} damage · ${tftCompNumber(unit.dps)} DPS · Alive ${tftCompSeconds(unit.aliveTime)} · ${tftCompNumber(unit.damageTaken)} damage taken`, "tft-core-components"));
+    const sustain = (theory
+      ? [[unit.healing, "effective self healing"], [unit.shielding, "shields absorbed"],
+        [unit.allyHealing, "potential ally healing (uncredited)"], [unit.allyShielding, "potential ally shields (uncredited)"]]
+      : [[unit.healing, "healing received"], [unit.shielding, "shield absorbed"],
+        [unit.allyHealing, "ally healing provided"], [unit.allyShielding, "ally shields granted"]])
       .filter(([value]) => value > 0).map(([value, label]) => `${tftCompNumber(value)} ${label}`);
     if (sustain.length) row.append(tftText("span", sustain.join(" · "), "tft-core-components"));
     const evidence = tftCompositionItemEvidence(unit, composition);
@@ -2987,6 +3739,18 @@ function tftCompositionDetailContents(composition) {
   items.append(builds);
   notes.append(tftText("h4", "Components to collect"), tftText("p", (composition.components || [])
     .map(c => `${c.count} × ${c.name}`).join(" · ") || "Component counts are unavailable for this board."));
+  const antiheal = (Array.isArray(composition.antihealSources) ? composition.antihealSources : [])
+    .filter(source => source && typeof source.name === "string" && source.name.trim())
+    .map(source => {
+      const holder = composition.units.find(unit => unit.api === source.unitApi);
+      if (source.type === "ability" && holder?.name === source.name)
+        return `${source.name}: ${source.abilityName || "ability"}`;
+      return `${source.name}${holder ? ` on ${holder.name}` : source.type === "trait" ? " (trait)" : ""}`;
+    });
+  if (antiheal.length) notes.append(tftText("h4", "Antiheal"),
+    tftText("p", [...new Set(antiheal)].join(" · "), "tft-comp-antiheal"));
+  const primal = tftCompositionPrimalDetails(composition);
+  if (primal) notes.append(primal);
   const inactive = (composition.traits || []).filter(t => !t.active);
   if (inactive.length) {
     notes.append(tftText("h4", "Below a breakpoint"), tftText("p", inactive.map(t => `${t.count} ${t.name}`).join(" · ")));
@@ -3007,11 +3771,13 @@ function tftCompositionDetailContents(composition) {
   if (alternatives.length) {
     notes.append(tftText("h4", `Other allocations for these ${composition.units.length} champions`));
     const list = document.createElement("ul");
-    alternatives.forEach(board => list.append(tftText("li", `${TFT_COMP_STRUCTURES[board.structure] || board.structure}: ${tftCompWins(board.metrics)} benchmark wins · ${tftCompNumber(board.metrics.damageDps)} DPS · Frontline held ${tftCompSeconds(board.metrics.frontlineTime)}`)));
+    alternatives.forEach(board => list.append(tftText("li", `${TFT_COMP_STRUCTURES[board.structure] || board.structure}: ` +
+      (theory ? `${tftCompNumber(board.metrics.theoryScore)} EHP × DPS score · ${tftCompNumber(board.metrics.frontlineEhp)} frontline EHP · ${tftCompNumber(board.metrics.damageDps)} DPS`
+        : `${tftCompWins(board.metrics)} benchmark wins · ${tftCompNumber(board.metrics.damageDps)} DPS · Frontline held ${tftCompSeconds(board.metrics.frontlineTime)}`))));
     notes.append(list);
   }
   notes.append(tftText("p", `${tftCompNumber(composition.purchaseGold)} gold buys the copies on this finished board. Rolling and leveling costs are additional.`));
-  grid.append(tftCompositionMatchups(composition), items, notes);
+  grid.append(theory ? tftCompositionTheoryScenarios(composition) : tftCompositionMatchups(composition), items, notes);
   return grid;
 }
 
@@ -3028,12 +3794,17 @@ function tftCompositionCard(composition, rank) {
   card.dataset.rank = rank;
   title.append(tftText("span", `${rank}.`, "tft-comp-rank"),
     document.createTextNode(`${carry?.name || composition.mainCarry} + ${tank?.name || composition.mainTank}`));
-  header.append(title, tftText("span", TFT_COMP_STRUCTURES[composition.structure] || composition.structure, "tft-comp-structure"));
+  header.append(title, tftText("span", TFT_COMP_STRUCTURES[composition.structure] || composition.structure, "tft-comp-structure"),
+    tftCompositionCopyButton(composition));
   const profile = tcomp.meta.profiles.find(p => p.key === tcomp.profile);
   if (tftCompositionHasLevels()) card.append(tftText("p", "Level 8 core", "tft-comp-level"));
   const occupancy = tftCompositionHasLevels() ? `${composition.unitCount} champions · ${composition.slotsUsed} / ${composition.boardSlots} slots · ` : "";
   card.append(header, tftText("p", `${occupancy}${composition.sameCostCount} of ${composition.units.length} at ${profile.cost} cost · ${tftCompNumber(composition.purchaseGold)}g in champion copies · ${composition.itemCount} items`, "tft-comp-meta"));
+  const primal = tftCompositionPrimalChoice(composition);
+  if (primal) card.append(primal);
   card.append(tftCompositionMetrics(composition));
+  const evidence = tftCompositionEvidenceSummary(composition);
+  if (evidence) card.append(tftText("p", evidence, "tft-comp-contribution-note tft-comp-evidence-summary"));
   card.append(tftCompositionUnits(composition), tftCompositionTraits(composition.traits || []));
   if (tftCompositionHasLevels() && composition.level9Upgrade) card.append(tftCompositionUpgrade(composition));
   card.append(tftCompositionDetails(composition));
@@ -3043,7 +3814,18 @@ function tftCompositionCard(composition, rank) {
 function tftCompositionMetrics(composition) {
   const metrics = document.createElement("div");
   metrics.className = "tft-comp-metrics";
-  for (const [label, value, help] of [
+  const theory = tftCompositionTheory(composition);
+  metrics.dataset.model = tftCompositionModel(composition);
+  for (const [label, value, help] of theory ? [
+    ["EHP × DPS score", tftCompNumber(composition.metrics.theoryScore), "Geometric mean of frontline EHP × measured team DPS across the pressure assumptions. The score uses unrounded EHP × DPS. This strength index has no perfect-score ceiling and is not a win rate."],
+    ["Frontline EHP", tftCompNumber(composition.metrics.frontlineEhp), "Geometric mean of usable frontline effective health, including modeled resistances and effective self sustain, across the pressure assumptions. Ally support potential is uncredited."],
+    ["Team DPS", tftCompNumber(composition.metrics.damageDps), tftCompositionSharedPressure(composition)
+      ? "Geometric mean of protected damage divided by observed time. Measurement stops at the planned opening-EHP window or earlier frontline collapse; no protected output continues after collapse."
+      : "Geometric mean of team damage output measured by the saved v1 independent-response model over opening frontline EHP ÷ incoming DPS."],
+    ["Est. protection", tftCompSeconds(composition.metrics.protectionTime), tftCompositionSharedPressure(composition)
+      ? "Geometric mean of usable frontline EHP ÷ incoming DPS. The scenario table separately shows observed frontline collapse. Remaining-EHP extrapolation applies only when the frontline survives its planned window."
+      : "Geometric mean of frontline EHP ÷ incoming DPS in the saved v1 model; this is an estimate, not an observed collapse time."],
+  ] : [
     ["Benchmark wins", tftCompWins(composition.metrics), "Wins against the fixed ranking pool, with each opponent tested in both initiative orders. Equal win rates share a rank. This is not a live win rate."],
     ["Encounter DPS", tftCompNumber(composition.metrics.damageDps), "Actual team damage divided by the whole fight’s duration, averaged across opponents. Attacks and casts stop after death; burns and on-death bodies can persist."],
     ["Frontline held", tftCompSeconds(composition.metrics.frontlineTime), "Time until the last allied frontliner dies or the fight ends, averaged across opponents."],
@@ -3069,7 +3851,7 @@ function tftCompositionUnits(composition) {
   units.setAttribute("aria-label", `${composition.units.length} champions grouped from frontline to backline roles; not hex positioning`);
   const roleOrder = { mainTank: 0, tank: 1, mainCarry: 3, carry: 4, support: 5 };
   const ordered = composition.units.slice().sort((a, b) => {
-    const front = u => ["tank", "fighter"].includes(u.objective);
+    const front = u => u.frontline ?? ["tank", "fighter"].includes(u.objective);
     return Number(front(b)) - Number(front(a)) || (roleOrder[a.assignment] ?? 5) - (roleOrder[b.assignment] ?? 5) || a.name.localeCompare(b.name);
   });
   ordered.forEach(unit => units.append(tftCompositionUnit(unit, composition)));
@@ -3102,14 +3884,24 @@ function tftCompositionUpgradeContents(composition) {
   section.className = "tft-comp-upgrade-body";
   section.dataset.composition = board.id;
   section.dataset.level = board.level;
-  section.append(tftText("p", `${board.unitCount} champions · ${board.slotsUsed} / ${board.boardSlots} slots · ${board.itemCount} existing items`, "tft-comp-meta"));
+  const heading = document.createElement("div");
+  heading.className = "tft-comp-heading";
+  heading.append(tftText("p", `${board.unitCount} champions · ${board.slotsUsed} / ${board.boardSlots} slots · ${board.itemCount} existing items`, "tft-comp-meta"),
+    tftCompositionCopyButton(board));
+  section.append(heading);
+  const primal = tftCompositionPrimalChoice(board);
+  if (primal) section.append(primal);
   const changes = document.createElement("div");
   changes.className = "tft-comp-transition";
   const unitNames = units => units.map(unit => `${unit.name} ${unit.star}★${unit.slotCost > 1 ? ` (${unit.slotCost} slots)` : ""}`).join(" + ");
   changes.append(tftText("p", transition.removed.length
     ? `Replace ${unitNames(transition.removed)} → ${unitNames(transition.added)}.` : `Add ${unitNames(transition.added)}.`));
   const delta = upgrade.benchmarkWinDelta;
-  changes.append(tftText("p", `${delta ? `${Math.abs(delta)} ${delta > 0 ? "more" : "fewer"} benchmark ${Math.abs(delta) === 1 ? "win" : "wins"}` : "Same benchmark win count"} against the same reference boards. Level 8 results determine this composition’s rank. Reaching level 9 and finding these champions are optional.`));
+  const theory = tftCompositionTheory(composition);
+  changes.append(tftText("p", (theory
+    ? `${tftCompPercentDelta(upgrade.theoryScoreDelta, composition.metrics.theoryScore)} EHP × DPS score under the same pressure assumptions.`
+    : `${delta ? `${Math.abs(delta)} ${delta > 0 ? "more" : "fewer"} benchmark ${Math.abs(delta) === 1 ? "win" : "wins"}` : "Same benchmark win count"} against the same reference boards.`) +
+    " Level 8 results determine this composition’s rank. Reaching level 9 and finding these champions are optional."));
   if (transition.itemTransfers.length) {
     const transfers = document.createElement("div");
     transfers.className = "tft-comp-transfers";
@@ -3135,10 +3927,12 @@ function tftCompositionUpgradeContents(composition) {
   section.append(changes, tftCompositionMetrics(board), tftCompositionUnits(board), tftCompositionTraits(board.traits || []));
   const evidence = document.createElement("details");
   evidence.className = "tft-details tft-comp-upgrade-tests";
-  evidence.append(tftText("summary", "Upgrade fights and contributions"));
+  evidence.append(tftText("summary", theory ? "Upgrade capacity and contributions" : "Upgrade fights and contributions"));
   evidence.addEventListener("toggle", () => {
     if (!evidence.open || evidence.dataset.built) return;
-    evidence.append(tftText("p", `${tftCompNumber(upgrade.selection.rostersCompared)} legal transitions and ${tftCompNumber(upgrade.selection.allocationsCompared)} allocations of the existing items compared in the ranking fights. Retained champions keep their items. Level 9 and held-out outcomes never change the level 8 ranking.`, "tft-comp-contribution-note"),
+    evidence.append(tftText("p", `${tftCompNumber(upgrade.selection.rostersCompared)} legal transitions and ${tftCompNumber(upgrade.selection.allocationsCompared)} allocations of the existing items compared ` +
+      (theory ? "under the same pressure assumptions. Retained champions keep their items. Level 9 results never change the level 8 ranking."
+        : "in the ranking fights. Retained champions keep their items. Level 9 and held-out outcomes never change the level 8 ranking."), "tft-comp-contribution-note"),
       tftCompositionDetailContents(board));
     evidence.dataset.built = "true";
   });
@@ -3150,8 +3944,7 @@ function renderTftCompositions() {
   const m = tcomp.meta, d = tcomp.data;
   const rows = d && d.revision === m?.revision && tcomp.key === tftCompositionKey() &&
     d.boardPlanModel === m?.boardPlanModel &&
-    m?.methodology?.evaluationModel === TFT_COMP_EVALUATION_MODEL &&
-    d.methodology?.evaluationModel === TFT_COMP_EVALUATION_MODEL ? tftCompositionRows() : [];
+    tftCompositionModelsMatch(d, m) ? tftCompositionRows() : [];
   const shown = rows.slice(0, tcomp.shown);
   const ranks = tftCompositionRanks(rows);
   tftActive("tft-comp-profile-seg", tcomp.profile);
@@ -3167,10 +3960,17 @@ function renderTftCompositions() {
     document.getElementById("tft-comp-plan-note").textContent = levels
       ? `Level 8 boards fill eight team slots. Elder Dragon occupies two slots, so a level 8 board containing him has seven champions. Four-cost cores contain no 5-cost champions and are selected for their level 8 strength. Optional level 9 upgrades retain the main carry and tank. Their 5-cost champions, including Elder Dragon, are assumed to be ${tftCompositionCapStar(m)}★. The search compares replacing a support with two 5-cost champions or Elder Dragon, and adding one 5-cost without selling anyone; equal results prefer two legendary slots. Traits may change. Existing items stay on retained holders; a sold support’s items move to the new champions.`
       : "These saved boards use the previous eight-champion composition model, with a main carry and tank of the chosen cost and one shared budget for completed items.";
-    const ranking = shown.length && shown.every(row => row.metrics.benchmarkWins === row.metrics.benchmarkCount)
-      ? "All shown boards won every ranking test and share rank 1. Held-out results are a separate check."
+    const theory = tftCompositionTheory(m);
+    const ranking = theory ? (tftCompositionPersistentTargets(m)
+      ? "Persistent enemy targets, two starting focus assumptions and explicit enemy control. Protected output stops at frontline collapse. "
+      : tftCompositionSharedPressure(m)
+      ? "Shared frontline pressure and explicit enemy-control conditions. Protected output stops at frontline collapse. "
+      : "Saved v1 independent-response model. ") +
+      "Ranked by the geometric mean of EHP × DPS; equal scores share a rank. EHP and DPS show the offense–defense tradeoff. Expand assumptions to see estimated damage capacity and how results vary."
+      : shown.length && shown.every(row => row.metrics.benchmarkWins === row.metrics.benchmarkCount)
+      ? "All shown boards reached the benchmark ceiling and share rank 1. These tests cannot identify a best board among them. Held-out results are a separate check."
       : "Ranked only by benchmark win rate; ties share a rank. Held-out checks do not affect ranks.";
-    document.getElementById("tft-comp-context").textContent = `${tcomp.geo === "clump" ? "Clumped" : "Spread"} formation · Fixed reference boards. ${levels ? "Level 8 determines the ranking. " : ""}${ranking}`;
+    document.getElementById("tft-comp-context").textContent = `${tcomp.geo === "clump" ? "Clumped" : "Spread"} ${theory ? "target coverage · Pressure assumptions" : "formation · Fixed reference boards"}. ${levels ? "Level 8 determines the ranking. " : ""}${ranking}`;
   }
   const search = d?.search;
   const refresh = tcomp.status?.refresh || tstate.status?.refresh;
@@ -3218,10 +4018,8 @@ async function loadTftCompositions({ preserve = false, force = false } = {}) {
       saved.revision === meta.revision && saved.baselineRevision === tftRevision() &&
       saved.baselineRevision === meta.baselineRevision &&
       (saved.profile?.key || saved.profile) === tcomp.profile && saved.geometry === tcomp.geo &&
-      saved.threat === tcomp.threat && saved.methodology?.evaluationModel === TFT_COMP_EVALUATION_MODEL &&
-      meta.methodology?.evaluationModel === TFT_COMP_EVALUATION_MODEL &&
-      saved.boardPlanModel === meta.boardPlanModel &&
-      saved.opponentPool?.hash === meta.opponentPool.hash && saved.opponentPool?.version === meta.opponentPool.version) {
+      saved.threat === tcomp.threat && tftCompositionModelsMatch(saved, meta) &&
+      saved.boardPlanModel === meta.boardPlanModel) {
     tcomp.loading = false;
     renderTftCompositions();
     updateHash();
@@ -3252,8 +4050,7 @@ async function loadTftCompositions({ preserve = false, force = false } = {}) {
           d.boardPlanModel !== tcomp.meta.boardPlanModel ||
           (d.boardPlanModel != null && d.boardPlanModel !== TFT_COMP_BOARD_PLAN_MODEL) ||
           d.geometry !== tcomp.geo || d.threat !== tcomp.threat || d.baselineRevision !== tftRevision() ||
-          d.methodology?.evaluationModel !== TFT_COMP_EVALUATION_MODEL ||
-          d.opponentPool?.hash !== tcomp.meta.opponentPool.hash || d.opponentPool?.version !== tcomp.meta.opponentPool.version ||
+          !tftCompositionModelsMatch(d, tcomp.meta) ||
           !Object.values(d.results).every(groups => groups && !Array.isArray(groups) &&
             Object.values(groups).every(rows => Array.isArray(rows) && rows.every(tftCompositionValid)))) {
         tcomp.data = null;
@@ -3532,8 +4329,15 @@ function renderTftRefresh() {
     title = target ? `Patch ${target} needs review` : "New patch data needs review";
     detail = `${current} ${refreshMessage(refresh) || "Some changes need checking before the updated TFT results can be used."}`;
   } else if (status === "failed") {
-    title = "Automatic update did not finish";
+    title = refresh.transport?.exhausted && refresh.transport?.retryable
+      ? "Patch download was interrupted" : "Automatic update did not finish";
     detail = `${current} The next scheduled check will retry.`;
+  } else if (status === "waiting-not-before") {
+    const retryAt = new Date(refresh.retryNotBefore);
+    title = "Patch source requested a pause";
+    detail = `${current} ${Number.isFinite(retryAt.getTime())
+      ? `Downloads can resume after ${retryAt.toLocaleString([], { dateStyle: "short", timeStyle: "short" })}.`
+      : "The next scheduled check will retry when the source is ready."}`;
   } else if (when && Date.now() - when.getTime() > 18 * 3.6e6) {
     status = "stale";
     title = "No recent automatic update check";
@@ -3541,6 +4345,10 @@ function renderTftRefresh() {
   } else {
     title = "Checked for patch updates";
     detail = refreshMessage(refresh) || `Using patch ${patch}.`;
+  }
+  if (status !== "needs-review" && refresh?.reviewBlocker) {
+    const blockedPatch = refresh.reviewBlocker.targetPatch;
+    detail += ` ${blockedPatch ? `Patch ${blockedPatch}` : "Downloaded patch data"} still has an unresolved review from an earlier check.`;
   }
   el.hidden = false;
   el.dataset.state = status;
@@ -4095,7 +4903,7 @@ async function loadTftScenario({ preserve = false } = {}) {
   document.getElementById("tft-show-stats").disabled = false;
   document.getElementById("tft-scenario-details").hidden = false;
   const sc = d.scenario;
-  renderTftFight(unit, sc);
+  renderTftFight(unit, sc, d.rows[tstate.sel] || d.best);
   const ranking = d.objective === "tank" ? `Ranked by survival; ${sc.duration}s+ builds compared at 2× incoming damage`
     : d.objective === "fighter" ? "Ranked by kill time, then damage before dying" : "Ranked by kill time, then damage";
   summary.textContent = d.rows.length
@@ -4107,9 +4915,11 @@ async function loadTftScenario({ preserve = false } = {}) {
   const traits = sc.traitsActive.length
     ? sc.traitsActive.map(t => `${t.trait} ${t.breakpoint}`).join(", ")
     : "none";
-  const objective = (tstate.meta.objectives || {})[d.objective] || d.objective;
+  const objective = d.pressureByBuild
+    ? "Pressure depends on the equipped form: AD builds receive attacks and casts; AP builds are protected."
+    : (tstate.meta.objectives || {})[d.objective] || d.objective;
   desc.replaceChildren(
-    tftText("p", `${d.unitName} at ${sc.star}★ · ${d.role}. ${objective}.`),
+    tftText("p", `${d.unitName} at ${sc.star}★${d.pressureByBuild ? " · role depends on equipped form" : ` · ${d.role}`}. ${objective}${objective.endsWith(".") ? "" : "."}`),
     ...(d.objective !== "tank" ? [tftText("p", tftTargetDebuffNote(sc.dummy?.targetDebuffs))] : []),
     ...(d.objective === "tank" ? [
       tftText("p", `${threat?.label || "Mixed"} enemy damage. ${tftTankDebuffNote(sc.dummy?.enemyDebuffs || tstate.meta.tankDebuffs)}`),
@@ -4155,6 +4965,7 @@ function tftHeldTime(time, capped, duration = tstate.data?.scenario?.duration ||
 
 function tftColumns() {
   const d = tstate.data, objective = d.objective || "carry";
+  const pressured = objective === "fighter" || d.pressureByBuild || d.rows.some(row => row.pressure === true);
   const items = { th: "Items", td: r => {
     const td = cell("");
     const list = document.createElement("div");
@@ -4179,6 +4990,7 @@ function tftColumns() {
       ? `How long the unit or its on-death body held enemies. ${d.scenario.duration}s+ means it reached the fight limit.`
       : "How long the unit lived under the dummies' attacks",
     td: r => {
+      if (r.pressure === false) return cell("Protected");
       const td = cell(objective === "tank" ? tftHeldTime(r.aliveTime, r.survivalCapped)
         : r.died ? `${r.diedAt.toFixed(1)}s ✝` + (r.aliveTime > r.diedAt ? ` (held ${r.aliveTime.toFixed(1)}s)` : "")
                              : `${r.aliveTime.toFixed(0)}s`);
@@ -4202,16 +5014,16 @@ function tftColumns() {
     { th: "Crit", td: r => cell(r.crit + "%" + (r.precision ? " ✦" : "")) },
   ];
   const body = [
-    { th: "HP", title: "Max health with items and traits", td: r => cell(fmtInt(r.hp)) },
+    { th: "HP", title: "Max health with items and traits", td: r => cell(Number.isFinite(r.hp) ? fmtInt(r.hp) : "—") },
     { th: "Armor/MR", title: objective === "tank" ? "Opening armor and MR after enemy sunder and shred" : "Armor and magic resist",
-      td: r => cell(`${fmtInt(r.armor)}/${fmtInt(r.mr)}`) },
+      td: r => cell(Number.isFinite(r.armor) && Number.isFinite(r.mr) ? `${fmtInt(r.armor)}/${fmtInt(r.mr)}` : "—") },
     { th: "Dur", title: "Durability: post-mitigation damage prevented", td: r => cell(r.durability ? r.durability + "%" : "–") },
   ];
   const soak = [
-    { th: "Absorbed", title: "Pre-mitigation damage the unit (and its body) took", td: r => cell(fmtInt(r.absorbed)) },
+    { th: "Absorbed", title: "Pre-mitigation damage the unit (and its body) took", td: r => cell(Number.isFinite(r.absorbed) ? fmtInt(r.absorbed) : "—") },
     { th: "Healed", title: objective === "tank" ? "Health actually restored after enemy heal cut; excludes overhealing" : "Health actually restored; excludes overhealing",
-      td: r => cell(fmtInt(r.healed)) },
-    { th: "Shielded", title: "Damage that landed on shields", td: r => cell(fmtInt(r.shielded)) },
+      td: r => cell(Number.isFinite(r.healed) ? fmtInt(r.healed) : "—") },
+    { th: "Shielded", title: "Damage that landed on shields", td: r => cell(Number.isFinite(r.shielded) ? fmtInt(r.shielded) : "—") },
     { th: "Denied", title: "Damage the dummies could not land while stunned or the unit was untargetable",
       td: r => cell(fmtInt(r.denied)) },
   ];
@@ -4221,11 +5033,11 @@ function tftColumns() {
   const counts = [{ th: "Casts", td: r => cell(String(r.casts)) }, { th: "Attacks", td: r => cell(String(r.attacks)) }];
   if (!document.getElementById("tft-show-stats").checked) {
     if (objective === "tank") return [rank, items, held, ...stress, ehp, ...soak.slice(1, 3), counts[0], soak[3]];
-    if (objective === "fighter") return [rank, items, kill, dmg, dps, held];
+    if (pressured) return [rank, items, kill, dmg, dps, held, ...(d.pressureByBuild ? [body[0]] : [])];
     return [rank, items, kill, dps, dmg];
   }
   if (objective === "tank") return [rank, items, held, ...stress, ehp, ...soak, ally, ...body, ...counts, dmg, ...stats];
-  if (objective === "fighter") return [rank, items, kill, dmg, dps, held, ...soak.slice(0, 3), ...body, ...counts, ...stats];
+  if (pressured) return [rank, items, kill, dmg, dps, held, ...soak.slice(0, 3), ...body, ...counts, ...stats];
   return [rank, items, kill, dps, dmg, ...counts, ...stats];
 }
 
@@ -4266,6 +5078,12 @@ function renderTftTable() {
 function renderTftBreakdown(r) {
   if (!r) return;
   const tank = tstate.data.objective === "tank";
+  const unit = tstate.meta?.units.find(unit => unit.slug === tstate.data.unit);
+  if (unit && typeof r.pressure === "boolean") {
+    renderTftFight(unit, tstate.data.scenario, r);
+    document.getElementById("tft-selected-meta").textContent =
+      `${unit.cost} cost · ${r.role || unit.role} · ${r.form ? `${r.form} form · ${r.range} range` : unit.ability}`;
+  }
   document.getElementById("tbd-title").textContent =
     `${tank ? "Build details" : "Damage breakdown"} — #${r.rank}: ${r.items.join(", ")}`;
   const fight = r.killTime != null ? `all three dead at ${r.killTime.toFixed(2)}s`
@@ -4279,8 +5097,11 @@ function renderTftBreakdown(r) {
     (r.allyHeal || r.allyShield ? `, allies healed ${fmtInt(r.allyHeal)} / shielded ${fmtInt(r.allyShield)}` : "");
   const stats = `${fmtInt(r.ad)} AD · ${fmtInt(r.ap)} AP · ${r.attackSpeed} attack speed · ${r.crit}% crit` +
     (r.precision ? " with Precision" : "") + (r.form ? ` · ${r.form} form` : "") +
+    (typeof r.pressure === "boolean" ? r.pressure ? " · takes incoming damage" : " · protected" : "") +
     ` · ${fmtInt(r.total)} damage · ${fmtInt(r.dps)} DPS · ` +
     `${r.attacks} attacks · ${r.casts} casts`;
+  const movement = !tank && tstate.data.scenario?.dummy?.meleeRepositionSeconds > 0
+    ? tftMovementSummary(r, r.range) : "";
   const hint = document.getElementById("tbd-hint");
   if (tank) {
     const survival = `${tftHeldTime(r.aliveTime, r.survivalCapped)} holding enemies` +
@@ -4297,7 +5118,7 @@ function renderTftBreakdown(r) {
       ...(r.allyHeal || r.allyShield ? [tftText("p", `Potential team utility: ${fmtInt(r.allyHeal)} ally healing / ${fmtInt(r.allyShield)} ally shielding. Ally health and survival are not simulated; these totals do not affect the ranking.`)] : []),
       tftText("p", `Damage breakdown for the regular fight: ${stats}.`));
   } else {
-    hint.textContent = `${stats} · ${fight}${body}`;
+    hint.textContent = `${stats}${movement ? ` · ${movement}` : ""} · ${fight}${body}`;
   }
   const entries = Object.entries(r.breakdown);
   const max = Math.max(...entries.map(([, x]) => x));
@@ -4499,6 +5320,7 @@ function showView(v) {
   if (v === "tft") { renderTftMode(); openTft(); }
   if (v !== "tft") clearTimeout(tstate.timer);
   if (v === "data") loadInventory().catch(() => {});
+  if (v === "onetricks") loadOnetricks();
 }
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearTimeout(tstate.timer);
@@ -4522,6 +5344,13 @@ document.querySelectorAll("#tbl th").forEach(th =>
     if (sortKey === k) sortDir = -sortDir;
     else { sortKey = k; sortDir = (k === "metric" || k === "games") ? -1 : 1; }
     renderTable();
+  }));
+document.querySelectorAll("#otbl th").forEach(th =>
+  th.addEventListener("click", () => {
+    const k = th.dataset.k;
+    if (otSortKey === k) otSortDir = -otSortDir;
+    else { otSortKey = k; otSortDir = (k === "rank" || k === "c") ? 1 : -1; }
+    renderOnetricks();
   }));
 initBucketSeg();
 document.getElementById("champ-search").addEventListener("change", e => {
@@ -4549,7 +5378,7 @@ async function init() {
     showView("champion");
     document.getElementById("champ-search").value = hash.name;
     loadChampion(hash.name);
-  } else if (hash.tab && ["overview", "champion", "builds", "tft", "data"].includes(hash.tab)) {
+  } else if (hash.tab && ["overview", "champion", "onetricks", "builds", "tft", "data"].includes(hash.tab)) {
     if (hash.tab === "builds" && hash.champ) bstate.champion = hash.champ;
     if (hash.tab === "builds" && hash.sc) bstate.scenario = hash.sc;
     if (hash.tab === "tft") {

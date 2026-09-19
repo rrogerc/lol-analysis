@@ -96,6 +96,44 @@ class TestLeaderboard(unittest.TestCase):
         self.assertEqual([row["rank"] for row in rows], [1, 1, 3])
         self.assertEqual([row["unitName"] for row in rows[:2]], ["Ahri", "Azir"])
 
+    def test_finite_winner_reports_its_equipped_form_and_pressure(self):
+        self.units.append(self.snap.unit("Nidalee"))
+        payload = self.write("Nidalee", killTime=5.5)
+        payload["best"].update(form="AD", kind="Assassin", objective="fighter", range=1, pressure=True)
+        Path(self.paths[("nidalee", "s2-clump-bare")]).write_text(json.dumps(payload))
+        row = next(row for row in self.board()["damage"] if row["unit"] == "nidalee")
+        self.assertEqual((row["form"], row["kind"], row["objective"], row["role"], row["range"], row["pressure"]),
+                         ("AD", "Assassin", "fighter", "Attack Assassin", 1, True))
+        self.assertEqual(row["performance"]["killTime"], 5.5)
+        self.assertEqual(row["score"], [0, 5.5])
+
+    def test_old_curve_payload_does_not_replace_the_finite_winner(self):
+        payload = self.write("Azir", killTime=10, total=6240)
+        payload["damageCurve"] = {"builds": [{"samples": [99999999]}]}
+        Path(self.paths[("azir", "s2-clump-bare")]).write_text(json.dumps(payload))
+        board = self.board()
+        row = board["damage"][0]
+        self.assertEqual(row["performance"]["killTime"], 10)
+        self.assertEqual(row["performance"]["total"], 6240)
+        self.assertEqual(row["score"], [0, 10])
+        for key in ("damageCurve", "finiteDiagnostic", "evaluationModel"):
+            self.assertNotIn(key, row)
+        self.assertNotIn("damageEvaluationModel", board)
+        self.assertNotIn("defaultDamageTime", board)
+
+    def test_movement_assumption_and_exact_time_come_from_the_saved_cell(self):
+        payload = self.write("Akali", killTime=8, movementTime=1.25, repositions=3)
+        payload["scenario"] = {"dummy": {"meleeRepositionSeconds": 0.75}}
+        path = Path(self.paths[("akali", "s2-clump-bare")])
+        path.write_text(json.dumps(payload))
+        row = self.board()["damage"][0]
+        self.assertEqual(row["meleeRepositionSeconds"], 0.75)
+        self.assertEqual(row["performance"]["movementTime"], 1.25)
+        self.assertEqual(row["performance"]["repositions"], 3)
+        del payload["scenario"]
+        path.write_text(json.dumps(payload))
+        self.assertNotIn("meleeRepositionSeconds", self.board()["damage"][0])
+
     def test_tanks_use_hold_time_and_double_pressure_with_double_caps_tied(self):
         self.write("Leona", aliveTime=60, survivalCapped=True, stressAliveTime=60,
                    stressCapped=True, total=200)

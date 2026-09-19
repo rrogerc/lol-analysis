@@ -116,6 +116,8 @@ pub struct DamageSpec {
     pub ap_ratio: f64,
     pub max_hp_ratio: Option<f64>,
     pub bonus_hp_ratio: Option<f64>,
+    /// Kassadin's Riftwalk: a percentage of the caster's MAXIMUM mana.
+    pub max_mana_ratio: Option<f64>,
 }
 
 impl DamageSpec {
@@ -129,6 +131,9 @@ impl DamageSpec {
         }
         if let Some(r) = self.bonus_hp_ratio {
             amt += r / 100.0 * sheet.hp_bonus;
+        }
+        if let Some(r) = self.max_mana_ratio {
+            amt += r / 100.0 * sheet.mana;
         }
         amt
     }

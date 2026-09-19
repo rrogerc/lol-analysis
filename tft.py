@@ -61,10 +61,12 @@ Every 3-item combination is simulated and ranked that way.
 """
 
 import glob
+from contextvars import ContextVar
 from functools import lru_cache
 import hashlib
 import itertools
 import json
+import math
 import multiprocessing as mp
 import os
 import re
@@ -81,11 +83,16 @@ from html import unescape
 from html.parser import HTMLParser
 
 from common import BASE_DIR
+import tft_http
 
 TFT_DATA_DIR = os.path.join(BASE_DIR, "data", "tft")
 CACHE_DIR = os.path.join(BASE_DIR, ".cache", "tft")
 SCENARIO_CACHE_DIR = CACHE_DIR   # the name webapp's warmer expects
 REFRESH_STATE_FILE = os.path.join(BASE_DIR, "jobs", ".state", "refresh-tft.json")
+REFRESH_HISTORY_LIMIT = 10
+# Match the user service's RestartSec; longer server delays use the stored guard.
+REFRESH_RETRY_DELAY_SECONDS = 5 * 60
+_FETCH_PROGRESS = ContextVar("tft_fetch_progress", default=None)
 DEFAULT_SET = 18
 
 METATFT_URL = "https://data.metatft.com/lookups/TFTSet{set}_latest_en_us.json"
@@ -128,6 +135,10 @@ PRISMATIC_STYLE = 5    # trait breakpoint styles at or above this are chase tier
 FIGHT_DURATION = 20.0  # carries and frontliners
 TANK_DURATION = 60.0   # tanks are scored on how long they last, so longer
 N_DUMMIES = 3
+# User-selected shared approximation, not a decoded champion animation.
+# Applies to the first engagement and each current-target death, at equipped
+# range <= 2. Cooldowns overlap; immortal composition probes stay stationary.
+MELEE_REPOSITION_SECONDS = 0.5
 DUMMY_STAR = 2
 # The first enemy is a tougher benchmark; the other slots keep set medians.
 FRONT_TANK_DEFENSES = {"hp": 3000, "armor": 110, "mr": 110}
@@ -244,11 +255,35 @@ def unit_scenarios(unit):
 # snapshots: fetch and load
 # ---------------------------------------------------------------------------
 
+def _fetch_response(url):
+    """Retry only transport operations; callers parse the returned raw bytes."""
+    last_retry = None
+
+    def retry(event):
+        nonlocal last_retry
+        last_retry = event
+        cause = f"HTTP {event['status']}" if event["status"] else event["errorType"]
+        print(f"TFT download {event['url']}: {cause} on attempt "
+              f"{event['attempt']}/{event['maxAttempts']}; retrying in {event['delay']:g}s.", flush=True)
+        report = _FETCH_PROGRESS.get()
+        if report:
+            report(transport={"state": "retrying", **event})
+
+    try:
+        response = tft_http.get(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"},
+                                opener=urllib.request.urlopen, on_retry=retry)
+    except urllib.error.URLError as error:
+        # Distinguish an exhausted GET from, for example, a warm-time timeout.
+        error.tft_fetch_error = True
+        raise
+    if last_retry and (report := _FETCH_PROGRESS.get()):
+        report(transport={"state": "recovered", "url": last_retry["url"],
+                          "attempts": response.attempts, "maxAttempts": last_retry["maxAttempts"]})
+    return response
+
+
 def fetch_bytes(url):
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT,
-                                               "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read()
+    return _fetch_response(url).body
 
 
 def fetch_json(url):
@@ -306,6 +341,8 @@ class PatchNotesParser(HTMLParser):
             self.heading, self.heading_text = tag, []
         elif tag == "li":
             parent = " ".join("".join(self.stack[-1]["text"]).split()).rstrip(":") if self.stack else ""
+            if self.stack and self.stack[-1]["parent"]:
+                parent = self.stack[-1]["parent"] + " " + parent
             self.stack.append({"text": [], "parent": parent, "section": self.section,
                                "update": self.update, "major": self.major})
         elif tag == "br" and self.stack:
@@ -343,6 +380,31 @@ class PatchNotesParser(HTMLParser):
             self.entries.append(entry)
 
 
+def patch_entry_changes(entry):
+    """Extract each numeric statement, retaining nested labels and context.
+
+    A form label can itself contain a colon ("Master Yi AP Form: Ability
+    Damage: ..."). Stop extending the label once the old value starts with
+    a number; expressions such as ratios remain intact for review.
+    """
+    text = entry["text"]
+    changes = []
+    for part in re.split(r"\.\s+(?=[A-Z][^⇒]*?:)", text):
+        match = re.fullmatch(r"(.+?):\s*(.*?)\s*⇒\s*(.+)", part)
+        if not match:
+            continue
+        what, old, new = match.groups()
+        while ":" in old and not re.match(r"^[+-]?(?:\d|\.\d)", old.lstrip()):
+            qualifier, old = old.split(":", 1)
+            what += ": " + qualifier.strip()
+            old = old.strip()
+        if entry.get("parent"):
+            what = entry["parent"] + " " + what
+        changes.append({"what": what, "old": old, "new": new,
+                        **{key: entry.get(key, "") for key in ("section", "update", "major")}})
+    return changes
+
+
 def patch_notes_document(html, base_patch):
     """Riot lists newest hotfix sections first; first update is B, then C/D."""
     parser = PatchNotesParser()
@@ -358,21 +420,7 @@ def patch_notes_document(html, base_patch):
     entries = [entry for entry in parser.entries if entry["major"]
                and entry["major"].lower() != "related articles" and entry["text"]]
     for entry in entries:
-        text = entry["text"]
-        if "⇒" not in text:
-            continue
-        # A sentence can contain multiple independent changes. Keep their
-        # labels together instead of treating the first new value as a label.
-        for part in re.split(r"\.\s+(?=[A-Z][^⇒]*?:)", text):
-            match = re.fullmatch(r"(.+?):\s*(.*?)\s*⇒\s*(.+)", part)
-            if not match:
-                continue
-            what, old, new = match.groups()
-            if entry["parent"]:
-                what = entry["parent"] + " " + what
-            changes.append({"what": what, "old": old, "new": new,
-                            "section": entry["section"], "update": entry["update"],
-                            "major": entry["major"]})
+        changes.extend(patch_entry_changes(entry))
     if not changes:
         raise ValueError("Riot patch notes contained no readable balance changes")
     return {"patch": patch, "basePatch": base_patch, "updates": parser.updates,
@@ -395,11 +443,10 @@ def parse_patch_notes(html):
 
 
 def fetch_source(url):
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=60) as response:
-        raw = response.read()
-        source = {"url": url, "lastModified": response.headers.get("Last-Modified"),
-                  "sha256": hashlib.sha256(raw).hexdigest()}
+    response = _fetch_response(url)
+    raw = response.body
+    source = {"url": url, "lastModified": response.headers.get("Last-Modified"),
+              "sha256": hashlib.sha256(raw).hexdigest()}
     return json.loads(raw), source
 
 
@@ -503,7 +550,7 @@ def cmd_fetch(args, *, automatic=False, prepare=None, progress=None):
             except HTTPError as e:
                 if e.code != 404:
                     raise
-                bins[asset] = {"error": str(e)[:80]}
+                bins[asset] = {"error": "HTTP Error 404: Not Found"}
     ok = sum(1 for b in bins.values() if b.get("castTime") is not None)
     print(f"  {len(bins)} bins, {ok} with a cast time")
     meta = {"set": set_no, "patch": patch,
@@ -1181,6 +1228,8 @@ def dummies_for(snap, n=N_DUMMIES, star=DUMMY_STAR, threat=None):
            "totalHp": sum(s["hp"] for s in slots),
            "critEv": crit_ev, "pressureDps": dps([1] * n),
            "board": board, "boardSize": BOARD_SIZE, "boardPressureDps": dps(board)}
+    if threat is None:
+        out["meleeRepositionSeconds"] = MELEE_REPOSITION_SECONDS
     if threat is not None:
         profile = next(p for p in tank_threats(snap, star) if p["key"] == threat)
         front = [dict(tank, nearby=True, line="frontline", label=f"Frontliner {i + 1}")
@@ -1352,7 +1401,8 @@ def kit_spec(unit, star, form=None):
 def item_spec(snap, api, item_fx, unit):
     """One item for the engine: its stat line as (key, value) pairs in the
     line's order and its modeled passive as plain numbers, with the range
-    and role gates of apply_item already applied for `unit`."""
+    and role gates of apply_item applied for `unit`. Form-dependent aura
+    reach is retained for the engine to resolve after equipping the build."""
     item = snap.items[api]
     spec = (item_fx.get("items") or {}).get(api) or {}
     c = item["curve"]
@@ -1399,13 +1449,19 @@ def item_spec(snap, api, item_fx, unit):
         if k in spec:
             out[k] = [rv(spec[k]["pct"]), rv(spec[k]["duration"])]
     rng = unit["stats"]["range"]
-    if "sunderAura" in spec and rng <= rv(spec["sunderAura"]["hexes"]):
-        out["sunderAura"] = rv(spec["sunderAura"]["pct"])
-    if "shredAura" in spec and rng <= rv(spec["shredAura"]["hexes"]):
-        out["shredAura"] = rv(spec["shredAura"]["pct"])
-    if "burnAura" in spec and ("hexes" not in spec["burnAura"]
-                               or rng <= rv(spec["burnAura"]["hexes"])):
-        out["burnAura"] = [rv(spec["burnAura"]["pct"]), rv(spec["burnAura"]["duration"])]
+    for name in ("sunderAura", "shredAura"):
+        if name in spec:
+            aura = spec[name]
+            if unit.get("forms"):
+                out[name + "ByRange"] = [rv(aura["pct"]), rv(aura["hexes"])]
+            elif rng <= rv(aura["hexes"]):
+                out[name] = rv(aura["pct"])
+    if "burnAura" in spec:
+        aura = spec["burnAura"]
+        if unit.get("forms") and "hexes" in aura:
+            out["burnAuraByRange"] = [rv(aura["pct"]), rv(aura["duration"]), rv(aura["hexes"])]
+        elif "hexes" not in aura or rng <= rv(aura["hexes"]):
+            out["burnAura"] = [rv(aura["pct"]), rv(aura["duration"])]
     for k in ("hpMult", "durability", "attackDamageTaken", "regenMissingPct", "allyHealPct", "ccImmuneDuration"):
         if k in spec:
             out[k] = rv(spec[k])
@@ -1438,8 +1494,12 @@ def item_spec(snap, api, item_fx, unit):
         out["adapPerHit"] = True
     if spec.get("unstoppableAtMaxStacks"):
         out["unstoppableAtMaxStacks"] = True
-    if "ionicSpark" in spec and rng <= rv(spec["ionicSpark"]["hexes"]):
-        out["ionicSpark"] = rv(spec["ionicSpark"]["pct"])
+    if "ionicSpark" in spec:
+        spark = spec["ionicSpark"]
+        if unit.get("forms"):
+            out["ionicSparkByRange"] = [rv(spark["pct"]), rv(spark["hexes"])]
+        elif rng <= rv(spark["hexes"]):
+            out["ionicSpark"] = rv(spark["pct"])
     if "hoj" in spec:
         h = spec["hoj"]
         out["hoj"] = [rv(h["adPct"]), rv(h["ap"]), rv(h["omnivamp"]), rv(h["threshold"])]
@@ -1464,6 +1524,13 @@ def trait_spec(snap, api, col, trait_fx, unit):
     own_mult = rv(spec["ownMultiplier"]) if "ownMultiplier" in spec else 1.0
     out = {"api": api, "name": t["name"],
            "stats": [[k, rv(s) * own_mult] for k, s in (spec.get("stats") or {}).items()]}
+    if "timedStats" in spec:
+        out["timedStats"] = []
+        for grant in spec["timedStats"]:
+            stats = [[key, rv(value) * own_mult] for key, value in grant["stats"].items()]
+            if any(value != 0 for _, value in stats):
+                out["timedStats"].append({"after": rv(grant["after"]),
+                                          "interval": rv(grant.get("interval", 0)), "stats": stats})
     if spec.get("precision"):
         out["precision"] = True
     if "asPerAttackStack" in spec:
@@ -1476,7 +1543,7 @@ def trait_spec(snap, api, col, trait_fx, unit):
     for k in ("bleed", "burnOnHit", "caustic"):
         if k in spec:
             out[k] = [rv(spec[k]["pct"]), rv(spec[k]["duration"])]
-    for k in ("bonusMagicPct", "durability", "omnivamp"):
+    for k in ("bonusMagicPct", "durability", "durabilityWhileShielded", "omnivamp"):
         if k in spec:
             out[k] = rv(spec[k])
     if "ravager" in spec:
@@ -1550,6 +1617,7 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
     item_fx = item_fx if item_fx is not None else load_item_effects(snap.set_no)
     trait_fx = trait_fx if trait_fx is not None else load_trait_effects(snap.set_no)
     objective = unit.get("objective", "carry")
+    auto_pressure = pressure is None
     if pressure is None:
         pressure = objective in PRESSURED
     if duration is None:
@@ -1571,7 +1639,8 @@ def cell_spec(snap, unit, star, geometry, ctx_traits, dummy_spec, duration=None,
                  "castTime": unit.get("castTime"), "hasForms": bool(unit.get("forms")),
                  "extras": {api: e["stats"] for api, e in snap.extras.items()}},
         "star": star, "kits": kits, "geometry": geometry, "duration": float(duration),
-        "pressure": bool(pressure), "immortal": objective == "tank",
+        "meleeRepositionSeconds": dummy_spec.get("meleeRepositionSeconds", 0.0),
+        "pressure": bool(pressure), "autoPressure": auto_pressure, "immortal": objective == "tank",
         "enemyDebuffs": dummy_spec.get("enemyDebuffs", tank_debuffs(snap))
                         if board and pressure else {},
         "targetDebuffs": dummy_spec.get("targetDebuffs", target_debuffs(snap)) if not board else {},
@@ -1989,14 +2058,16 @@ def _leaderboard_best(path, mtime_ns, size):
     if not payload.get("best"):
         raise ValueError("scenario lacks an exact leaderboard result; recalculate its cache")
     return {"best": payload["best"], "buildsEvaluated": payload["buildsEvaluated"],
-            "computedAt": payload["computedAt"]}
+            "computedAt": payload["computedAt"],
+            "meleeRepositionSeconds": payload.get("scenario", {}).get("dummy", {}).get("meleeRepositionSeconds", 0.0)}
 
 
 def cached_leaderboard(key, paths=None, *, snap=None):
     """One optimized build per eligible champion under matching conditions.
 
-    Damage keeps the existing protected carry / pressured fighter models.
-    Tanks use the selected shared pressure preset. Cold winners are listed
+    Damage keeps the protected carry / pressured fighter models, resolved
+    for the equipped form. Tanks use the selected shared pressure preset.
+    Cold winners are listed
     explicitly instead of being replaced with zeroes or another scenario.
     """
     selection = leaderboard_scenarios().get(key)
@@ -2030,11 +2101,13 @@ def cached_leaderboard(key, paths=None, *, snap=None):
             pending.append(identity)
             continue
         best = cached["best"]
-        entry = {**identity, "unitApi": unit["api"], "role": unit["roleName"],
-                 "kind": unit["kind"], "items": [snap.items[a]["name"] for a in best["itemApis"]],
+        entry = {**identity, "unitApi": unit["api"], **equipped_metadata(unit, best),
+                 "items": [snap.items[a]["name"] for a in best["itemApis"]],
                  "itemApis": list(best["itemApis"]), "performance": dict(best["performance"]),
                  "score": list(leaderboard_rank_key(best["performance"], unit["objective"])),
                  "buildsEvaluated": cached["buildsEvaluated"], "computedAt": cached["computedAt"]}
+        if cached["meleeRepositionSeconds"] > 0:
+            entry["meleeRepositionSeconds"] = cached["meleeRepositionSeconds"]
         boards["tanks" if unit["objective"] == "tank" else "damage"].append(entry)
     for rows in boards.values():
         rows.sort(key=lambda row: (row["score"], row["unitName"], row["unitApi"]))
@@ -2049,17 +2122,30 @@ def cached_leaderboard(key, paths=None, *, snap=None):
             "readyCount": expected - len(pending), "pending": pending, **boards}
 
 
+def equipped_metadata(unit, measured):
+    """Use the measured loadout's form and role, including melee Nidalee."""
+    form = measured.get("form")
+    kind = measured.get("kind", unit["kind"])
+    prefix = "Attack" if form == "AD" else "Magic" if form == "AP" else unit["roleName"].split()[0]
+    return {"form": form, "kind": kind, "role": f"{prefix} {kind}",
+            "range": measured.get("range", unit["stats"]["range"]),
+            "objective": measured.get("objective", unit["objective"]),
+            "pressure": measured.get("pressure", unit["objective"] in PRESSURED)}
+
+
 def cell_rows(snap, unit, out, count=CACHED_ROWS):
     """The cached rows of a cell: the top `count` builds of an enumeration,
     rounded as the dashboard shows them."""
-    pressured = unit["objective"] in PRESSURED
     rows = []
     previous_key, previous_rank = None, None
     for n, (combo, sheet, res) in enumerate(out[:count], 1):
+        measured = equipped_metadata(unit, sheet)
+        pressured = measured["pressure"]
         key = rank_key(res, unit["objective"])
         rank = previous_rank if unit["objective"] == "tank" and key == previous_key else n
         previous_key, previous_rank = key, rank
         row = {
+            **measured,
             "rank": rank, "items": [snap.items[a]["name"] for a in combo],
             "ad": round(sheet["ad"], 1), "ap": round(sheet["ap"]),
             "attackSpeed": round(sheet["as"], 2),
@@ -2074,6 +2160,9 @@ def cell_rows(snap, unit, out, count=CACHED_ROWS):
         }
         if sheet["form"]:
             row["form"] = sheet["form"]
+        if "movementTime" in res:
+            row.update(movementTime=round(res["movementTime"], 3),
+                       repositions=res["repositions"])
         if pressured:
             row.update({
                 "hp": round(sheet["hp"]), "armor": round(sheet["armor"]), "mr": round(sheet["mr"]),
@@ -2119,14 +2208,18 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
     core_analysis = analyze_cores(snap, unit, pool, scores, pair_scores=pair_scores)
     secs = round(time.time() - t0, 3)
     pressured = unit["objective"] in PRESSURED
+    pressure_by_build = unit["api"] == "TFT18_Nidalee"
     rows = cell_rows(snap, unit, out, CACHED_ROWS)
     fx_notes = trait_notes(snap, ctx_traits, trait_fx)
+    if pressure_by_build:
+        fx_notes.append("Nidalee's melee AD form receives incoming damage; her ranged AP form is protected.")
     traits_active = [{"trait": snap.traits[api]["name"], "breakpoint": snap.traits[api]["levels"][col - 1]}
                      for api, col in ctx_traits]
     payload = {
         "unit": unit_slug(unit), "unitName": unit["name"], "unitApi": unit["api"],
         "cost": unit["cost"], "role": unit["roleName"], "kind": unit["kind"],
-        "objective": unit["objective"], "pressured": pressured,
+        "objective": unit["objective"], "pressured": None if pressure_by_build else pressured,
+        "pressureByBuild": pressure_by_build,
         "scenario": {**sc, "duration": duration, "dummy": dummy, "traitsActive": traits_active,
                      "traitsUnmodeled": unmodeled, "notes": fx_notes,
                      "driver": driver_name(unit)},
@@ -2135,9 +2228,12 @@ def compute_cell(snap, unit, key, paths, log=None, prune=True):
         # The leaderboard must not rank different champions using rounded
         # display times. Keep the actual winning build and its raw metrics.
         "best": {"itemApis": list(out[0][0]),
+                 **equipped_metadata(unit, out[0][1]),
                  "performance": {field: out[0][2][field] for field in (
                      "killTime", "total", "dps", "aliveTime", "survivalCapped",
-                     "stressAliveTime", "stressCapped")}} if out else None,
+                     "stressAliveTime", "stressCapped")} |
+                     {field: out[0][2][field] for field in ("movementTime", "repositions")
+                      if field in out[0][2]}} if out else None,
         "coreAnalysis": core_analysis,
         "computedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "computeSeconds": secs,
@@ -2241,6 +2337,52 @@ def refresh_state():
         return {}
 
 
+def _refresh_summary(state):
+    """A bounded terminal record without recursively copying its history."""
+    if not isinstance(state, dict) or state.get("status") not in ("ok", "failed", "needs-review", "waiting-not-before"):
+        return None
+    fields = ("status", "phase", "failedPhase", "startedAt", "finishedAt", "checkedAt",
+              "activePatch", "targetPatch", "exit", "message", "transport", "retryNotBefore")
+    result = {key: state[key] for key in fields if key in state}
+    if isinstance(result.get("message"), str):
+        result["message"] = result["message"][:1000]
+    return result
+
+
+def _review_blocker(state):
+    return {"message": state.get("message", "Patch review is required."),
+            "targetPatch": state.get("targetPatch"),
+            "detectedAt": state.get("finishedAt", state.get("checkedAt")),
+            "failedPhase": state.get("failedPhase")}
+
+
+def _refresh_transport(error):
+    if not isinstance(error, urllib.error.URLError):
+        return None
+    source = getattr(error, "source_url", None) or getattr(error, "url", None)
+    # The fallback covers external/mocked URLError instances too, without
+    # placing their potentially credential-bearing reason text in status.
+    url = tft_http._safe_url(source) if source else None
+    context = {"state": "failed", "url": url, "errorType": type(error).__name__,
+            "attempts": getattr(error, "attempts", None),
+            "maxAttempts": getattr(error, "max_attempts", None),
+            "elapsed": getattr(error, "elapsed", None),
+            "httpStatus": error.code if isinstance(error, HTTPError) else None,
+            "retryable": tft_http.is_transient(error),
+            "exhausted": bool(getattr(error, "tft_fetch_error", False))}
+    if isinstance(error, HTTPError):
+        stamp = time.time()
+        delay = tft_http._retry_after(tft_http._headers(error.headers), stamp)
+        if delay is not None:
+            context["retryAfterSeconds"] = delay if math.isfinite(delay) else None
+            if delay > REFRESH_RETRY_DELAY_SECONDS:
+                try:
+                    context["retryNotBefore"] = datetime.fromtimestamp(stamp + delay, timezone.utc).isoformat()
+                except (ValueError, OverflowError, OSError):
+                    context["unsupportedRetryAfter"] = True
+    return context
+
+
 def write_json_atomic(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
@@ -2339,21 +2481,63 @@ def cmd_refresh(args):
             return
         now = lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
         previous_state = refresh_state()
+        previous_history = previous_state.get("history", [])
+        history = ([summary for entry in previous_history if (summary := _refresh_summary(entry))]
+                   if isinstance(previous_history, list) else [])
+        previous_summary = _refresh_summary(previous_state)
+        if previous_summary and (not history or history[-1] != previous_summary):
+            history.append(previous_summary)
+        blocker = previous_state.get("reviewBlocker")
+        if not isinstance(blocker, dict):
+            blocker = _review_blocker(previous_state) if previous_state.get("status") == "needs-review" else None
         state = {"status": "running", "phase": "checking", "startedAt": now(),
                  "message": "Checking Riot's patch notes and current source data.",
-                 "lastSuccessAt": previous_state.get("lastSuccessAt"), "exit": None}
+                 "lastSuccessAt": previous_state.get("lastSuccessAt"), "exit": None,
+                 "history": history[-REFRESH_HISTORY_LIMIT:], "reviewBlocker": blocker,
+                 "retryNotBefore": None}
 
         def report(**fields):
             state.update(fields)
             write_json_atomic(REFRESH_STATE_FILE, state)
 
+        def finish(**fields):
+            state.update(fields)
+            state["history"] = (state["history"] + [_refresh_summary(state)])[-REFRESH_HISTORY_LIMIT:]
+            report()
+
+        try:
+            retry_not_before = datetime.fromisoformat(previous_state.get("retryNotBefore", ""))
+        except (TypeError, ValueError):
+            retry_not_before = None
+        if (retry_not_before is not None and retry_not_before.tzinfo is not None
+                and datetime.now(timezone.utc) < retry_not_before):
+            finished = now()
+            context = previous_state.get("transport")
+            context = dict(context) if isinstance(context, dict) else {}
+            context["state"] = "waiting-not-before"
+            if context.get("url"):
+                context["url"] = tft_http._safe_url(context["url"])
+            finish(status="waiting-not-before", phase="waiting-not-before", exit=1,
+                   activePatch=previous_state.get("activePatch"), targetPatch=previous_state.get("targetPatch"),
+                   checkedAt=finished, finishedAt=finished, transport=context,
+                   retryNotBefore=retry_not_before.astimezone(timezone.utc).isoformat(),
+                   message=f"Waiting until {retry_not_before.astimezone(timezone.utc).isoformat()} "
+                           "to honor the source's Retry-After; no download or publication was attempted.")
+            print(state["message"], file=sys.stderr)
+            raise SystemExit(1)
+
         old_term = signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+        fetch_progress = _FETCH_PROGRESS.set(report)
         try:
             report(activePatch=load_snapshot(args.set).patch)
             prepared = None
 
             def prepare(candidate):
                 nonlocal prepared
+                # cmd_fetch calls this only after the staged inputs passed
+                # validation. A later computation failure is a separate issue.
+                report(reviewBlocker=None, targetPatch=candidate.patch, phase="warming-builds",
+                       message=f"Staged patch {candidate.patch} validated; preparing its dashboard.")
                 with open(os.path.join(CACHE_DIR, "refresh-warm.log"), "a") as log:
                     def log_line(line):
                         print(line, file=log, flush=True)
@@ -2367,22 +2551,47 @@ def cmd_refresh(args):
             finished = now()
             count = state.get("computedCells", 0)
             compositions = state.get("computedCompositionScenarios", 0)
-            report(status="ok", phase="complete", activePatch=snap.patch, targetPatch=snap.patch,
+            finish(status="ok", phase="complete", activePatch=snap.patch, targetPatch=snap.patch,
                    checkedAt=finished, finishedAt=finished, lastSuccessAt=finished, exit=0,
+                   reviewBlocker=None, retryNotBefore=None,
                    revision=snapshot_revision(snap),
                    compositionRevision=prepared["site"]["compositionRevision"],
                    message=f"Patch {snap.patch} is ready; {count} champion scenarios and {compositions} composition contexts recalculated.")
             print(state["message"])
         except BaseException as error:
             needs_review = isinstance(error, ReviewRequired)
-            code = 2 if needs_review else error.code if isinstance(error, SystemExit) and isinstance(error.code, int) else 1
+            transport = _refresh_transport(error)
+            temporary_fetch = transport is not None and transport["exhausted"] and transport["retryable"]
+            deferred = transport is not None and bool(transport.get("retryNotBefore") or transport.get("unsupportedRetryAfter"))
+            temporary_fetch = temporary_fetch and not deferred
+            interrupted = error.code if isinstance(error, SystemExit) and error.code in (130, 143) else 130 if isinstance(error, KeyboardInterrupt) else None
+            code = 2 if needs_review else 75 if temporary_fetch else interrupted or 1
             finished = now()
-            report(status="needs-review" if needs_review else "failed", phase="stopped",
-                   checkedAt=finished, finishedAt=finished, exit=code,
-                   message=str(error)[:1000] or "Refresh interrupted; the previous builds remain available.")
+            failed_phase = state.get("phase")
+            if transport and not getattr(error, "source_url", None):
+                message = f"{transport['errorType']} while downloading {transport['url'] or 'an HTTP source'}"
+                if transport["httpStatus"]:
+                    message += f" (HTTP {transport['httpStatus']})"
+            else:
+                message = str(error)[:1000] or "Refresh interrupted; the previous builds remain available."
+            failure = {"status": "needs-review" if needs_review else "failed", "phase": "stopped",
+                       "failedPhase": failed_phase, "checkedAt": finished, "finishedAt": finished,
+                       "exit": code, "message": message}
+            if transport:
+                failure["transport"] = transport
+                transport["automaticRetry"] = code == 75
+                if transport.get("retryNotBefore"):
+                    failure["retryNotBefore"] = transport["retryNotBefore"]
+                    failure["message"] += f" No immediate retry; the source requires waiting until {transport['retryNotBefore']}."
+                elif transport.get("unsupportedRetryAfter"):
+                    failure["message"] += " No automatic retry; the source's Retry-After exceeds the supported date range."
+            if needs_review:
+                failure["reviewBlocker"] = _review_blocker({**state, **failure})
+            finish(**failure)
             print(state["message"], file=sys.stderr)
-            raise SystemExit(code) from error
+            raise SystemExit(code) from None
         finally:
+            _FETCH_PROGRESS.reset(fetch_progress)
             signal.signal(signal.SIGTERM, old_term)
 
 

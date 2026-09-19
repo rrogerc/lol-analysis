@@ -1,7 +1,7 @@
 # Golden fixtures — the damage engine's output, pinned
 
 `engine-fights.json` and `enumerate.json` pin the **exact** output of the
-engine (item patch 16.17). Kayle's and Vladimir's cases are what the pre-Rust
+engine (item patch 16.18). Kayle's and Vladimir's cases are what the pre-Rust
 Python engine (`builds.py` at commit **d2922e6**) computed, and they proved
 the Rust port bit-identical; when the fixtures were regenerated on 2026-09-07
 to add Twitch (`lol_engine 6979fdd6…`, on top of commit e291d15) every one of
@@ -14,11 +14,23 @@ them a build holding the item (92 Kayle, 75 Twitch; Vladimir's kit never
 auto-attacks), and every other case came out byte for byte the same. No
 enumeration run's pool holds the item, so `enumerate.json` changed only in
 its provenance header.
+Regenerated on 2026-09-18 to add Kassadin (`lol_engine 6f54b786…`, on top of
+commit ba1a3a3), which also moved the fixtures to item patch 16.18: the
+16.18 snapshot (ba1a3a3) had left `TestGolden.test_fights` failing on the
+patch label alone. Before regenerating, every one of the 3,870 old cases was
+replayed with the new engine at 16.17 and came out bit-identical (the only
+differences were the new data key `costIncreasePct` in the 239 Actualizer
+cases' merged effects); regenerated at 16.18 every old case keeps its build,
+sheet and result byte for byte (the pool's numbers did not move between the
+two patches) and the four old enumeration runs are identical. What changed
+in the old cases is shape only: sheets gained `ult_cd_mult` (ultimate
+haste, read by a kit that recasts its ult) and Actualizer's `manaActive`
+gained `costIncreasePct`.
 `engine-fights.json` holds one case per (build, target, flag-variant): its
-inputs plus the `sheet`, `fx`, `ranks` and `simulate` result (3,870 cases:
-129 Kayle builds, 126 Vladimir, 129 Twitch). `enumerate.json` holds four
-`enumerate_builds` runs (a Kayle test fixture and a 12-item pool per
-champion) with their ordered result rows. Floats are stored as Python
+inputs plus the `sheet`, `fx`, `ranks` and `simulate` result (5,249 cases:
+129 Kayle builds, 126 Vladimir, 129 Twitch, 131 Kassadin). `enumerate.json`
+holds five `enumerate_builds` runs (a Kayle test fixture and a 12-item pool
+per champion) with their ordered result rows. Floats are stored as Python
 `repr`, which round-trips exactly; a non-finite value would be stored as the
 string `"inf"` / `"-inf"` / `"nan"` (none occur today).
 

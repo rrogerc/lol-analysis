@@ -64,6 +64,15 @@ def _number_unit(value):
 
 
 def _check_numeric_units(change, templates):
+    # When both sides explicitly name a unit, adding/removing % can change
+    # the formula even if the number is identical (10 AD versus 10% AD).
+    # A side with no unit can simply be Riot's abbreviated repeated suffix.
+    written_values = [change['old'], change['new'],
+                      *(c.get('patchLine', {}).get('new', '') for c in templates)]
+    percent_modes = {'%' in str(value) for value in written_values
+                     if _number_unit(value) or '%' in str(value)}
+    if len(percent_modes) > 1:
+        _fail(f"{change['what']}: numeric percentage/flat units changed, which needs a mechanics review")
     units = {_number_unit(change[key]) for key in ('old', 'new')} - {''}
     units.update(_number_unit(c.get('patchLine', {}).get('new', '')) for c in templates)
     units.discard('')
@@ -165,11 +174,137 @@ def _change_key(change):
 def _entry_key(entry):
     # Mechanics text is evidence: 1.5%, 15%, and -15% must stay distinct.
     return tuple(" ".join(str(entry.get(key, "")).casefold().split())
-                 for key in ("update", "section", "parent", "text"))
+                 for key in ("update", "major", "section", "parent", "text"))
+
+
+def _change_category(change):
+    section = _norm(change.get('section', ''))
+    if any(word in section for word in ('augment', 'wisp')):
+        return 'outside'
+    if section.startswith(('unit', 'champion')):
+        return 'unit'
+    if section == 'traits':
+        return 'trait'
+    if any(word in section for word in ('item', 'artifact', 'radiant', 'emblem')):
+        return 'item'
+    return None
+
+
+def _replace_check(checks, check):
+    """Supersede only the coordinates actually reviewed, retaining the rest."""
+    target = check['target']
+    positions = set(_positions(target))
+    kept, superseded = [], []
+    for old in checks:
+        if _target_key(old['target']) != _target_key(target):
+            kept.append(old)
+            continue
+        remaining = [] if 'stat' in target else [
+            (p, v) for p, v in zip(_positions(old['target']), old['expected']) if p not in positions]
+        if len(remaining) == len(old['expected']):
+            kept.append(old)
+            continue
+        # Keep lineage flat; copying its own lineage at every update would
+        # double the audit size on successive patches.
+        superseded.extend(deepcopy(old.get('supersededChecks', [])))
+        superseded.append({k: deepcopy(v) for k, v in old.items() if k not in {'supersededChecks', 'history'}})
+        if remaining:
+            rest = deepcopy(old)
+            rest['target']['stars' if target['kind'] == 'unit' else 'columns'] = [p for p, _ in remaining]
+            rest['expected'] = [v for _, v in remaining]
+            kept.append(rest)
+    if superseded:
+        records = [*check.get('supersededChecks', []), *superseded]
+        check['supersededChecks'] = list({json.dumps(record, sort_keys=True): record for record in records}.values())
+    checks[:] = [*kept, check]
+
+
+class _BoundReview:
+    """An explicit review of one transition, bound to source and prior audit.
+
+    This is the escape hatch for stale upstream values, compound expressions,
+    and documented model limits. It grants no approval to future source edits.
+    Raw definition and final numeric validation still run after applying it.
+    """
+    def __init__(self, candidate, previous, notes, document=None):
+        import tft
+        if document is None and previous.patch != candidate.patch:
+            path = Path(previous.dir).parent / 'patch-reviews' / f'{candidate.patch}.json'
+            if path.exists():
+                document = json.loads(path.read_text())
+        self.document = deepcopy(document)
+        self.changes, self.notes, self.dispositions = {}, {}, {}
+        if document is None:
+            return
+        if document.get('schema') != 1 or document.get('patch') != candidate.patch or document.get('previousPatch') != previous.patch:
+            _fail('review manifest names a different patch transition')
+        if document.get('source', '').rstrip('/') != notes['url'].rstrip('/'):
+            _fail('review manifest is not bound to the official patch source')
+        expected = {'lookupHash': tft.json_hash(candidate.raw), 'binsHash': tft.json_hash(candidate.bins),
+                    'patchNotesHash': tft.json_hash(notes), 'previousAuditHash': tft.json_hash(previous.audit)}
+        if document.get('bindings') != expected:
+            _fail('review manifest hashes do not match the staged sources and previous audit')
+        identities = {'change': {tft.json_hash(c) for c in notes['changes']},
+                      'note': {tft.json_hash(n) for n in notes['notes']}}
+        seen = set()
+        for mapping in document.get('mappings', []):
+            kind, evidence = self._evidence(mapping, identities)
+            target = mapping['target']
+            positions = [1] if 'stat' in target else _positions(target)
+            if (target.get('kind') not in {'unit', 'item', 'trait'}
+                    or ('stat' in target) == ('row' in target)
+                    or not positions or len(set(positions)) != len(positions)
+                    or any(type(p) is not int or p < 1 or (target['kind'] == 'unit' and p > 4) for p in positions)):
+                _fail(f'invalid reviewed target {target}')
+            for name in ('expected', 'observedBefore'):
+                values = mapping[name]
+                if (not isinstance(values, list) or len(values) != len(positions)
+                        or any(type(v) not in (int, float) or not math.isfinite(v) for v in values)):
+                    _fail(f'invalid reviewed {name} for {target}')
+            if not _same(_values(previous, target), mapping['observedBefore']):
+                _fail(f'reviewed baseline no longer matches {target}')
+            key = (kind, tft.json_hash(evidence), _target_key(target), tuple(positions))
+            if key in seen:
+                _fail(f'duplicate reviewed mapping for {target}')
+            seen.add(key)
+            bucket = self.changes if kind == 'change' else self.notes
+            bucket.setdefault(tft.json_hash(evidence), []).append(deepcopy(mapping))
+        for disposition in document.get('dispositions', []):
+            kind, evidence = self._evidence(disposition, identities)
+            key = kind, tft.json_hash(evidence)
+            if not disposition.get('disposition') or key in self.dispositions:
+                _fail('missing or duplicate review disposition')
+            if kind == 'change' and key[1] in self.changes:
+                _fail('review both applies and skips the same numeric change')
+            self.dispositions[key] = deepcopy(disposition)
+
+    @staticmethod
+    def _evidence(record, identities):
+        import tft
+        kinds = [kind for kind in ('change', 'note') if kind in record]
+        if len(kinds) != 1 or not str(record.get('reason', '')).strip():
+            _fail('review record needs exact evidence and an explanation')
+        kind = kinds[0]
+        evidence = record[kind]
+        if tft.json_hash(evidence) not in identities[kind]:
+            _fail('review record is absent from the exact staged patch notes')
+        return kind, evidence
+
+    def mapped(self, kind, evidence):
+        import tft
+        return (self.changes if kind == 'change' else self.notes).get(tft.json_hash(evidence), [])
+
+    def disposition(self, kind, evidence):
+        import tft
+        return self.dispositions.get((kind, tft.json_hash(evidence)))
 
 
 def _outside(entry, excluded_items):
     section, major = _norm(entry.get("section", "")), _norm(entry.get("major", ""))
+    if major == "systems" and section in {"xpperlevel", "experienceperlevel", "levelingcosts", "xpcosts"}:
+        text = entry.get("text", entry.get("what", ""))
+        if re.match(r"^Level\s+\d+\s+to\s+(?:Level\s+)?\d+(?:\s*:|\s*$)", text, re.I):
+            return "XP purchase costs are outside fixed-level combat evaluation"
     if any(word in section for word in ("augment", "artifact", "radiant")):
         return "category is outside the craftable-item combat model"
     if "cosmetic" in major or section in {"arenas", "booms", "tacticians", "3rdpartyfriends"}:
@@ -254,6 +389,10 @@ def _discover(change, previous, current):
     label = _label(change["what"])
     units = [u for u in previous.units.values() if label.startswith(_norm(u["name"]))]
     if len(units) != 1:
+        for kind, entities in (("trait", previous.traits), ("item", previous.items)):
+            found = [entity for entity in entities.values() if label.startswith(_norm(entity["name"]))]
+            if found:
+                _fail(f"{change['what']}: {kind} change needs an explicit reviewed field mapping")
         _fail(f"{change['what']}: no unique existing champion or reviewed target mapping")
     unit = units[0]
     suffix = label[len(_norm(unit["name"])):]
@@ -636,7 +775,7 @@ class _DefinitionReview:
         return self.changes
 
 
-def _reconcile(candidate, previous, notes):
+def _reconcile(candidate, previous, notes, review_document=None):
     """Return publishable overrides/audit, or raise :class:`ReviewRequired`.
 
     The candidate is staged. Its copied audit/overrides are never treated as
@@ -646,6 +785,7 @@ def _reconcile(candidate, previous, notes):
     import tft
     prior_notes = _read_notes(previous)
     _validate_sources(candidate, previous, notes, prior_notes)
+    bound_review = _BoundReview(candidate, previous, notes, review_document)
     overrides = deepcopy(previous.overrides)
     audit = deepcopy(previous.audit)
     checks = audit["checks"]
@@ -675,21 +815,103 @@ def _reconcile(candidate, previous, notes):
     # value, not to introduce any other value behind an old override.
     for check in checks:
         allow(check["target"], check["expected"])
+
+    def apply_review(mapping):
+        nonlocal working
+        target, expected = mapping['target'], mapping['expected']
+        evidence = mapping.get('change', mapping.get('note'))
+        check = {'what': evidence.get('what', evidence.get('text')), 'target': deepcopy(target),
+                 'expected': deepcopy(expected), 'source': {'url': notes['url']},
+                 'reviewRationale': mapping['reason'], 'observedBefore': mapping['observedBefore'],
+                 'fixedScope': True, 'manualOnly': True}
+        if 'change' in mapping:
+            check['patchLine'] = deepcopy(evidence)
+            # Only simple, verified encodings become reusable automatic
+            # mappings. A decomposed formula must be reviewed again if changed.
+            encoding = mapping.get('numericEncoding')
+            if encoding:
+                try:
+                    projected = _project(_numbers(evidence['new'], evidence['what']), target)
+                    if _same(_encode(projected, encoding['scale'], encoding['offset']), expected):
+                        check['numericEncoding'] = deepcopy(encoding)
+                        check['manualOnly'] = False
+                except ReviewRequired:
+                    pass
+        else:
+            check['reviewedNote'] = deepcopy(evidence)
+        allow(target, mapping['observedBefore'])
+        allow(target, expected)
+        _write_override(overrides, working, target, expected)
+        _replace_check(checks, check)
+        working = _normalized(candidate, overrides)
+
     handled = set()
+
+    def record_disposition(disposition):
+        nonlocal working
+        for target in disposition.get('retireTargets', []):
+            # Excluded stage arrays may have no verified current encoding.
+            # Keep their previous checks as history, not claims of currency.
+            if target.get('kind') != 'item' or target.get('api') not in excluded or not target.get('row'):
+                _fail('only an excluded item field can retire checks without a replacement')
+            _values(previous, target)
+            retired = [c for c in checks if _target_key(c['target']) == _target_key(target)]
+            if not retired:
+                _fail(f'review retirement has no previous checked field: {target}')
+            checks[:] = [c for c in checks if c not in retired]
+            audit.setdefault('outOfScopeChecks', []).extend(
+                {**deepcopy(c), 'retiredAtPatch': candidate.patch, 'retirementReason': disposition['reason']}
+                for c in retired)
+            overrides.get('items', {}).get(target['api'], {}).get('curve', {}).pop(target['row'], None)
+            working = _normalized(candidate, overrides)
+        ignored.append(disposition)
+
     for change in changes:
-        matching = [c for c in checks if _label(change["what"]) in {_label(c["what"]), _label(c.get("patchLine", {}).get("what", c["what"]))}]
+        mappings = bound_review.mapped('change', change)
+        if mappings:
+            for mapping in mappings:
+                apply_review(mapping)
+            applied.append(deepcopy(change))
+            handled.add(_change_key(change))
+            continue
+        disposition = bound_review.disposition('change', change)
+        if disposition:
+            record_disposition(disposition)
+            handled.add(_change_key(change))
+            continue
+        category = _change_category(change)
+        matching = [c for c in checks if (category is None or category == c['target']['kind'])
+                    and _label(change["what"]) in {_label(c["what"]), _label(c.get("patchLine", {}).get("what", c["what"]))}]
         reason = _outside(change, excluded_names)
         if not matching and reason:
             ignored.append({"change": deepcopy(change), "reason": reason})
             handled.add(_change_key(change))
             continue
         if not matching:
+            if category == 'outside':
+                _fail(f"{change['what']}: this category needs a scoped review disposition")
             matching = _discover(change, previous, working)
+            if category and any(c['target']['kind'] != category for c in matching):
+                _fail(f"{change['what']}: note category does not match the inferred target")
+        if any(c.get('manualOnly') for c in matching):
+            _fail(f"{change['what']}: previously decomposed expression needs a new explicit review")
         old_numbers = _numbers(change["old"], change["what"])
         new_numbers = _numbers(change["new"], change["what"])
         if len(old_numbers) != len(new_numbers):
             _fail(f"{change['what']}: old/new array lengths differ")
         _check_numeric_units(change, matching)
+        if len(new_numbers) > 1:
+            # A source array claims every listed coordinate. Fixed-scope
+            # reviews must not mark newly listed stars as handled while
+            # projecting only the previously reviewed subset.
+            for template in matching:
+                target = template['target']
+                if not template.get('fixedScope') or 'row' not in target:
+                    continue
+                covered = {p for c in matching if _target_key(c['target']) == _target_key(target)
+                           for p in _positions(c['target'])}
+                if not set(range(1, len(new_numbers) + 1)) <= covered:
+                    _fail(f"{change['what']}: array adds coordinates outside the reviewed scope")
         item_arrays = {c['target']['api'] for c in matching if c['target']['kind'] == 'item' and len(new_numbers) > 1}
         if item_arrays:
             if not item_arrays <= excluded:
@@ -709,7 +931,7 @@ def _reconcile(candidate, previous, notes):
             scale, offset = _transform(check)
             # A previously mapped unit row can extend to explicitly listed
             # stars. A singleton note retains the reviewed star scope.
-            if target["kind"] == "unit" and "row" in target and len(new_numbers) > 1:
+            if target["kind"] == "unit" and "row" in target and len(new_numbers) > 1 and not check.get('fixedScope'):
                 if len(new_numbers) > 4:
                     _fail(f"{change['what']}: unsupported star array")
                 target["stars"] = list(range(1, len(new_numbers) + 1))
@@ -743,10 +965,7 @@ def _reconcile(candidate, previous, notes):
                           "source": source, "numericEncoding": {"scale": scale, "offset": offset},
                           "automaticRationale": "existing reviewed mapping or unique old-value match; numeric continuity verified"})
             check.setdefault("id", "auto:" + ":".join(str(x) for x in _target_key(target)))
-            if template in checks:
-                checks[checks.index(template)] = check
-            else:
-                checks.append(check)
+            _replace_check(checks, check)
             working = _normalized(candidate, overrides)
         applied.append(deepcopy(change))
         handled.add(_change_key(change))
@@ -755,6 +974,14 @@ def _reconcile(candidate, previous, notes):
     for entry in notes["notes"]:
         if _entry_key(entry) in old_entries:
             continue
+        mappings = bound_review.mapped('note', entry)
+        for mapping in mappings:
+            apply_review(mapping)
+        disposition = bound_review.disposition('note', entry)
+        if not tft.patch_entry_changes(entry) and (mappings or disposition):
+            if disposition:
+                record_disposition(disposition)
+            continue
         reason = _outside(entry, excluded_names)
         if reason:
             ignored.append({"note": deepcopy(entry), "reason": reason})
@@ -762,9 +989,8 @@ def _reconcile(candidate, previous, notes):
         text = entry.get("text", "")
         if "⇒" in text:
             # The parser must have retained the bullet's numeric statements.
-            entry_label = _label((entry.get("parent", "") + " " + text.split(":", 1)[0]).strip())
-            relevant = [c for c in notes['changes'] if _label(c['what']) == entry_label
-                        and c.get('update', '') == entry.get('update', '')]
+            extracted = {_change_key(c) for c in tft.patch_entry_changes(entry)}
+            relevant = [c for c in notes['changes'] if _change_key(c) in extracted]
             if relevant and all(_change_key(c) in handled or _change_key(c) in old_changes for c in relevant):
                 continue
         _fail(f"new unreviewed mechanics bullet [{entry.get('section', '')}]: {text[:180]}")
@@ -791,6 +1017,9 @@ def _reconcile(candidate, previous, notes):
               "appliedChanges": applied, "definitionChanges": definition_changes,
               "outOfScope": ignored, "retiredStatCorrections": caught_up,
               "rationale": "No unreviewed modeled definition, timing, or mechanics change was accepted."}
+    if bound_review.document is not None:
+        record['reviewManifestHash'] = tft.json_hash(bound_review.document)
+        audit.setdefault('reviews', []).append(bound_review.document)
     unchanged = all(audit.get(key) == previous.audit.get(key)
                     for key in ('patch', 'lookupHash', 'binsHash', 'patchNotesHash'))
     if not (unchanged and audit.get('automatic')):
@@ -800,12 +1029,13 @@ def _reconcile(candidate, previous, notes):
     return overrides, audit
 
 
-def reconcile(candidate: 'tft.Snapshot', previous: 'tft.Snapshot', notes: dict) -> tuple[dict, dict]:
+def reconcile(candidate: 'tft.Snapshot', previous: 'tft.Snapshot', notes: dict,
+              *, review: dict | None = None) -> tuple[dict, dict]:
     """Reconcile staged inputs without mutation; fail closed on incomplete
     evidence, ambiguous targets, or unexplained modeled definition changes.
     """
     try:
-        return _reconcile(candidate, previous, notes)
+        return _reconcile(candidate, previous, notes, review)
     except ReviewRequired:
         raise
     except (KeyError, TypeError, IndexError, ValueError, AttributeError) as exc:

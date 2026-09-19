@@ -4,14 +4,14 @@
 //! bounces, charges and attack replacements.
 
 use crate::driver::Driver;
-use crate::fight::{Deal, Fight, MANA_LOCK_S, TICK_S};
+use crate::fight::{Deal, Fight, MANA_LOCK_S};
 use crate::fx::Form;
 use crate::kit::{CalcId, DType, Kit, RowId};
 use crate::pyf::{pyint, pymax, pymin};
 use crate::spec::UnitSpec;
 
-/// Noxious Blast: poison over fifteen seconds on the target and, in the
-/// clump, the nearest unpoisoned dummy. Poisons stack.
+/// Noxious Blast: poison over fifteen seconds on the target and the
+/// nearest unpoisoned enemy, independently of area coverage. Poisons stack.
 #[derive(Clone)]
 pub struct Cassiopeia {
     dur: RowId,
@@ -29,20 +29,19 @@ impl Driver for Cassiopeia {
         let dur = f.row(f.drv.dur);
         let d = f.target();
         f.dot_ability(f.drv.poison, d, dur, "poison", 1.0);
-        if let Some(d) = d {
-            f.dm(d).mark = true;
-        }
-        let others = f.aoe(None, true);
+        let others = f.alive();
         let mut first = None;
         for x in others.iter() {
-            if !f.d(x).mark {
+            // Poisoned means a live poison, not a permanent history mark.
+            // The target list supplies the existing nearest-first proxy.
+            if Some(x) != d && !f.d(x).dots.iter().any(|dot|
+                dot.src == "poison" && dot.until > f.t) {
                 first = Some(x);
                 break;
             }
         }
         if let Some(x) = first {
             f.dot_ability(f.drv.poison, Some(x), dur, "poison", 1.0);
-            f.dm(x).mark = true;
         }
     }
 }
@@ -106,7 +105,8 @@ impl Driver for Draven {
                 f.deal(rest, DType::Physical, Some(d), "giant axes", Deal::ABILITY_NOCRIT);
             }
         }
-        let tg = f.aoe_all();
+        // Both passes follow the selected line even if the outward pass
+        // kills its anchor. Dead recipients are skipped by the hit helper.
         for d in tg.iter() {
             f.hit_ability_typed(f.drv.axes2, Some(d), "giant axes", 1.0, DType::Physical);
         }
@@ -185,16 +185,16 @@ impl Driver for Gromp {
 
     fn cast(f: &mut Fight<Self>) {
         if f.sheet.form == Some(Form::AD) {
-            f.hit_ability(f.drv.phys1, f.target(), "ability", 1.0);
             // "within a 1 hex radius": the target too, as the poison cloud does
             let tg = f.adjacent(None);
+            f.hit_ability(f.drv.phys1, f.target(), "ability", 1.0);
             for d in tg.iter() {
                 f.hit_ability(f.drv.phys2, Some(d), "splash", 1.0);
             }
             return;
         }
-        f.hit_ability(f.drv.magic1, f.target(), "ability", 1.0);
         let tg = f.aoe_all();
+        f.hit_ability(f.drv.magic1, f.target(), "ability", 1.0);
         for d in tg.iter() {
             let dur = f.row(f.drv.poison_dur);
             f.dot_ability(f.drv.magic2, Some(d), dur, "cloud", 1.0);
@@ -224,7 +224,7 @@ impl Driver for Gromp {
 /// Karmic Bond: damage over a short tether, then a burst around the target.
 #[derive(Clone)]
 pub struct Karma {
-    bursts: Vec<f64>,
+    bursts: Vec<(f64, usize)>,
     tether_dur: RowId,
     tether: CalcId,
     burst: CalcId,
@@ -239,23 +239,33 @@ impl Driver for Karma {
     }
 
     fn cast(f: &mut Fight<Self>) {
-        let d = f.target();
+        let d = match f.target() {
+            Some(d) => d,
+            None => return,
+        };
         let dur = f.row(f.drv.tether_dur);
-        f.dot_ability(f.drv.tether, d, dur, "tether", 1.0);
+        f.dot_ability(f.drv.tether, Some(d), dur, "tether", 1.0);
         let at = f.t + dur;
-        f.drv.bursts.push(at);
+        f.drv.bursts.push((at, d));
     }
 
     fn tick(f: &mut Fight<Self>) {
         let t = f.t;
-        let due = f.drv.bursts.iter().filter(|&&b| t >= b - 1e-9).count();
-        if due > 0 {
-            f.drv.bursts.retain(|&b| t < b - 1e-9);
-            for _ in 0..due {
-                let tg = f.aoe_all();
-                for d in tg.iter() {
-                    f.hit_ability(f.drv.burst, Some(d), "burst", 1.0);
-                }
+        let mut i = 0;
+        while i < f.drv.bursts.len() {
+            let (at, center) = f.drv.bursts[i];
+            if t < at - 1e-9 {
+                i += 1;
+                continue;
+            }
+            f.drv.bursts.remove(i);
+            // The tether's recipient is its burst center, never whichever
+            // enemy becomes the current attack target. Whether the game
+            // cancels the burst after early death remains unresolved; keep
+            // the existing delayed burst in the retained abstract geometry.
+            let tg = f.aoe_around(center, None, false);
+            for d in tg.iter() {
+                f.hit_ability(f.drv.burst, Some(d), "burst", 1.0);
             }
         }
     }
@@ -286,7 +296,9 @@ impl Driver for KhaZix {
         } else {
             f.hit_ability(f.drv.isolated, d, "isolated", 1.0);
             let m = f.row(f.drv.grant);
-            f.mana += m;
+            // The spell's refund bypasses its own lock, while retaining
+            // all-source mana multipliers such as Adaptive Helm.
+            f.gain_mana_opt(m, false);
         }
     }
 }
@@ -306,8 +318,8 @@ impl Driver for LeBlanc {
     }
 
     fn cast(f: &mut Fight<Self>) {
-        f.hit_ability(f.drv.main, f.target(), "ability", 1.0);
         let tg = f.aoe(None, true);
+        f.hit_ability(f.drv.main, f.target(), "ability", 1.0);
         for d in tg.iter() {
             f.hit_ability(f.drv.splash, Some(d), "splash", 1.0);
         }
@@ -375,22 +387,22 @@ impl Driver for Pebbles {
         f.drv.channel_until = f.t + ct;
         f.drv.last = f.t;
         f.mana = 0.0;
+        // The endpoint need not coincide with the quarter-second tick.
+        f.after(ct, 0);
     }
 
     fn tick(f: &mut Fight<Self>) {
         let until = f.drv.channel_until;
-        if f.t > until + 1e-9 {
+        let through = pymin(f.t, until);
+        let span = through - f.drv.last;
+        if span <= 0.0 {
             return;
         }
         let d = match f.target() {
             Some(d) => d,
             None => return,
         };
-        let span = pymin(TICK_S, until - f.drv.last);
-        f.drv.last = f.t;
-        if span <= 0.0 {
-            return;
-        }
+        f.drv.last = through;
         f.hit_ability(f.drv.laser, Some(d), "laser", span);
         let red = f.row(f.drv.mr_reduction) * span;
         f.dm(d).mr_flat += red;
@@ -403,6 +415,10 @@ impl Driver for Pebbles {
                 f.fx.mana_regen += regen;
             }
         }
+    }
+
+    fn event(f: &mut Fight<Self>, _tag: u32) {
+        Self::tick(f);
     }
 }
 
@@ -426,22 +442,34 @@ impl Driver for Sivir {
     }
 
     fn cast(f: &mut Fight<Self>) {
-        f.hit_ability(f.drv.blade, f.target(), "ability", 1.0);
+        let primary = match f.target() {
+            Some(d) => d,
+            None => return,
+        };
+        f.hit_ability(f.drv.blade, Some(primary), "ability", 1.0);
         if !f.clump {
             return;
         }
         let mut bounces = pyint(f.row(f.drv.bounces));
+        if !f.d(primary).alive {
+            bounces += pyint(f.row(f.drv.kill_bounces));
+        }
+        let mut previous = primary;
         let mut i: i64 = 0;
         while i < bounces {
             let al = f.alive();
-            if al.len() < 2 {
-                break;
-            }
-            let d = al.get(((i + 1) as usize) % al.len());
+            // A bounce leaves the enemy just hit, even if that enemy died.
+            // Retain the existing target-order proxy for the nearby chain.
+            let d = match al.iter().find(|&d| d > previous)
+                .or_else(|| al.iter().find(|&d| d != previous)) {
+                Some(d) => d,
+                None => break,
+            };
             f.hit_ability(f.drv.bounce, Some(d), "bounces", 1.0);
             if !f.d(d).alive {
                 bounces += pyint(f.row(f.drv.kill_bounces));
             }
+            previous = d;
             i += 1;
         }
     }
@@ -644,8 +672,8 @@ impl Driver for Yunara {
     }
 
     fn cast(f: &mut Fight<Self>) {
-        f.hit_ability(f.drv.main, f.target(), "ability", 1.0);
         let tg = f.aoe(Some(f.row(f.drv.secondary)), true);
+        f.hit_ability(f.drv.main, f.target(), "ability", 1.0);
         for d in tg.iter() {
             f.hit_ability(f.drv.split, Some(d), "split", 1.0);
         }

@@ -727,3 +727,360 @@ impl Driver for TwitchDriver {
         }
     }
 }
+
+/// A blink caster who pays for everything in mana: Riftwalk opens the fight
+/// and goes out again on cooldown for as long as the pool lasts — each cast
+/// inside 15 s costs twice the last and hits harder for every stack standing
+/// — Null Sphere and Force Pulse go out on cooldown, every other cast takes
+/// time off Force Pulse, and Nether Blade arms an empowered attack that
+/// resets the attack timer and pays some of the spent mana back.
+#[derive(Clone, Debug, PartialEq)]
+pub struct KassadinDriver {
+    ranks: Ranks,
+    attack_range: f64,
+    windup_fraction: f64,
+    /// The pool every cast is paid from: the sheet's maximum mana.
+    mana_max: f64,
+    q_dmg: f64,
+    q_cd: f64,
+    q_cost: f64,
+    /// Nether Blade: the passive on-hit, the empowered attack's damage, how
+    /// long the empowerment waits for an attack, and the share of MISSING
+    /// mana that attack restores (the champion multiplier included).
+    w_onhit: f64,
+    w_dmg: f64,
+    w_cd: f64,
+    w_cost: f64,
+    w_window: f64,
+    w_restore: f64,
+    e_dmg: f64,
+    e_cd: f64,
+    e_cost: f64,
+    /// What each other ability cast takes off Force Pulse's cooldown.
+    e_cdr: f64,
+    /// Riftwalk: the blink's own damage, what each standing stack adds, its
+    /// cost with no stacks and the factor each stack multiplies that by, its
+    /// base cooldown, the stack cap and how long stacks stand.
+    r_dmg: f64,
+    r_stack_dmg: f64,
+    r_cost_base: f64,
+    r_cost_mult: f64,
+    r_cd: f64,
+    r_max_stacks: i64,
+    r_stack_s: f64,
+    /// The rotation state, and a pristine copy of it (see `KayleDriver`).
+    s: KassState,
+    s0: KassState,
+}
+
+/// Everything of Kassadin's rotation a fight moves.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct KassState {
+    /// Mana left: the sheet's maximum at the start, spent by every cast and
+    /// refilled only by Nether Blade's empowered attack (no regeneration).
+    mana: f64,
+    /// The cast animation in progress ends here: no other cast before it.
+    busy_until: f64,
+    w_ready: f64,
+    /// Nether Blade's empowerment waits for an attack, until `w_until`.
+    w_armed: bool,
+    w_until: f64,
+    e_ready: f64,
+    r_ready: f64,
+    /// Riftwalk stacks standing, and when they all lapse.
+    r_stacks: i64,
+    r_stacks_until: f64,
+    /// The ult is in this fight: the engine made the opening cast.
+    r_live: bool,
+}
+
+impl KassadinDriver {
+    /// The earliest a spell readied at `ready` can go: not before now, nor
+    /// inside another cast's animation.
+    fn castable_at(&self, e: &Engine, ready: f64) -> f64 {
+        pymax(pymax(ready, e.st.t), self.s.busy_until)
+    }
+
+    /// A cast with a cast time just went out: no other cast and no attack
+    /// inside its animation, but an attack already due later keeps its time.
+    fn cast_done(&mut self, e: &mut Engine) {
+        let t = e.st.t;
+        self.s.busy_until = t + ABILITY_LOCKOUT_S;
+        e.st.next_attack = pymax(e.st.next_attack, t + ABILITY_LOCKOUT_S);
+    }
+
+    /// Force Pulse's passive: an ability cast near Kassadin takes `e_cdr`
+    /// off its REMAINING cooldown.
+    fn shave_e(&mut self, t: f64) {
+        if self.s.e_ready > t {
+            self.s.e_ready = pymax(self.s.e_ready - self.e_cdr, t);
+        }
+    }
+
+    /// The Riftwalk stacks standing at `t`: none once they have lapsed.
+    fn stacks_at(&self, t: f64) -> i64 {
+        if t >= self.s.r_stacks_until {
+            0
+        } else {
+            self.s.r_stacks
+        }
+    }
+
+    /// What Riftwalk costs with `stacks` standing, before Actualizer.
+    fn r_cost(&self, stacks: i64) -> f64 {
+        let mut c = self.r_cost_base;
+        for _ in 0..stacks {
+            c *= self.r_cost_mult;
+        }
+        c
+    }
+
+    /// One Riftwalk: the damage counts the stacks standing before the cast,
+    /// which then gains one and refreshes them all.
+    fn riftwalk(&mut self, e: &mut Engine) {
+        let t = e.st.t;
+        let stacks = self.stacks_at(t);
+        self.s.mana -= self.r_cost(stacks) * e.mana_cost_mult();
+        debug_assert!(self.s.mana >= 0.0, "Riftwalk overspent: {}", self.s.mana);
+        self.s.r_ready = t + e.ult_cd(self.r_cd);
+        e.deal(self.r_dmg + stacks as f64 * self.r_stack_dmg, DType::Magic, SRC_R, false, true,
+               1.0);
+        e.ability_cast_proc();
+        e.eclipse_hit();
+        e.ult_hatefog();
+        self.s.r_stacks = imin(stacks + 1, self.r_max_stacks);
+        self.s.r_stacks_until = t + self.r_stack_s;
+        self.shave_e(t);
+    }
+}
+
+impl Driver for KassadinDriver {
+    fn new(kit: &Kit, sheet: &Sheet, level: i64, ranks: Ranks, _prestacked: bool)
+        -> Result<Self, String> {
+        let _ = level;
+        let cost = |ab: &crate::kit::Ability, rank: i64, slot: &str| -> Result<f64, String> {
+            ab.mana.get((rank - 1) as usize).copied()
+                .ok_or_else(|| format!("kassadin kit needs {slot}.mana"))
+        };
+        let (q_dmg, q_cd, q_cost) = if ranks.q > 0 {
+            (kit.q.damage.as_ref().ok_or("kassadin kit needs Q.damage")?.hit(ranks.q, sheet),
+             kit.q.cooldown_s[(ranks.q - 1) as usize], cost(&kit.q, ranks.q, "Q")?)
+        } else {
+            (0.0, INF, INF)
+        };
+        let (w_onhit, w_dmg, w_cd, w_cost, w_window, w_restore) = if ranks.w > 0 {
+            let r = (ranks.w - 1) as usize;
+            let em = kit.w.empowered.as_ref().ok_or("kassadin kit needs W.empowered")?;
+            (kit.w.onhit.as_ref().ok_or("kassadin kit needs W.onhit")?.hit(ranks.w, sheet),
+             em.damage.hit(ranks.w, sheet), kit.w.cooldown_s[r], cost(&kit.w, ranks.w, "W")?,
+             em.window_s, em.missing_mana_pct[r] / 100.0 * em.champion_mult)
+        } else {
+            (0.0, 0.0, INF, INF, 0.0, 0.0)
+        };
+        let (e_dmg, e_cd, e_cost) = if ranks.e > 0 {
+            (kit.e.damage.as_ref().ok_or("kassadin kit needs E.damage")?.hit(ranks.e, sheet),
+             kit.e.cooldown_s[(ranks.e - 1) as usize], cost(&kit.e, ranks.e, "E")?)
+        } else {
+            (0.0, INF, INF)
+        };
+        let (r_dmg, r_stack_dmg, r_cost_base, r_cost_mult, r_cd, r_max_stacks, r_stack_s) =
+            if ranks.r > 0 {
+                let rw = kit.r.riftwalk.as_ref().ok_or("kassadin kit needs R.riftwalk")?;
+                (rw.base.hit(ranks.r, sheet), rw.per_stack.hit(ranks.r, sheet),
+                 cost(&kit.r, ranks.r, "R")?, rw.mana_cost_mult,
+                 kit.r.cooldown_s[(ranks.r - 1) as usize], rw.max_stacks, rw.stack_duration_s)
+            } else {
+                (0.0, 0.0, INF, 1.0, INF, 0, 0.0)
+            };
+        let state = KassState {
+            mana: sheet.mana,
+            busy_until: 0.0,
+            w_ready: 0.0,
+            w_armed: false,
+            w_until: -1.0,
+            e_ready: 0.0,
+            r_ready: 0.0,
+            r_stacks: 0,
+            r_stacks_until: -1.0,
+            r_live: false,
+        };
+        Ok(KassadinDriver {
+            ranks,
+            attack_range: sheet.base_attack_range,
+            windup_fraction: kit.windup_fraction
+                .ok_or("kassadin kit needs attack.windupFraction")?,
+            mana_max: sheet.mana,
+            q_dmg,
+            q_cd,
+            q_cost,
+            w_onhit,
+            w_dmg,
+            w_cd,
+            w_cost,
+            w_window,
+            w_restore,
+            e_dmg,
+            e_cd,
+            e_cost,
+            e_cdr: kit.e.cd_reduction_per_cast_s,
+            r_dmg,
+            r_stack_dmg,
+            r_cost_base,
+            r_cost_mult,
+            r_cd,
+            r_max_stacks,
+            r_stack_s,
+            s: state,
+            s0: state,
+        })
+    }
+
+    fn reset(&mut self) {
+        self.s = self.s0;
+    }
+
+    fn ranged(&self) -> bool {
+        self.attack_range > MELEE_MAX_RANGE
+    }
+
+    fn attack_range(&self) -> f64 {
+        self.attack_range
+    }
+
+    fn shave_cooldowns(&mut self, st: &mut St, t: f64, factor: f64) {
+        shave(&mut st.q_ready, t, factor);
+        shave(&mut self.s.w_ready, t, factor);
+        shave(&mut self.s.e_ready, t, factor);
+    }
+
+    fn attack_riders(&mut self, e: &mut Engine) {
+        // Nether Blade's passive: proc damage on every on-hit (phantom hits
+        // and Dusk and Dawn's second pass included), not ability damage
+        if self.ranks.w > 0 {
+            e.deal(self.w_onhit, DType::Magic, SRC_W_ONHIT, false, false, 1.0);
+        }
+    }
+
+    fn after_attack(&mut self, e: &mut Engine) {
+        if !self.s.w_armed {
+            return;
+        }
+        let t = e.st.t;
+        self.s.w_armed = false;
+        if t > self.s.w_until {
+            // the window lapsed unused (a fight never gets here: the reset
+            // puts an attack inside it); the cooldown ran from its end
+            self.s.w_ready = self.s.w_until + e.basic_cd(self.w_cd);
+            return;
+        }
+        // the empowered attack: spell damage on top of the passive, one
+        // attack for Eclipse, and a share of the missing mana back
+        e.deal(self.w_dmg, DType::Magic, SRC_W, false, true, 1.0);
+        self.s.mana += (self.mana_max - self.s.mana) * self.w_restore;
+        self.s.w_ready = t + e.basic_cd(self.w_cd);
+    }
+
+    fn q_at(&self, e: &Engine) -> f64 {
+        if self.ranks.q == 0 || self.s.mana < self.q_cost * e.mana_cost_mult() {
+            return INF;
+        }
+        self.castable_at(e, e.st.q_ready)
+    }
+
+    fn cast_q(&mut self, e: &mut Engine) {
+        let t = e.st.t;
+        self.s.mana -= self.q_cost * e.mana_cost_mult();
+        e.st.q_ready = t + e.basic_cd(self.q_cd);
+        e.deal(self.q_dmg, DType::Magic, SRC_Q, false, true, 1.0);
+        e.ability_cast_proc();
+        e.eclipse_hit();
+        e.prime_spellblade();
+        self.cast_done(e);
+        self.shave_e(t);
+    }
+
+    fn cast_r(&mut self, e: &mut Engine) {
+        // the opening Riftwalk: the engine has primed Spellblade, held the
+        // first attack past the cast and opened the on-ult item windows
+        self.s.r_live = true;
+        self.s.busy_until = e.st.t + ABILITY_LOCKOUT_S;
+        self.riftwalk(e);
+    }
+
+    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 4]) -> usize {
+        let t = e.st.t;
+        let m = e.mana_cost_mult();
+        let mut n = 0;
+        if self.ranks.w > 0 && !self.s.w_armed && self.s.mana >= self.w_cost * m {
+            out[n] = (self.castable_at(e, self.s.w_ready), Kind::WCast);
+            n += 1;
+        }
+        if self.ranks.e > 0 && self.s.mana >= self.e_cost * m {
+            out[n] = (self.castable_at(e, self.s.e_ready), Kind::ECast);
+            n += 1;
+        }
+        if self.s.r_live {
+            let at = self.castable_at(e, self.s.r_ready);
+            let stacks = self.stacks_at(t);
+            if self.s.mana >= self.r_cost(stacks) * m {
+                out[n] = (at, Kind::RCast);
+                n += 1;
+            } else if stacks > 0 && self.s.mana >= self.r_cost(0) * m {
+                // short of this cost, but not of the one once the stacks lapse
+                out[n] = (pymax(at, self.s.r_stacks_until), Kind::RCast);
+                n += 1;
+            }
+        }
+        n
+    }
+
+    fn on_event(&mut self, e: &mut Engine, kind: Kind) {
+        let t = e.st.t;
+        let m = e.mana_cost_mult();
+        match kind {
+            Kind::WCast => {
+                if self.castable_at(e, self.s.w_ready) > t || self.s.w_armed
+                    || self.s.mana < self.w_cost * m {
+                    return; // a cast at this instant took the time or the mana
+                }
+                self.s.mana -= self.w_cost * m;
+                self.s.w_armed = true;
+                self.s.w_until = t + self.w_window;
+                // the reset: the empowered attack lands one windup from now,
+                // unless the attack already due lands sooner
+                let windup = e.attack_windup(0.0, self.windup_fraction);
+                e.st.next_attack = pymin(e.st.next_attack, t + windup);
+                // instant: no cast time, so no lockout; Muramana's Shock
+                // applies on the cast itself (V11.8)
+                e.ability_cast_proc();
+                e.prime_spellblade();
+                self.shave_e(t);
+            }
+            Kind::ECast => {
+                if self.castable_at(e, self.s.e_ready) > t || self.s.mana < self.e_cost * m {
+                    return;
+                }
+                self.s.mana -= self.e_cost * m;
+                self.s.e_ready = t + e.basic_cd(self.e_cd);
+                e.deal(self.e_dmg, DType::Magic, SRC_E, false, true, 1.0);
+                e.ability_cast_proc();
+                e.eclipse_hit();
+                e.prime_spellblade();
+                self.cast_done(e);
+            }
+            Kind::RCast => {
+                if self.castable_at(e, self.s.r_ready) > t
+                    || self.s.mana < self.r_cost(self.stacks_at(t)) * m {
+                    return;
+                }
+                // Hexplate's Overdrive (30 s cooldown) and Fiendhunter's
+                // Opening Barrage (45 s) opened on the opening cast and
+                // cannot again inside a fight
+                e.prime_spellblade();
+                self.cast_done(e);
+                self.riftwalk(e);
+            }
+            other => panic!("unhandled event {other:?}"),
+        }
+    }
+}

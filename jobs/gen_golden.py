@@ -71,7 +71,7 @@ SEED_COVERAGE = 20260905    # >=2 builds per pool item
 SEED_LOWLEVEL = 20260906    # level 9 / 11 / 13 builds
 SEED_ENUM_POOL = 20260907   # the 12-item pools for enumerate runs B and C
 
-CHAMPIONS = ("kayle", "vladimir", "twitch")
+CHAMPIONS = ("kayle", "vladimir", "twitch", "kassadin")
 LOW_LEVELS = (9, 11, 13)
 LOW_PER_LEVEL = 10
 VARIANT_EVERY = 5           # every 5th build also gets the flag variants
@@ -86,36 +86,36 @@ EXTRA_TARGETS = {
 # Hand-picked interaction builds (5 items, no boots).  Ids resolved by name
 # through item_index/resolve_item at run time so a rename is caught loudly.
 HANDPICKED = [
-    ("collector-execute", ("kayle", "vladimir", "twitch"),
+    ("collector-execute", ("kayle", "vladimir", "twitch", "kassadin"),
      ["The Collector", "Infinity Edge", "Yun Tal Wildarrows",
       "Lord Dominik's Regards", "Navori Flickerblade"]),
-    ("ap-burst", ("kayle", "vladimir", "twitch"),
+    ("ap-burst", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Stormsurge", "Shadowflame", "Rabadon's Deathcap", "Luden's Echo",
       "Horizon Focus"]),
-    ("on-hit", ("kayle", "vladimir", "twitch"),
+    ("on-hit", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Guinsoo's Rageblade", "Terminus", "Kraken Slayer", "Wit's End",
       "Nashor's Tooth"]),
-    ("burn-amp", ("kayle", "vladimir", "twitch"),
+    ("burn-amp", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Liandry's Torment", "Riftmaker", "Blackfire Torch", "Malignance",
       "Cosmic Drive"]),
     # Muramana + Essence Reaver + Trinity Force is illegal (two Spellblade):
-    ("mana-crit", ("kayle", "twitch"),
+    ("mana-crit", ("kayle", "twitch", "kassadin"),
      ["Muramana", "Essence Reaver", "Yun Tal Wildarrows",
       "Navori Flickerblade", "Infinity Edge"]),
-    ("actives", ("kayle", "vladimir", "twitch"),
+    ("actives", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Experimental Hexplate", "Fiendhunter Bolts", "Sundered Sky", "Eclipse",
       "Hullbreaker"]),
-    ("energized", ("kayle", "vladimir", "twitch"),
+    ("energized", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Rapid Firecannon", "Statikk Shiv", "Stormrazor", "Voltaic Cyclosword",
       "Runaan's Hurricane"]),
-    ("shred-mana", ("kayle", "twitch"),
+    ("shred-mana", ("kayle", "twitch", "kassadin"),
      ["Black Cleaver", "Bloodletter's Curse", "Spear of Shojin",
       "Abyssal Mask", "Actualizer"]),
     # Titanic + Rocketbelt + Gunblade + Stridebreaker is illegal (hydra group):
-    ("hydra-hextech", ("kayle", "vladimir", "twitch"),
+    ("hydra-hextech", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Titanic Hydra", "Hextech Rocketbelt", "Hextech Gunblade",
       "Umbral Glaive", "Dusk and Dawn"]),
-    ("hp-ap", ("kayle", "twitch"),
+    ("hp-ap", ("kayle", "twitch", "kassadin"),
      ["Overlord's Bloodmail", "Endless Hunger", "Rod of Ages",
       "Seraph's Embrace", "Rabadon's Deathcap"]),
     ("hp-ap", ("vladimir",),
@@ -123,12 +123,18 @@ HANDPICKED = [
       "Zhonya's Hourglass", "Rabadon's Deathcap"]),
     # Lich Bane + Nashor's + Rabadon's + Void Staff + Cryptbloom is illegal
     # (two VoidPen), so Horizon Focus replaces Cryptbloom:
-    ("lich-bane-ap", ("kayle", "vladimir", "twitch"),
+    ("lich-bane-ap", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Lich Bane", "Nashor's Tooth", "Rabadon's Deathcap", "Void Staff",
       "Horizon Focus"]),
-    ("hexoptics-as", ("kayle", "vladimir", "twitch"),
+    ("hexoptics-as", ("kayle", "vladimir", "twitch", "kassadin"),
      ["Hexoptics C44", "Guinsoo's Rageblade", "Kraken Slayer",
       "Phantom Dancer", "Statikk Shiv"]),
+    ("ult-recast", ("kassadin",),
+     ["Malignance", "Experimental Hexplate", "Fiendhunter Bolts",
+      "Rabadon's Deathcap", "Shadowflame"]),
+    ("mana-pool", ("kassadin",),
+     ["Actualizer", "Seraph's Embrace", "Rod of Ages", "Lich Bane",
+      "Void Staff"]),
 ]
 
 # Pools for enumerate runs B and C: forced strong items + a seeded draw.
@@ -141,6 +147,8 @@ ENUM_FORCED = {
     "twitch": ["Infinity Edge", "Kraken Slayer", "Blade of the Ruined King",
                "Guinsoo's Rageblade", "Lord Dominik's Regards",
                "Yun Tal Wildarrows"],
+    "kassadin": ["Rabadon's Deathcap", "Void Staff", "Shadowflame",
+                 "Seraph's Embrace", "Malignance", "Actualizer"],
 }
 ENUM_POOL_SIZE = 12
 
@@ -419,7 +427,9 @@ def gen_enumerate(ctxs, patch):
             ("C-vladimir-12", "vladimir",
              enum_pool(ctxs["vladimir"], random.Random(SEED_ENUM_POOL)), 200),
             ("D-twitch-12", "twitch",
-             enum_pool(ctxs["twitch"], random.Random(SEED_ENUM_POOL)), 200)]
+             enum_pool(ctxs["twitch"], random.Random(SEED_ENUM_POOL)), 200),
+            ("E-kassadin-12", "kassadin",
+             enum_pool(ctxs["kassadin"], random.Random(SEED_ENUM_POOL)), 200)]
 
     for name, slug, cand, keep in plan:
         c = ctxs[slug]

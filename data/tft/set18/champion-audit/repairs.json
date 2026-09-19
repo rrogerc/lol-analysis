@@ -1,0 +1,1346 @@
+{
+  "schema": "tft-champion-repairs-v1",
+  "date": "2026-09-08",
+  "set": 18,
+  "patch": "18.1d",
+  "scope": "All 65 shop champions and all five AD/AP pairs reviewed. Only source-supported corrections implemented; no claim all champions are accurate against live games.",
+  "nativeSourceHash": "9640b491f083150151fa358dd0ec04d6669413350cd5fa438c3693aaaad70d9b",
+  "championsReviewed": 65,
+  "formsReviewed": 70,
+  "championsDirectlyRepaired": 18,
+  "androidNumericOrTimingAdoptions": [],
+  "sharedRepairs": [
+    "Independent enemy population and adjacency: three targets in both theoretical layouts.",
+    "Nearest-N and original-area helpers used by the affected drivers.",
+    "Source-attributed damage-threshold Sleep with independent stun state.",
+    "Flat resistance deltas shared between theoretical actors without repeated application.",
+    "Cast-start hook separates first-flight protection from landing effects."
+  ],
+  "remainingGlobalLimits": [
+    "Attack windup, projectile travel, walking/jumps and occupied hexes are not fully modeled.",
+    "Generic cast/mana timing remains unless a driver declares a channel or documented rule.",
+    "Several ally buffs and support recipient/overlap rules remain incomplete; theory ally heals/shields still receive no EHP credit.",
+    "Permanent histories, augment-specific behavior and uncertain proc/recast semantics remain explicit gaps.",
+    "The Android custom effect/timeline definitions are only partly decoded; incompatible source balance values were not adopted."
+  ],
+  "entries": [
+    {
+      "api": "TFT18_Ahri",
+      "name": "Ahri",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Aim, projectile travel and interruption behavior; exact densest-center/radius geometry and target falloff; per-target proc rules."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Akali",
+      "name": "Akali",
+      "group": "a-late",
+      "forms": [
+        "AD",
+        "AP"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "AP recast delay, chain limit, reduction compounding and cast/proc hooks; burning eligibility sampling and volley flags. Android typed kill-check and mana-gain calls do not resolve the whole schedule."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Alistar",
+      "name": "Alistar",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The explicit cleanse operation is absent; the cast-while-controlled trigger is unresolved.",
+        "Ally healing is potential-only in theory and does not buy allied EHP.",
+        "Whether Alistar may cast or complete the cleanse while already disabled; shared engine blocks casts during stun.",
+        "Exact recipient eligibility/self exclusion and tie-breaking in live play."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "ALI_CLEANSE",
+          "classification": "confirmed_omission",
+          "evidence": "Pinned ability explicitly cleanses disables; the driver has no cleanse operation. Its comment that there is nothing to remove does not describe current enemy-control scenarios.",
+          "impact": "The disabled-state interaction is absent; the exact expected cast/cleanse trigger still requires runtime evidence."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Alune",
+      "name": "Alune",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Independent nearest-three targeting no longer reduces to local AoE coverage in spread. Nine shards keep their existing total and are distributed among the selected living targets."
+      ],
+      "remaining": [
+        "Moon phase sequence/start/reset and Attuned team phases; shard flight cadence; target distance ordering remains the shared engine approximation."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Amumu",
+      "name": "Amumu",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Different passive and active radii use the same coarse nearby group.",
+        "Whether Burning is checked independently per victim or once on the current target.",
+        "GenericCalc2 is represented as StunDuration + 0.5 and GenericCalc1 adds StunDuration again; this needs source expression/runtime verification before changing the 2.5-second result."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "AMU_CALC_FOOTER",
+          "classification": "source_data_conflict",
+          "evidence": "Normalized HealthCalc1 multiplies both HealthCalc2 and max HP by PassiveHealPercent; raw footer instead says percentage max HP plus the full HealthCalc2. Driver follows the footer, so it intentionally does not call HealthCalc1.",
+          "impact": "Canonical calculation data and displayed attributes can disagree with the scoring formula; resolve the extraction before simplifying the driver."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Aphelios",
+      "name": "Aphelios",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Exact attack-speed input/rounding beyond cap, swipe schedule and simulated-auto proc flags; radius geometry."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Ashe",
+      "name": "Ashe",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Projectile crossing and trail occupancy; attack-speed Slow is absent; percent-HP trail ability/proc classification needs confirmation."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Azir",
+      "name": "Azir",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Live command-window mana lock/sixth-command mana, attack/dash consumer semantics and individual soldier proc flags. Android DashSpeed curve alone is not a duration."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Brambleback",
+      "name": "Brambleback",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The source says leap when the target dies; driver attaches an immediate leap to own kill callback. Kills by allies and loss of a target need a target-death event, distinct from personal kill credit. Theory targets never die, so this passive has no composition contribution.",
+        "Frenzy overlap and mana-lock duration are explicitly conservative assumptions, not live-verified mechanics.",
+        "Leap movement, range, travel time, and whether the leap chains through kills need runtime validation. No Wound is inferred merely from its burn."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Caitlyn",
+      "name": "Caitlyn",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Headshot ability-versus-attack crit/on-hit flags; attack windup and impact timing."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Camille",
+      "name": "Camille",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Generic cast/mana/attack timing remains unverified. The two-second shield may overlap on recast because the shared shield list stacks grants; recast behavior is not established by the tooltip."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Cassiopeia",
+      "name": "Cassiopeia",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "The secondary poison selects an independent unpoisoned enemy in either layout.",
+        "Expired poison no longer permanently excludes an enemy from secondary selection."
+      ],
+      "remaining": [
+        "Target distance ordering uses stable slots; exact poison tick cadence, application timing and proc rules remain unverified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Cinderling",
+      "name": "Cinderling",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Per-leaf proc sequencing and current burn/Wound duration and ownership semantics."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Diana",
+      "name": "Diana",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Orbs cannot leave the modeled nearby area when the original recipients are exhausted."
+      ],
+      "remaining": [
+        "Exact orb distribution, two-hex geometry, movement and impact timing.",
+        "Shield overlap/refresh behavior."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Draven",
+      "name": "Draven",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Outbound and returning axes retain the same original recipients after lethal hits."
+      ],
+      "remaining": [
+        "Ticking bleeds receive Precision crit expectation, but cashing their entire remaining raw DoT uses ABILITY_NOCRIT and loses that value. This is an internal inconsistency; which branch should change needs actual bleed-crit semantics.",
+        "Most-bleeds active targeting is absent; no distance/range selection is performed.",
+        "Chance is not clamped: an injected 120% chance produces a 160-damage expected attack although one spinning attack is 150. Ordinary 20s legal-build reachability was not measured; confirm overflow behavior before choosing a cap."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_ElderDragon",
+      "name": "Elder Dragon",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Splash recipients are captured before a lethal primary auto.",
+        "First-flight protection starts at cast start and ends at landing; landing effects retain their existing event time."
+      ],
+      "remaining": [
+        "The supplied flight/cast duration remains a generic approximation.",
+        "Flight still uses the existing untargetability representation; the tooltip says invulnerable.",
+        "Line shape, falloff ordering and Alpha execute event filtering are not fully verified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Elise",
+      "name": "Elise",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Decaying AS is deliberately replaced with its arithmetic average, so burst timing, attack count boundaries, proc stacking and recast timing can differ.",
+        "Exact AS decay function and buff refresh policy.",
+        "Max-HP grant filling current health and interrupted-transform timing require runtime confirmation."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Ezreal",
+      "name": "Ezreal",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Native always applies the ordinary bolt before the fourth-cast blast, while the fourth cast skips the normal AS grant and clears accumulated AS. The tooltip does not establish whether the blast replaces or supplements the bolt.",
+        "Largest-group piercing aim is represented by all clumped targets or the single spread target; falloff is additive by target index."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Fiddlesticks",
+      "name": "Fiddlesticks",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Independent nearest-target selection and sharing applied flat MR reduction with theoretical teammates."
+      ],
+      "remaining": [
+        "Drain uses common DoTs/HoT, with quarter-second payment and no spatial channel range check.",
+        "Flat MR reduction is permanent and cumulative because source names no duration; actual stacking policy is not verified.",
+        "Whether control cancels the channel and its queued DoT/HoT, and whether already queued drain should stop on death.",
+        "Exact first drain tick and channel animation versus generic 0.25-second compatibility cast metadata."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Gnar",
+      "name": "Gnar",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Lethal throws preserve their original secondary recipients.",
+        "Transformation stuns the same original area it damaged, without switching to an isolated survivor."
+      ],
+      "remaining": [
+        "Transformation and Mega mana/on-cast semantics need runtime evidence.",
+        "Exact landing/throw path, target distance and unused rage rows remain unresolved."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Gromp",
+      "name": "Gromp",
+      "group": "carries",
+      "forms": [
+        "AD",
+        "AP"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Both forms capture cloud or splash recipients before the primary hit, preventing a lethal hit from switching the area to an isolated survivor."
+      ],
+      "remaining": [
+        "Generic dot() pushes an independent cloud DoT on each cast; recast overlap is therefore additive. The pinned tooltip does not state stacking or refresh behavior.",
+        "The stated 30% Slow for 3s is not applied."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Hecarim",
+      "name": "Hecarim",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Nearest means stable ordered slots, not actual distances.",
+        "Riders land simultaneously without modeled travel time.",
+        "Overlapping cast HoTs overwrite one slot while resistance buffs stack as separate entries; source does not settle the live recast behavior."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Ivern",
+      "name": "Ivern",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "OutgoingDamageMultiplier shield formula; actual shield recipients as damage centers and overlapping explosions; recipient damage amp and cast-threshold stacking AS."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Karma",
+      "name": "Karma",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Delayed bursts retain their original tether center after target changes or death; the existing delayed-burst policy is retained."
+      ],
+      "remaining": [
+        "The stated 30% Slow for 2s is not applied.",
+        "Recasts add independent tethers/bursts; source text does not explicitly settle overlap/refresh, dynamic AP at burst, or early victim death behavior."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Kayle",
+      "name": "Kayle",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Freeze secondary wave recipients before the primary attack components. Primary death no longer cancels the wave or mistakenly excludes the next primary. Existing spread/clump coverage and star unlocks remain unchanged."
+      ],
+      "remaining": [
+        "Wave line/width and live emission timing; empowered hit classification and same-attack Shred order; four-star mode outside supported comparisons."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Kennen",
+      "name": "Kennen",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The source does not establish whether the gained AP persists beyond this cast; the driver removes it immediately after creating shield and damage snapshots.",
+        "No charge-up stage, three-hex group search, movement, or two-hex storm geometry beyond the generic cast and clump/spread coverage.",
+        "Burn detection is available on abstract targets, but coverage from allies and timing of the charge snapshot can change the AP gained."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_KhaZix",
+      "name": "Kha'Zix",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Isolation mana bypasses the mana lock while receiving all-source mana multipliers, including Adaptive Helm."
+      ],
+      "remaining": [
+        "Farthest enemy within raw LeapRangeHexes 2.7 and no-adjacent-allies isolation are replaced by last/current index and clump population."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Kobuko",
+      "name": "Kobuko",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Quarter-second HoT payout instead of a continuous or source-confirmed per-tick schedule.",
+        "No character-bin cast time was resolved; the common cast-time fallback is used.",
+        "Basic-attack replacement is flagged as ability damage; ordinary attack crit versus Precision-only crit needs runtime classification evidence.",
+        "Recast behavior while a prior HoT or bash remains active is not established."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_KogMaw",
+      "name": "Kog'Maw",
+      "group": "a-late",
+      "forms": [
+        "AD",
+        "AP"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Both equipped forms select current target plus one additional living enemy independently of AoE coverage. AP damage over time uses those same two identities."
+      ],
+      "remaining": [
+        "Projectile travel, impact-versus-DOT proc rules, actual target distance ordering and mixed-bonus form tie semantics."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Krug",
+      "name": "Krug",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Kruglette deaths do not emit their stated Alpha ally shields.",
+        "Bodies soak damage but do not attack, despite the Kruglette data containing attack stats.",
+        "Body pressure is serial rather than two simultaneous entities.",
+        "Exact Slate recipients, whose max HP determines each shield, and repeated cast max-HP stacking rules.",
+        "Unused APDamage/HigherHealthMultiplier/StunDuration rows do not establish additional active mechanics absent from tooltip."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "KRG_SLATE",
+          "classification": "confirmed_omission",
+          "evidence": "Alpha Slate Buff says Krug and Kruglettes shield allies on death. The driver reports one shield request at Krug’s death (8% of Krug max HP for row duration 5), with no Kruglette death shield hooks.",
+          "impact": "Missing later shields and uncertain area/recipient counts; theory gives even the one reported ally shield no EHP credit."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_LeBlanc",
+      "name": "LeBlanc",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Splash recipients are captured before the primary hit so a lethal hit cannot skip a valid secondary."
+      ],
+      "remaining": [
+        "Adjacency uses the shared spread/clump approximation; projectile, impact timing and per-hit proc rules remain unverified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Leona",
+      "name": "Leona",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Passive decay is updated on the quarter-second engine tick.",
+        "Whether later AP changes should rescale the opening passive; code snapshots the opening bonus.",
+        "Live stun/attack windup and simultaneous-event ordering are not verified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Lillia",
+      "name": "Lillia",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Damage-threshold Sleep and one-shot wake damage across standalone, shared-target, symmetric and theory paths; other stuns remain intact.",
+        "Pending enemy spells resume using current control state after waking or sleep refresh; untouched future spell timers are preserved."
+      ],
+      "remaining": [
+        "Nearby recipients use the declared spread/clump area model, not hex positions.",
+        "Sleep starts after butterfly damage; reapplication refreshes one condition and threshold. These are explicit source interpretations.",
+        "Shared wake damage settles at the originating action boundary at the same timestamp; exact live sub-hit ordering is unverified.",
+        "Whether the initial hit counts toward the threshold, and exact simultaneous-hit/awaken ordering.",
+        "Live nearby-target selection and linked-team damage attribution."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Lux_Base",
+      "name": "Lux",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The stated shared-trait ally mana passive is never read/applied; Lux constructor only loads falloff and damage.",
+        "No Avatar variant is selected; raw extra abilities and associated trait contribution are intentionally not inferred.",
+        "Laser coverage is generic clump/spread with additive target-index falloff, not a best line through positions."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Malphite",
+      "name": "Malphite",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Petrified state is entirely omitted because no numerical behavior was established.",
+        "Only the latest own shield is tracked; overlapping recasts can leave an older shield’s later break unobserved.",
+        "Whether petrification prevents attacks/casts or changes defenses/targetability, and whether expiry triggers any live effect.",
+        "Whether own shields refresh, replace or stack, which determines whether tracking only the last is correct.",
+        "Unused ShieldRatioArmorMR/SpellDamagePercentOfShield rows do not justify adding those terms absent from the active calculations."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_MamaBeak",
+      "name": "Mama Beak",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Repeated cast flock overlap versus refresh; per-beak armor strip ordering/proc inheritance rather than aggregated hit."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Maokai",
+      "name": "Maokai",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Accumulated Old Growth health from earlier eligible events is not represented in board inputs.",
+        "Blocked-damage counter is raw incoming minus post-resist/durability damage; shield absorption is excluded.",
+        "Saplings are instantaneous direct hits rather than spawned attackers or traveling projectiles.",
+        "Whether live blocked damage includes shields, cancelled hits or only mitigation; do not guess from the wording alone.",
+        "Unused 3StarBigSaplingsOnCast/BigSaplingAOEDamage rows are not implemented; three-star five-costs are outside the dashboard’s legal stars and rows alone do not prove live triggers."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "MAO_OLD_GROWTH",
+          "classification": "confirmed_unmodeled_state",
+          "evidence": "Old Growth’s persistent health state is not represented by the current board input/resolver. Driver itself only handles combat saplings and heal.",
+          "impact": "Boards cannot include accumulated unique-trait health from prior eligible events."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_MasterYi",
+      "name": "Master Yi",
+      "group": "fighters",
+      "forms": [
+        "AD",
+        "AP"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "AP explicit healing uses unclipped hit_ability result: a controlled 500-magic-damage hit into 1 HP credits 1 damage but 175 healing. Immortal theory probes are unaffected by lethal overkill.",
+        "The second physical hit precedes AP bonus damage, so the magic bonus disappears if that physical hit kills. Double-strike crit/on-hit and retargeting between its two hits need direct runtime evidence.",
+        "Takedown movement-speed burst has no effect because there is no movement simulation."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Morgana",
+      "name": "Morgana",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The three nearby blast targets use the generic clump/spread selector and become one in spread. Actual reachable count is not modeled.",
+        "Curse bonus is granted on her autos and later blasts, not zone ticks, item damage or ally damage. The tooltip says cursed enemies take more damage per curse without establishing the exact event filter; do not invent a per-tick proc rule.",
+        "The zone’s two-hex area and 0.25-second source tick rate are represented by the abstract target set and shared tick loop."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Murkwolf",
+      "name": "Murkwolf",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Leap ignores the source’s three-hex reach. Controlled leap strikes lowest-absolute-HP target 2, but both subsequent empowered attacks go to the old target 0. The driver does not update target/position on leap.",
+        "The ordinary attack and empowered bonus are separate: killing with the ordinary attack loses the bonus. The source does not settle the exact combined-hit/on-hit/crit ordering.",
+        "Each own kill adds two empowered attacks from a data row not mentioned in the current tooltip; this needs confirmation rather than assuming every dormant row is active.",
+        "Alpha crit chance is capped at 100%; any intended crit-overflow conversion for this dynamic gain needs observation."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Nidalee",
+      "name": "Nidalee",
+      "group": "a-late",
+      "forms": [
+        "AD",
+        "AP"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "AD target-change leap and armor-ignore/proc ordering; AP actual range application, cast scaling consumer, three-javelin mana-lock/reset behavior, furthest/fewest-items targeting. Android ASToCastTime alone does not establish a cast_time input."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Ornn",
+      "name": "Ornn",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Cone orientation, travel and sequential hits are replaced by coarse nearby selection.",
+        "Forge Power and Artifact Anvil rewards are economy across rounds and do not enter a single-fight score.",
+        "Shield refresh/stacking on overlapping recasts; precise cone targeting and interruption behavior."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Pebbles",
+      "name": "Pebbles",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Channel damage settles actual elapsed time, including the first and final partial intervals."
+      ],
+      "remaining": [
+        "Fixed full-bar duration, immediate mana reset, and lock through channel plus one second are adopted assumptions; tooltip alone does not settle mana gains/drain during channel.",
+        "The unused GenericCalc1 resolves to 2/(4/.25) = .125, consistent with a possible per-tick mana-regeneration increment. Native instead adds +2 only at each four accumulated channel seconds. Neither an unused calc nor the simplified tooltip proves which cadence the game uses."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Rakan",
+      "name": "Rakan",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The highest-damage ally receives no decaying attack-speed buff in any current fight path.",
+        "Recipient support effects are not represented in the production theory actor scheduler.",
+        "Tie-breaking for highest-damage ally, self eligibility, exact decay curve and recast refresh/stacking."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "RKN_ALLY_AS",
+          "classification": "confirmed_omission",
+          "evidence": "Source grants decaying ally AS of 90%/100%/130% × A over 4 seconds; driver never reads AttackSpeedCalc1 or AttackSpeedDuration. No ally receives it in standalone, legacy team, symmetric, or theory execution.",
+          "impact": "Undercredits Rakan support value and the item/trait/recipient interactions of his active."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Rammus",
+      "name": "Rammus",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Same-ability overlapping resistance/shield refresh versus stacking; watching only newest shield; expiration versus break trigger and taunt/radius behavior."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_RekSai",
+      "name": "Rek'Sai",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Adjacency and lunge movement are coarse target selection; no movement path.",
+        "Exact boost-boundary inclusion and any untargetability during the lunge."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Rengar",
+      "name": "Rengar",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The source’s three-hex reach is ignored. A leap does not itself move the actor or change subsequent auto targeting.",
+        "Linear interpolation and using post-hit rather than pre-hit missing health are reasonable readings, not verified runtime behavior.",
+        "Rivals augment behavior and movement are outside the basic kit evaluator."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Scuttlecrab",
+      "name": "Scuttlecrab",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Alpha Green Buff allied low-health healing is absent.",
+        "Body placement and dancing movement are not modeled.",
+        "Coins and other unused legacy rows have no current-combat credit.",
+        "Dance basic-attack crit versus ability crit classification and secondary on-hit eligibility.",
+        "Green Buff trigger limits, reset rules and self eligibility; do not infer them from the two threshold rows.",
+        "Burrow mana-lock duration is intentionally not asserted as live-verified."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "SCT_GREEN",
+          "classification": "confirmed_omission",
+          "evidence": "Green Buff source restores 15% max HP to allies falling below 50%, with TraitHealDuration=3; no Green Buff health trigger is installed or read by this driver.",
+          "impact": "Alpha support healing is absent, not merely reduced by recipient utilization."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Sejuani",
+      "name": "Sejuani",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Different cone/line shapes and sequential strike timing are collapsed to the same nearby set and timestamp.",
+        "Whether the line can reach a protected backliner, exact direction selection and delay between strikes."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Sentinel",
+      "name": "Sentinel",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Alpha Blue Buff does not grant teammates the stated per-cast mana regeneration.",
+        "Fissure direction/path and travel are not modeled.",
+        "Generic incoming pressure channels have no mana bar, so reave has no theory pressure benefit.",
+        "Repeated reave stacking uses strongest pending increase; live stacking semantics remain unverified.",
+        "Alpha ally inclusion, permanence and stacking duration require runtime evidence."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "SNT_BLUE",
+          "classification": "confirmed_omission",
+          "evidence": "Source Alpha Blue Buff grants allies +2 Mana Regen each time Sentinel casts. No recipient-aware event implements it; the stale +5 opening-self-regen row was previously removed.",
+          "impact": "Undercredits repeated Alpha support casts and ally mana throughput."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Sett",
+      "name": "Sett",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Distribution of healing through the half-second windup, interruption ordering and cone geometry."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Shen",
+      "name": "Shen",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The ally receives no three-attack attack-speed/bonus-magic-damage buff; only Shen has the attack charges.",
+        "Ally shield is uncredited potential in theory.",
+        "Nearby damaged recipient selection is not modeled by theory’s independent actor probes.",
+        "Shield and remaining empowered-attack refresh rules on early recast.",
+        "Exact attack-speed rescheduling when the cast lands midway through an attack period."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "SHN_ALLY_ATTACKS",
+          "classification": "confirmed_omission",
+          "evidence": "The source gives the ally the same three-attack AS and bonus-damage buff. The driver only buffs its own attack counter/as_extra and sends a shield request.",
+          "impact": "Undercredits offensive support, including a paired carry’s item interactions."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Sivir",
+      "name": "Sivir",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Kills from the initial blade grant extra bounces.",
+        "Bounces retain previous-victim identity, including after death; a projectile may reach the sole survivor from a dead previous target."
+      ],
+      "remaining": [
+        "Binary clump coverage approximates the three-hex bounce range; every bounce is instantaneous and exact travel/impact cadence remains unverified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Soraka",
+      "name": "Soraka",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "No interval is supplied for the three extra stars, so they are simultaneous in native code."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Taric",
+      "name": "Taric",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Paired-ally threshold activation, both shielding areas and the ally’s next-two-attack magic bonus are absent.",
+        "One ally shield is potential-only in theory, not actual area recipient utilization.",
+        "Pair selection, area overlap/duplicate-shield policy, self inclusion and lethal-hit threshold ordering.",
+        "Unused 3StarPercentHPDamage is not interpreted as an active effect without stronger evidence; three-star five-costs are not in current dashboard search."
+      ],
+      "liveGameVerified": false,
+      "unresolvedFindings": [
+        {
+          "id": "TAR_PAIR_TRIGGER",
+          "classification": "confirmed_omission",
+          "evidence": "No paired ally state exists in the driver; paired-ally threshold and both area emission centers are absent.",
+          "impact": "Missing team shielding and possible earlier activation."
+        },
+        {
+          "id": "TAR_ALLY_ATTACKS",
+          "classification": "confirmed_omission",
+          "evidence": "Source gives both Taric and the paired ally bonus magic damage on their next 2 attacks; only Taric has charges.",
+          "impact": "Undercredits the pair’s offense and item/crit interactions."
+        }
+      ]
+    },
+    {
+      "api": "TFT18_Teemo",
+      "name": "Teemo",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Each mushroom cluster independently selects up to three living enemies regardless of clump/nearby coverage. The giant mushroom remains a primary-target hit."
+      ],
+      "remaining": [
+        "Cluster and giant projectile cadence/target locking and per-hit proc flags; actual target distance ordering. Economy excluded intentionally."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Tristana",
+      "name": "Tristana",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Zero cast animation and 4s-plus-1s mana lock are modeling choices; the tooltip establishes continued attacks but not the precise animation/lock duration.",
+        "Two-hex radius is generic clump/spread; damage pool is correctly split, not copied to every target."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Varus",
+      "name": "Varus",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Most-enemies-in-line aiming is reduced to clump/spread; additive falloff is implemented, while exact shape/ordering/travel remain unverified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Veigar",
+      "name": "Veigar",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Source-backed kill-credit window/attribution and prior-combat permanent AP; existing all-own-kills interpretation remains unverified."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Vi",
+      "name": "Vi",
+      "group": "frontline",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Common temporary AS slot refreshes instead of stacking.",
+        "Does Unstoppable also cleanse control already applied before landing? Current hook blocks new CC only.",
+        "Exact passive heal trigger on an attack that kills its target or misses."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Warwick",
+      "name": "Warwick",
+      "group": "fighters",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Standalone hit_ability returns damage before clipping lethal overkill, but the damage ledger and omnivamp use clipped damage. A 500-damage bite into 1 remaining HP credits 1 damage and 100 healing, not 0.2; bridged combat returns clipped dealt damage. This is a mode inconsistency and contradicts the model’s own effective-damage contract; live overkill-heal semantics still deserve observation.",
+        "Permanent AS is represented additively; mana lock and timing use shared assumptions."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Xayah",
+      "name": "Xayah",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "The driver assumes no mana throughout all five feathers and treats their damage as ability damage that only crits with Precision. The tooltip calls them replaced attacks but does not settle either rule. Kit note justifies lock by avoiding perpetual empowerment, which is not runtime evidence.",
+        "Cast animation is forced to zero even though a .25s generic cached cast value exists."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Yorick",
+      "name": "Yorick",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Conflicting AP calculation versus AD tooltip icon; Spirit attack/cadence/taunt not represented; live spawn/impact timing."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Yunara",
+      "name": "Yunara",
+      "group": "carries",
+      "forms": [
+        "base"
+      ],
+      "status": "repaired_partial",
+      "fixed": [
+        "Secondary recipients are captured before the primary hit so a lethal hit cannot exclude the new primary."
+      ],
+      "remaining": [
+        "Three-hex dash movement/timing is absent, and nearby secondary eligibility is only a clump flag."
+      ],
+      "liveGameVerified": false
+    },
+    {
+      "api": "TFT18_Zyra",
+      "name": "Zyra",
+      "group": "a-late",
+      "forms": [
+        "base"
+      ],
+      "status": "reviewed_partial",
+      "fixed": [],
+      "remaining": [
+        "Plant attack speed/first shot/lifetime/overlap, distributed nearest targets and spawn-time inheritance; six-plant Thornmaiden transition remains absent."
+      ],
+      "liveGameVerified": false
+    }
+  ],
+  "verification": {
+    "nativeBuild": {
+      "sourceHash": "9640b491f083150151fa358dd0ec04d6669413350cd5fa438c3693aaaad70d9b",
+      "status": "passed",
+      "releaseCompileSeconds": 184
+    },
+    "rustUnitTests": {
+      "command": "cargo test --manifest-path tft_engine/Cargo.toml --no-default-features",
+      "passed": 8,
+      "failed": 0
+    },
+    "newRegressionMethods": 62,
+    "historicalFightComparison": {
+      "total": 7670,
+      "identical": 7085,
+      "changed": 585,
+      "changesOnlyInDirectlyRepairedChampions": true
+    },
+    "fullSuite": {
+      "status": "passed",
+      "command": "TFT_GOLDEN_ALL=1 python -m unittest discover -s . -p 'test_tft*.py' -q",
+      "testsRun": 817,
+      "passed": 816,
+      "skipped": 1,
+      "failed": 0,
+      "seconds": 74.398,
+      "all7670GoldenFightsReplayed": true,
+      "all1770GoldenCellsReplayed": true,
+      "sourceHash": "9640b491f083150151fa358dd0ec04d6669413350cd5fa438c3693aaaad70d9b",
+      "skipReason": "The modeled craftable pool contains no unique item for the conditional unique-item enumeration test; synthetic unique-item behavior is covered by native unit tests."
+    },
+    "publication": {
+      "beforeSite": {
+        "baselineRevision": "515a7a167347acb61148016e4966ffc0be538785e670c05ad441113d752b3a13",
+        "compositionRevision": "051a9eb136b31ed1bb603573fe1edfdb20313b07be0ae9457a53a725618f8a7d",
+        "manifestHash": "b9b81326482d82ee0a2c4220cadd0cce42bcda4a69278d7001d15243c62642cf",
+        "siteGeneration": "g-5764ce1968ca9c81b6b43956e0f7d98cd14944557e164fa943a2bf13e364a668"
+      },
+      "publishedAt": "2026-09-08T22:37:48.663938+00:00",
+      "site": {
+        "baselineRevision": "ae34c6b45d4a31f53e6cc51a0237cbcd0f69c31929cf723c20b88e63a1e4ba18",
+        "compositionRevision": "a539bc125c58455873dd98ff6c47d1f7bc2ff8686073804b63626a24e8e417c5",
+        "manifestHash": "a44d0e3f0d34555a94d32516f1330f6e29d46396f87bc81ccd6f0ec89170f9e6",
+        "siteGeneration": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7"
+      },
+      "status": "published-and-observed",
+      "observedAt": "2026-09-08T22:38:27.708271+00:00",
+      "http": {
+        "meta": {
+          "revision": "ae34c6b45d4a31f53e6cc51a0237cbcd0f69c31929cf723c20b88e63a1e4ba18",
+          "publicationRevision": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7"
+        },
+        "status": {
+          "revision": "ae34c6b45d4a31f53e6cc51a0237cbcd0f69c31929cf723c20b88e63a1e4ba18",
+          "publicationRevision": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7",
+          "readyCount": 1770,
+          "totalCount": 1770
+        },
+        "compositions/meta": {
+          "revision": "a539bc125c58455873dd98ff6c47d1f7bc2ff8686073804b63626a24e8e417c5",
+          "publicationRevision": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7"
+        },
+        "compositions/status": {
+          "revision": "a539bc125c58455873dd98ff6c47d1f7bc2ff8686073804b63626a24e8e417c5",
+          "publicationRevision": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7",
+          "readyCount": 8,
+          "totalCount": 8
+        }
+      }
+    },
+    "liveGameValidation": false,
+    "optimizerReplay": {
+      "engineHash": "9640b491f083150151fa358dd0ec04d6669413350cd5fa438c3693aaaad70d9b",
+      "referenceEngineHash": "de68a37fe8fe1886f30a6f852dd77ed7abf1cea44f996508515b3682e922cd0f",
+      "referenceArtifact": "benchmark.json",
+      "snapshotInputs": "1c7e857debea22df4f16936771bd1ea07800f59bdbd3f05a0574434c9e18067c",
+      "cpus": [
+        2
+      ],
+      "workloads": [
+        {
+          "name": "reported9",
+          "passes": [
+            {
+              "kind": "cold",
+              "seconds": 11.876158931991085,
+              "allocationsCompared": 3080,
+              "converged": true,
+              "winnerEvidenceAndCoverageEqual": true
+            },
+            {
+              "kind": "repeated",
+              "seconds": 12.13779956009239,
+              "allocationsCompared": 3080,
+              "converged": true,
+              "winnerEvidenceAndCoverageEqual": true
+            }
+          ],
+          "anchorPreparationSeconds": 1.0589104609098285
+        },
+        {
+          "name": "dense12",
+          "passes": [
+            {
+              "kind": "cold",
+              "seconds": 28.085874563083053,
+              "allocationsCompared": 5583,
+              "converged": true,
+              "winnerEvidenceAndCoverageEqual": true
+            },
+            {
+              "kind": "repeated",
+              "seconds": 27.730829534120858,
+              "allocationsCompared": 5583,
+              "converged": true,
+              "winnerEvidenceAndCoverageEqual": true
+            }
+          ],
+          "anchorPreparationSeconds": 1.0210591738577932
+        }
+      ]
+    },
+    "rosterCoverage": {
+      "uniqueChampionApis": 65,
+      "forms": 70,
+      "directlyRepaired": 18,
+      "everyEntryHasRemainingLimitations": true
+    },
+    "goldenFixtures": {
+      "fights": 7670,
+      "cells": 1770,
+      "topRowsPerCell": 20,
+      "regenerated": true,
+      "previousFixtureHistoryRetained": true
+    },
+    "uiChecks": {
+      "finiteDamageHarness": "passed",
+      "compositionHarness": "passed",
+      "preparedGenerationHarness": {
+        "caps": 416,
+        "contexts": {
+          "c1-clump-mixed": {
+            "caps": 0,
+            "cores": 208
+          },
+          "c1-spread-mixed": {
+            "caps": 0,
+            "cores": 208
+          },
+          "c2-clump-mixed": {
+            "caps": 0,
+            "cores": 208
+          },
+          "c2-spread-mixed": {
+            "caps": 0,
+            "cores": 208
+          },
+          "c3-clump-mixed": {
+            "caps": 0,
+            "cores": 208
+          },
+          "c3-spread-mixed": {
+            "caps": 0,
+            "cores": 208
+          },
+          "c4-clump-mixed": {
+            "caps": 208,
+            "cores": 208
+          },
+          "c4-spread-mixed": {
+            "caps": 208,
+            "cores": 208
+          }
+        },
+        "cores": 1664,
+        "plannerRosterRoundTrips": 2080,
+        "seconds": 12.20308747002855,
+        "site": {
+          "baselineRevision": "ae34c6b45d4a31f53e6cc51a0237cbcd0f69c31929cf723c20b88e63a1e4ba18",
+          "compositionRevision": "a539bc125c58455873dd98ff6c47d1f7bc2ff8686073804b63626a24e8e417c5",
+          "manifestHash": "a44d0e3f0d34555a94d32516f1330f6e29d46396f87bc81ccd6f0ec89170f9e6",
+          "siteGeneration": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7"
+        },
+        "status": "passed"
+      }
+    },
+    "preparation": {
+      "computedCells": 1770,
+      "computedCompositionScenarios": 8,
+      "elapsedSeconds": 4083.247,
+      "engineHash": "9640b491f083150151fa358dd0ec04d6669413350cd5fa438c3693aaaad70d9b",
+      "site": {
+        "baselineRevision": "ae34c6b45d4a31f53e6cc51a0237cbcd0f69c31929cf723c20b88e63a1e4ba18",
+        "compositionRevision": "a539bc125c58455873dd98ff6c47d1f7bc2ff8686073804b63626a24e8e417c5",
+        "manifestHash": "a44d0e3f0d34555a94d32516f1330f6e29d46396f87bc81ccd6f0ec89170f9e6",
+        "siteGeneration": "g-e855e95ca90bcfaf25f76496eb698936c88892bbb676d1afbdc420fdfed03da7"
+      }
+    }
+  }
+}

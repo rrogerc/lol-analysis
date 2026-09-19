@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest test_tft -v
 
-The rule tests pin the set's mechanics to hand-computed values, read off
+The rule tests pin patch 18.1d mechanics to hand-computed values, read off
 the compiled engine through its traces and end-of-fight probes; the golden
 tests replay data/tft/golden bit for bit; the snapshot tests read the
 committed data/tft archive, so they also catch a MetaTFT schema change or
@@ -16,14 +16,19 @@ import unittest
 
 import tft
 
-SNAP = tft.load_snapshot()
+# These numbers (and helpers imported by other mechanic regressions) describe
+# 18.1d. Publishing another patch must not silently change their fixtures.
+# The active archive is checked separately by TestSnapshot below.
+SNAP = tft.load_snapshot(18, "18.1d")
 ENGINE = tft.engine()
 ITEM_FX = tft.load_item_effects(SNAP.set_no)
 TRAIT_FX = tft.load_trait_effects(SNAP.set_no)
 # Isolated mechanics fixtures start without team-supplied target debuffs.
 # The default carry/fighter benchmark is covered in test_tft_target_debuffs
 # and test_tft_ui, including redundancy of item resistance reduction.
-DUMMY = dict(tft.dummies_for(SNAP), targetDebuffs={})
+# These hand-computed mechanics fixtures also start in contact. The production
+# movement benchmark is exercised independently in test_tft_movement.
+DUMMY = dict(tft.dummies_for(SNAP), targetDebuffs={}, meleeRepositionSeconds=0.0)
 
 
 def immortal(spec):
@@ -420,7 +425,10 @@ class TestDrivers(unittest.TestCase):
                 if res["killTime"] is not None:
                     self.assertAlmostEqual(res["total"], DUMMY["totalHp"], places=3)
                 self.assertLessEqual(res["aliveTime"], tft.fight_duration(u) + 1e-9)
-                if u["objective"] not in tft.PRESSURED:
+                pressured = u["objective"] in tft.PRESSURED or (
+                    u["api"] == "TFT18_Nidalee" and sheet["form"] == "AD")
+                self.assertEqual(sheet["pressure"], pressured)
+                if not pressured:
                     self.assertEqual(res["absorbed"], 0.0)
 
     def test_every_unit_has_a_driver(self):
@@ -780,10 +788,13 @@ class TestSnapshot(unittest.TestCase):
         self.assertEqual(count, 1770)
 
     def test_overrides_are_current_with_the_patch_notes(self):
-        findings, unmatched = tft.check_patch_notes(SNAP)
-        stale = [f for f in findings if f["status"] != "current"]
-        self.assertEqual(stale, [])
-        self.assertGreater(len(findings), 5)
+        snapshots = {snap.patch: snap for snap in (SNAP, tft.load_snapshot())}
+        for patch, snap in snapshots.items():
+            with self.subTest(patch=patch):
+                findings, unmatched = tft.check_patch_notes(snap)
+                stale = [f for f in findings if f["status"] != "current"]
+                self.assertEqual(stale, [])
+                self.assertGreater(len(findings), 5)
 
     def test_cast_times_from_bins(self):
         self.assertAlmostEqual(SNAP.unit("Ashe")["castTime"], 0.25)

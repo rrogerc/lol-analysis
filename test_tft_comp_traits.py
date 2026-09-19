@@ -115,10 +115,10 @@ class TestCompositionTraits(unittest.TestCase):
                          {"manaRegen": 2})
         self.assertEqual(dict(self.effect(board, "Pebbles", "Invoker")["stats"]),
                          {"manaRegen": 8})
-        # The archived team curve omits column2. Preserve the existing
-        # hold-previous curve convention rather than inventing interpolation.
+        # The explicit audited four-unit value fills the sparse lookup's
+        # missing second column without changing other curve semantics.
         for names, own, team in ((["Rakan", "Yorick", "Karma"], 0.2, 0.04),
-                                 (["Rakan", "Yorick", "Sejuani", "Vi", "Karma"], 0.3, 0.04),
+                                 (["Rakan", "Yorick", "Sejuani", "Vi", "Karma"], 0.3, 0.06),
                                  (["Rakan", "Yorick", "Sejuani", "Vi", "Amumu", "Maokai", "Karma"], 0.4, 0.08)):
             result = self.board(*names)
             self.assertAlmostEqual(self.effect(result, "Rakan", "Juggernaut")["durability"], own)
@@ -175,7 +175,11 @@ class TestCompositionTraits(unittest.TestCase):
             self.assertAlmostEqual(stats["asPct"], 0.05)
         self.assertFalse(any(effect["name"] == "Riftbeast"
                              for effect in board["effects"][self.snap.unit("Karma")["api"]]))
-        self.assertTrue(any("recurring growth" in text for text in board["limitations"]))
+        for name in names[:-1]:
+            growth = self.effect(board, name, "Riftbeast")["timedStats"]
+            self.assertEqual((growth[0]["after"], growth[0]["interval"]), (5, 5))
+            self.assertEqual(dict(growth[0]["stats"])["hp"], 50)
+        self.assertFalse(any("recurring growth" in text for text in board["limitations"]))
 
     def test_invalid_alpha_holder_is_rejected(self):
         for names, holder in [(("Murkwolf", "Gromp"), "Murkwolf"),
@@ -235,11 +239,13 @@ class TestCompositionTraits(unittest.TestCase):
         board = resolve_board_traits(self.snap, members)
         self.assertAlmostEqual(self.effect(board, "Leona", "Solar")["bonusMagicPct"], 0.085)
 
-    def test_solar_unsupported_high_upgrade_effects_are_explicit(self):
+    def test_solar_high_upgrade_splits_bonus_and_keeps_ascension_explicit(self):
         board = self.board("Kayle", "Leona", "Sejuani", "Karma", "Kobuko", "Ornn", "Rakan", "Varus", star=3)
-        self.assertTrue(any("true damage" in text for text in board["limitations"]))
+        self.assertFalse(any("true damage" in text for text in board["limitations"]))
         self.assertTrue(any("ascension" in text for text in board["limitations"]))
-        self.assertAlmostEqual(self.effect(board, "Karma", "Solar")["bonusMagicPct"], 0.19)
+        effect = self.effect(board, "Karma", "Solar")
+        self.assertAlmostEqual(effect["bonusMagicPct"], 0.095)
+        self.assertAlmostEqual(effect["bonusTruePct"], 0.095)
 
     def test_lux_does_not_infer_an_avatar_variant_or_duplicate_traits(self):
         board = self.board("Lux", "Kayle", "Leona")
@@ -256,6 +262,26 @@ class TestCompositionTraits(unittest.TestCase):
         self.assertFalse(self.trait(board, "Blackthorn")["modeled"])
         self.assertFalse(any(effect["name"] in ("Blackthorn", "Coven", "Sprykin")
                              for effects in board["effects"].values() for effect in effects))
+
+    def test_coverage_distinguishes_engine_hooks_from_scored_trait_effects(self):
+        board = self.board("Soraka", "Fiddlesticks", "Karma", "Ahri", "Zyra", "Kobuko", "Rek'Sai", "Ivern")
+        self.assertEqual(len(board["traits"]), len(self.snap.traits))
+        self.assertTrue(all(isinstance(trait["coverageNotes"], list) for trait in board["traits"]))
+        self.assertEqual(self.trait(board, "Brawler")["coverage"], "supported")
+        self.assertEqual(self.trait(board, "Spellweaver")["coverage"], "partial")
+        self.assertTrue(any("opening member AP" in note for note in self.trait(board, "Spellweaver")["coverageNotes"]))
+        self.assertGreater(self.effect(board, "Karma", "Spellweaver")["apPerCast"], 0)
+        for name, omission in (("Flora Fatalis", "contribute zero"),
+                               ("Thornmaiden", "six plants")):
+            trait = self.trait(board, name)
+            self.assertTrue(trait["modeled"])
+            self.assertEqual(trait["coverage"], "partial")
+            self.assertTrue(any(omission in note for note in trait["coverageNotes"]))
+        self.assertEqual(self.trait(board, "Greenfather")["coverage"], "unmodeled")
+        self.assertTrue(any("cultivated hexes" in note for note in self.trait(board, "Greenfather")["coverageNotes"]))
+        specials = self.board("Elder Dragon", "Draven")
+        self.assertEqual(self.trait(specials, "Apex Predator")["coverage"], "structural")
+        self.assertEqual(self.trait(specials, "Bounty Seeker")["coverage"], "economy")
 
     def test_results_are_deterministic_json_safe_and_do_not_mutate_sources(self):
         members = self.members("Kayle", "Leona", "Sejuani", "Karma", "Ahri")

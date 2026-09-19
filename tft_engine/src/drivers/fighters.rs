@@ -6,7 +6,7 @@ use crate::driver::Driver;
 use crate::fight::{Deal, Fight, Sel, TICK_S};
 use crate::fx::Form;
 use crate::kit::{CalcId, DType, Kit, RowId};
-use crate::pyf::{pyint, pymax, pymin, pysum};
+use crate::pyf::{pyint, pymax, pymin};
 use crate::spec::UnitSpec;
 
 /// Defensive Sweep: slice the target and take a shield for a couple of
@@ -66,8 +66,11 @@ impl Driver for Warwick {
 /// attacks burn and heal him for a share of his max health.
 #[derive(Clone)]
 pub struct Brambleback {
-    /// (until, attack damage granted) per live spell of frenzy.
-    frenzy: Vec<(f64, f64)>,
+    /// Conservative model policy: one live Frenzy, refreshed on recast.
+    /// The pinned tooltip supplies its magnitude/duration, but no runtime
+    /// source establishes overlapping stacks or an eight-second mana lock.
+    frenzy_until: f64,
+    frenzy_grant: f64,
     duration: RowId,
     frenzy_ad: RowId,
     burn_amount: RowId,
@@ -81,7 +84,7 @@ impl Driver for Brambleback {
     const NAME: &'static str = "Brambleback";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Brambleback { frenzy: Vec::new(), duration: k.row("Duration"),
+        Brambleback { frenzy_until: 0.0, frenzy_grant: 0.0, duration: k.row("Duration"),
                       frenzy_ad: k.row("FrenzyADPercent"), burn_amount: k.row("BurnAmount"),
                       burn_dur: k.row("TraitBurnDuration"),
                       trait_heal: k.row("TraitMaxHealthHeal"), ignore: k.calc("GenericCalc1"),
@@ -90,21 +93,19 @@ impl Driver for Brambleback {
 
     fn cast(f: &mut Fight<Self>) {
         let (dur, ad) = (f.row(f.drv.duration), f.row(f.drv.frenzy_ad));
-        f.ad_extra += ad;
-        let t = f.t;
-        f.drv.frenzy.push((t + dur, ad));
+        f.ad_extra += ad - f.drv.frenzy_grant;
+        f.drv.frenzy_grant = ad;
+        f.drv.frenzy_until = f.t + dur;
         let ignore = f.calc(f.drv.ignore);
+        // This driver's Frenzy is the only source of these personal buffs.
+        f.armor_ignore_buffs.clear();
         f.ignore_armor(ignore, dur);
     }
 
     fn tick(f: &mut Fight<Self>) {
-        let t = f.t;
-        let done = !f.drv.frenzy.is_empty()
-            && f.drv.frenzy.iter().any(|&(until, _)| t >= until - 1e-9);
-        if done {
-            let spent = pysum(f.drv.frenzy.iter().filter(|x| t >= x.0 - 1e-9).map(|x| x.1));
-            f.ad_extra -= spent;
-            f.drv.frenzy.retain(|x| t < x.0 - 1e-9);
+        if f.drv.frenzy_grant != 0.0 && f.t >= f.drv.frenzy_until - 1e-9 {
+            f.ad_extra -= f.drv.frenzy_grant;
+            f.drv.frenzy_grant = 0.0;
         }
     }
 
@@ -119,10 +120,19 @@ impl Driver for Brambleback {
     }
 
     fn kill(f: &mut Fight<Self>, _target: usize) {
-        let d = f.target();
-        if d.is_some() {
-            f.hit_ability(f.drv.leap, d, "leap", 1.0);
+        // Stationary benchmarks retain their existing immediate callback.
+        // With movement enabled only a current-target death creates an
+        // arrival, so collateral kills cannot trigger extra leaps.
+        if f.movement_delay() == 0.0 {
+            let d = f.target();
+            if d.is_some() {
+                f.hit_ability(f.drv.leap, d, "leap", 1.0);
+            }
         }
+    }
+
+    fn target_changed(f: &mut Fight<Self>, _old_target: usize, new_target: usize) {
+        f.hit_ability(f.drv.leap, Some(new_target), "leap", 1.0);
     }
 }
 
@@ -153,7 +163,9 @@ impl Driver for Diana {
         for i in 0..orbs {
             let mut al = f.alive_of(&tg);
             if al.is_empty() {
-                al = f.alive();
+                // Orbs remain constrained to the modeled nearby area.
+                // Exhausting that group cannot grant board-wide reach.
+                al = f.aoe_all();
             }
             if al.is_empty() {
                 break;
@@ -256,7 +268,8 @@ impl Driver for Rengar {
 }
 
 /// Heat Without Equal: attacks splash onto the dummies beside the target.
-/// The first cast is the flight — untargetable for the cast time, then a
+/// The first cast is the flight — currently approximated as untargetable
+/// during the existing cast window, then a
 /// stun on everyone, omnivamp, an Ignite burning a share of max health,
 /// and Flame Breath straight away; every later cast is Flame Breath alone,
 /// a line weaker per dummy passed and another Ignite. With the Riftbeast
@@ -315,9 +328,9 @@ impl Driver for ElderDragon {
     }
 
     fn attack(f: &mut Fight<Self>, target: usize) {
+        let adj = f.adjacent(Some(target));
         f.hit_attack(target, 1.0, "auto");
         let ratio = f.row(f.drv.aoe_ratio);
-        let adj = f.adjacent(None);
         for d in adj.iter() {
             if d != target {
                 f.hit_attack(d, ratio, "splash");
@@ -326,12 +339,14 @@ impl Driver for ElderDragon {
         Self::execute(f);
     }
 
+    fn cast_started(f: &mut Fight<Self>, duration: f64) {
+        if !f.drv.landed { f.untargetable(duration); }
+    }
+
     fn cast(f: &mut Fight<Self>) {
         let landing = !f.drv.landed;
         if landing {
             f.drv.landed = true;
-            let ct = Self::cast_time(f);
-            f.untargetable(ct);
             let al = f.alive();
             let stun = f.row(f.drv.stun_dur);
             f.stun(&al, stun);
@@ -493,6 +508,7 @@ impl Driver for Kennen {
 #[derive(Clone)]
 pub struct MasterYi {
     n: i64,
+    pending_double: bool,
     heal_pct: RowId,
     magic: CalcId,
     as_gain: CalcId,
@@ -500,13 +516,25 @@ pub struct MasterYi {
 
 impl MasterYi {
     const DOUBLE_EVERY: i64 = 3;
+
+    fn double_strike(f: &mut Fight<Self>, target: usize) {
+        f.hit_attack(target, 1.0, "double strike");
+        if f.sheet.form == Some(Form::AP) {
+            let dmg = f.hit_ability(f.drv.magic, Some(target), "double strike", 1.0);
+            let heal = dmg * f.row(f.drv.heal_pct);
+            f.heal(heal, "double strike");
+        } else {
+            f.as_extra += f.calc(f.drv.as_gain);
+            f.as_extra_until = 1e9;
+        }
+    }
 }
 
 impl Driver for MasterYi {
     const NAME: &'static str = "MasterYi";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        MasterYi { n: 0, heal_pct: k.row("APForm_HealPercent"),
+        MasterYi { n: 0, pending_double: false, heal_pct: k.row("APForm_HealPercent"),
                    magic: k.calc("MagicDamageCalc1"), as_gain: k.calc("AttackSpeedCalc1") }
     }
 
@@ -521,19 +549,21 @@ impl Driver for MasterYi {
         if n % Self::DOUBLE_EVERY != 0 {
             return;
         }
-        let d = if f.d(target).alive { Some(target) } else { f.target() };
-        let d = match d {
-            Some(d) => d,
-            None => return,
-        };
-        f.hit_attack(d, 1.0, "double strike");
-        if f.sheet.form == Some(Form::AP) {
-            let dmg = f.hit_ability(f.drv.magic, Some(d), "double strike", 1.0);
-            let heal = dmg * f.row(f.drv.heal_pct);
-            f.heal(heal, "double strike");
-        } else {
-            f.as_extra += f.calc(f.drv.as_gain);
-            f.as_extra_until = 1e9;
+        if f.d(target).alive {
+            Self::double_strike(f, target);
+        } else if let Some(next) = f.target() {
+            if f.movement_ready_at() > f.t {
+                f.drv.pending_double = true;
+            } else {
+                Self::double_strike(f, next);
+            }
+        }
+    }
+
+    fn target_changed(f: &mut Fight<Self>, _old_target: usize, new_target: usize) {
+        if f.drv.pending_double {
+            f.drv.pending_double = false;
+            Self::double_strike(f, new_target);
         }
     }
 }
@@ -582,7 +612,6 @@ impl Gnar {
             dummy.armor_flat += strip;
             dummy.mr_flat += strip;
         }
-        let tg = f.aoe_all();
         let stun = f.row(f.drv.stun_dur);
         f.stun(&tg, stun);
         f.sheet.mana_max = f.kit.stats.mana;
@@ -625,8 +654,8 @@ impl Driver for Gnar {
             }
             return;
         }
-        f.hit_ability(f.drv.throw, d, "throw", 1.0);
         let others = f.aoe(None, true);
+        f.hit_ability(f.drv.throw, d, "throw", 1.0);
         for o in others.iter() {
             f.hit_ability(f.drv.passed, Some(o), "passed through", 1.0);
         }

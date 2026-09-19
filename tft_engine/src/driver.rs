@@ -30,6 +30,10 @@ pub trait Driver: Clone + Sized + Send {
         f.default_cast_time()
     }
 
+    /// Effects explicitly active during the already-modeled cast window.
+    /// This does not add a second animation or move the landing callback.
+    fn cast_started(_f: &mut Fight<Self>, _duration: f64) {}
+
     fn attack(f: &mut Fight<Self>, target: usize) {
         f.hit_attack(target, 1.0, "auto");
     }
@@ -41,6 +45,11 @@ pub trait Driver: Clone + Sized + Send {
     fn hit(_f: &mut Fight<Self>, _attacker: Option<usize>, _damage: f64) {}
 
     fn kill(_f: &mut Fight<Self>, _target: usize) {}
+
+    /// A moving melee actor reaches its new focus after its old focus dies.
+    /// This is separate from kill credit: an off-target kill is not a move.
+    /// Stationary workloads retain their existing kill callbacks.
+    fn target_changed(_f: &mut Fight<Self>, _old_target: usize, _new_target: usize) {}
 
     fn died(_f: &mut Fight<Self>) {}
 

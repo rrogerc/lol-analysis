@@ -414,8 +414,12 @@ def cmd_sync(args):
 # Web API payloads (used by webapp.py serve/export and the legacy dashboard)
 # ---------------------------------------------------------------------------
 
-def build_rows(con, tier, patches, min_games=1000, min_bucket_games=1000):
-    """Aggregated per-champion-lane payload used by the dashboard and the web API."""
+def build_rows(con, tier, patches, min_games=500, min_bucket_games=500):
+    """Aggregated per-champion-lane payload used by the dashboard and the web API.
+
+    The defaults are the web page's lowest min-games option (#mingames in
+    web/index.html). The page filters on the ranked bucket's games, so the
+    payload must carry every row and win rate that option can show."""
     agg = aggregate(con, tier, patches)
     rows = []
     for (champ, lane), buckets in sorted(agg.items()):

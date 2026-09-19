@@ -7,8 +7,8 @@ use std::cmp::Ordering;
 use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 
 use crate::driver::Driver;
-use crate::fight::{make_dummies, Fight, FightResult, Opening, Sheet};
-use crate::fx::{build_fx, Form, ItemFx};
+use crate::fight::{make_dummies_for, Fight, FightResult, Opening, ResponseSample, Sheet};
+use crate::fx::{build_fx_for, Form, ItemFx};
 use crate::spec::{CellSpec, Objective};
 
 /// A driver instance per kit (the form's rows and calcs differ), cloned
@@ -29,7 +29,7 @@ impl<D: Driver> Drivers<D> {
         }
     }
 
-    fn for_form(&self, form: Option<Form>) -> &D {
+    pub(crate) fn for_form(&self, form: Option<Form>) -> &D {
         match form {
             Some(Form::AD) => self.ad.as_ref().unwrap_or(&self.base),
             Some(Form::AP) => self.ap.as_ref().unwrap_or(&self.base),
@@ -53,11 +53,11 @@ pub fn run_fight<D: Driver>(spec: &CellSpec, drivers: &Drivers<D>, items: &[&Ite
 /// One pass of the chosen scenario; the stress run only scales incoming damage.
 fn run_fight_raw<D: Driver>(spec: &CellSpec, drivers: &Drivers<D>, items: &[&ItemFx],
                             trace: bool, incoming_mult: f64) -> (Opening, FightResult) {
-    let fx = build_fx(spec.role, items, &spec.traits, spec.unit.has_forms, spec.unit.attack);
+    let fx = build_fx_for(spec, items);
     let kit = spec.kit_for(fx.form);
     let drv = drivers.for_form(fx.form).clone();
     let sheet = Sheet::new(spec, kit, &fx);
-    let mut dummies = make_dummies(spec);
+    let mut dummies = make_dummies_for(spec, fx.form);
     if incoming_mult != 1.0 {
         for dummy in &mut dummies {
             dummy.ad *= incoming_mult;
@@ -83,6 +83,24 @@ fn run_fight_raw<D: Driver>(spec: &CellSpec, drivers: &Drivers<D>, items: &[&Ite
     opening.mana_start = f.sheet.mana_start;
     opening.mana_max = f.sheet.mana_max;
     (opening, res)
+}
+
+/// Measure a unit's cumulative response in one pass, without the tank
+/// leaderboard's extra stress run or a win/loss objective.
+pub fn measure_response<D: Driver>(spec: &CellSpec, times: &[f64])
+    -> (Opening, ResponseSample, Vec<ResponseSample>) {
+    let items: Vec<&ItemFx> = spec.items.iter().collect();
+    let fx = build_fx_for(spec, &items);
+    let kit = spec.kit_for(fx.form);
+    let drv = D::new(kit, &spec.unit);
+    let sheet = Sheet::new(spec, kit, &fx);
+    let dummies = make_dummies_for(spec, fx.form);
+    let mut f = Fight::new(spec, kit, sheet, fx, dummies, drv);
+    D::init(&mut f);
+    let opening = f.opening();
+    let initial_response = f.response_sample(0.0);
+    let (_, samples) = f.run_observed(times);
+    (opening, initial_response, samples)
 }
 
 /// Every multiset of three pool items (a unique item at most once), in
@@ -170,7 +188,10 @@ fn loadout_combos(pool: &[ItemFx]) -> Vec<Vec<usize>> {
 /// Exhaustive item-budget options under one fully resolved trait context.
 /// Each item count has its own best-first rows; the existing fight, stress
 /// pass and API-name tie-break remain the same as ordinary full builds.
-pub fn optimize_loadouts<D: Driver>(spec: &CellSpec, top: usize, workers: usize)
+/// Optionally retain `top` rows per equipped form so composition legality
+/// can choose a lower-damage ranged form alongside a melee carry.
+pub fn optimize_loadouts<D: Driver>(spec: &CellSpec, top: usize, workers: usize,
+                                    preserve_forms: bool)
     -> (usize, [Vec<LoadoutRow>; 4]) {
     let combos = loadout_combos(&spec.pool);
     let n = combos.len();
@@ -236,7 +257,27 @@ pub fn optimize_loadouts<D: Driver>(spec: &CellSpec, top: usize, workers: usize)
                     .cmp(b.combo.iter().map(|&i| api_rank[i]))
             })
         });
-        group.truncate(top);
+        if preserve_forms {
+            // All worker results reach this single ranked merge before any
+            // truncation. Retain each form's own best rows in the original
+            // total order, including the ordinary no-form group.
+            let mut retained = [0usize; 3];
+            group.retain(|(_, row)| {
+                let index = match row.opening.form {
+                    None => 0,
+                    Some(Form::AD) => 1,
+                    Some(Form::AP) => 2,
+                };
+                if retained[index] == top {
+                    false
+                } else {
+                    retained[index] += 1;
+                    true
+                }
+            });
+        } else {
+            group.truncate(top);
+        }
         group.into_iter().map(|(_, row)| row).collect()
     });
     (n, rows)

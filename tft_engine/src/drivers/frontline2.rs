@@ -212,15 +212,15 @@ impl Driver for Amumu {
     }
 }
 
-/// Lilting Lullaby: a heal and butterflies at the nearest few. Her own
-/// attacks wake the dummy she is hitting at once — it takes the wake-up
-/// damage and never sleeps — while the others sleep out the full duration
-/// with nothing around to wake them.
+/// Lilting Lullaby: butterflies damage nearby enemies, then put them to
+/// sleep. Subsequent damage must reach the source's threshold to awaken a
+/// victim and trigger the percent-max-health hit. Ordinary expiry has no hit.
 #[derive(Clone)]
 pub struct Lillia {
     n_enemies: RowId,
     wakeup: RowId,
     sleep: RowId,
+    threshold: RowId,
     heal: CalcId,
     butterflies: CalcId,
 }
@@ -231,26 +231,22 @@ impl Driver for Lillia {
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
         Lillia { n_enemies: k.row("NumEnemiesToFireAt"), wakeup: k.row("WakeupDamage"),
                  sleep: k.row("SleepDuration"), heal: k.calc("HealthCalc1"),
+                 threshold: k.row("DamageNeededToAwaken"),
                  butterflies: k.calc("MagicDamageCalc1") }
     }
 
     fn cast(f: &mut Fight<Self>) {
         let heal = f.calc(f.drv.heal);
         f.heal(heal, "lullaby");
-        let prim = f.target();
         let tg = f.aoe(Some(f.row(f.drv.n_enemies)), false);
         for d in tg.iter() {
             f.hit_ability(f.drv.butterflies, Some(d), "butterflies", 1.0);
         }
-        for d in tg.iter() {
-            if Some(d) == prim {
-                let amount = f.row(f.drv.wakeup) * f.d(d).max_hp;
-                f.deal(amount, DType::Magic, Some(d), "wake-up", Deal::ABILITY);
-            } else {
-                let dur = f.row(f.drv.sleep);
-                f.stun(&Sel::one(d), dur);
-            }
-        }
+        // Initial butterflies precede sleep. The archived wording does not
+        // establish a different initial-hit/threshold ordering at runtime.
+        let (duration, threshold, fraction) = (f.row(f.drv.sleep),
+            f.row(f.drv.threshold), f.row(f.drv.wakeup));
+        f.sleep(&tg, duration, threshold, fraction);
     }
 }
 
@@ -292,11 +288,11 @@ impl Driver for Malphite {
 }
 
 /// Azure Shockwave: a shield, then a fissure that knocks up, damages and
-/// Mana Reaves everyone in its path. With the Riftbeast Alpha Mark the Blue
-/// Buff's mana regen on himself.
+/// Mana Reaves everyone in its path. The Alpha Mark's per-cast allied mana
+/// regeneration needs a recipient-aware event; the stale self-regeneration
+/// row is not an opening effect in the pinned live tooltip.
 #[derive(Clone)]
 pub struct Sentinel {
-    self_regen: RowId,
     duration: RowId,
     knockup: RowId,
     reave: RowId,
@@ -308,15 +304,9 @@ impl Driver for Sentinel {
     const NAME: &'static str = "Sentinel";
 
     fn new(k: &Kit, _u: &UnitSpec) -> Self {
-        Sentinel { self_regen: k.row("TraitSelfManaRegen"), duration: k.row("ShieldDuration"),
+        Sentinel { duration: k.row("ShieldDuration"),
                    knockup: k.row("KnockupDuration"), reave: k.row("ManaReaveFlat"),
                    shield: k.calc("ShieldCalc1"), fissure: k.calc("MagicDamageCalc1") }
-    }
-
-    fn init(f: &mut Fight<Self>) {
-        if f.fx.riftbeast {
-            f.fx.mana_regen += f.row(f.drv.self_regen);
-        }
     }
 
     fn cast(f: &mut Fight<Self>) {

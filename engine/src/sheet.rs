@@ -143,6 +143,10 @@ pub struct Sheet {
     pub haste: f64,
     pub cd_mult: f64,
     pub basic_cd_mult: f64,
+    /// Ultimate cooldowns: ability haste plus the ultimate ability haste
+    /// three items grant. Only a kit that casts its ult more than once
+    /// (Kassadin) reads it.
+    pub ult_cd_mult: f64,
     pub hp: f64,
     pub hp_bonus: f64,
     pub mana: f64,
@@ -181,6 +185,7 @@ impl Sheet {
             haste: getf(d, "haste", 0.0)?,
             cd_mult: getf(d, "cd_mult", 1.0)?,
             basic_cd_mult: reqf(d, "basic_cd_mult")?,
+            ult_cd_mult: getf(d, "ult_cd_mult", 1.0)?,
             hp: reqf(d, "hp")?,
             hp_bonus: reqf(d, "hp_bonus")?,
             mana: reqf(d, "mana")?,
@@ -216,6 +221,7 @@ impl Sheet {
         d.set_item("haste", self.haste)?;
         d.set_item("cd_mult", self.cd_mult)?;
         d.set_item("basic_cd_mult", self.basic_cd_mult)?;
+        d.set_item("ult_cd_mult", self.ult_cd_mult)?;
         d.set_item("hp", self.hp)?;
         d.set_item("hp_bonus", self.hp_bonus)?;
         d.set_item("mana", self.mana)?;
@@ -270,6 +276,7 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
     // AP multiplier, matching the in-game order.
     let base_mana = stat_at(base.mp, base.mp_per, level);
     let mut basic_haste = 0.0f64;
+    let mut ult_haste = 0.0f64;
     // One item in seventy-nine carries any given field here, so each term is
     // skipped when the item's own number is exactly 0.0. Adding a term whose
     // factor is 0.0 changes an accumulator's bits only when the accumulator
@@ -296,6 +303,9 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
         }
         if fx.basic_ability_haste != 0.0 {
             basic_haste += fx.basic_ability_haste;
+        }
+        if fx.ultimate_ability_haste != 0.0 {
+            ult_haste += fx.ultimate_ability_haste;
         }
     }
     for (_, fx) in items {
@@ -352,6 +362,7 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
         haste,
         cd_mult: 100.0 / (100.0 + haste),
         basic_cd_mult: 100.0 / (100.0 + haste + basic_haste),
+        ult_cd_mult: 100.0 / (100.0 + haste + ult_haste),
         hp: stat_at(base.hp, base.hp_per, level) + agg[SK::Hp as usize] + pact_hp,
         hp_bonus: agg[SK::Hp as usize] + pact_hp,
         mana: stat_at(base.mp, base.mp_per, level) + agg[SK::Mana as usize],

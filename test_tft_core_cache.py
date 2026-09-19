@@ -140,7 +140,8 @@ class TestCoreCache(unittest.TestCase):
                     (webapp, "db_connect", con), (webapp, "app_meta", {"jobs": [], "tiers": ["test"]}),
                     (webapp.builds, "api_builds_meta", {}), (webapp.builds, "warm", 0),
                     (webapp.builds, "cell_paths", {}), (webapp.scaling, "db_patches", []),
-                    (webapp.scaling, "build_rows", []), (tft, "cell_paths", paths),
+                    (webapp.scaling, "build_rows", []), (webapp.onetricks, "api_onetricks", {}),
+                    (tft, "cell_paths", paths),
                     (webapp.tft_comps, "warm", 0),
                     (webapp.tft_comps, "cached_scenario", {"compositionFixture": True}),
                     (webapp.tft_comps, "cell_ready", {"c1-clump-mixed": True})):

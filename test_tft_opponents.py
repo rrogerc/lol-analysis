@@ -39,11 +39,11 @@ class TestReferenceOpponents(unittest.TestCase):
         validation = team.opponent_suite(self.snap, split="validation")
         screen = team.opponent_suite(self.snap, subset="screen")
         identities = lambda rows: {row["opponentId"] for row in rows}
-        self.assertEqual((len(search), len(validation), len(screen)), (6, 3, 3))
+        self.assertEqual((len(search), len(validation), len(screen)), (12, 3, 3))
         self.assertFalse(identities(search) & identities(validation))
         self.assertLessEqual(identities(screen), identities(search))
         rosters = {tuple(sorted(u["api"] for u in row["roster"])) for row in search + validation}
-        self.assertEqual(len(rosters), 9)
+        self.assertEqual(len(rosters), 15)
         with self.assertRaisesRegex(ValueError, "held-out"):
             team.opponent_suite(self.snap, split="validation", subset="screen")
 
@@ -77,9 +77,14 @@ class TestReferenceOpponents(unittest.TestCase):
 
     def test_pool_hash_tracks_authored_inputs_and_item_budget(self):
         meta = team.pool_metadata(self.snap)
-        self.assertEqual(meta["version"], "18-reference-v2-level8")
+        self.assertEqual(meta["version"], "18-reference-v3-coverage-positions")
         self.assertEqual(len(meta["hash"]), 64)
         self.assertEqual(meta["initiatives"], [0, 1])
+        self.assertEqual(meta["laneOffsets"], [0, 2, 4])
+        self.assertEqual(meta["positionVariants"], 3)
+        self.assertEqual((meta["searchBoards"], meta["validationBoards"], meta["screenBoards"]), (12, 3, 3))
+        self.assertEqual((meta["searchEncounters"], meta["validationEncounters"], meta["screenEncounters"]),
+                         (72, 18, 18))
         self.assertEqual(meta["authoredForPatch"], "18.1d")
         self.assertEqual((meta["level"], meta["boardSlots"]), (8, 8))
         for board in meta["boards"]:
@@ -89,6 +94,59 @@ class TestReferenceOpponents(unittest.TestCase):
         changed = deepcopy(self.snap)
         changed._input_hash = "different-resolved-snapshot"
         self.assertNotEqual(team.pool_revision(changed, 9), team.pool_revision(self.snap, 9))
+
+    def test_search_covers_every_supported_four_cost_damage_champion(self):
+        data = team.load_pool(self.snap)
+        required = {unit["api"] for unit in tft.modeled_units(self.snap)
+                    if unit["cost"] == 4 and unit["objective"] != "tank"}
+        actual = {board["mainCarry"] for board in data["boards"] if board["split"] == "search"}
+        self.assertLessEqual(required, actual)
+        broken = deepcopy(data)
+        broken["boards"] = [board for board in broken["boards"] if board["id"] != "nidalee-javelin"]
+        # Nidalee's AD held-out board cannot substitute for search coverage.
+        with self.assertRaisesRegex(ValueError, "missing supported four-cost carries: TFT18_Nidalee"):
+            team.validate_pool(self.snap, broken)
+
+    def test_nidalee_search_carry_uses_the_magic_form(self):
+        evaluator = team.Evaluator(self.snap, "clump")
+        for budget in team.ITEM_BUDGETS:
+            board = next(row for row in team.opponent_suite(self.snap, budget=budget)
+                         if row["opponentId"] == "nidalee-javelin")
+            carry = next(actor for actor in evaluator.allies(board["members"], board["effects"],
+                         board["selected"], board["carry"], board["tank"])
+                         if actor["spec"]["unit"]["api"] == board["carry"])
+            spec = dict(carry["spec"], dummies=tft.dummies_for(self.snap))
+            self.assertEqual(tft.engine().compose_fx(spec)["form"], "AP")
+
+    def test_position_variants_rotate_only_lanes_and_include_both_initiatives(self):
+        evaluator = team.Evaluator(self.snap, "clump")
+        for split in ("search", "validation"):
+            encounters = evaluator.encounters(9, split)
+            boards = team.opponent_suite(self.snap, split=split)
+            self.assertEqual(len(encounters), len(boards) * 6)
+            self.assertEqual(len({encounter["label"]["key"] for encounter in encounters}), len(encounters))
+            for board in boards:
+                variants = [encounter for encounter in encounters
+                            if encounter["label"]["opponentId"] == board["opponentId"]]
+                self.assertEqual({(entry["label"]["laneOffset"], entry["initiative"]) for entry in variants},
+                                 {(offset, initiative) for offset in (0, 2, 4) for initiative in (0, 1)})
+                baseline = variants[0]["enemies"]
+                for variant in variants:
+                    offset = variant["label"]["laneOffset"]
+                    self.assertEqual(variant["label"]["roster"],
+                                     [dict(unit, lane=(unit["lane"] + offset) % 7) for unit in board["roster"]])
+                    self.assertEqual(variant["enemies"],
+                                     [dict(actor, lane=(actor["lane"] + offset) % 7) for actor in baseline])
+
+    def test_prepared_position_variants_match_scalar_fights(self):
+        board = team.opponent_suite(self.snap, subset="screen")[0]
+        args = board["members"], board["effects"], board["selected"], board["carry"], board["tank"]
+        prepared = team.Evaluator(self.snap, "clump").evaluate(*args, subset="screen")
+        scalar = team.Evaluator(self.snap, "clump", prepared=False).evaluate(*args, subset="screen")
+        self.assertEqual(prepared, scalar)
+        self.assertEqual(prepared["opponentCount"], 3)
+        self.assertEqual(prepared["laneOffsets"], [0, 2, 4])
+        self.assertEqual(prepared["metrics"]["benchmarkCount"], 18)
 
     def test_reference_validation_rejects_illegal_units_items_and_leakage(self):
         data = team.load_pool(self.snap)
@@ -116,6 +174,11 @@ class TestReferenceOpponents(unittest.TestCase):
         duplicated["boards"][6] = dict(deepcopy(duplicated["boards"][0]), id="held-out-copy", split="validation", screen=False)
         with self.assertRaisesRegex(ValueError, "rosters must be distinct"):
             team.validate_pool(self.snap, duplicated)
+        for offsets in ([], [2, 4], [0, 0], [0, 7], [0, True]):
+            broken = deepcopy(data)
+            broken["laneOffsets"] = offsets
+            with self.subTest(offsets=offsets), self.assertRaisesRegex(ValueError, "reference lane offsets"):
+                team.validate_pool(self.snap, broken)
 
     def test_four_cost_reference_board_uses_the_level_eight_support(self):
         data = team.load_pool(self.snap)
@@ -145,7 +208,7 @@ class TestReferenceOpponents(unittest.TestCase):
             evaluator = team.Evaluator(self.snap, "clump")
             encounters = [row for row in evaluator.encounters(9, "validation")
                           if row["label"]["opponentId"] == board["id"]]
-        self.assertEqual(len(encounters), 2)
+        self.assertEqual(len(encounters), 6)
         for encounter in encounters:
             label = encounter["label"]
             self.assertEqual(len(encounter["enemies"]), 7)

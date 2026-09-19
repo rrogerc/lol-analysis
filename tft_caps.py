@@ -2,17 +2,19 @@
 
 The main carry/tank, surviving stars and surviving item holders are fixed.
 Only a sold support's completed items can move, and only onto newly bought
-two-star five-costs. Search fights select the cap; held-out fights describe
-the selected result afterwards. A cap never feeds back into its parent's
-selection or rank.
+two-star five-costs. Theoretical capacity across the parent's pressure
+scenarios selects the cap. A cap never feeds back into its parent's rank.
 """
 from collections import Counter
 from copy import copy, deepcopy
 from itertools import combinations, product
+import math
 
 import tft
+import tft_theory
 from tft_board import slots_used, unit_slots
 from tft_comp_items import arrangement, identity
+from tft_comp_utility import AntihealPolicy
 from tft_comp_traits import RIFTBEAST, resolve_board_traits
 
 
@@ -75,6 +77,7 @@ def _transitions(search, parent, carry, tank, profile):
 
 
 def _legal_allocation(snap, selected, carry, tank, budget):
+    # The ordinary item arrangement allows at most two carries.
     counts = {api: len(option["items"]) for api, option in selected.items()}
     if (sum(counts.values()) != budget or any(count > 3 for count in counts.values())
             or counts[carry] < 2 or counts[tank] < 2):
@@ -92,7 +95,7 @@ def _legal_allocation(snap, selected, carry, tank, budget):
     return arrangement(snap, selected, carry, tank) is not None
 
 
-def _allocations(snap, parent, removed, added, resolved, carry, tank, budget):
+def _allocations(snap, parent, removed, added, resolved, carry, tank, budget, *, profiles=None):
     """Every split of the sold items, crossed with every eligible Alpha holder."""
     retained = {api: {"items": tuple(unit["itemApis"]), "count": len(unit["itemApis"]), "alpha": False}
                 for api, unit in parent.items() if api != removed}
@@ -100,6 +103,9 @@ def _allocations(snap, parent, removed, added, resolved, carry, tank, budget):
     active_rift = any(trait["api"] == RIFTBEAST and trait["active"] for trait in resolved["traits"])
     alphas = sorted(api for api in (*retained, *added) if RIFTBEAST in snap.units[api]["traitApis"])
     alphas = alphas if active_rift else [None]
+    members = [{"api": api, "star": parent[api]["star"]} for api in retained]
+    members.extend({"api": api, "star": CAP_FIVE_COST_STAR} for api in added)
+    antiheal = AntihealPolicy(snap, members, resolved["effects"], profiles=profiles)
     selected_rows, seen = [], set()
     for destinations in product(range(len(added)), repeat=len(freed)):
         transferred = [[] for _ in added]
@@ -112,6 +118,8 @@ def _allocations(snap, parent, removed, added, resolved, carry, tank, budget):
             continue
         for alpha in alphas:
             trial = {api: dict(option, alpha=api == alpha) for api, option in selected.items()}
+            if not antiheal.legal(trial):
+                continue
             key = identity(trial)
             if key not in seen:
                 seen.add(key)
@@ -119,17 +127,24 @@ def _allocations(snap, parent, removed, added, resolved, carry, tank, budget):
     return selected_rows
 
 
-def _search_wins(result, expected_count, parent):
-    metrics = result["metrics"]
-    wins, count = metrics["benchmarkWins"], metrics["benchmarkCount"]
-    if type(wins) is not int or count != expected_count or not 0 <= wins <= count:
-        raise ValueError("cap comparisons must use the parent's complete search opponent suite")
-    if result.get("poolSplit", "search") != "search":
-        raise ValueError("held-out fights cannot select a cap")
-    if ("poolRevision" in parent and "poolRevision" in result
-            and result["poolRevision"] != parent["poolRevision"]):
-        raise ValueError("cap comparisons must use the parent's opponent revision")
-    return wins
+def _theory_score(result, expected_count, parent):
+    if (type(result.get("profileCount")) is not int
+            or result["profileCount"] != expected_count):
+        raise ValueError("cap comparisons must use the parent's complete theoretical pressure range")
+    if (result.get("evaluationModel") != tft_theory.MODEL
+            or parent.get("evaluationModel") != tft_theory.MODEL):
+        raise ValueError("cap comparisons require the theoretical evaluation model")
+    if not parent.get("modelRevision") or result.get("modelRevision") != parent["modelRevision"]:
+        raise ValueError("cap comparisons must use the parent's theoretical model revision")
+    pressures = result.get("scenarios", [])
+    expected = parent.get("scenarios", [])
+    if len(pressures) != expected_count or len(expected) != expected_count:
+        raise ValueError("cap comparisons require the complete declared scenario inputs")
+    inputs = (*tft_theory.scenarios()[0], "targetCount")
+    if any(any(actual.get(field) != previous.get(field) for field in inputs)
+           for actual, previous in zip(pressures, expected, strict=True)):
+        raise ValueError("cap comparisons must retain the parent's theoretical scenario inputs")
+    return -tft_theory.rank_key(result)[0]
 
 
 def _summary(unit):
@@ -158,10 +173,9 @@ def _trait_changes(before, after):
 def build_upgrade(search, parent_row):
     """Return an independently chosen level-nine variant, leaving the parent intact.
 
-    The bounded roster policy is exhaustive unless a preferred two-legendary-
-    slot board wins every search fight. That is an exact upper bound: an unseen
-    board cannot improve either the primary score or the legendary-slot tie
-    preference. Ending health, damage and held-out outcomes never break ties.
+    The bounded roster policy is exhaustive. Continuous capacity has no
+    perfect-win upper bound, so every legal transition and allocation must
+    be compared. Preferred legendary slots only break exact score ties.
     """
     if search.profile["cost"] != 4:
         return None
@@ -169,26 +183,30 @@ def build_upgrade(search, parent_row):
     profile = _cap_profile(search.profile)
     transitions = _transitions(search, parent, carry, tank, profile)
     budget = parent_row["itemCount"]
-    expected_count = parent_row["metrics"]["benchmarkCount"]
+    expected_count = parent_row.get("profileCount")
     if type(expected_count) is not int or expected_count < 1:
-        raise ValueError("a cap requires the parent's complete search benchmark")
-    selection = {"evaluatedOn": "search", "parentRanking": "level8",
+        raise ValueError("a cap requires the parent's complete theoretical pressure range")
+    _theory_score(parent_row, expected_count, parent_row)
+    history = parent_row.get("primalHistory", parent_row.get("primal", {}).get("selected", []))
+    primal_constraints = {"required_primal": history} if history else {}
+    selection = {"evaluatedOn": "theory", "parentRanking": "level8",
                  "fiveCostStar": CAP_FIVE_COST_STAR,
                  "preferredFiveCostSlots": PREFERRED_FIVE_COST_SLOTS,
                  "candidatesAvailable": len(transitions), "rostersCompared": 0,
                  "allocationsCompared": 0, "alphaAssignmentsCompared": 0,
-                 "perfectScoreBoundReached": False, "testFightsPerAllocation": expected_count}
+                 "profilesPerAllocation": expected_count}
     best, best_key = None, None
     for removed, added in transitions:
         members = [{"api": api, "star": unit["star"]} for api, unit in parent.items() if api != removed]
         members.extend({"api": api, "star": CAP_FIVE_COST_STAR} for api in added)
         members.sort(key=lambda member: member["api"])
         resolved = resolve_board_traits(search.snap, members)
-        trials = _allocations(search.snap, parent, removed, added, resolved, carry, tank, budget)
+        trials = _allocations(search.snap, parent, removed, added, resolved, carry, tank, budget,
+                              profiles=getattr(search.team, "profiles", None))
         if not trials:
             continue
         results = search.team.evaluate_many(members, resolved["effects"], trials,
-                                            carry, tank, split="search", details=False)
+                                            carry, tank, split="theory", details=False, **primal_constraints)
         if len(results) != len(trials):
             raise RuntimeError("cap comparison batch returned an incomplete result")
         selection["rostersCompared"] += 1
@@ -197,22 +215,23 @@ def build_upgrade(search, parent_row):
             if option["alpha"]), None) for trial in trials})
         five_slots = sum(unit_slots(api) for api in added)
         for selected, result in zip(trials, results, strict=True):
-            key = (_search_wins(result, expected_count, parent_row),
+            key = (_theory_score(result, expected_count, parent_row),
                    five_slots == PREFERRED_FIVE_COST_SLOTS)
             if best_key is None or key > best_key:
                 best_key = key
                 best = {"members": members, "traits": resolved, "selected": selected,
                         "removed": removed, "added": added, "fiveCostSlots": five_slots}
-        if best_key == (expected_count, True):
-            selection["perfectScoreBoundReached"] = True
-            break
     if best is None:
         return None
 
     members, resolved, selected = best["members"], best["traits"], best["selected"]
-    result = search.team.evaluate(members, resolved["effects"], selected, carry, tank, split="search")
-    if _search_wins(result, expected_count, parent_row) != best_key[0]:
-        raise RuntimeError("full cap diagnostics disagree with the selected search result")
+    result = search.team.evaluate(members, resolved["effects"], selected, carry, tank,
+                                  split="theory", **primal_constraints)
+    if not math.isclose(_theory_score(result, expected_count, parent_row), best_key[0], rel_tol=1e-12, abs_tol=1e-12):
+        raise RuntimeError("full cap diagnostics disagree with the selected theoretical result")
+    if "primal" in result:
+        resolved = resolve_board_traits(search.snap, members,
+                                        primal_blessings=result["primal"]["selected"])
     # The expensive search is complete. Cheap standalone diagnostics now fill
     # the standard board payload, without being allowed to change the winner.
     detailed = {member["api"]: search.evaluator.loadout(member["api"], member["star"],
@@ -225,17 +244,12 @@ def build_upgrade(search, parent_row):
     candidate = tuple(member["api"] for member in members), carry, tank
     board = cap_search.compose(candidate, {"members": members, "traits": resolved}, budget,
                                structure, cap_search.allocation(detailed, result))
+    selected_blessings = result.get("primal", {}).get("selected", [])
+    if history or selected_blessings:
+        board["primalHistory"] = [*history, *(key for key in selected_blessings if key not in history)]
     board["itemPolicy"] = deepcopy(ITEM_POLICY)
     board.pop("itemAnalysis", None)
-    validation = search.team.evaluate(members, resolved["effects"], selected, carry, tank, split="validation")
-    board["validation"] = {field: validation[field] for field in
-        ("metrics", "matchups", "poolRevision", "poolSplit", "opponentCount", "itemBudget")}
-    restricted = search.team.evaluate(members, resolved["effects"], selected, carry, tank,
-                                    split="validation", healing_policy="restricted")
-    board["assumptionCheck"] = {field: restricted[field] for field in
-        ("metrics", "matchups", "poolRevision", "poolSplit", "opponentCount", "itemBudget", "healingPolicy")}
-    board["assumptionCheck"]["winDelta"] = (restricted["metrics"]["benchmarkWins"]
-                                          - validation["metrics"]["benchmarkWins"])
+    cap_search.validate_boards([board])
     by_api = {unit["api"]: unit for unit in board["units"]}
     removed, added = best["removed"], best["added"]
     transfers = [{"fromApi": removed, "fromSlug": parent[removed]["slug"],
@@ -243,10 +257,9 @@ def build_upgrade(search, parent_row):
                   "item": search.snap.items[item]["name"]}
                  for api in added for item in selected[api]["items"]] if removed is not None else []
     selection.update(fiveCostSlots=best["fiveCostSlots"],
-                     poolRevision=result["poolRevision"], itemBudget=budget)
+                     modelRevision=result["modelRevision"], itemBudget=budget)
     search.team.stats.update(capRostersCompared=selection["rostersCompared"],
-                             capAllocationsCompared=selection["allocationsCompared"],
-                             capPerfectScoreBounds=int(selection["perfectScoreBoundReached"]))
+                             capAllocationsCompared=selection["allocationsCompared"])
     return {"parentId": parent_row["id"], "board": board,
             "transition": {"removed": [_summary(parent[removed])] if removed is not None else [],
                            "added": [_summary(by_api[api]) for api in added],
@@ -254,4 +267,4 @@ def build_upgrade(search, parent_row):
                            "itemTransfers": transfers,
                            "traitChanges": _trait_changes(parent_row["traits"], board["traits"])},
             "selection": selection,
-            "benchmarkWinDelta": result["metrics"]["benchmarkWins"] - parent_row["metrics"]["benchmarkWins"]}
+            "theoryScoreDelta": result["metrics"]["theoryScore"] - parent_row["metrics"]["theoryScore"]}

@@ -1,5 +1,15 @@
 # lol-analysis — notes for whoever works here next
 
+## Computation architecture
+
+- Use Rust for heavy computation: simulations, scoring, numerical aggregation,
+  expensive search loops and their caches. Keep Python focused on data loading,
+  orchestration, CLI/API plumbing and readable verification references.
+- Batch work across the Python/Rust boundary. Avoid repeated serialization,
+  hashing and validation inside computational loops.
+- Profile representative workloads before large rebuilds, and verify numerical
+  parity and search coverage when moving computation between implementations.
+
 ## The dashboard on :8321 is a NixOS system service. Never launch it by hand.
 
 - `lol-dashboard.service` runs `lol.py serve --host 0.0.0.0 --port 8321
@@ -75,6 +85,20 @@
   commit. Keep the Rust strict: no `target-cpu`, no fast-math, no
   `mul_add`; floating point has to stay operation-for-operation what the
   Python engine did.
+- Buy order (2026-09-18): the top `BUY_ORDER_ROWS` (10) rows of each cell
+  carry `buyOrder`, the five items after the boots in a suggested purchase
+  order; `items` keeps the enumeration's order (the seeds read it). Every
+  partial build (31 subsets, boots owned) is fought at `BUY_STAGE_LEVELS`
+  (7/9/11/13/15 by items owned) against `stage_target`s: the full dummies
+  scaled down to the dropped first-item preset's shares by level 9, item
+  HP lost first. `buy_order` scores all 120 orders by the sum over stages
+  of kill time × the next item's gold (overall cells: the geometric mean
+  over the three targets). Rod of Ages (`stackedStats`) is pinned first;
+  Seraph's/Muramana (`BUY_NOT_FIRST`) are never first, since their Tear
+  needs time. Damage only; about 0.06 s a champion; fights and goldens
+  unchanged. Tests: `TestBuyOrder`,
+  `TestScenarioCache.test_top_rows_carry_buy_orders`,
+  `node jobs/test-builds-item-ui.cjs`.
 - Fiendhunter Bolts (2026-09-07): `ultAttackSteroid` in item-effects.json
   models Opening Barrage as expected values over the sheet's crit chance.
   The three attacks after R gain 50% AS; one that would not have crit is
@@ -126,9 +150,342 @@
   added and the old 2,565 cases and three runs verified unchanged. A cold
   Twitch tier warms in ~41 s. Tests: `test_builds.TestTwitchKit`,
   `TestTwitchEngine`; the dashboard shows the kit's `notes`.
+- Kassadin (2026-09-18): the fourth kit (`data/builds/kassadin.json`,
+  `KassadinDriver`), numbers from Riot's 16.18 character bin cross-checked
+  against the wiki (V26.18: Null Sphere 80% AP, Riftwalk 80–110; the bin's
+  `RiftWalkBaseDamage` row is stale, `RBaseDamage` is live). The first kit
+  that keeps a mana pool: the sheet's max mana is the budget, every cast
+  pays, a spell that cannot be paid waits, nothing regenerates; Nether
+  Blade's empowered attack refunds 20–30% of missing mana (×5, the dummy
+  counting as a champion). Riftwalk opens through the engine's t=0 ult path
+  (the kit's R has no `damage`, so no single impact is scheduled) and is
+  recast on cooldown via `Kind::RCast` while its 40 × 2^stacks cost is there
+  (four stacks at most, damage counts the stacks before the cast, +2%/+1%
+  max mana); Q and E on cooldown when affordable; W the moment it is up
+  (instant; the reset only ever pulls the next attack in; "W onhit" is proc
+  damage on every on-hit, "W" the empowered attack's ability damage;
+  Muramana on the W cast per V11.8, no extra Eclipse hit); every Q/W/R cast
+  takes 0.75 s off Force Pulse; a 0.25 s cast blocks other casts without
+  pushing an attack already due later. Skill order E > W > Q: Riot's file
+  and 16.18's most played; Q > E > W wins more and gave the same kill times
+  at 16. Engine additions, inert for the other kits: sheet `ult_cd_mult`
+  from item `ultimateAbilityHaste` (Malignance 20, Fiendhunter 30, Hexplate
+  30), `Engine::ult_cd`, `ult_hatefog` (a live zone is refreshed and keeps
+  its tick cadence — the wiki's one-zone rule), `mana_cost_mult`
+  (Actualizer's `costIncreasePct` 100 during its window) and
+  `DamageSpec.max_mana_ratio`. Recasts do NOT reopen Hexplate's Overdrive
+  or Fiendhunter's Opening Barrage: the wiki's item data gives them 30 s and
+  45 s cooldowns (ddragon's text drops them), so each fires once per fight;
+  reopening them per Riftwalk had made AD-crit Kassadin top bruiser/tank.
+  Still unmodeled for him: mana regen and Essence Reaver's refund. The
+  goldens moved to item patch 16.18 in the same regeneration (the 16.18
+  snapshot had left `TestGolden.test_fights` failing on the label alone);
+  every Kayle/Vladimir/Twitch case replayed bit-identical at 16.17 and
+  again at 16.18. Kassadin's tier warmed in 15–28 s (two cold runs). Tests:
+  `test_builds.TestKassadinKit`, `TestKassadinEngine`.
+
+## The One-tricks tab (onetricks.py)
+
+- Counts, per champion, the players on each crawled region's latest Master+
+  ladder (lol-quant's ladder ledger: last full frame plus later deltas) for
+  whom that champion is more than 85% of their ranked solo games in a role
+  (the crawl's `role` is Riot's per-game `teamPosition`), with at least 20
+  games on it. The denominator is the role's games, not all games as
+  onetricks.gg uses: Roger's definition. The season is the crawl's patches
+  of the newest major version. The total is distinct players; one who
+  one-tricks the champion in two roles is in both role columns (common:
+  Yasuo, Vel'Koz, Katarina).
+- `lol.py onetricks sync` replaces the `onetricks` and `onetrick_sync`
+  tables; `jobs/sync-scaling.sh` runs it after the scaling sync, so it
+  rides the existing six-hourly timer. It streams the parquet through a
+  pyarrow grouped count: ~18 s, ~8 GB peak, most of it the metadata of the
+  crawl's ~28k uncompacted parquet files (a one-column scan alone peaks
+  near 5 GB). Serve only reads the tables (`/api/onetricks.json`).
+- Tests: `python3 -m unittest test_onetricks`, `node jobs/test-onetricks-ui.cjs`.
 
 ## The TFT tab (tft.py, tft_engine/, data/tft/)
 
+- Automatic update recovery (2026-09-10): `tft_http.py` bounds each download
+  to four attempts/90 seconds, including DNS and body reads. Only exhausted
+  transient fetch failures exit 75; review-required exits 2 and permanent
+  failures exit 1. `lol-tft-refresh` is a USER service, with a four-hour
+  startup limit and exit-75-only retries after five minutes (three starts
+  per 30 minutes). The Nix declaration and checked-in drop-in under
+  `jobs/systemd/` must stay aligned. Never restart the system dashboard by
+  hand to run an update; let complete publication signal its existing path.
+  Status retains recent failures and a pending review blocker separately.
+- Patch reviews: `data/tft/set18/patch-reviews/<patch>.json` explicitly binds
+  corrections and scoped mechanics dispositions to the downloaded source
+  hashes and previous audit. `tft_update.py` validates the prior values,
+  exact note identities, raw definition changes and final target values.
+  Do not refresh hashes merely to approve new evidence. Preserve forms,
+  star levels and trait columns; split superseded checks rather than leave
+  conflicting expectations. Compound formulas are not automatically reusable
+  numeric mappings. See `18.2-review.md` for source conflicts and retained
+  geometry, terrain and summon-timing limitations. Regressions:
+  `test_tft_{http,patch_parser,patch_review,update,refresh}.py`.
+
+- Melee movement estimate (2026-09-09): the finite damage benchmark declares
+  `MELEE_REPOSITION_SECONDS = 0.5` in `tft.py`. Equipped ranges 1–2 wait that
+  long at initial engagement and after their current target dies; ranged
+  forms (including AP Nidalee at range5) are unchanged. This is the user's
+  accepted shared approximation, not decoded walking or jump timing. Rust
+  tracks an independent arrival gate; attack cooldowns overlap it, new casts
+  wait for arrival, and existing damage/regen/incoming pressure keep running.
+  Akali AP recasts, Brambleback leaps and Yi's transferred second strike resume
+  through `Driver::target_changed` at arrival. Superseded moves are cancelled;
+  collateral kills do not move the actor. Explicit zero-delay inputs retain
+  the previous stationary behavior. Tank presets and immortal composition
+  probes do not enable this finite-target policy. Saved cells/leaderboards
+  expose the assumption and actual elapsed movement time; old payloads retain
+  their original explanation. See `data/tft/set18/melee-movement.md` and
+  `test_tft_movement{,_chains}.py`. This change's champion cells are rebuilt
+  independently; a full composition/site publication is a separate rebuild.
+- Percentage HP (2026-09-09): ordinary item and trait bonuses share one
+  additive pool: `(star-scaled base HP + flat HP) * (1 + sum(bonus HP %))`.
+  The existing `hpMult` input keeps factor notation; 1.18 contributes 0.18.
+  Both item and generic trait paths use `Fx::add`; timed flat HP uses the
+  combined factor once. Spell calculations based on current max HP remain
+  separate. The user selected this interpretation after reviewing historical
+  in-game evidence; current Set 18 operation/channel decoding is unresolved.
+  See `data/tft/set18/hp-stacking.{md,json}` and `test_tft_hp_stacking.py`.
+  Engine `cfe721d84f2e`: 893 TFT tests with one existing skip, eight Rust tests,
+  and complete reference/native item-search parity at 3,242/4,183 allocations.
+  All 6,053 previous fights with at most one ordinary HP bonus stay identical;
+  the 1,617 multi-bonus fights change. Regenerated ranked cells change in
+  1,079/1,770 cases. Published `g-1b8d8c0db83f` passes all 1,664 core / 416 cap
+  UI checks and 2,080 copy round trips; all four live endpoints agree.
+  Among three-item core tank appearances, at least two Warmogs falls from
+  75.65% to 42.74%, and triple Warmogs from 38.79% to 3.04%. These are repeated
+  generated-board appearances, not match data. Rebuild stages total
+  7,142.628 s (1 h 59 m 3 s), excluding compilation and verification waiting.
+- Persistent incoming targets (2026-09-09): capacity v3 uses 48 profiles,
+  including two mirrored focus orientations. Incoming sources keep individual
+  owners; Gargoyle and Monolith count all assigned sources before initialization
+  and throughout measurement. See `data/tft/set18/pressure-targeting.md` for
+  the exact formation, regressions, benchmarks and remaining HP-stacking question.
+  At that generation, three Warmogs still won both controlled original tank
+  comparisons; the subsequent additive-HP results are recorded above.
+  Targeting alone did not resolve the health preference. Source masks and prepared openings are cached
+  in Rust; the Python reference independently checks assignment and aggregation.
+  Engine `6bef32c46ca7`: 888 TFT tests with one existing skip, eight Rust tests,
+  and complete native/reference optimizer parity at 3,981/4,478 allocations.
+  All 7,670 standalone fights and 1,770 ranked-cell fixtures are unchanged.
+  Rebuild took 6,444.755 s (1 h 47 m 25 s); published `g-574cbbba155f` passed
+  all 1,664 core / 416 cap UI checks and 2,080 copy round trips. All four live
+  endpoints agree. At least two Warmogs among three-item tank appearances
+  increased from 69.5% to 75.6%; this is a targeting fix, not a resolved HP bias.
+- Trait choices and melee-policy removal (2026-09-08): no melee-count cap
+  remains in allocation, refinement or publication. Existing one/two-carry
+  arrangements and antiheal requirements remain. Both equipped forms survive
+  shortlisting; use native role/pressure resolution for Nidalee.
+  `tft_comp_traits.primal_options` enumerates four singles at two Primals and
+  six pairs at four. `tft_theory.Evaluator(optimize_primal=True)` is used by
+  `Search`; every item allocation is compared against all legal choices with
+  one selected aggregate across the 24 profiles. Bear/Phoenix share identical
+  immortal-target/fixed-budget physics but remain separate evidence rows;
+  their unmeasured execute/economy value must stay visible. Ordinary roster
+  search cannot reach four Primals without Avatar/emblem state. Level-nine
+  plans retain earlier choices through `required_primal` and preserve latent
+  `primalHistory`; losing/regaining activation remains unverified. UI rows use
+  optional `primal.selected`, `primal.required` and `primal.alternatives`.
+  Native Turtle heals each living actor every four seconds; Spellweaver shares
+  AP on actual eligible allied casts without doubling self credit; Solar
+  converts half its existing bonus to true damage at five three-stars.
+  Current core/gap details for all 36 traits are in
+  `data/tft/set18/trait-models.{md,json}`. Engine `4116bc4251fd` preserves every
+  prior standalone fight. Tests include `test_tft_primal`,
+  `test_tft_primal_choices`, `test_tft_trait_shared_casts`, the updated carry
+  policy/cap tests and the composition UI harness. The full suite ran 855
+  tests with one existing skip. Complete Primal-aware item-search parity
+  passed: 3,230 allocations at 36.191 s cold / 36.107 s repeated (reported nine
+  items), 5,583 at 29.422 s / 29.213 s (dense twelve items without active Primal).
+  These are pinned-CPU optimizer timings, excluding snapshot/anchor preparation.
+  Full refresh took 83 min 49 s; publication `g-ae3fa683e59d` passed
+  actual-data UI/copy checks for 1,664 cores and 416 caps.
+  All four live TFT metadata/status endpoints agree on that generation and
+  report all 1,770 baseline cells and eight composition contexts ready.
+- Champion repairs (2026-09-08): all 65 champions / 70 base-and-Adaptor forms
+  were reviewed; 18 received supported corrections. The current decisions,
+  remaining per-champion gaps and verification record are in
+  `data/tft/set18/champion-audit/repairs.{md,json}`. Nearest-N selection is
+  independent of adjacency, lethal primary hits preserve secondary recipients,
+  and Lillia uses source-attributed damage-threshold sleep across all fight
+  paths. Theory shares newly applied flat resistance deltas exactly once.
+  Pebbles settles elapsed channel time including endpoint fractions, Kha'Zix
+  applies all-source mana multipliers to refunds, and Sivir extends the initial
+  blade's kills and retains the previous victim across bounces. Elder starts
+  its existing first-flight protection at cast start; duration/untargetability
+  remain explicit approximations. No unverified Android numeric/timing rows
+  were adopted. The previous 7,670-fight comparison changed 585 cases, only for
+  repaired champions. New regressions are `test_tft_audit_*.py`; passing them
+  does not validate live movement, timing, support, history or proc semantics.
+  Final engine `9640b491f083` passes 817 Python tests (one existing unique-pool
+  skip), including all 7,670 golden fights and all 1,770 golden cells, plus eight
+  Rust unit tests. Full preparation took 4,083.247 s (68 min 3 s). Generation
+  `g-e855e95ca90b` passed actual-payload UI checks for 1,664 cores, 416 level-nine
+  upgrades and 2,080 exact planner-code roster round trips, then was published
+  and observed through the active service. See the structured repair record
+  for complete hashes, remaining limitations and verification commands.
+- Damage comparisons use the finite-target clear-time/DPS leaderboard.
+  The experimental elapsed-time damage curves, slider, native curve API and
+  extra cache payloads were removed at the user's request. Keep the equipped
+  Nidalee corrections: form determines Assassin/Marksman role, range and
+  automatic exposure before combat; explicit pressure overrides still apply.
+  Also retain the confirmed execute correction: an immortal probe grants no
+  removal damage or sustain, preventing Gnar from cashing out the same HP
+  every cast. Finite/bridged executions, ordinary throws and true damage
+  remain valid. Tests: `test_tft_equipped_forms`, `test_tft_execute`,
+  `test_tft_theory_auras`, `test_tft_leaderboard` and
+  `jobs/test-tft-damage-ui.cjs`. The UI can read `finiteDiagnostic` from an
+  older pinned curve-era generation during publication, without treating its
+  damage-potential metrics as finite results. Heavy calculations remain Rust.
+- Composition clipboard export: each core and expanded level-nine upgrade has
+  `Copy to TFT`, using the version-two Team Planner roster format. Import IDs
+  come from `data/tft/set18/team-planner.json` (Riot client data with source and
+  asset joins); MetaTFT's combat lookup has stale IDs for Ivern and Lux. Codes
+  carry champions only, with Elder counted once; no items, stars, positions,
+  Alpha or Lux origin. `tft_site._team_planner` adds `teamPlanner` to saved
+  composition metadata and its presentation hash, preserving calculation
+  caches. UI clipboard failure falls back to legacy copy, then selected manual
+  text. Check `test_tft_site` and `jobs/test-tft-composition-ui.cjs`. Publish
+  with `tft_site.prepare(snap)` and `tft.dashboard_ready`, without a warm.
+- Trait audit (2026-09-07): `data/tft/set18/trait-audit.md` covers all 36
+  traits and the ten Alpha variants against the pinned 18.1d sources. Roster
+  screening now calls the native theoretical scorer with resolved team traits
+  and all legal Alpha holders at every beam step; it no longer sums isolated
+  unit baselines before traits enter. Costs and trait counts add no score.
+  `coverage` / `coverageNotes` distinguish partial or missing trait effects in
+  composition tooltips; legacy `modeled` only promises some engine support.
+  Corrected mechanics include delayed Primal Tiger team attack speed, repeating
+  Riftbeast growth, shield-dependent Vanguard durability, Juggernaut(4)'s
+  audited 6% nonmember durability, Thornmaiden's base team durability, shared
+  Caustic reductions, Hunter amplification on secondary targets, and removal
+  of undocumented Summoner extra summons and Sentinel's opening Alpha mana.
+  Do not call all traits accurate: shared casts, summoned-board entities,
+  position/recipient choices, histories and some source semantics remain
+  unresolved. The audit records these individually; never substitute arbitrary
+  flat synergy points or dormant curve rows for missing mechanics. Heavy
+  numerical work remains native; Python resolves inputs and orchestrates.
+- Theoretical composition capacity v3: `tft_theory.Evaluator` is
+  the Python adapter to native `lol_tft.TheoryScorer` in
+  `tft_engine/src/theory.rs`. It replaces
+  named-opponent win ranking with `evaluationModel=ehp-damage-capacity-v3`.
+  Score is frontline EHP × team DPS, aggregated geometrically across 48
+  equally weighted sensitivity profiles: raw DPS 1,000/2,000 × physical share
+  0/50/100% × incoming antiheal 0/33% × no enemy control or a 1.5-second
+  frontline stun every eight seconds × main-first/secondary-first targeting.
+  Control immunity is respected. Targets
+  have 3,000 HP and 100 armor/MR; both layouts contain three targets. Spread
+  changes adjacency coverage rather than deleting enemies, so independent
+  nearest-N spells retain their target count. These are visible
+  stress assumptions, not opponent frequencies; walking is not simulated.
+  Native persistent actors share one live frontline pressure budget in
+  half-second pulses, including a proportional final pulse. Pressure is
+  emitted by three rotating source channels (`incomingSourceCount=3`),
+  independent of outgoing area coverage. Single-target control
+  can suppress one channel, not all incoming pressure; area control can cover
+  up to three. Sources retain individual target ownership, including during
+  source CC. Initial owners are first/second/first eligible frontliner; all
+  three focus the only eligible frontliner. The main tank leads a fixed
+  priority sorted by unfocused 50/50 opening EHP, with API ties; the second
+  orientation swaps its first two entries. Opening and live per-attacker
+  defenses count all assigned sources. A source retargets to the first eligible
+  priority entry only after death or untargetability; lethal excess follows
+  that same source. This is an explicit two-orientation formation assumption,
+  not actual hex positioning. Planned window = opening
+  frontline EHP / raw DPS; observed window ends at that point or earlier
+  frontline collapse. All protected output stops when the last frontline
+  champion or holding body dies. Unsupported derived windows fail explicitly;
+  there is no 30-second win/loss cutoff. Adjusted EHP = raw pressure spent
+  excluding lethal overkill
+  + observed denial + remaining health/shield/body EHP; consumed shields and
+  effective self healing are already included. DPS = protected damage /
+  observed time.
+  Protection time = adjusted EHP / pressure; damage capacity = score / pressure.
+  Metrics are geometric means, with zero inputs yielding zero; exact score
+  ties share ranks. Per-unit DPS is allocated by mean shares to sum to the
+  aggregate; `measuredDps` is its arithmetic mean and `damageTaken` is raw spent
+  pressure. A first response extension from remaining EHP is allowed only if
+  the frontline survives its planned workload. Future ramping and temporary
+  buffs remain approximate; algebraic protection/capacity estimates are shown
+  separately from observed collapse. Scenario fields include
+  `plannedMeasurementWindow`, `measurementWindow`, `frontlineCollapsed` and
+  `incomingBudget = spentPressure + deniedPressure + unspentPressure`.
+  Detailed rows also identify `pressureTargetOrder` and
+  `initialPressureTargets`; compact scoring omits these board diagnostics.
+  Metadata and cap inputs retain `targeting`, `incomingSourceCount=3` and
+  `pressureAllocation=persistent-source-targets`. UI rollout accepts saved
+  v1/v2 generations using their original schemas and explanations.
+  No item-duplicate penalty is added. Ally healing
+  and shields remain potential output with no team-EHP credit. Provider
+  Sunder/Shred use opening uptime; each nonstacking burn channel has one owner.
+  Targets do not die/heal; executes, takedowns, hex movement and real lobby
+  frequencies are outside this model. Do not tune assumptions to force an
+  item category to win. See `data/tft/README.md` for the current methodology.
+  Tests: `python3 -m unittest test_tft_unit_profiles test_tft_theory
+  test_tft_theory_native test_tft_comp_items test_tft_comps test_tft_caps`, plus
+  `node jobs/test-tft-composition-ui.cjs`. Arithmetic/regression success does
+  not establish accuracy against recorded live fights.
+  The UI can still display a pinned v1 generation with its historical
+  independent-response explanation; v1/v2 data, scores and revisions must not
+  be mixed. Existing v1 performance/parity claims are historical, not evidence
+  of v2 throughput or accuracy.
+- Native theory execution: Python loads inputs, resolves board traits, prepares
+  legal roster/item candidates and owns metadata/API/UI publication.
+  `TheoryScorer.register(spec)` parses each immutable loadout once and returns
+  an integer ID; `evaluate_many` scores batches of allocation ID lists in Rust.
+  Rust owns equipped roles, shared-provider ownership and burn suppression,
+  persistent actor/event state, pressure and control delivery, targetability,
+  observed collapse, EHP/DPS accounting and scenario aggregation. Independent
+  cached curves no longer drive board scoring. Prepared loadouts and reusable
+  results avoid repeated parsing; `stats()` exposes execution/cache diagnostics.
+  `ReferenceEvaluator` independently aggregates raw native shared-pressure
+  observations via `UnitProfiles.measure_team` and `theory_opening`. Injected
+  analytic providers independently solve conserved pressure cases. The
+  reference remains a verification oracle, not the production batch scorer
+  or an automatic fallback.
+  After changing this path, rebuild the extension, run
+  `test_tft_theory_native` parity/failure checks, and measure representative
+  cold and repeated allocation batches before starting a full composition
+  rebuild. `jobs/tft_theory_verify.py capture --out PATH` freezes oracle
+  outputs, `replay --corpus PATH` checks the native results, and
+  `benchmark --out PATH --cpu 2 --repeats 1` times unchanged production
+  `ItemSearch` workloads for the reported nine-item board and a dense
+  twelve-item board. It compares winners, complete evidence and search counts;
+  shared anchor preparation is outside the timed optimizer sections.
+  Current v2 measurements after champion repairs (2026-09-08, engine
+  `9640b491f083`, CPU 2): reported-nine-item search compares 3,080 allocations
+  in 11.876 s cold / 12.138 s repeated; dense-twelve-item search compares 5,583
+  in 28.086 s / 27.731 s. Both converge and preserve the frozen independent
+  reference's winners, complete item evidence and search counts. All 24 profiles
+  use three outgoing targets in both layouts. Snapshot/anchor preparation is
+  excluded; these are optimizer measurements, not a full dashboard warm.
+  Earlier v2 measurements (2026-09-07, engine `3adc7dc4a3f2`, CPU 2,
+  24 profiles): complete reported-nine-item search compared 3,496 allocations
+  in 10.427 s cold / 10.270 s repeated; dense-twelve-item search compared
+  6,265 in 23.561 s / 23.287 s. Both converged with exact cold/repeated
+  winner, evidence and search-count agreement. Snapshot/anchor preparation
+  is excluded. These are optimizer timings, not a full dashboard warm;
+  historical v1 timings use a different model/workload and do not establish
+  a speed ratio across versions. See `data/tft/README.md` for the record.
+  The subsequent full v2 preparation measured 3,182.05 s (53 min 2 s),
+  including 1,770 baseline champion cells, eight composition contexts and
+  immutable HTTP responses. The complete site's UI/copy harness passed all
+  1,664 cores and 416 caps, including 2,080 exact planner-code roster round trips.
+  Report measured timings with workload/cache state; no speedup or
+  full-warm estimate follows from the Rust rewrite alone. Keep the published
+  dashboard generation active until the complete replacement is validated.
+- Retained combat corrections (2026-09-07): Nidalee's equipped form uses the
+  native form calculation; AP is a protected Marksman, AD a frontline
+  Assassin. Theory contributions and the UI retain form/role/ability fields;
+  the legacy match API also retains collision-free positions. Sentinel Mana
+  Reave raises the next cast's mana cost, preserves stored mana and clears
+  on cast. Repeated reaves keep the strongest increase; separate current-set
+  stacking confirmation remains unavailable. Fixed-interval dummy spells
+  remain timed. Tests: `test_tft_adaptor_positions`, `test_tft_mana_reave`,
+  `test_tft_unit_profiles`. The prior golden replay found all 7,670 archived
+  standalone fights unchanged by these corrections.
 - Scheduled publication and saved HTTP responses (2026-09-06): the existing
   six-hour `lol-tft-refresh` timer now calls `tft.prepare_dashboard` through
   `tft refresh`: warm all champion cells, warm all composition contexts with
@@ -154,35 +511,31 @@
   `test_tft_refresh`, `test_tft_site`, `test_tft_serving`, plus the two Node
   TFT UI jobs. Run `lol.py tft refresh` for an immediate complete publication;
   warming an individual cache alone does not activate it in the dashboard.
-- Symmetric composition fights (2026-09-06): `tft_engine/src/symmetric.rs`
-  exposes `lol_tft.simulate_match`, running the same champion drivers, item,
-  trait, mana, shield/heal and CC rules on both teams. Fixed lanes/rows remain
-  an approximation. Recipient defenses resolve damage before donor credit;
-  reciprocal procs use a deterministic queue. Test both initiative orders.
-  The old `simulate_team` synthetic API remains for mechanics diagnostics.
-  `tft_team.py` evaluates six independently authored search opponents and
-  three distinct held-out opponents from
-  `data/tft/set18/composition-opponents.json`; references obey the same
-  cost/star and 6–12-item budget rules. Paired initiatives give 12 search
-  fights and 6 held-out fights. Only search win rate ranks boards; exact ties
-  share a rank. HP/time are diagnostics and held-out outcomes never select
-  or reorder results. Draws/timeouts are non-wins. Pool versions/hashes and
-  exact enemy champions/items/positions are published for review.
-  Gunblade heals one lowest-percentage-HP living ally and discards overheal.
-  Self omnivamp is separate. Quicksilver, full-stack Titan and Vi's spell
-  supply their archived CC immunity; Sentinel's Mana Reave affects actual
-  opposing mana. Current-set proc/post-death healing eligibility is not fully
-  verified: the default broad convention is explicit, and final boards get a
-  separate held-out restricted-healing sensitivity check, outside ranking.
-  APIs carry `evaluationModel=symmetric-reference-pool-v1`; the UI rejects old
-  payloads. Tests: `test_tft_symmetric`, `test_tft_team_engine`, `test_tft_team`,
-  `test_tft_opponents`, `test_tft_comp_items`, `test_tft_comps`.
+- Legacy symmetric combat diagnostics: `tft_engine/src/symmetric.rs`
+  exposes `simulate_match`, using champion/item/trait/mana/shield/heal/CC rules
+  on both teams with fixed lanes and rows. Recipient defenses resolve damage
+  before donor credit; reciprocal procs use a deterministic queue. The
+  synthetic `simulate_team` API also remains available. `tft_team.py` and
+  `composition-opponents.json` retain their authored opponents, paired
+  initiatives/positions, win counts and held-out/restricted-healing checks
+  for mechanics diagnostics only. They do not select current compositions
+  or enter their model revision. `prepare_actor`, `simulate_matches` and the
+  exact SQLite WAL cache under `.cache/tft-comps/fight-scores/` likewise
+  belong to this legacy path; old match throughput/rebuild timings do not
+  characterize the theoretical evaluator. Tests: `test_tft_symmetric`,
+  `test_tft_team_engine`, `test_tft_team`, `test_tft_opponents`,
+  `test_tft_prepared`, `test_tft_team_batch`, `test_tft_match_cache` and
+  `test_tft_exact_verify`. Gunblade ally targeting and broad/restricted
+  proc/post-death healing conventions remain explicit diagnostic assumptions.
 - Brambleback armor ignore (2026-09-06): Frenzy ignores a fraction of the
   armor remaining after Sunder, for his damage only. This corrects the old
   shared reduction and deliberately changes 52 recorded standalone fights
   and his 12 ranked cells. Other champions' recorded fights remain exact.
   The rebaseline follows a full warm; `test_tft_symmetric_regressions` checks
   source isolation, expiry and the hand-calculated 100 × .7 × .5 = 35 armor.
+  Current Frenzy policy keeps one active eight-second buff, refreshed on
+  recast. This is conservative; stacking/recast-mana semantics remain
+  unverified, and the generic mana-lock rules are unchanged.
 - Scuttlecrab burrow (2026-09-06): Roger confirmed it cannot attack while
   burrowed. Healing/durability still start when the cast lands; the driver
   blocks attacks/recasts for the resolved three-second duration. Existing
@@ -193,8 +546,8 @@
   Tests: `python3 -m unittest test_tft_scuttlecrab`.
 - Composition item navigation and recipe previews (2026-09-06): champion
   names/portraits also show details on hover or keyboard focus: board stars,
-  roles, ability names, actual trait activity, equipped items and averaged fight
-  contributions. Core/cap and opponent tooltips use saved data without requests.
+  roles, equipped ability names, actual trait activity, items and theoretical
+  unit contributions. Core/cap tooltips use saved data without requests.
   Selecting a champion opens its individual item analysis with the board's star,
   geometry and tank threat, initially without traits. The view states that
   its fight differs from the board's actual traits/shared allocation; Back
@@ -207,97 +560,94 @@
   minimizing maximum component copies, then repeated-component pairs, then
   performance. Turning the preference off restores performance order. These
   are presentation choices; they do not alter scores. Composition item choices
-  now come from the shared encounters described above. Checks:
+  now come from the theoretical capacity objective above. Checks:
   `node jobs/test-tft-item-ui.cjs`, `python3 -m unittest
   test_tft_ui test_tft_cores test_tft_pair_cores test_tft_core_cache`.
-- Composition levels (2026-09-07): `tft_board.py` owns slot costs and weighted
-  trait counts. Elder Dragon occupies two team slots and contributes two
-  Riftbeast in total: seven champions at level 8, eight at level 9. This follows
-  Riot's Enchanted Wilds overview. Four-cost profiles now forbid all 5-costs
-  at level 8. After those cores and their ranks are fixed, `tft_caps.py` chooses
-  linked level-9 variants: sell one support and add two ordinary 2-star
-  legendaries or 2-star Elder; adding one ordinary 2-star legendary without a sale is a
-  fallback. Main carry/tank, retained stars/items and total item budget stay
-  fixed. Only a sold holder's items can move onto new units. Traits and Alpha
-  are recalculated, and a cap may change the carry/tank arrangement.
-  Caps compare search wins first, then prefer two legendary slots. A perfect
-  score with that preference is an exact stopping bound. Caps never affect
-  parent ranking; their held-out checks happen after cap selection. Both
-  levels face the same level-8 references, so upgrade results describe that
-  transition, not a separate level-9 field. The reference pool is now
-  `18-reference-v2-level8`; its four-cost Ezreal board replaces unitemized
-  Gnar with 2-star Kobuko to remove its legendary while preserving both traits.
-  Symmetric native fights support nine actors; standalone limits are unchanged.
-  Existing raw, prepared and compact fights through eight actors were verified
-  bit-for-bit against the previous native binary; no goldens were regenerated.
-  Metadata/artifacts carry `boardPlanModel=level8-core-level9-cap-v1`, board
-  level/capacity/used slots and per-unit slot costs. Optional `level9Upgrade`
-  contains the full board, sold/added units, item transfers and trait changes;
-  it carries an item-transfer policy instead of fresh item-replacement evidence.
-  The UI opens caps lazily and preserves exact champion/cap navigation. Old
-  metadata and artifacts remain compatible together during publication handoff.
-  The existing timer warms caps with the other calculations before publishing.
-  Roger's cap assumption is now 2-star five-costs, including Elder Dragon.
-  `tft_caps.CAP_FIVE_COST_STAR` supplies both fight inputs and the c4 profile's
-  `level9FiveCostStar`; each cap's selection records `fiveCostStar`. Missing
-  profile metadata denotes the earlier 1-star publication during handoff.
-  Level-8 five-cost support rules and reference opponents remain independent.
-  The original 1-star-cap refresh took 23 min 34 s on 2026-09-07: 1,770 champion
-  cells, 1,664 level-8 cores and 416 linked level-9 caps. The cap phase compared
-  618 legal rosters and 1,121 allocations; all selected caps reached the exact
-  perfect-score bound. All 520,064 core item alternatives and 1,919 saved HTTP
-  responses passed the final artifact/publication checks.
-  Tests: `test_tft_caps`, `test_tft_nine_units`, `test_tft_comps`,
-  `test_tft_comp_traits`, `test_tft_opponents`, and the Node composition UI job.
-- Compositions (2026-09-06): `tft_comps.py` searches eight occupied team slots
-  with same-cost main carry/tank, at least four target-cost units, realistic
-  support costs/stars, and one shared 6–12-item budget (default 9). It compares
-  single/duo carry/tank arrangements. `tft_comp_traits.py` resolves exact
-  breakpoints, team shares and one Alpha Mark. Items remain ideal craftable
-  items; component demand is shown but item bags/drops are not constrained.
-  Individual loadout calculations screen starting allocations only. Every
-  one-item candidate is retained, without a special Gunblade healing group.
-  `tft_comp_items.ItemSearch` refines finalists from multiple seeds by every
-  legal single-item replacement, transfers/exchanges and selected paired
-  changes; only additional search wins accept changes. Per-holder evidence
-  lists every legal replacement's lost/gained winning matchups. This remains
-  bounded roster/local search, not a global optimum or a live-winrate claim.
-  Eight artifacts cover 4 cost plans × 2 formations, all 7 budgets and 4 arrangements.
-  The old synthetic pressure selector is gone; canonical keys retain '-mixed'
-  and legacy UI pressure URLs normalize to that reference-pool context.
-  Standalone champion threat controls remain separate.
-  `python3 lol.py tft comps warm` uses up to 8 spawned workers. After each
-  context's dependent roster screening, independent finalist item searches
-  share that pool, including when only one cold context remains. Results
-  merge in their original order; held-out validation follows fixed rankings.
-  `--workers 1` and explicit `--only c1-clump-mixed` run serially. Workers
-  receive the supplied snapshot; parent validates revisions and publishes
-  complete contexts atomically. Native batches use one thread per worker.
-  `lol_tft.prepare_actor` retains immutable resolved inputs; `simulate_matches`
-  creates fresh combat state and returns results in input order. Compact
-  search reports omit per-unit diagnostics; final reports replay full fights.
-  Exact compact results persist under `.cache/tft-comps/fight-scores/` in
-  SQLite WAL databases. Keys include engine/data/model revisions and resolved
-  combat inputs, positions, opponents, duration and healing policy. Doubles
-  retain their bits; corrupt entries are recomputed. This only reuses identical
-  fights and does not narrow the search. Cache-free fixed workloads measured
-  1.78–1.94× faster than the previous implementation on 2026-09-06; distinguish
-  first-run timings from reuse when reporting performance.
-  The full eight-context run from an empty composition cache took 1,117.4 s
-  (18 min 37 s), versus the prior 3,287.7 s (54 min 48 s), with 8 workers on
-  this host. All 1,664 boards, 520,064 replacement records and logical search
-  counts match the frozen generation. The separately rebuilt 1,770 champion
-  cells took 126.2 s and match their complete previous artifacts as well.
-  A repeat composition rebuild, removing the eight result files while
-  retaining unit benchmarks and exact fight scores, took 79.5 s. It reused
-  6,959,652 fights and still ran 39,936 full diagnostic fights. This is a
-  separate cache-reuse measurement, not a claim about first-time simulation.
-  Cache revisions include item-search code, opponent data and the baseline
-  engine/data revision. Warm all 1,770 baseline cells and all 8 composition
-  contexts before signaling `tft.dashboard_ready`; never hand-launch 8321.
-  Persistent UI checks: `node jobs/test-tft-composition-ui.cjs` and
-  `node jobs/test-tft-item-ui.cjs`. See `data/tft/README.md` for methodology
-  and limitations; do not tune opponent items/pressure to force desired items.
+- Composition levels: `tft_board.py` owns slot costs and weighted trait
+  counts. Elder Dragon occupies two slots and contributes two Riftbeast:
+  seven champions at level 8, eight at level 9. Four-cost profiles forbid
+  all 5-costs at level 8. After cores and ranks are fixed, `tft_caps.py`
+  compares selling one support for two distinct ordinary 2-star legendaries
+  or 2-star Elder; adding one ordinary 2-star legendary without a sale is
+  also allowed. Main carry/tank and retained stars/items stay fixed. Only
+  sold items transfer to new units; all legal splits and Alpha choices are
+  compared, and the resulting arrangement may change. Every legal cap
+  transition is evaluated: continuous capacity has no perfect-win upper
+  bound. Exact score ties prefer two legendary slots, then lower purchase
+  gold sold and stable IDs. Parent and cap use identical theoretical inputs;
+  `theoryScoreDelta` reports their difference without affecting parent rank.
+  `CAP_FIVE_COST_STAR=2` supplies cap stars and `level9FiveCostStar` metadata.
+  `boardPlanModel=level8-core-level9-cap-v1` carries level/slot occupancy;
+  `level9Upgrade` contains the board, sold/added units, item transfers, trait
+  changes and `itemPolicy` instead of fresh replacement evidence. The UI
+  opens caps lazily. Tests: `test_tft_caps`, `test_tft_nine_units`,
+  `test_tft_comps`, `test_tft_comp_traits` and the Node composition UI job.
+- Composition search and publication: `tft_comps.py` fills eight slots
+  with matched-cost mains, at least three target-cost units, declared support
+  costs/stars and one shared 6–12-item budget (default 9). Four arrangements
+  cover single/duo carry/tank allocations. Planning constraints are not shop
+  probabilities. There is no melee-carry cap at either planning level. Native
+  equipped forms still determine actual roles and pressure (AD Nidalee is melee,
+  AP is ranged); both AD/AP forms survive loadout shortlisting. Native
+  `optimize_loadouts(..., preserve_forms=True)` retains each form's best
+  candidates before truncation; the default remains false for other callers.
+  Every core and cap also
+  requires a usable antiheal source; `AntihealPolicy` audits active traits,
+  items and native providers. Recheck after item/Alpha changes and support
+  sales; a cap cannot lose its only source. These are hard planning constraints,
+  without damage multipliers or guessed healing-denial score bonuses.
+  Confirmed sources: Inferno 2+, Morello/Red Buff/usable Sunfire (33% Wound),
+  and Cinderling's base ability (20%, no Alpha required). Brambleback Alpha
+  and Elder Ignite do not explicitly specify Wound in the pinned evidence
+  and do not qualify. `antihealSources` identifies actual holders in board details.
+  Regression suites: `test_tft_carry_policy` and `test_tft_comp_utility`.
+  This constraint/leaderboard-rollback generation prepared in 2,824.90 s
+  (47 min 5 s): 1,770 champion cells and all eight composition contexts.
+  Final validation covered 1,664 cores, 416 caps and 49,920 pressure rows;
+  all boards had antiheal, no core exceeded one melee carry, and 14 caps used
+  two. All item searches converged within the existing bound. The 755-test
+  TFT suite passed with one existing skip, as did all 2,080 UI/copy round trips.
+  All 1,770 finite winners and 442,500 displayed builds matched the previous
+  finite results exactly. These counts verify the declared model and rules.
+  `tft_comp_traits.py` resolves actual breakpoints, team shares
+  and one Alpha. Items are ideal craftable choices, without inventory limits.
+  Roster screening uses native unitemized EHP × DPS with resolved board traits
+  and all legal Alpha holders, without main-role, trait-count or cost points.
+  Beam width four, sixteen diverse boards and four support swaps bound the
+  search. Itemless screening and limited beam width can still discard good
+  completed rosters, so this is not a global optimum.
+  Standalone loadouts supply diverse allocation seeds, retaining all single
+  items and offensive/defensive/utility options. `ItemSearch` refines two seeds
+  with every legal single replacement, transfers/exchanges and up to 64
+  complete-loadout/paired interactions per round. Only strict capacity gains
+  accept moves; 24 accepted improvements per seed is a bound, disclosed by
+  `itemAnalysis.converged=false` with complete final single-item evidence.
+  Convergence is local to tested moves. Evidence reports score/percentage
+  changes and improved/degraded pressure profiles, not winning matchups.
+  Eight artifacts cover four cost plans × two formations, all seven budgets
+  and four arrangements. Canonical keys retain `-mixed` for the theoretical
+  pressure range; standalone champion threat settings are separate.
+  `python3 lol.py tft comps warm` uses up to eight spawned workers. Dependent
+  roster screening precedes independent finalist jobs; fixed-order merge and
+  ranking precede input/arithmetic consistency checks and optional caps.
+  `--workers 1` and explicit `--only c1-clump-mixed` run serially. Parent and
+  workers use one loaded snapshot and validate source/data revisions before
+  atomic complete-context publication; missing/failed work never marks ready.
+  Revisions include theory/unit-profile wrappers, search/items/traits/board/
+  cap code and native engine/data inputs, not legacy named-opponent files.
+  Metadata/artifacts expose `modelRevision`, `evaluationModel`, methodology
+  and declared scenarios. Prepared native loadouts and results allow batched
+  candidate scoring, with shared-pressure actor advancement and numerical
+  aggregation in Rust. The legacy
+  persistent match-score cache is not used. Benchmark a representative native
+  batch and verify oracle parity before committing to all eight contexts.
+  TFT requests only read
+  prepared responses. Warm all champion cells and all eight composition
+  contexts, then build the immutable site bundle before publication/reload
+  via `tft refresh`; warming one cache does not activate the dashboard.
+  Do not mix or relabel old payloads as the new model, and never hand-launch
+  8321. Checks: `test_tft_refresh`, `test_tft_site`, `test_tft_serving`,
+  `node jobs/test-tft-composition-ui.cjs` and `node jobs/test-tft-item-ui.cjs`.
 - Champion leaderboards (2026-09-06): the TFT subview compares each unit's
   optimal three-item build, with separate damage and tank survival boards.
   Default `best` means the highest allowed star (3★ 1–3 costs / 2★ 4–5
@@ -384,7 +734,7 @@
   with synthetic tank damage presets from
   three attackers for fighters and none for carries. UI metadata checks:
   `python3 -m unittest test_tft_ui`.
-- Purely theoretical, no match data (Roger's call 2026-09-04): one unit's
+- Standalone champion analysis, without match data (Roger's call 2026-09-04): one unit's
   mana-cycle fight against stat dummies derived from the set's own
   units at 2★ (two tanks then a non-tank for carries/fighters; three
   frontline tanks and two backliners for tanks; the first tank's defenses
@@ -419,7 +769,8 @@
   reduction for carries/fighters, with Roger's revised first tank of
   3,000 HP / 110 base armor / 110 base MR and adopted Azir six-command
   mana lock, followed by the Murkwolf leap/formula-card correction and
-  Scuttlecrab burrow attack lock on 2026-09-06; see
+  Scuttlecrab burrow attack lock on 2026-09-06 and the audited trait corrections
+  on 2026-09-07 (921 affected historical fights, 6,749 unchanged); see
   `data/tft/golden/README.md` for provenance. They pin 7,670 fights and
   the top 20 rows of every cell. `test_tft.TestGolden` replays every fight plus a sample of cells
   (`TFT_GOLDEN_ALL=1` for all 1,770; `jobs/tft_compare.py` prints per-unit
@@ -565,7 +916,8 @@
   (Riot's 15.4 curve: stage 2–6 = 5/10/20/30/30%), damage amp additive
   and post-mitigation, negative resists floored at 0, Blossom/Elderwood
   "high" stops below the 11-unit prismatic tier, Fae pixies 3 and 7, the
-  Riftbeast Alpha Mark on the unit, Primal = Tiger, Zyra's plants attack
+  Riftbeast Alpha Mark on the unit, standalone Primal = Tiger (compositions
+  optimize explicit legal blessings), Zyra's plants attack
   once a second, Mega Gnar casts on 10 mana per attack. Traits that are
   economy or need a specific board (Coven, Elderwood, Sprykin, Blackthorn,
   Emerald Aspect, Old Growth, Greenfather, Rival, Attuned, Bounty Seeker,
@@ -616,6 +968,16 @@
 
 ## Tests
 
+- `python3 -m unittest test_scaling` (the Overview rankings payload, whose
+  game floors must reach the page's lowest min-games option; in-memory DB).
+- `python3 -m unittest test_onetricks` (pyarrow; builds a small fake crawl).
 - `python3 -m unittest test_builds` (needs the built engine; ~2 s).
 - `python3 -m unittest test_tft` (needs the built TFT engine; ~2 s;
   `TFT_GOLDEN_ALL=1` recomputes every golden cell, ~30 s).
+- Theoretical compositions: `python3 -m unittest test_tft_unit_profiles
+  test_tft_theory test_tft_theory_native test_tft_comp_items test_tft_comps
+  test_tft_caps`. Run representative native/reference batch benchmarks before
+  a full rebuild after scorer performance changes.
+- TFT publication and browser contracts: `python3 -m unittest test_tft_refresh
+  test_tft_site test_tft_serving`, `node jobs/test-tft-composition-ui.cjs` and
+  `node jobs/test-tft-item-ui.cjs`.

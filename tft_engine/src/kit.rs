@@ -282,6 +282,15 @@ impl Kit {
         }
     }
 
+    /// Override an existing resolved row for an isolated measurement.
+    /// The theoretical scorer uses this to assign one native burn holder;
+    /// ordinary fights never alter the parsed ability rows.
+    pub(crate) fn set_existing_row(&mut self, name: &str, value: f64) {
+        if let Some(&id) = self.row_names.get(name) {
+            self.rows[id as usize] = value;
+        }
+    }
+
     pub fn calc_dtype(&self, id: CalcId) -> DType {
         self.calc_ref(id).dtype
     }

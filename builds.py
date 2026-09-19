@@ -42,6 +42,7 @@ penetration"); each is cited at its implementation.
 import ctypes
 import glob
 import hashlib
+import itertools
 import json
 import math
 import os
@@ -1079,6 +1080,95 @@ def _fight_row(r, duration, best):
     }
 
 
+# ---------------------------------------------------------------------------
+# suggested buy order, for the top rows of each cell
+# ---------------------------------------------------------------------------
+
+BUY_ORDER_ROWS = 10  # rows per cell that get one; the rest keep pool order
+# Owning k of a build's five items (boots are bought early, so every stage
+# has them), the champion fights at BUY_STAGE_LEVELS[k]: the first item
+# lands around level 9 and the second around 11, where the dropped
+# first-item (4.5k gold) and mid-game (7.5k) presets put them, then two
+# levels an item.
+BUY_STAGE_LEVELS = (7, 9, 11, 13, 15)
+# The targets grow into the full-build dummies meanwhile. Up to
+# BUY_EARLY_LEVEL they keep these shares of their full stats (the dropped
+# first-item target's 1,900 HP / 50 armor / 40 MR against today's squishy
+# 2,800/110/60), then reach the full dummy linearly by the scenario's level.
+# That puts the level-11 squishy at 2,157/67/46 and tank at 3,698/134/122,
+# near the dropped mid-game presets' 2,200/60/45 and 3,800/160/110. The
+# health a target lacks comes out of its item health first, which Giant
+# Slayer reads.
+BUY_EARLY_LEVEL = 9
+BUY_EARLY_SHARE = {"targetHp": 1900 / 2800, "armor": 50 / 110, "mr": 40 / 60}
+# Seraph's and Muramana count as fully stacked, and those stacks come from a
+# Tear bought early that needs about an item's time to fill: neither is ever
+# the first item completed. (Rod of Ages stacks only once completed, so
+# items with stackedStats go first instead.)
+BUY_NOT_FIRST = (3040, 3042)
+
+
+def stage_target(sc, level):
+    """Full-build target scenario `sc` as that enemy stands at `level`. A
+    scenario at or below BUY_EARLY_LEVEL has nothing to grow into."""
+    span = sc["level"] - BUY_EARLY_LEVEL
+    f = 1.0 if span <= 0 else min(1.0, max(0.0, (level - BUY_EARLY_LEVEL) / span))
+    t = {k: sc[k] * (s + (1 - s) * f) for k, s in BUY_EARLY_SHARE.items()}
+    t["targetBonusHp"] = max(0.0, sc.get("targetBonusHp", 0.0)
+                             - (sc["targetHp"] - t["targetHp"]))
+    t["duration"] = sc["duration"]
+    return t
+
+
+def stage_times(champ, kit, pool, effects, ids, targets):
+    """{owned items (frozenset): {target key: kill time}} for each partial
+    build on the way to `ids` (boots first, owned throughout), fought at
+    its stage's level against that stage's targets. Kill times are the
+    ranking's (kill_time: None when nothing is dealt)."""
+    boots, items = ids[0], ids[1:]
+    top = min(sc["level"] for sc in targets.values())
+    out = {}
+    for k in range(len(items)):
+        level = min(BUY_STAGE_LEVELS[k], top)
+        ranks = skill_ranks(level, kit_max_order(kit))
+        stage = {key: stage_target(sc, level) for key, sc in targets.items()}
+        for owned in itertools.combinations(items, k):
+            build = [boots, *owned]
+            sheet = resolve_stats(champ, level, build, pool, effects, kit=kit)
+            fx = merge_effects(build, effects)
+            out[frozenset(owned)] = {
+                key: kill_time(simulate(sheet, kit, fx, level, ranks,
+                                        t["targetHp"], t["armor"], t["mr"],
+                                        t["duration"],
+                                        target_bonus_hp=t["targetBonusHp"],
+                                        breakdown=False), t["duration"])
+                for key, t in stage.items()}
+    return out
+
+
+def buy_order(items, times, cost, first=(), not_first=()):
+    """The order to buy `items` in: of the orders that start with the ones
+    in `first` and don't start with one in `not_first`, the one whose
+    partial builds kill fastest along the way, each stage's kill time
+    weighted by the gold of the item bought next, which is how long that
+    stage lasts. `times` maps each owned subset to its stage's kill time
+    (None: no damage). Five items have 120 orders, and every one is scored;
+    ties keep pool order."""
+    lead = [i for i in items if i in first]
+    rest = [i for i in items if i not in first]
+    orders = [a + b for a in itertools.permutations(lead)
+              for b in itertools.permutations(rest)]
+    allowed = [o for o in orders if not o or o[0] not in not_first] or orders
+
+    def score(order):
+        total = 0.0
+        for k, i in enumerate(order):
+            t = times[frozenset(order[:k])]
+            total += INF if t is None else t * cost[i]
+        return total
+    return min(allowed, key=score)
+
+
 def cached_builds(slug, pool):
     """Every build on the champion's cached cells, whatever code and data
     they were computed for, as id lists — the seeds of the next pass:
@@ -1137,6 +1227,25 @@ def compute_tier(slug, tier, paths, log=None):
         best[k] = min(times) if times else None
     target_meta = [{"key": k, **t} for k, t in targets.items()]
     when = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    # the top rows' buy orders; a build topping several cells is fought once
+    stages = {}
+
+    def buy_names(ids, key):
+        if tuple(ids) not in stages:
+            stages[tuple(ids)] = stage_times(champ, kit, pool, effects, ids,
+                                             targets)
+        overall_cell = SCENARIOS[key].get("overall")
+        times = {owned: ((None if None in ts.values()
+                          else geo_mean(list(ts.values())))
+                         if overall_cell else ts[key])
+                 for owned, ts in stages[tuple(ids)].items()}
+        items_ = ids[1:]
+        order = buy_order(
+            items_, times, {i: pool[i]["shop"]["prices"]["total"] for i in items_},
+            first={i for i in items_ if effects.get(i, {}).get("stackedStats")},
+            not_first=BUY_NOT_FIRST)
+        return [pool[i]["name"] for i in order]
+
     outs = {}
     for key in keys:
         sc = SCENARIOS[key]
@@ -1166,6 +1275,8 @@ def compute_tier(slug, tier, paths, log=None):
                     "attacks": r["attacks"],
                     "breakdown": {s: round(v) for s, v in r["breakdown"].items()},
                 })
+            if n <= BUY_ORDER_ROWS:
+                row["buyOrder"] = buy_names(ids, key)
             rows.append(row)
         outs[key] = {
             "champion": slug, "championName": kit.get("name", slug),

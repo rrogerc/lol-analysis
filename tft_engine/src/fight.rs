@@ -30,7 +30,8 @@
 //! `f.amp_extra`. Mana: `f.mana`, `f.sheet.mana_max`, `f.lock_until`.
 //! `f.after(delay, tag)` queues `Driver::event(f, tag)`.
 
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 
 use crate::driver::Driver;
@@ -65,6 +66,8 @@ pub(crate) const FAR: f64 = 1e18;
 pub struct Sheet {
     pub form: Option<crate::fx::Form>,
     pub kind: Kind,
+    pub objective: crate::spec::Objective,
+    pub range: f64,
     pub star: i64,
     pub base_ad: f64,
     pub ad_pct: f64,
@@ -92,7 +95,9 @@ impl Sheet {
         let extra_precision = if fx.precision - 1 > 0 { fx.precision - 1 } else { 0 };
         Sheet {
             form: fx.form,
-            kind: spec.unit.kind,
+            kind: spec.kind_for(fx.form),
+            objective: spec.objective_for(fx.form),
+            range: spec.range_for(fx.form),
             star: spec.star,
             base_ad: kit.base_ad,
             ad_pct: fx.ad_pct,
@@ -109,7 +114,7 @@ impl Sheet {
             precision: fx.precision > 0,
             mana_max: s.mana,
             mana_start: s.initial_mana + fx.starting_mana,
-            mana_per_attack: spec.unit.kind.mana_per_attack(),
+            mana_per_attack: spec.kind_for(fx.form).mana_per_attack(),
             omnivamp: fx.omnivamp,
         }
     }
@@ -186,10 +191,14 @@ pub struct Dummy {
     pub targeting_streams: usize,
     pub cast_interval: f64,
     pub next_cast: f64,
+    /// A scheduled spell already became due and is waiting for control to end.
+    pub cast_pending: bool,
     pub ability: f64,
     pub phys_share: f64,
     pub mana: f64,
     pub mana_max: f64,
+    /// Strongest pending flat cost increase, consumed by the next mana cast.
+    pub mana_reave: f64,
     pub mana_per_attack: f64,
     pub mana_from_damage: bool,
     pub lock_until: f64,
@@ -212,8 +221,8 @@ impl Dummy {
             burn_stack_until: 0.0, dots: Vec::new(), alive: true, died_at: None,
             immortal: false, ad: 0.0, as_: 0.0, crit_ev: 1.0,
             next_attacks: [0.0; MAX_STREAMS], n_streams: 0, ability: 0.0, phys_share: 1.0,
-            targeting_streams: 0, cast_interval: 0.0, next_cast: FAR,
-            mana: 0.0, mana_max: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
+            targeting_streams: 0, cast_interval: 0.0, next_cast: FAR, cast_pending: false,
+            mana: 0.0, mana_max: 0.0, mana_reave: 0.0, mana_per_attack: 0.0, mana_from_damage: false,
             lock_until: 0.0, stunned_until: 0.0, attacks: 0, casts: 0,
             mark: false, mark_times: Vec::new(),
         }
@@ -261,6 +270,18 @@ impl Dummy {
     }
 
     #[inline]
+    pub fn mana_cost(&self) -> f64 {
+        self.mana_max + self.mana_reave
+    }
+
+    pub fn reave_mana(&mut self, amount: f64) {
+        // Fixed-interval fixtures do not cast from their mana bars.
+        if self.alive && self.mana_max > 0.0 && self.cast_interval <= 0.0 {
+            self.mana_reave = pymax(self.mana_reave, amount);
+        }
+    }
+
+    #[inline]
     pub fn streams(&self) -> usize {
         self.targeting_streams
     }
@@ -297,6 +318,10 @@ impl Dummy {
 
 /// tft.make_dummies.
 pub fn make_dummies(spec: &CellSpec) -> Vec<Dummy> {
+    make_dummies_for(spec, None)
+}
+
+pub(crate) fn make_dummies_for(spec: &CellSpec, form: Option<crate::fx::Form>) -> Vec<Dummy> {
     let mut out = Vec::with_capacity(spec.dummies.len());
     for s in &spec.dummies {
         let mut d = Dummy::new(s.hp, s.armor, s.mr, s.is_tank);
@@ -304,7 +329,7 @@ pub fn make_dummies(spec: &CellSpec) -> Vec<Dummy> {
         d.baseline_shred = spec.target_debuffs.shred;
         d.nearby = s.nearby;
         d.immortal = spec.immortal;
-        if spec.pressure {
+        if spec.pressure_for(form) {
             d.arm(s, spec.crit_ev, s.streams);
         }
         out.push(d);
@@ -357,15 +382,6 @@ impl Sel {
         self.ids[..self.n].iter().copied()
     }
 
-    /// Python `al[1:]`.
-    pub fn tail(&self) -> Sel {
-        let mut s = Sel::default();
-        for i in self.iter().skip(1) {
-            s.push(i);
-        }
-        s
-    }
-
     /// Python `al[:n]`.
     pub fn take(&self, n: usize) -> Sel {
         let mut s = Sel::default();
@@ -412,6 +428,8 @@ pub enum Event {
     Cast,
     /// A driver's, dispatched to `Driver::event`.
     Driver(u32),
+    /// Complete the currently selected engagement, ignoring superseded moves.
+    Reposition(u64),
 }
 
 #[derive(Clone, Debug)]
@@ -445,6 +463,38 @@ pub struct Ev {
     pub hp: f64,
 }
 
+/// Cumulative response to abstract pressure at a measurement time. Ally
+/// values are potential output: this single-unit fight has no recipient
+/// health pool, so they must not be treated as effective team sustain.
+#[derive(Clone, Debug)]
+pub struct ResponseSample {
+    pub time: f64,
+    pub damage: f64,
+    pub raw_damage: f64,
+    pub self_heal: f64,
+    pub self_shield: f64,
+    pub ally_heal_potential: f64,
+    pub ally_shield_potential: f64,
+    pub alive_time: f64,
+    pub unit_alive_time: f64,
+    pub alive: bool,
+    pub holding: bool,
+    pub hp: f64,
+    pub shield_hp: f64,
+    pub armor: f64,
+    pub mr: f64,
+    pub durability: f64,
+    pub casts: i64,
+    pub first_cast: Option<f64>,
+    pub incoming: f64,
+    pub incoming_spent: f64,
+    pub denied: f64,
+    pub attack_damage_taken: f64,
+    /// Each sequential health pool must be mixed by damage type before
+    /// summing; mixing the pure-type totals would overvalue unlike bodies.
+    pub residual_pools: Vec<(f64, f64)>,
+}
+
 /// Cross-unit effects are consumed once by the shared encounter scheduler.
 #[derive(Clone, Debug)]
 pub(crate) enum TeamEffect {
@@ -453,10 +503,75 @@ pub(crate) enum TeamEffect {
     Shield(f64, f64),
     Burn(usize, f64, f64, bool),
     Stun(usize, f64),
-    Cast(f64),
+    Sleep(usize, f64, f64, f64),
+    Cast(f64, bool),
     ManaReave(usize, f64),
     Reduction(usize, f64, f64, bool),
 }
+
+/// Sleep is a separate control condition: removing it must not cleanse a
+/// stun from another ability. Damage is post-mitigation health/shield damage,
+/// including allies and persistent effects where targets are shared.
+#[derive(Clone, Copy)]
+struct Sleep {
+    source: usize,
+    generation: u64,
+    until: f64,
+    remaining: f64,
+    fraction: f64,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct SleepWake {
+    pub source: usize,
+    pub target: usize,
+    pub generation: u64,
+    pub fraction: f64,
+}
+
+pub(crate) struct SleepTracker {
+    targets: Vec<Option<Sleep>>,
+    pub wakes: VecDeque<SleepWake>,
+}
+
+impl SleepTracker {
+    pub fn new(count: usize) -> Self {
+        Self { targets: vec![None; count], wakes: VecDeque::new() }
+    }
+
+    pub fn apply(&mut self, target: usize, source: usize, generation: u64,
+                 time: f64, duration: f64, threshold: f64, fraction: f64) {
+        if duration <= 0.0 || threshold <= 0.0 || target >= self.targets.len() { return; }
+        // Reapplication refreshes one condition and its damage threshold;
+        // no duplicate sleeps or extra wake damage are stacked. The exact
+        // live refresh rule is not established by the archived description.
+        self.targets[target] = Some(Sleep { source, generation, until: time + duration,
+                                           remaining: threshold, fraction });
+    }
+
+    pub fn until(&self, target: usize, generation: u64, time: f64) -> f64 {
+        self.targets.get(target).and_then(|entry| *entry)
+            .filter(|sleep| sleep.generation == generation && sleep.until > time)
+            .map_or(0.0, |sleep| sleep.until)
+    }
+
+    pub fn damage(&mut self, target: usize, generation: u64, time: f64, amount: f64, alive: bool) {
+        let Some(entry) = self.targets.get_mut(target) else { return; };
+        let Some(sleep) = entry.as_mut() else { return; };
+        if !alive || sleep.generation != generation || time >= sleep.until {
+            *entry = None;
+            return;
+        }
+        sleep.remaining -= amount.max(0.0);
+        if sleep.remaining <= 0.0 {
+            let sleep = entry.take().unwrap();
+            self.wakes.push_back(SleepWake { source: sleep.source, target, generation,
+                                            fraction: sleep.fraction });
+        }
+    }
+}
+
+pub(crate) type SharedSleep = Rc<RefCell<SleepTracker>>;
 
 #[derive(Clone)]
 pub(crate) struct TeamClock {
@@ -483,6 +598,7 @@ pub struct Fight<'a, D: Driver> {
     pub unit_cast_time: Option<f64>,
     pub sheet: Sheet,
     pub fx: Fx,
+    timed_stats_next: Vec<f64>,
     pub targets: Vec<Dummy>,
     pub clump: bool,
     pub duration: f64,
@@ -490,9 +606,18 @@ pub struct Fight<'a, D: Driver> {
     pub enemy_debuffs: EnemyDebuffs,
     pub t: f64,
     pub mana: f64,
+    pub mana_reave: f64,
     pub lock_until: f64,
     pub casting_until: f64,
     pub next_attack: f64,
+    melee_reposition_seconds: f64,
+    movement_until: f64,
+    movement_started: Option<f64>,
+    movement_time: f64,
+    movement_generation: u64,
+    movement_origin: Option<usize>,
+    movement_target: Option<usize>,
+    repositions: usize,
     pub attacks: i64,
     pub casts: i64,
     pub cast_times: Vec<f64>,
@@ -526,6 +651,9 @@ pub struct Fight<'a, D: Driver> {
     pub bodies: Vec<Body>,
     pub shields: Vec<Shield>,
     pub absorbed: f64,
+    /// Raw damage in excess of the final health/shield budget on lethal
+    /// hits. Kept separately so legacy fight counters remain unchanged.
+    response_overkill: f64,
     pub taken: f64,
     pub mitigated: f64,
     pub healed: f64,
@@ -549,6 +677,11 @@ pub struct Fight<'a, D: Driver> {
     pub trace: Option<Vec<Ev>>,
     pub(crate) team_mode: bool,
     pub(crate) team_effects: Vec<TeamEffect>,
+    /// Theory actors keep local target damage while sharing real cast events.
+    pub(crate) shared_casts: bool,
+    pub(crate) sleeps: Option<SharedSleep>,
+    pub(crate) sleep_source: usize,
+    pub(crate) external_sleep: bool,
     pub(crate) combat_bridge: Option<Rc<dyn crate::symmetric::CombatBridge + 'a>>,
     pub(crate) combat_stunned_until: f64,
     pub(crate) combat_armor_flat: f64,
@@ -566,22 +699,40 @@ impl<'a, D: Driver> Fight<'a, D> {
         let mana = if sheet.mana_max > 0.0 { pymin(sheet.mana_start, sheet.mana_max) }
                    else { sheet.mana_start };
         let hp = sheet.max_hp;
+        // A shared approximation for short-range finite-target engagements.
+        // Resolve the equipped form first: AP Nidalee has five-hex range.
+        // Immortal pressure/response workloads do not invent target changes.
+        let melee_reposition_seconds = if sheet.range <= 2.0 && !spec.immortal {
+            spec.melee_reposition_seconds
+        } else { 0.0 };
+        let pressure = spec.pressure_for(fx.form);
         let thorns_ready = vec![0.0; fx.thorns.len()];
+        let timed_stats_next = fx.timed_stats.iter().map(|grant| grant.after).collect();
         let mut f = Fight {
             kit,
+            timed_stats_next,
             unit_cast_time: spec.unit.cast_time,
             sheet,
             fx,
             targets: dummies,
             clump: spec.clump,
             duration: spec.duration,
-            pressure: spec.pressure,
-            enemy_debuffs: if spec.pressure { spec.enemy_debuffs } else { EnemyDebuffs::default() },
+            pressure,
+            enemy_debuffs: if pressure { spec.enemy_debuffs } else { EnemyDebuffs::default() },
             t: 0.0,
             mana,
+            mana_reave: 0.0,
             lock_until: 0.0,
             casting_until: 0.0,
             next_attack: 0.0,
+            melee_reposition_seconds,
+            movement_until: 0.0,
+            movement_started: None,
+            movement_time: 0.0,
+            movement_generation: 0,
+            movement_origin: None,
+            movement_target: None,
+            repositions: 0,
             attacks: 0,
             casts: 0,
             cast_times: Vec::new(),
@@ -615,6 +766,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             bodies: Vec::new(),
             shields: Vec::new(),
             absorbed: 0.0,
+            response_overkill: 0.0,
             taken: 0.0,
             mitigated: 0.0,
             healed: 0.0,
@@ -638,6 +790,10 @@ impl<'a, D: Driver> Fight<'a, D> {
             trace: None,
             team_mode: false,
             team_effects: Vec::new(),
+            shared_casts: false,
+            sleeps: None,
+            sleep_source: 0,
+            external_sleep: false,
             combat_bridge: None,
             combat_stunned_until: 0.0,
             combat_armor_flat: 0.0,
@@ -671,6 +827,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         for (a, m, dur) in resists {
             f.resist_buffs.push((a, m, dur));
         }
+        if let Some(target) = f.target() { f.begin_reposition(None, target); }
         f
     }
 
@@ -694,6 +851,53 @@ impl<'a, D: Driver> Fight<'a, D> {
             Some(ct) => ct,
             None => CAST_TIME_DEFAULT,
         }
+    }
+
+    /// The explicit average engagement delay, not a champion animation value.
+    pub fn movement_delay(&self) -> f64 { self.melee_reposition_seconds }
+
+    /// Independent of attack cooldowns: an attack must satisfy both deadlines.
+    pub fn movement_ready_at(&self) -> f64 { self.movement_until }
+
+    fn movement_time_at(&self, time: f64) -> f64 {
+        self.movement_time + self.movement_started.map(|start|
+            pymax(0.0, pymin(time, self.movement_until) - start)).unwrap_or(0.0)
+    }
+
+    fn begin_reposition(&mut self, previous: Option<usize>, target: usize) {
+        if self.melee_reposition_seconds <= 0.0 || !self.alive_unit { return; }
+        self.movement_time = self.movement_time_at(self.t);
+        self.movement_started = Some(self.t);
+        self.movement_until = self.t + self.melee_reposition_seconds;
+        self.movement_generation += 1;
+        self.movement_origin = previous;
+        self.movement_target = Some(target);
+        self.repositions += 1;
+        self.record("move", self.melee_reposition_seconds, Some(target), "reposition");
+        self.push_event(self.melee_reposition_seconds, Event::Reposition(self.movement_generation));
+    }
+
+    fn complete_reposition(&mut self, generation: u64) {
+        if generation != self.movement_generation || !self.alive_unit { return; }
+        self.movement_time = self.movement_time_at(self.t);
+        self.movement_started = None;
+        let target = self.movement_target;
+        if target != self.target() { return; }
+        self.record("arrive", 0.0, target, "reposition");
+        if let (Some(previous), Some(target)) = (self.movement_origin, target) {
+            D::target_changed(self, previous, target);
+        }
+        // Movement can end between ordinary quarter-second ticks. A full
+        // bar can cast now, without paying an extra arbitrary tick of delay.
+        if self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0
+            && self.t >= self.casting_until && self.t >= self.combat_stunned_until {
+            self.cast();
+        }
+    }
+
+    fn attack_ready_at(&self) -> f64 {
+        pymax(pymax(self.next_attack, self.casting_until),
+              pymax(self.movement_until, self.combat_stunned_until))
     }
 
     // ---- targets ---------------------------------------------------------
@@ -727,6 +931,19 @@ impl<'a, D: Driver> Fight<'a, D> {
             }
         }
         s
+    }
+
+    /// Independently selected nearest enemies. The abstract target order is
+    /// current victim first, then remaining living slots; adjacency does not
+    /// limit a spell that explicitly selects N separate enemies.
+    pub fn nearest(&self, count: f64) -> Sel {
+        let mut selected = Sel::default();
+        let primary = self.target();
+        if let Some(target) = primary { selected.push(target); }
+        for target in self.alive().iter() {
+            if Some(target) != primary { selected.push(target); }
+        }
+        selected.take(crate::pyf::pyint(count).max(0) as usize)
     }
 
     pub fn target(&self) -> Option<usize> {
@@ -777,6 +994,26 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     pub fn aoe_all(&self) -> Sel {
         self.aoe(None, false)
+    }
+
+    /// Area anchored to a particular victim, including after its death.
+    /// Spread contains only that victim; a dead center never becomes the
+    /// next isolated enemy. Clump retains the existing nearby-group model.
+    pub fn aoe_around(&self, center: usize, count: Option<f64>, exclude_center: bool) -> Sel {
+        if center >= self.targets.len() { return Sel::default(); }
+        if !self.clump {
+            return if !exclude_center && self.targets[center].alive && self.targets[center].nearby {
+                Sel::one(center)
+            } else { Sel::default() };
+        }
+        let mut selected = Sel::default();
+        for target in self.nearby().iter() {
+            if !exclude_center || target != center { selected.push(target); }
+        }
+        match count {
+            Some(count) => selected.take(crate::pyf::pyint(count).max(0) as usize),
+            None => selected,
+        }
     }
 
     /// Fight.adjacent: nearby enemies standing in the clump, only the nearby
@@ -876,7 +1113,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             }
         }
         if let Some((amp, secs)) = self.fx.amp_after_same_target {
-            if target == self.cur && self.t - self.target_since >= secs {
+            if self.t - self.target_since >= secs {
                 a += amp;
             }
         }
@@ -934,7 +1171,13 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     pub fn durability_now(&self) -> f64 {
         let frac = self.hp_frac();
+        // Vanguard's capstone applies while any live shield remains. Check
+        // its time and remaining amount directly: observations can occur
+        // between shield-maintenance ticks, including exactly at expiry.
+        let shielded = !self.fx.durability_while_shielded.is_empty() && self.shields.iter()
+            .any(|shield| !shield.dead && shield.until > self.t && shield.amount > 0.0);
         let it = self.fx.durabilities.iter().copied()
+            .chain(self.fx.durability_while_shielded.iter().copied().filter(|_| shielded))
             .chain(self.fx.durability_by_health.iter()
                    .map(|&(below, above, thr)| if frac >= thr { above } else { below }))
             .chain(self.dur_buffs.iter().filter(|&&(_, until)| self.t < until).map(|&(p, _)| p));
@@ -955,6 +1198,16 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     pub(crate) fn take_with_ignore(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
                                   attack: bool, armor_ignore: f64, mr_ignore: f64) -> f64 {
+        self.take_from_source(amount, dtype, attacker, attack, armor_ignore, mr_ignore, attacker)
+    }
+
+    // Most callers use the same index for source identity and local
+    // attacker-relative procs. Theory's incoming sources are independent
+    // of its outgoing target probes, so it supplies those separately.
+    #[allow(clippy::too_many_arguments)]
+    fn take_from_source(&mut self, amount: f64, dtype: DType, attacker: Option<usize>,
+                        attack: bool, armor_ignore: f64, mr_ignore: f64,
+                        source: Option<usize>) -> f64 {
         if amount <= 0.0 || !self.holding() {
             return 0.0;
         }
@@ -979,6 +1232,9 @@ impl<'a, D: Driver> Fight<'a, D> {
             self.mitigated += pre - amount;
             b.hp -= amount;
             if b.hp <= 0.0 {
+                if amount > 0.0 {
+                    self.response_overkill += pre * pymax(-b.hp, 0.0) / amount;
+                }
                 self.next_body();
             }
             let name = self.body.as_ref().map(|b| b.name).unwrap_or("body");
@@ -986,7 +1242,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             return amount;
         }
         if self.sheet.kind == Kind::Assassin {
-            if let Some(a) = attacker {
+            if let Some(a) = source {
                 if a != self.cur {
                     amount *= 1.0 - ASSASSIN_OFFTARGET_REDUCTION;
                 }
@@ -1045,6 +1301,9 @@ impl<'a, D: Driver> Fight<'a, D> {
         D::hit(self, attacker, post);
         self.health_triggers();
         if self.hp <= 0.0 && self.alive_unit {
+            if post > 0.0 {
+                self.response_overkill += pre * pymax(-self.hp, 0.0) / post;
+            }
             self.die();
         }
         post
@@ -1184,11 +1443,57 @@ impl<'a, D: Driver> Fight<'a, D> {
         }
     }
 
+    pub fn sleep(&mut self, targets: &Sel, duration: f64, threshold: f64, fraction: f64) {
+        if self.combat_bridge.is_none() && self.sleeps.is_none() {
+            self.sleeps = Some(Rc::new(RefCell::new(SleepTracker::new(self.targets.len()))));
+        }
+        for target in targets.iter() {
+            if !self.targets[target].alive || duration <= 0.0 { continue; }
+            if self.combat_bridge.is_some() {
+                self.team_effects.push(TeamEffect::Sleep(target, duration, threshold, fraction));
+            } else if let Some(sleeps) = &self.sleeps {
+                sleeps.borrow_mut().apply(target, self.sleep_source, self.targets[target].generation,
+                                           self.t, duration, threshold, fraction);
+            }
+            if self.targets[target].cast_pending {
+                // Refreshing one condition can also shorten its expiry.
+                self.targets[target].next_cast = self.t.max(self.target_control_until(target))
+                    .max(self.untargetable_until);
+            }
+            self.cc_time += duration;
+            self.record("sleep", duration, Some(target), "lullaby");
+        }
+    }
+
+    fn target_control_until(&self, target: usize) -> f64 {
+        let dummy = &self.targets[target];
+        dummy.stunned_until.max(self.sleeps.as_ref().map_or(0.0, |sleeps|
+            sleeps.borrow().until(target, dummy.generation, self.t)))
+    }
+
+    pub(crate) fn wake_sleep(&mut self, wake: SleepWake) {
+        if wake.target >= self.targets.len() || !self.targets[wake.target].alive
+            || self.targets[wake.target].generation != wake.generation { return; }
+        let unblocked_at = self.t.max(self.target_control_until(wake.target))
+            .max(self.untargetable_until);
+        let target = &mut self.targets[wake.target];
+        // A scheduled spell delayed by sleep can resume on awakening. Its
+        // independent stun/untargetability still controls the resumed time.
+        // Track readiness explicitly: a refreshed sleep has a different expiry,
+        // and an ordinary future spell may coincidentally match that expiry.
+        if target.cast_pending {
+            target.next_cast = unblocked_at;
+        }
+        let amount = wake.fraction * target.max_hp;
+        self.record("wake", amount, Some(wake.target), "lullaby");
+        self.deal(amount, DType::Magic, Some(wake.target), "wake-up", Deal::ABILITY);
+    }
+
     pub fn reave_mana(&mut self, target: usize, amount: f64) {
         if self.combat_bridge.is_some() {
             self.team_effects.push(TeamEffect::ManaReave(target, amount));
         } else {
-            self.targets[target].mana = pymax(0.0, self.targets[target].mana - amount);
+            self.targets[target].reave_mana(amount);
         }
     }
 
@@ -1303,6 +1608,10 @@ impl<'a, D: Driver> Fight<'a, D> {
                 let bonus = amount * self.fx.bonus_magic_pct;
                 self.deal(bonus, DType::Magic, Some(target), "solar", Deal::RAW);
             }
+            if self.fx.bonus_true_pct != 0.0 {
+                let bonus = amount * self.fx.bonus_true_pct;
+                self.deal(bonus, DType::True, Some(target), "solar true", Deal::RAW);
+            }
             if self.fx.bleed_pct != 0.0 && self.targets[target].alive {
                 let (pct, dur) = (self.fx.bleed_pct, self.fx.bleed_dur);
                 self.dot(amount * pct, dur, DType::True, Some(target), "bleed", false);
@@ -1322,8 +1631,24 @@ impl<'a, D: Driver> Fight<'a, D> {
                 dtype: DType::True, src, mode: Deal::PLAIN, attack: false,
                 execution: true, armor_ignore_pct: 0.0, armor_ignore: 0.0, mr_ignore: 0.0 };
             if let Some(damage) = bridge.hit(hit.clone()) { self.combat_credit(&hit, damage); }
-        } else {
+        } else if !self.targets[target].immortal {
+            // Removing a finite enemy ends its contribution to the fight.
+            // An immortal probe cannot be removed: converting that action
+            // into its unchanged health on every cast fabricates repeatable
+            // damage (notably Gnar's last-enemy throw).
             self.deal(self.targets[target].hp, DType::True, Some(target), src, Deal::PLAIN);
+        }
+    }
+
+    /// Bear's execution is conditional on damage from an eligible Primal.
+    /// It is a finite-health removal, never a permanent damage multiplier or
+    /// repeatable cashout of an immortal probe's unchanged health pool.
+    fn try_trait_execute(&mut self, target: usize, damage: f64, source: &'static str) {
+        let threshold = self.fx.execute_below_hp;
+        if threshold <= 0.0 || damage <= 0.0 || source == "primal bear" { return; }
+        let victim = &self.targets[target];
+        if victim.alive && !victim.immortal && victim.hp < threshold * victim.max_hp {
+            self.execute(target, "primal bear");
         }
     }
 
@@ -1393,6 +1718,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             self.heal_ally(amount * self.fx.ally_heal_pct);
         }
         if !self.targets[target].immortal && self.targets[target].hp <= 0.0 && self.targets[target].alive {
+            let lost_focus = self.target() == Some(target);
             self.targets[target].alive = false;
             self.targets[target].died_at = Some(t);
             if !self.targets.iter().any(|d| d.alive) {
@@ -1400,6 +1726,9 @@ impl<'a, D: Driver> Fight<'a, D> {
             } else if target == self.cur {
                 self.cur = self.target().expect("someone alive");
                 self.target_since = t;
+            }
+            if lost_focus {
+                if let Some(next) = self.target() { self.begin_reposition(Some(target), next); }
             }
             if self.fx.heal_on_takedown != 0.0 {
                 let amount = self.fx.heal_on_takedown * self.max_hp();
@@ -1411,6 +1740,18 @@ impl<'a, D: Driver> Fight<'a, D> {
             self.record("kill", 0.0, Some(target), src);
             D::kill(self, target);
         }
+        if let Some(sleeps) = self.sleeps.clone() {
+            let victim = &self.targets[target];
+            sleeps.borrow_mut().damage(target, victim.generation, t, amount, victim.alive);
+            if !self.external_sleep {
+                loop {
+                    let wake = sleeps.borrow_mut().wakes.pop_front();
+                    let Some(wake) = wake else { break; };
+                    self.wake_sleep(wake);
+                }
+            }
+        }
+        self.try_trait_execute(target, amount, src);
     }
 
     /// Sunder, shred and burns that attacks and ability damage apply.
@@ -1557,6 +1898,19 @@ impl<'a, D: Driver> Fight<'a, D> {
     // ---- the loop ---------------------------------------------------------
 
     pub fn run(&mut self) -> FightResult {
+        self.run_observed(&[]).0
+    }
+
+    /// Observe the existing event loop without inserting combat events.
+    /// Samples include all events at their exact time, and remain flat
+    /// after death. Their horizon is a measurement limit, never a loss.
+    pub fn run_observed(&mut self, times: &[f64]) -> (FightResult, Vec<ResponseSample>) {
+        // Tracing is enabled after construction, where the initial approach
+        // was scheduled. Include that first engagement in standalone traces.
+        if self.t == 0.0 && self.movement_generation == 1 {
+            self.record("move", self.melee_reposition_seconds, self.movement_target, "reposition");
+        }
+        let mut samples = Vec::with_capacity(times.len());
         let mut next_tick = TICK_S;
         let mut next_second = 1.0;
         let mut interval_next: Vec<(f64, f64)> =
@@ -1567,11 +1921,14 @@ impl<'a, D: Driver> Fight<'a, D> {
         ap_after.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());   // stable, like Python's
         self.next_attack = 0.0;
         while self.t < self.duration && self.kill_time.is_none() && self.holding() {
-            let t_attack = if self.alive_unit { pymax(self.next_attack, self.casting_until) }
+            let t_attack = if self.alive_unit { self.attack_ready_at() }
                            else { FAR };
             let t_in = if self.pressure { self.next_incoming() } else { FAR };
             let t_fx = if !self.pending.is_empty() { self.pending[0].0 } else { FAR };
             let t_next = pymin(pymin(pymin(t_attack, next_tick), t_in), t_fx);
+            while samples.len() < times.len() && times[samples.len()] < t_next {
+                samples.push(self.response_sample(times[samples.len()]));
+            }
             if t_next > self.duration {
                 self.t = self.duration;
                 break;
@@ -1586,6 +1943,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                         D::cast(self);
                     }
                     Event::Driver(tag) => D::event(self, tag),
+                    Event::Reposition(generation) => self.complete_reposition(generation),
                 }
             }
             if self.kill_time.is_some() {
@@ -1605,11 +1963,80 @@ impl<'a, D: Driver> Fight<'a, D> {
                 continue;
             }
             // (a cast that started on this tick holds the attack that was due)
-            if t_attack <= self.t && self.t >= self.casting_until {
+            if t_attack <= self.t && self.t >= self.attack_ready_at() {
                 self.attack();
             }
         }
-        self.result()
+        while samples.len() < times.len() {
+            samples.push(self.response_sample(times[samples.len()]));
+        }
+        (self.result(), samples)
+    }
+
+    pub fn response_sample(&mut self, time: f64) -> ResponseSample {
+        let previous_time = self.t;
+        // Resist and shield expiry are evaluated at the requested time.
+        // No scheduled effects or combat counters are changed by observing.
+        self.t = time;
+        let sample = ResponseSample {
+            time,
+            damage: self.total,
+            raw_damage: self.raw_total,
+            self_heal: self.healed,
+            self_shield: self.shield_used,
+            ally_heal_potential: self.ally_heal,
+            ally_shield_potential: self.ally_shield,
+            alive_time: pymin(time, self.hold_until.unwrap_or(time)),
+            unit_alive_time: pymin(time, self.died_at.unwrap_or(time)),
+            alive: self.alive_unit,
+            holding: self.holding(),
+            hp: pymax(0.0, self.hp),
+            shield_hp: self.shields.iter()
+                .filter(|s| !s.dead && s.until > time)
+                .map(|s| pymax(0.0, s.amount)).sum(),
+            armor: self.armor_now(),
+            mr: self.mr_now(),
+            durability: self.durability_now(),
+            casts: self.casts,
+            first_cast: self.cast_times.first().copied(),
+            incoming: self.absorbed,
+            incoming_spent: pymax(0.0, self.absorbed - self.response_overkill),
+            denied: self.denied,
+            attack_damage_taken: self.fx.attack_damage_taken,
+            residual_pools: self.residual_ehp_pools(),
+        };
+        self.t = previous_time;
+        sample
+    }
+
+    /// Current health plus active shields, followed by active/queued
+    /// on-death bodies at their own defenses. This is a snapshot: future
+    /// healing, untriggered shields and not-yet-spawned bodies are absent.
+    fn residual_ehp_pools(&self) -> Vec<(f64, f64)> {
+        let mut pools = Vec::new();
+        if self.alive_unit {
+            let health = pymax(0.0, self.hp) + self.shields.iter()
+                .filter(|s| !s.dead && s.until > self.t)
+                .map(|s| pymax(0.0, s.amount)).sum::<f64>();
+            let durability = 1.0 - self.durability_now();
+            pools.push((
+                health / (resist_mult(pymax(self.armor_now(), 0.0))
+                          * durability * self.fx.attack_damage_taken),
+                health / (resist_mult(pymax(self.mr_now(), 0.0)) * durability),
+            ));
+        }
+        for body in self.body.iter().chain(self.bodies.iter()) {
+            // Standalone add_body applies enemy Sunder/Shred once, and
+            // take() gives bodies neither champion durability nor items.
+            let (armor, mr) = if self.combat_bridge.is_some() {
+                (body.armor * (1.0 - self.enemy_debuffs.sunder) - self.combat_armor_flat,
+                 body.mr * (1.0 - self.enemy_debuffs.shred) - self.combat_mr_flat)
+            } else { (body.armor, body.mr) };
+            let hp = pymax(0.0, body.hp);
+            pools.push((hp / resist_mult(pymax(armor, 0.0)),
+                        hp / resist_mult(pymax(mr, 0.0))));
+        }
+        pools
     }
 
     /// Run something at t + delay: `Driver::event(f, tag)`. Due events run
@@ -1644,6 +2071,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             for i in 0..n {
                 loop {
                     let t = self.t;
+                    let control_until = self.target_control_until(di);
                     let d = &mut self.targets[di];
                     if !(d.alive && (self.alive_unit || self.body.is_some())
                          && d.next_attacks[i] <= t + 1e-9) {
@@ -1652,7 +2080,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                     d.next_attacks[i] += 1.0 / d.as_;
                     d.attacks += 1;
                     let amount = d.ad * d.crit_ev;
-                    let stunned = t < d.stunned_until;
+                    let stunned = t < control_until;
                     if stunned || t < self.untargetable_until {
                         self.denied += amount;
                     } else {
@@ -1664,17 +2092,21 @@ impl<'a, D: Driver> Fight<'a, D> {
                 }
             }
             let holding = self.holding();
+            let control_until = self.target_control_until(di);
             let d = &mut self.targets[di];
             if d.alive && holding && d.cast_interval > 0.0
                && d.next_cast <= self.t + 1e-9 {
-                let unblocked_at = pymax(d.stunned_until, self.untargetable_until);
+                let unblocked_at = pymax(control_until, self.untargetable_until);
                 if self.t < unblocked_at {
                     // Keep one pending spell; CC delays it without erasing
                     // its damage or queuing every missed interval.
                     d.next_cast = unblocked_at;
+                    d.cast_pending = true;
                 } else {
                     d.next_cast = self.t + d.cast_interval;
-                    self.dummy_spell(di);
+                    d.cast_pending = false;
+                    let mana_cost = d.mana_max;
+                    self.dummy_spell(di, mana_cost);
                 }
             }
         }
@@ -1687,26 +2119,29 @@ impl<'a, D: Driver> Fight<'a, D> {
         let holding = self.holding();
         let d = &mut self.targets[di];
         if !(d.alive && holding && d.cast_interval <= 0.0 && d.mana_max > 0.0
-             && d.mana >= d.mana_max && t >= d.lock_until) {
+             && d.mana >= d.mana_cost() && t >= d.lock_until) {
             return;
         }
-        d.mana = pymin(d.mana - d.mana_max, d.mana_max);
+        let mana_cost = d.mana_cost();
+        d.mana = pymin(d.mana - mana_cost, d.mana_max);
+        d.mana_reave = 0.0;
         d.lock_until = t + MANA_LOCK_S;
-        self.dummy_spell(di);
+        self.dummy_spell(di, mana_cost);
     }
 
     /// The spell event is shared by periodic and mana-driven casts.
-    fn dummy_spell(&mut self, di: usize) {
+    fn dummy_spell(&mut self, di: usize, mana_cost: f64) {
         let t = self.t;
+        let control_until = self.target_control_until(di);
         let d = &mut self.targets[di];
         d.casts += 1;
-        if t < d.stunned_until || t < self.untargetable_until {
+        if t < control_until || t < self.untargetable_until {
             self.denied += d.ability;
             return;
         }
-        let (ability, phys_share, mana_max) = (d.ability, d.phys_share, d.mana_max);
+        let (ability, phys_share) = (d.ability, d.phys_share);
         if self.fx.ionic_spark != 0.0 && d.nearby {
-            let dmg = self.fx.ionic_spark * mana_max;
+            let dmg = self.fx.ionic_spark * mana_cost;
             self.deal(dmg, DType::Magic, Some(di), "ionic spark", Deal::PLAIN);
         }
         if phys_share > 0.0 {
@@ -1724,6 +2159,28 @@ impl<'a, D: Driver> Fight<'a, D> {
             let free = now - pymax(now - TICK_S, self.lock_until);
             if free > 0.0 {
                 self.gain_mana(self.fx.mana_regen * free);
+            }
+        }
+        // Both standalone and shared matches use this clock. A new mana
+        // regeneration grant starts after the just-completed time segment.
+        if self.alive_unit {
+            for index in 0..self.timed_stats_next.len() {
+                while now >= self.timed_stats_next[index] - 1e-9 {
+                    let grant = self.fx.timed_stats[index];
+                    self.sheet.ad_pct += grant.ad_pct;
+                    self.sheet.ap_flat += grant.ap;
+                    self.sheet.as_pct += grant.as_pct;
+                    self.sheet.armor += grant.armor;
+                    self.sheet.mr += grant.mr;
+                    self.fx.mana_regen += grant.mana_regen;
+                    // A flat stat grant participates in existing max-health
+                    // multipliers just as the opening trait packet does.
+                    self.gain_max_hp(grant.hp * self.fx.hp_mult);
+                    self.record("trait stats", grant.as_pct, None, "timed trait");
+                    self.timed_stats_next[index] = if grant.interval > 0.0 {
+                        self.timed_stats_next[index] + grant.interval
+                    } else { FAR };
+                }
             }
         }
         // burns: % max hp per second as true damage, applied per tick
@@ -1817,7 +2274,7 @@ impl<'a, D: Driver> Fight<'a, D> {
                 let (at, pct) = heal_next[i];
                 if now >= at - 1e-9 {
                     let amount = pct * self.max_hp();
-                    self.heal(amount, "dragon's claw");
+                    self.heal(amount, self.fx.heal_interval_sources[i]);
                     heal_next[i] = (at + self.fx.heal_per_interval[i].1, pct);
                 }
             }
@@ -1829,13 +2286,13 @@ impl<'a, D: Driver> Fight<'a, D> {
         if self.pressure {
             for di in 0..self.targets.len() {
                 let d = &self.targets[di];
-                if d.alive && d.mana_max > 0.0 && d.mana >= d.mana_max {
+                if d.alive && d.mana_max > 0.0 && d.mana >= d.mana_cost() {
                     self.dummy_cast(di);
                 }
             }
         }
         if !self.team_mode || self.alive_unit { D::tick(self); }
-        if self.alive_unit && self.mana >= self.sheet.mana_max && self.sheet.mana_max > 0.0
+        if self.alive_unit && self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0
             && self.t >= self.casting_until && self.t >= self.combat_stunned_until && self.kill_time.is_none() {
             self.cast();
         }
@@ -1852,6 +2309,19 @@ impl<'a, D: Driver> Fight<'a, D> {
             return;
         }
         self.mana += amount * self.fx.mana_mult;
+    }
+
+    #[inline]
+    pub(crate) fn mana_cost(&self) -> f64 {
+        self.sheet.mana_max + self.mana_reave
+    }
+
+    /// Mana Reave raises the next cast's cost without removing stored mana.
+    /// Reapplying the debuff keeps the strongest pending increase.
+    pub(crate) fn receive_mana_reave(&mut self, amount: f64) {
+        if self.alive_unit && self.sheet.mana_max > 0.0 {
+            self.mana_reave = pymax(self.mana_reave, amount);
+        }
     }
 
     /// What every attack does to the per-attack stacks: Kraken's, Titan's,
@@ -1895,6 +2365,7 @@ impl<'a, D: Driver> Fight<'a, D> {
     }
 
     fn attack(&mut self) {
+        if self.t < self.movement_until { return; }
         let tgt = match self.target() {
             Some(i) => i,
             None => return,
@@ -1908,7 +2379,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             + self.fx.mana_per_crit * self.sheet.crit_chance;
         self.gain_mana(mana);
         D::attack(self, tgt);
-        if self.mana >= self.sheet.mana_max && self.sheet.mana_max > 0.0 && self.alive_unit {
+        if self.mana >= self.mana_cost() && self.sheet.mana_max > 0.0 && self.alive_unit {
             self.cast();
         }
         // the next attack a period later, at the attack speed the unit has
@@ -1918,15 +2389,19 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     /// Fight._cast; public so the tests can start a cast by hand.
     pub fn cast(&mut self) {
-        if self.target().is_none() || !self.alive_unit {
+        if self.target().is_none() || !self.alive_unit || self.t < self.movement_until {
             return;
         }
         self.casts += 1;
         self.cast_times.push(self.t);
         self.record("cast", self.mana, None, "");
-        if self.combat_bridge.is_some() { self.team_effects.push(TeamEffect::Cast(self.sheet.mana_max)); }
-        let overflow = pymax(0.0, self.mana - self.sheet.mana_max);
+        let mana_cost = self.mana_cost();
+        if self.team_mode || self.shared_casts {
+            self.team_effects.push(TeamEffect::Cast(mana_cost, self.fx.spellweaver_ap_per_cast > 0.0));
+        }
+        let overflow = pymax(0.0, self.mana - mana_cost);
         self.mana = pymin(overflow, self.sheet.mana_max);   // overflow carries up to one cast
+        self.mana_reave = 0.0;
         let cast_time = D::cast_time(self);
         self.casting_until = self.t + cast_time;
         // no mana while casting nor for the second after: a channel the
@@ -1934,6 +2409,7 @@ impl<'a, D: Driver> Fight<'a, D> {
         // data's default animation is inside the second
         self.lock_until = self.t + MANA_LOCK_S
             + if cast_time > CAST_TIME_DEFAULT { cast_time } else { 0.0 };
+        D::cast_started(self, cast_time);
         if self.fx.ap_per_cast != 0.0 {
             self.ap_stack += self.fx.ap_per_cast;
         }
@@ -1959,7 +2435,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             alive: self.alive_unit, holding: self.holding(), armor, mr,
             shield: self.shields.iter().filter(|s| !s.dead && s.until > self.t).map(|s| s.amount.max(0.0)).sum(),
             untargetable_until: self.untargetable_until, stunned_until: self.combat_stunned_until,
-            mana_max: self.sheet.mana_max, tank: self.sheet.kind == Kind::Tank,
+            mana_max: self.mana_cost(), tank: self.sheet.kind == Kind::Tank,
             sunder_aura: self.fx.sunder_aura, shred_aura: self.fx.shred_aura,
             ionic_spark: self.fx.ionic_spark, cc_immune: self.combat_cc_immune() }
     }
@@ -2016,10 +2492,25 @@ impl<'a, D: Driver> Fight<'a, D> {
                 self.deal(damage.amount * self.fx.bonus_magic_pct, DType::Magic,
                           Some(target), "solar", Deal::RAW);
             }
+            if self.fx.bonus_true_pct > 0.0 {
+                self.deal(damage.amount * self.fx.bonus_true_pct, DType::True,
+                          Some(target), "solar true", Deal::RAW);
+            }
             if self.fx.bleed_pct > 0.0 && self.targets[target].alive {
                 self.dot(damage.amount * self.fx.bleed_pct, self.fx.bleed_dur,
                          DType::True, Some(target), "bleed", false);
             }
+        }
+        if !hit.execution && same_entity {
+            self.try_trait_execute(target, damage.amount, hit.src);
+        }
+    }
+
+    pub(crate) fn allied_spellweaver_cast(&mut self) {
+        if self.alive_unit && self.fx.spellweaver_ap_per_cast > 0.0 {
+            let amount = self.fx.spellweaver_ap_per_cast;
+            self.ap_stack += amount;
+            self.record("traitAP", amount, None, "spellweaver");
         }
     }
 
@@ -2028,7 +2519,7 @@ impl<'a, D: Driver> Fight<'a, D> {
             target.alive && !target.dots.is_empty());
         if !self.holding() && !pending_dot { return FAR; }
         let available = self.combat_bridge.is_none() || self.target().is_some();
-        let attack = if self.alive_unit && available { pymax(pymax(self.next_attack, self.casting_until), self.combat_stunned_until) } else { FAR };
+        let attack = if self.alive_unit && available { self.attack_ready_at() } else { FAR };
         let effect = self.pending.first().map(|event| pymax(event.0, self.combat_stunned_until)).unwrap_or(FAR);
         let next = pymin(pymin(attack, effect), clock.next_tick);
         // A previously unavailable target may become targetable after an
@@ -2038,13 +2529,14 @@ impl<'a, D: Driver> Fight<'a, D> {
 
     pub(crate) fn team_advance(&mut self, clock: &mut TeamClock, time: f64) {
         self.t = time;
-        let attack_due = self.alive_unit && pymax(pymax(self.next_attack, self.casting_until), self.combat_stunned_until) <= time + 1e-9;
+        let attack_due = self.alive_unit && self.attack_ready_at() <= time + 1e-9;
         while !self.pending.is_empty() && self.pending[0].0 <= time + 1e-9 && time + 1e-9 >= self.combat_stunned_until {
             let (_, _, event) = self.pending.remove(0);
             if !self.alive_unit { continue; }
             match event {
                 Event::Cast => { self.record("land", 0.0, None, ""); D::cast(self); }
                 Event::Driver(tag) => D::event(self, tag),
+                Event::Reposition(generation) => self.complete_reposition(generation),
             }
         }
         if clock.next_tick <= time + 1e-9 {
@@ -2057,6 +2549,51 @@ impl<'a, D: Driver> Fight<'a, D> {
             && time + 1e-9 >= self.combat_stunned_until && self.target().is_some() {
             self.attack();
         }
+    }
+
+    /// Run the own-effect/tick phase for an isolated theoretical actor.
+    /// The shared pressure scheduler inserts incoming damage before the
+    /// final attack phase, preserving one persistent clock per champion.
+    pub(crate) fn theory_events(&mut self, clock: &mut TeamClock, time: f64) -> bool {
+        self.t = time;
+        if self.combat_cc_immune() { self.combat_stunned_until = 0.0; }
+        let attack_due = self.alive_unit
+            && self.attack_ready_at() <= time + 1e-9;
+        while !self.pending.is_empty() && self.pending[0].0 <= time + 1e-9
+            && time + 1e-9 >= self.combat_stunned_until {
+            let (_, _, event) = self.pending.remove(0);
+            if !self.alive_unit { continue; }
+            match event {
+                Event::Cast => { self.record("land", 0.0, None, ""); D::cast(self); }
+                Event::Driver(tag) => D::event(self, tag),
+                Event::Reposition(generation) => self.complete_reposition(generation),
+            }
+        }
+        if clock.next_tick <= time + 1e-9 {
+            self.tick(time, clock.next_second, &mut clock.interval_next,
+                      &mut clock.ap_after, &mut clock.heal_next);
+            if time >= clock.next_second - 1e-9 { clock.next_second += 1.0; }
+            clock.next_tick += TICK_S;
+        }
+        attack_due
+    }
+
+    pub(crate) fn theory_attack(&mut self, time: f64, attack_due: bool) {
+        self.t = time;
+        if attack_due && self.alive_unit && time + 1e-9 >= self.casting_until
+            && time + 1e-9 >= self.combat_stunned_until && self.target().is_some() {
+            self.attack();
+        }
+    }
+
+    /// Return the unused raw part of a lethal pressure packet. The caller
+    /// can offer it to another surviving frontliner at the same timestamp.
+    pub(crate) fn theory_receive(&mut self, amount: f64, dtype: DType, source: usize) -> f64 {
+        let before = self.response_overkill;
+        let local = source % self.targets.len();
+        self.take_from_source(amount, dtype, Some(local), dtype == DType::Physical,
+                              0.0, 0.0, Some(source));
+        (self.response_overkill - before).clamp(0.0, amount)
     }
 
     pub fn result(&self) -> FightResult {
@@ -2096,6 +2633,9 @@ impl<'a, D: Driver> Fight<'a, D> {
             ally_shield: self.ally_shield,
             cc_time: self.cc_time,
             hits_taken: self.hits_taken,
+            melee_reposition_seconds: self.melee_reposition_seconds,
+            movement_time: self.movement_time_at(pymin(self.t, self.died_at.unwrap_or(self.t))),
+            repositions: self.repositions,
             dummy_casts: self.targets.iter().map(|d| d.casts).collect(),
             dummy_attacks: self.targets.iter().map(|d| d.attacks).collect(),
             probe: Probe {
@@ -2116,6 +2656,9 @@ impl<'a, D: Driver> Fight<'a, D> {
 /// Fight.result: what one fight reports.
 #[derive(Clone, Debug)]
 pub struct FightResult {
+    pub melee_reposition_seconds: f64,
+    pub movement_time: f64,
+    pub repositions: usize,
     pub kill_time: Option<f64>,
     pub total: f64,
     pub dps: f64,
@@ -2166,6 +2709,10 @@ pub struct Probe {
 /// own): what the cell rows report.
 #[derive(Clone, Debug)]
 pub struct Opening {
+    pub kind: Kind,
+    pub objective: crate::spec::Objective,
+    pub range: f64,
+    pub pressure: bool,
     pub ad: f64,
     pub ap: f64,
     pub as_: f64,
@@ -2191,6 +2738,10 @@ impl<'a, D: Driver> Fight<'a, D> {
         let mr = self.mr_now();
         let durability = self.durability_now();
         Opening {
+            kind: self.sheet.kind,
+            objective: self.sheet.objective,
+            range: self.sheet.range,
+            pressure: self.pressure,
             ad: self.ad(),
             ap: self.ap(),
             as_: self.attack_speed(),

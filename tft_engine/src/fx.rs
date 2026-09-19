@@ -130,6 +130,10 @@ pub struct ItemFx {
     pub sunder_aura: Option<f64>,
     pub shred_aura: Option<f64>,
     pub burn_aura: Option<(f64, f64)>,
+    pub sunder_aura_by_range: Option<(f64, f64)>,
+    pub shred_aura_by_range: Option<(f64, f64)>,
+    pub burn_aura_by_range: Option<(f64, f64, f64)>,
+    pub ionic_spark_by_range: Option<(f64, f64)>,
     pub hp_mult: Option<f64>,
     pub durability: Option<f64>,
     pub durability_by_health: Option<(f64, f64, f64)>,
@@ -192,6 +196,10 @@ impl ItemFx {
             sunder_aura: getopt(d, "sunderAura")?,
             shred_aura: getopt(d, "shredAura")?,
             burn_aura: tuple2(d, "burnAura")?,
+            sunder_aura_by_range: range_pair(d, "sunderAuraByRange", true)?,
+            shred_aura_by_range: range_pair(d, "shredAuraByRange", true)?,
+            burn_aura_by_range: range_burn(d)?,
+            ionic_spark_by_range: range_pair(d, "ionicSparkByRange", false)?,
             hp_mult: getopt(d, "hpMult")?,
             durability: getopt(d, "durability")?,
             durability_by_health: tuple3(d, "durabilityByHealth")?,
@@ -229,6 +237,24 @@ fn getopt(d: &Bound<'_, PyDict>, key: &str) -> PyResult<Option<f64>> {
     }
 }
 
+fn range_pair(d: &Bound<'_, PyDict>, key: &str, fraction: bool) -> PyResult<Option<(f64, f64)>> {
+    match vecf(d, key)? {
+        None => Ok(None),
+        Some(values) if values.len() == 2 && values.iter().all(|v| v.is_finite() && *v >= 0.0)
+            && (!fraction || values[0] <= 1.0) => Ok(Some((values[0], values[1]))),
+        Some(_) => Err(pyo3::exceptions::PyValueError::new_err(format!("{key}: invalid effect/range pair"))),
+    }
+}
+
+fn range_burn(d: &Bound<'_, PyDict>) -> PyResult<Option<(f64, f64, f64)>> {
+    match vecf(d, "burnAuraByRange")? {
+        None => Ok(None),
+        Some(values) if values.len() == 3 && values.iter().all(|v| v.is_finite() && *v >= 0.0)
+            && values[0] <= 1.0 && values[1] > 0.0 => Ok(Some((values[0], values[1], values[2]))),
+        Some(_) => Err(pyo3::exceptions::PyValueError::new_err("burnAuraByRange: invalid rate/duration/range")),
+    }
+}
+
 /// The Summoner trait's rows, for the drivers whose units summon.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Summoner {
@@ -240,12 +266,57 @@ pub struct Summoner {
 }
 
 /// One trait at one breakpoint, resolved (tft.trait_spec).
+/// Delayed or recurring combat stat grants. These use the same stat units
+/// as opening traits; interval zero means a single grant.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TimedStats {
+    pub after: f64,
+    pub interval: f64,
+    pub ad_pct: f64,
+    pub ap: f64,
+    pub as_pct: f64,
+    pub armor: f64,
+    pub mr: f64,
+    pub hp: f64,
+    pub mana_regen: f64,
+}
+
+impl TimedStats {
+    fn from_py(d: &Bound<'_, PyDict>) -> PyResult<Self> {
+        let mut result = Self { after: getf(d, "after", 0.0)?, interval: getf(d, "interval", 0.0)?,
+                                ..Self::default() };
+        if !result.after.is_finite() || result.after <= 0.0
+            || !result.interval.is_finite() || result.interval < 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "timedStats requires a positive finite delay and nonnegative finite interval"));
+        }
+        for (key, value) in pairs(d, "stats")? {
+            if !value.is_finite() || value < 0.0 {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    "timedStats grants must be finite and nonnegative"));
+            }
+            match key {
+                StatKey::AdPct => result.ad_pct += value,
+                StatKey::Ap => result.ap += value,
+                StatKey::AsPct => result.as_pct += value,
+                StatKey::Armor => result.armor += value,
+                StatKey::Mr => result.mr += value,
+                StatKey::Hp => result.hp += value,
+                StatKey::ManaRegen => result.mana_regen += value,
+                _ => return Err(pyo3::exceptions::PyValueError::new_err("unsupported timedStats stat")),
+            }
+        }
+        Ok(result)
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct TraitFx {
     #[allow(dead_code)]
     pub api: String,
     pub name: String,
     pub stats: Vec<(StatKey, f64)>,
+    pub timed_stats: Vec<TimedStats>,
     pub precision: bool,
     pub as_per_attack_stack: Option<(f64, f64)>,
     pub ap_per_cast: Option<f64>,
@@ -253,14 +324,18 @@ pub struct TraitFx {
     pub bleed: Option<(f64, f64)>,
     pub burn_on_hit: Option<(f64, f64)>,
     pub bonus_magic_pct: Option<f64>,
+    pub bonus_true_pct: Option<f64>,
     pub ravager: Option<(f64, f64, f64)>,
     pub pixies: Option<f64>,
     pub riftbeast: bool,
     pub durability: Option<f64>,
+    pub durability_while_shielded: Option<f64>,
     pub shield_at_start: Option<(f64, f64)>,
     pub shield_at_hp: Option<(f64, f64, f64)>,
     pub resists_per_attacker: Option<(f64, f64)>,
     pub omnivamp: Option<f64>,
+    pub execute_below_hp: Option<f64>,
+    pub heal_per_interval: Option<(f64, f64)>,
     pub takedown: Option<(f64, f64)>,
     pub fae_heal: Option<(f64, f64)>,
     pub summoner: Option<Summoner>,
@@ -270,6 +345,23 @@ pub struct TraitFx {
 
 impl TraitFx {
     pub fn from_py(d: &Bound<'_, PyDict>) -> PyResult<TraitFx> {
+        let bonus_true_pct: Option<f64> = getopt(d, "bonusTruePct")?;
+        if bonus_true_pct.is_some_and(|value| !value.is_finite() || value < 0.0) {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "bonusTruePct requires a finite nonnegative fraction"));
+        }
+        let execute_below_hp: Option<f64> = getopt(d, "executeBelowHp")?;
+        if execute_below_hp.is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value)) {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "executeBelowHp requires a finite fraction between 0 and 1"));
+        }
+        let heal_per_interval = tuple2(d, "healPerInterval")?;
+        if heal_per_interval.is_some_and(|(fraction, interval)|
+            !fraction.is_finite() || !(0.0..=1.0).contains(&fraction)
+                || !interval.is_finite() || interval <= 0.0) {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "trait healPerInterval requires a fraction between 0 and 1 and a positive finite interval"));
+        }
         let summoner = match getd(d, "summoner")? {
             Some(s) => Some(Summoner {
                 damage_mult: getopt(&s, "damageMult")?,
@@ -284,6 +376,8 @@ impl TraitFx {
             api: gets(d, "api", "")?,
             name: gets(d, "name", "")?,
             stats: pairs(d, "stats")?,
+            timed_stats: getlist(d, "timedStats")?.iter()
+                .map(|value| TimedStats::from_py(&dict_of(value)?)).collect::<PyResult<_>>()?,
             precision: truthy(d, "precision")?,
             as_per_attack_stack: tuple2(d, "asPerAttackStack")?,
             ap_per_cast: getopt(d, "apPerCast")?,
@@ -291,14 +385,18 @@ impl TraitFx {
             bleed: tuple2(d, "bleed")?,
             burn_on_hit: tuple2(d, "burnOnHit")?,
             bonus_magic_pct: getopt(d, "bonusMagicPct")?,
+            bonus_true_pct,
             ravager: tuple3(d, "ravager")?,
             pixies: getopt(d, "pixies")?,
             riftbeast: truthy(d, "riftbeast")?,
             durability: getopt(d, "durability")?,
+            durability_while_shielded: getopt(d, "durabilityWhileShielded")?,
             shield_at_start: tuple2(d, "shieldAtStart")?,
             shield_at_hp: tuple3(d, "shieldAtHp")?,
             resists_per_attacker: tuple2(d, "resistsPerAttacker")?,
             omnivamp: getopt(d, "omnivamp")?,
+            execute_below_hp,
+            heal_per_interval,
             takedown: tuple2(d, "takedown")?,
             fae_heal: tuple2(d, "faeHeal")?,
             summoner,
@@ -328,10 +426,13 @@ pub struct Fx {
     pub crit_dmg: f64,
     pub amp: f64,
     pub hp: f64,
+    /// Ordinary item and trait HP bonuses share one additive percentage pool.
+    /// Inputs retain factor notation (1.18 means +18%); this is 1 + their sum.
     pub hp_mult: f64,
     pub armor: f64,
     pub mr: f64,
     pub mana_regen: f64,
+    pub timed_stats: Vec<TimedStats>,
     pub mana_per_attack: f64,
     pub mana_per_crit: f64,
     pub mana_mult: f64,
@@ -347,6 +448,7 @@ pub struct Fx {
     pub amp_per_crit: Vec<(f64, f64, f64)>,
     pub as_per_attack_stack: Vec<(f64, f64)>,
     pub ap_per_cast: f64,
+    pub spellweaver_ap_per_cast: f64,
     pub sunder_on_hit: Vec<(f64, f64)>,
     pub shred_on_hit: Vec<(f64, f64)>,
     /// (pct of max hp per second, duration, stacks with the item burn?)
@@ -358,16 +460,20 @@ pub struct Fx {
     pub bleed_pct: f64,
     pub bleed_dur: f64,
     pub bonus_magic_pct: f64,
+    pub bonus_true_pct: f64,
     pub ravager: Option<(f64, f64, f64)>,
     pub riftbeast: bool,
     pub form: Option<Form>,
     pub omnivamp: f64,
     pub durabilities: Vec<f64>,
+    pub durability_while_shielded: Vec<f64>,
     pub durability_by_health: Vec<(f64, f64, f64)>,
     pub attack_damage_taken: f64,
     pub thorns: Vec<(f64, f64)>,
     pub resists_per_attacker: [f64; 2],
     pub heal_per_interval: Vec<(f64, f64)>,
+    pub heal_interval_sources: Vec<&'static str>,
+    pub execute_below_hp: f64,
     pub regen_missing_pct: f64,
     pub shield_at_hp: Vec<(f64, f64, f64, bool)>,
     pub shield_at_start: Vec<(f64, f64)>,
@@ -393,18 +499,21 @@ impl Default for Fx {
         Fx {
             ad_pct: 0.0, ap: 0.0, as_pct: 0.0, crit: 0.0, crit_dmg: 0.0, amp: 0.0, hp: 0.0,
             hp_mult: 1.0, armor: 0.0, mr: 0.0, mana_regen: 0.0, mana_per_attack: 0.0,
+            timed_stats: Vec::new(),
             mana_per_crit: 0.0, mana_mult: 1.0, adap_mult: 1.0, starting_mana: 0.0,
             precision: 0, amp_vs_tank: 0.0,
             as_per_second: Vec::new(), ad_per_attack: Vec::new(), adap_per_attack: Vec::new(),
             ap_per_interval: Vec::new(), ap_after: Vec::new(), amp_per_crit: Vec::new(),
-            as_per_attack_stack: Vec::new(), ap_per_cast: 0.0,
+            as_per_attack_stack: Vec::new(), ap_per_cast: 0.0, spellweaver_ap_per_cast: 0.0,
             sunder_on_hit: Vec::new(), shred_on_hit: Vec::new(), burn_on_hit: Vec::new(),
             sunder_aura: 0.0, shred_aura: 0.0, burn_aura: None, amp_after_same_target: None,
-            bleed_pct: 0.0, bleed_dur: 0.0, bonus_magic_pct: 0.0, ravager: None,
+            bleed_pct: 0.0, bleed_dur: 0.0, bonus_magic_pct: 0.0, bonus_true_pct: 0.0, ravager: None,
             riftbeast: false, form: None,
-            omnivamp: 0.0, durabilities: Vec::new(), durability_by_health: Vec::new(),
+            omnivamp: 0.0, durabilities: Vec::new(), durability_while_shielded: Vec::new(),
+            durability_by_health: Vec::new(),
             attack_damage_taken: 1.0, thorns: Vec::new(), resists_per_attacker: [0.0, 0.0],
             heal_per_interval: Vec::new(), regen_missing_pct: 0.0, shield_at_hp: Vec::new(),
+            heal_interval_sources: Vec::new(), execute_below_hp: 0.0,
             shield_at_start: Vec::new(), resists_at_start: Vec::new(),
             untargetable_at_hp: Vec::new(), mana_at_hp: Vec::new(), adap_per_hit: false,
             ionic_spark: 0.0, ally_heal_pct: 0.0, hojs: Vec::new(), heal_on_takedown: 0.0,
@@ -435,7 +544,7 @@ impl Fx {
             StatKey::CritDmg => self.crit_dmg += v,
             StatKey::Amp => self.amp += v,
             StatKey::Hp => self.hp += v,
-            StatKey::HpMult => self.hp_mult *= v,
+            StatKey::HpMult => self.hp_mult += v - 1.0,
             StatKey::Armor => self.armor += v,
             StatKey::Mr => self.mr += v,
             StatKey::ManaRegen => self.mana_regen += v,
@@ -529,7 +638,7 @@ impl Fx {
             self.burn_aura = Some(x);
         }
         if let Some(v) = it.hp_mult {
-            self.hp_mult *= v;
+            self.add(StatKey::HpMult, v, false);
         }
         if let Some(v) = it.durability {
             self.durabilities.push(v);
@@ -549,6 +658,7 @@ impl Fx {
         }
         if let Some(x) = it.heal_per_interval {
             self.heal_per_interval.push(x);
+            self.heal_interval_sources.push("dragon's claw");
         }
         if let Some(v) = it.regen_missing_pct {
             self.regen_missing_pct += v;
@@ -594,6 +704,7 @@ impl Fx {
         for &(k, v) in &t.stats {
             self.add(k, v, unit_attack);
         }
+        self.timed_stats.extend_from_slice(&t.timed_stats);
         if t.precision {
             self.precision += 1;
         }
@@ -602,6 +713,9 @@ impl Fx {
         }
         if let Some(v) = t.ap_per_cast {
             self.ap_per_cast += v;
+            if t.api == "DA_18_Spellweaver" {
+                self.spellweaver_ap_per_cast += v;
+            }
         }
         if let Some(x) = t.amp_after_same_target {
             self.amp_after_same_target = Some(x);
@@ -616,6 +730,9 @@ impl Fx {
         if let Some(v) = t.bonus_magic_pct {
             self.bonus_magic_pct += v;
         }
+        if let Some(v) = t.bonus_true_pct {
+            self.bonus_true_pct += v;
+        }
         if let Some(x) = t.ravager {
             self.ravager = Some(x);
         }
@@ -629,6 +746,9 @@ impl Fx {
         if let Some(v) = t.durability {
             self.durabilities.push(v);
         }
+        if let Some(v) = t.durability_while_shielded.filter(|v| *v > 0.0) {
+            self.durability_while_shielded.push(v);
+        }
         if let Some(x) = t.shield_at_start {
             self.shield_at_start.push(x);
         }
@@ -641,6 +761,13 @@ impl Fx {
         }
         if let Some(v) = t.omnivamp {
             self.omnivamp += v;
+        }
+        if let Some(value) = t.execute_below_hp {
+            self.execute_below_hp = pymax(self.execute_below_hp, value);
+        }
+        if let Some(heal) = t.heal_per_interval {
+            self.heal_per_interval.push(heal);
+            self.heal_interval_sources.push(if t.api == "DA_Primal18" { "primal turtle" } else { "trait healing" });
         }
         if let Some((heal, mana)) = t.takedown {
             self.heal_on_takedown += heal;
@@ -708,6 +835,28 @@ pub fn build_fx(role: RoleFx, items: &[&ItemFx], traits: &[TraitFx], has_forms: 
     fx.form = adaptor_form(has_forms, unit_attack, &fx);
     for t in traits {
         fx.apply_trait(t, unit_attack);
+    }
+    fx
+}
+
+/// Form-dependent aura reach is resolved only after all item stats select
+/// the equipped form. Ordinary pre-resolved item effects remain unchanged.
+pub(crate) fn build_fx_for(spec: &crate::spec::CellSpec, items: &[&ItemFx]) -> Fx {
+    let mut fx = build_fx(spec.role, items, &spec.traits, spec.unit.has_forms, spec.unit.attack);
+    let range = spec.range_for(fx.form);
+    for item in items {
+        if let Some((value, reach)) = item.sunder_aura_by_range {
+            if range <= reach { fx.sunder_aura = pymax(fx.sunder_aura, value); }
+        }
+        if let Some((value, reach)) = item.shred_aura_by_range {
+            if range <= reach { fx.shred_aura = pymax(fx.shred_aura, value); }
+        }
+        if let Some((rate, duration, reach)) = item.burn_aura_by_range {
+            if range <= reach { fx.burn_aura = Some((rate, duration)); }
+        }
+        if let Some((value, reach)) = item.ionic_spark_by_range {
+            if range <= reach { fx.ionic_spark += value; }
+        }
     }
     fx
 }

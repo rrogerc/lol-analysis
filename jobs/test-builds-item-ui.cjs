@@ -1,6 +1,7 @@
 // Run with node jobs/test-builds-item-ui.cjs. No browser or npm packages required.
 // The Builds tab's item icons: catalog lookup by row name, the initials an
-// icon shows without its image, and the model notes in the tooltip.
+// icon shows without its image, the model notes in the tooltip, and the
+// buy order the top rows number their items in.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -10,7 +11,8 @@ new vm.Script(script); // Check the complete dashboard script.
 const functions = (first, next) => script.slice(script.indexOf(`function ${first}(`), script.indexOf(`function ${next}(`));
 const context = vm.createContext({});
 vm.runInContext(functions('buildItemLookup', 'ddRuns'), context);
-const { buildItemLookup, itemAbbrev, itemModelText } = context;
+vm.runInContext(functions('buyOrderItems', 'buildCell'), context);
+const { buildItemLookup, itemAbbrev, itemModelText, buyOrderItems } = context;
 
 const cap = { id: 3089, name: "Rabadon's Deathcap", icon: 'x.png' };
 const lookup = buildItemLookup({ items: [cap, { id: 1001, name: 'Boots' }] });
@@ -37,4 +39,16 @@ assert.deepEqual(notes({ covers: [], unmodeled: [], note: 'Stasis is defensive â
 assert.deepEqual(notes({ covers: [], unmodeled: ['Fervor'], note: null }), ['Text-only passives outside the numbers: Fervor.']);
 assert.deepEqual(notes({ covers: [], unmodeled: [], note: null }), ['Stats only.'], 'Boots');
 assert.deepEqual(notes(null), ['No model notes for this item.']);
-console.log('Builds item icon checks passed: catalog lookup, initials and model notes.');
+
+// A top row's items after the boots, in buy order; other rows keep theirs.
+const row = { items: ["Berserker's Greaves", 'Infinity Edge', 'Yun Tal Wildarrows', 'Umbral Glaive'],
+  buyOrder: ['Yun Tal Wildarrows', 'Umbral Glaive', 'Infinity Edge'] };
+assert.deepEqual(JSON.parse(JSON.stringify(buyOrderItems(row))), row.buyOrder);
+assert.equal(buyOrderItems({ items: row.items }), null,
+  'Rows past the top 10, and cells computed before orders existed, have none');
+assert.equal(buyOrderItems({ ...row, buyOrder: ['Yun Tal Wildarrows', 'Umbral Glaive', 'Kraken Slayer'] }), null,
+  'An order naming other items is ignored');
+assert.equal(buyOrderItems({ ...row, buyOrder: row.buyOrder.slice(1) }), null, 'as is a partial one');
+assert.equal(buyOrderItems({ ...row, buyOrder: [row.items[0], ...row.buyOrder.slice(1)] }), null,
+  'The boots are not part of the order');
+console.log('Builds item icon checks passed: catalog lookup, initials, model notes and buy order.');

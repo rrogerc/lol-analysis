@@ -80,6 +80,28 @@ pub struct Cloud {
     pub stacks_per_tick: i64,
 }
 
+/// Kassadin's Nether Blade active: the next attack inside `window_s` deals
+/// this on top of the passive on-hit and gives back a share of the missing
+/// mana (quintupled against a champion, which the stat dummy stands in for).
+#[derive(Clone, Debug)]
+pub struct Empowered {
+    pub damage: DamageSpec,
+    pub window_s: f64,
+    pub missing_mana_pct: Vec<f64>,
+    pub champion_mult: f64,
+}
+
+/// Kassadin's Riftwalk: the blink's own damage, what each standing stack
+/// adds to it, and how the mana cost doubles per stack.
+#[derive(Clone, Debug)]
+pub struct Riftwalk {
+    pub base: DamageSpec,
+    pub per_stack: DamageSpec,
+    pub max_stacks: i64,
+    pub stack_duration_s: f64,
+    pub mana_cost_mult: f64,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Ability {
     pub cooldown_s: Vec<f64>,
@@ -106,6 +128,12 @@ pub struct Ability {
     pub per_stack_magic: Option<DamageSpec>,
     pub max_stacks: Option<i64>,
     pub bonus_ad: Option<Vec<f64>>,
+    // Kassadin: what a cast costs, Force Pulse's per-cast cooldown refund,
+    // Nether Blade's empowered attack and Riftwalk's stacking blink
+    pub mana: Vec<f64>,
+    pub cd_reduction_per_cast_s: f64,
+    pub empowered: Option<Empowered>,
+    pub riftwalk: Option<Riftwalk>,
 }
 
 /// Which rotation driver a kit needs (engine/src/drivers.rs). Settled
@@ -115,6 +143,7 @@ pub enum DriverId {
     Kayle,
     Vladimir,
     Twitch,
+    Kassadin,
 }
 
 impl DriverId {
@@ -125,6 +154,7 @@ impl DriverId {
             "kayle" => Some(DriverId::Kayle),
             "vladimir" => Some(DriverId::Vladimir),
             "twitch" => Some(DriverId::Twitch),
+            "kassadin" => Some(DriverId::Kassadin),
             _ => None,
         }
     }
@@ -165,6 +195,7 @@ pub fn parse_damage_spec(d: &Bound<'_, PyDict>) -> PyResult<DamageSpec> {
         ap_ratio: getf(d, "apRatio", 0.0)?,
         max_hp_ratio: if has(d, "maxHpRatio")? { Some(reqf(d, "maxHpRatio")?) } else { None },
         bonus_hp_ratio: if has(d, "bonusHpRatio")? { Some(reqf(d, "bonusHpRatio")?) } else { None },
+        max_mana_ratio: if has(d, "maxManaRatio")? { Some(reqf(d, "maxManaRatio")?) } else { None },
     })
 }
 
@@ -253,6 +284,26 @@ fn parse_ability(d: Option<Bound<'_, PyDict>>) -> PyResult<Ability> {
         ab.max_stacks = Some(reqi(&d, "maxStacks")?);
     }
     ab.bonus_ad = getvecf(&d, "bonusAd")?;
+    ab.mana = getvecf(&d, "mana")?.unwrap_or_default();
+    ab.cd_reduction_per_cast_s = getf(&d, "cooldownReductionPerCastS", 0.0)?;
+    if let Some(em) = getd(&d, "empowered")? {
+        ab.empowered = Some(Empowered {
+            damage: parse_damage_spec(&reqd(&em, "damage")?)?,
+            window_s: reqf(&em, "windowS")?,
+            missing_mana_pct: getvecf(&em, "missingManaPct")?
+                .ok_or_else(|| PyKeyError::new_err("missingManaPct"))?,
+            champion_mult: reqf(&em, "championMult")?,
+        });
+    }
+    if let Some(rw) = getd(&d, "riftwalk")? {
+        ab.riftwalk = Some(Riftwalk {
+            base: parse_damage_spec(&reqd(&rw, "base")?)?,
+            per_stack: parse_damage_spec(&reqd(&rw, "perStack")?)?,
+            max_stacks: reqi(&rw, "maxStacks")?,
+            stack_duration_s: reqf(&rw, "stackDurationS")?,
+            mana_cost_mult: reqf(&rw, "manaCostMult")?,
+        });
+    }
     Ok(ab)
 }
 

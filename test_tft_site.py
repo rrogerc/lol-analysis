@@ -229,6 +229,43 @@ class TestTftSite(unittest.TestCase):
         self.assertEqual(bundle.json("/api/tft/meta.json"), saved_meta)
         self.assertEqual(len(list(self.site.glob("g-*"))), 1)
 
+    def test_planner_catalog_republishes_without_recalculating_boards(self):
+        self.snap.units = {"TFT18_Ahri": {}, "TFT18_Leona": {}}
+        catalog = {"schemaVersion": 1, "set": 18, "format": "tft-team-planner-v2", "slots": 10,
+                   "unitCodes": {"TFT18_Ahri": "3e9", "TFT18_Leona": "411"}}
+        path = self.directory / "team-planner.json"
+        path.write_text(json.dumps(catalog))
+        with patch.object(tft, "set_dir", return_value=str(self.directory)):
+            previous, old = self.prepare()
+            exposed = old.json("/api/tft/compositions/meta.json")["teamPlanner"]
+            self.assertEqual(exposed["unitCodes"], catalog["unitCodes"])
+            self.assertEqual((exposed["set"], exposed["slots"], exposed["format"]),
+                             (18, 10, "tft-team-planner-v2"))
+            # Import-ID corrections are presentation inputs, not combat math.
+            catalog["unitCodes"]["TFT18_Ahri"] = "3e8"
+            path.write_text(json.dumps(catalog))
+            current, bundle = self.prepare()
+            self.assertNotEqual(current["siteGeneration"], previous["siteGeneration"])
+            for key in ("baselineRevision", "compositionRevision"):
+                self.assertEqual(current[key], previous[key])
+            for url in self.payloads:
+                self.assertEqual(bundle.entries[url], old.entries[url])
+            self.assertEqual(bundle.json("/api/tft/compositions/meta.json")["teamPlanner"]["unitCodes"],
+                             catalog["unitCodes"])
+            self.assertEqual(old.json("/api/tft/compositions/meta.json")["teamPlanner"], exposed)
+
+    def test_invalid_or_ambiguous_planner_ids_cannot_be_published(self):
+        self.snap.units = {"TFT18_Ahri": {}, "TFT18_Leona": {}}
+        catalog = {"schemaVersion": 1, "set": 18, "format": "tft-team-planner-v2", "slots": 10,
+                   "unitCodes": {"TFT18_Ahri": "3e9", "TFT18_Leona": "411"}}
+        with patch.object(tft, "set_dir", return_value=str(self.directory)):
+            self.assertIsNone(tft_site._team_planner(self.snap))
+            for bad in ("000", "not-code", "1234", "411", 1001, None):
+                value = deepcopy(catalog)
+                value["unitCodes"]["TFT18_Ahri"] = bad
+                (self.directory / "team-planner.json").write_text(json.dumps(value))
+                with self.subTest(code=bad), self.assertRaisesRegex(ValueError, "Team Planner catalog"):
+                    self.prepare()
     def test_v1_publication_without_presentation_hash_remains_readable(self):
         descriptor, bundle = self.prepare()
         manifest = deepcopy(bundle.manifest)
@@ -407,6 +444,28 @@ class TestTftSite(unittest.TestCase):
                     tft_site.prepare(self.snap)
                 asset.unlink(missing_ok=True)
                 asset.write_bytes(raw)
+
+
+class TestTeamPlannerCatalog(unittest.TestCase):
+    def test_all_current_champions_match_the_archived_riot_planner_records(self):
+        snap = tft.load_snapshot(18, "18.1d")
+        catalog = json.loads((Path(tft.set_dir(18)) / "team-planner.json").read_bytes())
+        planner = tft_site._team_planner(snap)
+        self.assertEqual(set(planner["unitCodes"]), set(snap.units))
+        self.assertEqual(len(set(planner["unitCodes"].values())), len(snap.units))
+        raw = {unit["apiName"]: unit for unit in snap.raw["units"]}
+        for api, code in planner["unitCodes"].items():
+            source = catalog["sourceRecords"][api]
+            with self.subTest(champion=api):
+                self.assertIn(source["matchedAsset"], raw[api]["assetNames"])
+                self.assertEqual(source["displayName"], snap.units[api]["name"])
+                self.assertEqual(source["tier"], snap.units[api]["cost"])
+                self.assertEqual(int(code, 16), source["teamPlannerCode"])
+        # The combat lookup's IDs would import the wrong units in these cases.
+        self.assertEqual(planner["unitCodes"]["TFT18_Ivern"], "405")
+        self.assertEqual(planner["unitCodes"]["TFT18_Lux_Base"], "413")
+        self.assertNotEqual(raw["TFT18_Ivern"]["code"], planner["unitCodes"]["TFT18_Ivern"])
+        self.assertNotEqual(raw["TFT18_Lux_Base"]["code"], planner["unitCodes"]["TFT18_Lux_Base"])
 
 
 if __name__ == "__main__":

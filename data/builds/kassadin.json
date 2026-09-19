@@ -1,0 +1,145 @@
+{
+  "_provenance": [
+    "Hand-encoded on 2026-09-18 from wiki.leagueoflegends.com/en-us/Kassadin",
+    "(V26.18 era), cross-checked against ddragon 16.18.1 and Riot's own 16.18",
+    "game files (raw.communitydragon.org/16.18/game/data/characters/kassadin/",
+    "kassadin.bin.json): every base, ratio, cooldown, stack count, duration",
+    "and mana cost below agrees between the wiki and the bin (the bin's",
+    "DataValues and cooldownTime carry a rank-0 entry ahead of ranks 1-5; its",
+    "`mana` array starts at rank 1). The meraki snapshot is from 14.24 and is",
+    "used for nothing here: the attack windup is 30% + Riot's attack cast",
+    "offset -0.15 = 15% (the wiki's attack_delay_offset agrees), where",
+    "meraki's stale 0.3/1.6 would say 18.75%; AD growth 3.9 comes from the",
+    "snapshot's riot.json, since ddragon publishes 0 for everyone since",
+    "16.5.1. Riftwalk's bin carries two base-damage rows: the live one is",
+    "RBaseDamage 80/95/110, which the BaseDamage calculation reads and V26.18",
+    "raised from 70/90/110 - the stale RiftWalkBaseDamage row still holds the",
+    "old numbers and nothing reads it.",
+    "Season-2026 history: V26.04 health growth 119 -> 113 and Force Pulse's",
+    "slow 50-90% -> 50-70%; V26.11 Null Sphere cooldown 10-8 -> 9-7 and Nether",
+    "Blade's passive 20 -> 25; V26.18 Null Sphere 70% -> 80% AP and Riftwalk's",
+    "base damage 70-110 -> 80-110. Skill order E > W > Q is Riot's own",
+    "recommendation in the character file (RecSpellRankUpInfo, mid: R, E, W,",
+    "Q) and the most played on 16.18 (lolsociety.com, 2026-09-18: 6,079 games",
+    "against 3,093 for Q > E > W, which wins more, 56.1% to 49.2%); at level",
+    "16 the two gave the same kill times for a full AP build on all three",
+    "presets (`builds optimize --max-order q,e,w` tries the other).",
+    "Modeling choices the sources do not settle are in the notes below and in",
+    "`notes` (shown by the dashboard): Riftwalk is spammed on cooldown while",
+    "the mana lasts; Nether Blade is cast the moment it is up and its reset",
+    "only ever pulls the next attack in; the empowered attack carries BOTH the",
+    "passive on-hit and the active's damage (V11.7 reclassified the passive as",
+    "proc damage without touching the active, and the wiki's spell-shield note",
+    "- 'blocks the active damage but not the passive one' - only makes sense",
+    "if both ride the same attack); no mana regeneration is modeled.",
+    "Base stats are NOT duplicated here - the stat layer reads them from",
+    "data/builds/champions/<patch>/kassadin/. This file is only what no",
+    "structured source has: the kit's damage logic and its rotation rules."
+  ],
+  "champion": "kassadin",
+  "name": "Kassadin",
+  "patch": "16.18",
+  "maxOrder": ["E", "W", "Q"],
+  "notes": [
+    "Riftwalk is the rotation: cast at the opening and then on cooldown for as long as the mana holds out. Each cast inside 15 s doubles the next one's cost (40 x 2^stacks, capped at four stacks, so 40/80/160/320/640) and adds a stack's damage to it, so the fight ends when the mana does.",
+    "Mana is a real resource here, unlike every other kit in this tab: the sheet's maximum is the budget, every cast pays, and a spell whose cost is not there waits. Regeneration is NOT modeled (base mp5 is worth about 3.5 mana a second at 16), so this is a hair conservative.",
+    "Null Sphere and Force Pulse go out on cooldown whenever the mana is there; every other ability cast shaves 0.75 s off Force Pulse's remaining cooldown.",
+    "Nether Blade is cast the moment it is up (1 mana): it resets the attack timer - modeled so the reset only ever pulls the next attack in, never pushes one back - and the attack it empowers carries the passive on-hit AND the active's magic damage, and pays back 20-30% of the missing mana (the stat dummy stands in for a champion). Its cooldown starts when that attack lands.",
+    "Void Stone (10% magic damage reduction, ghosted), Null Sphere's shield, Force Pulse's slow and Riftwalk's blink are defensive or utility: nothing in a damage-only fight against a dummy reads them."
+  ],
+  "attack": {
+    "windupFraction": 0.15,
+    "critModified": true,
+    "ranged": false,
+    "note": "windup = 30% + Riot's attack cast offset -0.15 (the wiki's attack_delay_offset). Read by Nether Blade's attack reset"
+  },
+  "passive": {
+    "name": "Void Stone",
+    "magicDamageReductionPct": 10,
+    "note": "takes 10% reduced magic damage and is permanently ghosted: defensive only. The dummies never hit back, so nothing here enters a fight"
+  },
+  "abilities": {
+    "Q": {
+      "name": "Null Sphere",
+      "cooldownS": [9, 8.5, 8, 7.5, 7],
+      "mana": [60, 65, 70, 75, 80],
+      "castTimeS": 0.25,
+      "damage": {
+        "base": [65, 95, 125, 155, 185],
+        "apRatio": 0.8,
+        "damageType": "magic"
+      },
+      "shield": {
+        "base": [80, 110, 140, 170, 200],
+        "apRatio": 0.3,
+        "durationS": 1.5,
+        "note": "magic shield on cast — sustain, not modeled"
+      },
+      "note": "unit-targeted, 650 range, missile speed 1400: the engine lands it at the cast like every other kit's direct damage, so the missile's ~0.1 s flight at melee range is dropped. Cast on cooldown whenever the mana is there; it also disrupts channels, which a dummy has none of"
+    },
+    "W": {
+      "name": "Nether Blade",
+      "cooldownS": [7, 7, 7, 7, 7],
+      "mana": [1, 1, 1, 1, 1],
+      "cdStart": "post-effect",
+      "onhit": {
+        "base": [25, 25, 25, 25, 25],
+        "apRatio": 0.1,
+        "damageType": "magic"
+      },
+      "empowered": {
+        "damage": {
+          "base": [50, 75, 100, 125, 150],
+          "apRatio": 0.8,
+          "damageType": "magic"
+        },
+        "windowS": 5,
+        "missingManaPct": [4, 4.5, 5, 5.5, 6],
+        "championMult": 5,
+        "bonusRange": 50,
+        "attackReset": true,
+        "note": "the next attack inside 5 s. Its damage is spell damage (the passive's is proc damage since V11.7, so the two are separate instances on one attack) and the mana restore is quintupled against champions — the dummy is one"
+      },
+      "note": "the passive on-hit rides every attack, phantom hits and Dusk and Dawn's second on-hit included; the active is instant (no cast time, no attack lockout), primes Spellblade and applies Muramana's ability damage on the cast itself (V11.8), and its cooldown starts when the empowered attack lands"
+    },
+    "E": {
+      "name": "Force Pulse",
+      "cooldownS": [21, 20, 19, 18, 17],
+      "mana": [60, 65, 70, 75, 80],
+      "castTimeS": 0.25,
+      "damage": {
+        "base": [70, 100, 130, 160, 190],
+        "apRatio": 0.7,
+        "damageType": "magic"
+      },
+      "cooldownReductionPerCastS": 0.75,
+      "slowPct": [50, 55, 60, 65, 70],
+      "slowDurationS": 1,
+      "note": "a 78-degree cone, 600 range: one dummy takes it in full. Each ability cast by Kassadin or a champion within 1800 units takes 0.75 s off its REMAINING cooldown — in a solo fight that is his own Q, W and R (the cast that starts the cooldown does not shorten it, and there is nobody else on the board)"
+    },
+    "R": {
+      "name": "Riftwalk",
+      "cooldownS": [5, 3.5, 2],
+      "mana": [40, 40, 40],
+      "castTimeS": 0.25,
+      "riftwalk": {
+        "base": {
+          "base": [80, 95, 110],
+          "apRatio": 0.5,
+          "maxManaRatio": 2,
+          "damageType": "magic"
+        },
+        "perStack": {
+          "base": [35, 45, 55],
+          "apRatio": 0.07,
+          "maxManaRatio": 1
+        },
+        "maxStacks": 4,
+        "stackDurationS": 15,
+        "manaCostMult": 2,
+        "note": "the damage on arrival counts the stacks standing BEFORE the cast, which then gains one for 15 s (every cast refreshes them all); the cost is 40 x 2^stacks the same way. maxManaRatio is a percentage of maximum mana, so mana items feed the damage as well as the casts"
+      },
+      "note": "a 500-range blink, 270 AoE on arrival. Horizon Focus's Hypershot counts the 600 units from the cast position (the wiki's notes), so a Riftwalk begun 600-770 units away marks, as does a max-range Null Sphere (650); the engine marks once, on the fight's first ability damage (this opening Riftwalk), and nothing cast from melee range afterwards could re-mark. An ultimate: its cooldown takes ultimate ability haste (Malignance, Fiendhunter Bolts, Experimental Hexplate). Every cast lights or refreshes Malignance's Hatefog, but Hexplate's Overdrive (30 s cooldown) and Fiendhunter's Opening Barrage (45 s) fire on the opening cast only"
+    }
+  }
+}

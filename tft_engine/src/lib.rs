@@ -20,14 +20,16 @@ mod pyget;
 mod spec;
 mod team;
 mod symmetric;
+mod theory;
+mod theory_fight;
 
-use pyo3::exceptions::PyKeyError;
+use pyo3::exceptions::{PyKeyError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
 use crate::driver::Driver;
 use crate::fight::{FightResult, Opening};
-use crate::fx::{build_fx, Fx};
+use crate::fx::{build_fx_for, Fx};
 use crate::kit::{CalcId, Kit, Runtime};
 use crate::spec::CellSpec;
 
@@ -47,6 +49,10 @@ fn opening_to_py<'py>(py: Python<'py>, o: &Opening) -> PyResult<Bound<'py, PyDic
     d.set_item("magicEhp", o.magic_ehp)?;
     d.set_item("omnivamp", o.omnivamp)?;
     d.set_item("form", o.form.map(|f| f.name()))?;
+    d.set_item("kind", o.kind.name())?;
+    d.set_item("objective", o.objective.name())?;
+    d.set_item("range", o.range)?;
+    d.set_item("pressure", o.pressure)?;
     d.set_item("manaStart", o.mana_start)?;
     d.set_item("manaMax", o.mana_max)?;
     Ok(d)
@@ -85,6 +91,11 @@ fn result_to_py<'py>(py: Python<'py>, r: &FightResult) -> PyResult<Bound<'py, Py
     d.set_item("allyShield", r.ally_shield)?;
     d.set_item("ccTime", r.cc_time)?;
     d.set_item("hitsTaken", r.hits_taken)?;
+    if r.melee_reposition_seconds > 0.0 {
+        d.set_item("meleeRepositionSeconds", r.melee_reposition_seconds)?;
+        d.set_item("movementTime", r.movement_time)?;
+        d.set_item("repositions", r.repositions)?;
+    }
     d.set_item("dummyCasts", PyList::new(py, r.dummy_casts.iter())?)?;
     d.set_item("dummyAttacks", PyList::new(py, r.dummy_attacks.iter())?)?;
     let p = PyDict::new(py);
@@ -145,6 +156,7 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("bleedPct", fx.bleed_pct)?;
     d.set_item("bleedDur", fx.bleed_dur)?;
     d.set_item("bonusMagicPct", fx.bonus_magic_pct)?;
+    d.set_item("bonusTruePct", fx.bonus_true_pct)?;
     d.set_item("ravager", fx.ravager)?;
     d.set_item("riftbeast", fx.riftbeast)?;
     d.set_item("form", fx.form.map(|f| f.name()))?;
@@ -156,6 +168,7 @@ fn fx_to_py<'py>(py: Python<'py>, fx: &Fx) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("thorns", fx.thorns.clone())?;
     d.set_item("resistsPerAttacker", fx.resists_per_attacker.to_vec())?;
     d.set_item("healPerInterval", fx.heal_per_interval.clone())?;
+    if fx.execute_below_hp > 0.0 { d.set_item("executeBelowHp", fx.execute_below_hp)?; }
     d.set_item("regenMissingPct", fx.regen_missing_pct)?;
     d.set_item("shieldAtHp", fx.shield_at_hp.clone())?;
     d.set_item("shieldAtStart", fx.shield_at_start.clone())?;
@@ -251,15 +264,17 @@ fn score_pairs<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, workers: usize)
 /// Exhaustively optimize zero through three items from the spec's pool.
 /// Returns (build count, [rows0, rows1, rows2, rows3]); each inner row uses
 /// run_cell's (pool indices, opening sheet, result) shape and ranking.
+/// With preserve_forms, top is retained separately for each equipped form.
 #[pyfunction]
-#[pyo3(signature = (spec, top=4, workers=0))]
-fn optimize_loadouts<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, top: usize, workers: usize)
+#[pyo3(signature = (spec, top=4, workers=0, preserve_forms=false))]
+fn optimize_loadouts<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, top: usize,
+                         workers: usize, preserve_forms: bool)
     -> PyResult<(usize, Bound<'py, PyList>)> {
     let spec = CellSpec::from_py(spec)?;
     let name = spec.driver.clone();
     let (n, groups) = with_driver!(name.as_str(), D, {
         debug_assert_eq!(D::NAME, name);
-        Ok::<_, PyErr>(py.detach(|| enumerate::optimize_loadouts::<D>(&spec, top, workers)))
+        Ok::<_, PyErr>(py.detach(|| enumerate::optimize_loadouts::<D>(&spec, top, workers, preserve_forms)))
     })?;
     let out = PyList::empty(py);
     for rows in groups {
@@ -290,13 +305,93 @@ fn simulate<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, trace: bool)
     Ok((opening_to_py(py, &o)?, result_to_py(py, &r)?))
 }
 
+/// Cumulative observations against immortal targets. All events at a
+/// requested time are included; no observation is interpreted as a win,
+/// loss or proof of indefinite survival.
+#[pyfunction]
+fn measure_response<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>, times: Vec<f64>)
+    -> PyResult<(Bound<'py, PyDict>, Bound<'py, PyList>)> {
+    if times.is_empty() || times.len() > 4096
+        || times.iter().any(|t| !t.is_finite() || *t < 0.0)
+        || times.windows(2).any(|w| w[0] >= w[1]) {
+        return Err(PyValueError::new_err(
+            "times: expected 1 to 4096 finite, nonnegative, strictly increasing times"));
+    }
+    let mut spec = CellSpec::from_py(spec)?;
+    // Leave a tiny tail so the legacy loop's final-time attack exclusion
+    // never truncates the requested last measurement.
+    let last = *times.last().unwrap();
+    spec.duration = last + (last.abs() * 1e-12).max(1e-8);
+    spec.immortal = true;
+    let name = spec.driver.clone();
+    let (opening, initial_response, samples) = with_driver!(name.as_str(), D, {
+        Ok::<_, PyErr>(py.detach(|| enumerate::measure_response::<D>(&spec, &times)))
+    })?;
+    let out = PyList::empty(py);
+    for sample in samples {
+        out.append(response_to_py(py, &sample)?)?;
+    }
+    let opening = opening_to_py(py, &opening)?;
+    response_defenses_to_py(py, &opening, &initial_response)?;
+    Ok((opening, out))
+}
+
+pub(crate) fn response_to_py<'py>(py: Python<'py>, sample: &crate::fight::ResponseSample)
+    -> PyResult<Bound<'py, PyDict>> {
+    let row = PyDict::new(py);
+    row.set_item("time", sample.time)?;
+    row.set_item("damage", sample.damage)?;
+    row.set_item("rawDamage", sample.raw_damage)?;
+    row.set_item("selfHeal", sample.self_heal)?;
+    row.set_item("selfShield", sample.self_shield)?;
+    row.set_item("allyHealPotential", sample.ally_heal_potential)?;
+    row.set_item("allyShieldPotential", sample.ally_shield_potential)?;
+    row.set_item("aliveTime", sample.alive_time)?;
+    row.set_item("unitAliveTime", sample.unit_alive_time)?;
+    row.set_item("alive", sample.alive)?;
+    row.set_item("holding", sample.holding)?;
+    row.set_item("hp", sample.hp)?;
+    row.set_item("shieldHp", sample.shield_hp)?;
+    row.set_item("armor", sample.armor)?;
+    row.set_item("mr", sample.mr)?;
+    row.set_item("durability", sample.durability)?;
+    row.set_item("casts", sample.casts)?;
+    row.set_item("firstCast", sample.first_cast)?;
+    row.set_item("incoming", sample.incoming)?;
+    row.set_item("incomingSpent", sample.incoming_spent)?;
+    row.set_item("denied", sample.denied)?;
+    response_defenses_to_py(py, &row, sample)?;
+    Ok(row)
+}
+
+fn response_defenses_to_py<'py>(py: Python<'py>, row: &Bound<'py, PyDict>,
+                                sample: &crate::fight::ResponseSample) -> PyResult<()> {
+    row.set_item("attackDamageTaken", sample.attack_damage_taken)?;
+    row.set_item("residualPhysicalEhp", sample.residual_pools.iter().map(|p| p.0).sum::<f64>())?;
+    row.set_item("residualMagicEhp", sample.residual_pools.iter().map(|p| p.1).sum::<f64>())?;
+    let pools = PyList::empty(py);
+    for (physical, magic) in &sample.residual_pools {
+        let pool = PyDict::new(py);
+        pool.set_item("physicalEhp", physical)?;
+        pool.set_item("magicEhp", magic)?;
+        pools.append(pool)?;
+    }
+    row.set_item("residualPools", pools)?;
+    Ok(())
+}
+
 /// The composed effects of the spec's `items` and traits (tft.build_fx).
 #[pyfunction]
 fn compose_fx<'py>(py: Python<'py>, spec: &Bound<'py, PyDict>) -> PyResult<Bound<'py, PyDict>> {
     let spec = CellSpec::from_py(spec)?;
     let items: Vec<&fx::ItemFx> = spec.items.iter().collect();
-    let fx = build_fx(spec.role, &items, &spec.traits, spec.unit.has_forms, spec.unit.attack);
-    fx_to_py(py, &fx)
+    let fx = build_fx_for(&spec, &items);
+    let out = fx_to_py(py, &fx)?;
+    out.set_item("kind", spec.kind_for(fx.form).name())?;
+    out.set_item("objective", spec.objective_for(fx.form).name())?;
+    out.set_item("range", spec.range_for(fx.form))?;
+    out.set_item("pressure", spec.pressure_for(fx.form))?;
+    Ok(out)
 }
 
 /// tft.calc_value on a kit spec: fold `name` at the given stats.
@@ -327,11 +422,15 @@ fn lol_tft(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(score_pairs, m)?)?;
     m.add_function(wrap_pyfunction!(optimize_loadouts, m)?)?;
     m.add_function(wrap_pyfunction!(simulate, m)?)?;
+    m.add_function(wrap_pyfunction!(measure_response, m)?)?;
     m.add_function(wrap_pyfunction!(team::simulate_team, m)?)?;
     m.add_function(wrap_pyfunction!(symmetric::simulate_match, m)?)?;
     m.add_function(wrap_pyfunction!(symmetric::prepare_actor, m)?)?;
     m.add_function(wrap_pyfunction!(symmetric::simulate_matches, m)?)?;
     m.add_class::<symmetric::PreparedActor>()?;
+    m.add_class::<theory::TheoryScorer>()?;
+    m.add_function(wrap_pyfunction!(theory_fight::measure_theory_team, m)?)?;
+    m.add_function(wrap_pyfunction!(theory_fight::theory_opening, m)?)?;
     m.add_function(wrap_pyfunction!(compose_fx, m)?)?;
     m.add_function(wrap_pyfunction!(calc_value, m)?)?;
     let drivers = PyDict::new(m.py());

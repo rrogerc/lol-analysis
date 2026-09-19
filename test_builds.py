@@ -8,6 +8,7 @@ also catch a meraki schema change sneaking past ITEM_STAT_MAP.
 """
 
 import copy
+import itertools
 import json
 import math
 import os
@@ -792,8 +793,8 @@ class TestVladimirKit(unittest.TestCase):
         self.assertEqual(builds.kit_max_order(self.kit, "e,q,w"), ("E", "Q", "W"))
 
     def test_registered(self):
-        self.assertEqual(builds.kit_champions(), ["kayle", "twitch", "vladimir"])
-        self.assertEqual(sorted(builds.KIT_DRIVERS), ["kayle", "twitch", "vladimir"])
+        self.assertEqual(builds.kit_champions(), ["kassadin", "kayle", "twitch", "vladimir"])
+        self.assertEqual(sorted(builds.KIT_DRIVERS), ["kassadin", "kayle", "twitch", "vladimir"])
 
     def test_own_health_ratios(self):
         # E at full charge, rank 5: 180 + 80% AP + 6% of OWN max health
@@ -1314,6 +1315,272 @@ class TestTwitchEngine(unittest.TestCase):
         self.assertEqual(exp, sorted(exp))
 
 
+def fake_kassadin():
+    """A Kassadin-shaped champion snapshot (patch 16.18 ddragon values), with
+    Riot's own file for the AD growth ddragon publishes as 0."""
+    dd = {"name": "Kassadin", "stats": {
+        "hp": 646, "hpperlevel": 113, "mp": 400, "mpperlevel": 87,
+        "armor": 21, "armorperlevel": 4,
+        "spellblock": 30, "spellblockperlevel": 1.3,
+        "attackdamage": 59, "attackdamageperlevel": 0,
+        "attackspeed": 0.64, "attackspeedperlevel": 3.7,
+        "movespeed": 335, "attackrange": 150,
+    }}
+    mk = {"stats": {"attackSpeedRatio": {"flat": 0.64},
+                    "criticalStrikeDamage": {"flat": 175.0}}}
+    return {"slug": "kassadin", "dd": dd, "mk": mk, "meta": {"patch": "16.18"},
+            "riot": {"damagePerLevel": 3.9}}
+
+
+class TestKassadinKit(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = builds.load_kit("kassadin")
+
+    def test_shape(self):
+        # Riot's 16.18 character bin (ranks 1-5; its rank-0 entries dropped)
+        ab = self.kit["abilities"]
+        for slot, ranks in [("Q", 5), ("W", 5), ("E", 5), ("R", 3)]:
+            self.assertEqual(len(ab[slot]["cooldownS"]), ranks)
+            self.assertEqual(len(ab[slot]["mana"]), ranks)
+        self.assertEqual(ab["Q"]["cooldownS"], [9, 8.5, 8, 7.5, 7])
+        self.assertEqual(ab["Q"]["damage"]["base"], [65, 95, 125, 155, 185])
+        self.assertEqual(ab["Q"]["damage"]["apRatio"], 0.8)  # V26.18: 70% -> 80%
+        self.assertEqual(ab["W"]["onhit"]["base"], [25] * 5)  # V26.11: 20 -> 25
+        self.assertEqual(ab["W"]["onhit"]["apRatio"], 0.1)
+        em = ab["W"]["empowered"]
+        self.assertEqual(em["damage"]["base"], [50, 75, 100, 125, 150])
+        self.assertEqual(em["damage"]["apRatio"], 0.8)
+        self.assertEqual((em["windowS"], em["championMult"]), (5, 5))
+        self.assertEqual(em["missingManaPct"], [4, 4.5, 5, 5.5, 6])
+        self.assertEqual(ab["W"]["cooldownS"], [7] * 5)
+        self.assertEqual(ab["E"]["cooldownS"], [21, 20, 19, 18, 17])
+        self.assertEqual(ab["E"]["damage"]["base"], [70, 100, 130, 160, 190])
+        self.assertEqual(ab["E"]["damage"]["apRatio"], 0.7)
+        self.assertEqual(ab["E"]["cooldownReductionPerCastS"], 0.75)
+        self.assertEqual(ab["R"]["cooldownS"], [5, 3.5, 2])
+        self.assertEqual(ab["R"]["mana"], [40, 40, 40])
+        rw = ab["R"]["riftwalk"]
+        self.assertEqual(rw["base"]["base"], [80, 95, 110])  # V26.18: 70-110 -> 80-110
+        self.assertEqual((rw["base"]["apRatio"], rw["base"]["maxManaRatio"]), (0.5, 2))
+        self.assertEqual(rw["perStack"]["base"], [35, 45, 55])
+        self.assertEqual((rw["perStack"]["apRatio"], rw["perStack"]["maxManaRatio"]),
+                         (0.07, 1))
+        self.assertEqual((rw["maxStacks"], rw["stackDurationS"], rw["manaCostMult"]),
+                         (4, 15, 2))
+        # the engine's single scheduled ult impact must stay out of it
+        self.assertNotIn("damage", ab["R"])
+        self.assertEqual(self.kit["attack"]["windupFraction"], 0.15)
+        self.assertFalse(self.kit.get("manaless"))
+        self.assertFalse(self.kit["attack"].get("never"))
+        # Riot's recommendation and 16.18's most played order
+        self.assertEqual(builds.kit_max_order(self.kit), ("E", "W", "Q"))
+        self.assertEqual(builds.skill_ranks(16, builds.kit_max_order(self.kit)),
+                         {"Q": 3, "W": 5, "E": 5, "R": 3})
+        self.assertTrue(self.kit["notes"])
+
+    def test_snapshot_agrees_with_riots_file(self):
+        # the archived 16.18 snapshot: AD growth from Riot's file (ddragon
+        # says 0), everything ddragon does publish matching the file
+        champ = builds.load_champion("kassadin")
+        self.assertEqual(champ["meta"]["patch"], "16.18")
+        self.assertEqual(champ["riot"]["damagePerLevel"], 3.9)
+        self.assertAlmostEqual(builds.champ_base(champ)["ad_per"], 3.9)
+        dd = champ["dd"]["stats"]
+        for dk, rk in (("hp", "baseHP"), ("hpperlevel", "hpPerLevel"),
+                       ("armor", "baseArmor"), ("spellblock", "baseMR"),
+                       ("spellblockperlevel", "mrPerLevel"),
+                       ("attackdamage", "baseDamage"), ("attackspeed", "attackSpeed"),
+                       ("attackspeedperlevel", "attackSpeedPerLevel"),
+                       ("attackrange", "attackRange"), ("movespeed", "baseMoveSpeed")):
+            self.assertAlmostEqual(dd[dk], champ["riot"][rk], msg=dk)
+        # the windup is 30% + Riot's attack cast offset
+        self.assertAlmostEqual(0.3 + champ["riot"]["attackDelayCastOffsetPercent"],
+                               self.kit["attack"]["windupFraction"])
+
+
+class TestKassadinEngine(unittest.TestCase):
+    """Kassadin's rotation, hand-computed at level 16 naked against 0
+    resists: AD 59 + 3.9 x growth(16) = 115.4525, mana 400 + 87 x growth(16)
+    = 1659.325, attack speed 0.64 x 1.535575 = 0.98277 (a 1.0175 s period,
+    a 0.1526 s windup). E > W > Q gives Null Sphere rank 3 (125, 8 s, 70
+    mana), Force Pulse rank 5 (190, 17 s, 80 mana), Nether Blade rank 5 (150
+    on the empowered attack, which refunds 30% of the missing mana, plus 25
+    on every hit); Riftwalk rank 3 is 110 + 2% mana = 143.1865 plus 55 + 1%
+    mana = 71.59325 a stack. The opening: R at 0 (its 0.25 s cast holds
+    everything), Q at 0.25, the auto at 0.5 then W (the reset) and E at 0.5,
+    whose cast puts the empowered attack at 0.75."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = builds.load_kit("kassadin")
+        cls.patch, cls.pool = builds.load_items()
+        cls.idx = builds.item_index(cls.pool)
+        cls.effects = builds.load_item_effects()
+        cls.order = builds.kit_max_order(cls.kit)
+        g = builds.growth(16)
+        cls.ad16 = 59 + 3.9 * g
+        cls.mana16 = 400 + 87 * g
+        cls.r0 = 110 + 2 / 100 * cls.mana16
+        cls.rs = 55 + 1 / 100 * cls.mana16
+
+    def resolve(self, level, tokens, effects=None):
+        ids = [builds.resolve_item(self.pool, self.idx, t) for t in tokens]
+        return ids, builds.resolve_stats(fake_kassadin(), level, ids, self.pool,
+                                         effects or self.effects, kit=self.kit)
+
+    def sim(self, level, tokens, hp=100_000, armor=0, mr=0, duration=3.0,
+            use_ult=True, kit=None, effects=None, **kw):
+        fx = effects or self.effects
+        ids, sheet = self.resolve(level, tokens, fx)
+        return builds.simulate(sheet, kit or self.kit,
+                               builds.merge_effects(ids, fx), level,
+                               builds.skill_ranks(level, self.order), hp, armor,
+                               mr, duration, use_ult=use_ult, **kw)
+
+    def riftwalks(self, n):
+        """n Riftwalks in a row: the stacks standing before each cast, capped
+        at four."""
+        return sum(self.r0 + min(k, 4) * self.rs for k in range(n))
+
+    def test_opening_hand_computed(self):
+        r = self.sim(16, [], duration=0.5)
+        self.assertEqual(r["attacks"], 1)
+        bd = r["breakdown"]
+        self.assertAlmostEqual(bd["R"], self.r0)
+        self.assertAlmostEqual(bd["Q"], 125.0)
+        self.assertAlmostEqual(bd["E"], 190.0)
+        self.assertAlmostEqual(bd["auto"], self.ad16)
+        self.assertAlmostEqual(bd["W onhit"], 25.0)
+        self.assertNotIn("W", bd)  # armed at 0.5, not landed yet
+        # the empowered attack at 0.75: the reset pulled it to 0.5 + windup,
+        # Force Pulse's cast animation to 0.75; it carries both halves
+        r = self.sim(16, [], duration=0.75)
+        self.assertEqual(r["attacks"], 2)
+        self.assertAlmostEqual(r["breakdown"]["W"], 150.0)
+        self.assertAlmostEqual(r["breakdown"]["W onhit"], 50.0)
+        self.assertAlmostEqual(sum(r["breakdown"].values()), r["total"], places=6)
+
+    def test_riftwalk_until_the_mana_runs_out(self):
+        # R every 2 s, each counting the stacks before it and costing 40 x
+        # 2^stacks: casts at 0/2/4/6/8 cost 40+80+160+320+640. Between them
+        # Null Sphere, Force Pulse and two Nether Blades, whose refunds (30%
+        # of the missing mana) leave 533 after the fifth: the sixth (640)
+        # waits, off cooldown since 10 s, for the third refund at 14.995 s
+        r = self.sim(16, [], duration=8.0)
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(5))
+        self.assertAlmostEqual(r["breakdown"]["Q"], 125.0)  # the next at 8.25
+        self.assertAlmostEqual(r["breakdown"]["W"], 2 * 150.0)
+        self.assertEqual(r["attacks"], 9)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 9 * self.ad16)
+        self.assertAlmostEqual(r["breakdown"]["W onhit"], 9 * 25.0)
+        r = self.sim(16, [], duration=14.9)
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(5))
+        self.assertAlmostEqual(r["breakdown"]["Q"], 2 * 125.0)
+        r = self.sim(16, [], duration=15.0)
+        self.assertAlmostEqual(r["breakdown"]["W"], 3 * 150.0)
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(6))
+        # the squishy preset: 60 MR, all five by its 8 s
+        r = self.sim(16, [], hp=2800, armor=110, mr=60, duration=8.0)
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(5) * 100 / 160)
+
+    def test_force_pulse_cooldown_shaved_by_casts(self):
+        # cast at 0.5, back at 17.5 on its own; the R casts at 2, 4, 6 and 8,
+        # Nether Blade at 7.75 and Null Sphere at 8.25 take 0.75 s each
+        self.assertAlmostEqual(self.sim(16, [], duration=12.99)["breakdown"]["E"], 190.0)
+        self.assertAlmostEqual(self.sim(16, [], duration=13.0)["breakdown"]["E"], 380.0)
+
+    def test_nether_blade_refund_pays_for_riftwalk(self):
+        # R made to cost 520 (1040 at a stack): after R, Q, W and E the pool
+        # holds 988.3 — short of the second Riftwalk at 2.0 — until the
+        # empowered attack at 0.75 refunds 30% of the 671 missing
+        dear = copy.deepcopy(self.kit)
+        dear["abilities"]["R"]["mana"] = [520, 520, 520]
+        r = self.sim(16, [], duration=2.0, kit=dear)
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(2))
+        dry = copy.deepcopy(dear)
+        dry["abilities"]["W"]["empowered"]["missingManaPct"] = [0] * 5
+        r = self.sim(16, [], duration=2.0, kit=dry)
+        self.assertAlmostEqual(r["breakdown"]["R"], self.riftwalks(1))
+
+    def test_no_ult_no_riftwalk(self):
+        # Null Sphere opens at 0 and is back at 8.0
+        r = self.sim(16, [], duration=8.1, use_ult=False)
+        self.assertNotIn("R", r["breakdown"])
+        self.assertAlmostEqual(r["breakdown"]["Q"], 2 * 125.0)
+        self.assertIn("W", r["breakdown"])
+        # below level 6 there is no rank to cast either way; level 1 is one
+        # point in Force Pulse (70), cast right after the auto at 0
+        r = self.sim(1, [], duration=0.25)
+        self.assertEqual(r["attacks"], 1)
+        self.assertAlmostEqual(r["breakdown"]["auto"], 59.0)
+        self.assertAlmostEqual(r["breakdown"]["E"], 70.0)
+        self.assertNotIn("Q", r["breakdown"])
+        self.assertNotIn("W onhit", r["breakdown"])  # no rank in W yet
+
+    def test_ultimate_haste_speeds_riftwalk(self):
+        # Hexplate's 30 ultimate haste: the sheet keeps it apart from ability
+        # haste, and the second Riftwalk comes at 2 x 100/130 = 1.538 s
+        ids, sheet = self.resolve(16, ["experimental hexplate"])
+        self.assertAlmostEqual(sheet["cd_mult"], 1.0)
+        self.assertAlmostEqual(sheet["ult_cd_mult"], 100 / 130)
+        self.assertAlmostEqual(
+            self.sim(16, ["experimental hexplate"], duration=1.6)["breakdown"]["R"],
+            self.riftwalks(2))
+        calm = copy.deepcopy(self.effects)
+        del calm[3073]["ultimateAbilityHaste"]
+        self.assertAlmostEqual(
+            self.sim(16, ["experimental hexplate"], duration=1.6, effects=calm)
+            ["breakdown"]["R"], self.riftwalks(1))
+        # Malignance: 15 ability haste for everything, 20 more for the ult
+        ids, sheet = self.resolve(16, ["malignance"])
+        self.assertAlmostEqual(sheet["cd_mult"], 100 / 115)
+        self.assertAlmostEqual(sheet["ult_cd_mult"], 100 / 135)
+
+    def test_hatefog_refreshes_and_keeps_its_cadence(self):
+        # Malignance: Riftwalks at 0, 1.481 and 2.963. The first opens the
+        # zone after its own hit (60 MR), the later ones land inside it (50
+        # MR) and only push its end back, so it ticks every 0.25 s from 0.25:
+        # twelve ticks of (180 + 15% AP) / 12 = 16.125 by 3.0
+        ids, sheet = self.resolve(16, ["malignance"])
+        mana, ap = sheet["mana"], sheet["ap"]
+        r0 = 110 + 0.5 * ap + 2 / 100 * mana
+        rs = 55 + 0.07 * ap + 1 / 100 * mana
+        r = self.sim(16, ["malignance"], mr=60, duration=3.0)
+        self.assertAlmostEqual(r["breakdown"]["malignance"], 12 * 16.125 * 100 / 150)
+        self.assertAlmostEqual(r["breakdown"]["R"],
+                               r0 * 100 / 160 + (2 * r0 + 3 * rs) * 100 / 150)
+
+    def test_actualizer_doubles_what_casts_cost(self):
+        # 8 s of doubled costs empty the pool sooner: fewer Riftwalks than
+        # the same build with the cost increase taken out
+        free = copy.deepcopy(self.effects)
+        free[2522]["manaActive"]["costIncreasePct"] = 0
+        paid = self.sim(16, ["actualizer"], duration=15.0)
+        unpaid = self.sim(16, ["actualizer"], duration=15.0, effects=free)
+        self.assertLess(paid["breakdown"]["R"], unpaid["breakdown"]["R"])
+
+    def test_recasts_do_not_reopen_the_on_ult_windows(self):
+        # Opening Barrage has a 45 s cooldown: the opening Riftwalk empowers
+        # the next three attacks (all in by 3 s) and the four more casts by
+        # 8 s (every 1.54 s with the item's 30 ultimate haste) add nothing
+        a = self.sim(16, ["fiendhunter bolts"], duration=3.0)
+        b = self.sim(16, ["fiendhunter bolts"], duration=8.0)
+        self.assertGreaterEqual(a["attacks"], 3)
+        self.assertGreater(b["breakdown"]["R"], self.riftwalks(4))
+        self.assertGreater(a["breakdown"]["barrage"], 0)
+        self.assertEqual(a["breakdown"]["barrage"], b["breakdown"]["barrage"])
+
+    def test_full_pool_and_dashboard_notes(self):
+        self.assertEqual(builds.champion_pool(self.kit, self.effects), builds.DEFAULT_POOL)
+        meta = builds.api_builds_meta()
+        by_slug = {c["slug"]: c for c in meta["champions"]}
+        self.assertEqual(by_slug["kassadin"]["name"], "Kassadin")
+        self.assertEqual(by_slug["kassadin"]["excluded"], [])
+        self.assertEqual(by_slug["kassadin"]["notes"], self.kit["notes"])
+        self.assertTrue(any("Riftwalk" in n for n in by_slug["kassadin"]["notes"]))
+
+
 class TestScenarioCache(unittest.TestCase):
     """The precomputed-cell layer: tiers, warm order, cache paths, read-only
     access, compute, and the warm lock — on a tiny item pool in a temp cache
@@ -1481,6 +1748,46 @@ class TestScenarioCache(unittest.TestCase):
         for r in d["rows"]:
             self.assertNotIn("Muramana", r["items"])
 
+    def test_top_rows_carry_buy_orders(self):
+        outs = builds.compute_tier("kayle", "full", builds.cell_paths())
+        champ = builds.load_champion("kayle")
+        _, pool = builds.load_items()
+        effects = builds.load_item_effects()
+        kit = builds.load_kit("kayle")
+        targets = {k: builds.SCENARIOS[k] for k in builds.tier_targets("full")}
+        ids_of = {pool[i]["name"]: i for i in [*self.TINY_POOL, *builds.BOOTS]}
+        cost = lambda i: pool[i]["shop"]["prices"]["total"]
+        for key, d in outs.items():
+            rows = d["rows"]
+            self.assertGreater(len(rows), builds.BUY_ORDER_ROWS)
+            for r in rows[builds.BUY_ORDER_ROWS:]:
+                self.assertNotIn("buyOrder", r)
+            for r in rows[:builds.BUY_ORDER_ROWS]:
+                # the items after the boots, reordered; the boots stay first
+                # and `items` keeps the enumeration's order (seeds read it)
+                self.assertCountEqual(r["buyOrder"], r["items"][1:])
+                self.assertNotEqual(r["buyOrder"][0], "Muramana")  # Tear first
+                # no allowed order does better along the way: each stage's
+                # kill time (the cell's own target, or the geometric mean
+                # over all three for overall) times the next item's gold
+                ids = [ids_of[n] for n in r["items"]]
+                stages = builds.stage_times(champ, kit, pool, effects, ids, targets)
+                self.assertEqual(len(stages), 2 ** 5 - 1)  # every partial build
+                for ts in stages.values():  # each stage fights its own enemies
+                    self.assertLess(ts["full-squishy"], ts["full-tank"])
+                if d["scenario"].get("overall"):
+                    own = lambda ts: math.prod(ts.values()) ** (1 / len(ts))
+                else:
+                    own = lambda ts: ts[key]
+
+                def score(order):
+                    return sum(own(stages[frozenset(order[:k])]) * cost(i)
+                               for k, i in enumerate(order))
+                allowed = [o for o in itertools.permutations(ids[1:])
+                           if o[0] not in builds.BUY_NOT_FIRST]
+                chosen = score([ids_of[n] for n in r["buyOrder"]])
+                self.assertLessEqual(chosen, min(map(score, allowed)) * (1 + 1e-9))
+
     def test_warm_computes_cold_cells_once_and_respects_lock(self):
         # a cell of a scenario that no longer ships is swept, not kept forever
         stray = os.path.join(self.tmp, "kayle-mid-squishy-0123456789abcdef.json")
@@ -1625,6 +1932,54 @@ class TestOverallRanking(unittest.TestCase):
                 self.assertLessEqual((-best["kills"], best["mean"]),
                                      (-kills, round(geo(times), 2) + 0.02))
 
+
+class TestBuyOrder(unittest.TestCase):
+    """The suggested buy order on the top rows of a cell: builds.buy_order
+    picks among orders, builds.stage_target sizes each stage's enemy."""
+
+    def test_each_stage_weighs_by_the_gold_to_the_next_item(self):
+        # b alone kills faster, but a is cheap: 10 s for 1,000 gold, then
+        # 6 s for 3,000 (28,000) beats 10 s for 3,000, then 4 s for 1,000
+        # (34,000)
+        times = {frozenset(): 10.0, frozenset({"a"}): 6.0, frozenset({"b"}): 4.0}
+        self.assertEqual(builds.buy_order(["a", "b"], times, {"a": 1000, "b": 3000}),
+                         ("a", "b"))
+        # at one price the stronger item goes first: 42,000 against 48,000
+        self.assertEqual(builds.buy_order(["a", "b"], times, {"a": 3000, "b": 3000}),
+                         ("b", "a"))
+
+    def test_rules_ties_and_stages_without_damage(self):
+        times = {frozenset(s): 5.0 for n in range(3)
+                 for s in itertools.combinations("abc", n)}
+        cost = dict.fromkeys("abc", 1000)
+        self.assertEqual(builds.buy_order(list("abc"), times, cost), ("a", "b", "c"),
+                         "ties keep pool order")
+        self.assertEqual(builds.buy_order(list("abc"), times, cost, first={"c"}),
+                         ("c", "a", "b"))
+        self.assertEqual(builds.buy_order(list("abc"), times, cost, not_first={"a"}),
+                         ("b", "a", "c"))
+        self.assertEqual(builds.buy_order(["a"], {frozenset(): 5.0}, cost,
+                                          not_first={"a"}), ("a",),
+                         "a lone not-first item is still bought")
+        times[frozenset({"a"})] = None  # owning just a deals nothing
+        self.assertEqual(builds.buy_order(list("abc"), times, cost)[0], "b")
+
+    def test_stage_targets_grow_into_the_full_dummies(self):
+        tank = builds.SCENARIOS["full-tank"]
+        full = builds.stage_target(tank, tank["level"])
+        for k in ("targetHp", "armor", "mr", "targetBonusHp", "duration"):
+            self.assertAlmostEqual(full[k], tank[k], msg=k)
+        early = builds.stage_target(tank, 9)
+        self.assertAlmostEqual(early["armor"], 220 * 50 / 110)  # first-item share
+        self.assertEqual(builds.stage_target(tank, 7), early, "no lower before 9")
+        # the health it lacks is item health first: 1,543 lacking, 1,500 of it items
+        self.assertEqual(early["targetBonusHp"], 0.0)
+        squishy = builds.stage_target(builds.SCENARIOS["full-squishy"], 11)
+        self.assertEqual([round(squishy[k]) for k in ("targetHp", "armor", "mr",
+                                                      "targetBonusHp")],
+                         [2157, 67, 46, 157])
+        # a tier at or below the early level has nothing to grow into
+        self.assertAlmostEqual(builds.stage_target(dict(tank, level=9), 7)["armor"], 220)
 
 
 class TestBootsClasses(unittest.TestCase):

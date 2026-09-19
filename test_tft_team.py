@@ -12,6 +12,10 @@ class TestTeamBenchmarks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.snap = tft.load_snapshot(18, "18.1d")
+        pool = team.pool_metadata(cls.snap)
+        cls.search_count = pool["searchEncounters"]
+        cls.validation_count = pool["validationEncounters"]
+        cls.screen_count = pool["screenEncounters"]
 
     def candidate(self):
         return team.opponent_suite(self.snap, budget=9)[0]
@@ -96,12 +100,13 @@ class TestTeamBenchmarks(unittest.TestCase):
     def test_each_reference_uses_identical_positions_for_both_initiatives(self):
         evaluator = team.Evaluator(self.snap, "clump", prepared=False)
         encounters = evaluator.encounters(9)
-        self.assertEqual(len(encounters), 12)
+        self.assertEqual(len(encounters), self.search_count)
         for a, b in zip(encounters[::2], encounters[1::2]):
             self.assertEqual((a["initiative"], b["initiative"]), (0, 1))
             self.assertIs(a["enemies"], b["enemies"])
             self.assertIs(a["label"]["roster"], b["label"]["roster"])
             self.assertEqual(a["label"]["opponentId"], b["label"]["opponentId"])
+            self.assertEqual(a["label"]["laneOffset"], b["label"]["laneOffset"])
             self.assertEqual(len(a["enemies"]), 8)
             self.assertEqual(sum(len(actor["spec"]["items"]) for actor in a["enemies"]), 9)
             by_api = {actor["spec"]["unit"]["api"]: actor for actor in a["enemies"]}
@@ -115,15 +120,17 @@ class TestTeamBenchmarks(unittest.TestCase):
         args = (board["members"], board["effects"], board["selected"], board["carry"], board["tank"])
         with patch.object(tft.engine(), "simulate_match", side_effect=self.simulate, create=True) as simulate:
             search = evaluator.evaluate(*args)
-            self.assertEqual(simulate.call_count, 12)
+            self.assertEqual(simulate.call_count, self.search_count)
             repeated = evaluator.evaluate(*args)
             self.assertIs(search, repeated)
             validation = evaluator.evaluate(*args, split="validation")
             screen = evaluator.evaluate(*args, subset="screen")
-        self.assertEqual(simulate.call_count, 24)
-        self.assertEqual((search["metrics"]["benchmarkWins"], search["metrics"]["benchmarkCount"]), (6, 12))
-        self.assertEqual((validation["metrics"]["benchmarkWins"], validation["metrics"]["benchmarkCount"]), (3, 6))
-        self.assertEqual(screen["metrics"]["benchmarkCount"], 6)
+        self.assertEqual(simulate.call_count, self.search_count + self.validation_count + self.screen_count)
+        self.assertEqual((search["metrics"]["benchmarkWins"], search["metrics"]["benchmarkCount"]),
+                         (self.search_count // 2, self.search_count))
+        self.assertEqual((validation["metrics"]["benchmarkWins"], validation["metrics"]["benchmarkCount"]),
+                         (self.validation_count // 2, self.validation_count))
+        self.assertEqual(screen["metrics"]["benchmarkCount"], self.screen_count)
         self.assertEqual(validation["poolSplit"], "validation")
         self.assertEqual(search["poolRevision"], validation["poolRevision"])
         self.assertEqual(search["itemBudget"], 9)
@@ -149,8 +156,9 @@ class TestTeamBenchmarks(unittest.TestCase):
             b = evaluator.evaluate(*args, changed, *tail)
             evaluator.evaluate(*args, selected, *tail)
         self.assertEqual(len(evaluator.results), 1)
-        self.assertEqual(seen[:12], seen[12:24])
-        self.assertEqual(seen[:12], seen[24:36])
+        count = self.search_count
+        self.assertEqual(seen[:count], seen[count:2 * count])
+        self.assertEqual(seen[:count], seen[2 * count:3 * count])
         self.assertIs(a["matchups"][0]["roster"], b["matchups"][0]["roster"])
         self.assertEqual(a["poolRevision"], b["poolRevision"])
 
@@ -170,12 +178,12 @@ class TestTeamBenchmarks(unittest.TestCase):
             restricted = evaluator.evaluate(*args, split="validation", healing_policy="restricted")
             repeated = evaluator.evaluate(*args, split="validation")
         self.assertIs(broad, repeated)
-        self.assertEqual(simulate.call_count, 12)
-        self.assertEqual(policies, [(True, True)] * 6 + [(False, False)] * 6)
+        self.assertEqual(simulate.call_count, 2 * self.validation_count)
+        self.assertEqual(policies, [(True, True)] * self.validation_count + [(False, False)] * self.validation_count)
         self.assertEqual(broad["healingPolicy"], "broad")
         self.assertEqual(restricted["healingPolicy"], "restricted")
         self.assertEqual(broad["poolRevision"], restricted["poolRevision"])
-        self.assertEqual(broad["metrics"]["benchmarkWins"], 3)
+        self.assertEqual(broad["metrics"]["benchmarkWins"], self.validation_count // 2)
         self.assertEqual(restricted["metrics"]["benchmarkWins"], 0)
         self.assertEqual(broad["matchups"][0]["roster"], restricted["matchups"][0]["roster"])
         with self.assertRaisesRegex(ValueError, "healing policy"):

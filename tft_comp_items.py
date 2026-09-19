@@ -1,16 +1,18 @@
-"""Team-outcome item refinement and auditable one-item alternatives.
+"""Theoretical capacity refinement and auditable one-item alternatives.
 
-Every legal single replacement is evaluated on the search opponents. Transfers,
-item exchanges, and a bounded set of paired replacements explore interactions.
-No item name, healing category, ending HP, or held-out result receives a bonus.
+Every legal single replacement is evaluated on the same pressure assumptions. Transfers,
+item exchanges, complete loadouts, and paired replacements explore interactions.
+No item name or role-specific item category receives a bonus.
 """
 from collections import Counter
 from itertools import combinations, product, zip_longest
 
 import tft
-import tft_team
+import tft_theory
+from tft_comp_utility import AntihealPolicy
 
-PAIR_TRIAL_LIMIT = 64
+INTERACTION_TRIAL_LIMIT = 64
+REFINEMENT_ROUND_LIMIT = 24
 
 
 def identity(selected):
@@ -29,7 +31,9 @@ def arrangement(snap, selected, carry, tank):
 
 
 class ItemSearch:
-    def __init__(self, snap, evaluator, members, effects, carry, tank, structure, anchors=None):
+    def __init__(self, snap, evaluator, members, effects, carry, tank, structure, anchors=None, *, level=8):
+        if type(level) is not int or level not in (8, 9):
+            raise ValueError("item refinement requires level eight or nine")
         self.snap, self.evaluator = snap, evaluator
         self.members, self.effects, self.carry, self.tank = members, effects, carry, tank
         self.structure = structure
@@ -39,6 +43,8 @@ class ItemSearch:
         self.alpha_count = None
         self.memo = {}
         self.stats = Counter()
+        self.antiheal_policy = AntihealPolicy(snap, members, effects,
+                                              profiles=getattr(evaluator, "profiles", None))
 
     def legal(self, selected):
         if set(selected) != {m["api"] for m in self.members}:
@@ -59,7 +65,8 @@ class ItemSearch:
                 main = self.tank if self.snap.units[api]["objective"] == "tank" else self.carry
                 if counts[api] > counts[main]:
                     return False
-        return arrangement(self.snap, selected, self.carry, self.tank) == self.structure
+        return (arrangement(self.snap, selected, self.carry, self.tank) == self.structure
+                and self.antiheal_policy.legal(selected))
 
     @staticmethod
     def changed(selected, api, items):
@@ -79,10 +86,10 @@ class ItemSearch:
         if missing:
             if callable(getattr(self.evaluator, "evaluate_many", None)):
                 results = self.evaluator.evaluate_many(self.members, self.effects, list(missing.values()),
-                    self.carry, self.tank, split="search", details=False)
+                    self.carry, self.tank, split="theory", details=False)
             else:
                 results = [self.evaluator.evaluate(self.members, self.effects, selected, self.carry,
-                                                   self.tank, split="search") for selected in missing.values()]
+                                                   self.tank, split="theory") for selected in missing.values()]
             if len(results) != len(missing):
                 raise RuntimeError("item comparison batch returned an incomplete result")
             self.memo.update(zip(missing, results))
@@ -134,12 +141,12 @@ class ItemSearch:
                     seen.add(key)
                     yield trial
 
-    def pairs(self, selected, singles):
-        """Selected two-item interactions; this is deliberately not exhaustive."""
+    def interactions(self, selected, singles):
+        """Complete loadouts and selected pairs, deliberately not exhaustive."""
         seen = {identity(selected)}
         groups = []
-        # Complete damage/defense/utility loadouts can uncover a pair whose
-        # two individual substitutions are both unhelpful on their own.
+        # Test the complete screened loadout, including all three slots.
+        # Complementary items can improve capacity only when changed together.
         for api in sorted(selected):
             current = Counter(selected[api]["items"])
             options = []
@@ -148,7 +155,7 @@ class ItemSearch:
                     continue
                 if bool(option.get("alpha")) != bool(selected[api].get("alpha")):
                     continue
-                if sum((current - Counter(option["items"])).values()) != 2:
+                if sum((current - Counter(option["items"])).values()) < 2:
                     continue
                 options.append(self.changed(selected, api, option["items"]))
             if options:
@@ -156,7 +163,7 @@ class ItemSearch:
         per_holder = {}
         for api in sorted(selected):
             candidates = [row for row in singles if row[0] == api]
-            candidates.sort(key=lambda row: (tft_team.rank_key(row[4]), row[1], row[2]))
+            candidates.sort(key=lambda row: (tft_theory.rank_key(row[4]), row[1], row[2]))
             per_holder[api] = candidates[:2]
         for left, right in combinations(sorted(selected), 2):
             options = []
@@ -173,7 +180,7 @@ class ItemSearch:
                 seen.add(key)
                 yield trial
                 count += 1
-                if count == PAIR_TRIAL_LIMIT:
+                if count == INTERACTION_TRIAL_LIMIT:
                     return
 
     def optimize(self, seeds):
@@ -188,35 +195,39 @@ class ItemSearch:
         for seed in seeds:
             selected = seed
             result = self.evaluate(selected)
+            rounds = 0
             while True:
                 singles = self.singles(selected)
-                if result["metrics"]["benchmarkWins"] == result["metrics"]["benchmarkCount"]:
-                    # No transfer, paired change, or other seed can exceed
-                    # winning every search fight. Singles are still fully
-                    # evaluated for the published replacement evidence.
-                    self.stats["perfectScoreRefinements"] += 1
-                    return selected, result, self.evidence(selected, result, singles)
+                if rounds == REFINEMENT_ROUND_LIMIT:
+                    # A continuous objective has no perfect-win upper bound.
+                    # Publish the complete last replacement pass and disclose
+                    # a bounded search rather than pretending convergence.
+                    self.stats["itemRefinementRoundLimits"] += 1
+                    winners.append((selected, result, singles, False))
+                    break
                 candidates = [(selected, result)] + [(row[3], row[4]) for row in singles]
                 moves = list(self.moves(selected))
-                pairs = list(self.pairs(selected, singles))
+                interactions = list(self.interactions(selected, singles))
                 self.stats["itemTransfersAndExchangesCompared"] += len(moves)
-                self.stats["pairedItemChangesCompared"] += len(pairs)
-                trials = moves + pairs
+                self.stats["itemInteractionsCompared"] += len(interactions)
+                trials = moves + interactions
                 candidates.extend(zip(trials, self.evaluate_many(trials)))
-                improved, score = min(candidates, key=lambda pair: tft_team.rank_key(pair[1]))
-                if tft_team.rank_key(score) >= tft_team.rank_key(result):
-                    winners.append((selected, result, singles))
+                improved, score = min(candidates, key=lambda pair: tft_theory.rank_key(pair[1]))
+                if tft_theory.rank_key(score) >= tft_theory.rank_key(result):
+                    winners.append((selected, result, singles, True))
                     break
-                # Strictly increasing wins on one fixed suite bound this
-                # loop. Equal HP/time differences cannot prolong the search.
+                # Only a strictly greater continuous capacity accepts a move.
                 selected, result = improved, score
+                rounds += 1
                 self.stats["acceptedItemImprovements"] += 1
-        selected, result, singles = min(winners, key=lambda row: tft_team.rank_key(row[1]))
-        return selected, result, self.evidence(selected, result, singles)
+        selected, result, singles, converged = min(winners, key=lambda row: tft_theory.rank_key(row[1]))
+        evidence = self.evidence(selected, result, singles)
+        evidence.update(converged=converged, roundLimit=REFINEMENT_ROUND_LIMIT)
+        return selected, result, evidence
 
     def evidence(self, selected, baseline, singles):
-        base_wins = baseline["metrics"]["benchmarkWins"]
-        before = {m["key"] for m in baseline["matchups"] if m["outcome"] == "win"}
+        base_score = baseline["metrics"]["theoryScore"]
+        before = {row["key"]: row["score"] for row in baseline["scenarios"]}
         holders = []
         for api, option in sorted(selected.items()):
             unit = self.snap.units[api]
@@ -226,19 +237,24 @@ class ItemSearch:
                 for holder, original, replacement, _, result in singles:
                     if holder != api or original != old:
                         continue
-                    after = {m["key"] for m in result["matchups"] if m["outcome"] == "win"}
-                    wins = result["metrics"]["benchmarkWins"]
+                    after = {row["key"]: row["score"] for row in result["scenarios"]}
+                    if after.keys() != before.keys() or result["modelRevision"] != baseline["modelRevision"]:
+                        raise ValueError("item replacements must use the same complete pressure assumptions")
+                    score = result["metrics"]["theoryScore"]
+                    delta = score - base_score
                     alternatives.append({"itemApi": replacement, "item": self.snap.items[replacement]["name"],
-                                         "wins": wins, "winDelta": wins - base_wins,
-                                         "lostMatchups": sorted(before - after), "gainedMatchups": sorted(after - before)})
-                alternatives.sort(key=lambda row: (-row["wins"], row["itemApi"]))
+                                         "score": score, "scoreDelta": delta,
+                                         "pctDelta": 100.0 * delta / base_score if base_score else None,
+                                         "improvedScenarios": sorted(key for key in before if after[key] > before[key]),
+                                         "degradedScenarios": sorted(key for key in before if after[key] < before[key])})
+                alternatives.sort(key=lambda row: (-row["score"], row["itemApi"]))
                 entries.append({"slot": slot, "itemApi": old, "item": self.snap.items[old]["name"],
                                 "testedAlternatives": len(alternatives),
-                                "equivalentAlternatives": sum(a["winDelta"] == 0 for a in alternatives),
-                                "bestWinDelta": max((a["winDelta"] for a in alternatives), default=0),
+                                "equivalentAlternatives": sum(a["scoreDelta"] == 0 for a in alternatives),
+                                "bestScoreDelta": max((a["scoreDelta"] for a in alternatives), default=0),
                                 "alternatives": alternatives})
             if entries:
                 holders.append({"api": api, "slug": tft.unit_slug(unit), "name": unit["name"], "items": entries})
-        return {"model": "team-item-replacements-v1", "evaluatedOn": "search",
-                "poolRevision": baseline["poolRevision"], "matches": baseline["metrics"]["benchmarkCount"],
+        return {"model": "theory-item-replacements-v1", "evaluatedOn": "theory",
+                "modelRevision": baseline["modelRevision"], "baselineScore": base_score,
                 "holders": holders}

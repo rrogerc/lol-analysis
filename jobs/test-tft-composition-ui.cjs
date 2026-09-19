@@ -1,4 +1,6 @@
 // Run with node jobs/test-tft-composition-ui.cjs. No browser or npm packages required.
+// Optional generated-data checks: --theory-fixture fixture.json (contains meta/payload)
+// or --theory-meta meta.json --theory-payload context.json [--theory-payload another.json].
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -229,6 +231,39 @@ Object.assign(unresolvedItem.alternatives[0], { wins: 1, winDelta: 1, gainedMatc
 assert.equal(context.tftCompositionValid(unresolved), true);
 assert.equal(context.tftCompositionItemVerdict(unresolvedItem, unresolved), 'A tested replacement gains 1 win.',
   'An improving replacement from a zero-win baseline is still disclosed');
+const saturated = board('saturated', { wins: 12 });
+assert.equal(context.tftCompositionItemVerdict(saturated.itemAnalysis.holders[0].items[0], saturated),
+  'Inconclusive: every legal replacement wins the same matchups. These tests provide no preference for this item.');
+assert.equal(context.tftCompositionEvidenceSummary(saturated),
+  'Benchmark ceiling reached; a perfect score does not establish a best build. 1 of 1 item slots have equally scoring alternatives.');
+assert(!context.tftCompositionEvidenceSummary(tiedA).includes('ceiling'), 'Partial wins do not imply saturation');
+{
+  const previousMeta = tcomp.meta;
+  const positioned = result(6, 12, 'search');
+  positioned.opponentCount = 2;
+  positioned.laneOffsets = [0, 2, 4];
+  positioned.matchups.forEach((matchup, i) => Object.assign(matchup, {
+    opponentId: `search-${Math.floor(i / 6)}`, laneOffset: positioned.laneOffsets[Math.floor(i / 2) % 3],
+  }));
+  tcomp.meta = { opponentPool: { laneOffsets: [0, 2, 4], searchBoards: 2 } };
+  assert.equal(context.tftCompositionResultValid(positioned, 'search'), true,
+    'Distinct positions of one opponent are valid paired fights, not extra independent boards');
+  for (const mutate of [
+    row => { row.matchups[0].laneOffset = 2; },
+    row => { row.matchups[0].initiative = 1; },
+    row => { row.laneOffsets = [0]; },
+    row => { row.laneOffsets = [0, 2, 2]; },
+    row => { row.matchups[0].laneOffset = 6; },
+  ]) {
+    const invalid = structuredClone(positioned); mutate(invalid);
+    assert.equal(context.tftCompositionResultValid(invalid, 'search'), false,
+      'Missing or duplicate initiative/position pairs cannot masquerade as a full evaluation');
+  }
+  tcomp.meta.opponentPool.searchBoards = 12;
+  assert.equal(context.tftCompositionResultValid(positioned, 'search'), false,
+    'A partial opponent pool cannot publish a complete-looking ranking');
+  tcomp.meta = previousMeta;
+}
 const strongerAllocation = structuredClone(tiedA);
 strongerAllocation.id = 'stronger-allocation';
 Object.assign(strongerAllocation, result(10, 12, 'search'));
@@ -392,11 +427,14 @@ function domHarness({ legacy = false } = {}) {
   let focused = null;
   const createElement = tag => ({ tag, dataset: {}, attributes: {}, children: [], events: {}, open: false,
     className: '', ownText: '', style: { values: {}, setProperty(name, value) { this.values[name] = value; } },
-    append(...children) { this.children.push(...children); },
+    append(...children) { children.forEach(child => { child.parent = this; }); this.children.push(...children); },
     replaceChildren(...children) { this.children = children; },
     setAttribute(name, value) { this.attributes[name] = value; },
     addEventListener(event, listener) { this.events[event] = listener; },
     focus() { focused = this; }, scrollIntoView() {},
+    select() { this.selection = [0, this.value.length]; },
+    setSelectionRange(start, end) { this.selection = [start, end]; },
+    remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); },
     querySelectorAll(selector) {
       const result = [];
       for (const child of this.children) {
@@ -428,6 +466,7 @@ function domHarness({ legacy = false } = {}) {
     get focused() { return focused; }, card: null };
   const ctx = vm.createContext({ tcomp: composition, tstate: champion, tboard: { req: 0 },
     document: { createElement, createTextNode: textContent => ({ textContent }), getElementById: element,
+      body: createElement('body'), get activeElement() { return focused; },
       querySelectorAll: selector => h.card?.querySelectorAll(selector) || [] },
     tftText: (tag, text, className = '') => Object.assign(createElement(tag), { textContent: text, className }),
     tftIcon: () => createElement('span'), bindTftTooltip(anchor, contents) { h.tooltips.set(anchor, contents); },
@@ -452,6 +491,168 @@ function domHarness({ legacy = false } = {}) {
     + script.slice(script.indexOf('function openTftCompositionUnit('), script.indexOf('function openTftLeaderboardEntry(')), ctx);
   h.context = ctx;
   return h;
+}
+
+function checkTeamCodes() {
+  const planner = JSON.parse(fs.readFileSync(require('node:path').join(__dirname, '../data/tft/set18/team-planner.json'), 'utf8'));
+  const members = apis => ({ units: apis.map(api => ({ api })) });
+  const board = members(['TFT18_Ivern', 'TFT18_Lux_Base', 'TFT18_ElderDragon']);
+  const code = context.tftCompositionTeamCode(board, planner);
+  assert.equal(code, '024054133fc000000000000000000000TFTSet18');
+  assert.equal(code.length, 40);
+  assert.deepEqual(code.slice(2, 32).match(/.{3}/g), ['405', '413', '3fc', ...Array(7).fill('000')]);
+  const equipped = structuredClone(board);
+  equipped.units.forEach(unit => Object.assign(unit, { star: 2, items: ['Warmogs Armor'], form: 'AD' }));
+  equipped.units[2].slotCost = 2;
+  equipped.alphaHolder = 'TFT18_ElderDragon';
+  assert.equal(context.tftCompositionTeamCode(equipped, planner), code, 'Elder has one roster entry; items, stars, forms and Alpha are not encoded');
+  const apis = Object.keys(planner.unitCodes);
+  const full = context.tftCompositionTeamCode(members(apis.slice(0, 10)), planner);
+  assert.equal(full, '02' + apis.slice(0, 10).map(api => planner.unitCodes[api]).join('') + 'TFTSet18');
+  for (const units of [[], [null], [{ api: 'missing' }], [board.units[0], board.units[0]], members(apis.slice(0, 11)).units]) {
+    assert.throws(() => context.tftCompositionTeamCode({ units }, planner), undefined, 'Never export an incomplete or truncated roster');
+  }
+  for (const bad of ['000', '1234', 'not-code', '405', null, 1043]) {
+    const wrong = structuredClone(planner);
+    wrong.unitCodes.TFT18_Lux_Base = bad;
+    assert.throws(() => context.tftCompositionTeamCode(board, wrong));
+  }
+  assert.throws(() => context.tftCompositionTeamCode(board, null));
+}
+
+function checkAntihealSources() {
+  const h = domHarness(), ctx = h.context;
+  ctx.tftCoreItems = names => Object.assign(h.createElement('div'), { textContent: names.join(' · ') });
+  ctx.tftCompositionMatchups = () => h.createElement('div');
+  vm.runInContext(script.slice(script.indexOf('function tftCompositionDetailContents('),
+    script.indexOf('function tftCompositionCard(')), ctx);
+  const core = h.parent, cap = core.level9Upgrade.board;
+  const unusualSource = '<img src=x onerror=alert(1)>', unusualHolder = '<script>holder</script>';
+  core.units[1].name = unusualHolder;
+  core.antihealSources = [
+    { type: 'item', api: 'DA_RedBuff', unitApi: core.units[0].api, name: 'Red Buff' },
+    { type: 'trait', api: 'DA_Inferno18', name: 'Inferno (2)' },
+    { type: 'ability', api: 'source-ability', unitApi: core.units[1].api, name: unusualSource },
+  ];
+  cap.antihealSources = [{ type: 'item', api: 'DA_Morellonomicon', unitApi: cap.units.at(-1).api, name: 'Morellonomicon' }];
+  const before = JSON.stringify(core);
+  const details = ctx.tftCompositionDetailContents(core), source = details.querySelector('.tft-comp-antiheal');
+  assert(source.textContent.includes(`Red Buff on ${core.units[0].name}`));
+  assert(source.textContent.includes('Inferno (2) (trait)'), 'A team trait does not need a holder');
+  assert(source.textContent.includes(`${unusualSource} on ${unusualHolder}`), 'Source and holder names render as literal text');
+  assert(!source.textContent.includes('DA_RedBuff'), 'Internal source IDs are not substituted for readable names');
+  const nodes = node => [node, ...(node.children || []).flatMap(nodes)];
+  assert(nodes(source).every(node => !Object.hasOwn(node, 'innerHTML') && !['img', 'script'].includes(node.tag)),
+    'Markup-like source names never create HTML or scripts');
+  const upgrade = ctx.tftCompositionUpgradeContents(core), evidence = upgrade.querySelector('.tft-comp-upgrade-tests');
+  evidence.open = true; evidence.events.toggle();
+  const capSource = evidence.querySelector('.tft-comp-antiheal');
+  assert.equal(capSource.textContent, `Morellonomicon on ${cap.units.at(-1).name}`);
+  assert(!capSource.textContent.includes('Red Buff'), 'Level-nine details use the cap’s source, not the core’s source');
+  assert.equal(JSON.stringify(core), before, 'Source presentation does not modify the board, scores or upgrade');
+  const old = structuredClone(core); delete old.antihealSources;
+  assert.equal(ctx.tftCompositionDetailContents(old).querySelector('.tft-comp-antiheal'), null,
+    'Older payloads receive no invented antiheal promise');
+  old.antihealSources = [];
+  assert.equal(ctx.tftCompositionDetailContents(old).querySelector('.tft-comp-antiheal'), null);
+
+  for (const description of ['Level 8: same-cost main carry and tank. Antiheal required.',
+    'At most one melee carry at level 8; optional level 9 upgrades allow two.']) {
+    h.composition.meta.profiles[0].description = description;
+    ctx.renderTftCompositions();
+    assert.equal(h.element('tft-comp-profile-hint').textContent, description,
+      'Display the declared description for both unrestricted new results and an older pinned generation');
+  }
+}
+
+async function checkCompositionClipboard() {
+  const ready = ({ elder = false } = {}) => {
+    const h = domHarness();
+    if (elder) withUpgrade(h.parent, { elder: true });
+    const apis = [...new Set([...h.parent.units, ...h.parent.level9Upgrade.board.units].map(unit => unit.api))];
+    h.composition.meta.teamPlanner = { set: 18, slots: 10, format: 'tft-team-planner-v2',
+      unitCodes: Object.fromEntries(apis.map((api, i) => [api, (0x100 + i).toString(16)])) };
+    h.card = h.context.tftCompositionCard(h.parent, 1);
+    h.core = h.card.querySelector('.tft-comp-copy');
+    h.expected = board => '02' + board.units.map(unit => h.composition.meta.teamPlanner.unitCodes[unit.api]).join('').padEnd(30, '0') + 'TFTSet18';
+    return h;
+  };
+  const h = ready();
+  const writes = [];
+  let finish;
+  h.context.navigator = { clipboard: { writeText: code => { writes.push(code); return new Promise(resolve => { finish = resolve; }); } } };
+  const button = h.core.children[0], status = h.core.querySelector('.tft-comp-copy-status');
+  const copying = button.events.click();
+  assert.equal(button.disabled, true);
+  assert(!status.textContent.includes('Copied'), 'Do not report success before clipboard write succeeds');
+  await button.events.click();
+  assert.equal(writes.length, 1, 'An in-flight copy cannot be submitted twice');
+  finish();
+  await copying;
+  assert.equal(button.disabled, false);
+  assert.equal(writes[0], h.expected(h.parent));
+  assert(status.textContent.includes('Copied!'));
+  assert.equal(status.attributes['aria-live'], 'polite');
+  assert(button.title.includes('items, stars, positions and Alpha marks'));
+  assert(button.attributes['aria-label'].includes('level 8'));
+
+  // The upgraded board gets its own control/code, including Elder once.
+  for (const elder of [false, true]) {
+    const cap = ready({ elder }), copied = [];
+    cap.context.navigator = { clipboard: { writeText: async code => { copied.push(code); } } };
+    const upgrade = cap.card.querySelector('.tft-comp-upgrade');
+    assert.equal(upgrade.querySelector('.tft-comp-copy'), null, 'Copy control follows lazy cap rendering');
+    upgrade.open = true;
+    upgrade.events.toggle();
+    const control = upgrade.querySelector('.tft-comp-copy');
+    assert(control.children[0].attributes['aria-label'].includes('level 9'));
+    await control.children[0].events.click();
+    assert.equal(copied[0], cap.expected(cap.parent.level9Upgrade.board));
+    assert.notEqual(copied[0], cap.expected(cap.parent));
+    assert.equal(cap.core.querySelector('.tft-comp-copy-status').textContent, '', 'Cap copy leaves the core feedback alone');
+  }
+
+  for (const modernDenied of [false, true]) {
+    const fallback = ready();
+    if (modernDenied) fallback.context.navigator = { clipboard: { writeText: async () => { throw new Error('permission denied'); } } };
+    const trigger = fallback.core.children[0];
+    let attempts = 0;
+    fallback.context.document.execCommand = command => {
+      ++attempts;
+      assert.equal(command, 'copy');
+      const field = fallback.context.document.body.children[0];
+      assert.equal(field.tag, 'textarea');
+      assert.equal(field.value, fallback.expected(fallback.parent));
+      assert.deepEqual(Array.from(field.selection), [0, field.value.length]);
+      return true;
+    };
+    trigger.focus();
+    await trigger.events.click();
+    assert.equal(attempts, 1);
+    assert.equal(fallback.context.document.body.children.length, 0, 'Temporary clipboard textarea is removed');
+    assert.equal(fallback.focused, trigger, 'Clipboard fallback restores focus');
+    assert(fallback.core.querySelector('.tft-comp-copy-status').textContent.includes('Copied!'));
+  }
+
+  const blocked = ready();
+  blocked.context.document.execCommand = () => false;
+  await blocked.core.children[0].events.click();
+  const manual = blocked.core.querySelector('.tft-comp-copy-code');
+  assert.equal(manual.value, blocked.expected(blocked.parent));
+  assert.equal(manual.readOnly, true);
+  assert.equal(blocked.focused, manual);
+  assert.deepEqual(Array.from(manual.selection), [0, manual.value.length]);
+  assert(blocked.core.querySelector('.tft-comp-copy-status').textContent.includes('Copy blocked'));
+  assert.equal(blocked.context.document.body.children.length, 0);
+  blocked.context.navigator = { clipboard: { writeText: async () => {} } };
+  await blocked.core.children[0].events.click();
+  assert.equal(blocked.core.querySelector('.tft-comp-copy-code'), null, 'A successful retry removes the manual fallback');
+  assert(blocked.core.querySelector('.tft-comp-copy-status').textContent.includes('Copied!'));
+
+  const missing = domHarness();
+  const unavailable = missing.context.tftCompositionCard(missing.parent, 1).querySelector('.tft-comp-copy');
+  assert.equal(unavailable.children[0].disabled, true);
+  assert(unavailable.children[0].title.includes('unavailable'));
 }
 
 function checkChampionTooltips() {
@@ -481,6 +682,10 @@ function checkChampionTooltips() {
   assert(coreText.includes('Shared trait2 · 2 active') && !coreText.includes('6 active'),
     'Core trait activity comes from this board, not standalone trait controls');
   assert(coreText.includes('125 DPS') && coreText.includes('Items: Selected'));
+  const transformed = { ...unit, form: 'AD', kind: 'Assassin', frontline: true, abilityName: "Prowler's Pounce" };
+  const transformedText = tooltip(transformed, parent);
+  assert(transformedText.includes('AD form · Assassin') && transformedText.includes("Ability: Prowler's Pounce"));
+  assert(!transformedText.includes('Correct champion ability'), 'The equipped form supplies its actual role and ability');
   assert(capText.includes('Shared trait1 · inactive') && capText.includes('987 DPS'),
     'The same champion uses the cap\'s changed traits and contributions');
   assert(capText.includes('123 healing received') && capText.includes('456 ally healing provided'));
@@ -715,6 +920,7 @@ function checkLazyDetails() {
   const composition = board('lazy');
   const contents = createElement('div');
   const ctx = vm.createContext({ document: { createElement },
+    tftCompositionTheory: () => false,
     tftText: (tag, text) => Object.assign(createElement(tag), { text }),
     tftCompositionDetailContents: value => {
       assert.equal(value, composition, 'Lazy details use the selected board');
@@ -740,6 +946,764 @@ function checkLazyDetails() {
   details.events.toggle();
   assert.equal(built, 1, 'Reopening does not duplicate or reconstruct details');
   assert.equal(details.children.length, 2);
+}
+
+function checkTraitCoverage() {
+  const h = domHarness(), ctx = h.context;
+  const base = { api: 'trait', name: 'Trait', active: true, count: 2, breakpoint: 2, modeled: true };
+  for (const [coverage, status] of [['supported', 'Supported scoring effects'],
+    ['partial', 'Partial scoring coverage'], ['structural', 'Board slots or trait counts modeled'],
+    ['economy', 'Economy effect; no direct combat score'], ['unmodeled', 'Combat effect not modeled']]) {
+    const note = 'The six-plant condition is not included.';
+    const list = ctx.tftCompositionTraits([{ ...base, coverage, coverageNotes: [note] }]);
+    const chip = list.querySelector('.tft-comp-trait');
+    assert.equal(chip.dataset.coverage, coverage);
+    assert(chip.attributes['aria-label'].includes(status), `${coverage}: coverage is announced accessibly`);
+    assert(chip.attributes['aria-label'].includes(note), `${coverage}: applicable omission is announced`);
+    const tooltip = h.tooltips.get(chip)().map(node => node.textContent).join('\n');
+    assert(tooltip.includes(note), `${coverage}: tooltip exposes the actual missing condition`);
+    if (coverage === 'partial') {
+      assert(chip.textContent.includes('Partial'), 'Partial traits are visible on the board without hovering');
+      assert(tooltip.includes('partial scoring coverage'));
+      assert(!tooltip.includes('active breakpoint contributes to the calculations'), 'Partial support is not described as complete scoring coverage');
+    }
+    if (coverage === 'economy') assert(tooltip.includes('no direct combat score'));
+    if (coverage === 'structural') assert(tooltip.includes('board slots or trait counts'));
+  }
+  for (const modeled of [true, false]) {
+    const list = ctx.tftCompositionTraits([{ ...base, modeled }]);
+    const chip = list.querySelector('.tft-comp-trait');
+    assert.equal(chip.dataset.coverage, modeled ? 'supported' : 'unmodeled', 'Older artifacts preserve their existing modeled flag');
+    const tooltip = h.tooltips.get(chip)().map(node => node.textContent).join('\n');
+    assert(tooltip.includes(modeled ? 'active breakpoint contributes' : 'combat effect is not included'));
+  }
+  assert.equal(ctx.tftCompositionTraits([{ ...base, active: false, coverage: 'partial' }]).children.length, 0,
+    'Inactive traits are still excluded from active board chips');
+}
+
+const theoryModel = 'ehp-damage-capacity-v2';
+const theoryRevision = 'theory-fixture-v1';
+const theoryScenarios = [
+  { key: 'mixed-low', label: 'Mixed, lower pressure · no enemy control', incomingDps: 1000, physicalShare: .5, armor: 100, mr: 100, wound: 0,
+    controlInterval: 8, controlDuration: 0, pressureInterval: .5, pressureAllocation: 'shared-live-frontline', incomingSourceCount: 3 },
+  { key: 'physical-high', label: 'Physical, higher pressure · 1.5s frontline stun every 8s', incomingDps: 4000, physicalShare: .8, armor: 150, mr: 100, wound: .33,
+    controlInterval: 8, controlDuration: 1.5, pressureInterval: .5, pressureAllocation: 'shared-live-frontline', incomingSourceCount: 3 },
+];
+
+function asTheory(row, score = 12000000) {
+  for (const key of ['poolRevision', 'poolSplit', 'opponentCount', 'matchups', 'validation', 'assumptionCheck', 'laneOffsets']) delete row[key];
+  Object.assign(row, { evaluationModel: theoryModel, modelRevision: theoryRevision, profileCount: theoryScenarios.length,
+    metrics: { theoryScore: score, frontlineEhp: score / 1000, damageDps: 1000, damageCapacity: score / 2000, protectionTime: score / 2000000 },
+    scenarios: theoryScenarios.map(scenario => ({ ...scenario, frontlineEhp: score / 1000, damageDps: 1000,
+      targetHp: 3000, targetCount: 3, measurementWindow: .8 * score / 1000 / scenario.incomingDps,
+      plannedMeasurementWindow: .8 * score / 1000 / scenario.incomingDps, frontlineCollapsed: false,
+      incomingBudget: .8 * score / 1000, spentPressure: .7 * score / 1000,
+      deniedPressure: .1 * score / 1000, unspentPressure: 0,
+      protectionTime: score / 1000 / scenario.incomingDps, damageCapacity: score / scenario.incomingDps, score })) });
+  row.units.forEach(unit => { unit.ehp = score / 4000; unit.damage = score / 2000 / row.units.length; unit.measuredDps = 120; });
+  if (row.itemAnalysis) row.itemAnalysis = { model: 'theory-item-replacements-v1', evaluatedOn: 'theory', modelRevision: theoryRevision,
+    baselineScore: score, holders: [{ api: row.units[0].api, slug: row.units[0].slug, name: row.units[0].name,
+      items: [{ slot: 0, itemApi: 'selected', item: 'Selected', testedAlternatives: 1, equivalentAlternatives: 0,
+        bestScoreDelta: -.02 * score, alternatives: [{ itemApi: 'alternative', item: 'Alternative', score: .98 * score,
+          scoreDelta: -.02 * score, pctDelta: score ? -2 : null, improvedScenarios: [], degradedScenarios: score ? theoryScenarios.map(scenario => scenario.key) : [] }] }] }] };
+  if (score === 0 && row.itemAnalysis) row.itemAnalysis.holders[0].items[0].equivalentAlternatives = 1;
+  if (row.level9Upgrade) {
+    asTheory(row.level9Upgrade.board, score * 1.2);
+    row.level9Upgrade.selection.evaluatedOn = 'theory';
+    delete row.level9Upgrade.benchmarkWinDelta;
+    row.level9Upgrade.theoryScoreDelta = score * .2;
+  }
+  return row;
+}
+
+function theoryMetadata() {
+  return { revision: 'composition-theory-v1', baselineRevision: 'champions-v1', boardPlanModel,
+    modelRevision: theoryRevision, scenarios: structuredClone(theoryScenarios), boardSize: 8,
+    profiles: [{ key: 'c4', cost: 4, level: 8, boardSlots: 8, maxFiveCosts: 0, level9FiveCostStar: 2 }],
+    methodology: { evaluationModel: theoryModel } };
+}
+
+const persistentTheoryModel = 'ehp-damage-capacity-v3';
+const persistentTheoryRevision = 'persistent-theory-fixture-v3';
+const persistentTheoryScenarios = [1000, 2000].flatMap(incomingDps => [0, .5, 1].flatMap(physicalShare =>
+  [0, .33].flatMap(wound => [0, 1.5].flatMap(controlDuration => ['main-first', 'secondary-first'].map(targeting => ({
+    key: `p${incomingDps}-physical${physicalShare}-wound${wound}-control${controlDuration}-${targeting}`,
+    label: `${incomingDps} raw DPS · ${physicalShare * 100}% physical · ${wound * 100}% antiheal · ${controlDuration}s control · ${targeting}`,
+    incomingDps, physicalShare, wound, controlDuration, targeting, controlInterval: 8,
+    armor: 100, mr: 100, targetHp: 3000, targetCount: 3,
+    pressureInterval: .5, pressureAllocation: 'persistent-source-targets', incomingSourceCount: 3,
+  }))))));
+
+function persistentTheoryMetadata() {
+  return { ...theoryMetadata(), revision: 'composition-persistent-v3',
+    modelRevision: persistentTheoryRevision, scenarios: structuredClone(persistentTheoryScenarios),
+    methodology: { evaluationModel: persistentTheoryModel } };
+}
+
+function asPersistentTheory(row, score = 12000000, fronts = [1, 2, 3]) {
+  asTheory(row, score);
+  row.units.forEach((unit, index) => { unit.frontline = fronts.includes(index); });
+  const main = row.units.find(unit => unit.slug === row.mainTank).api;
+  const order = [main, ...row.units.filter(unit => unit.frontline && unit.api !== main).map(unit => unit.api)];
+  Object.assign(row, { evaluationModel: persistentTheoryModel, modelRevision: persistentTheoryRevision,
+    profileCount: persistentTheoryScenarios.length,
+    metrics: { theoryScore: score, frontlineEhp: score / 1000, damageDps: 1000,
+      damageCapacity: score / Math.sqrt(1000 * 2000), protectionTime: score / 1000 / Math.sqrt(1000 * 2000) },
+    scenarios: persistentTheoryScenarios.map(definition => {
+      const pressureTargetOrder = [...order];
+      if (definition.targeting === 'secondary-first' && pressureTargetOrder.length > 1)
+        [pressureTargetOrder[0], pressureTargetOrder[1]] = [pressureTargetOrder[1], pressureTargetOrder[0]];
+      return { ...definition, pressureTargetOrder,
+        initialPressureTargets: [pressureTargetOrder[0], pressureTargetOrder[1] || pressureTargetOrder[0], pressureTargetOrder[0]],
+        frontlineEhp: score / 1000, damageDps: 1000, score,
+        plannedMeasurementWindow: .8 * score / 1000 / definition.incomingDps,
+        measurementWindow: .8 * score / 1000 / definition.incomingDps, frontlineCollapsed: false,
+        incomingBudget: .8 * score / 1000, spentPressure: .7 * score / 1000,
+        deniedPressure: .1 * score / 1000, unspentPressure: 0,
+        protectionTime: score / 1000 / definition.incomingDps, damageCapacity: score / definition.incomingDps };
+    }) });
+  if (row.itemAnalysis) {
+    row.itemAnalysis.modelRevision = persistentTheoryRevision;
+    row.itemAnalysis.holders.forEach(holder => holder.items.forEach(item => item.alternatives.forEach(alternative => {
+      alternative.degradedScenarios = score ? persistentTheoryScenarios.map(scenario => scenario.key) : [];
+    })));
+  }
+  if (row.level9Upgrade) asPersistentTheory(row.level9Upgrade.board, score * 1.2, fronts);
+  return row;
+}
+
+async function checkPersistentTheoryTargeting() {
+  const d = domHarness(), ctx = d.context;
+  const modelsMatch = vm.runInContext('tftCompositionModelsMatch', ctx);
+  const row = asPersistentTheory(d.parent);
+  d.composition.meta = { ...persistentTheoryMetadata(), primalBlessings: structuredClone(primalBlessings),
+    geometries: { clump: 'Clumped', spread: 'Spread' }, structures: [{ key: 'single' }] };
+  d.composition.data = { ...structuredClone(d.composition.meta), results: { 9: { single: [row] } } };
+  const before = JSON.stringify([row, d.composition.meta]);
+  assert.equal(ctx.tftCompositionMetadataModelValid(d.composition.meta), true);
+  assert.equal(ctx.tftCompositionValid(row), true, 'All 48 v3 conditions include coherent persistent target diagnostics');
+  const missingPopulation = structuredClone(d.composition.meta);
+  missingPopulation.scenarios.forEach(scenario => { delete scenario.targetCount; });
+  assert.equal(ctx.tftCompositionMetadataModelValid(missingPopulation), true, 'Geometry-independent metadata can omit outgoing population');
+  assert.equal(modelsMatch(d.composition.data, missingPopulation), true);
+  const withBlessing = withPrimal(asPersistentTheory(levelBoard('persistent-primal')), ['turtle']);
+  assert.equal(ctx.tftCompositionValid(withBlessing), true, 'Primal chooses one aggregate across all 48 targeting and pressure conditions');
+  for (const [label, mutate] of [
+    ['missing target priority', board => { delete board.scenarios[0].pressureTargetOrder; }],
+    ['missing initial assignments', board => { delete board.scenarios[0].initialPressureTargets; }],
+    ['missing front role', board => { delete board.units[1].frontline; }],
+    ['text front role', board => { board.units[1].frontline = 'true'; }],
+    ['missing priority member', board => { board.scenarios[0].pressureTargetOrder.pop(); }],
+    ['duplicate priority member', board => { board.scenarios[0].pressureTargetOrder[2] = board.scenarios[0].pressureTargetOrder[1]; }],
+    ['unknown priority member', board => { board.scenarios[0].pressureTargetOrder[2] = 'unknown'; }],
+    ['backline in priority', board => { board.scenarios[0].pressureTargetOrder[2] = board.units[0].api; }],
+    ['wrong main tank priority', board => { board.scenarios[0].pressureTargetOrder.reverse(); }],
+    ['secondary order does not swap first two', board => { board.scenarios[1].pressureTargetOrder = [...board.scenarios[0].pressureTargetOrder]; }],
+    ['neutral priority changes with pressure', board => {
+      const [tank, second, third] = board.scenarios[2].pressureTargetOrder;
+      board.scenarios[2].pressureTargetOrder = [tank, third, second];
+      board.scenarios[2].initialPressureTargets = [tank, third, tank];
+      board.scenarios[3].pressureTargetOrder = [third, tank, second];
+      board.scenarios[3].initialPressureTargets = [third, tank, third];
+    }],
+    ['wrong source count', board => { board.scenarios[0].incomingSourceCount = 4; }],
+    ['two initial targets', board => { board.scenarios[0].initialPressureTargets.pop(); }],
+    ['unknown target', board => { board.scenarios[0].initialPressureTargets[1] = 'unknown'; }],
+    ['backline target', board => { board.scenarios[0].initialPressureTargets[1] = board.units[0].api; }],
+    ['mixed assigned and null targets', board => { board.scenarios[0].initialPressureTargets[1] = null; }],
+    ['wrong alternating assignments', board => { board.scenarios[0].initialPressureTargets[2] = board.scenarios[0].initialPressureTargets[1]; }],
+    ['assignments reverse priority', board => {
+      const [first, second] = board.scenarios[0].pressureTargetOrder;
+      board.scenarios[0].initialPressureTargets = [second, first, second];
+    }],
+    ['old pressure routing', board => { board.scenarios[0].pressureAllocation = 'shared-live-frontline'; }],
+    ['wrong pulse cadence', board => { board.scenarios[0].pressureInterval = .25; }],
+    ['unknown targeting mode', board => { board.scenarios[0].targeting = 'random'; }],
+    ['missing targeting mode', board => { delete board.scenarios[0].targeting; }],
+    ['only 24 conditions', board => { board.scenarios = board.scenarios.slice(0, 24); board.profileCount = 24; }],
+    ['old model label', board => { board.evaluationModel = theoryModel; }],
+    ['missing cap assignments', board => { delete board.level9Upgrade.board.scenarios[0].initialPressureTargets; }],
+  ]) {
+    const invalid = structuredClone(row); mutate(invalid);
+    assert.equal(ctx.tftCompositionValid(invalid), false, `${label} is rejected for v3`);
+  }
+  for (const [label, mutate] of [
+    ['missing condition pair', meta => { meta.scenarios.splice(0, 2); }],
+    ['duplicate targeting mode', meta => { meta.scenarios[0].targeting = meta.scenarios[1].targeting; }],
+    ['unpaired pressure assumptions', meta => { meta.scenarios[0].incomingDps += 1; }],
+    ['old routing in metadata', meta => { meta.scenarios[0].pressureAllocation = 'shared-live-frontline'; }],
+    ['missing targeting input', meta => { delete meta.scenarios[0].targeting; }],
+    ['invalid source count', meta => { meta.scenarios[0].incomingSourceCount = 4; }],
+  ]) {
+    const invalid = structuredClone(d.composition.meta); mutate(invalid);
+    assert.equal(ctx.tftCompositionMetadataModelValid(invalid), false, `${label} is rejected`);
+  }
+  const swappedMetadata = structuredClone(d.composition.meta);
+  swappedMetadata.scenarios.forEach(scenario => { scenario.targeting = scenario.targeting === 'main-first' ? 'secondary-first' : 'main-first'; });
+  assert.equal(ctx.tftCompositionMetadataModelValid(swappedMetadata), true);
+  assert.equal(modelsMatch(d.composition.data, swappedMetadata), false,
+    'Changing targeting assumptions invalidates cached calculations even if revisions were reused');
+  const one = asPersistentTheory(levelBoard('persistent-one-front'), 12000000, [1]);
+  assert.equal(ctx.tftCompositionValid(one), true);
+  assert(one.scenarios.every(scenario => new Set(scenario.initialPressureTargets).size === 1),
+    'A sole available tank receives all three assignments');
+  const initiallyUnavailable = asPersistentTheory(levelBoard('persistent-unavailable'));
+  initiallyUnavailable.scenarios.forEach(scenario => { scenario.initialPressureTargets = [null, null, null]; });
+  assert.equal(ctx.tftCompositionValid(initiallyUnavailable), true,
+    'The native scorer may report no initially targetable frontliner; the browser cannot reconstruct initial immunity');
+  assert.equal(JSON.stringify([row, d.composition.meta]), before, 'Schema validation preserves board data and target order');
+
+  ctx.tftCoreItems = items => Object.assign(d.createElement('div'), { textContent: items.join(' · ') });
+  ctx.tftSeg = () => {};
+  vm.runInContext(script.slice(script.indexOf('function tftCompositionTheoryScenarios('), script.indexOf('function tftCompositionItemEvidence('))
+    + script.slice(script.indexOf('function tftCompositionDetailContents('), script.indexOf('function tftCompositionCard('))
+    + script.slice(script.indexOf('function renderTftCompositionControls('), script.indexOf('function tftCompositionRows(')), ctx);
+  const card = ctx.tftCompositionCard(row, 1);
+  assert(card.querySelector('.tft-comp-metrics').dataset.model === persistentTheoryModel);
+  const details = ctx.tftCompositionDetailContents(row);
+  const assignments = details.querySelectorAll('.tft-comp-initial-targets');
+  assert.equal(assignments.length, 48);
+  const mainName = row.units[1].name, secondaryName = row.units[2].name;
+  assert.equal(assignments[0].textContent, `${mainName}: 2 attackers · ${secondaryName}: 1 attacker`);
+  assert.equal(assignments[1].textContent, `${secondaryName}: 2 attackers · ${mainName}: 1 attacker`);
+  assert(assignments[0].title.includes(`Attacker 1: ${mainName}`) && assignments[0].title.includes(`Attacker 3: ${mainName}`));
+  assert(assignments[0].attributes['aria-label'].includes('Target priority:'));
+  assert(details.textContent.includes('Main tank first') && details.textContent.includes('Second frontliner first'));
+  assert(details.textContent.includes('keep their targets until death or untargetability'));
+  assert(details.textContent.includes('including between hits'));
+  const sole = ctx.tftCompositionTheoryScenarios(one).querySelector('.tft-comp-initial-targets');
+  assert.equal(sole.textContent, `${one.units[1].name}: 3 attackers`);
+  assert(ctx.tftCompositionTheoryScenarios(initiallyUnavailable).textContent.includes('No target available at start'));
+  const upgrade = ctx.tftCompositionUpgradeContents(row), evidence = upgrade.querySelector('.tft-comp-upgrade-tests');
+  evidence.open = true; evidence.events.toggle();
+  assert.equal(evidence.querySelectorAll('.tft-comp-initial-targets').length, 48);
+  ctx.renderTftCompositionControls();
+  assert(d.element('tft-comp-context').textContent.includes('Persistent enemy targets'));
+  assert(d.element('tft-comp-pool-note').textContent.includes('48 pressure assumptions'));
+  assert.equal(JSON.stringify([row, d.composition.meta]), before, 'Rendering preserves assignments, scores, items and copy inputs');
+
+  const h = theoryLoadHarness();
+  await h.load();
+  const previous = structuredClone(h.state.data);
+  h.state.meta = persistentTheoryMetadata();
+  const payload = () => ({ ...structuredClone(h.state.meta), key: `c4-${h.state.geo}-mixed`, profile: { key: 'c4' },
+    geometry: h.state.geo, threat: 'mixed', results: { 9: { single: [asPersistentTheory(withUpgrade(levelBoard('persistent-cached')))] } } });
+  h.payload = () => ({ ...payload(), results: previous.results });
+  await h.load({ preserve: true });
+  assert(h.state.error && h.state.data === null, 'A v2 cached board cannot be relabeled as v3');
+  h.payload = payload;
+  await h.load({ preserve: true });
+  assert.equal(h.state.error, null);
+  assert.equal(h.state.data.results[9].single[0].profileCount, 48);
+  const calls = h.calls.length, saved = h.state.data;
+  await h.load({ preserve: true });
+  assert.equal(h.calls.length, calls);
+  assert.equal(h.state.data, saved, 'Returning to an unchanged v3 board reuses its validated calculation');
+}
+
+const primalBlessings = [
+  { key: 'tiger', name: 'Tiger', description: 'Attack speed after the opening delay.', scoreLimitation: null },
+  { key: 'turtle', name: 'Turtle', description: 'Defensive stats.', scoreLimitation: null },
+  { key: 'bear', name: 'Bear', description: 'An execute threshold.', scoreLimitation: 'Executes are not valued against immortal targets.' },
+  { key: 'phoenix', name: 'Phoenix', description: 'A component reward.', scoreLimitation: 'Component rewards are not valued with a fixed item budget.' },
+];
+
+function withPrimal(row, selected = ['tiger'], required) {
+  const keys = primalBlessings.map(blessing => blessing.key);
+  const activeRequired = (required || []).slice(0, selected.length);
+  const choices = (selected.length === 1 ? keys.map(key => [key])
+    : keys.flatMap((key, index) => keys.slice(index + 1).map(next => [key, next])))
+    .filter(choice => activeRequired.every(key => choice.includes(key)));
+  row.traits = [...row.traits.filter(trait => trait.api !== 'DA_Primal18'),
+    { api: 'DA_Primal18', name: 'Primal', active: true, count: selected.length * 2,
+      breakpoint: selected.length * 2, blessings: [...selected], modeled: true }];
+  const choiceKey = choice => choice.slice().sort().join('+');
+  row.primal = { selected: [...selected], ...(required === undefined ? {} : { required: [...required] }),
+    alternatives: choices.map(blessings => ({ blessings,
+      score: row.metrics.theoryScore * (choiceKey(blessings) === choiceKey(selected) ? 1 : .9) })) };
+  return row;
+}
+
+function checkPrimalBlessings() {
+  const h = domHarness(), ctx = h.context;
+  h.composition.meta = { ...theoryMetadata(), primalBlessings: structuredClone(primalBlessings) };
+  asTheory(h.parent);
+  h.composition.data = { ...structuredClone(h.composition.meta), results: { 9: { single: [h.parent] } } };
+  const single = withPrimal(asTheory(levelBoard('primal-single')));
+  const pair = withPrimal(asTheory(levelBoard('primal-pair')), ['tiger', 'turtle']);
+  const before = JSON.stringify([single, pair, h.composition.meta]);
+  assert.equal(ctx.tftCompositionValid(single), true);
+  assert.equal(ctx.tftCompositionValid(pair), true);
+  const capFixture = id => asTheory(withUpgrade(levelBoard(id))).level9Upgrade.board;
+  const retainedSingle = withPrimal(capFixture('primal-retained-single'), ['turtle'], ['turtle']);
+  const addedSecond = withPrimal(capFixture('primal-added-second'), ['tiger', 'turtle'], ['turtle']);
+  const retainedPair = withPrimal(capFixture('primal-retained-pair'), ['turtle', 'tiger'], ['turtle', 'tiger']);
+  const droppedTier = withPrimal(capFixture('primal-dropped-tier'), ['turtle'], ['turtle', 'tiger']);
+  const retainedBefore = JSON.stringify([retainedSingle, addedSecond, retainedPair, droppedTier]);
+  for (const [row, count] of [[retainedSingle, 1], [addedSecond, 3], [retainedPair, 1], [droppedTier, 1]]) {
+    assert.equal(ctx.tftCompositionBoardValid(row, 9, false), true, 'Retained choices leave exactly the permitted cap alternatives');
+    assert.equal(row.primal.alternatives.length, count);
+  }
+  const legacy = structuredClone(single); delete legacy.primal;
+  assert.equal(ctx.tftCompositionValid(legacy), true, 'Older active-Primal boards without a chosen-blessing payload remain valid');
+  const olderTrait = structuredClone(single); delete olderTrait.traits.at(-1).blessings;
+  assert.equal(ctx.tftCompositionValid(olderTrait), true, 'The optional trait annotation is not required by older producers');
+  for (const [label, mutate, source = single] of [
+    ['null payload', row => { row.primal = null; }],
+    ['unknown choice', row => { row.primal.selected = ['dragon']; }],
+    ['empty choice', row => { row.primal.selected = []; }],
+    ['duplicate choice', row => { row.primal.selected = ['tiger', 'tiger']; }],
+    ['too many choices', row => { row.primal.selected = ['tiger', 'turtle', 'bear']; }],
+    ['missing alternative', row => { row.primal.alternatives.pop(); }],
+    ['duplicate alternative', row => { row.primal.alternatives[1] = structuredClone(row.primal.alternatives[0]); }],
+    ['unknown alternative', row => { row.primal.alternatives[1].blessings = ['dragon']; }],
+    ['mixed alternative sizes', row => { row.primal.alternatives[1].blessings = ['tiger', 'turtle']; }],
+    ['negative score', row => { row.primal.alternatives[1].score = -1; }],
+    ['nonfinite score', row => { row.primal.alternatives[1].score = Infinity; }],
+    ['text score', row => { row.primal.alternatives[1].score = '100'; }],
+    ['selected aggregate mismatch', row => { row.primal.alternatives[0].score += 1000; }],
+    ['selection is not globally best', row => { row.primal.alternatives[1].score = row.metrics.theoryScore + 1; }],
+    ['inactive Primal', row => { row.traits.at(-1).active = false; }],
+    ['missing Primal', row => { row.traits.pop(); }],
+    ['wrong tier for one blessing', row => { row.traits.at(-1).breakpoint = 4; }],
+    ['wrong tier for two blessings', row => { row.traits.at(-1).breakpoint = 2; }, pair],
+    ['contradictory resolved trait choice', row => { row.traits.at(-1).blessings = ['bear']; }],
+    ['reversed duplicate pair', row => { row.primal.alternatives[1].blessings = ['turtle', 'tiger']; }, pair],
+    ['null retained choices', row => { row.primal.required = null; }, retainedSingle],
+    ['unknown retained choice', row => { row.primal.required = ['dragon']; }, retainedSingle],
+    ['duplicated retained choices', row => { row.primal.required = ['turtle', 'turtle']; }, retainedSingle],
+    ['too many retained choices', row => { row.primal.required = ['turtle', 'tiger', 'bear']; }, retainedSingle],
+    ['free respec of a retained single', row => { row.primal.required = ['bear']; }, retainedSingle],
+    ['free respec by keeping all six pairs', row => { row.primal.alternatives = structuredClone(pair.primal.alternatives); }, addedSecond],
+    ['missing legal second blessing', row => { row.primal.alternatives.pop(); }, addedSecond],
+    ['pair drops the retained first blessing', row => { row.primal.alternatives[1].blessings = ['tiger', 'bear']; }, addedSecond],
+    ['dropping tiers activates the wrong retained choice', row => { row.primal.required.reverse(); }, droppedTier],
+  ]) {
+    const invalid = structuredClone(source); mutate(invalid);
+    assert.equal(invalid.level === 9 ? ctx.tftCompositionBoardValid(invalid, 9, false)
+      : ctx.tftCompositionValid(invalid), false, `${label} is rejected`);
+  }
+  for (const [label, mutate] of [
+    ['null catalog', meta => { meta.primalBlessings = null; }],
+    ['missing blessing', meta => { meta.primalBlessings.pop(); }],
+    ['unknown key', meta => { meta.primalBlessings[0].key = 'dragon'; }],
+    ['duplicate key', meta => { meta.primalBlessings[1].key = 'tiger'; }],
+    ['missing name', meta => { meta.primalBlessings[0].name = ''; }],
+    ['invalid description', meta => { meta.primalBlessings[0].description = 4; }],
+    ['invalid score limitation', meta => { meta.primalBlessings[0].scoreLimitation = []; }],
+  ]) {
+    const invalid = structuredClone(h.composition.meta); mutate(invalid);
+    assert.equal(ctx.tftCompositionMetadataModelValid(invalid), false, `${label} is rejected`);
+  }
+  assert.equal(ctx.tftCompositionMetadataModelValid(theoryMetadata()), true, 'A legacy catalog remains optional');
+  const catalog = h.composition.meta.primalBlessings;
+  delete h.composition.meta.primalBlessings;
+  assert.equal(ctx.tftCompositionValid(single), false, 'A new choice payload requires its declared catalog');
+  assert.equal(ctx.tftCompositionValid(legacy), true);
+  h.composition.meta.primalBlessings = catalog;
+  assert.equal(JSON.stringify([single, pair, h.composition.meta]), before, 'Choice validation never mutates data or catalog order');
+
+  ctx.tftCoreItems = items => Object.assign(h.createElement('div'), { textContent: items.join(' · ') });
+  ctx.tftCompositionTheoryScenarios = () => h.createElement('div');
+  vm.runInContext(script.slice(script.indexOf('function tftCompositionDetailContents('),
+    script.indexOf('function tftCompositionCard(')), ctx);
+  withPrimal(h.parent, ['turtle']);
+  withPrimal(h.parent.level9Upgrade.board, ['tiger', 'turtle'], ['turtle']);
+  const saved = JSON.stringify([h.parent, h.composition.meta]);
+  const card = ctx.tftCompositionCard(h.parent, 1);
+  assert.equal(card.querySelector('.tft-comp-primal-choice').textContent, 'Primal: Turtle');
+  assert.equal(card.querySelector('.tft-comp-primal-choice').title, 'Defensive stats.');
+  const details = ctx.tftCompositionDetailContents(h.parent);
+  const section = details.querySelector('.tft-comp-primal-details');
+  const rows = section.querySelectorAll('.tft-comp-primal-alternative');
+  assert.equal(rows.length, 4);
+  assert.equal(rows.filter(row => row.dataset.selected === 'true').length, 1);
+  assert(rows.find(row => row.dataset.selected === 'true').textContent.includes('Turtle · selected'));
+  assert(section.textContent.includes(`One choice across all ${h.parent.profileCount} pressure assumptions`));
+  assert(section.textContent.includes('Bear’s executes are not valued against immortal targets'));
+  assert(section.textContent.includes('Phoenix’s component rewards are not valued with a fixed item budget'));
+  assert(section.textContent.includes('Those benefits can still matter in a real game'));
+  const upgrade = ctx.tftCompositionUpgradeContents(h.parent);
+  assert.equal(upgrade.querySelector('.tft-comp-primal-choice').textContent, 'Primal: Tiger + Turtle');
+  const evidence = upgrade.querySelector('.tft-comp-upgrade-tests');
+  evidence.open = true; evidence.events.toggle();
+  assert.equal(evidence.querySelectorAll('.tft-comp-primal-alternative').length, 3);
+  assert(evidence.querySelector('.tft-comp-primal-retained').textContent.includes('Retained from level 8: Turtle'));
+  assert(evidence.querySelector('.tft-comp-primal-retained').textContent.includes('reset behavior is unverified'));
+  assert.equal(ctx.tftCompositionPrimalDetails(pair).querySelectorAll('.tft-comp-primal-alternative').length, 6,
+    'A board with no prior choices still compares all six pairs');
+  assert.equal(ctx.tftCompositionPrimalDetails(retainedSingle).querySelectorAll('.tft-comp-primal-alternative').length, 1);
+  assert(ctx.tftCompositionPrimalDetails(droppedTier).textContent.includes('only the first retained choice is active'));
+  const oldDetails = ctx.tftCompositionDetailContents(legacy);
+  assert.equal(oldDetails.querySelector('.tft-comp-primal-details'), null, 'Do not invent a blessing choice for a pinned board');
+  assert.equal(JSON.stringify([h.parent, h.composition.meta]), saved, 'Card, cap and alternatives preserve scores, choices, items and catalog order');
+  assert.equal(JSON.stringify([retainedSingle, addedSecond, retainedPair, droppedTier]), retainedBefore,
+    'Filtering legal cap alternatives preserves required-choice order and latent second choices');
+
+  h.composition.meta.primalBlessings[1].name = '<script>Turtle</script>';
+  const literal = ctx.tftCompositionPrimalChoice(h.parent);
+  assert.equal(literal.textContent, 'Primal: <script>Turtle</script>');
+  assert(!Object.hasOwn(literal, 'innerHTML'), 'Blessing labels remain literal text');
+}
+
+function checkTheoryValidationAndRanks() {
+  const previous = { ...tcomp };
+  Object.assign(tcomp, { meta: theoryMetadata(), profile: 'c4', structure: 'auto', budget: 9 });
+  const best = asTheory(withUpgrade(levelBoard('theory-best')), 12500);
+  const tied = asTheory(levelBoard('theory-tied'), 12500);
+  const weaker = asTheory(withUpgrade(levelBoard('theory-weaker')), 12499.99);
+  asTheory(weaker.level9Upgrade.board, 25000);
+  weaker.level9Upgrade.theoryScoreDelta = 25000 - weaker.metrics.theoryScore;
+  tcomp.data = { ...theoryMetadata(), results: { 9: { single: [weaker, best, tied] } } };
+  const snapshot = JSON.stringify(tcomp.data);
+  assert.equal(context.tftCompositionValid(best), true, 'Theory boards need pressure assumptions and legal items, without authored opponents or validation fights');
+  const doubleMelee = asTheory(levelBoard('theory-double-melee'));
+  doubleMelee.structure = 'duoCarry';
+  for (const [index, kind, objective] of [[0, 'Assassin', 'fighter'], [1, 'Tank', 'tank'], [2, 'Fighter', 'fighter']]) {
+    Object.assign(doubleMelee.units[index], { kind, objective, form: 'AD', frontline: true,
+      assignment: index === 0 ? 'mainCarry' : index === 1 ? 'mainTank' : 'secondCarry' });
+    doubleMelee.units[index].items = [index ? 'Other' : 'Selected', 'Other'];
+    doubleMelee.units[index].itemApis = [index ? 'other' : 'selected', 'other'];
+  }
+  doubleMelee.itemCount = doubleMelee.units.reduce((count, unit) => count + unit.itemApis.length, 0);
+  assert.equal(context.tftCompositionValid(doubleMelee), true, 'A level-eight board can contain two melee carries');
+  doubleMelee.maxMeleeCarries = 1;
+  assert.equal(context.tftCompositionValid(doubleMelee), true, 'An obsolete saved limit field does not impose a current validation rule');
+  assert.equal(context.tftCompositionValid(asTheory(withUpgrade(levelBoard('theory-elder'), { elder: true }))), true,
+    'Theory keeps Elder occupancy and cap item conservation');
+  assert.equal(context.tftCompositionValid(asTheory(withSingleUpgrade(levelBoard('theory-add')))), true);
+  assert.deepEqual(Array.from(context.tftCompositionRows(), row => row.id), ['theory-best', 'theory-tied', 'theory-weaker']);
+  assert.deepEqual(Array.from(context.tftCompositionRanks(context.tftCompositionRows())), [1, 1, 3],
+    'Scores remain continuous above 100; stronger caps and old benchmark outcomes cannot alter level 8 rank');
+  tcomp.structure = 'single';
+  assert.equal(context.tftCompositionRows()[0].id, 'theory-best', 'A specific allocation also sorts by capacity');
+  assert.equal(JSON.stringify(tcomp.data), snapshot, 'Validation and rank display preserve theory artifacts');
+  const resultWithoutOwnModel = structuredClone(best);
+  delete resultWithoutOwnModel.evaluationModel;
+  assert.equal(context.tftCompositionValid(resultWithoutOwnModel), true, 'Enclosing methodology may identify the theory model');
+  assert.equal(context.tftCompositionValid(asTheory(levelBoard('zero-theory'), 0)), true, 'Zero capacity is represented explicitly without a fake percentage');
+  for (const [label, mutate] of [
+    ['mixed old model', row => { row.evaluationModel = 'symmetric-reference-pool-v1'; }],
+    ['wrong revision', row => { row.modelRevision = 'old-theory'; }],
+    ['fake benchmark metrics', row => { row.metrics.benchmarkWins = 12; }],
+    ['old matchups', row => { row.matchups = []; }],
+    ['infinite capacity', row => { row.metrics.theoryScore = Infinity; }],
+    ['negative EHP', row => { row.metrics.frontlineEhp = -1; }],
+    ['inconsistent aggregate EHP', row => { row.metrics.frontlineEhp += 1; }],
+    ['wrong damage capacity formula', row => { row.scenarios[0].damageCapacity += 10; }],
+    ['wrong score formula', row => { row.scenarios[0].score *= 2; }],
+    ['missing scenario', row => { row.scenarios.pop(); }],
+    ['duplicate scenario', row => { row.scenarios[1].key = row.scenarios[0].key; }],
+    ['wrong pressure input', row => { row.scenarios[0].incomingDps = 1001; }],
+    ['impossible damage mixture', row => { row.scenarios[0].physicalShare = 2; }],
+    ['changed control duration', row => { row.scenarios[0].controlDuration = 1.5; }],
+    ['wrong pressure allocation', row => { row.scenarios[0].pressureAllocation = 'independent'; }],
+    ['missing incoming source count', row => { delete row.scenarios[0].incomingSourceCount; }],
+    ['outgoing coverage used as incoming source count', row => { row.scenarios[0].incomingSourceCount = 1; }],
+    ['different cap source count', row => { row.level9Upgrade.board.scenarios[0].incomingSourceCount = 2; }],
+    ['missing planned window', row => { delete row.scenarios[0].plannedMeasurementWindow; }],
+    ['observation after planned end', row => { row.scenarios[0].measurementWindow = row.scenarios[0].plannedMeasurementWindow + 1; }],
+    ['early stop without collapse', row => { row.scenarios[0].measurementWindow /= 2; }],
+    ['invalid collapse flag', row => { row.scenarios[0].frontlineCollapsed = 'false'; }],
+    ['negative raw budget', row => { row.scenarios[0].incomingBudget = -1; }],
+    ['missing spent pressure', row => { delete row.scenarios[0].spentPressure; }],
+    ['unconserved pressure', row => { row.scenarios[0].deniedPressure += 1; }],
+    ['self-consistent budget for wrong observed time', row => {
+      row.scenarios[0].incomingBudget /= 2;
+      row.scenarios[0].spentPressure /= 2;
+      row.scenarios[0].deniedPressure /= 2;
+    }],
+    ['unspent exceeds budget', row => { row.scenarios[0].unspentPressure = row.scenarios[0].incomingBudget + 1; }],
+    ['stale item analysis', row => { row.itemAnalysis.modelRevision = 'old-theory'; }],
+    ['wrong item baseline', row => { row.itemAnalysis.baselineScore += 1; }],
+    ['wrong item delta', row => { row.itemAnalysis.holders[0].items[0].alternatives[0].scoreDelta = 1; }],
+    ['wrong item percentage', row => { row.itemAnalysis.holders[0].items[0].alternatives[0].pctDelta = 2; }],
+    ['unknown item scenario', row => { row.itemAnalysis.holders[0].items[0].alternatives[0].improvedScenarios = ['invented']; }],
+    ['duplicated holder evidence', row => { row.itemAnalysis.holders.push(structuredClone(row.itemAnalysis.holders[0])); }],
+    ['wrong cap delta', row => { row.level9Upgrade.theoryScoreDelta = 0; }],
+    ['changed cap conditions', row => { row.level9Upgrade.board.scenarios[0].incomingDps += 1; }],
+    ['cap searched fights', row => { row.level9Upgrade.selection.evaluatedOn = 'search'; }],
+    ['reitemized retained holder', row => { row.level9Upgrade.board.units[0].itemApis = ['invented']; }],
+    ['added item budget', row => { row.level9Upgrade.board.itemCount += 1; }],
+  ]) {
+    const invalid = structuredClone(best); mutate(invalid);
+    assert.equal(context.tftCompositionValid(invalid), false, `${label} is rejected for theoretical results`);
+  }
+  const verdict = context.tftCompositionItemVerdict(best.itemAnalysis.holders[0].items[0], best);
+  const invalidSources = theoryMetadata();
+  invalidSources.scenarios[0].incomingSourceCount = 1;
+  assert.equal(context.tftCompositionMetadataModelValid(invalidSources), false,
+    'Metadata cannot quietly change the declared three incoming channels');
+  const missingProfiles = theoryMetadata();
+  delete missingProfiles.scenarios;
+  assert.equal(context.tftCompositionMetadataModelValid(missingProfiles), false,
+    'V2 metadata must declare the pressure/control profiles used by every board');
+  assert(verdict.includes('2.0%') && !verdict.includes('win'));
+  assert(!context.tftCompositionEvidenceSummary(best).includes('ceiling'));
+  Object.assign(tcomp, previous);
+}
+
+function theoryLoadHarness() {
+  const h = loadHarness();
+  Object.assign(h.state, { profile: 'c4', meta: theoryMetadata() });
+  h.payload = () => {
+    const row = asTheory(withUpgrade(levelBoard('cached-theory')));
+    for (const result of [row, row.level9Upgrade.board]) {
+      result.modelRevision = h.state.meta.modelRevision;
+      result.scenarios.forEach((scenario, i) => {
+        Object.assign(scenario, h.state.meta.scenarios[i]);
+        scenario.protectionTime = scenario.frontlineEhp / scenario.incomingDps;
+        scenario.damageCapacity = scenario.score / scenario.incomingDps;
+        scenario.plannedMeasurementWindow = scenario.measurementWindow = .8 * scenario.frontlineEhp / scenario.incomingDps;
+        scenario.incomingBudget = .8 * scenario.frontlineEhp;
+      });
+      for (const metric of ['damageCapacity', 'protectionTime']) result.metrics[metric] = Math.sqrt(result.scenarios[0][metric] * result.scenarios[1][metric]);
+      if (result.itemAnalysis) result.itemAnalysis.modelRevision = result.modelRevision;
+    }
+    return { ...structuredClone(h.state.meta), key: `c4-${h.state.geo}-mixed`, profile: { key: 'c4' },
+      geometry: h.state.geo, threat: 'mixed', results: { 9: { single: [row] } } };
+  };
+  return h;
+}
+
+async function checkTheoryCacheAndRendering() {
+  const h = theoryLoadHarness();
+  await h.load();
+  assert.equal(h.state.error, null, 'Theory artifacts load through the real cache guard');
+  const saved = h.state.data;
+  await h.load({ preserve: true });
+  assert.equal(h.calls.length, 1, 'Matching theory results reuse the validated artifact');
+  assert.equal(h.state.data, saved);
+  h.state.meta.modelRevision = 'theory-fixture-v2';
+  await h.load({ preserve: true });
+  assert.equal(h.calls.length, 2, 'A changed capacity formula revision fetches a new artifact');
+  assert.equal(h.state.error, null);
+  h.state.meta.scenarios[0].incomingDps += 100;
+  await h.load({ preserve: true });
+  assert.equal(h.calls.length, 3, 'Changed pressure assumptions also invalidate reusable data');
+  assert.equal(h.state.error, null);
+  for (const [label, mutate] of [
+    ['legacy model', data => { data.methodology.evaluationModel = 'symmetric-reference-pool-v1'; }],
+    ['conflicting top-level model', data => { data.evaluationModel = 'ehp-damage-capacity-v1'; }],
+    ['wrong model revision', data => { data.modelRevision = 'old-theory'; }],
+    ['mismatched scenario inputs', data => { data.scenarios[0].incomingDps += 1; }],
+    ['bad board evidence', data => { data.results[9].single[0].itemAnalysis.evaluatedOn = 'search'; }],
+  ]) {
+    const invalid = theoryLoadHarness();
+    invalid.response = () => { const data = invalid.payload(); mutate(data); return data; };
+    await invalid.load();
+    assert.equal(invalid.state.data, null, `${label} cannot mix with a theory publication`);
+    assert(invalid.state.error);
+  }
+
+  const d = domHarness(), ctx = d.context;
+  asTheory(d.parent);
+  d.composition.meta = { ...theoryMetadata(), geometries: { clump: 'Clumped', spread: 'Spread' }, structures: [{ key: 'single' }] };
+  d.composition.data = { ...structuredClone(d.composition.meta), results: { 9: { single: [d.parent] } } };
+  ctx.tftCoreItems = (items) => Object.assign(d.createElement('div'), { textContent: items.join(' · ') });
+  ctx.tftSeg = () => {};
+  vm.runInContext(script.slice(script.indexOf('function tftCompositionTheoryScenarios('), script.indexOf('function tftCompositionItemEvidence('))
+    + script.slice(script.indexOf('function tftCompositionDetailContents('), script.indexOf('function tftCompositionCard('))
+    + script.slice(script.indexOf('function renderTftCompositionControls('), script.indexOf('function tftCompositionRows(')), ctx);
+  const card = d.card = ctx.tftCompositionCard(d.parent, 1);
+  const metrics = card.querySelector('.tft-comp-metrics');
+  assert(metrics.textContent.includes('EHP × DPS score') && metrics.textContent.includes('Frontline EHP') && metrics.textContent.includes('Team DPS') && metrics.textContent.includes('Est. protection'));
+  assert(!/benchmark|held-out|wins|undefined|NaN/i.test(card.textContent));
+  const details = ctx.tftCompositionDetailContents(d.parent);
+  const scenarios = details.querySelector('.tft-comp-scenario-table');
+  assert(scenarios.textContent.includes('1,000') && scenarios.textContent.includes('50% / 50%') && scenarios.textContent.includes('100 / 100') && scenarios.textContent.includes('33%'));
+  assert(scenarios.textContent.includes('12,000') && scenarios.textContent.includes('3,000'));
+  assert(scenarios.textContent.includes('3 × 3,000 HP') && scenarios.textContent.includes('Measured over'));
+  assert(scenarios.textContent.includes('Planned window') && scenarios.textContent.includes('Held through window'));
+  assert(scenarios.textContent.includes('Incoming budget') && scenarios.textContent.includes('Unspent pressure'));
+  assert(scenarios.textContent.includes('no enemy control') && scenarios.textContent.includes('1.5s frontline stun every 8s'));
+  assert(!/benchmark|held-out|wins|undefined|NaN/i.test(details.textContent));
+  const replacements = details.querySelector('.tft-comp-replacements');
+  replacements.open = true; replacements.events.toggle();
+  assert(replacements.textContent.includes('-2.0%') && replacements.textContent.includes('same 2 pressure assumptions'));
+  assert(replacements.textContent.includes('no enemy control') && replacements.textContent.includes('1.5s frontline stun every 8s'));
+  const cap = ctx.tftCompositionUpgradeContents(d.parent);
+  assert(cap.textContent.includes('+20.0% EHP × DPS score') && cap.textContent.includes('Level 8 results determine this composition’s rank.'));
+  assert(!/benchmark|held-out|wins|undefined|NaN/i.test(cap.textContent));
+  const legendary = d.parent.level9Upgrade.board.units.at(-1);
+  cap.querySelectorAll('.tft-comp-unit-head').find(head => head.dataset.unit === legendary.slug).events.click();
+  assert.equal(d.scenarios.at(-1).star, 2, 'Theory caps still open the exact saved champion star');
+  assert.equal(d.composition.returnUpgrade, d.parent.level9Upgrade.board.id);
+  const tooltip = ctx.tftCompositionChampionTooltip(d.parent.units[0], d.parent).map(node => node.textContent).join('\n');
+  assert(tooltip.includes('pressure assumptions') && !tooltip.includes('ranking fights'));
+  assert(tooltip.includes('125 DPS contribution') && tooltip.includes('120 mean measured DPS') && tooltip.includes('1,000 raw pressure spent'));
+  assert(tooltip.includes('arithmetic means') && tooltip.includes('excludes overkill'));
+  assert(details.textContent.includes('DPS contribution') && details.textContent.includes('mean measured DPS') && details.textContent.includes('raw pressure spent'));
+  ctx.renderTftCompositionControls();
+  assert.equal(d.element('tft-comp-geo-label').textContent, 'Target coverage');
+  assert(d.element('tft-comp-context').textContent.includes('geometric mean of EHP × DPS'));
+  assert(!/benchmark|held-out|win rate/i.test(d.element('tft-comp-ranking-note').textContent));
+  assert(d.element('tft-comp-pool-note').textContent.includes('not statistical confidence'));
+}
+
+async function checkTheoryV2ObservationAndLegacyRollout() {
+  const h = theoryLoadHarness();
+  const currentPayload = h.payload;
+  h.payload = () => {
+    const payload = currentPayload(), row = payload.results[9].single[0];
+    for (const result of [row, row.level9Upgrade.board]) {
+      result.scenarios[0].measurementWindow /= 2;
+      result.scenarios[0].frontlineCollapsed = true;
+      result.scenarios[0].spentPressure /= 2;
+      result.scenarios[0].deniedPressure /= 2;
+      result.scenarios[0].incomingBudget = result.scenarios[0].spentPressure + result.scenarios[0].deniedPressure;
+    }
+    return payload;
+  };
+  await h.load();
+  assert.equal(h.state.error, null, 'A measured early collapse is valid; the score identities still hold');
+  const d = domHarness(), ctx = d.context;
+  Object.assign(d.composition, { meta: h.state.meta, data: h.state.data });
+  vm.runInContext(script.slice(script.indexOf('function tftCompositionTheoryScenarios('), script.indexOf('function tftCompositionItemEvidence(')), ctx);
+  const section = ctx.tftCompositionTheoryScenarios(h.state.data.results[9].single[0]);
+  assert(section.textContent.includes('Collapsed') && section.textContent.includes('Held through window'));
+  assert(section.textContent.includes('all protected damage stops there') && section.textContent.includes('DPS uses this observed time'));
+
+  const previous = theoryLoadHarness();
+  previous.state.meta.methodology.evaluationModel = 'ehp-damage-capacity-v1';
+  previous.state.meta.modelRevision = 'previous-theory-formula';
+  for (const scenario of previous.state.meta.scenarios) {
+    for (const key of ['controlInterval', 'controlDuration', 'pressureInterval', 'pressureAllocation', 'incomingSourceCount']) delete scenario[key];
+  }
+  const legacyPayload = previous.payload;
+  previous.payload = () => {
+    const payload = legacyPayload();
+    for (const row of [payload.results[9].single[0], payload.results[9].single[0].level9Upgrade.board]) {
+      row.evaluationModel = 'ehp-damage-capacity-v1';
+      for (const scenario of row.scenarios) {
+        for (const key of ['plannedMeasurementWindow', 'frontlineCollapsed', 'incomingBudget', 'spentPressure', 'deniedPressure', 'unspentPressure',
+          'controlInterval', 'controlDuration', 'pressureInterval', 'pressureAllocation', 'incomingSourceCount']) delete scenario[key];
+      }
+    }
+    return payload;
+  };
+  await previous.load();
+  assert.equal(previous.state.error, null, 'The pinned v1 generation stays readable during the v2 rollout');
+  const old = domHarness();
+  Object.assign(old.composition, { meta: previous.state.meta, data: previous.state.data });
+  vm.runInContext(script.slice(script.indexOf('function tftCompositionTheoryScenarios('), script.indexOf('function tftCompositionItemEvidence(')), old.context);
+  const older = old.context.tftCompositionTheoryScenarios(previous.state.data.results[9].single[0]);
+  assert(older.textContent.includes('saved v1 results') && !older.textContent.includes('Planned window'));
+  assert(!older.textContent.includes('Pressure is reassigned') && !older.textContent.includes('Control immunity is respected'));
+  previous.state.meta.methodology.evaluationModel = theoryModel;
+  previous.response = previous.payload;
+  await previous.load({ preserve: true });
+  assert(previous.state.error && previous.state.data === null, 'Old board metrics cannot masquerade as the new model');
+}
+
+async function checkRealTheoryArtifact(meta, payload, label) {
+  const h = loadHarness();
+  h.baseline = payload.baselineRevision;
+  Object.assign(h.state, { meta, profile: payload.profile?.key || payload.profile,
+    geo: payload.geometry, threat: payload.threat, budget: Number(Object.keys(payload.results)[0]) });
+  h.payload = () => structuredClone(payload);
+  assert.equal(h.context.tftCompositionMetadataModelValid(meta), true, `${label}: real theory metadata passes the model guard`);
+  await h.load();
+  assert.equal(h.state.error, null, `${label}: the full generated payload loads and validates`);
+  assert(h.state.data, `${label}: validated payload is available`);
+  await h.load({ preserve: true });
+  assert.equal(h.calls.length, 1, `${label}: returning from a champion reuses the same validated calculation`);
+  const rows = Object.values(payload.results).flatMap(groups => Object.values(groups).flat());
+  if (meta.teamPlanner) {
+    const source = JSON.parse(fs.readFileSync(require('node:path').join(__dirname, '../data/tft/set18/team-planner.json'), 'utf8'));
+    const names = new Map(Object.values(source.sourceRecords).map(record => [record.teamPlannerCode, record.displayName]));
+    for (const board of rows.flatMap(row => [row, ...(row.level9Upgrade ? [row.level9Upgrade.board] : [])])) {
+      const code = h.context.tftCompositionTeamCode(board, meta.teamPlanner);
+      assert(/^02[0-9a-f]{30}TFTSet18$/.test(code), `${label}: generated board has a valid complete planner code`);
+      const importedNames = code.slice(2, 32).match(/.{3}/g).filter(part => part !== '000').map(part => names.get(parseInt(part, 16)));
+      assert.deepEqual(importedNames, board.units.map(unit => unit.name), `${label}: planner IDs import exactly the displayed champions`);
+    }
+  }
+  const representatives = Object.entries(payload.results).flatMap(([budget, groups]) =>
+    Object.entries(groups).filter(([, boards]) => boards.length).map(([structure, boards]) => ({ budget, structure, board: boards[0] })));
+  let rendered = 0;
+  for (const { budget, structure, board } of representatives) {
+    const d = domHarness(), ctx = d.context;
+    Object.assign(d.composition, { meta, data: payload, profile: h.state.profile, geo: payload.geometry,
+      key: payload.key, budget: Number(budget), structure });
+    d.champion.meta = { revision: payload.baselineRevision, traits: [], units:
+      [...board.units, ...(board.level9Upgrade?.board.units || [])].map(unit => ({ ...unit, stars: [unit.star] })) };
+    ctx.tftCoreItems = items => Object.assign(d.createElement('div'), { textContent: items.join(' · ') });
+    ctx.tftSeg = () => {};
+    vm.runInContext(script.slice(script.indexOf('function tftCompositionTheoryScenarios('), script.indexOf('function tftCompositionItemEvidence('))
+      + script.slice(script.indexOf('function tftCompositionDetailContents('), script.indexOf('function tftCompositionCard('))
+      + script.slice(script.indexOf('function renderTftCompositionControls('), script.indexOf('function tftCompositionRows(')), ctx);
+    const snapshot = JSON.stringify(board);
+    const card = d.card = ctx.tftCompositionCard(board, 1);
+    const copied = [];
+    if (meta.teamPlanner) {
+      ctx.navigator = { clipboard: { writeText: async code => { copied.push(code); } } };
+      const control = card.querySelector('.tft-comp-copy');
+      assert.notEqual(control.children[0].disabled, true, `${label}: real core copy is available`);
+      await control.children[0].events.click();
+      assert.equal(copied[0], ctx.tftCompositionTeamCode(board, meta.teamPlanner));
+    }
+    assert(card.textContent.includes('EHP × DPS score'), `${label}: generated board displays the new score`);
+    assert(!/Benchmark wins|Held-out|undefined|NaN/.test(card.textContent), `${label}: old metrics never leak into a theory card`);
+    const details = ctx.tftCompositionDetailContents(board);
+    const table = details.querySelector('.tft-comp-scenario-table');
+    assert(table && table.textContent.includes('Measured over'), `${label}: measured windows and pressure inputs render`);
+    assert(details.textContent.includes('DPS contribution') && details.textContent.includes('mean measured DPS') &&
+      details.textContent.includes('raw pressure spent'), `${label}: real unit diagnostics have the correct meanings`);
+    for (const evidence of details.querySelectorAll('.tft-comp-replacements')) {
+      evidence.open = true;
+      evidence.events.toggle();
+    }
+    assert(!/Benchmark wins|Held-out|undefined|NaN/.test(details.textContent), `${label}: real item evidence renders without missing or obsolete metrics`);
+    const unit = board.units.find(unit => unit.frontline) || board.units[0];
+    const tooltip = ctx.tftCompositionChampionTooltip(unit, board).map(node => node.textContent).join('\n');
+    assert(tooltip.includes('raw pressure spent') && tooltip.includes('DPS contribution'), `${label}: frontline tooltip matches theoretical measurements`);
+    card.querySelectorAll('.tft-comp-unit-head').find(head => head.dataset.unit === unit.slug).events.click();
+    assert.equal(d.scenarios.at(-1).star, unit.star, `${label}: real champions open their exact saved star level`);
+    if (board.level9Upgrade) {
+      const cap = ctx.tftCompositionUpgradeContents(board);
+      if (meta.teamPlanner) {
+        const control = cap.querySelector('.tft-comp-copy');
+        assert.notEqual(control.children[0].disabled, true, `${label}: real upgrade copy is available`);
+        await control.children[0].events.click();
+        assert.equal(copied[1], ctx.tftCompositionTeamCode(board.level9Upgrade.board, meta.teamPlanner));
+      }
+      const evidence = cap.querySelector('.tft-comp-upgrade-tests');
+      evidence.open = true;
+      evidence.events.toggle();
+      assert(!/Benchmark wins|Held-out|undefined|NaN/.test(cap.textContent), `${label}: real cap transitions and metrics render`);
+      const legendary = board.level9Upgrade.board.units.find(unit => !board.units.some(previous => previous.slug === unit.slug));
+      cap.querySelectorAll('.tft-comp-unit-head').find(head => head.dataset.unit === legendary.slug).events.click();
+      assert.equal(d.scenarios.at(-1).star, legendary.star, `${label}: actual level 9 additions keep their saved star assumption`);
+      assert.equal(d.composition.returnUpgrade, board.level9Upgrade.board.id, `${label}: champion navigation remembers the actual cap`);
+    }
+    ctx.renderTftCompositionControls();
+    assert(d.element('tft-comp-pool-note').textContent.includes('Raw incoming DPS:'), `${label}: scenario axes are visible`);
+    assert.equal(JSON.stringify(board), snapshot, `${label}: display and navigation preserve the computed board`);
+    ++rendered;
+  }
+  console.log(`Real theoretical composition UI checks passed: ${label}; ${rows.length} ${rows.length === 1 ? 'board' : 'boards'} validated, ${rendered} budget/allocation examples rendered.`);
+}
+
+async function checkRequestedTheoryArtifacts() {
+  let metadataPath = null;
+  const requested = [];
+  const args = process.argv.slice(2);
+  for (let index = 0; index < args.length; ++index) {
+    const flag = args[index], path = args[++index];
+    assert(path, `Missing path for ${flag}`);
+    if (flag === '--theory-meta') metadataPath = path;
+    else if (flag === '--theory-fixture') requested.push({ path });
+    else if (flag === '--theory-payload') {
+      assert(metadataPath, '--theory-meta must precede --theory-payload');
+      requested.push({ path, metadataPath });
+    } else throw new Error(`Unknown argument ${flag}`);
+  }
+  for (const { path, metadataPath } of requested) {
+    const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+    const meta = metadataPath ? JSON.parse(fs.readFileSync(metadataPath, 'utf8')) : data.meta;
+    await checkRealTheoryArtifact(meta, metadataPath ? data : data.payload, path);
+  }
 }
 
 function checkRefreshMessages() {
@@ -773,6 +1737,21 @@ function checkRefreshMessages() {
     assert(element('tft-refresh-detail').textContent.includes('Champion builds and compositions update together'),
       'Refresh messaging includes both published analyses');
   }
+  champion.status.refresh = { status: 'failed', exit: 75,
+    transport: { exhausted: true, retryable: true },
+    reviewBlocker: { targetPatch: '18.2', message: 'Technical diagnostic in the journal.' } };
+  ctx.renderTftRefresh();
+  assert.equal(element('tft-refresh-title').textContent, 'Patch download was interrupted');
+  assert(element('tft-refresh-detail').textContent.includes('Patch 18.2 still has an unresolved review'),
+    'A later transport failure must not hide a pending patch review');
+  champion.status.refresh = { status: 'waiting-not-before', retryNotBefore: '2026-09-10T20:00:00+00:00' };
+  ctx.renderTftRefresh();
+  assert.equal(element('tft-refresh-title').textContent, 'Patch source requested a pause');
+  assert(element('tft-refresh-detail').textContent.includes('Downloads can resume after'));
+  champion.status.refresh = { status: 'failed' };
+  ctx.renderTftRefresh();
+  assert.equal(element('tft-refresh-title').textContent, 'Automatic update did not finish',
+    'Older status payloads without transport/history remain supported');
   champion.status.refresh = { status: 'ok' };
   ctx.showTftPending(champion.req);
   ctx.renderTftCompositions();
@@ -941,10 +1920,23 @@ checkLevelPlans();
 checkLazyDetails();
 checkRefreshMessages();
 checkChampionTooltips();
+checkTraitCoverage();
+checkTheoryValidationAndRanks();
+checkPrimalBlessings();
+checkTeamCodes();
+checkAntihealSources();
 assert(html.includes('Loading saved compositions…'), 'Loading accurately describes reading precomputed results');
 assert(!html.includes('Calculating the comparison…'), 'A fetch is not presented as a fresh simulation');
-checkSavedCompositions().then(checkPublicationRefresh).then(checkSavedLevelPlans).then(checkLevelRenderingAndNavigation).then(() => {
+checkSavedCompositions().then(checkPublicationRefresh).then(checkSavedLevelPlans).then(checkLevelRenderingAndNavigation).then(checkTheoryCacheAndRendering).then(checkTheoryV2ObservationAndLegacyRollout).then(checkPersistentTheoryTargeting).then(checkRequestedTheoryArtifacts).then(checkCompositionClipboard).then(() => {
   console.log('Saved composition UI checks passed: validated reuse, explicit retry, revision and publication guards, request races, deferred details and scheduled publication messages.');
   console.log('Composition level-plan UI checks passed: both teams\' slot occupancy, level 8 ranking, valid level 9 transitions, conserved items, changed traits, lazy cards and exact champion navigation.');
   console.log('Composition champion tooltip checks passed: exact identity and stars, board-specific traits and contributions, opponent details, and saved-data reuse.');
+  console.log('Composition trait coverage checks passed: visible partial labels, accessible omissions, structural/economy distinctions and legacy fallback.');
+  console.log('Composition copy checks passed: Riot planner IDs, exact roster codes, separate core/cap controls, clipboard success, HTTP fallback and manual recovery.');
+  console.log('Composition antiheal checks passed: readable sources and holders, literal text safety, separate core/cap sources and old-payload fallback.');
+  console.log('Composition carry checks passed: level-eight double melee, unrestricted new metadata and older pinned descriptions.');
+  console.log('Composition Primal checks passed: chosen core/cap blessings, complete legal alternatives with retained choices, score limits, invalid payload guards, immutability and legacy fallback.');
+  console.log('Theoretical composition UI checks passed: continuous ranking, visible EHP/DPS and pressure inputs, item percentages, cap conservation, exact champion navigation and model/revision cache isolation.');
+  console.log('Theory v2 UI checks passed: observed collapse versus planned windows, conserved raw pressure, explicit control conditions and isolated v1 rollout support.');
+  console.log('Theory v3 UI checks passed: 48 paired focus assumptions, persistent initial targets, source counts, malformed-data guards, v1/v2 rollout and cache transition.');
 }).catch(error => { console.error(error); process.exitCode = 1; });

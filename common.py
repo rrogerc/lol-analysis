@@ -15,7 +15,8 @@ DB_PATH = os.path.join(BASE_DIR, "lol.db")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 WEB_DIR = os.path.join(BASE_DIR, "web")
 
-# The whole database, all domains. `stats` belongs to scaling.py.
+# The whole database, all domains. `stats` and `match_counts` belong to
+# scaling.py, `onetricks` and `onetrick_sync` to onetricks.py.
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS stats (
   patch TEXT NOT NULL,
@@ -36,6 +37,27 @@ CREATE TABLE IF NOT EXISTS match_counts (
   matches INTEGER NOT NULL,
   scraped_at TEXT NOT NULL,
   PRIMARY KEY (patch, tier)
+);
+CREATE TABLE IF NOT EXISTS onetricks (
+  champion TEXT PRIMARY KEY,
+  players INTEGER NOT NULL,
+  top INTEGER NOT NULL,
+  jungle INTEGER NOT NULL,
+  middle INTEGER NOT NULL,
+  bottom INTEGER NOT NULL,
+  support INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS onetrick_sync (
+  synced_at TEXT NOT NULL,
+  ladder_at TEXT,
+  ladder_players INTEGER NOT NULL,
+  onetrick_players INTEGER NOT NULL,
+  games INTEGER NOT NULL,
+  first_patch TEXT,
+  last_patch TEXT,
+  min_share_pct INTEGER NOT NULL,
+  min_games INTEGER NOT NULL,
+  platforms TEXT NOT NULL
 );
 """
 

@@ -5,10 +5,13 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::driver::Driver;
-use crate::fight::{make_dummies, Deal, Dummy, Ev, Fight, FightResult, Sheet, TeamClock, TeamEffect, TICK_S};
-use crate::fx::build_fx;
+use crate::fight::{make_dummies, Deal, Dummy, Ev, Fight, FightResult, Sheet, SharedSleep,
+                   SleepTracker, SleepWake, TeamClock, TeamEffect, TICK_S};
+use crate::fx::build_fx_for;
 use crate::kit::DType;
 use crate::pyget::{dict_of, getf, geti, getlist, gets, reqd, truthy};
 use crate::spec::{CellSpec, DummySpec, EnemyDebuffs};
@@ -123,6 +126,9 @@ struct Status {
 }
 
 trait Actor {
+    fn sleep_tracker(&mut self, tracker: SharedSleep, source: usize);
+    fn wake_sleep(&mut self, time: f64, wake: SleepWake);
+    fn allied_spellweaver_cast(&mut self, time: f64);
     fn status(&self) -> Status;
     fn sync(&mut self, time: f64, targets: &[Dummy], nearby: &[bool], focus: &[bool], primary: Option<usize>);
     fn targets(&self) -> &[Dummy];
@@ -148,7 +154,7 @@ struct Champion<'a, D: Driver> {
 impl<'a, D: Driver> Champion<'a, D> {
     fn new(spec: &'a CellSpec, trace: bool) -> Self {
         let items = spec.items.iter().collect::<Vec<_>>();
-        let fx = build_fx(spec.role, &items, &spec.traits, spec.unit.has_forms, spec.unit.attack);
+        let fx = build_fx_for(spec, &items);
         let kit = spec.kit_for(fx.form);
         let sheet = Sheet::new(spec, kit, &fx);
         let driver = D::new(kit, &spec.unit);
@@ -175,6 +181,19 @@ impl<'a, D: Driver> Champion<'a, D> {
 }
 
 impl<D: Driver> Actor for Champion<'_, D> {
+    fn sleep_tracker(&mut self, tracker: SharedSleep, source: usize) {
+        self.fight.sleeps = Some(tracker);
+        self.fight.sleep_source = source;
+        self.fight.external_sleep = true;
+    }
+    fn wake_sleep(&mut self, time: f64, wake: SleepWake) {
+        self.fight.t = time;
+        self.fight.wake_sleep(wake);
+    }
+    fn allied_spellweaver_cast(&mut self, time: f64) {
+        self.fight.t = time;
+        self.fight.allied_spellweaver_cast();
+    }
     fn status(&self) -> Status {
         let f = &self.fight;
         Status { hp: if f.alive_unit { f.hp } else { f.body.as_ref().map(|b| b.hp).unwrap_or(0.0) },
@@ -259,7 +278,7 @@ fn make_actor(spec: &CellSpec, trace: bool) -> PyResult<Box<dyn Actor + '_>> {
     })
 }
 
-struct EnemyClock { attack: f64, cast: f64, attacks: usize, casts: usize, focus: Option<usize> }
+struct EnemyClock { attack: f64, cast: f64, cast_pending: bool, attacks: usize, casts: usize, focus: Option<usize> }
 
 #[derive(Default)]
 struct BurnOwners {
@@ -276,6 +295,7 @@ struct Encounter<'a> {
     targets: Vec<Dummy>,
     enemies: Vec<EnemyClock>,
     burns: Vec<BurnOwners>,
+    sleeps: Option<SharedSleep>,
     primary: Vec<Option<usize>>,
     ally_healing: Vec<f64>,
     ally_shielding: Vec<f64>,
@@ -292,7 +312,12 @@ struct TeamEvent {
 
 impl<'a> Encounter<'a> {
     fn new(specs: &'a TeamSpec, trace: bool) -> PyResult<Self> {
-        let actors = specs.allies.iter().map(|ally| make_actor(&ally.cell, trace)).collect::<PyResult<Vec<_>>>()?;
+        let mut actors = specs.allies.iter().map(|ally| make_actor(&ally.cell, trace)).collect::<PyResult<Vec<_>>>()?;
+        let sleeps = specs.allies.iter().any(|ally| ally.cell.driver == "Lillia")
+            .then(|| Rc::new(RefCell::new(SleepTracker::new(specs.enemies.len()))));
+        if let Some(tracker) = &sleeps {
+            for (source, actor) in actors.iter_mut().enumerate() { actor.sleep_tracker(Rc::clone(tracker), source); }
+        }
         let targets = specs.enemies.iter().map(|enemy| {
             let slot = &enemy.slot;
             let mut target = Dummy::new(slot.hp, slot.armor, slot.mr, slot.is_tank);
@@ -304,10 +329,10 @@ impl<'a> Encounter<'a> {
             attack: if enemy.slot.ad > 0.0 && enemy.slot.as_ > 0.0 { enemy.slot.attack_start.unwrap_or(0.0) } else { NEVER },
             cast: if enemy.slot.ability > 0.0 && enemy.slot.cast_interval > 0.0 {
                 enemy.slot.cast_start.unwrap_or(enemy.slot.cast_interval) } else { NEVER },
-            attacks: 0, casts: 0, focus: None,
+            cast_pending: false, attacks: 0, casts: 0, focus: None,
         }).collect();
         let count = actors.len();
-        Ok(Self { specs, actors, targets, enemies,
+        Ok(Self { specs, actors, targets, enemies, sleeps,
             burns: (0..specs.enemies.len()).map(|_| BurnOwners::default()).collect(),
             primary: vec![None; count], ally_healing: vec![0.0; count], ally_shielding: vec![0.0; count],
             frontline_time: None, trace: Vec::new(), tracing: trace, time: 0.0 })
@@ -412,7 +437,18 @@ impl<'a> Encounter<'a> {
                         if healed > 0.0 { self.record("allyHeal", actor, ally, healed); }
                     }
                 }
-                TeamEffect::Stun(_, _) | TeamEffect::Cast(_) | TeamEffect::ManaReave(_, _) => {}
+                TeamEffect::Stun(_, _) | TeamEffect::Sleep(_, _, _, _) |
+                    TeamEffect::ManaReave(_, _) => {}
+                TeamEffect::Cast(_, spellweaver) => {
+                    if spellweaver {
+                        for ally in 0..self.actors.len() {
+                            if ally != actor {
+                                self.actors[ally].allied_spellweaver_cast(self.time);
+                                self.capture(ally);
+                            }
+                        }
+                    }
+                }
                 TeamEffect::HealAllies(amount, count) => {
                     let mut eligible = (0..self.actors.len()).filter(|&i| i != actor && self.actors[i].status().alive).collect::<Vec<_>>();
                     eligible.sort_by(|&a, &b| {
@@ -463,6 +499,27 @@ impl<'a> Encounter<'a> {
         }
         self.refresh_statuses();
         self.retarget();
+        if let Some(sleeps) = self.sleeps.clone() {
+            // Control can be refreshed to an earlier expiry or removed by
+            // damage. Only spells that already became due should resume.
+            for target in 0..self.targets.len() {
+                if self.targets[target].alive && self.enemies[target].cast_pending {
+                    self.enemies[target].cast = self.time.max(self.control_until(target));
+                }
+            }
+            loop {
+                let wake = sleeps.borrow_mut().wakes.pop_front();
+                let Some(wake) = wake else { break; };
+                self.sync(wake.source);
+                self.actors[wake.source].wake_sleep(self.time, wake);
+                self.commit(wake.source);
+            }
+        }
+    }
+
+    fn control_until(&self, target: usize) -> f64 {
+        self.targets[target].stunned_until.max(self.sleeps.as_ref().map_or(0.0, |sleeps|
+            sleeps.borrow().until(target, self.targets[target].generation, self.time)))
     }
 
     fn refresh_statuses(&mut self) {
@@ -587,16 +644,18 @@ impl<'a> Encounter<'a> {
                 if !self.targets[enemy].alive { continue; }
                 if self.enemies[enemy].attack <= self.time + EPS {
                     self.enemies[enemy].attack += 1.0 / self.specs.enemies[enemy].slot.as_;
-                    if self.targets[enemy].stunned_until <= self.time {
+                    if self.control_until(enemy) <= self.time {
                         self.enemies[enemy].attacks += 1;
                         self.enemy_hit(enemy, self.specs.enemies[enemy].slot.ad * self.specs.crit_ev, DType::Physical, true, None);
                     }
                 }
                 if self.targets[enemy].alive && self.enemies[enemy].cast <= self.time + EPS {
-                    if self.targets[enemy].stunned_until > self.time {
-                        self.enemies[enemy].cast = self.targets[enemy].stunned_until;
+                    if self.control_until(enemy) > self.time {
+                        self.enemies[enemy].cast = self.control_until(enemy);
+                        self.enemies[enemy].cast_pending = true;
                     } else {
                         self.enemies[enemy].cast = self.time + self.specs.enemies[enemy].slot.cast_interval;
+                        self.enemies[enemy].cast_pending = false;
                         self.enemies[enemy].casts += 1;
                         self.retarget();
                         let target = self.enemies[enemy].focus;
