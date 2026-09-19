@@ -1,0 +1,271 @@
+{
+ "name": "Ntofo Strikes",
+ "cooldown": {
+  "values": [
+   3.5,
+   3.5,
+   3.5,
+   3.5,
+   3.5
+  ],
+  "quote": "{{dv|{{pp|3.5 to 2 by 0.05|0 to 120|type='''bonus''' resistances|label=cooldown|label1=bonus resistances|formula= 3.5 - 0.0125 × bonus resistances, capped at 120 bonus resistances.}}|{{pp|3.5*2/3 to 2*2/3 by 0.3/9|0 to 120|type='''bonus''' resistances|label=cooldown|label1=bonus resistances|formula= During All Out. 3.5 * 2 / 3 - (0.0125 * 2 / 3) × bonus resistances, capped at 120 bonus resistances.|showtype=false}}}}",
+  "binNote": "Base cooldown is a flat 3.5s at all ranks (bin cooldown: 3.5, BaseCD=3.5), but is reduced by bonus resistances down to a floor of 2s at 120 bonus resistances (MinCD=2, DefenseCapforCooldown=120), and further reduced by 33% during All Out (RCooldownReduction=0.33333). Recorded value is the undiscounted base."
+ },
+ "cost": {
+  "values": [
+   20,
+   20,
+   20,
+   20,
+   20
+  ],
+  "quote": "20",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.45,
+  "quote": "{{pp|0.45 to 0.35 by 0.01|0 to 120|type='''bonus''' resistances|label=cast time|label1=bonus resistances|formula= 0.45 - (1/1200) × bonus resistances, capped at 120 bonus resistances.}}",
+  "binNote": "Bin lists castTime: 0.35 for the base slot, but the wiki's formula shows base cast time is 0.45 with no bonus resistances, decreasing to 0.35 at 120 bonus resistances (MinCastTime=0.35, MaxCastTime=0.45). Recorded value is the wiki's undiscounted base (0 bonus resistances)."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    70,
+    100,
+    130,
+    160,
+    190
+   ],
+   "terms": [
+    {
+     "stat": "bonusArmor",
+     "coef": 0.4
+    },
+    {
+     "stat": "bonusMr",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|70 to 190}} {{as|(+ 40% '''bonus''' armor)}} {{as|(+ 40% '''bonus''' magic resistance)}}",
+   "bin": [
+    "KSanteQ#BaseDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "slow amount applied to enemies hit",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.8,
+   "terms": [],
+   "quote": "{{tip|slow|slows}} them by 80% for {{fd|0.5}} seconds",
+   "bin": [
+    "KSanteQ.SlowPercent"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "slows them by 80% for {{fd|0.5}} seconds",
+   "bin": [
+    "KSanteQ.SlowDuration"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "stack duration before expiry",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "'''K'Sante''' generates a {{tip|stack}} for 6 seconds, stacking up to 2 times and refreshing on subsequent hits",
+   "bin": [
+    "KSanteQ.RecastWindow"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "stack cap needed to empower next cast",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "stacking up to 2 times and refreshing on subsequent hits. At 2 stacks, the next ''Ntofo Strikes'' cast consumes them all to become empowered with a new effect",
+   "bin": [],
+   "binNote": "No bin data value stores the stack cap as a plain number; KSanteQ#{9c9367bc} = 1xbuffStacks + 1xbuffStacks references buffStacks but does not carry the cap of 2 itself. The stack cap is presumably set on the buff definition, not in this ability's data values."
+  },
+  {
+   "id": "q_6",
+   "meaning": "empowered pull duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.65,
+   "terms": [],
+   "quote": "pulls them towards him over {{fd|0.65}} seconds",
+   "bin": [
+    "KSanteQ.KnockupDuration"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "empowered stun duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.8,
+   "terms": [],
+   "quote": "{{tip|stun|stuns}} them for {{fd|0.8}} seconds",
+   "bin": [
+    "KSanteQ.StunDuration"
+   ],
+   "binNote": "Wiki states the empowered active's stun as 0.8 seconds, but the bin's KSanteQ.StunDuration is 1; this may correspond to a different variable, or the wiki figure is out of date."
+  },
+  {
+   "id": "q_8",
+   "meaning": "All Out bonus cooldown reduction percent",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.33333,
+   "terms": [],
+   "quote": "''Ntofo Strikes' '' {{sti|cooldown}} is reduced by 33%",
+   "bin": [
+    "KSanteQ.RCooldownReduction"
+   ],
+   "binNote": "Bin's RCooldownReduction is 0.33333; wiki rounds this to '33%' in prose. Recorded the bin's precise value."
+  },
+  {
+   "id": "q_9",
+   "meaning": "shared queue/cast time applying to all casts",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "|queue time       = {{tt|{{fd|0.25}}|All casts}}",
+   "bin": [],
+   "binNote": "No matching KSanteQ data value of 0.25 exists in the sheet; the queue time appears to be a separate/hardcoded engine constant not exposed among the listed data values."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The non-empowered active is not a projectile and applies instantly along a rectangle in the target direction.",
+   "quote": "Only the empowered active is a {{tip|projectile}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ntofo Strikes resets K'Sante's basic attack timer.",
+   "quote": "Ntofo Strikes {{tip|basic attack reset|resets}} '''K'Sante's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the cast hits at most one enemy champion, K'Sante is automatically ordered to attack that champion.",
+   "quote": "If ''Ntofo Strikes'' hits no more than one enemy champion, '''K'Sante''' will be ordered an attack command against them.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Hitting at least one enemy grants a stack lasting 6 seconds, stacking up to 2 and refreshing on subsequent hits; at 2 stacks the next cast is empowered and consumes all stacks.",
+   "quote": "If this hits at least one enemy, '''K'Sante''' generates a {{tip|stack}} for 6 seconds, stacking up to 2 times and refreshing on subsequent hits. At 2 stacks, the next ''Ntofo Strikes'' cast consumes them all to become empowered with a new effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While in All Out, Ntofo Strikes no longer slows enemies hit, and its stacks are reset upon entering All Out; if K'Sante had 2 stacks before entering All Out, the cooldown is also reset.",
+   "quote": "Upon entering ''All Out'', ''Ntofo Strikes' '' stacks are reset. ''Ntofo Strikes' '' {{sti|cooldown}} is reset if '''K'Sante''' had 2 stacks before entering ''All Out''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Temporary changes to bonus resistances affect Ntofo Strikes' cooldown and cast time in real time.",
+   "quote": "Temporary increases/decreases in bonus resistances will count for reducing/increasing ''Ntofo Strikes''' cooldown.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KSanteQ.RectangleWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.RectangleLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.Range",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.RecastLockoutAO",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KSanteQ.PullSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.PullDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.KnockGrav",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.MaxCastTime",
+   "reason": "unknown"
+  },
+  {
+   "ref": "KSanteQ.MinCastTime",
+   "reason": "unknown"
+  },
+  {
+   "ref": "KSanteQ.MinCastTimeQ3",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KSanteQ.BaseCD",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "KSanteQ.MinCD",
+   "reason": "unknown"
+  },
+  {
+   "ref": "KSanteQ.DefenseCapforCooldown",
+   "reason": "unknown"
+  },
+  {
+   "ref": "KSanteQ.PullSpeedMin",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.PullSpeedMax",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.PullDistanceMin",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.PullDistanceMax",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteQ.LifetimeMax",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

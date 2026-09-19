@@ -1,0 +1,249 @@
+{
+ "name": "Molten Burst",
+ "cooldown": {
+  "values": [
+   12,
+   11,
+   10,
+   9,
+   8
+  ],
+  "quote": "{{ap|12 to 8}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|{{fd|0.25}}|Cast time in Human Form}}|{{tt|{{fd|0.3333}}|Cast time in Dragon Form}}}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    65,
+    80,
+    95,
+    110
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.6,
+      0.65,
+      0.7,
+      0.75,
+      0.8
+     ]
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|50 to 110}} {{as|(+ {{ap|60 to 80}}% AP)}} {{as|(+ 5% of target's '''maximum''' health)}}",
+   "bin": [
+    "ShyvanaE#Damage",
+    "ShyvanaE#Calc_Max_Health_Damage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Increased/Explosion Magic Damage (Dragon Form)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    62.5,
+    81.25,
+    100,
+    118.75,
+    137.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.75,
+      0.8125,
+      0.875,
+      0.9375,
+      1.0
+     ]
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.0625
+    }
+   ],
+   "quote": "{{ap|50*1.25 to 110*1.25}} {{as|(+ {{ap|60*1.25 to 80*1.25}}% AP)}} {{as|(+ {{ap|5*1.25}}% of target's '''maximum''' health)}}",
+   "bin": [
+    "ShyvanaE#Calc_Dragon_Damage",
+    "ShyvanaE#Calc_Max_Health_Dragon_Damage"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Subsequent Explosion Damage (Dragon Form, same target)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    32.5,
+    40,
+    47.5,
+    55
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.3,
+      0.325,
+      0.35,
+      0.375,
+      0.4
+     ]
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.025
+    }
+   ],
+   "quote": "{{ap|50*1.25*0.4 to 110*1.25*0.4}} {{as|(+ {{ap|60*1.25*0.4 to 80*1.25*0.4}}% AP)}} {{as|(+ {{ap|5*1.25*0.4}}% of target's '''maximum''' health)}}",
+   "bin": [],
+   "binNote": "ShyvanaE#Calc_Multihit_Efficacy only stores the 0.4 multiplier applied to the Dragon Form explosion damage (e_2); it does not carry the resulting absolute damage/ratio numbers computed here, so no bin row states this value's actual numbers directly."
+  },
+  {
+   "id": "e_4",
+   "meaning": "Dragon Form scorched field damage per second",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    20,
+    20,
+    20,
+    20,
+    20,
+    25,
+    25,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{#vardefine:dot6|15}}<!-- Level 6 Dragon Form damage over time damage PER SECOND\n-->{{#vardefine:dot11|20}}<!-- Level 11 Dragon Form damage over time damage PER SECOND\n-->{{#vardefine:dot16|25}}<!-- Level 16 Dragon Form damage over time damage PER SECOND\n-->{{#vardefine:dot_ap|5}}<!-- Damage over time AP ratio as a PERCENTAGE",
+   "bin": [
+    "ShyvanaE#DamagePerSecond"
+   ],
+   "binNote": "ShyvanaE.BaseDamagePerSecond is a stale flat-rank array [10/20/30/40/50] that neither the wiki's byLevel(15..25) values nor the DamagePerSecond calculation's byLevelL[...] array match; ShyvanaE#DamagePerSecond's byLevelL array does match the wiki's level 1-18 progression, so that calculation is cited instead and the DataValue is left unused."
+  },
+  {
+   "id": "e_5",
+   "meaning": "Scorched field tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "every {{ap|1/{{#var:dot_tick}}}} seconds",
+   "bin": [
+    "ShyvanaE.RepeatExplosionDelay"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Scorched field duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "beneath for {{#var:dot_time}} seconds",
+   "bin": [
+    "ShyvanaE.GroundLingerDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The fireball explodes upon colliding with the first enemy or reaching maximum range.",
+   "quote": "explodes upon colliding with the first enemy or reaching maximum range, dealing {{as|magic damage}} to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemies can only be damaged by one scorched field at a time; a repeat explosion on the same target deals reduced (40%) damage.",
+   "quote": "Enemies may be damaged by only one scorched field at a time. Subsequent explosions against the same target deal {{ap|{{#var:xpl}}*100}}% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The fireball applies area damage; in Dragon Form the explosion also applies area damage and the scorched field deals persistent area damage over time.",
+   "quote": "The fireball applies {{tip|area damage}}. In {{ai|Dragon's Descent|Shyvana|Dragon Form}}, the explosion applies {{tip|area damage}} and the scorched field deals {{tip|persistent area damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "In Dragon Form, both the explosion and scorched field are centered on the first champion struck, not the missile's collision point.",
+   "quote": "In ''Dragon Form'', both areas of effect will be centered on the first champion struck, not at the location the missile collided with them.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability can fail to go on cooldown due to a bug if cast starts in Dragon Form and ends in Human Form.",
+   "quote": "''Molten Burst'' will fail to go on cooldown if its cast time starts in {{ai|Dragon's Descent|Shyvana|Dragon Form}} and ends in {{sbc|Human Form}}.{{bug}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ShyvanaE.BaseDamagePerSecond",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "ShyvanaE.GroundRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaE.TrailRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaE.SlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "ShyvanaE.SlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "ShyvanaE.DragonGroundRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaE.DragonTrailRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaE.DragonCastRangeScale",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

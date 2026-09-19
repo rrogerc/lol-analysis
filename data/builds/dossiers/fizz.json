@@ -1,0 +1,927 @@
+{
+ "champion": "fizz",
+ "abilities": {
+  "P": {
+   "name": "Nimble Fighter",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "damage reduction on every instance of pre-mitigation damage taken",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.01
+      }
+     ],
+     "quote": "reduces every instance of {{tt|pre-mitigation|Damage calculated before modifiers}} damage taken by 4 {{as|(+ 1% AP)}}",
+     "bin": [
+      "FizzPassive#DamageReductionCalc"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "maximum damage reduction cap",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "up to a maximum of 50% reduction",
+     "bin": [
+      "FizzPassive.DamageReductionMax"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "damage reduction against monsters",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 14,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.01
+      }
+     ],
+     "quote": "The damage reduction is increased to 14 {{as|(+ 1% AP)}} against {{tip|monsters}}",
+     "bin": [
+      "FizzPassive#MonsterDamageReductionCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The damage reduction applies to every separate instance of pre-mitigation damage taken, not a single flat reduction per fight.",
+     "quote": "reduces every instance of {{tt|pre-mitigation|Damage calculated before modifiers}} damage taken by 4",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Fizz is permanently ghosted, which does not affect damage dealt or taken.",
+     "quote": "'''Fizz''' is permanently {{tip|ghosted}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Urchin Strike",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      25,
+      40,
+      55,
+      70
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|10 to 70}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "FizzQ#QDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "physical damage component (100% AD)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      }
+     ],
+     "quote": "plus {{as|100% AD}} {{as|physical damage}}",
+     "bin": [
+      "FizzQ#TotalDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Fizz dashes a fixed distance toward the target and deals damage and applies on-hit effects only if the target is still in range upon arrival.",
+     "quote": "Fizz dashes a fixed distance in the direction of the target enemy. If they are in range upon arrival, he deals {{as|magic damage}} plus {{as|100% AD}} {{as|physical damage}} and applies {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Seastone Trident and Chum the Waters can be cast during the dash, allowing ability combos without waiting for the dash to finish.",
+     "quote": "{{ai|Seastone Trident|Fizz}} and {{ai|Chum the Waters|Fizz}} can be cast during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Urchin Strike only damages the target if it is within 200 units of its original location when the dash completes.",
+     "quote": "''Urchin Strike'' only damages targets if within 200 units of their original location upon completion of the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After Urchin Strike, Fizz automatically basic attacks the target, which can trigger an on-attack reset context.",
+     "quote": "'''Fizz''' will be automatically ordered to {{tip|basic attack}} the target after ''Urchin Strike''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Urchin Strike deals no damage if the target becomes untargetable.",
+     "quote": "''Urchin Strike'' does not deal damage if the target is {{tip|untargetable}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Life steal applies only to the physical damage portion, while spell vamp applies to both the physical damage and bonus magic damage.",
+     "quote": "{{as|{{sti|Life steal}}}} applies only on the physical damage component. {{tip|Spell vamp}} applies to both the physical damage and bonus magic damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Seastone Trident",
+   "cooldown": {
+    "values": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "quote": "{{ap|7 to 3}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     40,
+     50,
+     60,
+     70
+    ],
+    "quote": "{{ap|30 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Total Passive Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60,
+      75,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|30 to 90}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "FizzW#DoTDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Passive Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      7.5,
+      10,
+      12.5,
+      15
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.041666666666666664
+      }
+     ],
+     "quote": "{{ap|30/6 to 90/6|round=2}} {{as|(+ {{ap|25/6|round=2}}% AP)}}",
+     "bin": [
+      "FizzW#DoTDamage"
+     ],
+     "binNote": "Per-tick value derived from FizzW#DoTDamage (total) divided by 6 ticks (0.5s interval over 3s duration); no separate bin row for the per-tick amount."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Active Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 45% AP)}}",
+     "bin": [
+      "FizzW#ActiveDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Active On-Hit Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "FizzW#OnHitBuffDamage"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "bleed (DoT) duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every {{fd|0.5}} seconds over 3 seconds",
+     "bin": [
+      "FizzW.BleedDuration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "bleed tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every {{fd|0.5}} seconds over 3 seconds",
+     "bin": [
+      "FizzW.DoTTicksPerSecond"
+     ],
+     "binNote": "Bin stores DoTTicksPerSecond=2 (i.e. one tick every 0.5s); wiki states the interval directly as 0.5 seconds, consistent value."
+    },
+    {
+     "id": "w_7",
+     "meaning": "window to use empowered attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Fizz''' empowers his next {{tip|basic attack}} within 4 seconds to have an {{tip|uncancellable windup}}",
+     "bin": [
+      "FizzW.ActiveDuration"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "on-hit bonus damage buff duration if target not killed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "'''Fizz's''' basic attacks deal {{as|'''bonus''' magic damage}} {{tip|on-hit}} for the next 5 seconds",
+     "bin": [
+      "FizzW.OnHitBuffDuration"
+     ]
+    },
+    {
+     "id": "w_9",
+     "meaning": "cooldown reduced to on kill",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "the {{sti|cooldown}} is reduced to 1 second",
+     "bin": [
+      "FizzW.OnKillNewCooldown"
+     ]
+    },
+    {
+     "id": "w_10",
+     "meaning": "structure damage effectiveness for active/on-hit",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "Seastone Trident's active damage can be applied against {{tip|structures}} at 50% effectiveness",
+     "bin": [
+      "FizzW.TurretMod"
+     ],
+     "binNote": "not applicable in a dummy fight since the dummy is a champion, kept for completeness."
+    },
+    {
+     "id": "w_11",
+     "meaning": "bonus magic damage against monsters",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": 90,
+     "terms": [],
+     "quote": "Active and on-hit damage deal an additional {{as|90 '''bonus''' magic damage}} against {{tip|monsters}}",
+     "bin": [
+      "FizzW.BonusMonsterDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Killing the target with the empowered attack refunds the mana cost and reduces the cooldown to 1 second; otherwise the target-not-killed case grants a 5s on-hit magic damage buff.",
+     "quote": "If ''Seastone Trident'' kills its target, the {{sti|cooldown}} is reduced to 1 second and the {{sti|{{as|mana cost}}}} is refunded. Otherwise, if the target is not killed, '''Fizz's''' basic attacks deal {{as|'''bonus''' magic damage}} {{tip|on-hit}} for the next 5 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the active is used/resolved, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack resets Fizz's basic attack timer.",
+     "quote": "Seastone Trident {{tip|basic attack reset|resets}} '''Fizz's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive bleed refreshes its duration on subsequent basic attack hits rather than stacking as a separate instance.",
+     "quote": "dealing {{as|magic damage}} every {{fd|0.5}} seconds over 3 seconds, refreshing on subsequent hits",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack applies spell damage, while the DoT is persistent/indirect damage and the on-hit bonus is proc damage; this affects how each interacts with damage amps/reductions.",
+     "quote": "Applies {{tip|spell damage}} on the empowered attack, {{tip|persistent damage}} additionally tagged as {{tip|indirect damage}} on the damage over time effect, and {{tip|proc damage}} on the bonus damage on-hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dodging, blocking, or blinding negates the passive bleed damage entirely.",
+     "quote": "The passive bonus damage gets negated by {{tip|dodge|dodging}} or {{tip|block|blocking}} the attack, or if '''Fizz''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target dodges the active or Fizz is blinded, the empowered attack deals no damage but is not consumed; if the target blocks, the attack deals no active damage despite being consumed, but still applies the passive bleed.",
+     "quote": "If the attacked enemy is {{tip|dodge|dodging}} or if '''Fizz''' is {{tip|blind|blinded}}, the empowered attack won't deal any damage, but the empowered attack won't be consumed.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FizzW.OnKillManaRefund",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "FizzW.PassiveDoTDuration",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Playful / Trickster",
+   "cooldown": {
+    "values": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "quote": "{{ap|16 to 8}}"
+   },
+   "cost": {
+    "values": [
+     75,
+     80,
+     85,
+     90,
+     95
+    ],
+    "quote": "{{ap|75 to 95}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Playful splash Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      130,
+      180,
+      230,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.95
+      }
+     ],
+     "quote": "{{ap|80 to 280}} {{as|(+ 95% AP)}}",
+     "bin": [
+      "FizzE#EDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Trickster splash Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      130,
+      180,
+      230,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.95
+      }
+     ],
+     "quote": "{{ap|80 to 280}} {{as|(+ 95% AP)}}",
+     "bin": [
+      "FizzE#EDamage"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "duration Fizz balances on his trident before being able to hop off, delaying the Playful damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "balancing on his trident for {{fd|0.75}} seconds",
+     "bin": [],
+     "binNote": "no matching data value found in the bin; wiki-only timing figure"
+    },
+    {
+     "id": "e_5",
+     "meaning": "time into the balancing duration after which Trickster can be cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "he can cast ''{{ai|Trickster|Fizz}}'' after {{fd|0.15}} seconds into the duration",
+     "bin": [],
+     "binNote": "no matching data value found in the bin; wiki-only timing figure"
+    },
+    {
+     "id": "e_6",
+     "meaning": "duration of the hop-off animation before Playful's splash damage lands and Fizz becomes targetable again",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "He then begins to hop off of his trident over {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "no matching data value found in the bin; wiki-only timing figure"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Playful makes Fizz untargetable while balanced on his trident, and the splash damage only lands after he hops off and becomes targetable again, delaying the damage instance relative to the cast.",
+     "quote": "dashes to the target location while becoming {{tip|untargetable}}, balancing on his trident for {{fd|0.75}} seconds ... becoming targetable and landing to create a splash that deals {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Trickster detonates immediately on arrival in a smaller radius, dealing the same damage as Playful's splash but without the slow, and lands the damage sooner than waiting out Playful's full sequence.",
+     "quote": "hopping down and splashing onto the ground prematurely upon arrival to deal the same {{as|magic damage}} in a smaller radius but not applying the slow",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Playful counts as an ability activation for on-cast effects like Spellblade, but detonating early into Trickster does not.",
+     "quote": "''Playful'' counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.\n**Detonating the ability early for {{ai|Trickster|Fizz}} does not.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Trickster itself does not count as an ability activation.",
+     "quote": "''Trickster'' does not count as an ability activation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Playful cannot be used for about 0.5 seconds after using Urchin Strike, delaying the ability's availability but not its cooldown value.",
+     "quote": "''Playful'' cannot be used for approximately {{fd|0.5}} seconds after using {{ai|Urchin Strike|Fizz}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown does not begin until after the post-effect (the splash) resolves.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FizzE.SmallAoESize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzE.LargeAoESize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzE.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "FizzE.SlowAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Chum the Waters",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Guppy Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      180,
+      300,
+      420
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|180 to 420}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "FizzR#SmallSharkDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Chomper Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      225,
+      375,
+      525
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|180*(1+(1.5-1)*(1/2)) to 420*(1+(1.5-1)*(1/2))}} {{as|(+ {{ap|60*(1+(1.5-1)*(1/2))}}% AP)}}",
+     "bin": [
+      "FizzR#{262c3c02}"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Gigalodon Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      270,
+      450,
+      630
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|180*1.5 to 420*1.5}} {{as|(+ {{ap|60*1.5}}% AP)}}",
+     "bin": [
+      "FizzR#BigSharkDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "detonation delay before the shark erupts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "chomp at the lure after 2 seconds",
+     "bin": [
+      "FizzR.DetonationTime"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "lure attachment slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slowing them for 2 seconds",
+     "bin": [
+      "FizzR.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shark deals damage to nearby enemies when it erupts after the delay, not on cast.",
+     "quote": "chomp at the lure after 2 seconds, dealing {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shark erupts after 2 seconds, dealing magic damage to nearby enemies and knocking them back or up.",
+     "quote": "attracts a shark, granting {{tip|sight}} of the area before it emerges to chomp at the lure after 2 seconds, dealing {{as|magic damage}} to nearby enemies, {{tip|airborne|knocking them back}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The farther the lure flies before landing/attaching, the larger the shark and the higher its damage tier (Guppy/Chomper/Gigalodon).",
+     "quote": "The further the lure travels in its initial flight, the larger the shark that is attracted; increasing ''Chum the Waters' '' damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield or Malzahar's Void Shift blocks the lure from attaching to a champion, consuming the mitigation effect; the eruption still occurs at the target's location.",
+     "quote": "will not attach the lure to an enemy champion if they have a {{tip|spell shield}} as well as against an enemy {{ci|Malzahar}} with his {{ai|Void Shift|Malzahar}} active (mitigation effect is consumed in both cases)",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The lure missile can be stopped prematurely by colliding with certain blocking abilities, causing the eruption to occur early rather than at the intended location.",
+     "quote": "lure missile will stop its movement upon colliding with {{cai|Blade Whirl|Samira}} or {{cai|Wind Wall|Yasuo}} specifically, creating the area of effect for the eruption prematurely",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FizzR.SmallFishSize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzR.MidFishSize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzR.BigFishSize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzR.MissileWidthTiers",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzR.MaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FizzR.SlowAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Urchin Strike dash deals magic + 100% AD physical damage on landing if target still in range"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Playful/Trickster splash magic damage lands after the dash/balance/hop sequence resolves"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Playful (dash, balance ~0.75s, hop ~0.5s then splash) can be canceled early into Trickster (dash + immediate smaller splash), two separately timed resolution paths for the same base damage"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Chum the Waters lure lands then the shark erupts for magic damage 2s later"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "the lure's travel distance before landing/attaching determines the Guppy/Chomper/Gigalodon damage tier (1.0x/1.25x/1.5x of the small-fish formula)"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "passive bleed applies on every basic attack hit, dealing DoT magic damage"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "passive bleed ticks every 0.5s over 3s, refreshing (not stacking) on subsequent hits"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "active arms the next basic attack with bonus magic damage plus a 5s on-hit buff window if the target survives"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "the empowered attack resets Fizz's basic attack timer"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "killing the target with the empowered attack refunds the mana cost and cuts the cooldown to 1s"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (50 flat Q; 30-70 W; 75-95 E; 100 R) can meaningfully cap how often each ability is cast inside a 15s window without mana items/regen"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Nimble Fighter's flat + %AP pre-mitigation damage reduction (capped 50%, higher vs monsters) only matters for damage taken, i.e. the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (dash-cast physical+magic hit, on-hit bleed DoT, empowered-attack with attack reset and kill-refund cooldown, a cancelable multi-part dash ability, and a travel-distance-gated projectile payload) map onto existing primitives; nothing requires logic outside the closed list for the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "What travel distance should Chum the Waters be assumed to fly before landing/attaching in the dummy fight, since it directly sets the Guppy (1.0x)/Chomper (1.25x)/Gigalodon (1.5x) damage tier and the swing is large (e.g. rank 3: 420 to 630 base)?",
+   "options": [
+    "Assume max range (>910 units) so it always attaches as a Gigalodon for maximum damage",
+    "Assume it is cast at/near the dummy (short travel) so it lands as a Guppy, the conservative default",
+    "Assume some fixed mid-range distance (Chomper tier) as a neutral default"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does the automatic basic attack Fizz is ordered into immediately after Urchin Strike count as an extra scheduled attack in the rotation (triggering the W passive bleed, on-hit effects, and consuming the W empowered-attack buff if active), or is it just flavor text with no separate timing impact on the simulated attack sequence?",
+   "options": [
+    "It is a real forced attack that fires right after the dash and should be scheduled as such, potentially consuming an active W empower",
+    "It only auto-issues an attack command if the player wasn't already attacking, so in an optimized sim it never adds an extra attack beyond the normal auto-attack cadence"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "When Seastone Trident's active is triggered on a basic attack, does that same attack also apply/refresh the W passive bleed DoT (i.e., do both the active bonus damage and the passive bleed proc on one attack), or does the active override/replace the passive proc for that hit?",
+   "options": [
+    "Both the active bonus damage and the passive bleed apply on the same empowered attack",
+    "The empowered attack only deals the active's bonus damage and does not also refresh/apply the passive bleed"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start at max rank on all abilities with full mana against the stationary dummy in melee/dash range.",
+   "Open with Q (Urchin Strike) to dash in, dealing magic + 100% AD physical damage on arrival.",
+   "During the Q dash, weave in R (Chum the Waters) toward the dummy so its 2s fuse starts as early as possible.",
+   "Immediately after the dash resolves, cast W (Seastone Trident) to arm the next basic attack.",
+   "Auto-attack to consume the W empower, dealing bonus magic damage, resetting the attack timer, and applying the passive bleed.",
+   "Cast E (Playful) and cancel it into Trickster as soon as it becomes available (~0.15s in) for the same splash damage but a faster resolution, letting its post-effect cooldown start sooner.",
+   "Fill all remaining time with basic attacks to keep the passive bleed refreshed and to consume any active on-hit buff window from W.",
+   "Recast Q, W, E/Trickster, and R on cooldown for the rest of the 15s window in that priority order (shortest cooldown first), interleaving auto-attacks between casts.",
+   "Track mana against the 15s window (Q 50, W 30-70, E 75-95, R 100) and fall back to auto-attacks plus lowest-cost Q/W if mana would otherwise run out."
+  ],
+  "questions": [
+   "Should Chum the Waters always be held for maximum travel distance/tier, or cast on cooldown regardless of resulting shark size?",
+   "Is canceling Playful into Trickster always correct for a pure damage race, since the damage is identical but the cooldown starts sooner, or is there a reason (e.g. testing full Playful's extra hop-off time) to sometimes let it resolve fully?",
+   "Does the forced post-Urchin-Strike basic attack add a genuinely extra attack to the DPS sequence, and if so, does it consume an already-armed W empower or a fresh one from a same-instant W cast?",
+   "In the damage fight, is Fizz assumed to already be in melee auto-attack range of the dummy for the whole 15s, or does travel time to/from Q and E dash targets eat into the attack uptime?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

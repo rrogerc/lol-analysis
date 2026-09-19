@@ -1,0 +1,126 @@
+{
+ "champion": "aurora",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Spirit Abjuration: damaging basic attacks/abilities apply a stack (cap 3, 4s duration, refreshes) to the target; the 3rd stack consumes all stacks for bonus damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "P's proc damage scales off target's max health; Q's recast bolt damage scales linearly from base (0% missing health) to 1.5x base (100% missing health)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Twofold Hex outbound bolt marks the target, then a manual or automatic recast fires a return bolt that expunges the mark for separate damage."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "The Weirding and the shockwave portion of Between Worlds deal a single fixed-formula magic damage instance on cast."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (60/80/100) against a limited mana pool can cap how many Q/E/R cycles fit in the 15s window."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "P's per-second heal from active Spirits, and W/R's invisibility, ghosting, bonus movement speed, displacement immunity and untargetability are pure survival/mobility effects irrelevant to the damage fight and (per the mobility-is-ignored rule) largely irrelevant to the survival fight too, except P's heal which changes effective health taken."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (stack-and-consume passive, missing-health-scaled recast, plain-cast E/R, mana budget) is expressible with existing primitives once the single-dummy simplification is applied (only one Abjuration cycle and one active Q mark can exist on a single target at a time, so the kit's multi-target-only wrinkles, like Q's reduced subsequent-bolt damage, never trigger)."
+ },
+ "unsettled": [
+  {
+   "question": "When does Between Worlds' cooldown actually start given 'cdstart = post-effect'?",
+   "options": [
+    "CD starts immediately once the shockwave resolves (~0.4s dash + up to 0.75s expansion after cast)",
+    "CD starts only once the rift naturally closes (full AreaDuration, ~1.75-3.25s after the shockwave per the wiki's corrected duration)",
+    "CD starts at the moment Aurora manually recasts to close the rift early (as soon as the 1s recast-enable delay has passed)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = post-effect",
+    "''Between Worlds'' can be recast after 1 second of unleashing the shockwave while the rift is active."
+   ]
+  },
+  {
+   "question": "Does Spirit Abjuration's own max-health proc damage (the 3rd-stack consume) count as a 'damaging ability' that itself re-applies a fresh stack of Spirit Abjuration to the target?",
+   "options": [
+    "The proc is excluded from applying a new stack (stacks only build back up from subsequent attacks/abilities)",
+    "The proc counts as a damaging effect and immediately seeds stack #1 again on the same hit"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Aurora's''' damaging {{tip|basic attacks}} and {{tip|abilities}} apply a {{tip|stack}} of ''Spirit Abjuration''",
+    "The third stack against a target consumes them all to deal {{as|'''bonus''' magic damage}}"
+   ]
+  },
+  {
+   "question": "In the survival fight, is the tanky defender (Aurora) assumed to land damaging hits/abilities on her attacker at all, which is required to trigger Spirit Abjuration stacks, the 3rd-stack consume, and the resulting per-second heal from exorcised Spirits?",
+   "options": [
+    "Aurora is purely passive/defensive in the survival fight, so P's heal never triggers",
+    "Aurora is assumed to auto-attack and/or cast on cooldown even while being the survival-fight target, so the heal applies"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon consuming the stacks from a {{tip|champion}}, '''Aurora''' additionally exorcises them, freeing a {{as|Spirit|buzzword}}",
+    "For each active {{as|Spirit|buzzword}}, '''Aurora''' is {{tip|heal|healed}} for {{pplevel|2 + x|color=heal}} {{as|(+ 2% AP)}} every second."
+   ]
+  },
+  {
+   "question": "Does Spirit Abjuration's monster-damage cap (AuroraPassive#{394d1781}) apply to the stationary target dummy used in the damage fight, given the dummy 'counts as an enemy champion' per the fight's rules, and the bin's byLevel table (10-180) doesn't match the wiki's stated formula (90+10*x, giving 90-260)?",
+   "options": [
+    "The cap never applies since the dummy is defined as a champion, not a monster",
+    "The cap should still be applied using the bin's byLevel values as a conservative ceiling",
+    "The cap should be applied using the wiki's stated 90+10*x formula instead of the bin table"
+   ],
+   "impact": "low",
+   "quotes": [
+    "capped at {{pplevel|90+10*x}} against {{tip|monsters}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the fight by casting R (Between Worlds) on the dummy for its shockwave magic damage and Realm Hopper buff, since its cooldown (100-140s) is far longer than the 15s window and it should only ever be cast once.",
+   "Immediately follow with Q (Twofold Hex) outbound cast to hit the dummy, dealing damage, applying a mark, and adding a Spirit Abjuration stack.",
+   "Weave in a basic attack (also applies a Spirit Abjuration stack) while waiting out Q's 0.1s recast-enable delay.",
+   "Cast E (The Weirding) for its flat magic damage and a further Spirit Abjuration stack.",
+   "Manually recast Q as soon as the 0.1s window opens (rather than letting it auto-recast at the mark's 3.5s expiry) to maximize ability uptime and DPS, dealing the return-bolt damage scaled by the dummy's current missing health.",
+   "Repeat the Q cast-recast cycle on cooldown (~7-9s full cycle depending on rank) for the rest of the 15s, weaving E on its own cooldown (~11-15s) and basic attacks in between to keep stacking/consuming Spirit Abjuration for its bonus max-health-based damage roughly every third damaging hit.",
+   "Do not cast W (Across the Veil) at any point: it deals no damage and only grants invisibility, ghosting and bonus movement speed, none of which matter against a stationary, non-attacking dummy."
+  ],
+  "questions": [
+   "Should Q's recast be fired immediately after the 0.1s delay for uptime, or deliberately delayed toward the mark's 3.5s expiry so the missing-health scaling benefits from a lower dummy health percentage, and does the delay cost more DPS than it gains?",
+   "Does the simulator model Aurora's basic attacks between ability casts (needed to help build Spirit Abjuration stacks and use Runaan's-style on-hit interactions), or is the rotation ability-casts-only?",
+   "At what point (level/items) does Aurora's mana pool actually become the binding constraint on repeating the Q/E cycle for the full 15 seconds, given Q+E costs 140 mana per full cycle plus R's 100 mana up front?",
+   "Is R best opened at the very start of the fight for maximum total damage window, or held briefly so its long cast-to-cooldown-start delay (post-effect) doesn't waste time that could instead go to Q/E cycles?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

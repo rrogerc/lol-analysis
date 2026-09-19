@@ -1,0 +1,663 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SwainPassive",
+    "key": "Characters/Swain/Spells/SwainPassiveAbility/SwainPassive",
+    "dataValues": {
+     "SoulCollectionRange": 1100,
+     "HealthIncrement": 15
+    },
+    "calcs": {
+     "PassiveHealPercent": {
+      "expr": "byLevel(0.06..0.06)",
+      "flat": 0.06,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "PassiveHealCalculated": {
+      "expr": "PassiveHealPercent * 1xmaxHp",
+      "modifies": "PassiveHealPercent",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "MaxHealthGained": {
+      "expr": "(HealthIncrement=15)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({0dc6979e})",
+        "scope": "total",
+        "coef": 15,
+        "dataValue": "HealthIncrement"
+       }
+      ],
+      "refs": [
+       "HealthIncrement"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SwainQ",
+    "key": "Characters/Swain/Spells/SwainQAbility/SwainQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6,
+      5,
+      4,
+      3
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "FirstBoltAPRatio": 0.45,
+     "ExtraBoltRatio": 0.25,
+     "BoundaryCheckRange": 725,
+     "MaxDamageMultiTOOLTIP": 2
+    },
+    "calcs": {
+     "InitialDamage": {
+      "expr": "BaseDamage=[60/90/120/150/180] + (FirstBoltAPRatio=0.45)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.45,
+        "dataValue": "FirstBoltAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FirstBoltAPRatio"
+      ]
+     },
+     "ExtraBoltDamage": {
+      "expr": "InitialDamage * ExtraBoltRatio=0.25",
+      "modifies": "InitialDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        22.5,
+        30,
+        37.5,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1125,
+        "dataValue": "FirstBoltAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "ExtraBoltRatio",
+       "FirstBoltAPRatio"
+      ]
+     },
+     "MaxDamage": {
+      "expr": "InitialDamage * MaxDamageMultiTOOLTIP=2",
+      "modifies": "InitialDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        180,
+        240,
+        300,
+        360
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9,
+        "dataValue": "FirstBoltAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FirstBoltAPRatio",
+       "MaxDamageMultiTOOLTIP"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SwainW",
+    "key": "Characters/Swain/Spells/SwainWAbility/SwainW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      21,
+      20,
+      19,
+      18
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       105,
+       140,
+       175,
+       210
+      ]
+     },
+     "APRatio": 0.6,
+     "MinionMod": 0.5,
+     "Slow": -0.5,
+     "SlowDuration": 1.5,
+     "RevealDuration": 6,
+     "EffectRadius": 325,
+     "VisionRadius": 420
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/105/140/175/210] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        105,
+        140,
+        175,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "MinionDamage": {
+      "expr": "TotalDamage * MinionMod=0.5",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        52.5,
+        70,
+        87.5,
+        105
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "MinionMod"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SwainE",
+    "key": "Characters/Swain/Spells/SwainEAbility/SwainE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11.5,
+      11,
+      10.5,
+      10
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "E2Damage": {
+      "axis": "rank",
+      "v": [
+       90,
+       130,
+       170,
+       210,
+       250
+      ]
+     },
+     "E2Ratio": 0.7,
+     "RootDuration": 1.5,
+     "PullDistance": 290,
+     "CooldownRefund": 0.2,
+     "ExplosionRadius": 205
+    },
+    "calcs": {
+     "SecondaryDamage": {
+      "expr": "E2Damage=[90/130/170/210/250] + (E2Ratio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        130,
+        170,
+        210,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "E2Ratio"
+       }
+      ],
+      "refs": [
+       "E2Damage",
+       "E2Ratio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SwainR",
+    "key": "Characters/Swain/Spells/SwainRAbility/SwainR",
+    "cooldown": 120,
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamagePerSecond": {
+      "axis": "rank",
+      "v": [
+       15,
+       25,
+       35
+      ]
+     },
+     "DamageAPRatio": 0.04,
+     "HealPerSecond": {
+      "axis": "rank",
+      "v": [
+       15,
+       30,
+       45
+      ]
+     },
+     "HealAPRatio": 0.05,
+     "HealHPRatio": 0.015,
+     "MinionMonsterHealReduction": 0.1,
+     "DemonPowerMax": 50,
+     "DemonPowerDegen": 10,
+     "DemonPowerRegen": 20,
+     "DemonflareDamageBase": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "DemonflareDamageRatio": 0.4,
+     "DemonflareSlowAmount": 0.5,
+     "DemonflareSlowDuration": 1.5,
+     "AmpTime": 5,
+     "DegenAmpAmount": 15,
+     "DemonflareCastDelay": 2,
+     "MaxDemonflareCast": 100,
+     "TimeBetweenTicks": 0.5,
+     "DemonflareCooldownTooltip": 8
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "DamagePerSecond=[15/25/35] + (DamageAPRatio=0.04)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        25,
+        35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.04,
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "DamageAPRatio",
+       "DamagePerSecond"
+      ]
+     },
+     "HealingCalc": {
+      "expr": "HealPerSecond=[15/30/45] + (HealAPRatio=0.05)xap + (HealHPRatio=0.015)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        30,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05,
+        "dataValue": "HealAPRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.015,
+        "dataValue": "HealHPRatio"
+       }
+      ],
+      "refs": [
+       "HealAPRatio",
+       "HealHPRatio",
+       "HealPerSecond"
+      ]
+     },
+     "DemonflareDamageTotal": {
+      "expr": "DemonflareDamageBase=[150/250/350] + (DemonflareDamageRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "DemonflareDamageRatio"
+       }
+      ],
+      "refs": [
+       "DemonflareDamageBase",
+       "DemonflareDamageRatio"
+      ]
+     },
+     "MinionMonsterHeal": {
+      "expr": "HealingCalc * MinionMonsterHealReduction=0.1",
+      "modifies": "HealingCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        1.5,
+        3,
+        4.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.005,
+        "dataValue": "HealAPRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.0015,
+        "dataValue": "HealHPRatio"
+       }
+      ],
+      "refs": [
+       "HealAPRatio",
+       "HealHPRatio",
+       "HealPerSecond",
+       "MinionMonsterHealReduction"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SwainQ",
+  "W": "SwainW",
+  "E": "SwainE",
+  "R": "SwainR",
+  "P": "SwainPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 400,
+   "{6216bf7b}": 29,
+   "{c4ab3550}": 2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.16
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Swain",
+  "name": "Swain",
+  "partype": "Mana",
+  "passive": "Ravenous Flock",
+  "spells": [
+   {
+    "id": "SwainQ",
+    "name": "Death's Hand",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "SwainW",
+    "name": "Vision of Empire",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "SwainE",
+    "name": "Nevermove",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "SwainR",
+    "name": "Demonic Ascension",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     120,
+     120
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Ravenous Flock": {
+    "projectile": "false",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Death's Hand": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Vision of Empire": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Nevermove": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Demonic Ascension": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "projectile": "False",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Demonflare": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

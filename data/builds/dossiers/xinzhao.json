@@ -1,0 +1,952 @@
+{
+ "champion": "xinzhao",
+ "abilities": {
+  "P": {
+   "name": "Determination / Challenged",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_bonus_damage",
+     "meaning": "bonus physical damage dealt on third Determination stack",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.45,
+        0.45,
+        0.45,
+        0.45,
+        0.45,
+        0.6,
+        0.6,
+        0.6
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": [
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.2,
+        0.2,
+        0.2
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|15 to 60 for 4|key=%|1 to 16|formula=15% + 15% every 5 levels}} AD}} {{as|(+ {{pp|5 to 20 for 4|1;6;11;16|key=%}} AP)}}",
+     "bin": [
+      "XinZhaoP#TotalDamage"
+     ]
+    },
+    {
+     "id": "p_heal",
+     "meaning": "heal to Xin Zhao on third Determination stack",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.035,
+        0.035,
+        0.035,
+        0.035,
+        0.035,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": [
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.7,
+        0.7,
+        0.7,
+        0.7,
+        0.7,
+        0.7,
+        0.7,
+        0.7
+       ]
+      }
+     ],
+     "quote": "heal '''Xin Zhao''' for {{as|{{pp|2 to 5|key=%|1;6;11}} of his '''maximum''' health}} {{as|(+ {{pp|40;50;70|1;6;11|key=%}} AP)}}",
+     "bin": [
+      "XinZhaoP#TotalHealing",
+      "XinZhaoP#HealHPRatio",
+      "XinZhaoP#HealAPRatio"
+     ]
+    },
+    {
+     "id": "p_stack_cap",
+     "meaning": "Determination stacks required to trigger the bonus damage/heal",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "stack cap is not represented as a data value in the sheet; only rank-scaling damage/heal ratios are given"
+    },
+    {
+     "id": "p_challenged_duration",
+     "meaning": "duration of the Challenged mark",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "apply a {{as|Challenged|buzzword}} mark to certain enemies hit for 3 seconds",
+     "bin": [],
+     "binNote": "mark duration (XinZhaoW.MarkDuration/XinZhaoR.MarkDuration = 3) lives on other spell slots, not on the passive itself"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Only the third Determination stack triggers the bonus damage and heal; the bonus damage is a separate proc-damage instance from the triggering attack/strike.",
+     "quote": "The third stack {{tt|consumes them|See notes for consumption details}} all to deal {{as|{{pp|15 to 60 for 4|key=%|1 to 16|formula=15% + 15% every 5 levels}} AD}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage cannot critically strike.",
+     "quote": "The bonus damage cannot {{tip|critical strike|critically strike}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When applied by a basic attack, the bonus damage benefits from life steal.",
+     "quote": "The bonus damage benefits from {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When applied by Wind Becomes Lightning, the bonus damage does not benefit from life steal, including W's own 33% lifesteal conversion.",
+     "quote": "Does not benefit from {{sti|life steal}}, including not healing from ''Wind Becomes Lightning's'' 33% conversion for this bonus damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only Wind Becomes Lightning's first slash hit and its thrust can generate a Determination stack; subsequent slashes do not.",
+     "quote": "Only the initial slash of {{ai|Wind Becomes Lightning|Xin Zhao}} can generate a ''Determination'' stack. Slashes after the first do not count for stack generation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Determination stacks (and thus the proc) are still gained even if the triggering attack is blocked (e.g. by spell shield).",
+     "quote": "Stacks of ''Determination'' will be gained even if the attack is {{tip|blocked}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage from Wind Becomes Lightning can be blocked by spell shield, but the heal cannot; when applied by basic attack, neither the bonus damage nor the heal is blocked by spell shield.",
+     "quote": "The bonus damage will be blocked by {{tip|spell shield}}, the heal will not.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Only one enemy can be marked Challenged at a time; marking a new target removes the mark from the previous target.",
+     "quote": "Only one enemy can be marked as {{as|Challenged|buzzword}} at a time; applying the mark to a new target removes it from the previous one.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Three Talon Strike",
+   "cooldown": {
+    "values": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "quote": "{{ap|7 to 5}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage per empowered attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      15,
+      30,
+      45,
+      60,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|15 to 75}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [
+      "XinZhaoQ#BonusDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "duration to land the three empowered attacks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "within 5 seconds",
+     "bin": [],
+     "binNote": "No bin data value corresponds to this window duration; the bin has no XinZhaoQ.Duration field, only the per-rank BaseDamage/BADRatio and KnockUpDuration."
+    },
+    {
+     "id": "q_4",
+     "meaning": "ability cooldown reduction on each empowered attack",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "reduce his other {{tip|ability|abilities'}} {{sti|'''current''' cooldowns}} by 1 second",
+     "bin": [],
+     "binNote": "No bin data value listed for this 1 second cooldown refund; the sheet has no matching Q field."
+    },
+    {
+     "id": "q_5",
+     "meaning": "knock up duration on third attack",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}}",
+     "bin": [
+      "XinZhaoQ.KnockUpDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bonus damage is affected by critical strike modifiers.",
+     "quote": "''Three Talon Strike's'' '''bonus''' damage is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Three Talon Strike resets Xin Zhao's basic attack timer.",
+     "quote": "Three Talon Strike {{tip|basic attack reset|resets}} '''Xin Zhao's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each empowered attack refreshes the 5 second duration.",
+     "quote": "Each attack refreshes the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered attacks have an uncancellable windup and cannot be issued commands until it ends, delaying subsequent actions.",
+     "quote": "The enhanced attacks present input buffering during their wind-up animation ('''Xin Zhao''' cannot be issued any commands until after it ends).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the ability's effect (empowerment window/attacks), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks the knock up, not the damage.",
+     "quote": "{{tip|Spell shield}} will only block the knock up.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XinZhaoQ.BADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Wind Becomes Lightning",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}",
+    "binNote": "Wiki lists cast time as 0.5, but the bin's castTime field is 0.6; reporting the wiki's stated value as required, with this discrepancy noted."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage per Slash",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      7.5,
+      10,
+      12.5,
+      15,
+      17.5
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.075
+      }
+     ],
+     "quote": "{{ap|30/4 to 70/4}} {{as|(+ {{ap|30/4}}% AD)}}",
+     "bin": [
+      "XinZhaoW.SlashBaseDamage",
+      "XinZhaoW#SlashDamage"
+     ],
+     "binNote": "Bin's SlashBaseDamage [30/40/50/60/70] and SlashDamage (base + 0.3xad) are the TOTAL across all 4 slashes; per-slash values quoted here are that total divided by 4 (per-slash AD ratio 0.3/4=0.075), matching the wiki's per-slash row."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Thrust Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      85,
+      120,
+      155,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.9
+      },
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|50 to 190}} {{as|(+ 90% AD)}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "XinZhaoW#ThrustDamage"
+     ],
+     "binNote": "The base values [50/85/120/155/190] match the named ThrustBaseDamage data value inside the ThrustDamage calculation. The 0.9 AD and 0.65 AP coefficients appear only as inline literals within the XinZhaoW#ThrustDamage formula text (\"+ 0.9xad + 0.65xap\") and are not exposed as separate named DataValues in the sheet, so no distinct bin row can be cited for them beyond the calculation itself."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Thrust damage amplification from critical strike chance",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.333,
+     "terms": [],
+     "quote": "{{pp|key=%|key1=%|type=critical strike chance|0 to 33.3 for 11|0 to 100|formula=0.33 * critical strike chance}}",
+     "bin": [
+      "XinZhaoW.CritChanceAmp"
+     ],
+     "binNote": "Bin value is 0.333 (33.3%); wiki's formula multiplies the thrust's total damage by (1 + 0.333*critChance)."
+    },
+    {
+     "id": "w_6",
+     "meaning": "Xin Zhao heals for a percentage of the ability's damage times his life steal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.33333,
+     "terms": [],
+     "quote": "''Wind Becomes Lightning's'' damage {{tip|healing|heals}} '''Xin Zhao''' for {{fd|33.{{recurring|3}}}}% of his {{as|{{sti|life steal}}}}",
+     "bin": [],
+     "binNote": "No matching data value in the provided W bin rows; the life-steal-based heal formula is not present in this sheet excerpt."
+    },
+    {
+     "id": "w_7",
+     "meaning": "Interval between successive slash hits",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [],
+     "quote": "applied every 0.05 seconds thereafter",
+     "bin": [
+      "XinZhaoW.DelayTime"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "Number of slash hits",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "4 slashes",
+     "bin": [
+      "XinZhaoW.HitNum"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Each of the 4 slashes is a separate damage instance, causing on-hit/on-damage effects to trigger multiple times.",
+     "quote": "Each of ''Wind Becomes Lightning's'' slashes are applied in a separate damage instance from each other.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first slash happens instantly on cast, and the other 3 slashes follow every 0.05s during the first 0.15s of the cast time.",
+     "quote": "First slash happens on-cast instantly, while the remaining 3 are applied every 0.05 seconds thereafter",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The thrust fires at the end of the cast time from Xin Zhao's position at that moment.",
+     "quote": "The thrust will occur from wherever '''Xin Zhao''' is at the end of the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks both the slashes and the thrust; if it blocks the first (or sometimes second) slash it blocks the rest of the ability including the thrust.",
+     "quote": "If the spell shield blocks the first, or {{tt|sometimes|inconsistent}} the second slash, it will block the rest of the ability, including the thrust.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The thrust's damage is amplified by Xin Zhao's critical strike chance.",
+     "quote": "increased by {{as|{{pp|key=%|key1=%|type=critical strike chance|0 to 33.3 for 11|0 to 100|formula=0.33 * critical strike chance}}|critical chance}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Xin Zhao is healed for a portion of the ability's damage based on his life steal, using the older life-steal-based healing method rather than applying life steal directly, causing Spirit Visage to amplify it twice.",
+     "quote": "Because ''Wind Becomes Lightning'' uses an older type of 'healing based on life steal' and not ''{{tip|applies life steal}}'', {{ii|Spirit Visage}} will amplify the life gain twice",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XinZhaoW.MarkDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "XinZhaoW.BaseSlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "XinZhaoW#MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "XinZhaoW#TotalSlowDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Audacious Charge",
+   "cooldown": {
+    "values": [
+     11,
+     11,
+     11,
+     11,
+     11
+    ],
+    "quote": "11"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 120% AP)}}",
+     "bin": [
+      "XinZhaoE#ChargeDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.38,
+      0.46,
+      0.54,
+      0.62,
+      0.7
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.001
+      },
+      {
+       "stat": "bonusAttackSpeed",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|38 to 70}}% {{as|(+ 10% per 100 AP)}} {{as|(+ 1% per 5% '''bonus''' attack speed from non-buff sources)|as}}",
+     "bin": [
+      "XinZhaoE.ASMod",
+      "XinZhaoE.APToASRatio",
+      "XinZhaoE.PermanentASToASRatio"
+     ],
+     "binNote": "APToASRatio=0.001 is AS gained per point of AP, equal to the wiki's 10% per 100 AP (0.001*100=0.1). The wiki's '1% per 5% bonus attack speed from non-buff sources' implies a coefficient of 0.01/0.05=0.2 per unit of bonus attack speed (as a fraction); PermanentASToASRatio=5 in the bin does not directly equal 0.2, so the exact relationship between this row and the wiki's stated ratio is uncertain and is recorded here as a disagreement/uncertainty rather than resolved by guessing."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Bonus attack speed duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds",
+     "bin": [
+      "XinZhaoE.ASDuration"
+     ]
+    },
+    {
+     "id": "e_4a",
+     "meaning": "Slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "slowing all targets hit by 30%",
+     "bin": [
+      "XinZhaoE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_4b",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "for {{fd|0.5}} seconds",
+     "bin": [
+      "XinZhaoE.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Xin Zhao dashes to the target enemy's location, dealing damage to them and nearby enemies.",
+     "quote": "'''Xin Zhao''' {{tip|dashes}} to the target enemy's location, dealing {{as|magic damage}} to them and nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Three Talon Strike and Crescent Guard can be cast during the dash, allowing ability chaining without waiting for the dash to end.",
+     "quote": "''{{ai|Three Talon Strike|Xin Zhao}} and {{ai|Crescent Guard|Xin Zhao}} can be cast during the dash.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary target cannot dodge the ability's effects and always emits the area of effect from their position.",
+     "quote": "The primary target cannot dodge ''Audacious Charge's'' effects.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XinZhaoE.AoERadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Crescent Guard",
+   "cooldown": {
+    "values": [
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|120 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      75,
+      175,
+      275
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      },
+      {
+       "stat": "ap",
+       "coef": 1.1
+      },
+      {
+       "stat": "targetCurrentHp",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|75 to 275}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 110% AP)}} {{as|(+ 15% of target's '''current''' health)}}",
+     "bin": [
+      "XinZhaoR#TotalDamage",
+      "XinZhaoR.PercentCurrentHealthDamage"
+     ],
+     "binNote": "XinZhaoR#TotalDamage's listed calculation only shows flat+bonusAd+ap terms; the current-health term matches the separate data value XinZhaoR.PercentCurrentHealthDamage=0.15, which the calculation apparently omits from the sheet's printed formula but the wiki confirms is part of the total damage."
+    },
+    {
+     "id": "r_2",
+     "meaning": "damage cap against minions and monsters",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 600,
+     "terms": [],
+     "quote": "capped at 600 against {{tip|minions}} and {{tip|monsters}}",
+     "bin": [],
+     "binNote": "wiki-only cap on non-champion targets, not present as a separate bin row; not-in-a-dummy-fight since it caps damage to minions/monsters, and the dummy fight target counts as a champion"
+    },
+    {
+     "id": "r_3",
+     "meaning": "knockback/stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "up-to 700 units over {{fd|0.75}} seconds",
+     "bin": [],
+     "binNote": "no matching data value found in the sheet for this knockback/stun duration; likely a hardcoded animation/timing value not exposed in the listed bin rows"
+    },
+    {
+     "id": "r_4",
+     "meaning": "invulnerability duration against distant enemy champions",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "For the next 4 seconds, '''Xin Zhao''' is {{tip|invulnerable}} against enemy {{tip|champions}} far away from him.",
+     "bin": [
+      "XinZhaoR.MissileDefenseBaseDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks and Audacious Charge apply the Challenged mark; targets already marked Challenged are not knocked back/stunned by the R active.",
+     "quote": "knocking back}} all targets hit that are not ''{{ai|Challenged|Xin Zhao|border=false}}''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts on cast, not on effect resolution.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The invulnerability only applies against enemy champions far away from Xin Zhao (outside a minimum radius), not all sources.",
+     "quote": "'''Xin Zhao''' is {{tip|invulnerable}} against enemy {{tip|champions}} far away from him.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage-over-time and delayed-damage abilities from a source outside the immunity circle at resolution time will not damage Xin Zhao.",
+     "quote": "delayed-damage abilities (e.g. {{ai|Death Mark|Zed}}, {{ai|Explosive Charge|Tristana}}, {{ai|Hemoplague|Vladimir}}) will not damage '''Xin Zhao''' if the enemy champion source is outside the circle when the damage applies.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XinZhaoR.MissileDefenseRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "XinZhaoR.MarkDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Determination: every 3rd on-hit-generating action (basic attack on-hit, or W's first slash hit / thrust) consumes 3 stacks to deal bonus physical damage and heal Xin Zhao; separate counters for the damage-stack and heal-stack systems, both capped at 3."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q arms the next 3 basic attacks (within 5s, refreshed on each hit) to deal bonus physical damage; the 3rd also knocks up."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Q-empowered attack resets Xin Zhao's basic attack timer."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Q-empowered attack reduces the current cooldowns of Xin Zhao's other abilities (W, E, R) by 1 second."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W is 4 separate slash damage instances (first on cast, next 3 every 0.05s) followed by a separately-timed thrust instance; each is its own damage event."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's thrust damage is amplified by 0.333x Xin Zhao's critical strike chance; the thrust itself does not crit but scales off the stat."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "E grants Xin Zhao bonus attack speed for 5 seconds after the dash."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's bonus attack speed itself scales with AP and with Xin Zhao's own bonus attack speed from non-buff sources (item/rune AS), a nonlinear self-referential conversion."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's damage includes a flat term plus a term equal to 15% of the target's current health, in addition to AD/AP ratios."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E and R deal their damage on a fixed near-instant timing on cast (E on-dash-connect, R at end of 0.35s cast time), then go on cooldown."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's 4s invulnerability against far-away enemy champions and the knockback/stun on non-Challenged targets are never read by a damage-only dummy fight; relevant only to the survival fight, and even there only against ranged/poke sources, which a single enemy champion rotation may or may not trigger."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics -- Determination's dual on-hit/on-attack stack-and-consume proc, Q's empowered-attack window with attack resets and cooldown refunds, W's multi-instance slash+thrust with crit-chance-scaled thrust, E's self-referential AS conversion, and R's current-health-scaling nuke -- are each expressible with one or two primitives from the closed list. No mechanic (e.g. no stance change, no pet, no ammo system, no execute threshold) falls outside the list."
+ },
+ "unsettled": [
+  {
+   "question": "What is the exact formula for how Xin Zhao's own bonus attack speed (from items/runes) increases E's bonus AS gain -- the bin's XinZhaoE.PermanentASToASRatio=5 and the wiki's '+1% AS per 5% bonus AS from non-buff sources' do not obviously match up (a ratio of 5 vs. an implied per-unit ratio of 0.2), so it is unclear which reading (or a different one) is correct.",
+   "options": [
+    "Use the wiki's literal 1% E-AS gain per 5% of Xin Zhao's existing non-buff bonus AS (coefficient 0.2 per unit)",
+    "Use the bin's PermanentASToASRatio=5 directly as the coefficient on bonus AS",
+    "Some other transform of the bin value (e.g. 5 is expressed in different units, such as per 100% rather than per 1%)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|(+ 1% per 5% '''bonus''' attack speed from non-buff sources)|as}}",
+    "XinZhaoE.PermanentASToASRatio = 5"
+   ]
+  },
+  {
+   "question": "What is W's true cast time -- the wiki template states 0.5s but the bin's castTime field for W is 0.6 -- since this affects how long W blocks other actions and how quickly it can be looped with autos in the 15s fight.",
+   "options": [
+    "Use the wiki's 0.5s cast time (matches the described 0.15s slash window + remaining cast time structure)",
+    "Use the bin's 0.6 castTime value",
+    "The two represent different things (e.g. wiki cast time excludes a fixed queue/animation buffer the bin includes) and both are partially correct"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cast time    = {{fd|0.5}}",
+    "castTime: 0.6"
+   ]
+  },
+  {
+   "question": "When W's first slash and its thrust each independently generate a Determination stack in the same cast, and this pushes the damage-stack counter to 3 mid-cast (e.g. slash was the 2nd stack, thrust is the 3rd), does the bonus damage/heal proc trigger immediately after the thrust lands (essentially simultaneous with W's own damage), or is there a resolution-order/timing rule the sources don't state?",
+   "options": [
+    "Proc triggers instantly on the thrust connecting, stacking as separate near-simultaneous damage in the same frame as W's damage",
+    "Proc has some engine-level queuing delay not documented by either source",
+    "Not distinguishable for a dummy-fight DPS total either way, since both land within the same GCD-less cast"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Only the initial slash of {{ai|Wind Becomes Lightning|Xin Zhao}} can generate a ''Determination'' stack.",
+    "The third stack {{tt|consumes them|See notes for consumption details}} all to deal ... bonus physical damage"
+   ]
+  },
+  {
+   "question": "Q's cooldown is flagged 'cdstart = post-effect' -- if the third empowered attack is not landed within the 5s window in a real fight (not an issue against a stationary dummy that Xin Zhao keeps attacking, but relevant to how the simulator should model Q's effective cooldown timer), does the cooldown start counting from the last attack landed, from the end of the 5s window regardless, or only once all 3 attacks connect?",
+   "options": [
+    "Cooldown starts once the 3rd empowered attack connects (or the window fully expires, whichever first)",
+    "Cooldown starts immediately on cast, and 'post-effect' just means after the cast-time-less immediate empowerment applies",
+    "Ambiguous / not stated precisely enough to model without assuming the dummy fight always lands all 3 attacks, in which case this doesn't matter"
+   ],
+   "impact": "low",
+   "quotes": [
+    "cdstart      = post-effect"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Wind Becomes Lightning (W) at max range/on the dummy for the 4-slash + thrust burst, Determination stack progress, and the lifesteal-based self-heal.",
+   "Immediately follow with Audacious Charge (E) to add the magic-damage burst and pick up the 5s bonus attack speed window.",
+   "Cast Three Talon Strike (Q) as soon as available (it has no cast time and doesn't interrupt attacking) to arm the next 3 basic attacks, refresh attack timer on each empowered hit, and shave 1s off W/E/R cooldowns per hit.",
+   "Weave in Crescent Guard (R) for its flat + %current-health physical burst as soon as it is off cooldown (best used early while the dummy is near full health, since the %current-health term is largest then).",
+   "Auto-attack on-hit continuously between ability casts, letting basic attacks feed both Determination's damage-stack and heal-stack counters and benefit from Q's attack resets.",
+   "Recast W, E, and Q on cooldown for the remainder of the 15s window in roughly W > Q > E priority (W and Q have the shortest cooldowns and highest weighted damage-per-cooldown-second; use R the moment it comes back up)."
+  ],
+  "questions": [
+   "Is R (Crescent Guard) worth delaying past its first availability to line up with Determination's 3rd stack proc for burst stacking, or is casting it on cooldown always correct for total damage over 15s?",
+   "Given Q's cooldown reduction on other abilities scales with number of empowered attacks landed, should Q be cast as early and often as possible even at the cost of slightly delaying W/E casts, to compound the CDR across the fight?",
+   "Does the E attack-speed buff's uncertain scaling (see unsettled AS-conversion question) change whether prioritizing early E casts for the AS window is worth it relative to front-loading W/R burst?",
+   "In a 15s dummy fight is there ever a reason to hold Q's 3rd (knock-up) attack rather than just cycling all 3 as fast as possible, given the target never retaliates or repositions?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

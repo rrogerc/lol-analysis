@@ -1,0 +1,141 @@
+{
+ "champion": "jinx",
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Toggle between Pow-Pow (plain autoattacks that build Rev'd up AS stacks) and Fishbones (autoattacks cost mana on-attack, deal 110% AD modified physical damage + AoE splash, gain range, lose 10% bonus AS)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Rev'd up: Pow-Pow autoattacks build up to 3 stacks of bonus attack speed (first stack twice as potent, each stack expires individually 2.5s after being granted/refreshed)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Get Excited!: a champion takedown grants up to 5 stacks of 25% total AS beyond the normal cap, decaying over 6s; only fires on a kill, which in a single-dummy damage fight happens once at the very end."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Fishbones mode adds modified physical damage (110% AD, crit-affected) to the primary target on every basic attack, plus AoE splash to nearby enemies (proc damage, no lifesteal/on-hit)."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Passive raises Jinx's attack speed cap to 90.0 while stacked; Fishbones mode separately reduces her bonus attack speed by 10%."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Both normal and Fishbones-mode primary-target autoattack damage can critically strike; Fishbones AoE splash cannot."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Zap!, Flame Chompers!, and Super Mega Death Rocket! deal damage on cast/impact on their own cooldowns."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's bonus damage scales with the target's missing health (25-35% base, 20-28% on secondary/AoE targets), independent of the travel-distance component."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (20 per Fishbones autoattack, plus W/E/R cast costs) can meaningfully constrain casts/attacks across a 15s fight, especially sustained Fishbones autoattacking."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R",
+    "E"
+   ],
+   "note": "R's damage ramps with projectile travel distance up to 1500 units (10% to 100% of max) and its secondary AoE (80% damage) plus E's chomper splash only matter with multiple targets or engagement distance, both of which a single stationary dummy fight must assume a value for."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Q is a toggle that swaps Jinx's entire basic-attack profile (damage formula, range, attack-speed penalty, and a per-attack mana cost rather than a per-cast cost) between two stances, and a Rev'd up stack built in one stance is only partially honored on the first attack after switching to the other. The closed primitive list can approximate the pieces (weapon-or-ammo-system, stacking-self-buff, onhit-rider, resource-budget) but none of them natively models 'cost attached to every basic attack while in a given stance' or 'buff partially carries across a stance switch for exactly one attack', so bespoke logic is needed to wire these primitives together correctly for Jinx."
+ },
+ "unsettled": [
+  {
+   "question": "Does Rev'd up (Pow-Pow AS stacks) persist and continue decaying/expiring after the one Fishbones attack that benefits from it, or is it cleared the instant Jinx switches to Fishbones?",
+   "options": [
+    "Stacks are consumed/cleared once the first Fishbones attack benefits from them",
+    "Stacks remain and keep decaying on their normal timers even though only the first Fishbones attack reads them, so switching back to Pow-Pow quickly could resume from leftover stacks"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Stacks expire one by one when the duration ends.",
+    "Only the first attack after switching to [[File:Switcheroo!.png|20px|link=]] Fishbones will benefit from [[File:Rev'd up buff.png|20px]] Rev'd up"
+   ]
+  },
+  {
+   "question": "For a stationary dummy at melee/point-blank range, how far has Super Mega Death Rocket! traveled when it hits, since its physical damage scales 10% to 100% based on distance traveled up to 1500 units?",
+   "options": [
+    "Simulator assumes Jinx fires from max effective range so R hits near/at max travel-distance damage",
+    "Simulator assumes point-blank engagement so R hits for only its minimum (10%) distance-scaled damage",
+    "Simulator uses some fixed mid-range assumption"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Super Mega Death Rocket!'' deals {{pp|type=distance traveled|key=%|10 to 100 for 16|0 to 1500}} damage. This does not affect the '''bonus''' damage based on the {{as|target's '''missing''' health}}.",
+    "The maximum damage is reached after traveling 1500 units, which is exactly equal to the range of her {{ai|Zap!|Jinx}}, or roughly {{fd|0.85}} seconds of travel time."
+   ]
+  },
+  {
+   "question": "W's cast time is given by the wiki as a lookup from 0.6s (0% bonus AS) down to a floor of 0.4s (250%+ bonus AS), while the bin's JinxW.JinxLowEndWCastTime=0.4 and a per-hundredth-AS scalar of 0.08 describe the same curve from the other end; is the interpolation linear across that whole range and does bonus AS from all sources (items, Get Excited!, Rev'd up) count toward it?",
+   "options": [
+    "Linear interpolation from 0.6 at 0% bonus AS to 0.4 at 250% bonus AS, floored at 0.4 thereafter, using all bonus AS sources",
+    "Some non-linear or capped variant not fully specified by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|0.6 to 0.4 for 11|0 to 250|key1=%|type='''bonus''' attack speed|color=attack speed}}",
+    "JinxW.JinxWASpeedCastTimeScalarPerHundrethSecond = 0.08"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Toggle Switcheroo! to Fishbones at the start of the fight for extra per-attack physical damage and range.",
+   "Fire Super Mega Death Rocket! (R) as early as feasible, positioned to maximize its travel-distance damage bonus before it hits the target.",
+   "Cast Flame Chompers! (E) and Zap! (W) on cooldown throughout the fight for their flat direct damage.",
+   "Autoattack continuously with Fishbones for its per-hit bonus damage as long as mana allows.",
+   "If mana runs low, toggle back to Pow-Pow (no cast cost) and keep autoattacking to build Rev'd up attack-speed stacks and sustain DPS without further draining mana.",
+   "Recast W and E again as their cooldowns come up (both are short enough to be used multiple times in 15s); R likely only fires once given its long cooldown relative to a 15s window."
+  ],
+  "questions": [
+   "Given typical mid/late-game AD and mana pool for this build, is sustained Fishbones autoattacking (extra flat damage per hit, mana-limited) actually higher DPS over 15s than staying in Pow-Pow and stacking attack speed, or does mana starvation make Pow-Pow the stronger choice?",
+   "Should the simulator toggle Q mid-fight (Fishbones -> Pow-Pow) when mana is depleted, or does the dummy fight assume unlimited/refilled mana so Jinx should just stay in Fishbones the whole time?",
+   "Does the simulator engage the dummy at Fishbones' extended range from the start, or does Jinx begin in Pow-Pow's shorter range and switch weapons only after closing distance, delaying the first few high-value hits?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

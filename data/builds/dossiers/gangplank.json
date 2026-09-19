@@ -1,0 +1,961 @@
+{
+ "champion": "gangplank",
+ "abilities": {
+  "P": {
+   "name": "Trial by Fire / Trial by Fire 2",
+   "cooldown": {
+    "values": [
+     15
+    ],
+    "quote": "15"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "true damage over time from empowered attack",
+     "role": "dot",
+     "damageType": "true",
+     "by": "level",
+     "base": [
+      50,
+      61.76,
+      73.53,
+      85.29,
+      97.06,
+      108.82,
+      120.59,
+      132.35,
+      144.12,
+      155.88,
+      167.65,
+      179.41,
+      191.18,
+      202.94,
+      214.71,
+      226.47,
+      238.24,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{pplevel|50 to 250|color=true damage}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "GangplankPassive#TotalDamage"
+     ],
+     "binNote": "Sheet gives GangplankPassive#TotalDamage = byLevel(50..250) + 1x bonus AD, matching the base/ratio; exact per-level values 2-17 are not given by the sheet or wiki (only endpoints), so a linear interpolation across 18 levels is used here."
+    },
+    {
+     "id": "p_2",
+     "meaning": "duration over which the DoT burn ticks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "GangplankPassive.DoTDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "tick interval of the DoT burn",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "every {{fd|0.25}} seconds over {{fd|2.5}} seconds",
+     "bin": [],
+     "binNote": "No bin row gives a tick interval; DoTDuration=2.5 only states total duration. Wiki alt-description text states the 0.25s tick cadence, likely matching the 0.25 castTime-style granularity used elsewhere in the kit, but no bin field confirms it directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Reapplying Trial by Fire before a previous application ends stacks the full damage rather than refreshing the duration.",
+     "quote": "Reapplying ''Trial by Fire'' before a previous application has run out will stack the full damage, instead of refreshing the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the empowered attack is dodged or Gangplank is blinded, the burn does not apply and the passive does not go on cooldown; if the attack is blocked, the burn does not apply but the cooldown still triggers.",
+     "quote": "If the attack is {{tip|dodge|dodged}} or if '''Gangplank''' is {{tip|blind|blinded}}, the effect is not applied nor does ''Trial by Fire'' go on cooldown. If the attack is {{tip|block|blocked}}, the effect is not applied, but ''Trial by Fire'' will go on cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Every time a Powder Keg explodes, Trial by Fire's cooldown resets, allowing it to be applied again sooner.",
+     "quote": "Every time a ''{{ai|Powder Keg|Gangplank}}'' explodes, the {{sti|cooldown}} for ''Trial by Fire'' resets",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Trial by Fire cannot be applied together with (in the same attack as) Parrrley or Powder Keg.",
+     "quote": "Trial by Fire cannot be applied with {{ai|Parrrley|Gangplank}} nor {{ai|Powder Keg|Gangplank}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Turrets take 50% damage from the empowered attack's burn.",
+     "quote": "{{tip|turret|Turrets}} are dealt 50% damage.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GangplankPassive.MoveSpeedDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "GangplankPassive.TurretDamageMult",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "GangplankPassive.ADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Parrrley / Silver Serpents",
+   "cooldown": {
+    "values": [
+     4.5,
+     4.5,
+     4.5,
+     4.5,
+     4.5
+    ],
+    "quote": "{{fd|4.5}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     45,
+     40,
+     35,
+     30
+    ],
+    "quote": "{{ap|50 to 30}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      40,
+      70,
+      100,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|10 to 130}} {{as|(+ 100% AD)}}",
+     "bin": [
+      "GangplankQWrapper#ShotDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Gold Plunder",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "terms": [],
+     "quote": "{{g|{{ap|3 to 7}}}}",
+     "bin": [
+      "GangplankQWrapper.GoldProc"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Silver Serpent Plunder",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "terms": [],
+     "quote": "[[File:Silver Serpents.png|20px|link=]] {{ap|4 to 8}}",
+     "bin": [
+      "GangplankQWrapper.SSProc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability deals basic (attack) damage that also triggers spell effects, and is affected by critical strike modifiers.",
+     "quote": "''Parrrley'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shot applies on-hit effects as a ranged attack and triggers on-attack effects.",
+     "quote": "fires a shot at the target enemy that deals {{as|physical damage}}, applies {{tip|on-hit}} effects as a {{tip|ranged}} attack, and triggers {{tip|on-attack}} effects",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is affected by critical strike modifiers.",
+     "quote": "This damage is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GangplankQWrapper.ADRatio",
+     "reason": null
+    },
+    {
+     "ref": "GangplankQWrapper.CherryRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "GangplankQWrapper.GameModeInteger",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "GangplankQWrapper.CritDamageMod",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "GangplankQWrapper.PlunderThreshold",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Remove Scurvy",
+   "cooldown": {
+    "values": [
+     22,
+     20,
+     18,
+     16,
+     14
+    ],
+    "quote": "{{ap|22 to 14}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      45,
+      70,
+      95,
+      120,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      },
+      {
+       "stat": "missingHp",
+       "coef": 0.13
+      }
+     ],
+     "quote": "{{ap|45 to 145}} {{as|(+ 90% AP)}} {{as|(+ 13% '''missing''' health)}}",
+     "bin": [
+      "GangplankW#BaseHealth",
+      "GangplankW.PercentHeal"
+     ],
+     "binNote": "wiki AP ratio is 90% AP; bin's GangplankW#BaseHealth calculation lists 0.9xap, matching. PercentHeal=13 matches the 13% missing health term."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Remove Scurvy cleanses Gangplank of all crowd control effects.",
+     "quote": "cleansing himself from all {{tip|crowd control}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Remove Scurvy does not remove non-CC debuffs, such as the damage reduction from Exhaust.",
+     "quote": "does not remove [[debuff]]s other than {{tip|crowd control}}, even if both occur from the same effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal scales with Gangplank's missing health at time of cast.",
+     "quote": "{{as|(+ 13% '''missing''' health)}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GangplankW.BuffDuration_unused",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "GangplankW.HasteAmount",
+     "reason": "unknown"
+    },
+    {
+     "ref": "GangplankW.SteroidAmount_unused",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Powder Keg",
+   "cooldown": {
+    "values": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "quote": "{{fd|0.5}}",
+    "binNote": "This is the delay between chained keg explosions, not a spell cooldown; recharge governs new-keg charges instead."
+   },
+   "cost": {
+    "values": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "quote": "1",
+    "resource": "charge"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Maximum charges",
+     "role": "count",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3,
+      3,
+      4,
+      4,
+      5
+     ],
+     "terms": [],
+     "quote": "{{ap|3|3|4|4|5}}",
+     "bin": [
+      "GangplankE.MaxBarrels"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 80}}%",
+     "bin": [
+      "GangplankE.BarrelSlow",
+      "GangplankE#FinalSlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Bonus Champion Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      75,
+      95,
+      115,
+      135,
+      155
+     ],
+     "terms": [],
+     "quote": "{{ap|75 to 155}}",
+     "bin": [
+      "GangplankE.BonusDamageToChampions"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "keg starting health / hits to destroy",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "The keg starts with {{as|3 health}}",
+     "bin": [],
+     "binNote": "No sheet row carries the keg's own hit points; not exposed as a DataValue in the sheet."
+    },
+    {
+     "id": "e_5",
+     "meaning": "keg lifetime before it despawns",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "that lasts for 25 seconds",
+     "bin": [
+      "GangplankE.BarrelDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "decay tick interval by Gangplank's level",
+     "role": "interval",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+     ],
+     "terms": [],
+     "quote": "loses {{as|1|health}} every {{pp|2;1;0.5|1;7;13}} seconds",
+     "bin": [
+      "GangplankE#BarrelDecayTime"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "slow duration on explosion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "dealt the triggering {{tt|{{as|attack's damage}}|see notes}} and {{tip|slow|slowed}} for 2 seconds",
+     "bin": [
+      "GangplankE.DebuffDuration"
+     ]
+    },
+    {
+     "id": "e_8",
+     "meaning": "armor penetration on explosion damage",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [],
+     "quote": "ignores {{sti|armor penetration|{{as|40% of the target's armor}}}}",
+     "bin": [
+      "GangplankE.BarrelArmorPenetration"
+     ]
+    },
+    {
+     "id": "e_9",
+     "meaning": "delay between chained explosions",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "{{rutngt|0.3}}-delay between explosions",
+     "bin": [
+      "GangplankE.CooldownBetweenBarrels"
+     ],
+     "binNote": "Wiki text says the chain delay is 0.3s, while the bin's GangplankE.CooldownBetweenBarrels row (also shown as the ability's cooldown/recharge=0.5) reads 0.5; treated as the same mechanic but the values disagree."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The explosion deals the triggering attack's damage (the basic attack or Parrrley shot that destroyed the keg) to nearby enemies, not a fixed spell damage value.",
+     "quote": "it will explode to deal the {{as|attack's damage|pdamage}} to nearby enemies and {{tip|slow}} them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only an attack from Gangplank himself destroys and detonates the keg; an enemy destroying it simply dismantles it safely with no explosion.",
+     "quote": "If an enemy destroys a ''Powder Keg'', it is safely dismantled.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bonus physical damage to champions and armor penetration only apply against champion targets, on top of the triggering attack's damage.",
+     "quote": "Against an enemy {{tip|champion}}, the explosion additionally deals {{as|'''bonus''' physical damage}} and ignores a {{sti|armor penetration|{{as|portion of their armor}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A keg explosion can chain-trigger nearby connected kegs to also explode, each hitting an enemy once per chain.",
+     "quote": "The explosion will cause nearby ''Powder Kegs'' to also explode.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The triggering attack can critically strike, causing the explosion to deal the attack's critical damage instead.",
+     "quote": "The triggering attack on the keg can {{tip|critically strike}}, causing the explosion to deal the attack's critical damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The triggering attack's damage used for the explosion can include Parrrley's base damage and Spellblade, but on-hit proc damage against the keg itself is reduced to zero and does not add to the explosion.",
+     "quote": "Attacks against ''Powder Kegs'' will apply {{tip|on-hit}} effects (such as {{iis|Tiamat}} {{nie|Cleave}}), but {{tip|proc damage}} against the keg itself is reduced to 0.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage modifiers apply to damage dealt by kegs but not to damage dealt to kegs (i.e. the 1 damage per hit that reduces keg health).",
+     "quote": "[[Damage modifier]]s are applied to the damage dealt '''by''' kegs, but not to the damage dealt '''to''' kegs.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Slow, bonus champion damage, and keg health decay speed are locked in based on Gangplank's rank/level when the keg is placed, not when it explodes.",
+     "quote": "The {{tip|slow}}, {{as|'''bonus''' physical damage}} to champions, and keg {{as|health}} decay speed are determined when the keg is placed.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GangplankE.BarrelBaseDecay",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "GangplankE.BarrelEnemyGoldBounty",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "GangplankE.MinionDamagePercentage",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Cannon Barrage",
+   "cooldown": {
+    "values": [
+     160,
+     140,
+     120
+    ],
+    "quote": "{{ap|160 to 120}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage Per Wave",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      70,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|40 to 100}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "GangplankR#OneWaveDamage",
+      "GangplankR.DamagePerWave"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "True Damage with Death's Daughter",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      120,
+      210,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|40*3 to 100*3}} {{as|(+ {{ap|10*3}}% AP)}}",
+     "bin": [
+      "GangplankR#DeathsDaughterDamage",
+      "GangplankR.DeathsDaughterBaseDamage"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Total number of cannonball waves fired",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 12,
+     "terms": [],
+     "quote": "calling down 12 waves of cannonballs in clusters of 3 every 2 seconds",
+     "bin": [
+      "GangplankR.TotalWavesTooltip"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Interval between cannonball clusters",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "clusters of 3 every 2 seconds",
+     "bin": [
+      "GangplankR.CannonInterval"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "Delay between individual waves within a cluster",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "each wave in a cluster hitting {{fd|0.25}} seconds after the other",
+     "bin": [
+      "GangplankR.CannonDelay"
+     ],
+     "binNote": "Wiki states the intra-cluster wave delay is 0.25s, but the bin's GangplankR.CannonDelay is 0.5. These may measure different things (e.g. delay may include an initial offset), but as named this is a direct disagreement between the wiki description and the bin value; reporting the wiki's 0.25 as stated."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Cannon Barrage fires 12 waves in clusters of 3 every 2 seconds, with each wave in a cluster landing 0.25 seconds after the previous, each wave being a separate magic damage instance to all enemies in the area.",
+     "quote": "calling down 12 waves of cannonballs in clusters of 3 every 2 seconds, each wave in a cluster hitting {{fd|0.25}} seconds after the other",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each wave deals magic damage to all enemies within the area.",
+     "quote": "Each wave deals {{as|magic damage}} to all enemies within the area and {{tip|slow|slows}} them by 30% for {{fd|0.5}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "With the Death's Daughter shop upgrade, a large cannonball lands in the center after the first cluster, dealing a cluster's worth of true damage as a separate instance.",
+     "quote": "A large cannonball lands in the center of the barrage after the first cluster of waves occur, dealing a cluster's worth of {{as|true damage}} to enemies within the impact",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "With the Fire at Will shop upgrade, Cannon Barrage fires 18 total waves in clusters of 3 every ~1.33 seconds instead of 12 waves every 2 seconds, increasing total damage output.",
+     "quote": "''Cannon Barrage'' fires{{ft|6 additional waves|2 additional clusters}}over its duration; 18 waves of cannonballs are called down in clusters of 3 every {{fd|1.3{{recurring|3}}}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown starts on cast, not on completion of the barrage.",
+     "quote": "Starts on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GangplankR.RaiseMoraleHaste",
+     "reason": "utility"
+    },
+    {
+     "ref": "GangplankR.ZoneDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "GangplankR.SlowPercent",
+     "reason": "utility"
+    },
+    {
+     "ref": "GangplankR.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "GangplankR.DeathsDaughterSlow",
+     "reason": "utility"
+    },
+    {
+     "ref": "GangplankR.DeathsDaughterSlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "GangplankR.RaiseMoraleHasteDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Trial by Fire empowers next basic attack with a true-damage DoT every 15s cooldown, refreshed/reset by Powder Keg explosions"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "the next basic attack is armed to apply the burn"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Powder Keg explosions reset Trial by Fire's cooldown"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "true damage burn over 2.5s"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Parrrley fires on cast on cooldown; Cannon Barrage fires waves on cast"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "mana costs limit cast frequency, especially R (100 mana) and repeated Q"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Powder Keg placement + separate trigger via attack/Parrrley with chain explosions; Cannon Barrage fires 12 separately-timed waves in 4 clusters"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Powder Keg uses a charge/stock system with a max charge count and recharge timer, not a normal cooldown"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Powder Keg slow + armor penetration on champions; Cannon Barrage slow (utility only, ignored for damage but armor pen affects damage taken)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "bonus physical damage to champions only, on top of base explosion damage"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Parrrley damage can crit; a keg-destroying attack that crits causes the explosion to deal crit damage"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Remove Scurvy is a self-heal/cleanse with no damage relevance in the damage fight, but relevant to survival fight as a heal"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Powder Keg (E) does not fit any single primitive cleanly: it is placed on a location as a distinct entity with its own hit points (3 health, decaying over time), must then be destroyed by a separate basic attack or Parrrley cast from Gangplank to explode, and that triggering attack's own damage (including on-hit/Spellblade effects but not on-hit proc damage) becomes the explosion's base damage, plus a flat bonus vs champions, with a chain-reaction to other nearby kegs each on a 0.3s (or bin's 0.5s) delay. This is a two-stage cast-then-destroy pet/trap mechanic with damage-forwarding from the triggering attack, which is not captured by weapon-or-ammo-system, pet-or-summon, or recast-or-multipart alone. A bespoke rule is needed: place keg -> attack keg with a normal attack or Q -> that attack's damage (plus champion bonus, minus armor pen) is dealt as keg explosion damage, with the placing attack itself also dealing its own damage to the dummy directly (double-dip), and chains only relevant if multiple kegs are placed and clustered (a positional assumption the dummy fight must decide)."
+ },
+ "unsettled": [
+  {
+   "question": "What is Powder Keg's chain-explosion delay: 0.3s (wiki) or 0.5s (bin GangplankE.CooldownBetweenBarrels)?",
+   "options": [
+    "Use wiki's 0.3s stated for chain delay",
+    "Use bin's 0.5s (same field also doubles as recharge/cooldown value)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{rutngt|0.3}}-delay between explosions",
+    "GangplankE.CooldownBetweenBarrels = 0.5"
+   ]
+  },
+  {
+   "question": "Cannon Barrage intra-cluster wave delay: wiki says 0.25s between waves in a cluster, but bin's GangplankR.CannonDelay = 0.5.",
+   "options": [
+    "Use wiki's 0.25s",
+    "Use bin's 0.5s",
+    "They measure different things (e.g. delay from cluster start vs between waves) and both could be simultaneously true"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "each wave in a cluster hitting {{fd|0.25}} seconds after the other",
+    "GangplankR.CannonDelay = 0.5"
+   ]
+  },
+  {
+   "question": "How many Powder Kegs should the damage-fight rotation place and detonate, and does the dummy-fight model even support a keg as a distinct destructible entity with its own damage-forwarding rule, or should it be approximated as a flat bonus proc on attacks?",
+   "options": [
+    "Model E fully: place a keg then destroy it with a basic attack/Q, forwarding that attack's damage into a second explosion instance with the champion bonus added",
+    "Approximate E as a periodic bonus true/physical damage proc timed by the charge recharge rate, ignoring the two-step place/destroy structure",
+    "Exclude E from the damage fight entirely as too far outside engine primitives"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Gangplank''' consumes a charge to place a powder keg at the target location",
+    "it will explode to deal the {{as|attack's damage|pdamage}} to nearby enemies"
+   ]
+  },
+  {
+   "question": "Does the same attack that destroys a keg deal both its normal damage to the dummy AND get 'redealt' as the explosion damage (double-hit), or does destroying the keg replace/redirect that attack's damage so the dummy is hit once for a combined total?",
+   "options": [
+    "Dummy takes the attack's normal damage instance, plus a separate explosion damage instance equal to that same attack's damage + champion bonus (double count)",
+    "The keg destroying attack only deals its damage via the explosion (single instance), since the keg absorbs the attack (proc damage to the keg itself is reduced to 0)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Attacks against ''Powder Kegs'' will apply {{tip|on-hit}} effects...but {{tip|proc damage}} against the keg itself is reduced to 0.",
+    "it will explode to deal the {{as|attack's damage|pdamage}} to nearby enemies"
+   ]
+  },
+  {
+   "question": "Does Trial by Fire's cooldown reset from a Powder Keg explosion happen once per keg detonated by Gangplank in the 15s fight, and should the rotation assume Gangplank keeps a keg pre-placed to instantly refresh Trial by Fire on cooldown, effectively removing its 15s cooldown constraint?",
+   "options": [
+    "Assume keg resets are used opportunistically to near-permanently uptime Trial by Fire (best case for damage)",
+    "Assume Trial by Fire is used on its raw 15s cooldown without keg resets (conservative/simple case)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Every time a ''{{ai|Powder Keg|Gangplank}}'' explodes, the {{sti|cooldown}} for ''Trial by Fire'' resets and '''Gangplank''' gains its {{as|'''bonus''' movement speed}}."
+   ]
+  },
+  {
+   "question": "Is Trial by Fire's true-damage burn (P) mutually exclusive with Q (Parrrley) and E (Powder Keg) applying it at all, or only exclusive in the same attack instance (i.e., can a subsequent auto-attack after a Q still apply it)?",
+   "options": [
+    "Trial by Fire can never be applied via Q or E casts, only via plain basic attacks",
+    "Trial by Fire is blocked only on the specific attack instance that is a Q or keg-trigger, but any other basic attack (including ones that also proc other on-hit effects) can carry it"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Trial by Fire cannot be applied with {{ai|Parrrley|Gangplank}} nor {{ai|Powder Keg|Gangplank}}."
+   ]
+  },
+  {
+   "question": "Does Cannon Barrage's global-range, location-targeted AOE actually land on and fully hit a single stationary dummy target for all 12 waves (i.e., can we assume 100% wave uptime on the dummy), given the dummy fight has no positioning/movement?",
+   "options": [
+    "Assume all waves hit the stationary dummy (best case, matches spec's stationary-target assumption)",
+    "Assume some waves could miss if the dummy could reposition (not applicable here since target is stationary)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "calling down 12 waves of cannonballs in clusters of 3 every 2 seconds... to all enemies within the area"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: place a Powder Keg near the dummy if a charge is available (does not cost time in the fight, keg has 25s lifetime), to set up an instant Trial by Fire refresh once destroyed.",
+   "Open by casting Cannon Barrage (R) on the dummy's location immediately (long cooldown, cast early to maximize uptime of its 12 magic-damage waves across the fight duration).",
+   "Immediately follow with Parrrley (Q) on cooldown throughout the fight (4.5s cooldown, cheap enough on mana budget) as the primary repeated damage source.",
+   "Whenever Trial by Fire is off cooldown, weave a basic attack (or let auto-attacks naturally continue) into the Q rotation so the empowered burn attack fires immediately once available.",
+   "Attack the placed Powder Keg (via basic attack or Parrrley) as soon as convenient to detonate it, dealing the triggering attack's damage plus the champion bonus damage, and to reset Trial by Fire's cooldown for another proc.",
+   "Re-place and re-detonate Powder Kegs whenever a charge is available and it does not delay Q/auto-attack casts, to keep resetting Trial by Fire and adding extra explosion damage instances.",
+   "Continue basic-attacking between Q casts (respecting its cast time and the attack timer) to maximize total auto-attack damage and Trial by Fire uptime.",
+   "Do not cast Remove Scurvy (W) in the damage fight since it only heals/cleanses and has no damage-fight contribution; only relevant in the survival fight as periodic self-healing on cooldown."
+  ],
+  "questions": [
+   "In the intended damage-fight sim, is Gangplank expected to actively manage the Powder Keg place-then-destroy loop, or is E excluded/simplified because it needs bespoke logic the primitive list can't express?",
+   "Should Trial by Fire resets from Powder Keg explosions be assumed to happen on-cooldown throughout the fight (best case), given they require actively timing an extra basic attack onto a placed keg?",
+   "Does casting Q at a target that has a keg nearby cause it to hit the champion target directly as well as detonate the keg, or does the sim need to treat keg detonation as an entirely separate, optional action from the main single-target rotation?",
+   "For the survival fight, should Remove Scurvy's heal timing (on cooldown vs. saved for a health threshold) be assumed, since that materially changes effective health survived?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,149 @@
+{
+ "champion": "zac",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Base on-cast (or on-landing) magic damage for each active ability"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q's initial hit plus a second Stretching Strike; E's charge then a separately-resolved recast dash/impact; R's four bounces resolved 1s apart"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "While tethered, Zac's next basic attack is replaced by the second Stretching Strike (0.25s cast, on-attack but not on-hit/crit)"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Both the initial cast and the empowered second attack reset Zac's basic attack timer"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Elastic Slingshot channels up to 4.5s before dashing/dealing damage; other actions (Q, W) are restricted during the channel per the interaction table"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Each ability costs a percent of health per cast (Q 8%, W 4%, E 4%), constraining how many casts fit in the 15s window"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Unstable Matter's current cooldown is reduced 1s whenever Zac collects a Cell Division chunk, which his other abilities generate on hit"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Bounces beyond the first hit on the same target deal only 50% damage and no knockback, so total damage to a single stationary dummy depends on hit count already applied"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Cell Division's resurrection (extra life, untargetability, echoed bloblet damage, variable revive %) and the chunk self-heal do not add damage dealt; they matter only for how long Zac survives in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Cell Division's resurrection is a full secondary mechanic: on lethal damage Zac becomes untargetable/unable to act for a level-scaled duration, splits into four bloblets whose incoming damage (capped per-bloblet at their own max health) is echoed to him as true damage, and he then revives at 10-50% max health depending on surviving bloblet health, or dies outright if all bloblets die first. No primitive in the closed list expresses an extra, partially-independent health pool with its own damage cap and a variable revival outcome; this needs bespoke logic for the survival fight. Additionally, the chunk-drop/pickup loop that heals Zac and shortens W's cooldown depends on chunk spawn geometry (contestable vs. uncontestable placement) that a dummy fight must approximate rather than read off a primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Are Q/W/E's health costs paid off current health or (as the bin's HealthCostTooltip/TooltipHealthCost formulas suggest via a maxHp x stat14 term) something tied to max health, despite the wiki's costtype explicitly saying 'Current Health'?",
+   "options": [
+    "Cost = fraction x current health at time of cast (wiki costtype)",
+    "Cost = fraction x max health (bin formula literally multiplies by maxHp)",
+    "Cost uses current health but the bin formula's maxHp/stat14 terms are unresolved tooltip artifacts, not the live rule"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|'''Current''' Health|health}}",
+    "ZacQ#HealthCostTooltip = (HPCost=0.08)*((1xmaxHp)*(1xstat14?))"
+   ]
+  },
+  {
+   "question": "Elastic Slingshot's cooldown differs between sources by 1 second at every rank; which is the live value?",
+   "options": [
+    "Wiki: [21, 18, 15, 12, 9]",
+    "Bin ZacE.cooldown: [22, 19, 16, 13, 10]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown     = {{ap|21 to 9}}",
+    "cooldown: [22/19/16/13/10]"
+   ]
+  },
+  {
+   "question": "Do all four Let's Bounce! bounces land on a single stationary dummy target, or does Zac's movement during the ultimate carry him (and thus the 300-radius impact zone) away from a stationary target on some bounces?",
+   "options": [
+    "Assume all 4 bounces hit the dummy (worst case for the target, best case for Zac's DPS)",
+    "Assume only the first bounce reliably hits and later bounces may miss depending on where Zac's ultimate carries him",
+    "Treat as a positional assumption requiring an explicit convention (e.g. dummy is adjacent to Zac's cast point)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Zac''' bounces after the cast time, then bounces 3 additional times each second over 3 seconds. Each bounce deals {{as|magic damage}} to enemies hit",
+    "effect radius= {{tip|cr|icononly = true}} {{tt|300|Damage, knockback radius, and chunk consumption range}}"
+   ]
+  },
+  {
+   "question": "How many Cell Division chunks does Zac actually pick up during the 15s damage fight (feeding Unstable Matter's 1s-per-chunk cooldown reduction), given chunks by default spawn 'contestable' partway between Zac and the target and only become interactable after 0.25s?",
+   "options": [
+    "Assume the simplified 'uncontestable' chunk variant (lands near Zac, pickup is effectively immediate) for every hit that generates a chunk",
+    "Assume the default 'contestable' variant and that Zac must walk to it, which a stationary-dummy damage fight may or may not allow within the 15s window",
+    "Ignore chunk pickup entirely and treat W's cooldown as unmodified"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Cannot be interacted with for the first {{fd|0.25}} seconds (except during {{ai|Let's Bounce!|Zac}})",
+    "{{sbc|Uncontestable:}} They will fall to the ground near '''Zac''' and can be picked up immediately (version used by default)."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight with Let's Bounce! (R) already off cooldown, standing in melee range of the dummy so all four bounces land on it.",
+   "Immediately after R resolves, begin Elastic Slingshot (E): hold the channel only briefly (channel length doesn't add value against a stationary target) and recast onto the dummy for the dash-impact damage.",
+   "Cast Stretching Strikes (Q) at the dummy; since it is the only target, both the initial hit and the tether's empowered basic attack land on it for double Q damage — let the empowered attack fire as soon as the auto-attack queues.",
+   "Weave Unstable Matter (W) on cooldown throughout the fight (5s base cooldown, possibly shorter from chunk pickups) since it is free of cast time and can be re-cast repeatedly.",
+   "Re-cast Stretching Strikes on cooldown (8-14s depending on rank) between W casts, and fill remaining gaps with basic attacks to use attack resets.",
+   "Do not attempt to recast Let's Bounce! or a second full Elastic Slingshot cycle unless their cooldowns (90-120s and 9-21s respectively) genuinely come back up within the 15s window; prioritize Q/W uptime instead."
+  ],
+  "questions": [
+   "Is Let's Bounce! assumed available at the start of every damage-fight trial, or does the simulator start on full cooldown for the ultimate?",
+   "Given Q's health cost is 8% of current health per cast, does repeated Q casting materially cap out before 15s ends, and should the rotation reduce Q frequency to avoid overpaying (since cost as a fraction of shrinking current health asymptotically never bankrupts, but affects net HP for the survival fight)?",
+   "During Elastic Slingshot's channel, is Unstable Matter (W) genuinely castable (per the interaction table marking W as usable), letting Zac weave a W cast into the E channel window for extra DPS?",
+   "Should the dummy be treated as standing still directly adjacent to Zac for R's bounces, or does the ultimate's own movement need to be modeled as carrying Zac away from the target between bounces?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,208 @@
+{
+ "name": "Arc of Judgment / Arc of Ruin",
+ "cooldown": {
+  "values": [
+   10,
+   10,
+   10,
+   10,
+   10
+  ],
+  "quote": "10"
+ },
+ "cost": {
+  "values": [
+   60,
+   60,
+   60,
+   60,
+   60
+  ],
+  "quote": "60",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.45,
+  "quote": "{{pp|0.45 to 0.225 for 11|0 to 100|key1=%|type='''bonus''' attack speed|label1= Bonus AS|color=attack speed|round=3}}",
+  "binNote": "Base cast time is 0.45s (YunaraW.Cast_Time_Base), reduced toward a minimum of 0.225s (Cast_Time_Min) as bonus attack speed approaches the 100% cap (Cast_Time_Attack_Speed_Cap); this scaling with attacker's own bonus AS is not a per-rank value so only the base is recorded here."
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Initial Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    55,
+    95,
+    135,
+    175,
+    215
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.85
+    },
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|55 to 215}} {{as|(+ 85% '''bonus''' AD)}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "YunaraW#Calc_Damage_Initial"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Linger Magic Damage per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    8.25,
+    14.25,
+    20.25,
+    26.25,
+    32.25
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.1275
+    },
+    {
+     "stat": "ap",
+     "coef": 0.075
+    }
+   ],
+   "quote": "{{ap|(55*0.6)/4 to (215*0.6)/4}} {{as|(+ {{ap|(85*0.6)/4}}% '''bonus''' AD)}} {{as|(+ {{ap|(50*0.6)/4}}% AP)}}",
+   "bin": [
+    "YunaraW#Calc_Damage_Per_Second"
+   ],
+   "binNote": "Bin defines Calc_Damage_Per_Second = Calc_Damage_Initial * DPS_Modifier(0.6), i.e. the total damage dealt per second of lingering (4 ticks at the wiki's stated 0.25s interval). Per-tick value = that per-second figure / 4; the 0.25s tick interval itself is not an explicit bin data value, only stated in the wiki description."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Total Expanded Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    33,
+    57,
+    81,
+    105,
+    129
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.51
+    },
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|((55*0.6)/4)*4 to ((215*0.6)/4)*4}} {{as|(+ {{ap|((85*0.6)/4)*4}}% '''bonus''' AD)}} {{as|(+ {{ap|((50*0.6)/4)*4}}% AP)}}",
+   "bin": [
+    "YunaraW#Calc_Damage_Per_Second"
+   ],
+   "binNote": "Sum of the 4 lingering ticks over the 1s linger equals the per-second value Calc_Damage_Initial * DPS_Modifier(0.6) directly, since 4 ticks x (per-tick=per-second/4) = per-second."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Linger duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "lingering as it travels and resetting its remaining duration; upon reaching maximum range, it will expand and linger in place for 1 second",
+   "bin": [
+    "YunaraW.Linger_Duration"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Lingering damage tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{fd|0.25}} seconds",
+   "bin": [],
+   "binNote": "No explicit bin data value for the tick interval; it only appears in the wiki description text and is implied by the DPS_Modifier/4 math in the leveling table."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Applies area damage for the initial hit and persistent area damage for the lingering effect.",
+   "quote": "Applies {{tip|area damage}} for the initial hit and {{tip|persistent area damage}} for the lingering effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bead can hit the same enemy multiple times with the initial damage if it collides with it again while in flight, and can also deal the lingering effect's damage multiple times (both before and after expansion).",
+   "quote": "''Arc of Judgment'' can hit an enemy more than once with the initial damage as well with the lingering effect (both while not expanded and while expanded).",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield can block either the entire initial hit or a single damage tick of the lingering effect, not both.",
+   "quote": "{{tip|Spell shield}} can block either the initial hit or one damage tick of the lingering effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Upon reaching maximum range without hitting anything further, the bead expands and lingers in place for 1 second regardless of prior hits.",
+   "quote": "upon reaching maximum range, it will expand and linger in place for 1 second regardless of enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During Transcend One's Self (ultimate), Arc of Judgment is replaced by the upgraded Arc of Ruin, whose damage is treated as ultimate damage for effects like Malignance/Axiom Arcanist, but does not trigger on-ultimate-cast effects.",
+   "quote": "The damage of ''Arc of Ruin'' is considered ultimate damage for the purposes of {{Iis|Malignance}} {{nie|Hatefog}} and {{ri|Axiom Arcanist}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YunaraW.Cast_Time_Base",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YunaraW.Cast_Time_Min",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YunaraW.Cast_Time_Attack_Speed_Cap",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YunaraW.Cast_Time_Base_Empowered",
+   "reason": "unknown"
+  },
+  {
+   "ref": "YunaraW.Cast_Time_Min_Empowered",
+   "reason": "unknown"
+  },
+  {
+   "ref": "YunaraW.Cast_Time_Attack_Speed_Cap_Empowered",
+   "reason": "unknown"
+  },
+  {
+   "ref": "YunaraW.Slow_Duration",
+   "reason": "utility"
+  },
+  {
+   "ref": "YunaraW.Slow_Amount",
+   "reason": "utility"
+  },
+  {
+   "ref": "YunaraW.Minion_Execute_Tick_Count",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

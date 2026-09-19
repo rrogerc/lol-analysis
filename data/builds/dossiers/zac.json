@@ -1,0 +1,872 @@
+{
+ "champion": "zac",
+ "abilities": {
+  "P": {
+   "name": "Cell Division / Cell Division 2",
+   "cooldown": {
+    "values": [
+     300
+    ],
+    "quote": "300"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "heal from consuming a chunk, percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.04,
+        0.04235294,
+        0.04470588135368684,
+        0.04705882,
+        0.04941176360144335,
+        0.0517647047253216,
+        0.054117645849199855,
+        0.05647058697307811,
+        0.05882353,
+        0.06117646922083462,
+        0.06352941,
+        0.06588235146859113,
+        0.06823529,
+        0.07058823,
+        0.07294117484022589,
+        0.07529411596410415,
+        0.07764706,
+        0.08
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|key=%|4 + (8-4)/17*(x-1) for 20}} of his '''maximum''' health}}",
+     "bin": [
+      "ZacPassiveChunkDrop#HealPercent",
+      "ZacPassiveChunkDrop#TotalHeal"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "duration of resurrection (bloblet split) before Zac is revived",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      7,
+      7,
+      7,
+      7,
+      6,
+      6,
+      6,
+      5,
+      5,
+      5,
+      5,
+      4,
+      4
+     ],
+     "terms": [],
+     "quote": "{{pp|8 to 4 for 5|1;6;10;13;17}} seconds",
+     "bin": [
+      "ZacPassiveChunkDrop#ReviveBlobletDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "instant heal upon entering resurrection",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.5
+      }
+     ],
+     "quote": "instantly restoring {{as|50% of his '''maximum''' health}}",
+     "bin": [],
+     "binNote": "No bin row in the sheet carries this 50% instant heal; ReviveBlobletDuration/HealPercent/TotalHeal only cover the chunk heal and the resurrection duration."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While in resurrection Zac is untargetable and unable to act, and cannot take damage except the echoed damage from his bloblets.",
+     "quote": "becoming {{tip|untargetable}} and {{tip|lockout|unable to act}} for the duration. ... While in resurrection, '''Zac''' cannot take damage from sources other than the echoed damage from his ''bloblets''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage dealt to bloblets (excluding overkill past each bloblet's max health) is echoed to Zac as true damage.",
+     "quote": "Any damage the ''bloblets'' receive, excluding damage dealt in excess of each ''bloblet's'' {{as|'''total maximum''' health}}, is also echoed to '''Zac''' as {{sti|{{as|true damage}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "After the resurrection duration Zac revives with 10-50% max health depending on his bloblets' total remaining health, and dies if all bloblets are killed first.",
+     "quote": "'''Zac''' is revived with {{as|{{tt|10 – 50%|Based on his bloblets' total remaining health. Reaches the maximum amount at full health on all bloblets}} '''maximum''' health}}. '''Zac''' will be {{tip|execute|executed}} once all bloblets are killed.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Zac's abilities have a health cost, and hitting an enemy with an ability sheds chunks that Zac can consume to heal or enemies can destroy.",
+     "quote": "{{cis|Zac}} abilities have a {{as|{{sti|health cost}}}}. Whenever '''Zac's''' abilities damage an enemy, he sheds a number of chunks on the ground",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Chunks last 6 seconds and Zac must be within 50 units to consume one.",
+     "quote": "he sheds a number of chunks of himself to a nearby location, landing towards nearby {{tip|sight|visible}} enemy {{tip|champions}} and lasting for 6 seconds.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Stretching Strikes",
+   "cooldown": {
+    "values": [
+     14,
+     12.5,
+     11,
+     9.5,
+     8
+    ],
+    "quote": "{{ap|14 to 8}}"
+   },
+   "cost": {
+    "values": [
+     0.08,
+     0.08,
+     0.08,
+     0.08,
+     0.08
+    ],
+    "quote": "{{as|8%|health}}",
+    "resource": "{{as|'''current''' health|health}}"
+   },
+   "castTime": {
+    "value": 0.33,
+    "quote": "{{tt|{{fd|0.33}}|Cast time for the activation}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 30% AP)}} {{as|(+ 3% of '''Zac's''' '''bonus''' health)}}",
+     "bin": [
+      "ZacQ#TotalDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "If the two Stretching Strikes hit different enemies, Zac will fling them together to knock up and stun them, dealing magic damage to all surrounding enemies.",
+     "quote": "If the two ''Stretching Strikes'' hit different enemies, '''Zac''' will fling them together to briefly {{tip|airborne|knock up}} and {{tip|stun}} them, dealing {{as|magic damage}} to all surrounding enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While the tether persists, Zac's next basic attack is replaced by a second Stretching Strike with a 0.25s cast time.",
+     "quote": "'''Zac's''' next {{tip|basic attack}} is replaced by a second ''Stretching Strike'', empowering it to have a {{fd|0.25}}-second cast time",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack triggers on-attack effects but cannot critically strike nor apply on-hit effects.",
+     "quote": "This attack triggers {{tip|on-attack}} effects, but cannot {{tip|critically strike}} nor apply {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If both Stretching Strikes affect the same target, the target is dealt the damage and applied the slow for both hits (i.e. twice).",
+     "quote": "If both ''Stretching Strikes'' affect the same target, the target will be dealt the damage and applied the slow for both hits.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both Stretching Strikes (cast and empowered attack) reset Zac's basic attack timer.",
+     "quote": "Both Stretching Strikes (the cast and the empowered attack) {{tip|basic attack reset|reset}} '''Zac's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts after the ability's effect resolves (post-effect), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZacQ.HPCost",
+     "reason": null
+    },
+    {
+     "ref": "ZacQ.MissileRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacQ.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZacQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZacQ.TetherDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZacQ.TetherFalloffDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacQ.MaxSlamDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacQ.YankDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacQ.CollisionAoE",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Unstable Matter",
+   "cooldown": {
+    "values": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "quote": "5"
+   },
+   "cost": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "{{as|4%|health}}",
+    "resource": "{{as|'''current''' health}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.03
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|40 to 80}} {{as|(+ {{ap|4 to 8}}% {{as|(+ 3% per 100 AP)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "ZacW.BaseDamage",
+      "ZacW.HealthPercentTooltip",
+      "ZacW.APRatioToPercentDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The percent-max-health portion of the damage is capped against minions and monsters (at 200), but not against champions such as the dummy target.",
+     "quote": "The damage based on the target's max health ratio is capped at 200 against {{tip|minions}} and {{tip|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Unstable Matter's current cooldown is reduced by 1 second whenever Zac collects a Cell Division chunk, letting it be recast sooner.",
+     "quote": "''Unstable Matter's'' {{sti|'''current''' cooldown}} is reduced by 1 second whenever '''Zac''' collects a ''{{ai|Cell Division|Zac}}'' chunk.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZacW.BaseMaxHealthDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ZacW.PercentHealthDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ZacW.RefundOnBlobPickup",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ZacW.MaxMinionDamage",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Elastic Slingshot",
+   "cooldown": {
+    "values": [
+     21,
+     18,
+     15,
+     12,
+     9
+    ],
+    "quote": "{{ap|21 to 9}}",
+    "binNote": "Bin lists [22/19/16/13/10], one second higher at each rank than the wiki's [21/18/15/12/9]; stated the wiki's number."
+   },
+   "cost": {
+    "values": [
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.04
+    ],
+    "quote": "{{as|4%|health}}",
+    "resource": "{{as|'''current''' health|health}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Maximum Range Channel Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.9,
+      1,
+      1.1,
+      1.2,
+      1.3
+     ],
+     "terms": [],
+     "quote": "{{ap|0.9 to 1.3}} seconds",
+     "bin": [
+      "ZacE.ChannelTime"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      105,
+      150,
+      195,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|60 to 240}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "ZacE#Damage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Stun duration (minimum, or if charged over 1 second)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.5,
+      1
+     ],
+     "terms": [],
+     "quote": "stuns them for {{fd|0.5}} seconds, increased to 1 second if ''Elastic Slingshot'' was charged for more than 1 second",
+     "bin": [
+      "ZacE.MinimumStun"
+     ],
+     "binNote": "ZacE.MinimumStun=0.5 matches the base stun; ZacE#MaxStun = MinimumStun*2 = 1.0 matches the increased stun. Both bin rows carry this value's numbers together."
+    },
+    {
+     "id": "e_4",
+     "meaning": "health cost and cooldown refund fraction on cancel/no recast",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "50% of ''Elastic Slingshot's'' {{sti|{{as|health cost}}}} and {{sti|cooldown}} are refunded",
+     "bin": [],
+     "binNote": "No bin row expresses a 50% refund fraction; ZacW.RefundOnBlobPickup=1 is unrelated (W ability). This appears to be tooltip/description-only logic not present as a data value in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability is a channel that must be recast (or auto-recasts) to deal damage; damage occurs on landing, not on initial cast.",
+     "quote": "'''Zac''' {{tip|dash|leaps}} to the target location within the boundaries of the cone. Upon landing, he deals {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Zac cancels the channel himself or it completes without reactivation, half the health cost and cooldown are refunded, implying the full cost/cooldown is otherwise paid.",
+     "quote": "If '''Zac''' {{tt|cancels|See notes}} the channel himself, or the charge completes without reactivation, 50% of ''Elastic Slingshot's'' {{sti|{{as|health cost}}}} and {{sti|cooldown}} are refunded.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the dash/landing effect, not on initial cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stretching Strikes and Unstable Matter interrupt the channel, while Let's Bounce! initiates the recast and is buffered to cast at the end of the dash.",
+     "quote": "{{ai|Stretching Strikes|Zac}} and {{ai|Unstable Matter|Zac}} interrupt. {{ai|Let's Bounce!|Zac}} initiates the recast and is buffered to cast itself at the end of the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The knockup will not occur if the target location is directly on top of Zac, in which case he does not dash at all (and presumably deals no damage).",
+     "quote": "''Elastic Slingshot'' will not {{tip|airborne|knock up}} if the targeted location was directly on top of '''Zac''' (in which case he will not {{tip|dash}} at all).",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZacE.MaxRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacE.MinimumSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacE.MaximumSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacE.DistanceToSpeedRatio",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacE.KnockupRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacE.VFXWarningTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZacE.HPCost",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Let's Bounce!",
+   "cooldown": {
+    "values": [
+     120,
+     105,
+     90
+    ],
+    "quote": "{{ap|120 to 90}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.3,
+    "quote": "{{fd|0.3}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage Per Hit",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      120,
+      190,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|120 to 260}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "ZacR#DamagePerBounce"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Reduced Damage Per Hit",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      95,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|120/2 to 260/2}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "ZacR#DamagePerSubsequentBounce"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      300,
+      475,
+      650
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|120*2.5 to 260*2.5}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ZacR#MaxDamageTooltip"
+     ],
+     "binNote": "ZacR#MaxDamageTooltip's raw terms print as flat=[120,190,260] and ap=[0.4] because the sheet only shows the formula's leaf tokens, not its evaluated result. The full formula is DamagePerBounce + DamagePerBounce*DamageReductionBounce*(Bounces-1) = base*(1+0.5*3) = base*2.5 and ap*0.4*2.5 = ap*1.0, which equals the wiki's stated 300/475/650 base and 100% AP ratio - the numbers agree once the formula is evaluated, they are not raw bin fields."
+    },
+    {
+     "id": "r_4",
+     "meaning": "number of bounces",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Zac''' bounces after the cast time, then bounces 3 additional times each second over 3 seconds",
+     "bin": [
+      "ZacR.Bounces"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "time between bounces",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "then bounces 3 additional times each second over 3 seconds",
+     "bin": [
+      "ZacR.TimeBetweenBounces"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "slow amount per bounce",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "{{tip|slows}} them by 20% for the same duration",
+     "bin": [
+      "ZacR.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "slow/knockback duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "knocks them back over 1 second, and slows them ... for the same duration",
+     "bin": [
+      "ZacR.KnockupDuration",
+      "ZacR.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "damage reduction for subsequent bounces on same target",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "ones beyond the first deal 50% damage to them",
+     "bin": [
+      "ZacR.DamageReductionBounce"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "An enemy can be hit by multiple bounces, but bounces beyond the first deal 50% damage and no knockback.",
+     "quote": "An enemy can be hit by multiple bounces, but ones beyond the first deal 50% damage to them and do not apply the knock back.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While Let's Bounce! is active, Zac cannot use basic attacks, Q, or E.",
+     "quote": "{{ai|Q|Zac}} and {{ai|E|Zac}} are disabled. {{ai|W|Zac}} is usable.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks a single instance of the ability's damage.",
+     "quote": "{{tip|Spell shield}} only blocks a single instance of damage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Entering stasis ends Let's Bounce! prematurely, cutting off remaining bounces.",
+     "quote": "Entering {{tip|stasis (buff)|stasis}} will end ''Let's Bounce!'' prematurely.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZacR.KnockbackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacR.KnockbackRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZacR.BeginningMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZacR.EndingMS",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Base on-cast (or on-landing) magic damage for each active ability"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q's initial hit plus a second Stretching Strike; E's charge then a separately-resolved recast dash/impact; R's four bounces resolved 1s apart"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "While tethered, Zac's next basic attack is replaced by the second Stretching Strike (0.25s cast, on-attack but not on-hit/crit)"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Both the initial cast and the empowered second attack reset Zac's basic attack timer"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Elastic Slingshot channels up to 4.5s before dashing/dealing damage; other actions (Q, W) are restricted during the channel per the interaction table"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Each ability costs a percent of health per cast (Q 8%, W 4%, E 4%), constraining how many casts fit in the 15s window"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Unstable Matter's current cooldown is reduced 1s whenever Zac collects a Cell Division chunk, which his other abilities generate on hit"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Bounces beyond the first hit on the same target deal only 50% damage and no knockback, so total damage to a single stationary dummy depends on hit count already applied"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Cell Division's resurrection (extra life, untargetability, echoed bloblet damage, variable revive %) and the chunk self-heal do not add damage dealt; they matter only for how long Zac survives in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Cell Division's resurrection is a full secondary mechanic: on lethal damage Zac becomes untargetable/unable to act for a level-scaled duration, splits into four bloblets whose incoming damage (capped per-bloblet at their own max health) is echoed to him as true damage, and he then revives at 10-50% max health depending on surviving bloblet health, or dies outright if all bloblets die first. No primitive in the closed list expresses an extra, partially-independent health pool with its own damage cap and a variable revival outcome; this needs bespoke logic for the survival fight. Additionally, the chunk-drop/pickup loop that heals Zac and shortens W's cooldown depends on chunk spawn geometry (contestable vs. uncontestable placement) that a dummy fight must approximate rather than read off a primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Are Q/W/E's health costs paid off current health or (as the bin's HealthCostTooltip/TooltipHealthCost formulas suggest via a maxHp x stat14 term) something tied to max health, despite the wiki's costtype explicitly saying 'Current Health'?",
+   "options": [
+    "Cost = fraction x current health at time of cast (wiki costtype)",
+    "Cost = fraction x max health (bin formula literally multiplies by maxHp)",
+    "Cost uses current health but the bin formula's maxHp/stat14 terms are unresolved tooltip artifacts, not the live rule"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|'''Current''' Health|health}}",
+    "ZacQ#HealthCostTooltip = (HPCost=0.08)*((1xmaxHp)*(1xstat14?))"
+   ]
+  },
+  {
+   "question": "Elastic Slingshot's cooldown differs between sources by 1 second at every rank; which is the live value?",
+   "options": [
+    "Wiki: [21, 18, 15, 12, 9]",
+    "Bin ZacE.cooldown: [22, 19, 16, 13, 10]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown     = {{ap|21 to 9}}",
+    "cooldown: [22/19/16/13/10]"
+   ]
+  },
+  {
+   "question": "Do all four Let's Bounce! bounces land on a single stationary dummy target, or does Zac's movement during the ultimate carry him (and thus the 300-radius impact zone) away from a stationary target on some bounces?",
+   "options": [
+    "Assume all 4 bounces hit the dummy (worst case for the target, best case for Zac's DPS)",
+    "Assume only the first bounce reliably hits and later bounces may miss depending on where Zac's ultimate carries him",
+    "Treat as a positional assumption requiring an explicit convention (e.g. dummy is adjacent to Zac's cast point)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Zac''' bounces after the cast time, then bounces 3 additional times each second over 3 seconds. Each bounce deals {{as|magic damage}} to enemies hit",
+    "effect radius= {{tip|cr|icononly = true}} {{tt|300|Damage, knockback radius, and chunk consumption range}}"
+   ]
+  },
+  {
+   "question": "How many Cell Division chunks does Zac actually pick up during the 15s damage fight (feeding Unstable Matter's 1s-per-chunk cooldown reduction), given chunks by default spawn 'contestable' partway between Zac and the target and only become interactable after 0.25s?",
+   "options": [
+    "Assume the simplified 'uncontestable' chunk variant (lands near Zac, pickup is effectively immediate) for every hit that generates a chunk",
+    "Assume the default 'contestable' variant and that Zac must walk to it, which a stationary-dummy damage fight may or may not allow within the 15s window",
+    "Ignore chunk pickup entirely and treat W's cooldown as unmodified"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Cannot be interacted with for the first {{fd|0.25}} seconds (except during {{ai|Let's Bounce!|Zac}})",
+    "{{sbc|Uncontestable:}} They will fall to the ground near '''Zac''' and can be picked up immediately (version used by default)."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight with Let's Bounce! (R) already off cooldown, standing in melee range of the dummy so all four bounces land on it.",
+   "Immediately after R resolves, begin Elastic Slingshot (E): hold the channel only briefly (channel length doesn't add value against a stationary target) and recast onto the dummy for the dash-impact damage.",
+   "Cast Stretching Strikes (Q) at the dummy; since it is the only target, both the initial hit and the tether's empowered basic attack land on it for double Q damage — let the empowered attack fire as soon as the auto-attack queues.",
+   "Weave Unstable Matter (W) on cooldown throughout the fight (5s base cooldown, possibly shorter from chunk pickups) since it is free of cast time and can be re-cast repeatedly.",
+   "Re-cast Stretching Strikes on cooldown (8-14s depending on rank) between W casts, and fill remaining gaps with basic attacks to use attack resets.",
+   "Do not attempt to recast Let's Bounce! or a second full Elastic Slingshot cycle unless their cooldowns (90-120s and 9-21s respectively) genuinely come back up within the 15s window; prioritize Q/W uptime instead."
+  ],
+  "questions": [
+   "Is Let's Bounce! assumed available at the start of every damage-fight trial, or does the simulator start on full cooldown for the ultimate?",
+   "Given Q's health cost is 8% of current health per cast, does repeated Q casting materially cap out before 15s ends, and should the rotation reduce Q frequency to avoid overpaying (since cost as a fraction of shrinking current health asymptotically never bankrupts, but affects net HP for the survival fight)?",
+   "During Elastic Slingshot's channel, is Unstable Matter (W) genuinely castable (per the interaction table marking W as usable), letting Zac weave a W cast into the E channel window for extra DPS?",
+   "Should the dummy be treated as standing still directly adjacent to Zac for R's bounces, or does the ultimate's own movement need to be modeled as carrying Zac away from the target between bounces?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

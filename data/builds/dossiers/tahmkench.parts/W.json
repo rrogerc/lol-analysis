@@ -1,0 +1,172 @@
+{
+ "name": "Abyssal Dive",
+ "cooldown": {
+  "values": [
+   21,
+   20,
+   19,
+   18,
+   17
+  ],
+  "quote": "{{ap|21 to 17}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   75,
+   90,
+   105,
+   120
+  ],
+  "quote": "{{ap|60 to 120}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    100,
+    135,
+    170,
+    205,
+    240
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{ap|100 to 240}} {{as|(+ 150% AP)}}",
+   "bin": [
+    "TahmKenchW#TotalDamage"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Cooldown Refund",
+   "role": "other",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.4,
+    0.425,
+    0.45,
+    0.475,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 50}}%",
+   "bin": [
+    "TahmKenchW.ChampRefund"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "channel duration before blink",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.35,
+   "terms": [],
+   "quote": "{{tip|channels}} for {{fd|1.35}} seconds",
+   "bin": [
+    "TahmKenchW.ChannelTime"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "mana cost refund on champion hit",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "40% of ''Abyssal Dive's'' {{sti|{{as|mana}}}} cost",
+   "bin": [
+    "TahmKenchW.ChampRefund"
+   ],
+   "binNote": "wiki's 40% mana refund text matches only the first rank of ChampRefund [0.4/0.425/0.45/0.475/0.5], described in prose as a flat 40% though the leveling table shows it scaling to 50%; likely the prose is unrounded/rank-1-only wording while the actual value uses the same array as the cooldown refund."
+  },
+  {
+   "id": "w_5",
+   "meaning": "knock up and stun duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "knocking them up and stunning them for 1 second",
+   "bin": [
+    "TahmKenchW.KnockUpDuration"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "delay from channel completion to blink/damage",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.15,
+   "terms": [],
+   "quote": "{{fd|0.15}}-second delay",
+   "bin": [
+    "TahmKenchW.AoEDelayFromChannelStart",
+    "TahmKenchW.ChannelTime"
+   ],
+   "binNote": "wiki's 0.15s post-channel delay equals AoEDelayFromChannelStart (1.5) minus ChannelTime (1.35)."
+  },
+  {
+   "id": "w_7",
+   "meaning": "lockout duration after blink before Tahm Kench can act",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.65,
+   "terms": [],
+   "quote": "remains {{tip|lockout|unable to act}} for {{fd|0.65}} seconds after the blink",
+   "bin": [
+    "TahmKenchW.TotalTime",
+    "TahmKenchW.AoEDelayFromChannelStart"
+   ],
+   "binNote": "wiki's 0.65s lockout equals TotalTime (2) minus AoEDelayFromChannelStart (1.5)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Tahm Kench blinks to the target location after the channel, dealing damage, knock up, and stun to nearby enemies upon landing, not during the channel.",
+   "quote": "Upon completion of the channel, '''Tahm Kench''' {{tip|blink|blinks}} to the target location after a {{fd|0.15}}-second delay, dealing {{as|magic damage}} to nearby enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If at least one enemy champion is hit by the emergence, a cooldown and mana refund is granted; against a single dummy target this refund applies.",
+   "quote": "If at least one enemy {{tip|champion}} is hit, 40% of ''Abyssal Dive's'' {{sti|{{as|mana}}}} cost as well as a percentage of its {{sti|cooldown}} are refunded.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts on cast, not on the delayed damage.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability can be blocked by a spell shield.",
+   "quote": "spellshield  = true",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TahmKenchW.EnemyWarningDelayFromChannelStart",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

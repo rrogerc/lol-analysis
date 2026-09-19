@@ -1,0 +1,999 @@
+{
+ "champion": "yone",
+ "abilities": {
+  "P": {
+   "name": "Way of the Hunter",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "critical strike chance multiplier",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "{{as|{{sti|'''total''' critical strike chance}}}} is doubled from all other sources",
+     "bin": [
+      "YonePassive.CritChanceMultiplier"
+     ],
+     "binNote": "CritChanceMultiplier=1 is a base data value the doubling calculation reads/multiplies by 2 elsewhere; the wiki's stated doubling is not itself a distinct data value in the sheet."
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus AD gained per 1% excess critical strike chance",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{as|1% critical strike chance}} in excess of {{as|100%|critical strike chance}} is converted into {{sti|{{as|{{fd|0.5}} '''bonus''' attack damage}}}}",
+     "bin": [
+      "YonePassive.YoneCritToAD"
+     ],
+     "binNote": "sheet gives YoneCritToAD = 50 for 50% chance = 25 AD, i.e. 0.5 AD per 1% (50/100=0.5), matching wiki's 0.5 per 1%."
+    },
+    {
+     "id": "p_3",
+     "meaning": "critical strike damage multiplier for Yone (reduced from standard)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.95,
+     "terms": [],
+     "quote": "{{as|{{critical damage|{{ccd|Yone|crit_base}}|100|mod={{ccd|Yone|crit_mod}}}} AD}} {{as|physical damage}}",
+     "bin": [
+      "YonePassive.CritDamageMod"
+     ],
+     "binNote": null
+    },
+    {
+     "id": "p_4",
+     "meaning": "fraction of azakana sword auto-attack damage dealt as magic damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "basic attacks with {{as|Azakana Sword|azakana}} deal {{as|50% AD}} {{as|physical damage}} and {{as|50% AD}} {{as|magic damage}}",
+     "bin": [
+      "YonePassive.MagicDamageSplit"
+     ],
+     "binNote": null
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Yone's basic attacks alternate between physical-only (Steel) and mixed physical/magic (azakana) hits; there is no time-out to this alternation and it persists through death.",
+     "quote": "'''Yone's''' {{tip|basic attack|basic attacks}} alternate between his {{as|Steel Sword|Steel}} and {{as|Azakana Sword|azakana}} {{tip|on-attack}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The azakana attack's mixed damage is dealt as two simultaneous damage instances, but behaves as a single instance for most effects such as Conqueror stacks.",
+     "quote": "The mixed damage is dealt in two simultaneous instances of damage, but will pretend to be a single instance for most effects (such as {{ris|Conqueror}} stacks).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both azakana damage instances deal basic damage and thus both natively apply life steal.",
+     "quote": "Both instances deal {{tip|basic damage}} and thus natively apply {{sti|life steal}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "On-hit effects from the azakana attack are applied only once, at the start of the attack.",
+     "quote": "The attack applies [[on-hit]] effects only once, right at the start.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Even if the target dies from the magic damage portion, the physical damage portion still applies to it (unless the target died from on-hit damage, in which case the magic portion is skipped).",
+     "quote": "Even if the target dies from the {{as|magic damage}}, the {{as|physical damage}} will still be applied to it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yone requires at least 50% critical strike chance to reach 100% critical strike chance from the passive's doubling multiplier.",
+     "quote": "'''Yone''' requires at least {{sti|{{as|50% critical strike chance}}}} in order to reach {{as|100% critical strike chance}} from ''Way of the Hunter's'' multiplier.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Half of Spellblade and Demolish damage is converted to magic damage if applied by the azakana sword attack.",
+     "quote": "50% of {{tip|Spellblade}} and {{ri|Demolish}} damage will be converted to {{as|magic damage}} if applied by the {{as|Azakana Sword|azakana}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Mortal Steel",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "{{as|{{pp|type='''bonus''' attack speed|4 to 1.48 for 8;4/3|key1=%|0 to 105;1000/9|formula=4*(1-(0.01 per 1.67% '''bonus''' attack speed)). ''This is capped at 67% reduction at 111.1% '''bonus''' attack speed.''}}|attack speed}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{tt|{{as|{{pp|type='''bonus''' attack speed|round=3|0.35;0.33;0.297;0.264;0.231;0.198;0.175|key1=%|0;13.72;36.358;58.996;81.634;104.272;120|formula=0.35-0.035 per 24% '''bonus''' attack speed. ''This is capped at 50% reduction at 120% '''bonus''' attack speed.''}}|attack speed}}|Both thrust and whirlwind cast times}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      50,
+      75,
+      100,
+      125
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|25 to 125}} {{as|(+ 110% AD)}}",
+     "bin": [
+      "YoneQ#QDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Critical Strike Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      50,
+      75,
+      100,
+      125
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1,
+       "coefScaling": [
+        {
+         "stat": "critDamage",
+         "per": 1,
+         "coef": 1
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|25 to 125}} {{as|(+ {{as|{{critical damage|{{ccd|Yone|crit_base}}*1.1|110|mod={{ccd|Yone|crit_mod}}}}|critical damage}} AD)|ad}}",
+     "bin": [
+      "YoneQ#TotalDamageCrit"
+     ],
+     "binNote": "TotalDamageCrit = BaseDamage + (ADRatio x critDamage) x ad; the bin does not print a separate coefScaling row for the critDamage multiplier (it's embedded in the calculation as 'critDamage' variable, not a flat data value), so no bin row states the coefScaling coefficient of 1 directly - it is read off the calculation's own multiplication of ADRatio by the critDamage stat."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Gathering Storm stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "generates a {{tip|stack}} of ''Gathering Storm'' for 6 seconds, stacking up to 2 times",
+     "bin": [
+      "YoneQ.BuffDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "empowered cast dash/whirlwind knockup duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "knocking up enemies hit in their path for {{fd|0.75}} seconds",
+     "bin": [
+      "YoneQ.Q3KnockupDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "cooldown reset when thrust fails due to disarm",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "the {{sti|cooldown}} of the ability is reset to {{fd|0.1}} seconds",
+     "bin": [],
+     "binNote": "This 0.1s reset-on-disarm value is not present anywhere in the numbers sheet for YoneQ; it appears to be tooltip/description-only text not backed by a named data value in this dump."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Mortal Steel applies on-hit and on-attack effects to the first enemy hit only, not secondary enemies.",
+     "quote": "deals {{as|physical damage}} to enemies hit and applies {{tip|on-hit}} and {{tip|on-attack}} effects to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first target hit takes basic (single-target) damage, while secondary targets take area damage, affecting damage amp/reduction interactions.",
+     "quote": "''Mortal Steel'' applies {{tip|basic damage}} for {{tt|the first (closest) enemy hit|including enemies hit by the dash}} and {{tip|area damage}} for secondary enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Life steal only heals from damage dealt to the first target hit.",
+     "quote": "{{as|{{sti|Life steal}}}} will heal based on the damage dealt to the first target hit.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "All three parts of the ability (thrust, whirlwind, dash) can individually critically strike.",
+     "quote": "All three of the thrust, whirlwind and dash roll for a critical strike on each individual target hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mortal Steel does not benefit from the bonus attack speed granted by Hail of Blades.",
+     "quote": "''Mortal Steel'' will not benefit from the bonus attack speed gained by {{ri|Hail of Blades}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered (Gathering Storm) cast cannot hit the same target twice with both dash and whirlwind.",
+     "quote": "being unable to affect the same target twice",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YoneQ.Width",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneQ.Q3MaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneQ.Q3MinDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneQ.Q3DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneQ.Q3AoESize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneQ.QAttackSpeedCDPercent",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneQ.QAttackSpeedCDMax",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneQ.QAttackSpeedCastReductionPercent",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneQ.QAttackSpeedCastReductionMax",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneQ.QBaseCastTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneQ.Q3KnockupHeight",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Spirit Cleave",
+   "cooldown": {
+    "values": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "quote": "{{as|{{pp|type='''bonus''' attack speed|14 to 6 for 11|key1=%|0 to 94.553|formula=14*(1-(0.01 per 1.51% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 94.6% '''bonus''' attack speed.''}}|attack speed}}",
+    "binNote": "Base cooldown is a flat 14 at every rank per the bin (WAttackSpeedCDMax=0.57142 matches the 62.5%->? no, matches ~57% max reduction not 62.5%; wiki's quoted 'static' formula reduces effective cooldown from 14 down to as low as 6 with bonus attack speed, capped at 62.5% reduction per WAttackSpeedCDPercent=0.6/WAttackSpeedCDMax=0.57142). This is a dynamic, attack-speed-driven reduction, not a per-rank value; recorded as a mechanic as well."
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{as|{{pp|type='''bonus''' attack speed|0.5 to 0.1875 for 11|key1=%|0 to 105|formula=0.5*(1-(0.01 per 1.68% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 105% '''bonus''' attack speed.''}}|attack speed}}",
+    "binNote": "Base cast time is 0.5 (YoneW.WBaseCastTime=0.5). It is reduced by bonus attack speed per YoneW.WAttackSpeedCastReductionPercent=0.41667 / WAttackSpeedCastReductionMax=0.5, down to a floor around 0.1875-0.25; this is a continuous attack-speed-driven reduction rather than a per-rank number, also recorded as a mechanic."
+   },
+   "values": [
+    {
+     "id": "w_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      10,
+      15,
+      20,
+      25
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ]
+      }
+     ],
+     "quote": "{{ap|5 to 25}} {{as|(+ {{ap|8/2 to 12/2}}% of target's '''maximum''' health)}}",
+     "bin": [
+      "YoneW.BaseDamage",
+      "YoneW.MaxHealthDamage"
+     ],
+     "binNote": "Base and %maxHP values are half of YoneW.BaseDamage/YoneW.MaxHealthDamage (split evenly per YonePassive.MagicDamageSplit=0.5), matching the wiki's physical-damage row. YoneW#WDamage = BaseDamage + 1xad is NOT reflected anywhere in the wiki's leveling table or description (no flat AD ratio is listed for W's damage); this AD term appears to be unused/stale relative to the current tooltip."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      10,
+      15,
+      20,
+      25
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ]
+      }
+     ],
+     "quote": "{{ap|5 to 25}} {{as|(+ {{ap|8/2 to 12/2}}% of target's '''maximum''' health)}}",
+     "bin": [
+      "YoneW.BaseDamage",
+      "YoneW.MaxHealthDamage"
+     ],
+     "binNote": "Same split as the physical half; see w_2's binNote regarding the unused AD term in YoneW#WDamage."
+    },
+    {
+     "id": "w_4",
+     "meaning": "shield amount granted on hit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      40,
+      42.941,
+      45.882,
+      48.824,
+      51.765,
+      54.706,
+      57.647,
+      60.588,
+      63.529,
+      66.471,
+      69.412,
+      72.353,
+      75.294,
+      78.235,
+      81.176,
+      84.118,
+      87.059,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{pp|40 + (90-40)/17*(x-1) for 20}} {{as|(+ 65% '''bonus''' AD)}} for {{fd|1.5}} seconds",
+     "bin": [
+      "YoneW#WShield",
+      "YoneW.ShieldbADRatio"
+     ],
+     "binNote": "YoneW#WShield reads a by-level base of 40..90, matching the wiki's per-level formula exactly (40 at level 1, 90 at level 18). YoneW.BaseShield=[10/20/30/40/50] (by rank) is not what WShield actually uses and disagrees with the wiki, which describes the shield as scaling by champion level, not by ability rank; BaseShield looks stale."
+    },
+    {
+     "id": "w_5",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "for {{fd|1.5}} seconds",
+     "bin": [
+      "YoneW.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_6a",
+     "meaning": "shield increase when the first champion is hit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "increased by 100% if it hits a {{tip|champion}}",
+     "bin": [
+      "YoneW.FirstChampShieldMultiplier"
+     ]
+    },
+    {
+     "id": "w_6b",
+     "meaning": "shield increase for each subsequent champion hit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "and by 50% for each subsequent champion hit",
+     "bin": [
+      "YoneW.SecondChampShieldMultiplier"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The mixed damage is applied in two separate instances, with physical damage dealt first within the same game tick.",
+     "quote": "The mixed damage is applied in two instances, and the {{as|physical damage}} will be dealt first within the same game tick.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the physical damage instance kills the target, the magic damage instance will not be dealt.",
+     "quote": "If the {{as|physical damage}} finishes off the unit, the {{as|magic damage}} will not be dealt against it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yone gains a self-shield if the ability hits any enemy, base amount scaling by champion level plus 65% bonus AD, lasting 1.5 seconds.",
+     "quote": "If this hits an enemy, '''Yone''' grants himself a {{tip|shield}} for {{pp|40 + (90-40)/17*(x-1) for 20}} {{as|(+ 65% '''bonus''' AD)}} for {{fd|1.5}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield does not prevent Yone from receiving or increasing his own shield from this ability.",
+     "quote": "{{tip|Spell shield}} does not prevent '''Yone''' from receiving and/or increasing the {{tip|shield}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cast time is reduced by bonus attack speed, down to a capped minimum.",
+     "quote": "0.5*(1-(0.01 per 1.68% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 105% '''bonus''' attack speed.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's effective cooldown is reduced by bonus attack speed, down to a capped minimum.",
+     "quote": "14*(1-(0.01 per 1.51% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 94.6% '''bonus''' attack speed.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability is always quickcast.",
+     "quote": "{{always quickcast}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YoneW.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "YoneW.HealthStealMultiplier",
+     "reason": "unknown"
+    },
+    {
+     "ref": "YoneW.ConeWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneW.WAttackSpeedCDPercent",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneW.WAttackSpeedCDMax",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneW.WAttackSpeedCastReductionPercent",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneW.WAttackSpeedCastReductionMax",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneW.WBaseCastTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YoneW.WCritMultiplier",
+     "reason": "unknown"
+    },
+    {
+     "ref": "YoneW.BaseShield",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Soul Unbound",
+   "cooldown": {
+    "values": [
+     22,
+     19,
+     16,
+     13,
+     10
+    ],
+    "quote": "{{tt|{{ap|22 to 10}}|Starts after recasting}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.225,
+    "quote": "{{dv|{{tt|None|Initial cast}}|{{tt|{{fd|0.225}}|Recast}}}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Damage Stored as mark, detonated as true damage on recast",
+     "role": "dot",
+     "damageType": "true",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": [
+        0.25,
+        0.275,
+        0.3,
+        0.325,
+        0.35
+       ]
+      }
+     ],
+     "quote": "{{ap|25 to 35}}% of damage dealt",
+     "bin": [
+      "YoneE.DeathmarkPercent"
+     ],
+     "binNote": "Bin's DeathmarkPercent/DeathmarkBase and calculation YoneE#{df232269} describe a separate flat+ratio mark formula (20 to 80 + 0.25xAD) not reflected in the wiki text, which only states a percent-of-damage-dealt mark. This is a disagreement between sources; recorded as a finding."
+    },
+    {
+     "id": "e_2",
+     "meaning": "Spirit Form duration before automatic recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "entering ''Spirit Form'' for 5 seconds",
+     "bin": [
+      "YoneE.ReturnTimer"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "minimum time before Soul Unbound can be recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "can be recast after {{fd|0.5}} seconds",
+     "bin": [
+      "YoneE.RecastLockout"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "recast cast time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.225,
+     "terms": [],
+     "quote": "{{tt|{{fd|0.225}}|Recast}}",
+     "bin": [],
+     "binNote": "No bin field lists a recast cast time; the sheet only shows the overall E castTime of 0.35 which belongs to Q, not E - no matching row found in YoneE's data values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Damaging basic attacks and abilities against enemy champions apply a mark storing a portion of post-mitigation damage dealt.",
+     "quote": "His damaging {{tip|basic attacks}} and {{tip|abilities}} against enemy champions apply a mark that stores a portion of the {{tt|post-mitigation|Damage calculated after modifiers}} {{as|physical damage}} and {{as|magic damage}} dealt",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Recast ends Spirit Form and detonates all marks, dealing true damage equal to the amount stored on each champion.",
+     "quote": "consuming the marks on each champion to deal {{sti|{{as|true damage}}}} equal to the total amount of damage stored against each of them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The mark does not store damage from items, runes, and summoner spells, except damage that inherits champion source (e.g. Cut Down, Dead Man's Plate).",
+     "quote": "The marks do not store damage from [[item]]s, [[rune]]s and [[summoner spell]]s, excluding damage that inherits champion source",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The mark also automatically detonates without recasting when the marked champion dies or enters resurrection.",
+     "quote": "The mark also automatically detonates without '''Yone''' having to recast when the marked champion dies or enters {{tip|resurrection}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Detonation damage cannot be dodged by becoming untargetable.",
+     "quote": "The detonation damage cannot be dodged by becoming {{tip|untargetable}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Marks do not store damage dealt to shields.",
+     "quote": "The marks will not store damage dealt to {{tip|shield|shields}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Activation resets Yone's current sword (Way of the Hunter) stance state.",
+     "quote": "Activation resets ''{{ais|Way of the Hunter|Yone}}'' current sword state",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts only after the recast (post-effect), not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yone becomes ghosted and gains bonus movement speed during Spirit Form.",
+     "quote": "'''Yone''' becomes {{tip|ghosted}} and gains {{as|{{sti|'''bonus''' movement speed}}}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YoneE.MovementSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "YoneE.DeathmarkBase",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "YoneE.EDashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneE.EDashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneE.OnHitIncrease",
+     "reason": "unknown"
+    },
+    {
+     "ref": "YoneE.StartingMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "YoneE.MissingHealthPercent",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Fate Sealed",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{fd|0.75}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Total Mixed Damage",
+     "role": "damage",
+     "damageType": "adaptive",
+     "by": "rank",
+     "base": [
+      200,
+      400,
+      600
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|200 to 600}} {{as|(+ 80% '''bonus''' AD)}}",
+     "bin": [
+      "YoneR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      100,
+      200,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|100 to 300}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [],
+     "binNote": "wiki halves total damage into physical/magic halves; bin only expresses total via YoneR#Damage, and YoneR#TooltipDamage = Damage * 0.5 matches this half-split"
+    },
+    {
+     "id": "r_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      200,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|100 to 300}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [
+      "YoneR#TooltipDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|stun|stunning}} them for 1 second",
+     "bin": [],
+     "binNote": "no matching bin data value found; wiki-only figure, from description 'knocking them down and stunning them for 1 second'"
+    },
+    {
+     "id": "r_5",
+     "meaning": "knock up duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|airborne|knocks them up}} for {{fd|0.75}} seconds",
+     "bin": [
+      "YoneR.RKnockupDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "delay before second damage instance",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "After {{tt|{{fd|0.3}} seconds|From the end of the cast time}}",
+     "bin": [],
+     "binNote": "no matching bin data value found for this timing; wiki-only figure"
+    },
+    {
+     "id": "r_7",
+     "meaning": "post-cast action lockout",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.45,
+     "terms": [],
+     "quote": "'''Yone''' is {{tip|lockout|locked out}} of performing actions for {{fd|0.45}} seconds after the cast time.",
+     "bin": [],
+     "binNote": "no matching bin data value found for this lockout timing; wiki-only figure"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The mixed damage is applied as two separate instances, magic first then physical, within the same game tick, and if the magic damage kills the unit the physical damage is not dealt (a bug).",
+     "quote": "The mixed damage is applied in two instances, and the {{as|magic damage}} will be dealt first within the same game tick.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Marked enemies not within the area at the time of the gust are not affected by the second (damage) portion.",
+     "quote": "''Marked'' enemies that are not within the area will not be affected by the second portion of the ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yone blinks behind the last champion hit (or to max range) shortly after the cast time, before the damage gust occurs.",
+     "quote": "'''Yone''' will {{tip|blink}} after a {{fd|0.05}}-second delay of the cast time being completed.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Against a spell shield, Yone still blinks to the last champion hit even though the shield blocks the effects on that target.",
+     "quote": "When striking against {{tip|spell shield}}, '''Yone''' will still {{tip|blink}} to the last champion hit even if they block the effects to themselves.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The knock up begins only once the pull (movement toward Yone) ends.",
+     "quote": "The {{tip|airborne|knock up}} starts once the pull ends.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YoneR.BlinkDistanceBehindTarget",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneR.Width",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneR.RKnockupHeight",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneR.RKnockTowardsSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YoneR.RKnockTowardsDampener",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Passive doubles total crit chance from all sources and reduces crit damage multiplier to 0.95x AD bonus (2x AD total instead of usual); Mortal Steel's AD-ratio damage can critically strike on every enemy hit (thrust, whirlwind, dash each roll independently)."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Excess crit chance beyond 100% converts to bonus AD at 0.5 AD per 1% excess crit chance."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks permanently alternate between Steel (pure physical) and Azakana (50% physical / 50% magic, two simultaneous damage instances) sword states; governs every auto-attack in the fight."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Spirit Cleave's total mixed damage scales with the target's maximum health (8-12% by rank, split evenly physical/magic)."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Landing Mortal Steel grants a Gathering Storm stack (cap 2, 6s expiry); at 2 stacks the next Q cast is automatically empowered into a dash+whirlwind that deals the same damage formula twice more, each able to crit."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Soul Unbound is an initial dash plus a separately-timed recast (auto or manual after 0.5s) that deals a true-damage burst; Fate Sealed is a cast-time strike/knockdown followed 0.3s later by a separately-timed mixed-damage gust."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spirit Form marks enemy champions hit by attacks/abilities, storing a portion of post-mitigation damage dealt to them; the recast consumes and detonates the stored amount as true damage."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two mechanics exceed the closed primitives: (1) the Steel/Azakana auto-attack alternation produces two same-tick damage instances of different types with a specific kill-order rule (physical-dies-skips-magic on auto, magic-dies-skips-physical on W), which is more than a flat onhit-rider; (2) Soul Unbound's marks accumulate a running percentage of post-mitigation damage from every attack and ability landed during a multi-second window before being released as a single true-damage burst on recast, which needs bespoke accumulate-then-release logic rather than a simple target-stacks read/consume-per-cast model."
+ },
+ "unsettled": [
+  {
+   "question": "Does Soul Unbound's stored mark amount use the wiki's stated formula (25-35% of post-mitigation damage dealt) or the bin's separate flat+AD-ratio formula (DeathmarkBase[20/35/50/65/80] + 0.25xAD) found in YoneE#{df232269}?",
+   "options": [
+    "Percent-of-damage-dealt formula (wiki description2/leveling2)",
+    "Flat base + 0.25xAD formula (bin calculation df232269, possibly legacy/stale)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Damage Stored|{{ap|25 to 35}}% of damage dealt}}",
+    "YoneE#{df232269} = DeathmarkBase=[20/35/50/65/80] + 0.25xad"
+   ]
+  },
+  {
+   "question": "Does Spirit Cleave's (W) damage include a flat 100% AD ratio term in addition to the base+%maxHP damage, as the bin's calculation shows, or is W purely base+%maxHP as the wiki's leveling table states with no AD ratio mentioned?",
+   "options": [
+    "W deals base + %maxHP only (wiki leveling table, no AD term shown)",
+    "W deals base + 1x AD + %maxHP (bin YoneW#WDamage = BaseDamage + 1xad)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Total Mixed Damage|{{ap|10 to 50}} {{as|(+ {{ap|8 to 12}}% of target's '''maximum''' health)}}|...}}",
+    "YoneW#WDamage = BaseDamage=[10/20/30/40/50] + 1xad"
+   ]
+  },
+  {
+   "question": "When Gathering Storm's empowered Mortal Steel (dash + whirlwind, two separate damage applications) lands, does each of the two hits independently grant/refresh a Gathering Storm stack (potentially re-arming the empowerment almost immediately), or does the empowered cast grant at most one stack per cast regardless of how many hits land?",
+   "options": [
+    "Each hit (dash and whirlwind) grants its own stack, so an empowered cast landing on the dummy could immediately re-stack to 2",
+    "The empowered cast, like the regular cast, grants only a single stack total per activation"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If this hits at least one enemy, '''Yone''' generates a {{tip|stack}} of ''Gathering Storm'' for 6 seconds, stacking up to 2 times and refreshing on subsequent hits."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight by casting Fate Sealed (R) immediately if it is off cooldown at the simulated level, for its large upfront mixed damage burst.",
+   "Weave a basic attack whenever available between ability casts, letting Steel and Azakana sword states alternate naturally (every other auto includes the 50/50 physical/magic Azakana split).",
+   "Cast Mortal Steel (Q) on cooldown every ~4 seconds (adjusted for cast time reduction from bonus attack speed); when Gathering Storm reaches 2 stacks, the next Q cast is automatically empowered into the dash+whirlwind and should still be taken on cooldown rather than held.",
+   "Cast Spirit Cleave (W) on cooldown (~14s base, reduced by bonus attack speed) whenever it does not delay a Q cast, for its mixed max-health damage.",
+   "Cast Soul Unbound (E) once mid-fight: enter Spirit Form, continue attacking and casting Q/W on the dummy so their post-mitigation damage is marked, then recast E (manually, as soon as the 0.5s minimum lockout allows, or hold near the 5s cap) to detonate the stored true damage.",
+   "Fill all remaining time with basic attacks between ability cooldowns to maximize Azakana-sword magic damage uptime and overall DPS."
+  ],
+  "questions": [
+   "At what champion level and with what item build is this dummy fight run, and is Fate Sealed (R) unlocked and off cooldown at the start (it will likely only be usable once given its 80-120s cooldown)?",
+   "Should Soul Unbound's recast be taken as early as possible (0.5s minimum) to secure the true damage burst sooner, or held closer to the full 5s Spirit Form duration to mark more attacks/abilities before detonating, and which maximizes total damage in a 15s window?",
+   "Given Q's low cooldown and cast time overlapping with auto-attack windup, should Q be prioritized over queued basic attacks whenever both are available, or does weaving attacks between Q casts (rather than casting Q the instant it is off cooldown) produce more total damage?",
+   "Does entering Spirit Form (E) interrupt or delay the auto-attack alternation cadence, and should E's initial dash be timed to not waste a queued basic attack?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

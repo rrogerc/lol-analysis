@@ -1,0 +1,94 @@
+{
+ "champion": "twitch",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": ["P", "W", "E"],
+   "note": "Deadly Venom stacks (cap 6) are placed on the target by P's on-hit and added/refreshed by W's cask (on landing) and its 3 s zone (one more per second); E (Contaminate) reads the current stack count for its per-stack physical/magic bonus damage. Whether E consumes those stacks is unsettled."
+  },
+  {
+   "id": "dot",
+   "abilities": ["P", "W"],
+   "note": "P's Deadly Venom is a true-damage tick per stack per second. W's cask leaves a 3-second zone that ticks once per second, but the tick applies a Deadly Venom stack rather than dealing direct damage itself."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": ["E"],
+   "note": "Contaminate can only be cast on/near a target that already carries a Deadly Venom stack, and its bonus damage scales with that target's stack count at the start of the cast."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": ["Q", "R"],
+   "note": "Q grants bonus attack speed for 6 s after breaking stealth; R grants bonus attack damage (and attack range) for 6 s."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": ["Q"],
+   "note": "Ambush is cast before the fight: a 1 s delay, then camouflage that a subsequent attack or W/E cast breaks immediately, paying out the attack-speed buff right as the dummy fight begins."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": ["R"],
+   "note": "Spray and Pray's bolts explicitly apply on-hit effects and can critically strike, like a normal basic attack."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": ["R"],
+   "note": "Spray and Pray's bolts pierce every enemy hit in a line, dealing 10 percentage points less per enemy already hit (floored at 60%). Against this fight's single stationary target a bolt always hits only that target, so it always deals 100%."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": ["Q", "W", "E", "R"],
+   "note": "All four abilities cost mana (Q 40, W 70, E 50-90 by rank, R 100) from a 300+40/level pool with modest regen; repeated W/E casts across a 15 s fight may be mana-limited depending on level and build."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit decomposes into standard target-stacks/dot bookkeeping (Deadly Venom), conditional per-stack damage (Contaminate), timed self-buffs (Q's attack speed, R's bonus AD), a stealth opener (Q), and a crit-capable, positionally-trivial (single target) empowered attack (R). No mechanic here needs logic outside the primitive list."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting Contaminate consume/remove the target's Deadly Venom stacks it just scored bonus damage from, or do the stacks persist and keep ticking on their own timers?",
+   "options": [
+    "Contaminate consumes/resets the stacks it scores damage from",
+    "Stacks are unaffected by Contaminate and continue independently (added by attacks/Venom Cask, expiring/refreshing on their own 6 s timers)"
+   ],
+   "impact": "high",
+   "quotes": ["''Contaminate'' will deal the additional damage to targets based on the number of {{ai|Deadly Venom|Twitch}} stacks they had at the start of the cast time."]
+  },
+  {
+   "question": "Does Ambush's bonus attack speed pay out if the camouflage simply times out on its own (never broken by attacking or casting Venom Cask/Contaminate), or only when it is actively broken?",
+   "options": [
+    "Any way the effect ends, including natural expiry, counts as 'breaking stealth' and grants the bonus attack speed",
+    "Only an explicit break (attacking, or casting Venom Cask/Contaminate) grants it; a natural timeout grants nothing"
+   ],
+   "impact": "medium",
+   "quotes": ["Upon breaking stealth, '''Twitch''' gains {{sti|{{as|'''bonus''' attack speed}}}} for 6 seconds.", "Attacking or casting ''{{ai|Venom Cask|Twitch}}'' or ''{{ai|Contaminate|Twitch}}'' ends ''Ambush'' immediately."]
+  },
+  {
+   "question": "What critical-strike damage multiplier does Spray and Pray's bolts use? The wiki names a champion-specific {{ccd|Twitch|crit_base}} constant that neither the wiki capture nor the sheet resolves to a number.",
+   "options": [
+    "Twitch uses the engine's standard/default critical-strike damage multiplier",
+    "Twitch has a distinct crit_base baked into the bin that this capture did not include"
+   ],
+   "impact": "low",
+   "quotes": ["can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Twitch|crit_base}}|100}}|critical damage}} damage"]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Before the fight timer starts, cast Ambush (Q) so its 1-second delay and camouflage resolve pre-fight.",
+   "At the start of the fight, cast Venom Cask (W) on the dummy: this breaks Ambush's camouflage immediately (paying out the 6-second bonus attack speed) and applies the on-landing Deadly Venom stack, followed by one more stack per second for 3 seconds.",
+   "Cast Spray and Pray (R) as soon as it is available so its bonus attack damage is active for as much of the fight as possible, including while Contaminate is scoring its bonus-AD-scaled per-stack damage.",
+   "Auto-attack (or bolt-attack while R is active) continuously between casts to keep adding/refreshing Deadly Venom stacks toward the 6-stack cap and to make use of Q's attack-speed buff.",
+   "Cast Contaminate (E) once Deadly Venom stacks on the target are high, converting them into its per-stack physical and magic bonus damage; recast on cooldown as mana allows.",
+   "Recast Venom Cask on cooldown to keep Deadly Venom stacks topped up ahead of the next Contaminate, mana permitting."
+  ],
+  "questions": [
+   "Does Contaminate consume the target's Deadly Venom stacks, changing how soon it should be recast relative to rebuilding stacks?",
+   "How many Deadly Venom stacks (and how much elapsed time) should Contaminate wait for before its first cast, given its own cooldown and mana cost against a ~15 s fight?",
+   "Should Spray and Pray be cast immediately (to front-load its bonus AD for Contaminate) or held to align with a later, higher-stack Contaminate?",
+   "Is mana actually a binding constraint across Q/W/E/R at the levels/items this fight will be run at, or is it never tight enough to change the rotation?"
+  ]
+ }
+}

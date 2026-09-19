@@ -1,0 +1,155 @@
+{
+ "champion": "katarina",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bouncing Blade deals base+AP magic damage on a 0.25s cast, on cooldown; against a single dummy there are no bounce targets so only one hit lands"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shunpo deals base+bonusAD+AP magic damage to the nearest enemy on a 0.15s cast, on cooldown"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shunpo resets Katarina's basic attack timer on landing (unless it kills the target)"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Death Lotus channels for up to 2.5s, blocking movement/attacks in the middle of the channel while it fires"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Death Lotus ticks a dagger every ~0.166s for up to 15 ticks during the channel"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "R"
+   ],
+   "note": "each Death Lotus dagger applies on-hit/on-attack effects at reduced (25-35%) effectiveness"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Sinister Steel: retrieving a dropped dagger (from Q/W/E) triggers an AoE slash dealing magic damage and applying on-hit effects to enemies hit"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Death Lotus inflicts Grievous Wounds (40% healing reduction) on the target for 3s; relevant if the target self-heals"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Sinister Steel refunds a percentage of Shunpo's total cooldown as current cooldown on each dagger pickup; separately, Voracity refunds 15s of current cooldown on all abilities if the target dies within 3s of being damaged"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Sinister Steel only procs if Katarina physically walks over a dropped dagger within its 4s lifetime; how many daggers she retrieves per rotation cycle in a stationary-dummy fight is a geometry assumption"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics (channel/dot on R, on-hit rider on R and P, attack reset on E, cooldown refunds on P) all map onto existing primitives. The one non-standard piece is that Sinister Steel's proc condition is 'walk over your own dropped dagger,' which the positional-assumption primitive already exists to flag rather than requiring new logic."
+ },
+ "unsettled": [
+  {
+   "question": "How many of Katarina's own dropped daggers (from Q, W, E) does she actually retrieve within the 15s dummy fight, and how quickly after they land? This directly gates how many Sinister Steel procs (magic damage + on-hit) and how much bonus Shunpo CDR she gets.",
+   "options": [
+    "Assume she retrieves every dagger essentially immediately (best case, since the dummy doesn't move or interrupt)",
+    "Assume some daggers expire unretrieved (4s lifetime) because she is busy casting/attacking elsewhere",
+    "Only count dagger pickups that happen incidentally as part of an E-onto-dagger cast, ignore walking to Q/W daggers separately"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|Daggers|buzzword}} grant {{tip|sight}} of their radius and will disappear after being on the ground for 4 seconds.",
+    "The {{as|Dagger's|buzzword}} area of effect indicator is displayed even before it lands, although '''Katarina''' may not slash until it has. This can be targeted by {{ai|Shunpo|Katarina}}."
+   ]
+  },
+  {
+   "question": "If the dummy dies mid-fight (the damage fight explicitly ranks builds by kill time), does Voracity's 15s flat current-cooldown refund on all abilities actually fire, and does the simulator then let Katarina keep dealing damage to a dead target or does the fight simply end at the kill?",
+   "options": [
+    "Fight ends at kill, so the refund never matters for damage output",
+    "Refund applies at the moment of the kill but is moot since there is no more time/target left",
+    "Simulator should model the refund as usable against a fresh target/next phase (not applicable to a single 15s single-target fight)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Scoring a champion {{tip|takedown}} within 3 seconds of damaging them will reduce the {{sti|'''current''' cooldowns}} of '''Katarina's''' {{tip|abilities}} by 15 seconds.",
+    "''Voracity's'' cooldown reduction will still take effect even after '''Katarina''' dies."
+   ]
+  },
+  {
+   "question": "Death Lotus deals both a physical (bonus AD + attack speed scaling) and a magic (base + AP) component per dagger. Are these two components separate damage instances (each independently able to trigger per-hit effects, spell shields, etc.) or a single combined damage instance per dagger tick?",
+   "options": [
+    "Two separate instances per tick (one physical, one magic)",
+    "One combined instance per tick that happens to have mixed damage type",
+    "Sources don't specify; bin only gives two separate calculation nodes (DamageCalc/ADDamageCalc) which suggests two instances but doesn't confirm game-engine behavior"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Each dagger deals {{as|physical damage}} and {{as|magic damage}}, applies {{tip|on-hit}} and {{tip|on-attack}} effects",
+    "Each dagger counts as a separate hit for effects such as {{ri|Conqueror}}, {{ri|Electrocute}}, and {{iis|Eclipse}}"
+   ]
+  },
+  {
+   "question": "Does the '25-35% on-hit/on-attack effectiveness' reduction on Death Lotus apply to Death Lotus's own listed physical/magic per-dagger damage values, or only to separately-triggered on-hit/on-attack item and rune effects (e.g., Rageblade, Wit's End) layered on top of those listed values?",
+   "options": [
+    "The reduction is baked into the listed per-dagger physical/magic damage itself",
+    "The reduction only throttles external on-hit/on-attack procs triggered by each dagger, not R's own damage line",
+    "Both apply independently"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Each dagger deals {{as|physical damage}} and {{as|magic damage}}, applies {{tip|on-hit}} and {{tip|on-attack}} effects, with on-hit and on-attack damage reduced in effectiveness",
+    "{{st|On-Hit/On-Attack Damage Effectiveness|{{ap|25 to 35}}%}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with W (Preparation) to drop a dagger above Katarina's position and gain the movement burst, setting up an early retrieval target.",
+   "Immediately cast Q (Bouncing Blade) on the dummy for its magic damage; since only one target exists it lands as a single hit and drops a second dagger near the dummy.",
+   "Weave in basic attacks while closing/repositioning between casts.",
+   "Cast E (Shunpo) onto the nearest available dropped dagger (Q's or W's) to deal Shunpo's magic damage, reset the basic attack timer, and retrieve the dagger, triggering the Sinister Steel slash (extra magic damage + on-hit) and partially refunding Shunpo's own cooldown.",
+   "Recast Q and W again as they come off cooldown to keep generating daggers to retrieve via further E casts, repeating the retrieve-and-refund loop.",
+   "Cast R (Death Lotus) as soon as it is off cooldown and Katarina is within 500 units of the dummy; let the full up-to-2.5s channel complete, since ending it early forfeits remaining ticks and it is not interruptible by movement/attack in the middle of the channel.",
+   "Fill any remaining gaps with basic attacks and any off-cooldown Q/E casts for the rest of the 15s window."
+  ],
+  "questions": [
+   "Should R be delayed to stack more bonus attack speed (from items) before casting, given its physical-damage ratio scales with bonus AS, or is casting it on cooldown ASAP always higher DPS in a 15s window?",
+   "In a stationary-dummy fight with no real positioning need, is it realistic/optimal to model Katarina actually walking to pick up every Q/W dagger, or should the simulator assume some daggers are never retrieved?",
+   "Does the order Q-then-E-onto-dagger versus W-then-E-onto-dagger produce meaningfully different total damage/CDR loops within 15s, i.e. which dagger should be prioritized for retrieval first?",
+   "If the dummy dies before the 15s mark (kill-time-ranked damage fight), should the rotation model stop there, or continue casting for a 'total damage over 15s' style secondary metric?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,590 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "NautilusPassive",
+    "key": "Characters/Nautilus/Spells/NautilusPassiveAbility/NautilusPassive",
+    "dataValues": {
+     "PerTargetCD": 6
+    },
+    "calcs": {
+     "BonusDamage": {
+      "expr": "<ByCharLevelFormulaCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "TotalDamageTooltip": {
+      "expr": "<ByCharLevelFormulaCalculationPart> + 1xad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": []
+     },
+     "RootDuration": {
+      "expr": "byLevelL[0.75/0.75/0.75/0.75/0.75/1/1/1/1/1/1.25/1.25/1.25/1.25/1.25/1.5/1.5/1.5]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1.25,
+        1.25,
+        1.25,
+        1.25,
+        1.25,
+        1.5,
+        1.5,
+        1.5
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ByCharLevelFormulaCalculationPart"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "NautilusAnchorDrag",
+    "key": "Characters/Nautilus/Spells/NautilusAnchorDragAbility/NautilusAnchorDrag",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       85,
+       125,
+       165,
+       205,
+       245
+      ]
+     },
+     "TerrainCDR": 0.5,
+     "TerrainMana": 0.5,
+     "TerrainReduction": 0.5,
+     "TerrainManaRefund": 0.5
+    },
+    "calcs": {
+     "QDamageCalc": {
+      "expr": "BaseDamage=[85/125/165/205/245] + 0.9xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        85,
+        125,
+        165,
+        205,
+        245
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "NautilusPiercingGaze",
+    "key": "Characters/Nautilus/Spells/NautilusPiercingGazeAbility/NautilusPiercingGaze",
+    "cooldown": 12,
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ShieldBase": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90
+      ]
+     },
+     "ShieldHealthRatio": {
+      "axis": "rank",
+      "v": [
+       0.08,
+       0.09,
+       0.1,
+       0.11,
+       0.12
+      ]
+     },
+     "ShieldDuration": 6,
+     "DotDamageBase": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50,
+       60,
+       70
+      ]
+     },
+     "DotDamageAPRatio": 0.4
+    },
+    "calcs": {
+     "DotDamageCalc": {
+      "expr": "DotDamageBase=[30/40/50/60/70] + (DotDamageAPRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        40,
+        50,
+        60,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "DotDamageAPRatio"
+       }
+      ],
+      "refs": [
+       "DotDamageAPRatio",
+       "DotDamageBase"
+      ]
+     },
+     "ShieldCalc": {
+      "expr": "ShieldBase=[50/60/70/80/90] + (ShieldHealthRatio=[0.08/0.09/0.1/0.11/0.12])xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        60,
+        70,
+        80,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.08,
+          0.09,
+          0.1,
+          0.11,
+          0.12
+         ]
+        },
+        "dataValue": "ShieldHealthRatio"
+       }
+      ],
+      "refs": [
+       "ShieldBase",
+       "ShieldHealthRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "NautilusSplashZone",
+    "key": "Characters/Nautilus/Spells/NautilusSplashZoneAbility/NautilusSplashZone",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6.5,
+      6,
+      5.5,
+      5
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamageBase": {
+      "axis": "rank",
+      "v": [
+       55,
+       90,
+       125,
+       160,
+       195
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "SlowDuration": 1.25,
+     "MultiHitReduction": 0.5,
+     "DamageMonsterMod": 1.5,
+     "DamageAPRatio": 0.5,
+     "ExtraWavePenalty": 0.5,
+     "DamageRadius": 125,
+     "MonsterBonusDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       165,
+       205,
+       245,
+       285
+      ]
+     }
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "DamageBase=[55/90/125/160/195] + (DamageAPRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        90,
+        125,
+        160,
+        195
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "DamageAPRatio",
+       "DamageBase"
+      ]
+     },
+     "MonsterBonusCalc": {
+      "expr": "MonsterBonusDamage=[125/165/205/245/285] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        165,
+        205,
+        245,
+        285
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "MonsterBonusDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "NautilusGrandLine",
+    "key": "Characters/Nautilus/Spells/NautilusGrandLineAbility/NautilusGrandLine",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.46,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PrimaryDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       275,
+       400
+      ]
+     },
+     "SecondaryDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       175,
+       225
+      ]
+     },
+     "StunDuration": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.5,
+       2
+      ]
+     }
+    },
+    "calcs": {
+     "PrimaryTargetDamage": {
+      "expr": "PrimaryDamage=[150/275/400] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        275,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "PrimaryDamage"
+      ]
+     },
+     "SecondaryTargetDamage": {
+      "expr": "SecondaryDamage=[125/175/225] + 0.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        175,
+        225
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "SecondaryDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "NautilusAnchorDrag",
+  "W": "NautilusPiercingGaze",
+  "E": "NautilusSplashZone",
+  "R": "NautilusGrandLine",
+  "P": "NautilusPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 400,
+   "{6216bf7b}": 47,
+   "{c4ab3550}": 1.73,
+   "{3a509002}": 0.1
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": 0.00637254910543561
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Nautilus",
+  "name": "Nautilus",
+  "partype": "Mana",
+  "passive": "Staggering Blow",
+  "spells": [
+   {
+    "id": "NautilusAnchorDrag",
+    "name": "Dredge Line",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "NautilusPiercingGaze",
+    "name": "Titan's Wrath",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "NautilusSplashZone",
+    "name": "Riptide",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "cost": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ]
+   },
+   {
+    "id": "NautilusGrandLine",
+    "name": "Depth Charge",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Staggering Blow": {
+    "damagetype": "Physical",
+    "spelleffects": "Proc",
+    "spellshield": "Special",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Dredge Line": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "[[Self]], Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Titan's Wrath": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Riptide": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Depth Charge": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Depth Charge 2": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

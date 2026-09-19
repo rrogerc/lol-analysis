@@ -1,0 +1,806 @@
+{
+ "champion": "talon",
+ "abilities": {
+  "P": {
+   "name": "Blade's End",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_bleed_total",
+     "meaning": "total bleed damage from consuming max Wound stacks",
+     "role": "dot",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      80,
+      91.76,
+      103.53,
+      115.29,
+      127.06,
+      138.82,
+      150.59,
+      162.35,
+      174.12,
+      185.88,
+      197.65,
+      209.41,
+      221.18,
+      232.94,
+      244.71,
+      256.47,
+      268.24,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.1
+      }
+     ],
+     "quote": "{{as|{{pp|80 + (280-80)/17*(x-1) for 20}}|physical damage}} {{as|(+ 210% '''bonus''' AD)}} {{as|'''total''' physical damage}}",
+     "bin": [
+      "TalonPassive#BleedDamage"
+     ]
+    },
+    {
+     "id": "p_bleed_duration",
+     "meaning": "duration over which bleed damage is dealt",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "over 2 seconds",
+     "bin": [
+      "TalonPassive.BleedDuration"
+     ]
+    },
+    {
+     "id": "p_bleed_interval",
+     "meaning": "tick interval of the bleed damage",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.125,
+     "terms": [],
+     "quote": "{{fd|0.125}} seconds",
+     "bin": [],
+     "binNote": "The bin has no explicit tick-interval field; this comes only from the wiki's per-tick damage breakdown text (16 ticks over 2 seconds = 0.125s), derived rather than a named data value."
+    },
+    {
+     "id": "p_stack_cap",
+     "meaning": "Wound stacks required to empower the next basic attack",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "No stack-cap data value exists in the bin; the cap is only stated in the wiki description text."
+    },
+    {
+     "id": "p_stack_duration",
+     "meaning": "duration a Wound stack lasts before expiring, refreshed on reapplication",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Wound'' to enemy {{tip|champions}} and large {{tip|monsters}} hit for 6 seconds",
+     "bin": [
+      "TalonPassive.StackDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Talon's abilities apply a stack of Wound to enemy champions and large monsters hit, refreshing on basic attacks and subsequent applications, stacking up to 3 times.",
+     "quote": "'''Talon's''' {{tip|abilities}} apply a {{tip|stack}} of ''Wound'' to enemy {{tip|champions}} and large {{tip|monsters}} hit for 6 seconds, refreshing on basic attacks and subsequent applications and stacking up to 3 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Talon's next basic attack on-hit against a target with max Wound stacks consumes them all to apply the bleed, and the target cannot gain new Wound stacks while bleeding.",
+     "quote": "'''Talon's''' next {{tip|basic attack}} {{tip|on-hit}} against an enemy with 3 ''Wound'' stacks is empowered to consume them all to cause the target to bleed ... The target cannot gain ''Wound'' stacks during this time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both passes of Rake and Shadow Assault each apply a stack of Wound.",
+     "quote": "Both passes of {{ai|Rake|Talon}} and {{ai|Shadow Assault|Talon}} apply a stack of ''Wound''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The enhanced attack still triggers if the target blocks it, but not if it is dodged or missed while Talon is blinded, and the stack duration is not refreshed on a dodged or missed attack.",
+     "quote": "''Blade End's'' enhanced attack will still trigger if {{tip|blocked}}, but not if they are {{tip|dodge|dodged}} or missed while '''Talon''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks the enhanced attack from triggering (its bonus damage) but still consumes all Wound stacks.",
+     "quote": "{{tip|Spell shield}} prevents ''Blade End's'' enhanced attack from triggering though still consuming all ''Wound'' {{tip|stacks}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TalonPassive.MonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Noxian Diplomacy",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0,
+    "quote": "{{dv|{{tt|None|Ranged dash attack}}|{{tt|{{as|100% of '''Talon's''' windup time|as}} ({{ap|(1/{{ccd|Talon|as_base}})*{{ccd|Talon|windup}}|round=3}} at {{as|'''base''' attack speed}})|Close dash attack}}}}",
+    "binNote": "Ranged cast has no cast time (None). The close-range cast instead takes 100% of Talon's base attack windup time, a champion base stat not a fixed ability number, so no single number covers both cases; 0 is recorded for the default ranged case."
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      65,
+      85,
+      105,
+      125,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|65 to 145}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "TalonQ#LeapDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Critical Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      97.5,
+      127.5,
+      157.5,
+      187.5,
+      217.5
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|65*1.5 to 145*1.5}} {{as|(+ {{ap|100*1.5}}% '''bonus''' AD)}}",
+     "bin": [
+      "TalonQ#CriticalDamage",
+      "TalonQ.EnhancedDamageMod"
+     ],
+     "binNote": "Bin computes CriticalDamage = LeapDamage * EnhancedDamageMod(1.5) + 1x bonus critDamage, i.e. (base+bonusAd)*1.5 rather than base*1.5 + bonusAd*1.5 as separate terms; the wiki's stated base (97.5..217.5) and 150% bonus AD ratio are algebraically equivalent to the bin's multiplicative formula, so the numbers agree."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Heal on kill",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      9,
+      11.71,
+      14.41,
+      17.12,
+      19.82,
+      22.53,
+      25.24,
+      27.94,
+      30.65,
+      33.35,
+      36.06,
+      38.76,
+      41.47,
+      44.18,
+      46.88,
+      49.59,
+      52.29,
+      55
+     ],
+     "terms": [],
+     "quote": "'''Talon''' {{tip|heals}} for {{pp|9 + (55-9)*(x-1)/17|1 to 20 by 1|color=heal}}",
+     "bin": [
+      "TalonQ#TotalHealing"
+     ],
+     "binNote": "wiki formula is by champion level 1-20 but bin's byLevel table is stated 9..55 over levels; treating as levels 1-18 with the same endpoints since champion levels cap at 18."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Cooldown refund on kill",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "the ability's {{sti|cooldown}} is reduced by 50%",
+     "bin": [
+      "TalonQ.CooldownRefund"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Bonus attack range granted on next basic attack, close range",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 75,
+     "terms": [],
+     "quote": "grants him {{sti|75 '''bonus''' attack range}} on his next basic attack within 1 second",
+     "bin": [],
+     "binNote": "Not present in the datavalue sheet; the bin has no field for this bonus attack range or its 1s window."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "If cast in melee range, the ability instead deals critical damage.",
+     "quote": "If the target is within melee range, '''Talon''' will {{tip|critical strike|critically strike}} the target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "In close range, the cast is a stationary cast over the cast time, and damage is dealt at cast completion, not on dash arrival.",
+     "quote": "When cast in close range, ''Noxian Diplomacy'' deals its damage at the completion of the cast time, rather than at the dash's completion.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The close-range damage still lands even if the dash is interrupted, as long as the cast time finished.",
+     "quote": "The damage will be dealt even if '''Talon's''' dash is interrupted, so long as the cast time is completed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Talon is ordered to basic attack the target at the end of the dash, which combined with the reset lets it chain into an auto attack.",
+     "quote": "''Noxian Diplomacy {{tip|basic attack reset|resets}} '''Talon's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target dies at the moment the dash completes, the kill heal/cooldown refund still triggers (close range only).",
+     "quote": "''Noxian Diplomacy'' will also grant the heal if the target dies upon '''Talon's''' completion of the dash.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TalonQ.BonusADRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Rake",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9 to 7}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|50 to 90}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [
+      "TalonW#TotalInitialDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 90% '''bonus''' AD)}}",
+     "bin": [
+      "TalonW#TotalReturnDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "TalonW.MovespeedSlow"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "delay before daggers return to Talon",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.7,
+     "terms": [],
+     "quote": "the daggers linger for {{fd|0.7}} seconds before homing back to '''Talon'''",
+     "bin": [
+      "TalonW.ReturnDelay"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "slowing them for 1 second",
+     "bin": [
+      "TalonW.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies hit by the outgoing daggers can be hit again by the returning daggers, but each pass (outgoing or returning) hits a given enemy only once.",
+     "quote": "Enemies can be hit only once per pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The return damage and slow only occur if the daggers travel to maximum range before homing back.",
+     "quote": "At maximum range, the daggers linger for {{fd|0.7}} seconds before homing back to '''Talon''', dealing {{as|physical damage}} to enemies hit and {{tip|slow|slowing}} them for 1 second.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rake can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TalonW.MonsterDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TalonW.InitialBonusADRatio",
+     "reason": null
+    },
+    {
+     "ref": "TalonW.ReturnBonusADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Assassin's Path",
+   "cooldown": {
+    "values": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ],
+    "quote": "cooldown     = 2",
+    "binNote": "The bin's ddragon/base cooldown is 0; the wiki's cooldown = 2 refers to the ability's own cast cooldown, distinct from the on-terrain cooldown (TalonE.WallCD) which is tracked separately."
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "Shadow Assault can be cast during the Assassin's Path dash.",
+     "quote": "{{ai|Shadow Assault|Talon}} can be cast during the dash.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TalonE.WallCD",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TalonE.WallJumpDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TalonE.WallLockoutWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TalonE.DisplayCD",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Shadow Assault",
+   "cooldown": {
+    "values": [
+     100,
+     80,
+     60
+    ],
+    "quote": "{{ap|100 to 60}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      90,
+      135,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|90 to 180}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "TalonR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.55,
+      0.7
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 70}}%",
+     "bin": [
+      "TalonR.MoveSpeed"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Total Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      180,
+      270,
+      360
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.0
+      }
+     ],
+     "quote": "{{ap|90*2 to 180*2}} {{as|(+ 200% '''bonus''' AD)}}",
+     "bin": [
+      "TalonR#Damage"
+     ],
+     "binNote": "The wiki's 'Total Physical Damage' row is 2x the initial cast's TalonR#Damage (BaseDamage x2, ad ratio x2), because both the outward pass and the recast convergence deal TalonR#Damage separately; the bin has no calculation for the doubled total, it's just the same TalonR#Damage instance applied twice."
+    },
+    {
+     "id": "r_4",
+     "meaning": "lingers at maximum range for up to seconds before automatic recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "lingers at maximum range for up to {{fd|2.5}} seconds",
+     "bin": [
+      "TalonR.Duration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "minimum lifetime before convergence can be recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "''Shadow Assault'' has a minimum lifetime of {{fd|0.8}} seconds before convergence.",
+     "bin": [],
+     "binNote": "No bin row for this minimum-recast-delay timer; it's not exposed as a separate data value in the sheet (only overall Duration=2.5 is present)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The outward cast deals damage to enemies it passes through as blades disperse in a ring, separate from the recast convergence damage.",
+     "quote": "deals {{as|physical damage}} to enemies it passes through and lingers for a short time",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Recast converges the blades back and deals the same physical damage a second time, so hitting a single stationary target with both passes yields the 'Total Physical Damage' figure.",
+     "quote": "'''Talon''' breaks stealth and converges the blades to him, dealing the same {{as|physical damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Breaking stealth with a basic attack or Noxian Diplomacy converges the blades onto the attacked target instead of Talon, and using a basic attack breaks stealth at the end of the attack windup.",
+     "quote": "Breaking stealth with a basic attack or ''{{ai|Noxian Diplomacy|Talon}}'' will converge the blades to the target instead.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks only a single pass of the blades (not the whole ability).",
+     "quote": "{{tip|Spell shield}} will block a single pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shadow Assault does not interrupt or cancel Talon's basic attacks.",
+     "quote": "''Shadow Assault'' does not cancel '''Talon's''' basic attacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability casts 12 blades total, evenly spread in a ring, each a separate damage instance able to hit the same target as it passes through and again on return.",
+     "quote": "''Shadow Assault'' casts a total of 12 blades evenly distributed in all directions.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts after the recast/return effect completes, not on initial cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TalonR.BaseDamage",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Wound stacks (cap 3, 6s duration, refreshed by abilities/attacks) built up on the target by Talon's abilities and attacks"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "next basic attack on-hit against a maxed Wound target is empowered to consume the stacks and trigger the bleed"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "bleed damage dealt over 2s in 0.125s ticks once the empowered attack lands"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "baseline on-cast/on-cooldown damage for the leap, the outgoing dagger fan, and the dispersed ring of blades"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Noxian Diplomacy resets Talon's basic attack timer on landing"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Noxian Diplomacy critically strikes (150% damage) if cast within close/melee range instead of dashing from afar"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "killing the target with Noxian Diplomacy heals Talon and cuts the ability's cooldown by 50%"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Rake's outgoing and returning dagger passes are two separately timed damage instances; Shadow Assault's outward dispersal and its (auto or manual) recast convergence are two separately timed damage instances"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q's crit/cast-time behavior depends on cast range to the target; W's return pass and damage only occur if the daggers reach maximum range before homing back; R's recast convergence damage landing on a stationary target depends on blade geometry relative to Talon/target position"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "mana costs (40/50-70/100) on a limited mana pool constrain how often Q/W/R can be recast inside the 15s window"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The passive's stack-then-consume-into-a-DoT pattern maps to target-stacks + empowered-attack + dot; Q's range-conditional crit/cast-time and attack reset map to crit-interaction + positional-assumption + attack-reset + cooldown-manipulation; W's two-pass and R's cast-plus-recast structures map to recast-or-multipart with positional-assumption governing whether both passes connect. No mechanic here (stat conversion, forms, ammo, execute thresholds, etc.) falls outside this set."
+ },
+ "unsettled": [
+  {
+   "question": "For maximum damage, should the simulator have Talon cast Noxian Diplomacy from close range (getting the crit multiplier and attack reset, but incurring a cast time equal to his basic-attack windup) or from beyond close range (instant, no cast time, but no crit)?",
+   "options": [
+    "Always cast at close range: the crit multiplier (150% damage, ~250% bonus AD) outweighs the windup-length cast-time delay",
+    "Always cast from range when possible: the zero cast-time ranged dash maximizes casts-per-second even without the crit",
+    "Simulator should compute both and pick whichever yields higher rotation DPS, varying by build attack speed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If cast within close range, ... over the cast time instead and ''Noxian Diplomacy'' {{tip|critical strike|critically strikes}} for {{as|{{critical damage|150|100}}|critical damage}} damage",
+    "{{dv|{{tt|None|Ranged dash attack}}|{{tt|{{as|100% of '''Talon's''' windup time|as}}"
+   ]
+  },
+  {
+   "question": "Does Shadow Assault's recast (convergence) damage reliably land on a single stationary dummy, so the wiki's doubled 'Total Physical Damage' figure is achievable in the damage fight, or does the outward ring only guarantee one hit while the converging blades' return path (to Talon or to an attacked target) may not re-cross the dummy's position?",
+   "options": [
+    "Assume both the outward and convergence passes always hit the stationary target, i.e. use the full 2x 'Total Physical Damage' figure",
+    "Assume only the outward pass reliably hits; the convergence pass connecting depends on unmodeled geometry and should not be assumed guaranteed",
+    "Model convergence as hitting only if Talon breaks stealth with a basic attack or Q on the target (which redirects convergence to the target explicitly)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Shadow Assault'' casts a total of 12 blades evenly distributed in all directions",
+    "Breaking stealth with a basic attack or ''{{ai|Noxian Diplomacy|Talon}}'' will converge the blades to the target instead."
+   ]
+  },
+  {
+   "question": "Does Rake's returning dagger pass reliably hit the same stationary target as the outgoing pass in a no-terrain dummy fight (i.e., is the return damage always assumed to land), or does it require the target to remain within the lingering-blade radius at the end of the 0.7s delay, which a positioned/stationary-but-off-axis dummy might not satisfy?",
+   "options": [
+    "Assume the return pass always lands on a stationary target that was hit by the outgoing pass (full 'Total Physical Damage' each cast)",
+    "Assume the return pass only lands if the target sits at or near maximum Rake range when the daggers linger, which is a positional assumption the fight must fix explicitly",
+    "Treat return-pass connection as build/position-independent since the dummy never moves, making it a non-issue in practice"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "At maximum range, the daggers linger for {{fd|0.7}} seconds before homing back to '''Talon''', dealing {{as|physical damage}} to enemies hit"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Talon opens with Shadow Assault (R) at close range so the outward ring of blades hits the dummy immediately, dealing its damage and applying a Wound stack.",
+   "Immediately casts Noxian Diplomacy (Q) from close range (within melee/150 units) to trigger its critical-strike damage variant, apply a second Wound stack, and reset the basic attack timer.",
+   "The reset basic attack fires right after Q lands, applying a third Wound stack (or, once 3 stacks are already up, consuming them via Blade's End to start the bleed DoT).",
+   "Casts Rake (W) so both the outgoing and returning volleys hit the target, adding two more damage instances and a Wound stack application.",
+   "Recasts Shadow Assault as soon as its minimum lifetime (0.8-1s) has elapsed, converging the blades onto the target for the second half of its damage.",
+   "Between ability cooldowns, Talon continues auto-attacking on-cooldown to keep re-applying/consuming Wound stacks and benefit from Blade's End's periodic empowered attacks.",
+   "Recasts Q, W, and R again as soon as each comes off cooldown and mana allows, roughly Q > W > R by cooldown length, filling remaining time with basic attacks."
+  ],
+  "questions": [
+   "Should Q be cast at close range every time to guarantee the crit (accepting the windup-length cast time), or does ranged Q's zero cast time produce more total damage over 15s at high attack speed?",
+   "Is Shadow Assault's second (recast) damage instance guaranteed to connect on a stationary single target, or should the fight assume only the outward pass always lands?",
+   "Does Rake's return pass reliably hit a stationary dummy standing at Talon's chosen engage range, or only if the dummy is placed at Rake's maximum range?",
+   "Should the rotation prioritize waiting for 3 Wound stacks before auto-attacking (to always trigger Blade's End) at the cost of attack tempo, or attack on-cooldown regardless?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

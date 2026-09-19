@@ -1,0 +1,571 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TeemoPassive",
+    "key": "Characters/Teemo/Spells/TeemoPassiveAbility/TeemoPassive",
+    "dataValues": {
+     "AttackSpeedDuration": 5,
+     "StealthCooldownDuration": 1.5
+    },
+    "calcs": {
+     "BonusAttackSpeed": {
+      "expr": "byLevelL[0.2/0.2/0.2/0.2/0.4/0.4/0.4/0.4/0.4/0.6/0.6/0.6/0.6/0.6/0.8/0.8/0.8/0.8]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.8,
+        0.8,
+        0.8,
+        0.8
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "TeemoQ",
+    "key": "Characters/Teemo/Spells/TeemoQAbility/TeemoQ",
+    "cooldown": 7,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       125,
+       170,
+       215,
+       260
+      ]
+     },
+     "APRatio": 0.7,
+     "BlindDuration": {
+      "axis": "rank",
+      "v": [
+       2,
+       2.25,
+       2.5,
+       2.75,
+       3
+      ]
+     },
+     "MissChance": 1,
+     "MinionMonsterDurationMod": 2
+    },
+    "calcs": {
+     "CalculatedDamage": {
+      "expr": "BaseDamage=[80/125/170/215/260] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        125,
+        170,
+        215,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "{0f87e4ba}": {
+      "expr": "(BlindDuration=[2/2.25/2.5/2.75/3]) * MinionMonsterDurationMod=2",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        4,
+        4.5,
+        5,
+        5.5,
+        6
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "BlindDuration",
+       "MinionMonsterDurationMod"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "TeemoW",
+    "key": "Characters/Teemo/Spells/TeemoWAbility/TeemoW",
+    "cooldown": 14,
+    "cost": 40,
+    "dataValues": {
+     "PassiveMoveSpeedBonus": {
+      "axis": "rank",
+      "v": [
+       0.12,
+       0.16,
+       0.2,
+       0.24,
+       0.28
+      ]
+     },
+     "ActiveMoveSpeedBuffDuration": 3,
+     "ActiveMoveSpeedBonus": {
+      "axis": "rank",
+      "v": [
+       0.24,
+       0.32,
+       0.4,
+       0.48,
+       0.56
+      ]
+     },
+     "PassiveCooldownOnDamageTaken": 5
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TeemoE",
+    "key": "Characters/Teemo/Spells/TeemoEAbility/TeemoE",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TickBaseDamage": {
+      "axis": "rank",
+      "v": [
+       6,
+       12,
+       18,
+       24,
+       30
+      ]
+     },
+     "TickAPRatio": 0.1,
+     "ImpactBaseDamage": {
+      "axis": "rank",
+      "v": [
+       9,
+       23,
+       37,
+       51,
+       65
+      ]
+     },
+     "ImpactAPRatio": 0.3,
+     "PoisonDuration": 4,
+     "TickFrequency": 1,
+     "MonsterMod": 1.6,
+     "TickBonusADRatio": 0.025,
+     "ImpactBonusADRatio": 0.05
+    },
+    "calcs": {
+     "TickCalculatedDamage": {
+      "expr": "TickBaseDamage=[6/12/18/24/30] + (TickAPRatio=0.1)xap + (TickBonusADRatio=0.025)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        6,
+        12,
+        18,
+        24,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "TickAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.025,
+        "dataValue": "TickBonusADRatio"
+       }
+      ],
+      "refs": [
+       "TickAPRatio",
+       "TickBaseDamage",
+       "TickBonusADRatio"
+      ]
+     },
+     "ImpactCalculatedDamage": {
+      "expr": "ImpactBaseDamage=[9/23/37/51/65] + (ImpactAPRatio=0.3)xap + (ImpactBonusADRatio=0.05)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        9,
+        23,
+        37,
+        51,
+        65
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "ImpactAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.05,
+        "dataValue": "ImpactBonusADRatio"
+       }
+      ],
+      "refs": [
+       "ImpactAPRatio",
+       "ImpactBaseDamage",
+       "ImpactBonusADRatio"
+      ]
+     },
+     "TotalDotDamage": {
+      "expr": "TickCalculatedDamage * PoisonDuration=4",
+      "modifies": "TickCalculatedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        24,
+        48,
+        72,
+        96,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "TickAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1,
+        "dataValue": "TickBonusADRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "PoisonDuration",
+       "TickAPRatio",
+       "TickBaseDamage",
+       "TickBonusADRatio"
+      ]
+     },
+     "{8b70cfd6}": {
+      "expr": "ImpactCalculatedDamage * monstermod",
+      "modifies": "ImpactCalculatedDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "monstermod"
+      ]
+     },
+     "{938cba49}": {
+      "expr": "TickCalculatedDamage * monstermod",
+      "modifies": "TickCalculatedDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "monstermod"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value monstermod"
+    ]
+   }
+  ],
+  "R": [
+   {
+    "script": "TeemoR",
+    "key": "Characters/Teemo/Spells/TeemoRAbility/TeemoR",
+    "cooldown": 0.25,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      55,
+      35
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TriggerRadius": 160,
+     "MaxAmmo": {
+      "axis": "rank",
+      "v": [
+       3,
+       4,
+       5
+      ]
+     },
+     "MaxBounceDistance": {
+      "axis": "rank",
+      "v": [
+       360,
+       440,
+       550
+      ]
+     },
+     "ArmTime": 1,
+     "MushroomDuration": 5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       325,
+       450
+      ]
+     },
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50
+      ]
+     },
+     "DebuffDuration": 4,
+     "APRatioPerTick": 0.5,
+     "ExplosionRadius": 450,
+     "MaxTraps": 25000,
+     "MinTossDistanceBounceThreshold": {
+      "axis": "rank",
+      "v": [
+       220,
+       500,
+       500
+      ]
+     },
+     "VisionRadius": 210
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[200/325/450] + (APRatioPerTick=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        325,
+        450
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatioPerTick"
+       }
+      ],
+      "refs": [
+       "APRatioPerTick",
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "TeemoRDot",
+    "key": "Characters/Teemo/Spells/TeemoRAbility/TeemoRDot",
+    "dataValues": {
+     "VisionRadius": 175
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "TeemoQ",
+  "W": "TeemoW",
+  "E": "TeemoE",
+  "R": "TeemoR",
+  "P": "TeemoPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 334,
+   "{6216bf7b}": 25,
+   "{c4ab3550}": 1.92,
+   "{3a509002}": 0.09
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Teemo",
+  "name": "Teemo",
+  "partype": "Mana",
+  "passive": "Guerrilla Warfare",
+  "spells": [
+   {
+    "id": "TeemoQ",
+    "name": "Blinding Dart",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "TeemoW",
+    "name": "Move Quick",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "TeemoE",
+    "name": "Toxic Shot",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "TeemoR",
+    "name": "Noxious Trap",
+    "maxrank": 3,
+    "cooldown": [
+     0.25,
+     0.25,
+     0.25
+    ],
+    "cost": [
+     75,
+     55,
+     35
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Guerrilla Warfare": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Blinding Dart": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Move Quick": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Toxic Shot": {
+    "damagetype": "Magic",
+    "spelleffects": "mixed",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "Noxious Trap": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana + 1 Charge"
+   }
+  }
+ }
+}

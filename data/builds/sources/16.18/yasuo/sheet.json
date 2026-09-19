@@ -1,0 +1,527 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "YasuoPassive",
+    "key": "Characters/Yasuo/Spells/YasuoPassiveAbility/YasuoPassive",
+    "uncancellableWindup": true,
+    "dataValues": {
+     "YasuoCritToAD": 50,
+     "CritChanceMultiplier": 1,
+     "CritDamageMod": 0.95
+    },
+    "calcs": {
+     "ShieldValue": {
+      "expr": "byLevel(125..600)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        125,
+        152.94118,
+        180.88235,
+        208.82353,
+        236.76471,
+        264.70588,
+        292.64706,
+        320.58824,
+        348.52941,
+        376.47059,
+        404.41176,
+        432.35294,
+        460.29412,
+        488.2353,
+        516.17647,
+        544.1177,
+        572.05882,
+        600
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "{74ce5438}": {
+      "expr": "byLevelL[55/55/55/55/55/55/50/50/50/50/50/50/45/45/45/45/45/45]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        55,
+        55,
+        55,
+        55,
+        55,
+        55,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "CurrentCritDamage": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "YasuoQ1Wrapper",
+    "key": "Characters/Yasuo/Spells/YasuoQ1WrapperAbility/YasuoQ1Wrapper",
+    "cooldown": 4,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       45,
+       70,
+       95,
+       120
+      ]
+     },
+     "StabRange": 450,
+     "TornadoRange": 1100,
+     "Cooldown": 4,
+     "StabWidth": 80,
+     "SpinWidth": 260,
+     "GatheringStormDuration": 6,
+     "KnockUpDurationTOOLTIPONLY": 1,
+     "ADRatio": 1.05
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/45/70/95/120] + (ADRatio=1.05)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        45,
+        70,
+        95,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.05,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalDamageCrit": {
+      "expr": "BaseDamage=[20/45/70/95/120] + ((ADRatio=1.05)xcritDamage)xad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "YasuoW",
+    "key": "Characters/Yasuo/Spells/YasuoWAbility/YasuoW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      25,
+      23,
+      21,
+      19,
+      17
+     ]
+    },
+    "castTime": 0.013,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "WallLife": 4,
+     "Width": {
+      "axis": "rank",
+      "v": [
+       320,
+       390,
+       460,
+       530,
+       600
+      ]
+     },
+     "TravelRange": 450,
+     "BubbleRadius": 300,
+     "Thickness": 100
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "YasuoE",
+    "key": "Characters/Yasuo/Spells/YasuoEAbility/YasuoE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      0.5,
+      0.4,
+      0.3,
+      0.2,
+      0.1
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MaxStacks": 4,
+     "StackDuration": 5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       85,
+       100,
+       115,
+       130
+      ]
+     },
+     "APRatio": 0.6,
+     "ADRatio": 0.2,
+     "PerTargetCooldown": {
+      "axis": "rank",
+      "v": [
+       10,
+       9,
+       8,
+       7,
+       6
+      ]
+     },
+     "BaseDashSpeed": 750
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/85/100/115/130] + (ADRatio=0.2)xbonus ad + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        85,
+        100,
+        115,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "BonusDamagePerStack": {
+      "expr": "TotalDamage * 0.25",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        17.5,
+        21.25,
+        25,
+        28.75,
+        32.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.05,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "YasuoR",
+    "key": "Characters/Yasuo/Spells/YasuoRAbility/YasuoR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      70,
+      50,
+      30
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       350,
+       500
+      ]
+     },
+     "RPercentArmorPen": 60,
+     "RBuffDuration": 15,
+     "RKnockupDuration": 1,
+     "RRadius": 400,
+     "RCastSearchRadius": 1100
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "RBaseDamage=[200/350/500] + 1.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        350,
+        500
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "RBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "YasuoWMovingWall",
+    "key": "Characters/Yasuo/Spells/YasuoWMovingWall",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      26,
+      24,
+      22,
+      20,
+      18,
+      18
+     ]
+    },
+    "castTime": 0.0125,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "WallLife": 4
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "YasuoQ1Wrapper",
+  "W": "YasuoW",
+  "E": "YasuoE",
+  "R": "YasuoR",
+  "P": "YasuoPassive"
+ },
+ "resource": {
+  "arType": 11,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.08
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Yasuo",
+  "name": "Yasuo",
+  "partype": "Flow",
+  "passive": "Way of the Wanderer",
+  "spells": [
+   {
+    "id": "YasuoQ1Wrapper",
+    "name": "Steel Tempest",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YasuoW",
+    "name": "Wind Wall",
+    "maxrank": 5,
+    "cooldown": [
+     25,
+     23,
+     21,
+     19,
+     17
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YasuoE",
+    "name": "Sweeping Blade",
+    "maxrank": 5,
+    "cooldown": [
+     0.5,
+     0.4,
+     0.3,
+     0.2,
+     0.1
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YasuoR",
+    "name": "Last Breath",
+    "maxrank": 3,
+    "cooldown": [
+     70,
+     50,
+     30
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Way of the Wanderer": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Steel Tempest": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "true",
+    "projectile": "Special",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies"
+   },
+   "Steel Tempest 2": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "true",
+    "projectile": "Special",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies"
+   },
+   "Steel Tempest 3": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "true",
+    "projectile": "Special",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Wind Wall": {
+    "projectile": "Special",
+    "targeting": "Direction",
+    "affects": "None"
+   }
+  },
+  "E": {
+   "Sweeping Blade": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Self, Enemies"
+   }
+  },
+  "R": {
+   "Last Breath": {
+    "damagetype": "Physical",
+    "spelleffects": "Single target",
+    "spellshield": "special",
+    "targeting": "[[Unit-targeted|Unit]] / [[Proximity-targeted|Proximity]]",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

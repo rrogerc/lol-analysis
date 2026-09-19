@@ -1,0 +1,148 @@
+{
+ "champion": "annie",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Disintegrate, Incinerate, and Tibbers' initial burst deal damage on cast/fixed delay, on cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs may gate casts across a sustained 15s rotation"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Disintegrate refunds 50% cooldown and full mana cost on a killing blow"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Pyromania stacks (up to 4) built by spell hits/casts, consumed by next Q/W/R cast for Energized stun"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Energized cast stuns the target; stun itself doesn't matter for damage fight but the consumption mechanic and stack-gating do"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "R"
+   ],
+   "note": "Tibbers persists as a separate damage-dealing entity (attacks + aura) after the initial burst"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Summon: Tibbers can be recast to redirect Tibbers; only the initial cast is an 'ability activation'"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Molten Shield reflect damage only triggers when the dummy 'attacks' the shield — irrelevant against a passive dummy, flagged for exclusion"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "shield amount, damage reduction, movement speed are non-damage utility"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Tibbers (R) is a pet/summon whose ongoing attack and aura damage against the dummy over the ~45s lifetime (attack damage, attack speed decay, aura tick, AP ratio) isn't captured by a single 'pet-or-summon' primitive value the same way the numbers sheet structures it (per-attack AD+AP with a decaying attack-speed debuff, plus a separate AP-scaling aura DoT). A simulator needs bespoke logic to model Tibbers' independent attack timer and aura ticks over the fight duration, not just a flat pet-damage number. Additionally, the Pyromania stack/consume interaction (stacks build from hits, gate an empowering stun onto whichever of Q/W/R lands first) is timing-sensitive and needs bespoke sequencing logic beyond a generic 'target-stacks' primitive, though it does not add extra damage itself."
+ },
+ "unsettled": [
+  {
+   "question": "Does Molten Shield's reflect damage ever trigger in this fight, given the dummy never attacks Annie?",
+   "options": [
+    "Never triggers since a stationary non-attacking dummy never damages the shield, so E contributes zero damage",
+    "Simulator should still include E's cast for the Pyromania stack it grants, even though its damage term never fires"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "enemies that deal damage to it take {{as|magic damage}}. This may only occur once per enemy per cast for each active ''Molten Shield''."
+   ]
+  },
+  {
+   "question": "Should Tibbers' ongoing attacks and aura damage (over his 45s lifetime) be included in a 15s single-target dummy fight, and if so how is his attack speed and enrage state modeled?",
+   "options": [
+    "Include Tibbers' basic attacks (base 30/45/60 AD + 0.1 AP, decaying attack speed each swing) plus the 8/12/16 + 0.04 AP aura tick as ongoing damage sources for the full 15s",
+    "Treat only the initial burst (InitialDamage + 0.75 AP) as Annie's ability damage and exclude Tibbers' subsequent independent actions as pet AI outside scope",
+    "Include Tibbers but assume a fixed/simplified attack cadence since exact AI targeting/enrage timing against a dummy isn't specified"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ui|Tibbers}} then remains on the field as a controllable {{tip|pet}} for up to 45 seconds.",
+    "AnnieR.TibbersAttackSpeedDecay = -0.1"
+   ]
+  },
+  {
+   "question": "When Pyromania is at max stacks, which spell actually consumes it and gets the stun if the player queues multiple casts (Q then W)?",
+   "options": [
+    "Whichever spell's damage lands on the target first consumes the stacks (per wiki tip, e.g. faster-traveling Incinerate could land before a slower Disintegrate)",
+    "The spell cast first always consumes it regardless of travel time"
+   ],
+   "impact": "low",
+   "quotes": [
+    "The stun applies to the first ability that lands when the stun is available. If you cast {{ai|Disintegrate|Annie}} followed by {{ai|Incinerate|Annie}} while the stun is available and ''Incinerate'' lands first, the stun will be applied through ''Incinerate''."
+   ]
+  },
+  {
+   "question": "Does recasting Summon: Tibbers (redirecting him) count as a new ability activation that generates a Pyromania stack or interacts with on-cast item effects, given the notes say only the initial cast counts for effects like Spellblade but ambiguously mentions Experimental Hexplate counting recasts as ultimate casts?",
+   "options": [
+    "Recasts never count as activations for any on-cast effect (Pyromania stack, item procs)",
+    "Recasts count as ultimate-ability casts for specific effects like Experimental Hexplate/Overdrive but not for generic on-cast triggers like Spellblade or Pyromania stacking"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Only the initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}",
+    "Recasting the ability does, however, count as casting an ultimate ability for the purposes of {{iis|Experimental Hexplate}} {{nie|Overdrive}} and similar effects.{{bug}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight with Pyromania already at 4 max stacks (game-start default) and Energized active.",
+   "Open with Q (Disintegrate) to consume Energized for the stun (irrelevant to a passive dummy, but consumes stacks) and deal its magic damage.",
+   "Cast R (Summon: Tibbers) on/near the dummy for its initial burst damage, applying the magic penetration passive for the rest of the fight.",
+   "Cast W (Incinerate) on cooldown, angled to hit the dummy.",
+   "Cast E (Molten Shield) once for the Pyromania stack contribution (its own damage term never fires against a non-attacking dummy).",
+   "Repeat Q on cooldown (its 4s cooldown is shortest); weave W every 7s; let Pyromania stacks rebuild every 4 spell casts/hits and consume automatically on whichever qualifying spell lands next.",
+   "Track mana against costs (Q 60-80, W 70-90, E 60-80, R 100) to see if the 15s window is resource-constrained at low mana pools/levels.",
+   "Let Tibbers continue attacking/aura-ticking the dummy for the remainder of the 15s after his summon, per the unsettled Tibbers-inclusion question."
+  ],
+  "questions": [
+   "Should Molten Shield be cast at all in an optimal damage rotation, given its own damage term can't trigger against a passive dummy — or is it only worth casting for the Pyromania stack (and is that stack even worth a GCD/mana cost)?",
+   "Is Tibbers' post-summon attack and aura damage intended to be simulated for the full remaining fight duration, and if so what target-selection/attack-speed model should be assumed?",
+   "Does the fight start with Pyromania at 0 or 4 stacks — is 'game starts' interpreted as the moment the dummy fight begins, or does that only apply to an actual match spawn (i.e., should the simulator instead build stacks from 0)?",
+   "Given Q's cooldown/cost refund only triggers on a kill, and this is a sustained non-lethal dummy fight (until final kill), does that refund only matter in the final second of the fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

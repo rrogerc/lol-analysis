@@ -1,0 +1,792 @@
+{
+ "champion": "vladimir",
+ "abilities": {
+  "P": {
+   "name": "Crimson Pact",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "Ability power gained from Vladimir's bonus health",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.03333
+      }
+     ],
+     "quote": "{{#vardefine:cp1|3.333}}",
+     "bin": [
+      "VladimirBloodGorged#ApproximateAPBonusAvoidingRecursion"
+     ],
+     "binNote": "Wiki states a flat 3.333% of bonus health as AP. The bin calc that actually produces the AP bonus is (1xbonus maxHp + (APRatioBonusHP=1.6)*(-1xap))*((0.01)*(3.333))*1.06, i.e. net coefficients 0.0353298xbonusHp - 0.05652768xap (sheet.json terms) - a recursion-avoiding approximation that subtracts a share of current AP and applies an extra 1.06x factor, not the flat ratio the wiki states."
+    },
+    {
+     "id": "p_2",
+     "meaning": "Bonus health gained from Vladimir's ability power",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.6
+      }
+     ],
+     "quote": "{{#vardefine:cp2|160}}",
+     "bin": [
+      "VladimirBloodGorged.APRatioBonusHP",
+      "VladimirBloodGorged#ApproximateHPBonusAvoidingRecursion"
+     ],
+     "binNote": "APRatioBonusHP=1.6 matches the wiki's flat 160% exactly, but the calc that actually uses it is (1xbonus ap + ((0.01)*(3.333))*(-1xbonus maxHp))*((1.06)*(APRatioBonusHP=1.6)), i.e. net coefficients 1.696xap - 0.05652768xbonusHp (sheet.json terms) - a recursion-avoiding approximation that subtracts a share of current bonus health and applies an extra 1.06x factor, not a flat 160% conversion."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Crimson Pact's two conversions (bonus health to AP, and AP to bonus health) do not stack with each other.",
+     "quote": "These two bonuses do not stack with each other.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Crimson Pact's bonus AP stacks multiplicatively with other sources of percent AP, but its bonus health stacks additively with other sources of bonus health.",
+     "quote": "bonus''' ability power {{tip|stacks multiplicatively}} with other sources of {{as|% ability power}} but its '''bonus''' health {{tip|stacks additively}} with other sources of {{as|'''bonus''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Crimson Pact only raises Vladimir's maximum health; it does not restore his current health, which can drop to match a reduced maximum if the bonus is lost.",
+     "quote": "''Crimson Pact'' only affects '''Vladimir's''' {{as|'''maximum''' health}} and will not increase '''Vladimir's''' {{as|'''current''' health}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VladimirBloodGorged.HPforAP",
+     "reason": "unknown"
+    }
+   ]
+  },
+  "Q": {
+   "name": "Transfusion / Crimson Rush",
+   "cooldown": {
+    "values": [
+     9,
+     7.9,
+     6.8,
+     5.7,
+     4.6
+    ],
+    "quote": "{{ap|9 to 4.6}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      100,
+      120,
+      140,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|80 to 160}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "VladimirQ.BaseDamage",
+      "VladimirQ#BaseDamageTooltip"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Increased Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      148,
+      185,
+      222,
+      259,
+      296
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.11
+      }
+     ],
+     "quote": "{{ap|80*1.85 to 160*1.85}} {{as|(+ 111% AP)}}",
+     "bin": [
+      "VladimirQ#EmpoweredDamageTooltip"
+     ],
+     "binNote": "EmpoweredDamageTooltip = BaseDamageTooltip * 1.85 (flat [148/185/222/259/296], + 1.11xap), matching the wiki's total exactly."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Duration of the Crimson Rush surge before it fully depletes (the window to land the empowered cast)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "depletes over {{fd|2.5}} seconds",
+     "bin": [
+      "VladimirQ.FrenzyDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Crimson Rush stacks required to trigger the surge (arms the next Transfusion as the empowered cast)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "At 2 points of ''{{tip|Fury|Crimson Rush}}'', '''Vladimir''' surges",
+     "bin": [],
+     "binNote": "The wiki states the surge triggers at 2 stacks of Crimson Rush. VladimirQ's data values have no named stack-cap row for this. sheet.json's top-level resource block (arType 8, values {726ee5cd}=2, {c4ab3550}=0) plausibly encodes the resource max/start as 2/0, matching the wiki, but its keys are unlabeled hashes rather than a spell row kit_sources.py sheet prints, so it is not cited with confidence."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Transfusion generates 1 point of Crimson Rush over the course of its cooldown (i.e. stacks build up while the ability is on cooldown after being cast).",
+     "quote": "He then generates 1 point of ''{{tip|Fury|Crimson Rush}}'' over the {{sti|cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 2 points of Crimson Rush, Vladimir surges; casting Transfusion during the surge consumes all Crimson Rush to deal 85% increased damage.",
+     "quote": "At 2 points of ''{{tip|Fury|Crimson Rush}}'', '''Vladimir''' surges, gaining",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Once triggered, the surge (Crimson Rush) depletes over 2.5 seconds, so the empowered cast must land inside that window or the charge is lost.",
+     "quote": "depletes over {{fd|2.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Crimson Rush depletes 75% slower while Vladimir is in Sanguine Pool, channeling Tides of Blood, or in stasis, extending the window to land the empowered Transfusion.",
+     "quote": "''{{tip|Fury|Crimson Rush}}'' depletes 75% slower during ''{{ai|Sanguine Pool|Vladimir}}'', ''{{ai|Tides of Blood|Vladimir}}'', or {{tip|stasis (buff)|stasis}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Although visualized as a projectile, Transfusion's healing (and by the same cast, presumably its damage) triggers as soon as the 0.25s cast time completes, not on a travel delay.",
+     "quote": "the healing itself triggers as soon as the cast time completes.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vladimir can cast Sanguine Pool and Hemoplague during Transfusion's cast time, so the 0.25s cast does not block those other abilities.",
+     "quote": "'''Vladimir''' can cast {{ai|Sanguine Pool|Vladimir}} and {{ai|Hemoplague|Vladimir}} during ''Transfusion's'' cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VladimirQ.HealAPRatio",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirQ.BaseHeal",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirQ.Empowered___HealPer100AP_0_1_",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirQ.MinionHealPercent",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirQ.DamagePercentAmp",
+     "reason": "unknown"
+    }
+   ]
+  },
+  "W": {
+   "name": "Sanguine Pool",
+   "cooldown": {
+    "values": [
+     28,
+     25,
+     22,
+     19,
+     16
+    ],
+    "quote": "{{ap|28 to 16}}"
+   },
+   "cost": {
+    "values": 0.15,
+    "quote": "{{as|15%|health}}",
+    "resource": "{{as|'''current''' health}}"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      33.75,
+      47.5,
+      61.25,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.0375
+      }
+     ],
+     "quote": "{{ap|20 to 75}} {{as|(+ {{fd|3.75}}% '''bonus''' health)}}",
+     "bin": [],
+     "binNote": "The bin only exports the 4-tick total, not a per-tick row (see w_2: BaseDamage=[80/135/190/245/300] + 0.15xbonus maxHp via VladimirSanguinePool#TotalDamage). Dividing by the ability's 4 ticks gives exactly the wiki's per-tick figures here (20/33.75/47.5/61.25/75, ratio 0.0375xbonus health), so this is a derived split, not a disagreement."
+    },
+    {
+     "id": "w_2",
+     "meaning": "Total Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      135,
+      190,
+      245,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|20*4 to 75*4}} {{as|(+ 15% '''bonus''' health)}}",
+     "bin": [
+      "VladimirSanguinePool.BaseDamage",
+      "VladimirSanguinePool#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Duration Vladimir is untargetable/ghosted and unable to attack or cast (also the pool's damage/slow duration)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "becoming {{tip|untargetable}} and {{tip|ghosted}} for 2 seconds.",
+     "bin": [],
+     "binNote": "Not among VladimirSanguinePool's exported data values (only MinionHealingMod, BaseDamage, HealthCost, BonusHealthRatio, MoveSpeedMod, VampPercent, HasteBoost, HasteDuration are listed); the 2-second duration is stated only in the wikitext description."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Interval between Sanguine Pool's damage/slow ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "dealt {{as|magic damage}} every {{fd|0.5}} seconds over the duration",
+     "bin": [],
+     "binNote": "Not among VladimirSanguinePool's exported data values; the 0.5s tick interval is stated only in the wikitext description (it is however consistent with dividing the 2s duration into the 4 ticks that BaseDamage/TotalDamage's total implies)."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Health cost to cast Sanguine Pool, as a percent of current health",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "{{as|15%|health}}",
+     "bin": [
+      "VladimirSanguinePool.HealthCost"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Vladimir cannot use basic attacks or abilities during Sanguine Pool, but can still move.",
+     "quote": "'''Vladimir''' cannot use basic attacks nor abilities during Sanguine Pool, but he can still move.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Tides of Blood is charging when Sanguine Pool is cast, Tides of Blood may still be recast (its automatic release is not blocked by the pool's action lock).",
+     "quote": "If {{ai|Tides of Blood|Vladimir}} is charging at the time of Sanguine Pool's activation, that ability may still be recast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first damage tick lands immediately on cast, and the last real tick lands 0.5 seconds before Vladimir becomes targetable again (i.e. ticks land at 0, 0.5, 1.0 and 1.5s into the 2s duration).",
+     "quote": "The first tick damages immediately so the final one occurs {{fd|0.5}} seconds before '''Vladimir''' becomes targetable again.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "There is an extra tick for 0 damage when Vladimir becomes targetable again (a 5th tick event at the 2s mark that deals no damage but still triggers the same spell effects as the normal ticks).",
+     "quote": "There is an extra damage tick for [[Damage#0_Damage_Instances|0 damage]] when '''Vladimir''' becomes targetable again, triggering the same spell effects as the normal ticks (except those which require damage greater than 0 being dealt).",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VladimirSanguinePool.VampPercent",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirSanguinePool.MinionHealingMod",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirSanguinePool.MoveSpeedMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VladimirSanguinePool.HasteBoost",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VladimirSanguinePool.HasteDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  },
+  "E": {
+   "name": "Tides of Blood",
+   "cooldown": {
+    "values": [
+     13,
+     11,
+     9,
+     7,
+     5
+    ],
+    "quote": "{{ap|13 to 5}}"
+   },
+   "cost": {
+    "values": [
+     0.02,
+     0.08
+    ],
+    "quote": "{{pp|2 to 8|0 to 0.75 by 0.25|key=%|type=charge time|label1=seconds|color=health}}",
+    "resource": "{{as|'''maximum''' health}}",
+    "binNote": "The wiki ramps this cost from 2% to 8% of maximum health in four 0.25s steps (2/4/6/8% at 0/0.25/0.5/0.75s of charge). The bin only exposes the ramp's ceiling as VladimirE.MaxHealthCost=8 (matching the wiki's max); there is no bin data value for the 2% starting cost."
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Minimum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60,
+      75,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.015
+      },
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|30 to 90}} {{as|(+ {{fd|1.5}}% '''maximum''' health)}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "VladimirE.BaseDamage",
+      "VladimirE#MinDamageTooltip"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Maximum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.06
+      },
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 6% '''maximum''' health)}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "VladimirE.BaseMaxDamage",
+      "VladimirE#MaxDamageTooltip"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Maximum charge time (the channel can be held this long before it auto-fires)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "'''Vladimir''' {{tip|channel|charges}} for up to {{fd|1.5}} seconds",
+     "bin": [
+      "VladimirE.MaxChannelTime"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Time to ramp from minimum to maximum damage while charging",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "increases ''Tides of Blood's'' damage over the first second of the channel",
+     "bin": [
+      "VladimirE.TimetoRampMaxDamage"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Maximum health cost once Tides of Blood's charge cost has ramped up fully",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.08,
+     "terms": [],
+     "quote": "{{pp|2 to 8|0 to 0.75 by 0.25|key=%|type=charge time|label1=seconds|color=health}}",
+     "bin": [
+      "VladimirE.MaxHealthCost",
+      "VladimirE#ChargeHealthTooltip"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Tides of Blood is a channel held for up to 1.5s; damage ramps up over the first second, and Vladimir is slowed for the remainder once that ramp completes. It can be recast (released) manually within the duration, and releases automatically once the duration ends or if the channel is interrupted.",
+     "quote": "''Tides of Blood'' can be recast within the duration, and does so automatically afterwards or if it is {{tip|interrupt|interrupted}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "On release, Vladimir fires a nova of 15 blood bolts, each dealing magic damage to the first enemy it hits; an enemy can intercept multiple of the 15 bolts but is only damaged once by the cast.",
+     "quote": "''Enemies can intercept multiple bolts, but can be damaged only once.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Vladimir is below 12% of his maximum health, Tides of Blood costs no health at all.",
+     "quote": "''If '''Vladimir''' is below {{as|12% of his '''maximum''' health}}, Tides of Blood will not cost any {{as|health}}.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The health cost is applied per tick during the channel: it can still drop Vladimir below the 12% threshold from above it, but once he is at or below the threshold, further ticks in that cast stop costing health.",
+     "quote": "This is verified for every tick of {{as|health}} cost, i.e if the first tick drops him below it, the next ones will stop affecting him if he remains below it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tides of Blood's cooldown starts on cast (when the channel begins), not when it resolves.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While charging Tides of Blood, Sanguine Pool can still be cast without interrupting the channel, but casting Transfusion or Hemoplague interrupts it (after a 0.25s delay), forcing an early release.",
+     "quote": "{{ai|Sanguine Pool|Vladimir}} is usable. {{ai|Transfusion|Vladimir}} and {{ai|Hemoplague|Vladimir}} both interrupt after {{fd|0.25}} seconds.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VladimirE.SlowPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VladimirE.TotalMaxHPDamage",
+     "reason": "unknown"
+    }
+   ]
+  },
+  "R": {
+   "name": "Hemoplague",
+   "cooldown": {
+    "values": 120,
+    "quote": "120"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "VladimirHemoplague.BaseDamage",
+      "VladimirHemoplague#Damage"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Duration of the infection before it bursts into damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "infects enemies hit for 4 seconds, increasing the damage they take from all sources by 10%.",
+     "bin": [
+      "VladimirHemoplague.Duration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Increased damage taken by infected targets, from all sources, for the infection's duration",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "infects enemies hit for 4 seconds, increasing the damage they take from all sources by 10%.",
+     "bin": [
+      "VladimirHemoplague.DamageAmp"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Hemoplague's cast applies a 4-second infection to enemies hit that increases the damage they take from all sources by 10%.",
+     "quote": "infects enemies hit for 4 seconds, increasing the damage they take from all sources by 10%.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When the 4-second infection ends, it bursts to deal its magic damage to all affected targets immediately; the resulting heal for each infected champion follows a further 0.4-second delay.",
+     "quote": "the infection bursts to deal {{as|magic damage}} to all affected targets and, after a {{fd|0.4}}-second delay, {{tip|heal}} '''Vladimir''' for each infected champion",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hemoplague amplifies its own burst damage with its 10% damage-taken debuff, for an actual damage of base x1.1 (+77% AP) rather than the base x1.0 (+70% AP) figure.",
+     "quote": "''Hemoplague'' amplifies itself for an actual damage of {{ap|150*1.1 to 350*1.1}} {{as|(+ {{fd|77}}% AP)}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hemoplague's damage-taken amplification stacks multiplicatively with other damage modifiers.",
+     "quote": "''Hemoplague's'' effect {{tip|stacks multiplicatively}} with other damage modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hemoplague amplifies almost all sources and types of damage, including damage from neutral monsters.",
+     "quote": "''Hemoplague'' will amplify almost all sources and types of damage, even including damage from neutral monsters.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "True damage is not amplified by Hemoplague (documented as a bug).",
+     "quote": "{{as|{{sti|True damage}}}} will however not be amplified.{{bug}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VladimirHemoplague.VampPercentFirstChamp",
+     "reason": "defensive"
+    },
+    {
+     "ref": "VladimirHemoplague.VampPercentAdditionalChamp",
+     "reason": "defensive"
+    }
+   ]
+  }
+ },
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Crimson Pact converts bonus health to AP and AP to bonus health; the two conversions do not stack with each other."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Sanguine Pool deals magic damage in ticks over its duration, scaling off bonus health."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Crimson Rush arms an 85%-increased-damage Transfusion roughly every 2nd cast, once 2 stacks have built up and are spent within the 2.5s surge window."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E",
+    "W"
+   ],
+   "note": "Tides of Blood charges up to 1.5s, ramping its damage over the first second; Sanguine Pool locks out attacks and abilities for its full duration."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tides of Blood has a charge phase and a release/recast phase, auto-releasing at max charge or on interruption."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hemoplague increases all damage the infected target takes by 10% for 4 seconds, including Hemoplague's own burst."
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "Sanguine Pool costs a percent of current health; Tides of Blood costs a ramping percent of max health while charging, waived below 12% max health."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tides of Blood fires 15 blood bolts in a nova but any one target can be damaged only once per cast; the fight must assume the dummy is hit by at least one bolt."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Transfusion's heal (base and empowered), Sanguine Pool's self-heal, and Hemoplague's on-burst heal are never read by a damage-only fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Crimson Pact's bin formula is not a one-way 'convert stat A to stat B' lookup: the AP-from-health and health-from-AP conversions are mutually coupled (each subtracts a share of the other conversion's input) and both carry an extra ~1.06x factor that the wiki's flat 3.333%/160% ratios do not show (see P's binNote and unsettled question below). Reproducing the bin exactly needs that coupled formula, not a single stat-conversion primitive applied once."
+ },
+ "unsettled": [
+  {
+   "question": "Does Crimson Pact need the bin's coupled, recursion-avoiding formula (APbonus = (bonusHp - 1.6xap) x 0.03333 x 1.06; HPbonus = (ap - 0.03333xbonusHp) x 1.6 x 1.06), or is the wiki's flat description (3.333% of bonus health as AP, and separately 160% of AP as bonus health, applied once each) an adequate stand-in?",
+   "options": [
+    "Use the bin's coupled approximation exactly, solving both conversions together.",
+    "Use the wiki's flat ratios applied once each, non-recursively.",
+    "Independently iterate the naive recursive definition (AP from HP, HP from that AP, ...) to its own fixed point."
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{#vardefine:cp1|3.333}}",
+    "{{#vardefine:cp2|160}}",
+    "These two bonuses do not stack with each other."
+   ]
+  },
+  {
+   "question": "Does Crimson Rush (Q's stacks) only progress once Transfusion has been cast at least once (accumulating 'over the cooldown' that a cast starts), or does it also accrue on some independent timer even before Vladimir's first cast of the fight?",
+   "options": [
+    "Stacks only build after a cast, tied to that cast's own cooldown timer; Vladimir starts the fight at 0 stacks.",
+    "Stacks accrue on a fixed timer from the start of the fight regardless of whether Transfusion has been cast."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "He then generates 1 point of ''{{tip|Fury|Crimson Rush}}'' over the {{sti|cooldown}}."
+   ]
+  },
+  {
+   "question": "Does Transfusion's damage land at the instant its 0.25s cast time completes (as the wiki explicitly states for its heal), or does it carry separate missile travel time despite being flagged as a non-projectile?",
+   "options": [
+    "Damage lands simultaneously with the heal, at cast completion.",
+    "Damage has its own travel delay to the target after the cast completes."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the healing itself triggers as soon as the cast time completes."
+   ]
+  },
+  {
+   "question": "How does Tides of Blood's damage interpolate between its minimum (0s charge) and maximum (1s charge) values during that first second: linearly, in the same 0.25s steps as its health cost, or on some other curve?",
+   "options": [
+    "Linear interpolation over the 1-second ramp.",
+    "Stepped in 0.25s increments, matching the cost ramp's cadence.",
+    "Some other non-linear ramp."
+   ],
+   "impact": "high",
+   "quotes": [
+    "increases ''Tides of Blood's'' damage over the first second of the channel",
+    "{{pp|2 to 8|0 to 0.75 by 0.25|key=%|type=charge time|label1=seconds|color=health}}"
+   ]
+  },
+  {
+   "question": "Tides of Blood fires 15 blood bolts in a full nova but a single target can be damaged only once per cast: should a stationary single-target dummy fight assume every cast always lands its one damage instance, or can real geometry (a point target only in the path of some of the 15 directions) cause a cast to whiff entirely?",
+   "options": [
+    "Assume the dummy is always hit by at least one bolt, so every cast of Tides of Blood always deals its single damage instance.",
+    "Model bolt geometry explicitly, allowing some casts against a single point target to miss."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Enemies can intercept multiple bolts, but can be damaged only once.''"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Hemoplague (R) on the dummy at t=0, starting its 4-second infection (and the +10% damage-taken window) as early as possible and setting its self-amplified burst damage to land at t=4s.",
+   "Cast Transfusion (Q) every time it is off cooldown for the rest of the fight.",
+   "Whenever Crimson Rush has reached 2 stacks (its surge is active), spend the next Transfusion cast inside the 2.5-second surge window so it lands as the 85%-increased-damage empowered hit rather than a base hit.",
+   "Charge Tides of Blood (E) and hold it for at least 1 second so it always releases at its maximum damage value, then let it auto-release (or recast it) and start charging again on cooldown.",
+   "Do not start charging Tides of Blood if Transfusion or Hemoplague still needs to be cast in the next 0.25 seconds, since both interrupt an in-progress charge; Sanguine Pool is safe to weave into an E charge without interrupting it.",
+   "Treat Sanguine Pool (W) as optional: only cast it if its own bonus-health-scaling damage over 2 seconds is confirmed to outweigh the Transfusion/Tides of Blood casts that its 2-second full action-lock would otherwise displace."
+  ],
+  "questions": [
+   "Does the fight clock start with Vladimir already able to surge on his first Transfusion cast, or does he need close to one full Transfusion cooldown (and thus one 'wasted' base cast) before the first empowered cast is available?",
+   "Is Sanguine Pool ever worth casting in a pure damage-maximizing rotation against a single stationary target, given it fully locks out attacks and other abilities for 2 seconds and the target never punishes standing still?",
+   "Should Tides of Blood always be held for the full 1-second ramp to guarantee maximum damage, or does releasing it earlier (lower damage per cast, but cooldown starts on-cast) fit more total casts into 15 seconds for more total damage?",
+   "Since Hemoplague's cooldown is 120 seconds, is opening with it always correct, or could delaying it slightly to line up its 4-second amplification window with an empowered Transfusion or a Tides of Blood release deal more total damage?"
+  ]
+ }
+}

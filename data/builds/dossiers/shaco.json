@@ -1,0 +1,1148 @@
+{
+ "champion": "shaco",
+ "abilities": {
+  "P": {
+   "name": "Backstab",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus physical damage on basic attacks from behind",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      20,
+      20.59,
+      21.18,
+      21.76,
+      22.35,
+      22.94,
+      23.53,
+      24.12,
+      24.71,
+      25.29,
+      25.88,
+      26.47,
+      27.06,
+      27.65,
+      28.24,
+      28.82,
+      29.41,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{pp|20 + (35-25)/17*(x-1) for 20}}|physical damage}} {{as|(+ 20% '''bonus''' AD)}}",
+     "bin": [
+      "ShacoPassive#BasicAttackDamage"
+     ],
+     "binNote": "Bin's byLevel(20..35) for ShacoPassive.AttackBonusADRatio's base scales to 35 at level 18, but the wiki's pp formula (20 + (35-25)/17*(x-1)) evaluates to only 30 at level 18; using the wiki's stated formula as required, flagging the disagreement with the bin's stated 20..35 range."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Backstab's bonus damage is affected by critical strike modifiers.",
+     "quote": "This damage is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Backstab's bonus damage adds to the same damage instance as the triggering basic attack rather than being a separate hit.",
+     "quote": "Backstab's bonus damage adds to the damage instance of the original basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage does not apply against structures.",
+     "quote": "The attacks do not deal the '''bonus''' damage against {{tip|structures}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShacoPassive.PerUnitCD",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShacoPassive.MonsterCritMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShacoPassive.APRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShacoPassive.CloneMult",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShacoPassive.ShivSlowAmount",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShacoPassive.ShredDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShacoPassive.ShivExecuteDamagePercent",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Deceive",
+   "cooldown": {
+    "values": [
+     13,
+     12.5,
+     12,
+     11.5,
+     11
+    ],
+    "quote": "{{ap|13 to 11}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Invisibility Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5
+     ],
+     "terms": [],
+     "quote": "{{ap|2.5 to 3.5}} seconds",
+     "bin": [
+      "Deceive.StealthDuration"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      35,
+      45,
+      55,
+      65
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|25 to 65}} {{as|(+ 60% '''bonus''' AD)}}",
+     "bin": [
+      "Deceive#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Empowered attack window after breaking invisibility",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "empowers his next basic attack within {{fd|0.25}} seconds",
+     "bin": [
+      "Deceive.ExtraAATime"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Backstab critical damage modifier",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.6,
+     "terms": [],
+     "quote": "{{as|{{critical damage|160|60}}|critical damage}} damage, increased to {{as|{{critical damage|200|100}}|critical damage}} if a critical strike was {{tt|rolled|See notes}}",
+     "bin": [
+      "Deceive#QCritDamageMod"
+     ],
+     "binNote": "The bin's QCritDamageMod = 1 + NonCritBackstabMod(0.6)*(critDamage - 1); at base 100% critDamage (2.0x) this gives 1.6x, matching the wiki's 160% non-rolled value. The 200% (2.0x) value applies when a crit is separately rolled, using the default crit modifier instead of this formula."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Cast delay before blink",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.125,
+     "terms": [],
+     "quote": "after a {{fd|0.125}}-second delay, he {{tip|blinks}} to the target location",
+     "bin": [
+      "Deceive.PseudoCastTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Deceive's invisibility breaks when Shaco uses a basic attack or casts Two-Shiv Poison, but not from casting Jack in the Box or Hallucinate.",
+     "quote": "''Deceive's'' {{tip|invisibility}} breaks when '''Shaco''' uses a basic attack or casts ''{{ai|Two-Shiv Poison|Shaco}}'', but not from casting ''{{ai|Jack in the Box|Shaco}}'' or ''{{ai|Hallucinate|Shaco}}''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The bonus damage from breaking invisibility adds directly to the damage instance of the empowered basic attack, and is affected by critical strike modifiers.",
+     "quote": "''Deceive's'' bonus damage adds directly to the damage instance of the basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Using a basic attack breaks the stealth at the end of the attack windup, not immediately on cast.",
+     "quote": "Using a basic attack breaks the stealth at the end of the attack windup.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts only after the invisibility/blink effect resolves, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Deceive.CDRefund",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "Deceive.NonCritBackstabMod",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Jack in the Box",
+   "cooldown": {
+    "values": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "quote": "15"
+   },
+   "cost": {
+    "values": [
+     70,
+     65,
+     60,
+     55,
+     50
+    ],
+    "quote": "{{ap|70 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Fear Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{ap|0.5 to 1.5}} seconds",
+     "bin": [
+      "JackInTheBox.FearDuration"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.5,
+      0.75,
+      1,
+      1,
+      1
+     ],
+     "terms": [],
+     "quote": "{{ap|0.5|0.75|1|1|1}} seconds",
+     "bin": [],
+     "binNote": "No bin data value carries this root-duration schedule; it is not present in the sheet."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Slow Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.8,
+      1.05,
+      1.3,
+      1.55,
+      1.8
+     ],
+     "terms": [],
+     "quote": "{{ap|0.5+0.3 to 1.5+0.3}} seconds",
+     "bin": [],
+     "binNote": "Derived from FearDuration + 0.3s per the wiki description; no dedicated bin row exists."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Magic Damage (AoE tick)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.12
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 12% AP)}}",
+     "bin": [
+      "JackInTheBox#AoEDamage",
+      "JackInTheBox.AoEBaseDamage",
+      "JackInTheBox.WAoEAPRatio"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Increased Damage (single-target tick)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      40,
+      55,
+      70,
+      85
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.18
+      }
+     ],
+     "quote": "{{ap|25 to 85}} {{as|(+ 18% AP)}}",
+     "bin": [
+      "JackInTheBox#STDamage",
+      "JackInTheBox.STBaseDamage",
+      "JackInTheBox.WSingleTargetAPRatio"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Bonus Monster Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 80}}",
+     "bin": [
+      "JackInTheBox.MonsterBonusDamage"
+     ]
+    },
+    {
+     "id": "w_9",
+     "meaning": "Box lifetime before it springs (stealthed duration)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "lasting for up to 40 {{as|(+ 10% AP)}} seconds",
+     "bin": [
+      "JackInTheBox#TrapDuration",
+      "JackInTheBox.BoxDuration"
+     ]
+    },
+    {
+     "id": "w_10",
+     "meaning": "Duration the sprung box remains firing",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "the ''box'' will remain for 5 seconds",
+     "bin": [],
+     "binNote": "No bin data value equals this post-spring active duration; it appears only in the wiki description text."
+    },
+    {
+     "id": "w_11",
+     "meaning": "Interval between the sprung box's automatic attacks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "fire at nearby {{tip|sight|visible}} enemies every {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No bin data value equals this attack interval; stated only in the wiki description text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "If the sprung box attacks only one target, it deals increased damage (the single-target tick value instead of the AoE value).",
+     "quote": "If the ''box'' attacks only one target, it deals increased damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Boxes deal bonus magic damage to monsters and 50% reduced damage to structures (dummy in a champion fight is unaffected by either modifier).",
+     "quote": "''Boxes'' deal {{as|'''bonus''' magic damage}} to {{tip|monsters}} and 50% reduced damage to {{tip|turrets|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The box is invulnerable and untargetable to enemies while stealthed, becoming vulnerable only once revealed.",
+     "quote": "The ''box'' is {{tip|invulnerable}} and {{tip|untargetable}} to enemies while stealthed.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Once sprung, the box automatically fires at nearby visible enemies every 0.5 seconds, each attack being a separate magic damage instance.",
+     "quote": "it will automatically fire at nearby {{tip|sight|visible}} enemies every {{fd|0.5}} seconds, dealing {{as|magic damage}} with each attack",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JackInTheBox.MinionFearDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "JackInTheBox.MaxTraps",
+     "reason": "utility"
+    },
+    {
+     "ref": "JackInTheBox.ArmTime",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Two-Shiv Poison",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "8"
+   },
+   "cost": {
+    "values": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ],
+    "quote": "75",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      95,
+      120,
+      145,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.8
+      },
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|70 to 170}} {{as|(+ 80% '''bonus''' AD)}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "TwoShivPoison#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Increased Damage (target below 30% max health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      105,
+      142.5,
+      180,
+      217.5,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      },
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|70*1.5 to 170*1.5}} {{as|(+ {{ap|80*1.5}}% '''bonus''' AD)}} {{as|(+ {{ap|60*1.5}}% AP)}}",
+     "bin": [
+      "TwoShivPoison#TotalExecuteDamage"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Execute health threshold",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "'''below''' 30% of their '''maximum''' health",
+     "bin": [
+      "TwoShivPoison.ExecuteHealthThreshold"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Backstab bonus magic damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      15.0,
+      17.06,
+      19.12,
+      21.18,
+      23.24,
+      25.29,
+      27.35,
+      29.41,
+      31.47,
+      33.53,
+      35.59,
+      37.65,
+      39.71,
+      41.76,
+      43.82,
+      45.88,
+      47.94,
+      50.0
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{as|{{pp|15 + (50-15)/17*(x-1) for 20}}|magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}}",
+     "bin": [
+      "ShacoPassive#ShivDamage"
+     ],
+     "binNote": "This backstab bonus is implemented via the ShacoPassive spell's ShivDamage calculation (byLevel(15..50) + 0.1xap), not a row on the TwoShivPoison spell itself, though the wiki attributes it to Two-Shiv Poison's backstab bonus."
+    },
+    {
+     "id": "e_7",
+     "meaning": "Backstab bonus magic damage, increased (target below 30% max health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      22.5,
+      25.59,
+      28.68,
+      31.77,
+      34.85,
+      37.94,
+      41.03,
+      44.12,
+      47.21,
+      50.29,
+      53.38,
+      56.47,
+      59.56,
+      62.65,
+      65.74,
+      68.82,
+      71.91,
+      75.0
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "increased to {{as|{{pp|15*1.5 + (50*1.5-15*1.5)/17*(x-1) for 20}}|magic damage}} {{as|(+ {{ap|10*1.5}}% AP)}} if the target is {{as|'''below''' 30% of their '''maximum''' health}}",
+     "bin": [
+      "ShacoPassive#ShivDamageExecute"
+     ],
+     "binNote": "Implemented via ShacoPassive's ShivDamageExecute = ShivDamage * 1.5, not a Two-Shiv Poison spell row."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While Two-Shiv Poison is off cooldown, Shaco's basic attacks slow the target, but the slow itself does not change damage dealt or taken.",
+     "quote": "'''Shaco's''' basic attacks {{tip|slow}} enemies for 2 seconds while ''Two-Shiv Poison'' is not on cooldown.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The active dagger throw deals bonus increased magic damage if the target is below 30% of their maximum health.",
+     "quote": "deals {{as|magic damage}}, {{ccs|increased by 50%|magic}} if they are {{as|'''below''' 30% of their '''maximum''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target is a backstabbed enemy, the dagger deals additional bonus magic damage, itself increased under the same low-health execute condition.",
+     "quote": "The dagger deals an additional {{as|{{pp|15 + (50-15)/17*(x-1) for 20}}|magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}}, increased to {{as|{{pp|15*1.5 + (50*1.5-15*1.5)/17*(x-1) for 20}}|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shaco reuses his last attack animation for the Two-Shiv Poison cast.",
+     "quote": "'''Shaco''' replicates the last attack animation he performed for ''Two-Shiv Poison's'' animation.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TwoShivPoison.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "TwoShivPoison.SlowDurationPassive",
+     "reason": "utility"
+    },
+    {
+     "ref": "TwoShivPoison.SlowDurationActive",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Hallucinate / Hallucinate 2",
+   "cooldown": {
+    "values": [
+     100,
+     90,
+     80
+    ],
+    "quote": "{{ap|100 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Explosion magic damage on clone death/expiry",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      225,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|150 to 300}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "HallucinateFull#ExplosionTotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Mini-box modified magic damage per attack",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "HallucinateFull#AoEDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Mini-box increased modified damage against single unit",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      75,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|25 to 75}} {{as|(+ 15% AP)}}",
+     "bin": [
+      "HallucinateFull#STDamage"
+     ],
+     "binNote": "Wiki leveling3-derived base values shown as ap|10 to 30 for r_2 (AoE) match AoEBaseDamage [10/20/30]; here for r_3 the wiki string 'ap|25 to 75' is arithmetic notation (25 to 75) but bin STBaseDamage is [25/50/75], a rank-2/3 mismatch (75 vs 50 at rank 2) between wiki's displayed values and the sheet's array."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Explosion magic damage on clone death/expiry (duplicate description block)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      225,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|150 to 300}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "HallucinateFull#ExplosionTotalDamage"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Mini-box modified magic damage per attack (duplicate description block)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "HallucinateFull#AoEDamage"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Mini-box increased modified damage against single unit (duplicate description block)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      75,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|25 to 75}} {{as|(+ 15% AP)}}",
+     "bin": [
+      "HallucinateFull#STDamage"
+     ],
+     "binNote": "Same STBaseDamage/wiki mismatch as r_3."
+    },
+    {
+     "id": "r_vanish",
+     "meaning": "Vanish duration on activation",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}} seconds and {{tip|blinks}}",
+     "bin": [],
+     "binNote": "No corresponding bin row found; not-in-a-dummy-fight duration but recorded for completeness."
+    },
+    {
+     "id": "r_clone_life",
+     "meaning": "Clone lifetime",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 18,
+     "terms": [],
+     "quote": "remaining within {{tt|control range|1125 units}} of him as a controllable {{tip|clone}} for up to 18 seconds",
+     "bin": [
+      "HallucinateFull.CloneLifetime"
+     ]
+    },
+    {
+     "id": "r_fear_champ",
+     "meaning": "Fear duration on champions from mini-boxes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "fearing}} nearby enemies for 1 second",
+     "bin": [
+      "HallucinateFull.BoxFearDuration"
+     ]
+    },
+    {
+     "id": "r_fear_nonchamp",
+     "meaning": "Fear duration on non-champions from mini-boxes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.2,
+     "terms": [],
+     "quote": "increased to {{fd|2.2}} seconds against non-champions",
+     "bin": [],
+     "binNote": "No matching HallucinateFull data value found for the non-champion fear duration of 2.2s; sheet only lists BoxFearDuration=1."
+    },
+    {
+     "id": "r_root",
+     "meaning": "Root duration on champions from mini-boxes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{tip|root|rooting}} them for {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No matching HallucinateFull data value found; not represented in the sheet's listed values."
+    },
+    {
+     "id": "r_box_arm",
+     "meaning": "Mini-box invulnerability time after deployment",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{tip|invulnerable}} for {{tt|{{fd|0.5}}|estimated}} seconds after deployment",
+     "bin": [
+      "HallucinateFull.BoxArmTime"
+     ],
+     "binNote": "Wiki gives 0.5s (estimated) invulnerability while sheet's BoxArmTime is 2; these may denote different things (arm time vs invuln window), flagged as a disagreement."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The clone deals basic (on-hit style) damage while the explosion and boxes apply area damage.",
+     "quote": "The explosion and the {{tip|boxes}} apply {{tip|area damage}}, while the clone deals {{tip|basic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hallucinate can be recast at any time while the clone is alive to command it to move.",
+     "quote": "Recast:'' '''Shaco''' commands the {{tip|clone}} to move to the target location.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability can be cast while affected by cast-inhibiting crowd control.",
+     "quote": "can be used while affected by {{tip|cast-inhibiting crowd control}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown begins on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The clone explodes and deploys three mini-boxes upon dying or expiring, which activate instantly.",
+     "quote": "The clone will explode upon dying or expiring to deal {{as|magic damage}} to nearby enemies and deploy three ''{{ai|Jack in the Box|Shaco|mini-boxes}}'' that activate instantly",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mini-boxes share a doubled health pool and deal modified magic damage on each attack, more when attacking a single unit.",
+     "quote": "they have a doubled, but shared {{sti|{{as|health}}}}, and deal {{as|'''modified''' magic damage}} with each attack, increased when attacking a single unit",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HallucinateFull.TeleportRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "HallucinateFull.CloneAADamagePercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "HallucinateFull.CloneIncomingDamagePercent",
+     "reason": "defensive"
+    },
+    {
+     "ref": "HallucinateFull.BoxLifetime",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Backstab adds bonus physical damage to basic attacks that land from behind, folded into the same attack instance."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Backstab damage is affected by crit modifiers; Deceive's post-invis attack crits for a fixed 160% (200% if a real crit was rolled), overriding the normal crit multiplier."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deceive arms Shaco's next basic attack (within 0.25s of breaking stealth) with bonus physical damage added to that attack's damage instance."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deceive's invisibility + blink is the natural opener that sets up the Backstab-empowered first attack; decides how the 15s fight begins."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "P",
+    "Q",
+    "E"
+   ],
+   "note": "Backstab and its Q/E riders require attacking the target from behind; a stationary dummy fight must assume whether/for-how-long 'behind' holds."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Jack in the Box's initial cast, Two-Shiv Poison's dagger throw, and Hallucinate's clone-death explosion each deal damage on a fixed trigger."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "A sprung Jack in the Box (and each of R's three mini-boxes) auto-fires magic damage every 0.5s for its active window, i.e. a ticking zone."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "The trap box, and Hallucinate's clone plus its three deployed mini-boxes, are separate entities dealing part of the total damage."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "E"
+   ],
+   "note": "Two-Shiv Poison's dagger (and its Backstab bonus) deals 1.5x damage if the target is below 30% max health."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "The Backstab bonus rider on Two-Shiv Poison only applies while hitting from behind, layering with the execute condition."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (40/70-50/75/100) across four abilities on a base mana pool can meaningfully cap casts inside a 15s fight."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hallucinate is a cast (vanish+clone) with a separate recast (reposition clone) and a separately-timed explosion/mini-box payload on clone death or expiry."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deceive.CDRefund=2.5 in the bin suggests a cooldown refund, condition and applicability to a dummy kill undocumented on the wiki."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant part of Shaco's kit (backstab rider, Deceive's empowered/crit attack, Jack in the Box and Hallucinate's mini-boxes as ticking pets, Two-Shiv's execute) maps onto existing primitives. The only friction is real-world doubt (does backstab/positioning persist, does the clone survive to explode) rather than a mechanic the primitive list cannot express."
+ },
+ "unsettled": [
+  {
+   "question": "Does Hallucinate's clone (and its explosion + 3 mini-boxes) ever pay off within the 15s damage fight, given the clone lives 18s and a stationary, non-retaliating dummy will not kill it early?",
+   "options": [
+    "Assume the clone survives its full 18s and never explodes within the 15s window, so R contributes only whatever the clone's basic attacks (if any) deal, not the explosion/mini-box damage",
+    "Assume the simulator force-expires or force-kills the clone during the fight window so the explosion and mini-boxes always resolve and are counted",
+    "Exclude R from the damage rotation entirely as not realistically payoff-positive in a 15s single-target dummy fight"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does Hallucinate's clone auto-attack the dummy during its lifetime (per HallucinateFull.CloneAADamagePercent), functioning as a pet contributing basic-attack damage, or is that value inapplicable outside real combat/player control against a dummy?",
+   "options": [
+    "Clone auto-attacks the dummy like a controllable pet, dealing 60% of Shaco's basic attack damage per hit",
+    "Clone does not auto-attack a stationary dummy in this fight construct (matches the bin annotation 'not-in-a-dummy-fight')"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Is the dummy treated as being attacked 'from behind' for the whole fight (so Backstab and its Q/E riders are always active), or only for the single attack immediately following Deceive's blink?",
+   "options": [
+    "Assume permanent backstab positioning for all attacks/E casts throughout the fight (maximizes damage, simplest assumption)",
+    "Assume backstab only applies to the one attack empowered by Deceive right after each Q cast, with normal-facing attacks/E casts the rest of the time"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does Jack in the Box actually spring and start ticking against a stationary target dummy standing in melee range, given the wiki says it springs 'upon enemy contact,' or does it require the dummy to move onto it?",
+   "options": [
+    "Box springs as soon as Shaco or the dummy is within range/contact after the 2s arm time, so W reliably contributes dot damage",
+    "Box only springs on genuine movement-based contact and may never trigger against a truly stationary dummy, so W's damage should be counted as unreliable or zero"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "For R's single-target mini-box damage (rank 2 value), is the correct base 50 (matching bin HallucinateFull.STBaseDamage=[25/50/75] and the wiki's own arithmetic reading of '{{ap|25 to 75}}' over 3 ranks) or 75 (as recorded in the R ability part's r_3/r_6 base array [25,75,75])?",
+   "options": [
+    "Use 25/50/75 (bin array and correct arithmetic expansion of the wiki template)",
+    "Use 25/75/75 as currently recorded in the finished R ability JSON"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Deceive) to blink behind the dummy and go invisible, setting up a from-behind position.",
+   "Land the Deceive-empowered basic attack immediately as invisibility breaks, which benefits from Q's bonus damage, Backstab's bonus damage, and the guaranteed 160%/200% crit modifier.",
+   "Cast E (Two-Shiv Poison) on cooldown (~every 8s) throughout the fight for its magic damage plus, while positioned from behind, its Backstab bonus.",
+   "Cast W (Jack in the Box) on cooldown (~every 15s) at the dummy's location to add its AoE/single-target tick damage once armed and sprung.",
+   "Fill all remaining time between ability casts with basic attacks against the dummy, maintaining Backstab positioning if assumed to persist.",
+   "Re-cast Q again once its (post-effect) cooldown is up to refresh the empowered-attack/backstab-crit window and continue the loop.",
+   "Treat R (Hallucinate) as optional/low-priority given its long cooldown (80-100s) and clone lifetime (18s) exceeding the fight duration; cast it only if the sim counts clone auto-attacks or forces the explosion to resolve."
+  ],
+  "questions": [
+   "Should R be included in the max-damage rotation for a single 15s dummy fight at all, or is it strictly worse than spending the cast time on Q/E/W and auto-attacks?",
+   "Does the simulator model 'attacking from behind' as a toggle the player can hold indefinitely against a stationary dummy, or does it need to be re-earned (e.g. only right after a Deceive blink)?",
+   "Is Deceive's cooldown-refund (Deceive.CDRefund) triggered by damaging or killing the dummy, and if so does it apply within this fight?",
+   "Does Jack in the Box's spring condition ever trigger in a fight where only Shaco is moving and the dummy stands still?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

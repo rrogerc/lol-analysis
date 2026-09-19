@@ -1,0 +1,1140 @@
+{
+ "champion": "aurelionsol",
+ "abilities": {
+  "P": {
+   "name": "Cosmic Creator",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_qbonus",
+     "meaning": "bonus true damage on Q burst per Stardust stack, as % of target's max health",
+     "role": "onhit",
+     "damageType": "true",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.00031,
+       "coefScaling": [
+        {
+         "stat": "stacks",
+         "per": 1,
+         "coef": 0.00031
+        }
+       ]
+      }
+     ],
+     "quote": "Bursts deal {{as|'''bonus''' magic damage}} based on the {{as|target's '''maximum''' health}}.",
+     "bin": [
+      "AurelionSolPassive.QMaxHealthTrueDamagePerStack",
+      "AurelionSolPassive#QPassiveScaling"
+     ],
+     "binNote": "Wiki calls this bonus damage 'magic damage' in the description, but the bin data value name and calculation (QMaxHealthTrueDamagePerStack) indicate it is true damage; also seen as AurelionSolQ#BurstBonusTrueDamageToChamps."
+    },
+    {
+     "id": "p_wrange",
+     "meaning": "Astral Flight range increase per Stardust stack",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 7.5,
+     "terms": [],
+     "quote": "Range is increased by {{as|{{fd|7.5}} units per Stardust}}.",
+     "bin": [
+      "AurelionSolW.DistancePerMass"
+     ],
+     "binNote": null
+    },
+    {
+     "id": "p_ethreshold",
+     "meaning": "increase to Singularity's base execution threshold per Stardust stack",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.026
+      }
+     ],
+     "quote": "the execution threshold is increased.",
+     "bin": [
+      "AurelionSolPassive.BaseExecutionThreshold",
+      "AurelionSolPassive.ExecutionGrowthPerBreakpoint",
+      "AurelionSolE#CurrentExecutionThreshold"
+     ],
+     "binNote": "BaseExecutionThreshold (5) is the flat base threshold before Stardust scaling; only the per-stack growth term (ExecutionGrowthPerBreakpoint) is the passive's contribution stated here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Stardust stacks are gained permanently from damaging abilities landing on enemies.",
+     "quote": "Aurelion Sol's damaging abilities against enemies generate him permanent stacks of Stardust, which gradually augments his abilities.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Singularity's execution threshold is increased by Stardust in addition to its radius.",
+     "quote": "Outer and inner radius increased equal to 15% Stardust, and the execution threshold is increased.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Falling Star/The Skies Descend impact radius scales with Stardust but this does not change damage per instance.",
+     "quote": "Impact radius increased equal to 15% Stardust.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Singularity's relative inner/outer radius ratio is preserved when scaled by Stardust.",
+     "quote": "relative size and ratio stays the same when affected by ''Cosmic Creator's'' size modifier.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Breath of Light",
+   "cooldown": {
+    "values": [
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "quote": "3"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "resource": "mana {{tt|(+ {{ap|30*0.25 to 50*0.25}} mana per {{fd|0.25}} seconds)|cost for mana per 0.25 seconds starts being paid after 1.25 seconds into the channel.}}",
+    "quote": "{{ap|30 to 50}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_2",
+     "meaning": "Magic Damage per Second (primary target)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      45,
+      60,
+      75,
+      90,
+      105
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|45 to 105}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "AurelionSolQ#DamagePerSecond"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Secondary Magic Damage per Second (surrounding enemies)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      22.5,
+      30,
+      37.5,
+      45,
+      52.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.275
+      }
+     ],
+     "quote": "{{ap|45*0.5 to 105*0.5}} {{as|(+ {{ap|55*0.5}}% AP)}}",
+     "bin": [
+      "AurelionSolQ#DamagePerSecond",
+      "AurelionSolQ.AOEModifier"
+     ],
+     "binNote": "No single bin row states 22.5/30/37.5/45/52.5 or the 0.275 ratio directly; these are derived by multiplying AurelionSolQ#DamagePerSecond's flat values [45,60,75,90,105] and its ap coefficient 0.55 by AurelionSolQ.AOEModifier=0.5 (the secondary-target/AOE damage multiplier), matching the wiki's stated *0.5 halving."
+    },
+    {
+     "id": "q_7",
+     "meaning": "Bonus Magic Damage (burst on primary target per full second burned)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.00031
+      }
+     ],
+     "quote": "{{ap|60 to 100}} {{as|(+ 30% AP)}} {{ai|Cosmic Creator|Aurelion Sol|{{as|(+|hp}} {{as|({{fd|3.1}}% Stardust)}}{{as|%|hp}} {{as|of target's '''maximum''' health)}}|hp}}",
+     "bin": [
+      "AurelionSolQ#BurstDamage",
+      "AurelionSolQ.QMaxHealthTrueDamagePerStack"
+     ],
+     "binNote": "The bonus true-damage-vs-max-health term scales with Aurelion Sol's Stardust buffStacks (AurelionSolQ.QMaxHealthTrueDamagePerStack x buffStacks), a passive-stack-dependent value the wiki table does not fully break out; treated here as a flat per-stack coefficient since the stack count is not a rank number."
+    },
+    {
+     "id": "q_8",
+     "meaning": "Maximum channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3.25,
+      3.25,
+      3.25,
+      3.25,
+      160
+     ],
+     "terms": [],
+     "quote": "{{fd|3.25}} seconds",
+     "bin": [
+      "AurelionSolQ.MaxChannelDuration"
+     ],
+     "binNote": "Wiki states rank 5's channel duration becomes 160 seconds ('description5'), while the bin's MaxChannelDuration array shows 9999 for rank 5; both represent an effectively-uncapped channel, but the literal numbers differ."
+    },
+    {
+     "id": "q_10",
+     "meaning": "Burst trigger interval (bonus damage fires each full second the burn persists)",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "the beam will deal a burst of {{ccs|{{as|'''bonus''' magic damage}}|magic}} for each full second that it burns them",
+     "bin": [
+      "AurelionSolQ.BurstAfter"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The beam continuously ticks damage to the first enemy hit every 0.125 seconds, and deals only 50% damage to other enemies caught in the beam.",
+     "quote": "dealing {{as|magic damage}} to them and surrounding enemies every {{fd|0.125}} seconds. Secondary targets are dealt 50% damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A note contradicts the description, stating the burn timer ticks in 0.2 second intervals with the burst triggering at 5 completed intervals (1 full second) rather than 0.125 second ticks.",
+     "quote": "''Breath of Light's'' burn places a timer on the primary target, which ticks in {{fd|0.2}} second intervals. Thus, at{{ft|5 completed intervals,|1 full second,}}the burst damage is triggered.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary-target burn timer resets to zero (losing progress toward the next burst) if the target is not hit again within 1 second of no longer being burned.",
+     "quote": "It falls off and resets to zero if a target is not hit within 1 second of no longer being afflicted by the burn.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The beam and burst damage are separate persistent damage instances (beam is persistent area damage, burst is persistent damage), relevant for on-hit/proc interactions.",
+     "quote": "Applies {{tip|persistent damage}} on the burst and {{tip|persistent area damage}} on the beam.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Shield only blocks the burst component of the ability, not the continuous beam damage.",
+     "quote": "{{tip|Spell shield}} will only block the burst damage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Casting/steering Breath of Light can be recast to end it early, and it automatically recasts (ends) at the end of its duration.",
+     "quote": "''Breath of Light'' can be recast within the duration, and does so automatically afterwards.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown does not begin until the channel ends.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AurelionSolQ.AngularDegreesPerSec",
+     "reason": "utility"
+    },
+    {
+     "ref": "AurelionSolQ.BeamWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolQ.ManaCostPerSecond",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "AurelionSolQ.BeamSegments",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolQ.WProcCooldown",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AurelionSolQ.QMassStolen",
+     "reason": "utility"
+    },
+    {
+     "ref": "AurelionSolQ.DistancePerMass",
+     "reason": "utility"
+    },
+    {
+     "ref": "AurelionSolQ.MonsterDamageCap",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Astral Flight",
+   "cooldown": {
+    "values": [
+     22,
+     20.5,
+     19,
+     17.5,
+     16
+    ],
+    "quote": "{{ap|22 to 14}}",
+    "binNote": "Wiki's ap template endpoints read 22 to 14 but the actual per-rank steps shown (22/20.5/19/17.5/16) match bin's AurelionSolW.CD exactly."
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.375,
+    "quote": "{{tt|{{fd|0.4}}|Initial cast  (0.375, rounded to the next game tick)}}",
+    "binNote": "Bin's AurelionSolW.FakeCastTime = 0.375; wiki rounds display to 0.4 for the next game tick."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Breath of Light flat damage modifier while channeled during Astral Flight",
+     "role": "onhit",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.08,
+      1.09,
+      1.1,
+      1.11,
+      1.12
+     ],
+     "terms": [],
+     "quote": "{{ap|108 to 112}}%",
+     "bin": [],
+     "binNote": "No bin row in this W slot carries this per-rank Breath of Light damage multiplier; not present among AurelionSolW's or AurelionSolQ's listed fields in this sheet."
+    },
+    {
+     "id": "w_2",
+     "meaning": "cooldown reduction on takedown within 3 seconds of damaging the target",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.9,
+     "terms": [],
+     "quote": "reduces ''Astral Flight's'' {{sti|'''current''' cooldown}} by 90% of its '''total''' cooldown",
+     "bin": [
+      "AurelionSolW.TooltipTakedownCooldownMultiplier"
+     ],
+     "binNote": "Wiki's 90% matches AurelionSolW.TooltipTakedownCooldownMultiplier=90; AurelionSolW.TakedownCooldownMultiplier=0.1 is the complementary internal fraction (remaining cooldown after the 90% reduction), not restated here."
+    },
+    {
+     "id": "w_3",
+     "meaning": "window after damaging a champion within which a takedown grants the cooldown refund",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "Scoring a champion {{tip|takedown}} within 3 seconds of damaging them",
+     "bin": [
+      "AurelionSolW.ResetWindow"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "time window during dash before recast becomes available",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "''Astral Flight'' can be recast after {{fd|0.5}} seconds during the dash",
+     "bin": [],
+     "binNote": "No bin data value matches this 0.5s recast-availability window; not present among AurelionSolW's listed fields."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting Astral Flight resets Breath of Light's cooldown and, during flight, Breath of Light has no cooldown and its non-burst flat damage is increased.",
+     "quote": "resets ''{{ais|Breath of Light|Aurelion Sol}}'' {{sti|cooldown}}. During flight, he has {{tip|unobstructed vision}} and ''{{ai|Breath of Light|Aurelion Sol}}'' has no cooldown and maximum channel duration and its non-burst flat damage is increased",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Astral Flight's dash speed is reduced by 50% while channeling Breath of Light during the dash.",
+     "quote": "''Astral Flight's'' dash speed is reduced by 50% during its channel",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Aurelion Sol can cast any of his other abilities during the Astral Flight dash.",
+     "quote": "He can cast any of his abilities during the dash",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Breath of Light's channel is interrupted if Astral Flight ends or Singularity/R is cast during the flight, but it is automatically recast afterward.",
+     "quote": "{{ais|Breath of Light|Aurelion Sol}} channel will be interrupted if Astral Flight ends or {{ai|Singularity|Aurelion Sol}} or {{ai|Falling Star|Aurelion Sol}} / {{ai|The Skies Descend|Aurelion Sol}} is cast during the flight, but the ability will automatically be cast afterwards",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Astral Flight can be recast to end the dash early, and does so automatically upon arrival.",
+     "quote": "''Astral Flight'' can be recast after {{fd|0.5}} seconds during the dash, and does so automatically upon arrival.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Scoring a takedown within 3 seconds of damaging a target reduces Astral Flight's current cooldown by 90% of its total cooldown.",
+     "quote": "Scoring a champion {{tip|takedown}} within 3 seconds of damaging them reduces ''Astral Flight's'' {{sti|'''current''' cooldown}} by 90% of its '''total''' cooldown",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown starts on the post-effect (after the dash/channel ends), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Astral Flight cannot be used in the first 15 seconds of the game.",
+     "quote": "''Astral Flight'' cannot be used in the first 15 seconds of the game.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AurelionSolW.TrueDamageBonus",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "AurelionSolW.BaseMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "AurelionSolW.BaseCruiseMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "AurelionSolW.DistancePerMass",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolW.TakedownCooldownMultiplier",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AurelionSolW.OverrideECastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolW.FakeCastTime",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Singularity",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ],
+    "quote": "90",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.2,
+    "quote": "{{fd|0.2}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      2.5,
+      3.75,
+      5,
+      6.25,
+      7.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{ap|2.5 to 7.5}} {{as|(+ 3% AP)}}",
+     "bin": [
+      "AurelionSolE#DamagePerSecond"
+     ],
+     "binNote": "Bin's BaseDamagePerSecond [10/15/20/25/30] and DamageperSecondAPRatio 0.12 are per-second values; wiki's per-tick numbers (every 0.25s, 4 ticks/sec) are exactly these divided by 4 (10/4=2.5, 0.12/4=0.03), confirming the tick rate."
+    },
+    {
+     "id": "e_2",
+     "meaning": "Total Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|2.5*20 to 7.5*20}} {{as|(+ {{ap|3*20}}% AP)}}",
+     "bin": [
+      "AurelionSolE#DamagePerSecond"
+     ],
+     "binNote": "Total = per-tick x20 ticks (5s duration / 0.25s tick = 20 ticks), equal to BaseDamagePerSecond x5s (10x5=50) and DamageperSecondAPRatio x5 (0.12x5=0.6); this is a derived 'total' figure."
+    },
+    {
+     "id": "e_3",
+     "meaning": "black hole duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "lasts for 5 seconds",
+     "bin": [
+      "AurelionSolE.Duration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "damage tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every {{fd|0.25}} seconds to enemies within",
+     "bin": [],
+     "binNote": "No bin row states the 0.25s tick interval explicitly; it is inferred from the wiki's per-tick vs per-second damage values (base/4 = per-tick), but no DataValue names the interval itself."
+    },
+    {
+     "id": "e_5",
+     "meaning": "delay before black hole appears",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "conjures a black hole at the target location after a {{tt|{{fd|0.5}}-second delay|From start of cast time}}",
+     "bin": [],
+     "binNote": "The sheet lists castTime as 0.2 but no separate DataValue for the 0.5s pre-effect delay; this timing is not exposed as its own row."
+    },
+    {
+     "id": "e_6",
+     "meaning": "execute threshold against enemies in center",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.026,
+       "coefScaling": [
+        {
+         "stat": "stacks",
+         "per": 100,
+         "coef": 2.6
+        }
+       ]
+      }
+     ],
+     "quote": "executed below {{as|5%|hp}} {{as|(+ {{fd|2.6}}% per 100 Stardust)}} {{as|of their '''maximum''' health}}",
+     "bin": [
+      "AurelionSolE.BaseExecutionThreshold",
+      "AurelionSolE.ExecutionGrowthPerBreakpoint"
+     ],
+     "binNote": "Bin's AurelionSolE#CurrentExecutionThreshold = 5 + 0.026 x buffStacks, matching wiki's 5% + 2.6% per 100 Stardust (0.026 per stack scaled by 100 = 2.6)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies within the center of the black hole are executed below a health threshold, dealing lethal damage.",
+     "quote": "Enemies within the center are {{tip|execute|executed}} below {{as|5%|hp}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Epic monsters are excluded from the execute effect.",
+     "quote": "excluding epic monsters",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Shield blocks a single instance of the damage-over-time.",
+     "quote": "{{tip|Spell shield}} will block a single instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies in the black hole are pulled toward the center and minions/monsters have their movement speed reduced to 0, but this does not change damage dealt or taken directly.",
+     "quote": "Enemies in the black hole are {{tip|kinematics|dragged}} inward until they reach the center, and {{tip|minions}} and {{tip|monsters}} also have their {{as|movement speed}} '''reduced''' to a {{as|static 0|ms}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The damage area hits targets by edge range while the pull area hits by center range, creating a fringe where damage can apply without displacement.",
+     "quote": "The damage area hits targets by their {{tip|edge range|edge}}, while the {{tip|kinematics}} area hits targets by their {{tip|centered range|center}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins only after the ability's full effect (5-second duration) ends, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Singularity's execute against an enemy champion aggros nearby enemy minions.",
+     "quote": "''Singularity's'' execute against an enemy champion will aggro nearby enemy minions.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AurelionSolE.ChampionMassPerSecond",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolE.MinionMassDeath",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolE.LargeMinionCountBonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolE.LargeMonsterCountBonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolE.ChampionCountBonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolE.EpicMonsterCountBonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolE.StartingRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.StartingInnerRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.GrowthBreakPoint",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AurelionSolE.StartingGravity",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.NonChampGravity",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.OuterRadiusAreaPerStack",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.InnerRadiusAreaPerStack",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.PI",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolE.InversePI",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Falling Star / The Skies Descend",
+   "cooldown": {
+    "values": [
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|120 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "AurelionSolR#MaxDamageTooltip"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Empowered Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      187.5,
+      312.5,
+      437.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9375
+      }
+     ],
+     "quote": "{{ap|150*1.25 to 350*1.25}} {{as|(+ {{ap|75*1.25}}% AP)}}",
+     "bin": [
+      "AurelionSolR#R2Damage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      135,
+      225,
+      315
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.675
+      }
+     ],
+     "quote": "{{ap|150*0.9 to 350*0.9}} {{as|(+ {{ap|75*0.9}}% AP)}}",
+     "bin": [
+      "AurelionSolR#ShockwaveDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "delay before Falling Star strikes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "strikes the target location after {{fd|1.25}} seconds",
+     "bin": [],
+     "binNote": "no matching data value found in the sheet for this cast delay"
+    },
+    {
+     "id": "r_5",
+     "meaning": "delay before The Skies Descend strikes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "calls down a giant star that strikes the target location after 2 seconds",
+     "bin": [],
+     "binNote": "no matching data value found in the sheet for this cast delay"
+    },
+    {
+     "id": "r_6",
+     "meaning": "Stardust generated per champion hit by Falling Star",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "generates {{as|5 Stardust}} for each enemy {{tip|champion}} hit",
+     "bin": [
+      "AurelionSolR.MassStolen"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Stardust required to transform into The Skies Descend",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 75,
+     "terms": [],
+     "quote": "gathering {{as|75 Stardust}} causes the next cast of ''Falling Star'' to transform",
+     "bin": [
+      "AurelionSolR.CalamityStacks"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "shockwave expansion duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "rapidly expands from the area over 3 seconds",
+     "bin": [],
+     "binNote": "no matching data value found in the sheet for this duration; expansion speed/geometry constants exist but not a plain seconds value"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Falling Star deals its damage on impact, after a 1.25 second delay from cast, not instantly on cast.",
+     "quote": "calls down a star that strikes the target location after {{fd|1.25}} seconds, dealing {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Skies Descend impact damage is a separate, higher damage instance than base Falling Star, dealing 25% increased damage in a larger area.",
+     "quote": "dealing {{ccs|25% increased damage|magic}} in a larger area",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Skies Descend additionally sends a shockwave that deals a separate magic damage instance to enemy champions and epic monsters (not other minions), after the initial impact.",
+     "quote": "the impact sends a massive shockwave that rapidly expands from the area over 3 seconds, dealing {{ccs|{{as|magic damage}}|magic}} to enemy champions and epic {{tip|monsters}} hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies directly hit by the star's impact do not also take the shockwave's damage.",
+     "quote": "Enemies hit by the star are immune to the shockwave.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Falling Star transforms into the empowered The Skies Descend once 75 Stardust has been gathered since the last empowered cast (or since learning the ability).",
+     "quote": "Aurelion Sol will transform ''Falling Star'' into ''{{ai|The Skies Descend|Aurelion Sol}}'' each time he gathers {{as|75 Stardust}} from the last time he used the empowered cast, or once he has gathered that amount after learning the ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "spellshield  = true",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Falling Star has no cast time (only a queue time and the travel delay before impact).",
+     "quote": "cast time    = none",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AurelionSolR.CalamityStacks",
+     "reason": null
+    },
+    {
+     "ref": "AurelionSolR.StartingRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolR.SkiesDescendStartingRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolR.CalamitySizeBonus",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolR.MassStolen",
+     "reason": null
+    },
+    {
+     "ref": "AurelionSolR.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "AurelionSolR.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "AurelionSolR.StunDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolR.R2DamageRatio",
+     "reason": null
+    },
+    {
+     "ref": "AurelionSolR.ShockwaveDamageRatio",
+     "reason": null
+    },
+    {
+     "ref": "AurelionSolR.ShockwaveSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AurelionSolR.AreaPerPassiveStack",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolR.PI",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AurelionSolR.InversePI",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P",
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Permanent Stardust stacks (Cosmic Creator) scale Q's per-target-max-HP bonus damage, E's execution threshold, and unlock R's upgraded Skies Descend form at 75 stacks; the sim must assume a starting stack count for the 15s fight."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's beam ticks damage every 0.125s to the primary target (50% to secondary targets) while channeled; E's black hole ticks damage every 0.25s over its 5s duration."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Breath of Light is a channel (up to 3.25s at ranks 1-4, effectively unlimited at rank 5 or during Astral Flight) that is interrupted by attacking, moving, or hard-casting."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q layers a separately-timed per-second burst on top of its continuous beam tick and auto-recasts at max channel duration; The Skies Descend has a separately timed impact and an expanding 3s shockwave, with targets hit by the impact excluded from the shockwave."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Astral Flight fully resets Breath of Light's cooldown (and removes its max duration/cost pacing) on cast, and refunds 90% of its own cooldown on a takedown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "While channeling Breath of Light during Astral Flight's dash, Q's non-burst flat damage is increased by 108-112%."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "E"
+   ],
+   "note": "Enemies within the center of Singularity's black hole are executed below 5% (+Stardust scaling) of their maximum health."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Breath of Light's per-full-second burst deals bonus damage scaling with the target's maximum health, in addition to its flat+AP component."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Breath of Light incurs an ongoing mana-per-second cost starting 1.25s into the channel, on top of E's and R's flat 90/100 mana costs, which can meaningfully constrain casts across a 15s fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Aurelion Sol's damage output depends on a live-updating Stardust stack counter that simultaneously feeds three different formulas (Q's true-damage-vs-max-HP burst, E's execution threshold, and R's Falling Star->Skies Descend transform at exactly 75 stacks) while itself growing from the very abilities being simulated in the fight. Q also runs two independently-timed damage processes at once (a continuous 0.125s beam tick and a 1s-interval burst that resets if the burn lapses), and W can reset/extend that channel mid-fight and multiplicatively buff only its non-burst portion. Modeling this correctly needs bespoke state-tracking beyond a static combination of the listed primitives, not just tagging which primitives apply."
+ },
+ "unsettled": [
+  {
+   "question": "Is Breath of Light's health-ratio burst bonus (p_qbonus / q_7's target-max-HP term) true damage or magic damage against the dummy?",
+   "options": [
+    "True damage, per the bin field/function names (QMaxHealthTrueDamagePerStack, BurstBonusTrueDamageToChamps)",
+    "Magic damage, per the wiki's ability-wide 'magic damage' framing and damagetype flag"
+   ],
+   "impact": "high",
+   "quotes": [
+    "AurelionSolPassive.QMaxHealthTrueDamagePerStack",
+    "'''Aurelion Sol''' {{tip|channel|charges}} for up to {{fd|3.25}} seconds to exhale a beam of starfire ... dealing {{as|magic damage}}",
+    "Bursts deal {{as|'''bonus''' magic damage}} based on the {{as|target's '''maximum''' health}}."
+   ]
+  },
+  {
+   "question": "What starting Stardust stack count should the damage fight assume, since it changes Q's true-damage bonus, E's execution threshold, and whether R is cast as base Falling Star or the empowered Skies Descend (unlocked at 75 stacks)?",
+   "options": [
+    "0 stacks (fresh game state)",
+    "75+ stacks (Skies Descend already unlocked, as would be typical by the point a build/level is being tested)",
+    "Some other fixed assumed value"
+   ],
+   "impact": "high",
+   "quotes": [
+    "gathering {{as|75 Stardust}} causes the next cast of ''Falling Star'' to transform into ''{{ai|The Skies Descend|Aurelion Sol}}''"
+   ]
+  },
+  {
+   "question": "Does Breath of Light's automatic recast at the end of its max channel duration (ranks 1-4, ~3.25s) cause any gap in beam damage, or is it seamless?",
+   "options": [
+    "Seamless continuation with zero downtime",
+    "A brief gap (queue/cast time) before the beam resumes, reducing effective DPS",
+    "The primary-target burn timer/burst progress resets to zero on each auto-recast, losing partial burst credit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Breath of Light'' can be recast within the duration, and does so automatically afterwards.",
+    "It falls off and resets to zero if a target is not hit within 1 second of no longer being afflicted by the burn."
+   ]
+  },
+  {
+   "question": "Which execution-threshold constants actually govern Singularity's execute: E's own BaseExecutionThreshold/ExecutionGrowthPerBreakpoint, or the Passive's identically-named fields (which include an unresolved additional bin term {f3cbe7b2})?",
+   "options": [
+    "E's own fields (5 + 0.026x stacks) as used in AurelionSolE#CurrentExecutionThreshold",
+    "The Passive's fields plus the unresolved {f3cbe7b2} term, giving a different (possibly higher) threshold"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "AurelionSolPassive#ExecuteHealthThreshold = ((BaseExecutionThreshold=5)*(0.01) + (<{f3cbe7b2}>)*(0.01))xmaxHp",
+    "! unresolved calculation part {f3cbe7b2}",
+    "AurelionSolE#CurrentExecutionThreshold = BaseExecutionThreshold=5 + (ExecutionGrowthPerBreakpoint=0.026)xbuffStacks"
+   ]
+  },
+  {
+   "question": "Does Astral Flight's Breath of Light damage buff (108-112%) apply only to the flat per-second/beam-tick damage as its 'non-burst' wording states, or does it also affect the burst's flat component, and is it multiplicative on top of AP ratios?",
+   "options": [
+    "Applies only to the flat per-second tick damage (DamagePerSecond base, not its AP ratio or the burst)",
+    "Applies to all of Q's flat damage components including the burst's flat base",
+    "Applies multiplicatively to the whole per-second damage instance including its AP scaling"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''{{ai|Breath of Light|Aurelion Sol}}'' has no cooldown and maximum channel duration and its non-burst flat damage is increased",
+    "{{st|{{ai|Breath of Light|Aurelion Sol}} Flat Damage Modifier|{{ap|108 to 112}}%}}"
+   ]
+  },
+  {
+   "question": "Does casting Singularity (E) or Falling Star (R) while channeling Breath of Light (Q) outside of an active Astral Flight interrupt the Q channel, or can they be cast concurrently?",
+   "options": [
+    "Casting E/R interrupts and ends the Q channel (per the general channel interrupt table)",
+    "E/R can be cast without interrupting Q, since the explicit interrupt-on-cast rule is only described for casting them during Astral Flight's dash"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ct|channel|attack=interrupts|cast=interrupts|move=interrupts|items=interrupts,true,,false|spells=true,interrupts,false,interrupts,interrupts}}",
+    "{{ais|Breath of Light|Aurelion Sol}} channel will be interrupted if Astral Flight ends or {{ai|Singularity|Aurelion Sol}} or {{ai|Falling Star|Aurelion Sol}} / {{ai|The Skies Descend|Aurelion Sol}} is cast during the flight, but the ability will automatically be cast afterwards."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting R (Falling Star, or The Skies Descend if the assumed Stardust count has it unlocked) on the dummy first, since its long cooldown (100-120s) means it only fires once in the 15s window and its impact has a 1.25-2s travel delay.",
+   "Immediately begin channeling Q (Breath of Light) on the dummy and hold the channel as long as possible to maximize both the continuous beam tick damage and the once-per-second burst bonus.",
+   "Cast E (Singularity) on the dummy as soon as it is available (12s cooldown, mana permitting) to add its own DPS tick and execute threshold pressure, accepting that this may interrupt the ongoing Q channel.",
+   "Immediately re-open the Q channel after E resolves and keep it running.",
+   "Use W (Astral Flight) toward/through the dummy partway through the fight to instantly reset Q's cooldown/duration and gain the 108-112% flat damage buff on Q while flying, then let Q auto-continue at the buffed rate.",
+   "Recast E again near the end of the 15s window if its cooldown and mana allow a second cast.",
+   "Keep Q channeling continuously in every remaining gap, since its cooldown is only 3 seconds and it is the primary sustained damage source."
+  ],
+  "questions": [
+   "Does casting E or R actually interrupt an active Q channel outside of Astral Flight, and if so, is it worth pausing Q's DPS to fit them in, or should Q's channel be protected as the priority?",
+   "Should Astral Flight be used purely as a Q-cooldown/damage-buff tool in a stationary dummy fight, or does its dash mechanic (fixed range, must travel through/past the dummy) impose a positional constraint that reduces its practical uptime against a single stationary target?",
+   "Given mana costs (Q's per-second drain plus E's 90 and R's 100 flat costs), what mana pool/regen should be assumed at the tested level/items to know how many E and Q-channel-refresh cycles are actually affordable in 15 seconds?",
+   "Is it correct to assume the dummy is hit as a 'champion' for Q's true-damage-vs-max-HP term and Stardust generation, or does a dummy target count as a non-champion for these champion-only bonuses?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

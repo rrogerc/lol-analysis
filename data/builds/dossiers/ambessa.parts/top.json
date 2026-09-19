@@ -1,0 +1,142 @@
+{
+ "champion": "ambessa",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Cunning Sweep/Sundering Slam, Repudiation's smash, Lacerate's spin, and Public Execution's damage each land on a short fixed delay after cast (lockout end / cast time end), then go on cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Medarda Maxim stacks arm Ambessa's next basic attack to deal bonus physical on-hit damage, gain range/attack speed, and restore energy; consumed on-hit."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Medarda Maxim: casting any ability grants a stack (up to 3) lasting 4s, refreshing on subsequent casts."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Each empowered basic attack deals extra physical damage (level-scaled + 25% bonus AD) and grants 50% bonus attack speed for that swing."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q: Cunning Sweep opens a 4s window to cast the separately-timed Sundering Slam. E: Lacerate spins once on cast and a second time (same damage, no extra cost) if Drakehound's Step dash is triggered afterward."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's slash/slam doubles damage against the outer-edge (Q1) or first-hit (Q2) target vs. other hits; W's smash deals 50% more damage only if its on-cast shield mitigated champion/large-monster/turret damage before the smash lands."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Whether the single stationary dummy counts as being struck at Cunning Sweep's outer cone edge / as Sundering Slam's first hit must be assumed, since both determine which of two damage values applies."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q, W, and E each cost 70 energy; no energy regen rate is given in the sources, so sustaining a full-ability rotation across 15s requires an assumption."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W grants a 1.5s self-shield on cast; R's passive heals Ambessa for a % of post-mitigation damage she deals. Neither changes the dummy's health/damage-taken, and R's heal specifically triggers off Ambessa's own outgoing damage rather than incoming damage, so it does not aid her in a survival fight either."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Public Execution has a 0.7s cast time during which Ambessa is locked out (unable to act) before the strike/blink resolves."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic (Medarda Maxim's stacking empowered attacks, Q's two-part Cunning Sweep/Sundering Slam combo with edge/first-hit doubling, E's dash-triggered free second spin, W's conditional shield-based damage amp, R's channelled single-target burst with self-heal/armor pen) maps onto existing closed-list primitives; nothing requires logic the list cannot express."
+ },
+ "unsettled": [
+  {
+   "question": "Is Cunning Sweep / Sundering Slam's doubled-damage hit (outer edge / first target) a discrete either/or value, or a continuous interpolation across the cone/line using the unresolved bin calculation, and against a single stationary dummy which value actually applies?",
+   "options": [
+    "Binary: the dummy either counts fully as the 'outer edge'/'first hit' target (doubled value) or fully as an inner/non-first hit (halved value), matching the wiki's discrete description",
+    "Continuous: damage interpolates between the Min_Ratio (0.5x) and full value based on exact hit position via the unresolved {f3cbe7b2} calculation, which is not resolved in the sheet"
+   ],
+   "impact": "high",
+   "quotes": [
+    "AmbessaQ#{a7907b77} = Calc_Damage_1_Max * <{f3cbe7b2}>",
+    "! unresolved calculation part {f3cbe7b2}",
+    "The damage is {{ccs|doubled|physical}} against enemies hit by the outer edge."
+   ]
+  },
+  {
+   "question": "Does the stationary target dummy resist Public Execution's suppression (as CC-immune training dummies typically do), which per the wiki notes would prevent the attach, damage, and stun from ever applying even though Ambessa still blinks to it?",
+   "options": [
+    "Dummy is treated as a normal enemy champion (not CC-immune), so R's suppression, damage, and stun apply normally",
+    "Dummy is CC-immune, so Ambessa blinks to it but the suppression/attach fails and R's damage never lands"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target resists the suppression by being {{tip|cc-immune|immune to crowd control}}, {{tip|displacement immune}}, or having a {{tip|spell shield}}, '''Ambessa''' will not attach them to herself.",
+    "She will be unable to apply the damage and stun in this case since the suppression was not applied in the first place."
+   ]
+  },
+  {
+   "question": "What energy regeneration rate should be assumed for sustaining Q/W/E (70 energy each) across the 15s damage fight, since neither source states Ambessa's energy regen?",
+   "options": [
+    "Assume base champion energy regen is high enough to allow near-continuous casting of all three basic abilities on cooldown",
+    "Energy is a genuine bottleneck, forcing the rotation to skip some casts or attacks to stay within budget"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Ensure a Medarda Maxim stack is available at the start (e.g. from a pre-fight ability cast) so the opening auto-attack can be empowered.",
+   "Open with Public Execution (R) for its large upfront burst and to apply its passive armor penetration for the rest of the fight (only usable once given its 100-130s cooldown).",
+   "Immediately cast Cunning Sweep (Q1), then within the 4s window follow up with Sundering Slam (Q2), positioning both hits for their doubled-damage (outer edge / first-hit) value against the dummy.",
+   "Cast Repudiation (W) for its base smash damage (its 50% conditional bonus will not trigger since the stationary dummy never deals mitigated damage to the shield).",
+   "Cast Lacerate (E) and buffer Drakehound's Step immediately after so the dash triggers a second free spin, doubling E's effective damage per use.",
+   "Weave in empowered basic attacks whenever a Medarda Maxim stack is available (generated after each ability's lockout), prioritizing them over unempowered swings.",
+   "Repeat Q, W, E on cooldown for the remainder of the 15s, continuing to buffer Drakehound's Step after each lockout to keep gaining the E double-spin and stay in melee/attack range without losing tempo.",
+   "Fill any remaining time between ability cooldowns with plain basic attacks."
+  ],
+  "questions": [
+   "Should R be cast first to front-load burst and armor pen, or held until after Q's combo to maximize total damage output over the 15s window?",
+   "Does buffering Drakehound's Step after every ability cost any effective time/tempo in a dummy fight, or is it free as the wiki implies?",
+   "Is the target dummy guaranteed to be hit by Sundering Slam as the 'first enemy' (since it's the only target), or could engine mechanics still classify a single target as a non-first hit?",
+   "Should the rotation assume energy is unconstrained, or does a realistic energy regen value force cutting attacks/casts, changing optimal ability ordering?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,181 @@
+{
+ "name": "Inferno Trigger",
+ "cooldown": {
+  "values": [
+   5,
+   5,
+   5
+  ],
+  "quote": "5"
+ },
+ "cost": {
+  "values": [
+   6,
+   6,
+   6
+  ],
+  "quote": "6 Style",
+  "resource": "other"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage Per Shot",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    20,
+    40,
+    60
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|20 to 60}} {{as|(+ 30% AD)}}",
+   "bin": [
+    "SamiraR#DamageCalc"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Minion Damage Per Shot",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    10,
+    15
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.075
+    }
+   ],
+   "quote": "{{ap|20*0.25 to 60*0.25}} {{as|(+ {{ap|30*0.25}}% AD)}}",
+   "bin": [
+    "SamiraR.MinionDamageMod",
+    "SamiraR#DamageCalc"
+   ],
+   "binNote": "No bin row states 5/10/15 or 0.075 directly; these are the wiki-computed products of SamiraR#DamageCalc's base [20,40,60] and ad-ratio 0.3 with SamiraR.MinionDamageMod=0.25 (20*0.25=5, 40*0.25=10, 60*0.25=15; 0.3*0.25=0.075), matching the wiki's own displayed derivation."
+  },
+  {
+   "id": "r_5",
+   "meaning": "number of shots fired",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "up to 10 times per enemy",
+   "bin": [],
+   "binNote": "No bin row for a per-target shot cap of 10; this is stated only in the wiki description text, not any DataValue or calculation in the sheet."
+  },
+  {
+   "id": "r_6",
+   "meaning": "duration of the shooting effect",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "rapidly shooting at nearby enemies over {{rutngt|2}}",
+   "bin": [],
+   "binNote": "No matching DataValue in the sheet for this 2-second shooting sub-duration; not present as a named row."
+  },
+  {
+   "id": "r_7",
+   "meaning": "total active duration (movement speed reduction)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.25,
+   "terms": [],
+   "quote": "'''Samira''' unleashes a torrent of shots for {{rutngt|2.25}}",
+   "bin": [],
+   "binNote": "No matching DataValue in the sheet for this 2.25-second total duration; not present as a named row."
+  },
+  {
+   "id": "r_8",
+   "meaning": "average shot interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "{{tt|{{fd|0.2}}-second intervals|on average; total of 5 intervals of 0.231 and 5 of 0.198 seconds}}",
+   "bin": [],
+   "binNote": "No DataValue in the sheet gives the shot timing intervals; this is only documented in the wiki's tooltip note."
+  },
+  {
+   "id": "r_9",
+   "meaning": "life steal effectiveness",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "applies {{as|{{sti|life steal}}}} at 100% effectiveness",
+   "bin": [
+    "SamiraR.LifestealMod"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Each shot can critically strike and applies lifesteal.",
+   "quote": "Each shot can {{tip|critically strike}} and {{tip|applies lifesteal|apply}} {{as|{{sti|life steal}}}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage against minions is reduced by 75%.",
+   "quote": "reduced by 75% against {{tip|minions}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Samira cannot basic attack or cast Flair/Blade Whirl during Inferno Trigger, but can still move.",
+   "quote": "'''''Samira''' cannot basic attack nor cast {{ai|Flair|Samira}} and {{ai|Blade Whirl|Samira}} during Inferno Trigger, but she can still move.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Movement speed is reduced by 30% during the effect.",
+   "quote": "'''reducing''' her {{as|movement speed}} by {{as|30%|ms}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "A spell shield blocks the damage of one shot only.",
+   "quote": "{{tip|Spell shield}} will block the damage of one shot.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Inferno Trigger ends prematurely if Samira is affected by cast-inhibiting crowd control or disarm.",
+   "quote": "Inferno Trigger will end prematurely if '''Samira''' is affected by any form of {{tip|cast-inhibiting crowd control}} as well as {{tip|disarm}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SamiraR.BaseMSBonus",
+   "reason": "utility"
+  },
+  {
+   "ref": "SamiraR.ADRatio",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

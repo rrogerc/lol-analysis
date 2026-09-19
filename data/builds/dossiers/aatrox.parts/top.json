@@ -1,0 +1,129 @@
+{
+ "champion": "aatrox",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Deathbringer Stance arms Aatrox's next basic attack to deal bonus magic damage equal to a level-scaled % of the target's max health, applies life steal."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Landing a basic attack (on-hit) or an ability on an enemy champion reduces Deathbringer Stance's current cooldown by 2s, doubled to 4s if the hit was The Darkin Blade's sweetspot."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q: three sequential casts (1s static gap, 4s window to continue) each dealing separate damage before going on cooldown. W: an initial hit plus, if the tether survives 1.5s, a second identical-timing pull-damage instance."
+  },
+  {
+   "id": "ramping-per-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each subsequent Q cast (2nd, 3rd) deals 25% more base+AD damage than the previous cast, multiplicatively stacked with the sweetspot multiplier."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Whether each Q cast lands its Sweetspot (75% bonus damage + knockup) against a stationary dummy depends on hitbox geometry that must be assumed for the fight."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Umbral Dash resets Aatrox's basic attack timer and can be cast without interrupting other abilities, letting an extra auto be weaved into the rotation."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "World Ender grants 20-40% bonus AD for its (extendable) 10s duration, amplifying all of Aatrox's AD-scaling damage sources."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Umbral Dash's passive heal (16% + 1.1%/100 bonus HP of post-mitigation non-persistent champion damage) and World Ender's self-healing amplification (50-100%) only change Aatrox's effective damage taken/survivability, never damage dealt."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic that changes damage dealt or taken (Deathbringer Stance's empowered auto and its on-hit cooldown refund, Q's three-part ramping/sweetspot strikes, W's two-timed hits, E's attack-reset and self-heal, R's AD buff and healing amp) is expressible as a combination of listed primitives; nothing requires bespoke logic beyond composing them."
+ },
+ "unsettled": [
+  {
+   "question": "Is Deathbringer Stance's empowered basic attack already available at the start of the 15s damage fight, or does it need to charge from a fresh/uncharged state (10-22s depending on level)?",
+   "options": [
+    "Assume it is pre-charged and ready at t=0",
+    "Assume it starts uncharged and must recharge from the level-based cooldown before Aatrox's first empowered auto"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does a stationary target dummy get hit by The Darkin Blade's Sweetspot on every one of Aatrox's three Q casts (since the sweetspot is a separate farther/inner hitbox layered on the main AoE), or should only the non-sweetspot (center) damage be assumed?",
+   "options": [
+    "Assume every Q cast lands its Sweetspot (max damage, knockup, and doubled Deathbringer Stance CDR)",
+    "Assume Q lands only its base (non-sweetspot) damage each cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "As implied by the previous point, the {{as|Sweetspot}} for the first and second cast is implemented as separate [[area of effect|areas of effect]] to the main component of the ability."
+   ]
+  },
+  {
+   "question": "For Infernal Chains' delayed pull hit against a champion, is the total damage dealt across both hits the sum shown in the wiki's 'Total Damage' leveling row (2x base + 80% AD, matching the minion-doubled formula), or does each hit (initial and delayed) independently deal only the single-hit value (base + 40% AD), with the doubled row belonging solely to the minion-damage tooltip?",
+   "options": [
+    "Second hit equals the first hit (base+40% AD each, summing to 2x base+80% AD total) as literally stated ('the same physical damage again')",
+    "The wiki's 'Total Damage' row (2x base, 80% AD) is itself the value of the delayed hit alone, on top of a separate initial hit, roughly doubling total W damage again"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the tether is not broken by the end of its duration, the target is dealt the same {{as|physical damage}} again and {{tip|airborne|pulled}} to the center of the area.",
+    "{{st|Total Damage|{{ap|30*2 to 70*2}} {{as|(+ 80% AD)}}}}"
+   ]
+  },
+  {
+   "question": "Does each of Q's three separate strikes (and W's two hits) independently trigger Deathbringer Stance's on-hit cooldown reduction every time it connects, letting a single Q combo refund up to 12s of DBS cooldown, or is the refund capped/deduplicated per ability activation window?",
+   "options": [
+    "Each landed strike/cast independently refunds 2s (4s on sweetspot), stacking across all 3 Q casts and both W hits",
+    "The cooldown reduction is capped or only applies once per ability use regardless of how many enemies/strikes it hits"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Each cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting World Ender (R) immediately to secure its 20-40% bonus AD (and healing amp) for the rest of the fight, since it has only one use in a 15s window.",
+   "If Deathbringer Stance is already charged, land the empowered basic attack first for its large flat magic-damage burst and life steal.",
+   "Cast The Darkin Blade (Q) and chain all three casts back-to-back (respecting the 1s static gap and 4s recast window), aiming every strike to land its Sweetspot for maximum ramping damage and the biggest Deathbringer Stance cooldown refunds.",
+   "Cast Infernal Chains (W) on cooldown between Q combos, holding the tether uninterrupted so it deals its delayed second hit.",
+   "Weave basic attacks into every gap, using the Deathbringer Stance empowered auto the instant it comes off cooldown from the accumulated on-hit/on-ability refunds.",
+   "Use Umbral Dash (E) purely as an attack-reset whenever it is off cooldown right after landing an auto, to squeeze in extra basic attacks rather than for its (irrelevant, no-damage) mobility.",
+   "Repeat the Q three-cast combo and W cast on cooldown for the remainder of the 15s, prioritizing Q's ramping/sweetspot damage over auto-attacks when both are available."
+  ],
+  "questions": [
+   "Is Deathbringer Stance assumed pre-charged at the start of the damage fight, and does its bin-defined charge-up curve (AatroxPassive#PCooldown, 22 to 10s by level) actually gate the very first empowered attack if not?",
+   "Against a stationary dummy that 'counts as an enemy champion,' is it realistic/intended for every Q cast to land its Sweetspot given the described hitbox geometry (point-blank rectangle/trapezoid edge vs a ground-targeted circle)?",
+   "Is there a hard lockout window after each Q cast during which Aatrox cannot auto-attack (the wiki notes a bug to this effect), and if so how long, since it affects how many autos can be woven into the 15s rotation?",
+   "Does casting R before Q/W actually apply its bonus AD to those abilities' 'current stats' damage calculation at the moment they land, confirming R should be cast first rather than last for maximum total damage?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,90 @@
+{
+ "champion": "cassiopeia",
+ "primitives": [
+  {"id": "plain-cast", "abilities": ["Q"], "note": "Noxious Blast's poison starts a fixed 0.4 s after cast (not on cast), on a short 3.5 s cooldown."},
+  {"id": "dot", "abilities": ["Q"], "note": "Poison ticks over 3 s (bin says 7 ticks); a separate wiki note disputes the duration (3.2-3.3 s)."},
+  {"id": "plain-cast", "abilities": ["W"], "note": "Miasma is thrown at a location and ticks once it lands, on a 16-24 s cooldown."},
+  {"id": "dot", "abilities": ["W"], "note": "Cloud ticks over 5 s; the real tick count (19 vs the leveling table's implied 20, sometimes 18) is disputed by the wiki's own note."},
+  {"id": "plain-cast", "abilities": ["E"], "note": "Twin Fang is Cassiopeia's near-instant (0.125 s cast, 0.75 s cooldown) spammable direct-damage tool."},
+  {"id": "conditional-damage", "abilities": ["E"], "note": "Twin Fang deals extra magic damage only when the target is currently poisoned (by Q or W)."},
+  {"id": "resource-budget", "abilities": ["Q", "W", "E", "R"], "note": "All four actives cost mana (Q 50-70, W 70-90, E 40-45, R 100); spamming Twin Fang every 0.75 s alone will outrun the mana pool well inside 15 s."},
+  {"id": "plain-cast", "abilities": ["R"], "note": "Petrifying Gaze lands when its 0.5 s cast ends; its 80-120 s cooldown means at most one cast fits in the fight regardless of level."},
+  {"id": "defensive-only", "abilities": ["P"], "note": "Serpentine Grace only scales movement-speed effectiveness (plus an undocumented Feats-of-Strength AP/MS grant); nothing in it changes damage against a stationary target."}
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Twin Fang's damage waits at the target for an already-cast, unexploded Noxious Blast to land first, per the wiki ('will wait for an ongoing Noxious Blast to explode before dealing its damage'). This is a cross-ability blocking/sequencing rule - one ability's impact delaying on another ability's pending impact - that no single primitive in the closed list (plain-cast, dot, conditional-damage, etc.) expresses on its own."
+ },
+ "unsettled": [
+  {
+   "question": "How many damage ticks does Miasma actually land over its 5 s cloud duration?",
+   "options": [
+    "20 ticks / a continuous per-second rate (matches the leveling table's headline Total Magic Damage of 100-200, +50% AP, i.e. 5x the per-second BaseDamage)",
+    "19 ticks (matches the wiki's own corrective note: real total 95-190, +47.5% AP)",
+    "Inconsistent - sometimes only 18 ticks, per a further noted bug"
+   ],
+   "impact": "high",
+   "quotes": [
+    "because there is 19 ticks and not 20 ticks, the {{as|'''total''' magic damage}} is currently not {{as|{{ap|100 to 200}} {{as|(+ 50% AP)}}|magic damage}} but {{as|{{ap|95 to 190}}|magic damage}} {{as|(+ {{fd|47.5}}% AP)}}",
+    "Sometimes ''Miasma'' randomly inflicts only 18 ticks of damage."
+   ]
+  },
+  {
+   "question": "When Twin Fang's damage is delayed because it must wait for an unexploded Noxious Blast, does it then reliably count the target as poisoned (getting the bonus damage), or does its poison check happen on some other timing?",
+   "options": [
+    "Twin Fang's whole damage instance (including its poison check) is delayed until Noxious Blast explodes, so a same-target Q-into-E combo reliably gets the poison bonus",
+    "Only the raw damage application is delayed; the poison check happens at the original impact moment and could miss the bonus if Noxious Blast has not exploded yet"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon reaching the target, ''Twin Fang'' will wait for an ongoing {{ai|Noxious Blast|Cassiopeia}} to explode before dealing its damage."
+   ]
+  },
+  {
+   "question": "What is Twin Fang's real mana cost?",
+   "options": [
+    "45 mana (the wiki's stated literal cost, matching ddragon's public spell data)",
+    "40 mana (the raw CommunityDragon character-bin cost field)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cost         = 45"
+   ]
+  },
+  {
+   "question": "What is Noxious Blast's real poison duration (and therefore its tick window)?",
+   "options": [
+    "3 seconds (the ability's main description and the bin's PoisonDuration value)",
+    "3.2 to 3.3 seconds (a separate wiki note, explicitly marked 'pending for test')"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{pending for test}} Enemies within the blast of ''Noxious Blast'' are {{tip|poison|poisoned}} for something between {{fd|3.2}} and {{fd|3.3}} seconds."
+   ]
+  },
+  {
+   "question": "Should the bin-only Feats-of-Strength bonus ability power (byLevelL 3 to 54, under CassiopeiaPassive_Feats, undocumented by the wiki's Serpentine Grace text) be granted to Cassiopeia in the dummy fight?",
+   "options": [
+    "No: Feats of Strength require team milestones (first blood, first turret plates, first epic monster) that cannot occur in a solo dummy fight, and it is not part of Cassiopeia's documented kit",
+    "Yes: treat it as a flat bonus-AP-by-level source, since the bin exposes concrete numbers alongside her passive"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast Noxious Blast (Q) at the target first: it has the shortest cooldown of the poison-applying abilities (3.5 s) and starts the poison window (after its 0.25 s cast plus 0.4 s blast delay) that Twin Fang's bonus damage depends on.",
+   "Follow immediately with repeated Twin Fang (E) casts (0.75 s cooldown, 0.125 s cast) while the target is poisoned, to take the bonus magic damage on every hit.",
+   "Cast Miasma (W) as soon as it is off cooldown to add its own poison DoT and help keep the target poisoned between Noxious Blast casts, continuing to weave Twin Fang in between.",
+   "Cast Petrifying Gaze (R) as soon as it is available; nothing in Cassiopeia's kit ramps with time or stacks, so there is no benefit to delaying its single big magic hit.",
+   "Recast Noxious Blast every time it comes off cooldown (3.5 s) to keep refreshing the poison window, filling all remaining time with Twin Fang casts until mana is exhausted.",
+   "Once mana runs low, prioritize whichever ability is still affordable - most likely Twin Fang, the cheapest single cast - rather than holding mana for a more expensive ability that may not come off cooldown again in the remaining time."
+  ],
+  "questions": [
+   "Is Petrifying Gaze assumed to be ranked/available at the tested level? Its 80-120 s cooldown means it is cast at most once regardless of level, but if the tested level is too low to have taken R, this line of the rotation does not apply.",
+   "Does the target actually stay poisoned continuously through a Q/W rotation, or are there real gaps (Noxious Blast's ~3 s poison against its 3.5 s cooldown) where Twin Fang casts land without the bonus damage?",
+   "Should the simulator optimize mana usage (e.g. skipping a Q or W cast to afford more Twin Fangs) for the fastest kill, or is a fixed cast-priority order assumed regardless of mana efficiency?",
+   "Twin Fang's disputed mana cost (40 vs 45) changes how many casts the starting mana pool sustains - which number should the rotation's resource budget use?"
+  ]
+ }
+}

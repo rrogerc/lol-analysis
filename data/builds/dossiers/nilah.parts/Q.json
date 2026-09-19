@@ -1,0 +1,229 @@
+{
+ "name": "Formless Blade",
+ "cooldown": {
+  "values": [
+   4,
+   4,
+   4,
+   4,
+   4
+  ],
+  "quote": "4"
+ },
+ "cost": {
+  "values": [
+   30,
+   30,
+   30,
+   30,
+   30
+  ],
+  "resource": "mana",
+  "quote": "30"
+ },
+ "castTime": {
+  "value": 0.35,
+  "quote": "{{dv|{{tt|{{as|{{pp|type='''bonus''' attack speed|round=3|0.35;0.33;0.297;0.28|key1=%|0;13.72;36.358;48|changedisplay=true|formula=0.35-0.035 per 24% '''bonus''' attack speed)). ''This is capped at 20% reduction at 48% '''bonus''' attack speed.''}}|attack speed}}}}|{{tt|None|When cast during Slipstream}}}}",
+  "binNote": "Cast time actually varies from 0.35 down to 0.28 depending on Nilah's bonus attack speed (formula: 0.35 - 0.035 per 24% bonus AS, capped at 20% reduction at 48% bonus AS); recorded here as the uncapped base value."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Minimum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    0,
+    10,
+    20,
+    30,
+    40
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|0 to 40}} {{as|(+ 100% AD)}}",
+   "bin": [
+    "NilahQ#DamageCalc",
+    "NilahQ.BaseDamage",
+    "NilahQ.QADRatio"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "empowered basic attack cone damage to primary target",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": 0,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{as|100% AD}} {{as|physical damage}} to enemies hit",
+   "bin": [
+    "NilahQ#AttackTotalDamageTooltip"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "empowered bonus attack speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    10.0,
+    12.941176,
+    15.882353,
+    18.82353,
+    21.764706,
+    24.7058824,
+    27.647059,
+    30.588235,
+    33.52941,
+    36.47059,
+    39.411765,
+    42.35294,
+    45.294118,
+    48.235294,
+    51.17647,
+    54.117647,
+    57.058824,
+    60.0
+   ],
+   "terms": [],
+   "quote": "{{pp|10 to 60|key=%}}",
+   "bin": [
+    "NilahQ#BonusAttackSpeedCalc"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "duration of empowerment (range, attack speed, cone attacks) after Formless Blade hits",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "empowers herself for 4 seconds",
+   "bin": [
+    "NilahQ.BuffDuration"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "armor penetration gained per critical strike chance (passive)",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.3
+    }
+   ],
+   "quote": "0.3% per 1% critical strike chance, capped at 100% critical strike chance",
+   "bin": [
+    "NilahQ.CritArmorPenScalar"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "heal from post-mitigation damage to champions, based on critical strike chance",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.2
+    }
+   ],
+   "quote": "0.2% per 1% critical strike chance, capped at 100% critical strike chance",
+   "bin": [
+    "NilahQ.CritHealScalar"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "duration of shield created from overhealing",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "lasts 6 seconds",
+   "bin": [
+    "NilahQ.ShieldDuration"
+   ],
+   "binNote": "Wiki text states the overheal shield lasts 6 seconds, but the bin's NilahQ.ShieldDuration (and NilahPassive.ShieldMaxDuration) is 4 - a disagreement between sources."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Formless Blade's damage to champions is increased by a crit-chance-scaled multiplier of critical strike damage.",
+   "quote": "increased by {{critical damage|0 to 70|critScaling=true}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Formless Blade applies life steal at 100% effectiveness, but only to one target when multiple are hit.",
+   "quote": "at 100% effectiveness to one target",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The empowered attack cone applies area damage, but on-hit effects only apply to the primary target.",
+   "quote": "On-hit effects are applied only to the primary target.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Applies area damage on the empowered attacks.",
+   "quote": "Applies {{tip|area damage}} on the empowered attacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cast time is measured from the start of the cast to its end, at which point the effect resolves.",
+   "quote": "{{Effect at cast time end}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Formless Blade's cooldown starts on cast.",
+   "quote": "cdstart          = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NilahQ.CheatingThreshold",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NilahQ.CastRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NilahQ.MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NilahQ.RangeIncrease",
+   "reason": "utility"
+  },
+  {
+   "ref": "NilahQ.MonsterMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NilahQ.ActiveCritScaling",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,148 @@
+{
+ "name": "Spiraling Despair / Wash Brush",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage per Tick (aura, every 0.25s)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    2.5,
+    5,
+    7.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0125
+    }
+   ],
+   "quote": "{{ap|10/4 to 30/4}} {{as|(+ {{ap|5/4}}% AP)}}",
+   "bin": [
+    "HweiR#DamageOverTime"
+   ],
+   "binNote": "HweiR#DamageOverTime = BaseDamageOverTime + 0.05xap is a per-second rate; the wiki's per-tick value divides it by 4 (one tick every 0.25s), giving base [2.5,5,7.5] and ap coef 0.0125."
+  },
+  {
+   "id": "r_2",
+   "meaning": "aura duration / total DoT window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "grows over 3 seconds",
+   "bin": [
+    "HweiR.Duration"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "tick interval of the aura's damage/slow application",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "dealt {{as|magic damage}} and applied a {{tip|stack}} of ''Despair'' every {{fd|0.25}} seconds",
+   "bin": [],
+   "binNote": "No dedicated bin field states the 0.25s tick rate; it is implied by BaseDamageOverTime being a per-second value split across 12 ticks over the 3s Duration."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Magic Damage (explosion at end of duration or target death)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    200,
+    325,
+    450
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.8
+    }
+   ],
+   "quote": "{{ap|200 to 450}} {{as|(+ 80% AP)}}",
+   "bin": [
+    "HweiR#Damage"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The globule collides with the first enemy champion hit and applies the aura only to that champion (though the aura itself then damages all enemies within it).",
+   "quote": "collides with the first enemy {{tip|champion}} hit, afflicting them with an [[aura]] that grows over 3 seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The aura deals persistent tick damage to enemies within it, separate from the final explosion damage instance.",
+   "quote": "Enemies within are both dealt {{as|magic damage}} and applied a {{tip|stack}} of ''Despair'' every {{fd|0.25}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At the end of the duration or if the target dies first, the aura deals a separate explosion damage instance to all enemies within it and removes all stacks.",
+   "quote": "At the end of the duration or when the target dies, the aura explodes to deal {{as|magic damage}} to enemies within and remove all ''Despair'' stacks from affected enemies.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The tick damage is applied as persistent area damage while the explosion is a single area damage instance.",
+   "quote": "Applies {{tip|persistent area damage}} for the aura and deals {{tip|area damage}} for the explosion.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield can block the aura, the explosion, and the application of the first Despair stack.",
+   "quote": "{{tip|Spell shield}} can block the aura, explosion, and the application of the first ''Despair'' stack.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Wash Brush lets Hwei exit his current mood (swap Q/W/E form) for free, without triggering that ability's cost or cooldown; it does not deal damage or affect either fight's numbers.",
+   "quote": "'''Hwei''' exits his current ''mood'' without incurring its ability cost or cooldown, toggling it off.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Toggling Wash Brush does not count as an ability activation, so it will not trigger on-cast effects like Spellblade.",
+   "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "HweiR.SlowPercentPerStack",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "HweiR.SlowDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "HweiR.MaxDamageHelper",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,205 @@
+{
+ "name": "Explosive Charge",
+ "cooldown": {
+  "values": [
+   16,
+   15.5,
+   15,
+   14.5,
+   14
+  ],
+  "quote": "{{ap|16 to 14}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.225625,
+  "quote": "{{as|100% of '''Tristana's''' windup time|as}} ({{fd|{{#expr:(1/{{ccd|Tristana|as_base}})*{{ccd|Tristana|windup}}round2}}}} at {{as|'''base''' attack speed}})",
+  "binNote": "Cast time is not a fixed value; it equals 100% of Tristana's current attack windup time, so it scales with attack speed. At base attack speed this is 0.225625s (per note: 'At base attack speed, Tristana's attack windup is 0.225625 seconds.'); it can range down to ~0.148s at capped attack speed (3.003) and up to 0.74005s at floored attack speed (0.2)."
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Passive Magic Damage (on-kill explosion)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    45,
+    60,
+    75,
+    90,
+    105
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|45 to 105}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "TristanaE#PassiveDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Minimum Physical Damage (Active, base detonation, no stacks/crit bonus)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    60,
+    85,
+    110,
+    135,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.8
+    },
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|60 to 160}} {{as|(+ 80% '''bonus''' AD)}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "TristanaE.ActiveBaseDamage",
+    "TristanaE.ActiveBADRatio",
+    "TristanaE.APRatio"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Bonus damage per stack (multiplicative amp applied to base active damage)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "increase ''Explosive Charge's'' damage by {{ap|{{#var:e_a_s}}*100}}%, {{tip|stack|stacking}} up to 4 times for a maximum {{ap|{{#var:e_a_s}}*400}}% increase",
+   "bin": [
+    "TristanaE.ActivePerStackAmp"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Maximum stacks of Explosive Charge",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "{{tip|stack|stacking}} up to 4 times for a maximum {{ap|{{#var:e_a_s}}*400}}% increase, upon which the charge also detonates instantly",
+   "bin": [
+    "TristanaE.ActiveMaxStacks"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Crit-chance-based total damage amplification of the detonation",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.4
+    }
+   ],
+   "quote": "The charge's '''total''' damage is additionally increased by {{critical damage|0 to 40|critScaling=true}}",
+   "bin": [
+    "TristanaE.CritChanceModifier"
+   ],
+   "binNote": "Bin formula is (base+ratios) * (1 + CritChanceModifier(0.4) * critChance * (critDamage - 1)); wiki summarizes the resulting bonus range as 0 to 40% additional total damage at 100% crit chance and default crit damage."
+  },
+  {
+   "id": "e_6",
+   "meaning": "Duration the charge attaches to the target before detonating",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "tosses an explosive charge at the target enemy that attaches to them for 4 seconds",
+   "bin": [
+    "TristanaE.ActiveDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The initial application of the active deals 0 physical damage, only used to trigger turret aggro and on-hit-style stack effects.",
+   "quote": "''Explosive Charge's'' initial application deals 0 {{as|physical|physical damage}} {{tt|damage|sourcetype pending for test, but probably proc}}, triggering {{tip|turret}} aggro.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Tristana is automatically ordered to basic attack the target after the cast completes, adding an extra attack.",
+   "quote": "'''Tristana''' will be automatically ordered to basic attack the target after the cast time.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Basic attacks and abilities against the charged target add stacks (up to 4), each increasing the eventual detonation damage by 25%, and reaching the cap detonates the charge instantly.",
+   "quote": "'''Tristana's''' {{tip|basic attacks}} {{tip|on-hit}} and {{tip|abilities}} against the target increase ''Explosive Charge's'' damage by {{ap|{{#var:e_a_s}}*100}}%, {{tip|stack|stacking}} up to 4 times for a maximum {{ap|{{#var:e_a_s}}*400}}% increase, upon which the charge also detonates instantly.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The detonation still damages the primary target even if it has since become untargetable.",
+   "quote": "''Explosive Charge's'' detonation will deal damage to the primary target even if they have become {{tip|untargetable}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "All passive on-kill explosions count as a single cast instance, while each cast of the active is its own separate cast instance.",
+   "quote": "All explosions by ''Explosive Charge's'' passive count as the same cast instance. Every cast of the active is a separate cast instance:",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Dodge, block and blind prevent the active's stacks from being applied via basic attacks.",
+   "quote": "{{tip|Dodge}}, {{tip|block}} and {{tip|blind}} all prevent ''Explosive Charge's'' stack application via basic attacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The charge's stacks applied by basic attacks are an on-hit effect, so they interact with items like Guinsoo's Rageblade and Runaan's Hurricane.",
+   "quote": "''Explosive Charge's'' stacks from basic attacks are applied as an {{tip|on-hit}} effect and will therefore interact with {{iis|Guinsoo's Rageblade}} Phantom Hit and {{iis|Runaan's Hurricane}} bolts.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown starts on cast, not on detonation.",
+   "quote": "cdstart     = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Buster Shot applies the last stack, detonation is delayed until the knockback ends or the 4 seconds expire.",
+   "quote": "''If {{ai|Buster Shot|Tristana}} is used to apply the last stack, the detonation will instead be delayed until the end of the {{tip|airborne|knock back}} or the 4 seconds expire.''",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TristanaE.PassiveRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "TristanaE.ActiveRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "TristanaE.ActiveTowerRadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

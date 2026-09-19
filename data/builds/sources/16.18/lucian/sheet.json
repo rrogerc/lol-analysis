@@ -1,0 +1,533 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "LucianPassive",
+    "key": "Characters/Lucian/Spells/LucianPassiveAbility/LucianPassive",
+    "dataValues": {
+     "PassiveDuration": 3.5,
+     "PassiveDamageBase": 15,
+     "OnhitPassiveDuration": 6,
+     "NumAuto": 2,
+     "MaxAutos": 4,
+     "CCRange": 1000
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "(byLevelL[0.5/0.5/0.5/0.5/0.5/0.5/0.55/0.55/0.55/0.55/0.55/0.55/0.6/0.6/0.6/0.6/0.6/0.6])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.55,
+          0.55,
+          0.55,
+          0.55,
+          0.55,
+          0.55,
+          0.6,
+          0.6,
+          0.6,
+          0.6,
+          0.6,
+          0.6
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "CritDamage": {
+      "expr": "TotalDamage * 1.75 + 1xbonus critDamage",
+      "modifies": "TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "MinionDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "MinionCritDamage": {
+      "expr": "MinionDamage * 1.75 + 1xbonus critDamage",
+      "modifies": "MinionDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "PassiveTotalDamage": {
+      "expr": "PassiveDamageBase=15 + 0.2xad",
+      "flat": 15,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "PassiveDamageBase"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "LucianQ",
+    "key": "Characters/Lucian/Spells/LucianQAbility/LucianQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      48,
+      56,
+      64,
+      72,
+      80
+     ]
+    },
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       115,
+       150,
+       185,
+       220
+      ]
+     },
+     "BonusADRatio": 1,
+     "Range": 1000,
+     "Width": 100
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/115/150/185/220] + (BonusADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        115,
+        150,
+        185,
+        220
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "LucianW",
+    "key": "Characters/Lucian/Spells/LucianWAbility/LucianW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 60,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       110,
+       145,
+       180,
+       215
+      ]
+     },
+     "MoveSpeedAmount": {
+      "axis": "rank",
+      "v": [
+       60,
+       65,
+       70,
+       75,
+       80
+      ]
+     },
+     "BuffDuration": 1,
+     "VisionBubbleSize": 200,
+     "VisionBubbleDuration": 1,
+     "DebuffDuration": 6,
+     "DebuffMarkerDuration": 1,
+     "ImpactRangeCheck": 700
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[75/110/145/180/215] + 0.9xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        110,
+        145,
+        180,
+        215
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "LucianE",
+    "key": "Characters/Lucian/Spells/LucianEAbility/LucianE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15.5,
+      15,
+      14.5,
+      14
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      32,
+      24,
+      16,
+      8,
+      0
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CDRefundBase": 1,
+     "CDRefundChampion": 2,
+     "MaxDistance": 425,
+     "MinDistance": 200,
+     "DashSpeed": 1350
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "LucianR",
+    "key": "Characters/Lucian/Spells/LucianRAbility/LucianR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      100,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       30,
+       45
+      ]
+     },
+     "DamageADRatio": 0.25,
+     "DamageAPRatio": 0.15,
+     "CritValueMod": 1,
+     "PercentDamageAmpToMinions": 200,
+     "NumShots": 22,
+     "Duration": 3,
+     "RecastLockout": 0.75,
+     "RangeCheck": 1050,
+     "VisionBubbleRadius": 100,
+     "VisionBubbleDuration": 1
+    },
+    "calcs": {
+     "DamagePerBullet": {
+      "expr": "BaseDamage=[15/30/45] + (DamageADRatio=0.25)xad + (DamageAPRatio=0.15)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        30,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "DamageADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageADRatio",
+       "DamageAPRatio"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "TotalNumShots * BaseDamage=[15/30/45] + (DamageADRatio=0.25)xad + (DamageAPRatio=0.15)xap",
+      "modifies": "TotalNumShots",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BaseDamage",
+       "DamageADRatio",
+       "DamageAPRatio"
+      ]
+     },
+     "TotalNumShots": {
+      "expr": "(1 + ((CritValueMod=1)xcritChance)*(1xcritDamage + -1)) * NumShots=22",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CritValueMod",
+       "NumShots"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "LucianQ",
+  "W": "LucianW",
+  "E": "LucianE",
+  "R": "LucianR",
+  "P": "LucianPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 320,
+   "{6216bf7b}": 43,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.15
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Lucian",
+  "name": "Lucian",
+  "partype": "Mana",
+  "passive": "Lightslinger",
+  "spells": [
+   {
+    "id": "LucianQ",
+    "name": "Piercing Light",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     48,
+     56,
+     64,
+     72,
+     80
+    ]
+   },
+   {
+    "id": "LucianW",
+    "name": "Ardent Blaze",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "LucianE",
+    "name": "Relentless Pursuit",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15.5,
+     15,
+     14.5,
+     14
+    ],
+    "cost": [
+     32,
+     24,
+     16,
+     8,
+     0
+    ]
+   },
+   {
+    "id": "LucianR",
+    "name": "The Culling",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     100,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Lightslinger": {
+    "damagetype": "Physical",
+    "spelleffects": "attack",
+    "targeting": "Passive",
+    "affects": "Enemies",
+    "occurrence": "On-hit"
+   }
+  },
+  "Q": {
+   "Piercing Light": {
+    "damagetype": "Physical",
+    "spelleffects": "AoE",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Ardent Blaze": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies / Self, Allies",
+    "costtype": "Mana"
+   },
+   "Ardent Blaze 2": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies / Self, Allies",
+    "costtype": "Mana"
+   },
+   "Ardent Blaze 3": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies / Self, Allies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Relentless Pursuit": {
+    "targeting": "Location",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "The Culling": {
+    "damagetype": "Physical",
+    "spelleffects": "aoedot",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

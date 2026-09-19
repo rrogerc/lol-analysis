@@ -1,0 +1,134 @@
+{
+ "champion": "morgana",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dark Binding: single-target skillshot damage that lands after its 0.25s cast; the root itself is CC and ignored."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Tormented Shadow: on-cast damage instance plus a tick every 0.5s for 5s (up to 10 further ticks) while the zone persists on the dummy."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Each Tormented Shadow tick scales from its base value up to double as the target's missing-health percentage rises."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Every landed Morgana ability hit (including W's own ticks) triggers Soul Siphon, refunding 5% of W's total cooldown per trigger; simultaneous triggers stack."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Soul Shackles deals an initial hit on cast and, since a stationary dummy cannot break the 3s tether, an identical second magic-damage hit lands automatically 3s later."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Soul Siphon converts 18% of post-mitigation ability damage dealt into self-healing; only relevant if Morgana is the survival-fight subject and lands damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Black Shield only absorbs magic damage and grants CC immunity; it deals no damage and is only read in a survival fight where Morgana is the target being kept alive."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-70, W 70-110, R 100) against Morgana's mana pool can cap total casts inside a 15s all-in, particularly at low levels or without mana items."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behavior (a skillshot cast, a ticking zone whose tick size depends on target missing-health, a self-referential cooldown-refund loop off every landed hit, and a two-part tethered burst with a guaranteed delayed second hit against an immobile target) is fully expressible as combinations of plain-cast, dot, conditional-damage, cooldown-manipulation, and recast-or-multipart; nothing requires custom engine logic beyond these."
+ },
+ "unsettled": [
+  {
+   "question": "What is W's actual damage at 0% missing health: half of MorganaW.BaseDamage (as the wiki's 'Minimum Damage Per Tick' states, 9 to 35 +10% AP) or the full BaseDamage+0.2xAP value (as the bin's row literally named MorganaW#TotalMinDamage computes, which numerically equals the wiki's stated MAXIMUM tick)?",
+   "options": [
+    "Use the wiki's stated minimum (BaseDamage halved, +10% AP) as the 0%-missing floor and double it at 100% missing",
+    "Use the bin's TotalMinDamage (full BaseDamage, +20% AP) as the 0%-missing floor and double it via MissingHealthAmpPercent to reach the bin's TotalMaxDamage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Minimum Damage Per Tick|{{ap|9 to 35}} {{as|(+ 10% AP)}}|Maximum Damage Per Tick|{{ap|9*2 to 35*2}} {{as|(+ {{ap|10*2}}% AP)}}}}",
+    "MorganaW#TotalMinDamage = BaseDamage=[18/31/44/57/70] + BaseApRatioxap",
+    "MorganaW#TotalMaxDamage = TotalMinDamage * 1 + MissingHealthAmpPercent=1"
+   ]
+  },
+  {
+   "question": "Is Tormented Shadow's missing-health damage amp recalculated per tick against the dummy's live (falling) health, or fixed once when the zone is cast?",
+   "options": [
+    "Recomputed every 0.5s tick using the target's current health at that moment",
+    "Locked in once at cast time and applied identically to every tick of that cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "increased by {{pp|type=target's '''missing''' health|key=%|key1=%|0 to 100 for 11|0 to 100|formula=1% per 1% of target's '''missing''' health}}|health}}"
+   ]
+  },
+  {
+   "question": "Does Soul Siphon's 5%-of-total-cooldown refund shrink Tormented Shadow's cooldown live while it's counting down (letting a second W be cast well before the nominal 12s if enough hits land), or does it only apply once and get consumed at the next cooldown start?",
+   "options": [
+    "Refund is applied immediately to the live, ticking-down cooldown timer, so W can be recast earlier than 12s",
+    "Refund accumulates but is only realized the next time the ability enters its cooldown, i.e. does not shorten the current wait"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Tormented Shadow's'' {{sti|'''current''' cooldown}} is reduced by 5% of its '''total''' cooldown whenever ''{{ai|Soul Siphon|Morgana}}'' triggers. Simultaneous triggers from multiple targets will stack the cooldown reduction."
+   ]
+  },
+  {
+   "question": "Is Soul Shackles' aftereffect hit a fresh evaluation of MorganaR#TotalDamage at the moment it lands (3s after cast, so it could reflect stat changes mid-fight) or a value snapshotted from the initial cast?",
+   "options": [
+    "Aftereffect recomputes damage (base + 0.8xAP) using stats at the time it lands",
+    "Aftereffect reuses the exact damage number rolled at the initial hit"
+   ],
+   "impact": "low",
+   "quotes": [
+    "If a target does not break their tether by the end of its duration, they are dealt the same {{as|magic damage}} again and become {{tip|stun|stunned}} for a duration"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (Soul Shackles) while all cooldowns are fresh, since it is Morgana's largest one-time burst and starts the 3s tether that guarantees a free second hit later.",
+   "Immediately follow with W (Tormented Shadow) on the dummy's location for its on-cast hit and to start the 5s, 0.5s-interval tick DoT.",
+   "Cast Q (Dark Binding) at the dummy for its flat magic damage.",
+   "Let each landed hit (R's initial hit, W's on-cast hit and every subsequent tick, Q's hit) trigger Soul Siphon and shave 5% off W's total cooldown; recast W again as soon as it comes off cooldown to start another full tick cycle within the 15s window.",
+   "Recast Q again once its 10s cooldown is up (around the 10-11s mark) for another flat hit.",
+   "Allow Soul Shackles' aftereffect (an identical magic-damage hit plus stun) to land automatically ~3s after the initial cast, since the stationary dummy can never break the tether.",
+   "Do not cast E (Black Shield) in the damage fight: it deals no damage and only matters for a survival scenario.",
+   "Sequence casts to stay within the mana pool, prioritizing the second W cast (main DoT/DPS engine) and Q over any non-damaging spend."
+  ],
+  "questions": [
+   "Does the simulator model Soul Siphon's cooldown refund as live-reducing W's ongoing cooldown timer, or only applied at the next cooldown start? This changes how many W casts fit in 15s.",
+   "Should the opening order be R into W into Q, or does the intended combo (informed by real play, where Q's root sets up landing other abilities) put Q first even though CC is ignored in this dummy fight?",
+   "Should R be assumed available at the start of the 15s fight (i.e., the build/level scenario is a full-cooldown burst check), given its 100-120s cooldown otherwise never permits a second cast?",
+   "Is Tormented Shadow's missing-health amp meant to be evaluated per tick against the live, falling dummy health, materially raising total DoT damage over the fight versus a fixed 0%-missing assumption?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

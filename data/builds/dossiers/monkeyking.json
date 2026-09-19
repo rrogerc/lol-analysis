@@ -1,0 +1,885 @@
+{
+ "champion": "monkeyking",
+ "abilities": {
+  "P": {
+   "name": "Stone Skin",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus armor from level",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      6,
+      6.235,
+      6.471,
+      6.706,
+      6.941,
+      7.176,
+      7.412,
+      7.647,
+      7.882,
+      8.118,
+      8.353,
+      8.588,
+      8.824,
+      9.059,
+      9.294,
+      9.529,
+      9.765,
+      10
+     ],
+     "terms": [],
+     "quote": "{{pp|6 + (10-6)/17*(x-1) for 20}} '''bonus''' armor",
+     "bin": [
+      "MonkeyKingPassive#BonusArmor"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "health regen per 5 seconds as percent of max health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.0035,
+     "terms": [],
+     "quote": "{{fd|0.35}}% of his {{sti|'''maximum''' health}}}} every 5 seconds.",
+     "bin": [
+      "MonkeyKingPassive.HealthPercentPer5"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "duration a stack of Strength of Stone lasts before refreshing/expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds, refreshing on subsequent hits and stacking up to 5 times",
+     "bin": [
+      "MonkeyKingPassive.StackDuration"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "maximum stacks of Strength of Stone",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "stacking up to 5 times",
+     "bin": [
+      "MonkeyKingPassive.MaxStacks"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "interval at which stacks expire one by one once duration ends",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "Stacks expire one by one every second when the duration ends.",
+     "bin": [
+      "MonkeyKingPassive.FallOffRate"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "increase to Stone Skin's armor and regen effects per stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.0,
+     "terms": [],
+     "quote": "Stone Skin's effects are increased by 100%,",
+     "bin": [
+      "MonkeyKingPassive.StackMultiplier"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Stacks of Strength of Stone are granted whenever Wukong or his clone damage an enemy champion or monster with basic attacks or abilities, including on-hit, but not against invulnerable targets.",
+     "quote": "Stacks of ''Strength of Stone'' are also granted {{tip|on-hit}}, but will specifically not be if the target is {{tip|invulnerable}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Hits from Wukong's Warrior Trickster clone also generate stacks of Strength of Stone.",
+     "quote": "Whenever '''Wukong''' or his ''{{ai|Warrior Trickster|Wukong|clone}}'' damage an enemy {{tip|champion}} or {{tip|monster}}, he generates a {{tip|stack}} of ''Strength of Stone''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The passive can block a spell shield-consuming effect (spellshield/parry flag).",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MonkeyKingPassive.CombatDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "MonkeyKingPassive.TooltipMult",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "MonkeyKingPassive.TooltipMaxHealthPercentPer5",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Crushing Blow",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_2",
+     "meaning": "Bonus Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      45,
+      70,
+      95,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|20 to 120}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "MonkeyKingDoubleAttack#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Armor Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "armor",
+       "coef": [
+        0.1,
+        0.15,
+        0.2,
+        0.25,
+        0.3
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|10 to 30}}% of target's armor}}",
+     "bin": [
+      "MonkeyKingDoubleAttack.ArmorShredPercent"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Armor reduction duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "inflict {{sti|armor penetration|{{as|armor reduction}}}} for 3 seconds",
+     "bin": [
+      "MonkeyKingDoubleAttack.ShredDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Window to use the empowered attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "empowers his next {{tip|basic attack}} within 5 seconds",
+     "bin": [
+      "MonkeyKingDoubleAttack.BuffDuration"
+     ],
+     "binNote": "Wiki says the empowerment window is 5 seconds while bin BuffDuration is 6; recorded the wiki's stated value and flagged the discrepancy."
+    },
+    {
+     "id": "q_6",
+     "meaning": "Cooldown reduction per damage instance from Wukong or clone",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{sti|cooldown}} is reduced by {{fd|0.5}} seconds whenever '''Wukong''' or his ''{{ai|Warrior Trickster|Wukong|clone}}'' damage an enemy",
+     "bin": [
+      "MonkeyKingDoubleAttack.CooldownDecrease"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Crushing Blow empowers the next basic attack with an uncancellable windup, bonus range, and bonus damage, then applies the armor reduction after the attack lands.",
+     "quote": "empowers his next {{tip|basic attack}} within 5 seconds to have an {{tip|uncancellable windup}}, gain {{sti|range|'''bonus''' range}}, deal {{as|'''bonus''' physical damage}} and then inflict {{sti|armor penetration|{{as|armor reduction}}}} for 3 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage attack resets Wukong's (and his clone's) basic attack timer, so other abilities can be used during the attack's animation.",
+     "quote": "Crushing Blow {{tip|basic attack reset|resets}} '''Wukong's''' and his {{ai|Warrior Trickster|Wukong|clone's}} basic attack timer. Other abilities can be used during the attack's animation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown begins counting down only after the empowered attack lands (or the window expires), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage portion is tagged as proc damage while the basic attack portion counts as both basic and spell damage; this affects on-hit interactions.",
+     "quote": "The {{tip|basic attack}} portion of ''Crushing Blow'' is tagged as both {{tip|basic damage}} and {{tip|spell damage}}, while the bonus damage portion is {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against structures and wards the attack still triggers but the armor reduction does not apply (irrelevant to a dummy fight but noted for completeness).",
+     "quote": "''Crushing Blow'' triggers on {{tip|turret|structures}} and {{tip|ward|wards}} but the armor reduction is not applied.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MonkeyKingDoubleAttack.AttackRangeBonus",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Warrior Trickster",
+   "cooldown": {
+    "values": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "quote": "{{ap|22 to 18}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     55,
+     50,
+     45,
+     40
+    ],
+    "quote": "{{ap|60 to 40}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Clone Outgoing Damage",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "MonkeyKingDecoy.CloneDamageMod"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "invisibility duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "enters {{tip|invisibility}} for 1 second",
+     "bin": [
+      "MonkeyKingDecoy.StealthDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "clone duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "leaving behind a {{tip|clone}} of himself at his casting position for 4 seconds",
+     "bin": [
+      "MonkeyKingDecoy.CloneDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The clone can basic attack autonomously, prioritizing the last enemy Wukong damaged, and deals reduced damage scaled by CloneDamageMod.",
+     "quote": "The clone is {{tip|untargetable}} to allies and can basic attack autonomously, prioritizing the last enemy '''Wukong''' damaged.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The clone can gain the effects of Crushing Blow and Nimbus Strike's bonus attack speed, and casts Cyclone whenever Wukong does.",
+     "quote": "It can also gain the effects of ''{{ai|Crushing Blow|Wukong}}'' and ''{{ais|Nimbus Strike|Wukong}}'' {{as|'''bonus''' attack speed}}, and casts ''{{ai|Cyclone|Wukong}}'' whenever '''Wukong''' does.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Warrior Trickster during an ability's effects transfers them to the clone.",
+     "quote": "Casting ''Warrior Trickster'' during an ability's effects will transfer them to the clone.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Using a basic attack breaks the stealth at the end of the attack windup.",
+     "quote": "Using a basic attack breaks the stealth at the end of the attack windup.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Wukong dashes in the target direction and can cast any of his abilities during the dash.",
+     "quote": "'''Wukong''' can cast any of his [[champion ability|abilities]] during the dash.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MonkeyKingDecoy.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MonkeyKingDecoy.RangeClamp",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MonkeyKingDecoy.MinRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Nimbus Strike",
+   "cooldown": {
+    "values": [
+     10,
+     9.25,
+     8.5,
+     7.75,
+     7
+    ],
+    "quote": "{{ap|10 to 7}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "quote": "{{ap|30 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "MonkeyKingNimbus#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "MonkeyKingNimbus.AttackSpeed"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration of the bonus attack speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "gains {{sti|{{as|'''bonus''' attack speed}}}} for 5 seconds",
+     "bin": [
+      "MonkeyKingNimbus.AttackSpeedDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Wukong dashes to the target enemy and sends untargetable clones to strike up to two additional enemies near the target, each dealing the magic damage separately.",
+     "quote": "sends out {{tip|untargetable}} ''clones'' to strike up to two additional enemies near the target's location, dealing {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Crushing Blow (Q) can be cast during the Nimbus Strike dash.",
+     "quote": "{{ai|Crushing Blow|Wukong}} can be cast during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Nimbus Strike has no cast time.",
+     "quote": "cast time = none",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MonkeyKingNimbus.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MonkeyKingNimbus.EndPointOffsetDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MonkeyKingNimbus.ExtraTargets",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MonkeyKingNimbus.ExtraTargetRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MonkeyKingNimbus.MonsterDamageRatio",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Cyclone",
+   "cooldown": {
+    "values": [
+     130,
+     110,
+     90
+    ],
+    "quote": "{{ap|130 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage Per Tick",
+     "role": "dot",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.01,
+        0.015,
+        0.02
+       ]
+      },
+      {
+       "stat": "ad",
+       "coef": 0.34375
+      }
+     ],
+     "quote": "{{as|{{ap|8/8 to 16/8}}% of target's '''maximum''' health}} {{as|(+ {{ap|275/8}}% AD)}}",
+     "bin": [
+      "MonkeyKingSpinToWin.BasePercentMaxHPDmgPerSec",
+      "MonkeyKingSpinToWin.ADRatioPerSecond",
+      "MonkeyKingSpinToWin.SecondsPerTick"
+     ],
+     "binNote": "Bin stores per-second rates (BasePercentMaxHPDmgPerSec=[0.04,0.06,0.08], ADRatioPerSecond=1.375); the wiki's per-tick numbers equal those rates multiplied by SecondsPerTick=0.25 (0.04*0.25=0.01, 1.375*0.25=0.34375), matching the tick-rate the wiki quotes as '.../8'."
+    },
+    {
+     "id": "r_1b",
+     "meaning": "Total Physical Damage per full cast (8 ticks, i.e. one 2-second spin)",
+     "role": "dot",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.08,
+        0.12,
+        0.16
+       ]
+      },
+      {
+       "stat": "ad",
+       "coef": 2.75
+      }
+     ],
+     "quote": "{{as|{{ap|8 to 16}}% of target's '''maximum''' health}} {{as|(+ 275% AD)}}",
+     "bin": [
+      "MonkeyKingSpinToWin.BasePercentMaxHPDmgPerSec",
+      "MonkeyKingSpinToWin.ADRatioPerSecond",
+      "MonkeyKingSpinToWin.SpinDuration",
+      "MonkeyKingSpinToWin#DamagePerSecondTotal",
+      "MonkeyKingSpinToWin#{26c20668}"
+     ],
+     "binNote": "This is a derived per-cast total, not a distinct bin row. #DamagePerSecondTotal (ADRatioPerSecond=1.375 x ad) and #{26c20668} (BasePercentMaxHPDmgPerSec=[0.04,0.06,0.08]) are explicitly per-second rates; multiplying each by SpinDuration=2 (the length of one 2-second spin, matching r_4) gives the wiki's per-cast totals: 0.04*2=0.08 ... 0.08*2=0.16 for the max-HP term, and 1.375*2=2.75 for the AD term. The bin's own #TotalDamageTT/#PercentHPDamageTT calculations perform this same multiplication but are marked tooltip-only, so this value restates their math using the underlying per-second rows instead."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Spin duration per cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "spins his staff around for up to 2 seconds",
+     "bin": [
+      "MonkeyKingSpinToWin.SpinDuration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "deals {{as|physical damage}} every {{fd|0.25}} seconds to enemies hit",
+     "bin": [
+      "MonkeyKingSpinToWin.SecondsPerTick"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Recast window after first cast ends",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "he can cast ''Cyclone'' a second time within 8 seconds of the first cast",
+     "bin": [
+      "MonkeyKingSpinToWin.RecastWindow"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Delay before recast is allowed",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "After 1 second, he can cast ''Cyclone'' a second time",
+     "bin": [
+      "MonkeyKingSpinToWin.LockoutTimeBetweenCasts"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Cyclone deals damage as repeated periodic ticks against every enemy hit, each tick a separate damage instance.",
+     "quote": "The staff deals {{as|physical damage}} every {{fd|0.25}} seconds to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cyclone recasts automatically after the first cast ends (or on another ability cast), effectively doubling total duration/damage if allowed to continue.",
+     "quote": "does so automatically afterwards or by casting another {{tip|ability}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting a basic ability always interrupts Cyclone, cutting its damage window short.",
+     "quote": "Casting a basic ability will always interrupt '''Wukong's''' ''Cyclone''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks one instance (one tick) of Cyclone's damage.",
+     "quote": "{{tip|Spell shield}} will block one instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cyclone's damage against monsters is capped per second, but this does not apply against champions.",
+     "quote": "''Cyclone's'' damage is capped at {{pp|200 to 600 for 3|6;11;16}} per second against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MonkeyKingSpinToWin.KnockupDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "MonkeyKingSpinToWin.MoveSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "MonkeyKingSpinToWin#MonsterCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MonkeyKingSpinToWin#TotalDamageTT",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "MonkeyKingSpinToWin#PercentHPDamageTT",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "MonkeyKingSpinToWin#MonsterCapTT",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nimbus Strike deals magic damage on the dash (fixed cast, no windup)"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Crushing Blow arms Wukong's next basic attack with bonus physical damage, extra range and an uncancellable windup"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The Crushing Blow attack resets Wukong's basic attack timer, letting another auto-attack (or ability) chain immediately"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Crushing Blow's landed attack shreds a percent of the target's armor for 3s"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Every instance of damage Wukong (or his clone) deals reduces Crushing Blow's cooldown by 0.5s"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Strength of Stone stacks (up to 5, 5s refresh, 1/sec falloff) scale Stone Skin's bonus armor and % max-health regen; defensive, matters for the survival fight"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nimbus Strike grants Wukong bonus attack speed for 5s on arrival"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cyclone ticks physical damage (%max HP + AD ratio) every 0.25s while spinning"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cyclone ends after up to 2s and can/does recast for a second 2s spin within an 8s window, with a 1s lockout before the recast is available"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (esp. W 60-40, E 30-50 rising with rank, R flat 100) can meaningfully cap casts inside a 15s fight depending on mana pool/regen"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W"
+   ],
+   "note": "Warrior Trickster's clone persists for 4s, auto-attacks independently, and can mirror Q/E/R effects at reduced (CloneDamageMod) damage, acting as a second damage source"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "The W clone is not a simple fire-and-forget pet: it auto-attacks on its own timer AND, if Wukong casts Q, E's attack-speed buff, or R while the clone exists (or simultaneously), the clone replicates that ability's effects at CloneDamageMod (40%-60%) damage, running its own copy of Crushing Blow's empowered attack / Cyclone's tick-DoT in parallel with Wukong's. The closed primitive list's pet-or-summon assumes an independent damage source but does not capture 'mirrors the caster's other ability casts, scaled by a separate damage modifier, with its own attack-reset/empowered-attack/dot interactions.' Simulating this faithfully needs bespoke logic layering the same primitives a second time on a second actor timeline."
+ },
+ "unsettled": [
+  {
+   "question": "Crushing Blow's empowerment window before the bonus attack expires: is it 5 seconds (wiki description) or 6 seconds (bin BuffDuration)?",
+   "options": [
+    "5 seconds as stated in the wiki prose",
+    "6 seconds as stored in MonkeyKingDoubleAttack.BuffDuration"
+   ],
+   "impact": "low",
+   "quotes": [
+    "empowers his next {{tip|basic attack}} within 5 seconds",
+    "MonkeyKingDoubleAttack.BuffDuration = 6"
+   ]
+  },
+  {
+   "question": "When the clone mirrors Q or R because Wukong cast them, does CloneDamageMod (40-60%) scale only the clone's plain basic attacks, or does it also scale the clone's copy of Crushing Blow's bonus damage and Cyclone's DoT?",
+   "options": [
+    "CloneDamageMod applies uniformly to all clone damage sources (attacks and mirrored abilities)",
+    "CloneDamageMod only reduces the clone's basic attacks; mirrored ability damage uses the ability's own numbers unscaled"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The clone deals reduced damage.",
+    "{{st|Clone Outgoing Damage|{{ap|40 to 60}}%}}",
+    "It can also gain the effects of ''{{ai|Crushing Blow|Wukong}}'' and ''{{ais|Nimbus Strike|Wukong}}'' {{as|'''bonus''' attack speed}}, and casts ''{{ai|Cyclone|Wukong}}'' whenever '''Wukong''' does."
+   ]
+  },
+  {
+   "question": "Does Cyclone's automatic/manual recast (the second up-to-2s spin) cost another 100 mana, or is the recast free since it is part of the same R activation?",
+   "options": [
+    "The recast pays the full 100 mana cost again",
+    "The recast is free, only the initial cast paid the cost"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cost         = 100",
+    "''Cyclone'' can be recast after {{fd|0.5}} seconds within the duration, and does so automatically afterwards or by casting another {{tip|ability}}."
+   ]
+  },
+  {
+   "question": "How many stacks of Strength of Stone (0-5) should be assumed active for the tank in the survival fight, given stacks require Wukong to land hits on the attacker (not guaranteed in a pure defense scenario)?",
+   "options": [
+    "Assume 0 stacks (worst case, purely defensive sim)",
+    "Assume max 5 stacks maintained throughout (best case, Wukong trades hits back)",
+    "Assume a ramp-up curve reaching max stacks partway through the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "he generates a {{tip|stack}} of ''Strength of Stone'' for 5 seconds, refreshing on subsequent hits and stacking up to 5 times"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting W to plant a clone at the current position; it will auto-attack the dummy and mirror later Q/E/R casts for extra parallel damage across the fight.",
+   "Cast Q to empower the next basic attack, then immediately auto-attack the dummy to land the bonus physical damage and apply the 3s armor shred.",
+   "Cast E to dash onto the dummy (can be cast mid-Crushing-Blow-windup per its description) for magic damage and the 5s bonus attack-speed buff.",
+   "Continue auto-attacking and recasting Q on cooldown (each landed Q attack also shaves 0.5s off Q's own cooldown and refreshes the armor shred) while Q/E are off Cyclone's channel.",
+   "Cast R (Cyclone) as a standalone block once Q/E have been used and are on cooldown, since casting a basic ability (Q/W/E) during Cyclone interrupts it; let it tick for its full 2s.",
+   "Recast R at the earliest opportunity (0.5s after the first cast ends, within the 8s window) for a second 2s spin, again without weaving in Q/W/E mid-spin.",
+   "After both Cyclone spins finish, resume Q on cooldown with auto-attacks in between for the remainder of the 15s window; E if its cooldown and mana allow another cast.",
+   "Let the clone continue auto-attacking and mirroring whatever Wukong casts for the rest of the fight, contributing reduced-damage instances of the same rotation in parallel."
+  ],
+  "questions": [
+   "Does 'casting a basic ability' interrupting Cyclone include only Q/W/E casts, or does a plain basic attack during the spin also cut Cyclone short?",
+   "Given R's long base cooldown (130/110/90s) versus a 15s fight, is only a single R activation (plus its 8s-window recast) realistically available, and should R be front-loaded or saved until after the Q/E opener to avoid wasting the interrupt-sensitive channel?",
+   "When the clone independently mirrors Wukong's R cast, does it run its own full 2s (or recast 4s) Cyclone tick sequence as a separate damage source, and does the clone's copy get interrupted independently of Wukong's own spin?",
+   "Should W be cast at the very start (to maximize the clone's 4s uptime and its chance to mirror the opening Q/E/R) or held until after the initial burst so it can mirror a mid-fight R recast instead?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

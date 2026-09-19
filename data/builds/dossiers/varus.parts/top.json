@@ -1,0 +1,158 @@
+{
+ "champion": "varus",
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Living Vengeance converts Varus' bonus attack speed into bonus AD and AP (11% standard / 33% empowered) whenever the kill buff is active."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "On-kill buff grants bonus attack speed (and via conversion, AD/AP) for 5-11s (standard) or the same duration empowered (30% AS) after a champion takedown."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Empowered Living Vengeance raises Varus' attack speed cap to 3.33."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piercing Arrow channels up to 4s (effects cap at 1.25s), blocking Hail of Arrows/Chain of Corruption and disabling basic attacks/most actions during the channel; damage and Blight-detonation bonus scale continuously with charge time."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Piercing Arrow deals damage only on its recast (charge itself deals none, and can be auto-cancelled with a partial mana refund); Blighted Quiver's active is a separate recastable buff (arm/consume/auto-expire) with its own 1s recast cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (50-70 for Q, 90 for E, 100 for R) can gate cast frequency across the 15s window; W is free."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blighted Quiver's passive on-hit bonus magic damage triggers on every qualifying basic attack."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Blight stacks (0-3) are applied by autoattacks and by Chain of Corruption's root, refresh on reapplication, and are detonated by any Varus ability hit for bonus magic damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blight-stack detonation damage scales with the target's maximum health per stack; Blighted Quiver's active scales with the target's missing health."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blighted Quiver's active arms the next Piercing Arrow within 5.5s with bonus magic damage based on target missing health."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming Blight stacks against a champion(-equivalent) target refunds remaining cooldown on Varus' basic abilities (13% per stack, up to 39%, boosted by Q charge time)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Hail of Arrows (0.5s delayed landing) and Chain of Corruption deal fixed rank/AD/AP-scaling damage on cast, on cooldown."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Hail of Arrows applies Grievous Wounds (40% reduced healing/regen) to the target; only matters for damage taken if the target self-heals, which a stationary dummy does not do."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic in Varus' kit -- the kill-triggered stat-converting buff, the charged/recast Q, the on-hit/consumable Blight-stack system with its missing-health and max-health scalings, the empowered-attack W active, the stack-consumption cooldown refund, and the plain-cast E/R -- is expressible as a combination of listed primitives (stat-conversion, timed-self-buff, attack-speed-interaction, charge-or-channel, recast-or-multipart, resource-budget, onhit-rider, target-stacks, conditional-damage, empowered-attack, cooldown-manipulation, plain-cast, target-debuff). Nothing requires a form change, pet, ammo system, or other bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "Does Piercing Arrow (Q) apply on-hit effects, so that Blighted Quiver's on-hit magic damage (and any on-hit item effects) trigger on every Q cast in addition to basic attacks?",
+   "options": [
+    "Q counts as an on-hit-applying attack (as in some patches of live League), so its hit also triggers Blighted Quiver's on-hit bonus magic damage",
+    "Q does not apply on-hit effects at all; only true basic attacks trigger the W on-hit rider"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Piercing Arrow|{{{2|}}}... deals {{as|physical damage}} to enemies hit",
+    "'''Varus'''' {{tip|basic attacks}} {{tip|on-hit}} deal {{as|'''bonus''' magic damage}}"
+   ]
+  },
+  {
+   "question": "When Blighted Quiver's stack-consumption cooldown refund triggers off a cast of Q, E, or R, does the refund also apply to the cooldown of that same ability (which just started ticking), or only to the other two basic abilities?",
+   "options": [
+    "The refund applies to the remaining cooldowns of all basic abilities including the one that just triggered the consumption",
+    "The refund only applies to abilities not currently on cooldown from this cast (i.e. excludes the ability just used)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "reduces the {{sti|'''remaining''' cooldowns}} of '''Varus' ''' basic abilities by {{#var:cdr}}% of each of their '''total''' cooldowns"
+   ]
+  },
+  {
+   "question": "In a 15s damage fight against a single non-respawning target dummy, can Living Vengeance's on-kill buff ever trigger (only at the moment the dummy is defeated), and if so does it happen too late in the fight to affect ranked damage/kill time?",
+   "options": [
+    "The buff never meaningfully triggers because the dummy only 'dies' at the fight's end, if at all, so Living Vengeance should be excluded from the simulated rotation",
+    "The dummy should be treated as already dead/reset at some point during the 15s window (e.g. per the framework's general kill-time ranking), letting the buff apply for the remainder of the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "When '''Varus''' kills an enemy, he gains {{sti|attack speed"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-cast Blighted Quiver's active (W) to arm it before the first Piercing Arrow.",
+   "Cast Chain of Corruption (R) as an opener (or as soon as it is up) for its flat magic damage and to rapidly apply 3 Blight stacks over ~1.75s.",
+   "Charge Piercing Arrow (Q) to the 1.25s effect cap and release, dealing maximized Q damage and detonating all current Blight stacks (boosted by the charge-time bonus and any armed W active bonus).",
+   "Cast Hail of Arrows (E) on cooldown for its physical damage, letting it consume any accumulated Blight stacks (including a second consumption ~0.3s later).",
+   "Auto-attack continuously in the gaps between ability casts/channels to keep applying and refreshing Blight stacks and to deal the W on-hit bonus magic damage.",
+   "Re-arm W's active before each subsequent Q cast, and repeat R > (auto-attacks) > full-charge Q > E on cooldown, using the cooldown refunds from stack consumption to fit in extra casts as the fight goes on."
+  ],
+  "questions": [
+   "Should Piercing Arrow always be charged to the full 1.25s effect cap, or does the post-effect cooldown-start rule make a partial charge better for total damage/kill time given more frequent casts?",
+   "Can Varus actually land a basic attack during Piercing Arrow's channel (disabled for most of it) or between other ability casts, and how should attack timing be modeled around the channel-block window?",
+   "Does the simulator allow W's active to be reliably re-armed before every Q cast within its 1s internal recast/5.5s empower window, or does that impose an effective minimum spacing between Q casts?",
+   "Is opening with R (to front-load Blight stacks for a subsequent big Q detonation) actually better for total 15s damage than opening with Q, given R's much longer cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,171 @@
+{
+ "name": "Traveler's Call / Traveler's Call 2",
+ "cooldown": {
+  "values": null,
+  "quote": "{{dv|{{tt|50|Chime spawn rate}}|{{tt|{{pp|changedisplay=true|type = number of Chimes|8 to 4 for 5|0;20;40;55;70}}|Meep spawn rate}}}}"
+ },
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_meep_damage",
+   "meaning": "bonus magic damage dealt by meep-empowered basic attack",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": 30,
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{as|30|magic damage}} (''+ {{as|6|magic damage}} per 5 {{as|Chimes|buzzword2}} collected'') {{as|(+ 40% AP)}} {{as|'''bonus''' magic damage}}",
+   "bin": [
+    "BardPTooltip_D_nS#MeepDamageNoChime"
+   ]
+  },
+  {
+   "id": "p_meep_damage_per_chime_checkpoint",
+   "meaning": "additional flat meep damage per 5 Chimes collected",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "+ {{as|6|magic damage}} per 5 {{as|Chimes|buzzword2}} collected",
+   "bin": [
+    "BardPTooltip_D_nS.DamagePerCheckpoint"
+   ],
+   "binNote": "TooltipChimeDamageCheckpoint=5 is the chime-count denominator ('per 5 Chimes'), not a damage number itself; the damage-per-checkpoint value is DamagePerCheckpoint=6, matching the wiki's +6."
+  },
+  {
+   "id": "p_meep_slow",
+   "meaning": "slow applied by meeps at 5+ Chimes, duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "{{tip|slow}} damaged enemies by {{pp|type = number of Chimes|key=%|25 to 75 for 6|5;25;45;60;75;85}} for 1 second",
+   "bin": [
+    "BardPTooltip_D_nS.SlowDuration"
+   ]
+  },
+  {
+   "id": "p_meep_spawn_cd",
+   "meaning": "base cooldown for meep generation",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 8,
+   "terms": [],
+   "quote": "{{ci|Bard}} generates {{as|meeps|buzzword3}} that are each consumed in his basic attacks",
+   "bin": [
+    "BardPTooltip_D_nS.BaseMeepSpawnCD"
+   ],
+   "binNote": "The wiki does not state the base meep spawn cooldown number in the description text (only the reduced-by-Chimes progression in the static box); recorded from the bin as it directly affects on-hit damage frequency in a dummy fight."
+  },
+  {
+   "id": "p_max_meep_stacks",
+   "meaning": "maximum number of Meeps Bard can hold at once",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "'''Bard''' can have up to {{pp|type = number of Chimes|1 to 9 for 9|0;10;30;50;65;80;90;95;100}} {{as|Meeps|buzzword3}} at a time.",
+   "bin": [],
+   "binNote": "No data value named 'MaxPacks' exists on BardPTooltip_D_nS; the sheet lists MaxPacks under BardW instead (BardW.MaxPacks=3), and the wiki's own progression (1 to 9) does not match that number either. This is a disagreement/mismatch across sources that could not be resolved to a single bin row; kept the wiki's stated number and left bin empty rather than cite a wrong or unrelated row."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Meep-empowered attacks are consumed on-attack, dealing bonus magic damage on top of the basic attack.",
+   "quote": "his basic attacks are empowered to each consume a {{as|Meep|buzzword3}} {{tip|on-attack}} to deal {{as|30|magic damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At 15+ Chimes, meep damage also hits enemies within 150 units of the primary target and in a cone behind them, as a separate area-damage instance.",
+   "quote": "At {{as|15 Chimes|buzzword2}}, {{as|Meeps|buzzword3}} deal the damage to enemies within 150 units of the primary target as well as those in a cone behind them.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Meep damage on the primary target applies as spell damage, while the cone/splash damage on secondary targets applies as area damage.",
+   "quote": "The damage from {{as|Meeps|buzzword3}}:\n** Applies as {{tip|spell damage}} on the primary target.\n** Applies as {{tip|area damage}} on secondary target(s).",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the meep-empowered attack is dodged, blocked, or Bard is blinded, the basic attack itself deals no damage but the meep damage is still applied separately.",
+   "quote": "If a {{as|Meep|buzzword3}} empowered auto attack is {{tip|dodged}}, {{tip|blocked}} or when '''Bard''' is {{tip|blind|blinded}}, the basic attack itself will deal no damage, but the {{as|Meep|buzzword3}} damage will still be applied.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack does not trigger against structures and wards.",
+   "quote": "The empowered attack will not trigger against [[structures]] and [[ward]]s.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Meeps grant additional stacks of Electrocute and Conqueror.",
+   "quote": "{{as|Meeps|buzzword3}} grant additional stacks of {{ri|Electrocute}} and {{ri|Conqueror}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Collecting a Chime restores mana equal to a percentage of maximum mana.",
+   "quote": "restores {{sti|mana|{{as|12% '''maximum''' mana}}}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Only Meep cone attacks (not the combined basic-attack instance) are absorbed by spell shields.",
+   "quote": "Only {{as|Meep|buzzword3}} cone attacks are absorbed by {{tip|spell shield|spell shields}}. Those that deal damage together with the basic attack don't.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "BardPTooltip_D_nS.TooltipMSPerStack",
+   "reason": "utility"
+  },
+  {
+   "ref": "BardPTooltip_D_nS.TooltipMSMax",
+   "reason": "utility"
+  },
+  {
+   "ref": "BardPTooltip_D_nS.TooltipManaRestore",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "BardPTooltip_D_nS.ChimesPerUpgrade",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "BardPTooltip_D_nS.MeepAPRatio",
+   "reason": null
+  },
+  {
+   "ref": "BardPTooltip_D_nS.MaxSpeedStacks",
+   "reason": "utility"
+  },
+  {
+   "ref": "BardPTooltip_D_nS.SpeedStackDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "BardPTooltip_D_nS.TooltipChimeDamageCheckpoint",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "BardPTooltip_D_nS#ChimesForSlowUpgrade",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "BardPTooltip_D_nS#ChimesForSplashDamageUpgrade",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "BardPTooltip_D_nS#ChimesForSplashAreaUpgrade",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

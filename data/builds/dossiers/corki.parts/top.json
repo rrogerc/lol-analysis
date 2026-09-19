@@ -1,0 +1,137 @@
+{
+ "champion": "corki",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "basic attacks deal bonus true damage equal to 20% AD"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "passive converts a portion of AD into a separate true-damage instance on every attack"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "the true-damage on-hit portion is affected by crit modifiers, dealt as a simultaneous but separate instance from the physical attack"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "single AoE magic-damage instance on impact, on cooldown"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "W drops up to 3 ticking fire patches (2/s for 2.5s + 1s linger); E is a ticking cone (4/s for 4s)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "each E tick applies a stacking armor/MR shred (up to 4 stacks, 2s refreshing duration per stack)"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "E channels for 4 seconds, though it can be cast during W's dash"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "R"
+   ],
+   "note": "Missile Barrage is stocked as up to 4 ammo charges, each cast costs 1 ammo, recharges over time"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "every 3rd missile fired is a Big One dealing 2x damage with larger range/radius"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "on-hit basic attacks against champions reduce R's remaining recharge time, scaling with crit chance"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is expressible with standard primitives: an onhit true-damage rider with crit interaction (P), a plain-cast AoE nuke (Q), ticking DoT zones (W, E), a stacking target debuff (E), a channel that can be interrupted by another ability (E during W), and an ammo/recharge system with an nth-cast empowered shot and attack-triggered cooldown reduction (R). No unique mechanic here (e.g. stance switching, pet AI, self-damage) falls outside this list."
+ },
+ "unsettled": [
+  {
+   "question": "How should R's cast rate be modeled: as a flat 2s cooldown per cast (bin's 'cooldown' array), or as gated by a separate 20s-per-charge 'recharge' pool shown only on the wiki, with ammo capped at 4?",
+   "options": [
+    "R can be cast every 2s as long as ammo (max 4) is available, and ammo separately refills on a ~20s-per-charge timer independent of the 2s cast cooldown",
+    "The bin's cooldown=2 IS the effective per-charge recharge timer and the wiki's 'recharge=20' is stale/unrelated, so R effectively refills one charge every 2s"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown     = 2",
+    "recharge     = 20",
+    "'''Corki''' periodically [[stock]]s a ''Missile Barrage'' charge, up to a maximum of 4."
+   ]
+  },
+  {
+   "question": "When Corki dashes with W, how many of the up-to-3 fire patches actually overlap a single stationary target, since the wiki's 'total' damage figure (base*5, i.e. 5 ticks) only covers one patch's full duration?",
+   "options": [
+    "Assume only 1 patch hits the dummy (minimum dash / target stands in one spot), so W's damage per cast is the wiki's quoted per-patch total (5 ticks)",
+    "Assume all 3 patches overlap the dummy (Corki dashes through/around it at max range), tripling W's total damage per cast to up to 15 ticks"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Corki''' {{tip|dashes}} to the target location and drops bombs that leave up to 3 blazing patches along his path, depending on the distance traveled.",
+    "{{st|Magic Damage Per Tick|{{ap|30 to 90}} ... |Total Magic Damage|{{ap|30*5 to 90*5}} ...}}"
+   ]
+  },
+  {
+   "question": "If a target would die from Hextech Munitions' on-hit (physical) portion of an attack, the true-damage portion is described as a bug that gets skipped; should the damage-fight simulator honor this order-dependent bug for kill-time ranking against a target dummy?",
+   "options": [
+    "Model the bug: true damage instance is skipped if the target would already be dead from on-hit/physical damage in the same attack",
+    "Ignore the bug as unintended and always apply both damage instances in full for simulation purposes"
+   ],
+   "impact": "low",
+   "quotes": [
+    "If the target dies from {{tip|on-hit}} damage, the true damage portion will be skipped and only the physical damage applied.{{bug}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Corki enters the fight with full Missile Barrage ammo (4 charges) and starts within range of the dummy.",
+   "Open by firing Q (Phosphorus Bomb) at the dummy for the initial magic-damage poke.",
+   "Immediately begin firing R (Missile Barrage) charges roughly every 2 seconds, consuming all stored ammo (every 3rd shot is a Big One) while it recharges over the fight.",
+   "Cast W (Valkyrie) toward/through the dummy so its fire patches land on the target, casting E (Gatling Gun) during the W dash to stack both DoTs simultaneously.",
+   "Auto-attack the dummy continuously between ability casts to trigger Hextech Munitions' bonus true damage and to chip R's recharge via on-hit reduction.",
+   "Recast E on cooldown (every 12s) whenever facing the dummy, letting its 4-second channel run uninterrupted except for weaving R casts.",
+   "Recast Q on cooldown (~7-9s at low rank) and W on cooldown (~12-20s) as they come off cooldown, prioritizing whichever keeps mana available for continued R and E use.",
+   "Maintain auto-attacks as the default action whenever no ability is off cooldown, to keep the true-damage rider and R recharge reduction active for the full 15 seconds."
+  ],
+  "questions": [
+   "Does the simulated dummy fight assume Corki starts with 4 stocked R charges (as if just spawned) or only the 2 granted on first learning R?",
+   "Should Gatling Gun's 4-second channel be treated as uninterruptible (blocking Q/W/R casts) for the full duration, or can other spells be freely woven in mid-channel alongside it?",
+   "For Valkyrie, should the dummy be assumed stationary directly under Corki's dash path so all 3 fire patches land on it, or should a more conservative single-patch assumption be used?",
+   "Is crit chance assumed to be zero, partial, or itemized in the build being simulated, since it directly scales R's cooldown-reduction-on-hit value?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

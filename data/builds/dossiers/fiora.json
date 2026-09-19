@@ -1,0 +1,840 @@
+{
+ "champion": "fiora",
+ "abilities": {
+  "P": {
+   "name": "Duelist's Dance / Duelist's Dance 2",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_vital_delay",
+     "meaning": "time for a Vital to become targetable",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}} seconds to become targetable",
+     "bin": [],
+     "binNote": "no matching data value in the sheet for this timing"
+    },
+    {
+     "id": "p_vital_linger",
+     "meaning": "time a Vital lingers after becoming targetable before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 13.25,
+     "terms": [],
+     "quote": "linger for {{fd|13.25}} seconds afterwards",
+     "bin": [],
+     "binNote": "no matching data value in the sheet for this timing"
+    },
+    {
+     "id": "p_damage",
+     "meaning": "bonus true damage dealt when striking a Vital, percent of target's max health",
+     "role": "damage",
+     "damageType": "true",
+     "by": "const",
+     "base": 0.03,
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.0004,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.04
+        }
+       ]
+      }
+     ],
+     "quote": "3% {{as|(+ 4% per 100 '''bonus''' AD)}} of target's '''maximum''' health",
+     "bin": [
+      "FioraPassive#PassiveDamageTotal"
+     ]
+    },
+    {
+     "id": "p_heal",
+     "meaning": "heal amount when striking a Vital, by champion level",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      35,
+      38.8,
+      42.6,
+      46.5,
+      50.3,
+      54.1,
+      57.9,
+      61.8,
+      65.6,
+      69.4,
+      73.2,
+      77.1,
+      80.9,
+      84.7,
+      88.5,
+      92.4,
+      96.2,
+      100
+     ],
+     "terms": [],
+     "quote": "{{tip|heal}} '''Fiora''' for {{pplevel|35 to 100|color=heal}}",
+     "bin": [
+      "FioraPassive#PassiveHealAmount"
+     ],
+     "binNote": "sheet gives only endpoints byLevel(35..100); exact per-level curve is an estimate assuming linear scaling"
+    },
+    {
+     "id": "p_ms_decay_duration",
+     "meaning": "duration over which the movement speed burst decays",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.85,
+     "terms": [],
+     "quote": "decays over {{fd|1.85}} seconds",
+     "bin": [],
+     "binNote": "MovementSpeedDuration bin value is 2, not 1.85; disagreement between bin and wiki text"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Vitals can be triggered by any source of damage Fiora deals, except default damage and reactive damage types.",
+     "quote": "{{as|Vitals|buzzword}} can be triggered by any source of damage '''Fiora''' deals, except those with {{tip|default damage}} and {{tip|reactive damage}} types.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vitals will not trigger if the attack is dodged or missed while Fiora is blinded; block will not prevent a trigger.",
+     "quote": "{{as|Vitals|buzzword}} will not trigger if the attack is {{tip|dodge|dodged}} or missed while '''Fiora''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the Vital is triggered by Lunge (Q), it can be dodged but not blocked, and triggers even if Fiora is blinded.",
+     "quote": "If the {{as|Vital|buzzword}} is triggered by {{ai|Lunge|Fiora}}, it can be {{tip|dodge|dodged}}, but it can't be {{tip|block|blocked}} and will trigger even if '''Fiora''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Striking a vital deals bonus true damage, heals Fiora, and grants her bonus movement speed.",
+     "quote": "Striking a vital deals {{as|'''bonus''' true damage}} based on the {{as|target's '''maximum''' health}}, {{tip|heals}} '''Fiora''' and grants her a burst of {{as|{{sti|movement speed}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After a Vital expires, Fiora identifies a new one on her target.",
+     "quote": "After a {{as|Vital|buzzword}} expires, '''Fiora''' identifies a new one on her target.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FioraPassive.PassiveDamageADRatio",
+     "reason": null
+    },
+    {
+     "ref": "FioraPassive.PassiveDamageBase",
+     "reason": null
+    },
+    {
+     "ref": "FioraPassive.MovementSpeedDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Lunge",
+   "cooldown": {
+    "values": [
+     13,
+     11.25,
+     9.5,
+     7.75,
+     6
+    ],
+    "quote": "{{ap|13 to 6}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      80,
+      90,
+      100,
+      110
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.9,
+        0.95,
+        1.0,
+        1.05,
+        1.1
+       ]
+      }
+     ],
+     "quote": "{{ap|70 to 110}} {{as|(+ {{ap|90 to 110}}% '''bonus''' AD)}}",
+     "bin": [
+      "FioraQ.Damage",
+      "FioraQ.bADRatio"
+     ],
+     "binNote": "FioraQ#TotalDamage's calculation references a BADRatio field that the sheet marks as missing; the ratio values matching the wiki (0.9-1.1) are instead carried by the separate FioraQ.bADRatio data row, which is otherwise unread by any named calculation."
+    },
+    {
+     "id": "q_2",
+     "meaning": "cooldown reduction when Lunge stabs a target",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "Stabbing a target reduces ''Lunge's'' {{sti|cooldown}} by 50%.",
+     "bin": [
+      "FioraQ.CDRefundPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Lunge deals basic damage but also triggers spell effects (spell damage), and does not apply on-attack effects.",
+     "quote": "''Lunge'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lunge applies on-hit effects but does not apply on-attack effects.",
+     "quote": "''Lunge'' does not apply {{tip|on-attack}} effects but is special cased to stack {{tip|Energized}} upon hitting an enemy.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lunge's damage can be dodged or blocked, negating its damage.",
+     "quote": "''Lunge'' can be {{tip|dodge|dodged}} or {{tip|block|blocked}}, negating its damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Fiora does not stab if the dash is interrupted.",
+     "quote": "'''Fiora''' does not stab if the {{tip|dash}} is {{tip|interrupt|interrupted}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Riposte",
+   "cooldown": {
+    "values": [
+     24,
+     22,
+     20,
+     18,
+     16
+    ],
+    "quote": "{{ap|24 to 16}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      110,
+      150,
+      190,
+      230,
+      270
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|110 to 270}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "FioraW.BaseDamage",
+      "FioraW#StabDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Riposte total duration (block window before shock fires)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds, during which she is {{tip|lockout|unable to act}}",
+     "bin": [
+      "FioraW.ParryDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of slow/cripple or stun applied to the enemy champion struck",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slowed and crippled by 25% for 2 seconds",
+     "bin": [
+      "FioraW.CCDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "attack speed/damage cripple percent applied to target",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": -0.25,
+     "terms": [],
+     "quote": "slowed and crippled by 25% for 2 seconds",
+     "bin": [
+      "FioraW.AttackSlowPercent"
+     ],
+     "binNote": "Bin stores this as a negative modifier (-0.25); wiki states the magnitude as 25%. Using the bin's signed value here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Riposte prevents all incoming non-turret damage during its parry window, but is not true invulnerability: life steal/heal based on damage still triggers and shields absorb before it applies.",
+     "quote": "''Riposte'' does not grant {{tip|invulnerability}} but instead reduces any incoming damage by 100% late into the damage event.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shock deals damage after a 0.5s poise, hitting all enemies in a line until it collides with an enemy champion.",
+     "quote": "sends a shock with her sword in a line in the target direction, dealing {{as|magic damage}} to all enemies hit until colliding with an enemy champion",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Riposte negates a hostile immobilizing effect, the target is stunned instead of slowed/crippled.",
+     "quote": "If ''Riposte'' negates at least one {{tt|hostile|Belonging to an enemy source}} {{tip|immobilize|immobilizing}} effect, '''Fiora''' {{tip|stun|stuns}} the target for the same duration instead.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts only after the Riposte effect (parry + shock) completes.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FioraW.MSSlowPercent",
+     "reason": "utility"
+    },
+    {
+     "ref": "FioraW.SmallBlockPercent",
+     "reason": "unknown"
+    },
+    {
+     "ref": "FioraW.BigBlockPercent",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Bladework",
+   "cooldown": {
+    "values": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "quote": "{{ap|11 to 7}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9
+     ],
+     "terms": [],
+     "quote": "{{ap|50 to 90}}%",
+     "bin": [
+      "FioraE.ASPercent"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Critical damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      1.6,
+      1.7,
+      1.8,
+      1.9,
+      2.0
+     ],
+     "terms": [],
+     "quote": "{{ap|160 to 200}}%",
+     "bin": [
+      "FioraE.AttackTwoPercentTAD"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "buff duration to land both empowered attacks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "within 4 seconds",
+     "bin": [
+      "FioraE.BuffDuration"
+     ],
+     "binNote": "wiki says the empowered window lasts 4 seconds; the bin's BuffDuration value is 3, a disagreement between sources."
+    },
+    {
+     "id": "e_4",
+     "meaning": "slow amount from the first empowered attack",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": -0.3,
+     "terms": [],
+     "quote": "slows the target by 30% for 1 second",
+     "bin": [
+      "FioraE.SlowPercent"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "duration of the slow from the first empowered attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "slows the target by 30% for 1 second",
+     "bin": [
+      "FioraE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "bonus range on the two empowered attacks",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "25 '''bonus''' range",
+     "bin": [],
+     "binNote": "no data value carries the 25 bonus range in the sheet; it is a geometry value not exposed in the listed rows."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The first empowered attack cannot critically strike, only the second does.",
+     "quote": "The first attack {{tip|slow|slows}} the target by 30% for 1 second but cannot {{tip|critically strike}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bladework resets Fiora's basic attack timer.",
+     "quote": "Bladework {{tip|basic attack reset|resets}} '''Fiora's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Neither empowered attack deals damage if it is dodged, blocked, or misses (blinded).",
+     "quote": "Neither ''Bladework'' attack will deal damage if it is {{tip|dodge|dodged}}, {{tip|block|blocked}} or {{tip|blind|missed}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts after the effect resolves, not on cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks the slow from the first hit, not the damage.",
+     "quote": "{{tip|Spell shield}} will only block the slow from the first hit.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FioraE.AttackOnePercentTAD",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Grand Challenge / Grand Challenge 2",
+   "cooldown": {
+    "values": [
+     110,
+     90,
+     70
+    ],
+    "quote": "{{ap|110 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_2",
+     "meaning": "Victory Zone heal per second (per ally within the zone)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      75,
+      100,
+      125
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "Heal per Second|{{ap|75 to 125}} {{as|(+ 60% '''bonus''' AD)}}",
+     "bin": [
+      "FioraR.HealPerSecond",
+      "FioraR.Ratio",
+      "FioraR#HealPerSecondCalc"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Vitals reveal / challenge duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "challenges the target enemy champion for 8 seconds",
+     "bin": [
+      "FioraR.MarkDuration"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "Victory Zone duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds",
+     "bin": [
+      "FioraR.HealDuration"
+     ]
+    },
+    {
+     "id": "r_11",
+     "meaning": "Victory Zone heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No bin data value carries the 0.25s tick interval; it only appears as a tooltip {{fd|0.25}} literal in the wiki description, with HealPerSecondCalc being the underlying per-second rate the bin actually tracks."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Highlights all four Vitals on the target after a 0.5-second delay.",
+     "quote": "highlighting all four of their {{as|Vitals|buzzword}} after a {{fd|0.5}}-second delay",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage of this ability (via triggered Vitals) scales with Duelist's Dance.",
+     "quote": "The damage of this ability scales with {{ai|Duelist's Dance|Fiora}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast, not on effect end.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Fiora triggers at least one Vital before the target dies, or all four otherwise, a Victory Zone is created that heals Fiora and allies every 0.25 seconds for 5 seconds.",
+     "quote": "a ''{{ai|Grand Challenge 2|Fiora|Victory Zone}}'' is created on their death location for 5 seconds, which {{tip|heal|heals}} '''Fiora''' and all allies within the area every {{fd|0.25}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Victory Zone triggers even if Fiora herself dies, as long as she hit a Vital before the target's death.",
+     "quote": "Even if '''Fiora''' dies, the {{ai|Grand Challenge 2|Fiora|''Victory Zone''}} will trigger so long as she hit at least one {{as|Vital|buzzword}} and they die before the {{as|Vitals|buzzword}} wear off.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Victory Zone does not heal untargetable units.",
+     "quote": "The {{ai|Grand Challenge 2|Fiora|Victory Zone}} will not heal {{tip|untargetable}} units.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Recasting on a target already affected by Grand Challenge incurs only a 1-second cooldown instead of casting.",
+     "quote": "Attempting to cast ''Grand Challenge'' on a target already affected by it will incur a 1-second cooldown and a text saying that the ability cannot be stacked will pop out of the target.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FioraR.PassiveAS",
+     "reason": "unknown"
+    },
+    {
+     "ref": "FioraR.PercentMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "FioraR.MSRingRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FioraR.HealRingRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FioraR.HealDurationExtension",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Any qualifying Fiora damage that lands on an exposed Vital deals bonus true damage (3% + 4%/100 bonus AD of target max HP) and heals/grants MS to Fiora; the Vital is then consumed and a new one appears after a delay."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "The true-damage proc only fires if the hit direction matches the currently exposed Vital and the Vital is not on its 1.75s become-targetable delay; damage is a function of target max HP, not the hit's own damage."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "R"
+   ],
+   "note": "Grand Challenge reveals all four of the target's Vitals for its 8s duration, letting Fiora consume/trigger up to four separate P procs on that target instead of the normal one-at-a-time cycle."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Bladework arms the next two basic attacks (bonus AS, bonus range) within its buff window; first attack slows and cannot crit, second always crits for a modified crit multiplier."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Casting Bladework resets Fiora's basic attack timer (post-effect cooldown start)."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Bladework's second empowered attack always critically strikes, using a rank-scaling crit damage modifier ({{ap|160 to 200}}%) rather than (or overriding, per Sundered Sky note) the champion's normal crit multiplier."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Landing Lunge's stab refunds 50% of Lunge's remaining/base cooldown, letting it be recast far more than a flat-cooldown ability would allow inside 15s."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (20/50/40/100); with Fiora's typically low base mana pool this can gate how many W/R casts and repeated Q/E cycles fit in a 15s dummy fight."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "P",
+    "R"
+   ],
+   "note": "Riposte's 100% incoming-damage negation (parry) only matters when Fiora is being attacked (survival fight); P's heal and R's Victory Zone heal Fiora's own health and only matter for her own survivability, not for the damage-fight dummy's health."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Vitals are directional arcs on the target and Lunge's stab uses a target-priority search; a single stationary dummy fight must assume some simplification of whether Fiora's hits always face the exposed Vital."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behavior (a consumable directional mark that procs bonus true damage, an ultimate that exposes multiple marks at once, an empowered-attack/attack-reset/crit combo, and a cooldown-refund on hit) is expressible as a combination of onhit-rider + conditional-damage + target-stacks + empowered-attack + attack-reset + crit-interaction + cooldown-manipulation. The only open issue is a simplifying assumption about Vital facing/geometry in a single-target dummy fight, which is a modeling choice, not a missing primitive."
+ },
+ "unsettled": [
+  {
+   "question": "In a stationary single-target dummy fight, is every one of Fiora's attacks/hits assumed to satisfy the Vital's facing requirement (bounded only by the 1.75s become-targetable delay after each trigger), or should the 50/50 directional spawn logic be modeled as reducing the effective proc rate?",
+   "options": [
+    "Assume facing is always satisfied; P procs are limited only by the 1.75s Vital delay and by how often Fiora lands a qualifying hit",
+    "Model a chance (per the spawn algorithm) that a given hit does not face the current Vital, reducing total P procs over 15s"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|Vitals|buzzword}} spawn directions alternate in a Northeast-Southwest pattern. Other than that, they have a 50% chance to spawn North or East, or South or West, respectively."
+   ]
+  },
+  {
+   "question": "Does Lunge's basic-damage-tagged physical damage benefit from critical strike chance/damage the way a normal attack does, or is it treated purely as a non-crit ability despite the 'basic damage' tag?",
+   "options": [
+    "Lunge can critically strike like a basic attack for crit-itemization purposes",
+    "Lunge never critically strikes despite being tagged basic damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Lunge'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "Because Lunge is tagged as both basic (on-hit-eligible) damage and spell damage, does it proc both on-attack/on-hit item effects and spell-triggered item effects (e.g. Spellblade, proc items keyed off 'spell cast') on the same cast, or only one category?",
+   "options": [
+    "Lunge triggers both on-hit and spell-based item procs simultaneously",
+    "Lunge triggers only on-hit effects (per its onhiteffects=True flag) and the 'spell damage' tag is solely for Vital-triggering purposes, not item procs"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Lunge'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+    "''Lunge'' does not apply {{tip|on-attack}} effects but is special cased to stack {{tip|Energized}} upon hitting an enemy."
+   ]
+  },
+  {
+   "question": "Bladework's empowered-attack window is 3 seconds per the bin (BuffDuration) but 'within 4 seconds' per the wiki description; which value should gate whether Fiora's second empowered attack lands before the buff expires?",
+   "options": [
+    "Use the bin value: 3 seconds",
+    "Use the wiki value: 4 seconds"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "empowers her next two [[basic attack]]s {{tip|on-attack}} within 4 seconds"
+   ]
+  },
+  {
+   "question": "Should the maximizing-damage rotation for the dummy fight actually include casting Riposte (W) at all, given its 0.75s full-action lockout produces no benefit (no incoming damage to negate) and only pays off through its one-time magic-damage shock plus a Vital trigger?",
+   "options": [
+    "Always weave W in on cooldown in the damage fight, since it deals guaranteed magic damage and can trigger a Vital",
+    "Omit W from the damage-maximizing rotation (or deprioritize it) since 0.75s of lockout could otherwise be spent on more autos/Q/E casts with a higher DPS return"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Fiora''' enters a defensive stance for {{fd|0.75}} seconds, during which she is {{tip|lockout|unable to act}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Grand Challenge (R) on the target to reveal all four Vitals (after a 0.5s delay) and start the 8-second window in which multiple Vital procs are available on this one target.",
+   "Immediately cast Lunge (Q) to dash in and stab, dealing physical damage, applying on-hit effects, and triggering a Vital proc if one is exposed; a successful stab halves Q's remaining cooldown.",
+   "Cast Bladework (E) to empower the next two basic attacks; auto-attack twice to consume the empowered hits (first slows and cannot crit, second always crits), each a chance to trigger a Vital.",
+   "Cast Riposte (W) once for its guaranteed magic-damage shock and a further chance to trigger a Vital, since the dummy never deals damage back so the parry itself is wasted.",
+   "Auto-attack continuously between casts to fill downtime and to keep landing qualifying Vital-trigger hits.",
+   "Recast Lunge every time it comes off cooldown (further shortened by successful stabs) and recast Bladework every time it comes off cooldown for the attack-reset and guaranteed crit value.",
+   "Because Riposte (24-16s) and Grand Challenge (110-70s) cooldowns exceed the ~15s fight, each is cast only once near the start; the remaining time is spent cycling Q, E and autos on cooldown."
+  ],
+  "questions": [
+   "Should R be cast before or after the opening Q (does the 0.5s Vital-reveal delay make it better to dash in with Q first and cast R immediately after), and does casting order affect how many total Vital procs land inside R's 8s window?",
+   "In the fixed-position dummy fight, is it assumed Fiora can land all four Grand Challenge Vitals within its 8s duration, or does the 1.75s per-Vital become-targetable delay realistically cap it at fewer (e.g., 3) within that window?",
+   "Given Riposte's 0.75s full lockout, is it actually damage-positive to cast W in the pure damage fight, or should the optimal rotation skip it in favor of continuous Q/E/auto-attack cycling?",
+   "Does the simulator model Lunge's dash time (up to ~130-465ms depending on movement speed) as dead time in which no other action/auto can occur, and if so, how should that be weighted against Lunge's cooldown-refund value?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

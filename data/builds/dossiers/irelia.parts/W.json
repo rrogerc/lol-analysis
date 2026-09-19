@@ -1,0 +1,244 @@
+{
+ "name": "Defiant Dance",
+ "cooldown": {
+  "values": [
+   20,
+   18,
+   16,
+   14,
+   12
+  ],
+  "quote": "{{ap|20 to 12}}"
+ },
+ "cost": {
+  "values": [
+   70,
+   75,
+   80,
+   85,
+   90
+  ],
+  "quote": "{{ap|70 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|None|Active}}|{{tt|{{fd|0.25}}|Recast}}}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Minimum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.4
+    },
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|10 to 50}} {{as|(+ 40% AD)}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "IreliaW.MinDamage",
+    "IreliaW#MinDamageCalc"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Maximum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    60,
+    90,
+    120,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.2
+    },
+    {
+     "stat": "ap",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{ap|10*3 to 50*3}} {{as|(+ 120% AD)}} {{as|(+ 150% AP)}}",
+   "bin": [
+    "IreliaW.MaxDamage",
+    "IreliaW#MaxDamageCalc"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "physical damage reduction during channel",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    40,
+    41.76,
+    43.53,
+    45.29,
+    47.06,
+    48.82,
+    50.59,
+    52.35,
+    54.12,
+    55.88,
+    57.65,
+    59.41,
+    61.18,
+    62.94,
+    64.71,
+    66.47,
+    68.24,
+    70
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.08
+    }
+   ],
+   "quote": "{{pp|40 to 70|key=%}} {{as|(+ 8% per 100 AP)}}",
+   "bin": [
+    "IreliaW#FinalPhysicalDR"
+   ],
+   "binNote": "IreliaW.BasePhysicalDR=50 is a stale flat value not read by the FinalPhysicalDR calculation, which instead uses a byLevel(40..70) curve matching the wiki's 40 to 70% range."
+  },
+  {
+   "id": "w_4",
+   "meaning": "magic damage reduction during channel",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    20,
+    20.88,
+    21.76,
+    22.65,
+    23.53,
+    24.41,
+    25.29,
+    26.18,
+    27.06,
+    27.94,
+    28.82,
+    29.71,
+    30.59,
+    31.47,
+    32.35,
+    33.24,
+    34.12,
+    35
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.04
+    }
+   ],
+   "quote": "{{pp|40*0.5 to 70*0.5|key=%}} {{as|(+ {{ap|8*0.5}}% per 100 AP)}}",
+   "bin": [
+    "IreliaW#FinalMagicDR"
+   ],
+   "binNote": "FinalMagicDR = FinalPhysicalDR * MRReductionAmount(0.5), which halves both the byLevel(40..70) base and the 0.08 AP coefficient, giving the stated byLevel(20..35) base and 0.04 AP coefficient. MRReductionAmount itself is just the 0.5 multiplier, not this value's number directly."
+  },
+  {
+   "id": "w_5",
+   "meaning": "maximum channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{tip|channel|charge}} for up to {{fd|1.5}} seconds",
+   "bin": [
+    "IreliaW.MaxDuration"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "channel time to reach maximum damage",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "damage increases over the first {{fd|0.75}} seconds of the channel",
+   "bin": [
+    "IreliaW.ChargeTimeForMax"
+   ]
+  },
+  {
+   "id": "w_7",
+   "meaning": "duration damage reduction is retained after recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "retains the damage reduction for {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "No matching data value in the sheet for this 0.5s retention window; IreliaW.MRReductionAmount is also 0.5 but is a separate ratio used for magic DR, not this duration."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The charge cannot be interrupted by crowd control.",
+   "quote": "''Defiant Dance's'' charge cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability recasts automatically once the channel duration ends if not recast manually.",
+   "quote": "does so automatically afterwards",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Recast damage increases with charge time up to a cap of 0.75 seconds, at a rate of 20% per 0.075 seconds.",
+   "quote": "increased by {{pp|key=%|type=channel time|0 to 200 for 11|0 to 0.75|formula=20% per 0.075 seconds. ''This is capped at 0.75 seconds.''}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts after the ability's effect (recast) resolves, not on initial cast.",
+   "quote": "cdstart     = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast swipe damage can be blocked by spell shields.",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "IreliaW.BasePhysicalDR",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "IreliaW.MaxBonusRatio",
+   "reason": "unknown"
+  },
+  {
+   "ref": "IreliaW.MRReductionAmount",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

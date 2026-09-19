@@ -1,0 +1,201 @@
+{
+ "champion": "kindred",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q deals arrow damage on cast (0.01s cast); E's activation applies a mark and (on the 3rd stack) triggers Wolf's pounce damage instance."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dance of Arrows resets Lamb's basic attack timer on cast."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q grants 35% (+5%/mark) bonus attack speed for 4s."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Casting W (or standing in its zone) cuts Q's current/total cooldown to the rank's static CDNewValue."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Wolf occupies an area for 8.5s and repeatedly auto-attacks the target for magic damage each hit, effectively a ticking zone."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "Wolf's attack rate is set to 25% of Kindred's bonus attack speed, converting Lamb's AS stat into Wolf's attack rate."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "W's damage includes a % of target's current health (higher vs monsters); E's pounce damage includes a % of target's missing health (capped vs monsters)."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Basic attacks on the marked target add stacks (bin: cap 4, wiki: cap 3) which refresh the mark and, at the cap, are consumed to trigger Wolf's bonus pounce damage."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Both the flat/AD portion and the missing-health-% portion of the pounce damage scale up with Kindred's crit chance and crit damage even though Kindred does not need to crit on the attack itself."
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Permanent Mark of the Kindred stacks (gained only from champion takedowns) add flat bonuses to Q's AS buff, W's current-health-% damage, and E's missing-health-% damage; needs an assumed stack count for a solo-dummy fight."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Hunter's Vigor: stacks from moving/attacking, capping at 100, empower Lamb's next attack with a self-heal at max stacks (defensive relevance for survival fight)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (35/40/50(disputed)/100) limit how often each ability can be recast within the 15s window."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "Lamb's Respite deals no damage; it only heals and grants a low-health invulnerability threshold to units in its zone, relevant only to the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Kindred's damage-relevant mechanics (Q dash-and-arrow with an AS buff and attack reset, W's Wolf zone auto-attacking with an AS-derived attack rate and current-health-% scaling, E's stacking mark that detonates into crit-scaled missing-health-% bonus damage, and permanent Mark-of-the-Kindred stacks buffing all three) are each expressible with existing primitives (plain-cast, attack-reset, timed-self-buff, cooldown-manipulation, dot, attack-speed-interaction, conditional-damage, target-stacks, crit-interaction, infinite-scaling). No mechanic requires bespoke logic beyond composing these."
+ },
+ "unsettled": [
+  {
+   "question": "How many basic attacks does Mounting Dread need to detonate: 3 (wiki text and leveling description) or 4 (KindredEWrapper.StacksToProc)?",
+   "options": [
+    "3 attacks after the initial cast (wiki)",
+    "4 attacks/applications (bin StacksToProc)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "stacking up to 3 times",
+    "KindredEWrapper.StacksToProc = 4"
+   ]
+  },
+  {
+   "question": "What is Mounting Dread's actual mana cost: 0 (ddragon and KindredEWrapper cost array) or 50 (wiki cost field)?",
+   "options": [
+    "0 mana (bin arrays)",
+    "50 mana (wiki)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cost [0, 0, 0, 0, 0]",
+    "cost         = 50"
+   ]
+  },
+  {
+   "question": "What Mark of the Kindred stack count should the damage fight assume, since stacks come only from champion takedowns and a solo-dummy fight has none available?",
+   "options": [
+    "0 stacks (no takedowns possible in a dummy fight)",
+    "some non-zero baseline representing a mid/late-game champion (e.g. 5-10 stacks) to reflect typical play"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Scoring a {{tip|takedown}} against a ''hunted'' target collects a stack of ''Mark of the Kindred''."
+   ]
+  },
+  {
+   "question": "Wolf's base attack interval/animation rate inside the Wolf's Frenzy zone is not given anywhere in the sheet or wiki beyond '25% of Kindred's bonus attack speed' — is there an implicit base attack speed for Wolf (e.g. 1.0 attacks/sec) that this percentage is added to, or does 25% of bonus AS directly set Wolf's attacks-per-second?",
+   "options": [
+    "Wolf has an implicit 1.0 base AS and gains 25% of Kindred's bonus AS on top",
+    "Wolf's attack rate literally equals 25% of Kindred's bonus AS with no separate base rate stated"
+   ],
+   "impact": "high",
+   "quotes": [
+    "the rate at which he attacks scale with {{as|25% of '''Kindred's bonus''' attack speed}}"
+   ]
+  },
+  {
+   "question": "Does the crit-chance/crit-damage scaling on Mounting Dread's pounce apply separately and additively to both the flat+bonusAD portion and the missing-health-% portion (as the two separate bin formulas BaseBiteDamage and PercentBiteDamage suggest), or is it one combined scaling applied to the whole ability's bonus damage (as the single wiki leveling block implies)?",
+   "options": [
+    "Two independent crit-scaled components summed (per bin formulas)",
+    "One crit-scaled multiplier applied to the whole additional-damage total (per wiki leveling)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "KindredEWrapper#BaseBiteDamage = (BaseDamage=[80/110/140/170/200] + (BonusADRatio=1)xbonus ad) * 1 + ((CritMod=0.5)xcritChance)*(1xcritDamage + -1)",
+    "KindredEWrapper#PercentBiteDamage (percent) = (BasePercentDamage=0.05 + 0.005xbuffStacks) * 1 + ((CritMod=0.5)xcritChance)*(1xcritDamage + -1)"
+   ]
+  },
+  {
+   "question": "When both Q's continuous 'reduced while in W's zone' cooldown-cap and W's on-cast 'reduce current cooldown to that amount' effects are available, do they interact/stack for a faster Q loop, or is the continuous zone effect simply a cap that the on-cast reduction also respects?",
+   "options": [
+    "The zone effect is a continuous cooldown cap while standing in it; casting W is just one way to instantly hit that cap",
+    "Casting W and standing in the zone are two independent reduction triggers that could compound"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Dance of Arrows' '' {{sti|'''total''' cooldown}} is reduced to an amount while '''Lamb''' is within the area of ''{{ai|Wolf's Frenzy|Kindred}}''. Casting ''{{ai|Wolf's Frenzy|Kindred}}'' reduces ''Dance of Arrows' '' '''current''' cooldown to the same amount."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Dance of Arrows) onto/through the dummy to deal its arrow damage, gain the bonus attack speed buff, and reset the basic attack timer.",
+   "Immediately follow with E (Mounting Dread) on the dummy to apply the slow and the first Mounting Dread stack.",
+   "Auto-attack the dummy continuously; each attack on the marked target adds a Mounting Dread stack, and reaching the stack cap consumes them to trigger Wolf's bonus pounce damage.",
+   "Cast W (Wolf's Frenzy) on the dummy's location as soon as it is off cooldown; this both deals Wolf's zone damage (ticking auto-attacks scaled by 25% of Kindred's bonus AS) and cuts Q's cooldown, and Lamb should stay inside the zone while continuing to basic-attack and recast Q.",
+   "Recast Q as soon as its (now reduced) cooldown is up for another burst of arrow damage, the AS buff refresh, and another attack reset.",
+   "Re-cast E on the dummy whenever it is off cooldown and the previous mark has been consumed or expired, restarting the stack-and-pounce cycle.",
+   "Repeat the Q/basic-attack/E/W loop for the full ~15s window, prioritizing keeping Wolf's zone active and Mounting Dread stacks progressing, since neither of those has meaningful downside in a single-target dummy fight.",
+   "Do not cast R; it deals no damage and only matters for the survival fight."
+  ],
+  "questions": [
+   "Given the sheet/wiki discrepancy on Mounting Dread's stack cap (3 vs 4), how many auto-attacks should the simulated rotation assume are needed before Wolf's pounce triggers?",
+   "Should the damage fight assume zero Mark of the Kindred stacks throughout, or a fixed nonzero number representing 'typical' late-game stacking, given stacks only come from champion takedowns which a solo dummy fight cannot produce?",
+   "What is Wolf's actual attacks-per-second inside the Wolf's Frenzy zone, since only a 25%-of-bonus-AS conversion is given with no stated base rate?",
+   "Is it worth ever holding E's cast until Mounting Dread's cooldown reduction/stack timing aligns with W's zone, or should E always be recast the instant it's off cooldown regardless of Wolf's frenzy state?",
+   "Does Wolf, while occupying his zone, count as a second attacker for cooldown-manipulation/on-hit item interactions, or is only Lamb's own attack stream relevant to per-hit item effects in this simulator?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,540 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "IllaoiPassive",
+    "key": "Characters/Illaoi/Spells/IllaoiPassiveAbility/IllaoiPassive",
+    "dataValues": {
+     "MissingHPPercentHeal": 0.05,
+     "TentacleDisabledLifetime": 30,
+     "SpawnRadius": 1200,
+     "SpawnDensity": 1000,
+     "PassiveTentacleLength": 925,
+     "PassiveTentacleWidth": 200
+    },
+    "calcs": {
+     "SpawnCD": {
+      "expr": "byLevel(18..7)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        18,
+        17.352941,
+        16.7058824,
+        16.058823,
+        15.411765,
+        14.764706,
+        14.117647,
+        13.47058824,
+        12.823529,
+        12.176471,
+        11.52941176,
+        10.882353,
+        10.235294,
+        9.588235,
+        8.941176,
+        8.294118,
+        7.647059,
+        7
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "IllaoiQ",
+    "key": "Characters/Illaoi/Spells/IllaoiQAbility/IllaoiQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TentacleDamageAmp": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.15,
+       0.2,
+       0.25,
+       0.3
+      ]
+     },
+     "TotalADRatio": 1.1,
+     "APRatio": 0.4,
+     "TentacleLength": 800,
+     "TentacleWidth": 200
+    },
+    "calcs": {
+     "TentacleDamageTotal": {
+      "expr": "(byLevel(9..180) + (TotalADRatio=1.1)xad + (APRatio=0.4)xap) * 1 + TentacleDamageAmp=[0.1/0.15/0.2/0.25/0.3]",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "APRatio",
+       "TentacleDamageAmp",
+       "TotalADRatio"
+      ]
+     },
+     "DamageIncreaseTooltip": {
+      "expr": "(byLevel(9..162) + (TotalADRatio=1.1)xad + (APRatio=0.4)xap) * TentacleDamageAmp=[0.1/0.15/0.2/0.25/0.3]",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "APRatio",
+       "TentacleDamageAmp",
+       "TotalADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "IllaoiW",
+    "key": "Characters/Illaoi/Spells/IllaoiWAbility/IllaoiW",
+    "cooldown": 4,
+    "cost": 30,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "WMinDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     },
+     "HealthPercentDamage": {
+      "axis": "rank",
+      "v": [
+       3,
+       3.5,
+       4,
+       4.5,
+       5
+      ]
+     },
+     "HealthDamageADRatio": 0.035,
+     "CooldownDuringR": 2,
+     "MonsterDamageCap": 300,
+     "BuffDuration": 6,
+     "DashSpeedBonus": 600
+    },
+    "calcs": {
+     "HealthPercentTotal": {
+      "expr": "(HealthPercentDamage=[3/3.5/4/4.5/5] + (HealthDamageADRatio=0.035)xad) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.03,
+        0.035,
+        0.04,
+        0.045,
+        0.05
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.00035,
+        "dataValue": "HealthDamageADRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "HealthDamageADRatio",
+       "HealthPercentDamage"
+      ]
+     },
+     "DashSpeed": {
+      "expr": "DashSpeedBonus=600 + 1xstat7?",
+      "flat": 600,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "DashSpeedBonus"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "IllaoiE",
+    "key": "Characters/Illaoi/Spells/IllaoiEAbility/IllaoiE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      35,
+      40,
+      45,
+      50,
+      55
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamageTransferPercent": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.3,
+       0.35,
+       0.4,
+       0.45
+      ]
+     },
+     "VesselDuration": 4,
+     "SpiritDuration": 7,
+     "SlowDuration": 1.5,
+     "SlowAmount": 0.8,
+     "EchoTADScalar": 0.0008,
+     "GraceBeforeDormantAfterELand": 1.5,
+     "Density": 700,
+     "SpiritLeashRange": 1500
+    },
+    "calcs": {
+     "TimeBetweenVesselTentacleSlams": {
+      "expr": "byLevelL[4/4/4/4/4/4/3.5/3.5/3.5/3.5/3.5/3.5/3/3/3/3/3/3]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3.5,
+        3.5,
+        3.5,
+        3.5,
+        3.5,
+        3.5,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "EchoPercent": {
+      "expr": "BaseDamageTransferPercent=[0.25/0.3/0.35/0.4/0.45] + (EchoTADScalar=0.0008)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.25,
+        0.3,
+        0.35,
+        0.4,
+        0.45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.0008,
+        "dataValue": "EchoTADScalar"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseDamageTransferPercent",
+       "EchoTADScalar"
+      ]
+     },
+     "{87aff6dd}": {
+      "expr": "byLevelL[5/5/5/5/5/5/4/4/4/4/4/4/3/3/3/3/3/3]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "IllaoiR",
+    "key": "Characters/Illaoi/Spells/IllaoiRAbility/IllaoiR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      95,
+      70
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "BuffRadius": 500,
+     "Duration": 8
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=[150/250/350] + 0.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "IllaoiQ",
+  "W": "IllaoiW",
+  "E": "IllaoiE",
+  "R": "IllaoiR",
+  "P": "IllaoiPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.5,
+   "{3a509002}": 0.15
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Illaoi",
+  "name": "Illaoi",
+  "partype": "Mana",
+  "passive": "Prophet of an Elder God",
+  "spells": [
+   {
+    "id": "IllaoiQ",
+    "name": "Tentacle Smash",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "IllaoiW",
+    "name": "Harsh Lesson",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "IllaoiE",
+    "name": "Test of Spirit",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     35,
+     40,
+     45,
+     50,
+     55
+    ]
+   },
+   {
+    "id": "IllaoiR",
+    "name": "Leap of Faith",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     95,
+     70
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Prophet of an Elder God": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Tentacle Smash": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Harsh Lesson": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "Special",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Test of Spirit": {
+    "damagetype": "{{dv|{{tip|Physical damage|Physical}}|{{tip|Magic damage|Magic}}|{{tip|True damage|True}}<br>(Echoed damage)}}",
+    "spellshield": "Special",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Vessel": {
+    "damagetype": "{{dv|{{tip|Physical damage|Physical}}|{{tip|Magic damage|Magic}}|{{tip|True damage|True}}<br>(Echoed damage)}}",
+    "spellshield": "Special",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Leap of Faith": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

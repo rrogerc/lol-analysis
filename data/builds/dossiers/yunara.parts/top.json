@@ -1,0 +1,155 @@
+{
+ "champion": "yunara",
+ "primitives": [
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Critical strikes deal bonus magic damage (Vow of the First Lands); if the crit itself was not magic damage this bonus is dealt as a new tagged 'critical strike' instance that can itself crit and re-trigger the passive as a further amp"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Vow's bonus magic damage on every crit; Cultivation of Spirit's passive/active bonus magic damage on every basic attack"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Unleash stacks (0-8, +2 per attack on champions/dummy) build from attacking, decay one-by-one every 0.5s after a 6s duration, and gate the active cast (8 stacks + mana required)"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Active Unleash grants bonus attack speed and augmented windup for 5s (or Transcendent State's duration when auto-activated by R)"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Casting Cultivation of Spirit's active resets the attack timer; Untouchable Shadow's dash (E upgraded by R) also resets the attack timer"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Arc of Judgment / Arc of Ruin deals its initial magic damage on impact after a cast time"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "The bead lingers and deals magic damage every 0.25s for up to 1s (or longer if it keeps colliding, see unsettled)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "One W cast produces two separately-timed damage instances: the initial hit and the lingering ticks"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana (and Q's Unleash stacks) limit how often Q/W/E/R can be cast before Transcendent State removes W's and E's costs and Q's active becomes free"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "Entering and exiting Transcendent State cuts W's remaining cooldown by 80% (each time) and resets E's cooldown"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R"
+   ],
+   "note": "Transcendent State upgrades W into Arc of Ruin and E into Untouchable Shadow, and auto-activates Q's active for free with extended duration"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Vow of the First Lands is self-referential: a crit's bonus magic damage, when dealt as a new tagged 'critical strike' instance, can itself roll a crit and re-trigger the same passive as a multiplicative amp on itself, an iterative/recursive resolution not captured by picking a single crit-interaction primitive. Separately, Cultivation of Spirit's on-hit damage explicitly does NOT get amplified by crit (0% bonus) even though it is tagged as having critically struck for other purposes (e.g. Randuin's Omen), which requires custom sequencing between the onhit-rider and crit-interaction primitives rather than a generic composition of the two."
+ },
+ "unsettled": [
+  {
+   "question": "What does the unresolved bin calculation YunaraW#{669adf33} (multiplying Calc_Damage_Initial by an unresolved {f3cbe7b2}) actually compute for the lingering tick damage, and does it match the wiki's stated per-tick value of (Initial * 0.6)/4?",
+   "options": [
+    "The bin's unresolved factor equals DPS_Modifier (0.6) applied once per second, split into 4 ticks, matching the wiki figure used here",
+    "The unresolved factor differs (e.g. per-tick rather than per-second, or includes another multiplier), making the recorded per-tick/total-expanded damage wrong"
+   ],
+   "impact": "high",
+   "quotes": [
+    "YunaraW#{669adf33} = Calc_Damage_Initial * <{f3cbe7b2}>",
+    "! unresolved calculation part {f3cbe7b2}"
+   ]
+  },
+  {
+   "question": "Against a single stationary dummy that the bead keeps colliding with, does the bead's lingering duration keep resetting indefinitely (extending total tick count well past 4), or does it only ever tick up to the stated 1-second linger window regardless of continued collision?",
+   "options": [
+    "Each re-collision resets the linger timer, so continuous contact with a stationary target produces far more than 4 ticks over the fight",
+    "The lingering effect is capped/only meaningfully occurs once per cast (expansion at max range or a single linger episode), giving the wiki's stated 4 ticks (~1s) per cast regardless of a stationary target"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The bead slows down significantly while colliding with an enemy, lingering as it travels and resetting its remaining duration; upon reaching maximum range, it will expand and linger in place for 1 second regardless of enemies hit.",
+    "''Arc of Judgment'' can hit an enemy more than once with the initial damage as well with the lingering effect (both while not expanded and while expanded)."
+   ]
+  },
+  {
+   "question": "How many times, if any, does Vow of the First Lands' recursive self-amp chain resolve per triggering crit in current (non-bugged, intended) behavior — is it meant to potentially recurse indefinitely on repeated crit rolls, or is there an intended cap (e.g. one extra application) that the bug tags suggest isn't yet enforced?",
+   "options": [
+    "Recursion is unbounded by design, continuing as long as each new instance itself crits",
+    "Recursion is capped at one extra application, and further recursion is a bug (per the {{bug|2}} tags) not intended to be modeled as unlimited"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "When dealt as a new instance, it can ''critically strike'' again (e.g {{ii|Shadowflame}}), successivelly causing ''Vow of the First Lands'' to apply again on itself as an amp. {{bug|2}}"
+   ]
+  },
+  {
+   "question": "During Transcendent State, once Cultivation of Spirit auto-activates for free, does it ever need to be manually recast or does it simply persist (matching R's remaining duration) with no further stack/mana cost until R ends?",
+   "options": [
+    "It auto-activates once and persists for the rest of Transcendent State with zero further cost or recast needed",
+    "It could still expire/need recasting within the 15s window under some condition not stated in the sources"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{lc|{{ai|Cultivation of Spirit|Yunara}}}} Automatically becomes active at no cost, with the duration increased to ''Transcendent State's''."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "At the start of the 15s fight, immediately cast R (Transcend One's Self): this has no cast time, auto-activates Cultivation of Spirit (Q) for free with its duration extended to match R's 15s, upgrades W into the free, cheaper-cooldown Arc of Ruin, and upgrades E into Untouchable Shadow.",
+   "For the rest of the fight, basic-attack continuously as the core damage source, benefiting from Q's bonus attack speed, Q's passive+active on-hit magic damage, and P's (Vow of the First Lands) bonus magic damage on every crit.",
+   "Cast Arc of Ruin (W) on cooldown throughout the fight (free cost, cooldown cut 80% on entering the state) for its initial hit plus lingering tick damage.",
+   "Cast Untouchable Shadow (E) on cooldown purely for its attack-reset effect (and to re-enable an immediate Arc of Ruin cast during the dash), timed just before an auto-attack would otherwise land so it effectively grants an extra attack.",
+   "Do not recast R again during the fight (15s cooldown at rank 1 already exceeds the fight length, and it cannot be recast while its Transcendent State is active anyway)."
+  ],
+  "questions": [
+   "Does R's 15s Transcendent State duration match/cover the entire simulated 15s damage fight exactly, or is there any startup delay before its effects (Q auto-activation, W/E upgrades) apply?",
+   "In a fixed-position dummy fight, should Untouchable Shadow's dash be modeled as simply granting an attack reset with no positional benefit (since there's nowhere useful to dash), or does the simulator need to account for its dash distance/cast requirements at all?",
+   "Should Arc of Ruin be cast as soon as it comes off (reduced) cooldown, or held to line up with Untouchable Shadow's attack-reset window for maximum total attacks landed?",
+   "Is entering Transcendent State immediately at t=0 actually optimal, or would delaying R slightly (to first build Unleash stacks / land a manual Cultivation of Spirit cast) produce more total damage over the fixed 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

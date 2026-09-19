@@ -1,0 +1,125 @@
+{
+ "champion": "lucian",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Lightslinger: casting any ability (Q/W/E/R) arms Lucian's next basic attack; that attack fires an additional shot 0.25s later for bonus physical damage (or bonus magic damage if a separate Vigilance stack is consumed, which requires an ally heal/shield or enemy immobilize and so cannot trigger in the allyless/CC-ignored dummy fight)."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Pursuit resets Lucian's basic attack timer, letting him fit an extra auto (and thus an extra Lightslinger arm/consume cycle) into the rotation."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's current cooldown is reduced by 1s per Lightslinger shot landed on a non-champion, 2s per shot landed on the dummy (which counts as an enemy champion)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Piercing Light (0.35s bin cast time / 0.4-0.25s wiki per-rank) and Ardent Blaze (0.25s cast) each deal a single fixed damage instance on a short delay, on cooldown."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Culling channels for up to 3s firing up to 22 bullets; Lucian cannot basic-attack while channeling (attack=false during channel per the interaction table)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Culling can be recast after 0.75s to end the channel early, and auto-recasts to end itself when the 3s duration completes; each of the up-to-22 bullets is its own damage instance calculated on impact."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Culling's total bullet count scales with the caster's crit chance (bin formula also involves crit damage); this changes total R damage rather than individual hits critting."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on Q (48-80), W (60), E (32-0), and R (100) can cap how many casts fit into a 15s window, particularly at low levels/low mana itemization."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (the ability-cast-arms-next-auto passive, E's attack reset and cooldown refund, Q/W flat-damage casts, R's channel/recast/crit-scaled shot count, and mana gating) maps onto an existing primitive. Vigilance (the heal/shield/immobilize-triggered magic-damage empowered shots) is part of the same passive but its triggers (ally heal/shield, enemy immobilize/CC) either require an ally or are CC, both absent/ignored in the specified 1v1 dummy and survival fights, so it can be omitted from the modeled damage rather than requiring new mechanics."
+ },
+ "unsettled": [
+  {
+   "question": "What is Piercing Light's actual cast time by rank: a flat 0.35s (bin) or a per-rank array from 0.4s down to 0.25s (wiki)?",
+   "options": [
+    "Use the bin's constant 0.35s at all ranks",
+    "Use the wiki's per-rank array 0.4/0.375/0.325/0.3/0.25",
+    "Treat as unknown/needs confirmation from a current patch source"
+   ],
+   "impact": "high",
+   "quotes": [
+    "castTime: 0.35",
+    "{{pp|0.4 to 0.25}}"
+   ]
+  },
+  {
+   "question": "How many total bullets does The Culling fire as a function of crit chance (and possibly crit damage)?",
+   "options": [
+    "Wiki's simplified figure: up to +22.222 extra shots at 100% crit chance (i.e. ~44 max shots), independent of crit damage",
+    "Bin's literal formula TotalNumShots = (1 + CritValueMod*critChance*(critDamage-1)) * 22, which also scales with bonus critical strike damage from items",
+    "Some reconciled value not directly derivable from either source as given"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|(+ {{critical damage|0 to 22.222|flat=true|round=floor|critScaling=true}})|crit chance}}",
+    "LucianR#TotalNumShots = (1 + ((CritValueMod=1)xcritChance)*(1xcritDamage + -1)) * NumShots=22"
+   ]
+  },
+  {
+   "question": "Does the automatic recast that ends The Culling's channel (or a manual recast) count as a new ability cast that re-arms Lightslinger for Lucian's next basic attack?",
+   "options": [
+    "Yes, the recast is itself a qualifying ability cast and re-arms the passive",
+    "No, only the initial activation of R arms Lightslinger; ending the channel does not"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''The Culling'' can be recast after {{fd|0.75}} seconds during the channel, and does so automatically when the channel ends."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with a basic attack to establish the auto-attack rhythm.",
+   "Weave an ability cast (Q, then W, then E as each becomes available) immediately after each basic attack so the ability's cast arms Lightslinger and the very next auto fires the bonus-damage second shot.",
+   "Use Relentless Pursuit (E) right after an auto attack when it is off cooldown, purely for its attack-timer reset, to squeeze in an extra auto (and Lightslinger arm/consume cycle) without losing tempo; its own cooldown is further cut by Lightslinger hits landing on the dummy.",
+   "Fire Piercing Light (Q) and Ardent Blaze (W) on cooldown, sequencing them so their cast times don't stack idle time on top of the auto-attack weave.",
+   "Cast The Culling (R) as soon as it is available and channel it to completion (or until mana runs out) for its high sustained multi-hit damage, since only one R cast fits in the 15s window on its long cooldown.",
+   "For the remainder of the fight, continue the auto+Q/W/E weave, prioritizing whichever of Q/W/E is off cooldown and always following a cast with an auto to consume the Lightslinger arm.",
+   "If mana is exhausted, fall back to auto attacks only until a cost-bearing ability's cooldown and mana allow resuming the weave."
+  ],
+  "questions": [
+   "Should R be cast at the very start of the fight to guarantee it lands, or held slightly to line up with a Lightslinger-armed auto/crit itemization for maximum total shot count, given only one R cast fits in a 15s window?",
+   "Can the simulator model perfect ability-into-auto weaving (zero cancel/animation overhead between an ability's cast finishing and the next auto firing), or is there a tempo cost that should reduce how many Lightslinger procs fit into 15s?",
+   "At what level/item state should mana be assumed sufficient to sustain the full Q/W/E/R weave for the entire 15s, versus needing to skip casts due to mana starvation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

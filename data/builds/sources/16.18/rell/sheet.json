@@ -1,0 +1,664 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "RellP",
+    "key": "Characters/Rell/Spells/RellPAbility/RellP",
+    "dataValues": {
+     "RefreshDuration": 3.5,
+     "StealPercent": 0.03,
+     "ShredDuration": 5,
+     "MaxStacks": 5,
+     "MaxPercentTooltipOnly": 15
+    },
+    "calcs": {
+     "StealFloor": {
+      "expr": "byLevel(1.5..3)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1.5,
+        1.5882353,
+        1.6764706,
+        1.7647059,
+        1.8529412,
+        1.94117647,
+        2.0294118,
+        2.1176471,
+        2.2058824,
+        2.2941176,
+        2.3823529,
+        2.4705882,
+        2.5588235,
+        2.6470588,
+        2.735294,
+        2.8235294,
+        2.9117647,
+        3
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "OnHitDamage": {
+      "expr": "0.05xarmor? + 0.05xmoveSpeed?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.05
+       },
+       {
+        "stat": "moveSpeed?",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "RellQ",
+    "key": "Characters/Rell/Spells/RellQAbility/RellQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10.5,
+      10,
+      9.5,
+      9
+     ]
+    },
+    "cost": 50,
+    "castTime": 0.4,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       100,
+       140,
+       180,
+       220
+      ]
+     },
+     "StunDuration": 0.65
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[60/100/140/180/220] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        100,
+        140,
+        180,
+        220
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "RellW_Dismount",
+    "key": "Characters/Rell/Spells/RellW_DismountAbility/RellW_Dismount",
+    "cost": 40,
+    "dataValues": {
+     "CrashDownDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "CrashDownKnockupDuration": 0.4,
+     "CrashDownStunDuration": 0.8,
+     "SlideDistance": 320,
+     "ResistanceIncrease": 0.15,
+     "ShieldBase": {
+      "axis": "rank",
+      "v": [
+       20,
+       40,
+       60,
+       80,
+       100
+      ]
+     },
+     "ShieldHealthRatio": 0.11,
+     "DismountedASBoost": 0.2,
+     "DismountedRangeBoost": 75,
+     "MountUpDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       25,
+       40,
+       55,
+       70
+      ]
+     },
+     "MountUpSpeed": 0.3,
+     "MountUpSpeedDuration": 3.5,
+     "MountedMoveSpeed": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "FlipBaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       25,
+       40,
+       55,
+       70
+      ]
+     },
+     "FlipKnockupDuration": 0.4,
+     "FlipStunDuration": 0.6
+    },
+    "calcs": {
+     "DismountDamage": {
+      "expr": "CrashDownDamage=[60/90/120/150/180] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "CrashDownDamage"
+      ]
+     },
+     "Shield": {
+      "expr": "ShieldBase=[20/40/60/80/100] + (ShieldHealthRatio=0.11)xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        40,
+        60,
+        80,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.11,
+        "dataValue": "ShieldHealthRatio"
+       }
+      ],
+      "refs": [
+       "ShieldBase",
+       "ShieldHealthRatio"
+      ]
+     },
+     "FlipDamage": {
+      "expr": "MountUpDamage=[10/25/40/55/70] + 0.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        25,
+        40,
+        55,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "MountUpDamage"
+      ]
+     },
+     "{a71a11d7}": {
+      "expr": "<ClampSubPartsCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ClampSubPartsCalculationPart"
+    ]
+   },
+   {
+    "script": "RellW_MountUp",
+    "key": "Characters/Rell/Spells/RellW_DismountAbility/RellW_MountUp",
+    "dataValues": {
+     "CrashDownTooltip": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "ShieldBaseTooltip": {
+      "axis": "rank",
+      "v": [
+       20,
+       40,
+       60,
+       80,
+       100
+      ]
+     },
+     "FlipAttackTooltip": {
+      "axis": "rank",
+      "v": [
+       10,
+       25,
+       40,
+       55,
+       70
+      ]
+     },
+     "MoveSpeedTooltip": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "HasteTooltip": 0.3
+    },
+    "calcs": {
+     "{a71a11d7}": {
+      "expr": "<ClampSubPartsCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ClampSubPartsCalculationPart"
+    ]
+   }
+  ],
+  "E": [
+   {
+    "script": "RellE",
+    "key": "Characters/Rell/Spells/RellEAbility/RellE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MaxMS": 0.3,
+     "MinMS": 0.15,
+     "Duration": 3,
+     "MSModPhase1": 1,
+     "ExplosionRadius": 300,
+     "PercentHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.05,
+       0.055,
+       0.06,
+       0.065,
+       0.07
+      ]
+     },
+     "PassiveMSCombatPenalty": 0.5,
+     "EmpowermentBuffer": 2,
+     "Phase3Start": 0.5
+    },
+    "calcs": {
+     "MaxHealthDamageCalc": {
+      "expr": "PercentHealthDamage=[0.05/0.055/0.06/0.065/0.07] + 0.0003xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.05,
+        0.055,
+        0.06,
+        0.065,
+        0.07
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0003
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "PercentHealthDamage"
+      ]
+     },
+     "PercentHealthDamageCap": {
+      "expr": "byLevel(150..300)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        150,
+        158.82353,
+        167.64706,
+        176.470588,
+        185.29412,
+        194.11765,
+        202.94118,
+        211.76471,
+        220.58824,
+        229.41176,
+        238.23529,
+        247.05882,
+        255.88235,
+        264.70588,
+        273.52941,
+        282.35294,
+        291.17647,
+        300
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "RellR",
+    "key": "Characters/Rell/Spells/RellRAbility/RellR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 2,
+     "BaseDamagePerSecond": {
+      "axis": "rank",
+      "v": [
+       75,
+       125,
+       175
+      ]
+     },
+     "GravityHorizon": 225,
+     "GravityRadius": 375,
+     "GravityForce": 300,
+     "InitialRadius": 425
+    },
+    "calcs": {
+     "DamagePerSecond": {
+      "expr": "BaseDamagePerSecond=[75/125/175] + 0.55xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        125,
+        175
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55
+       }
+      ],
+      "refs": [
+       "BaseDamagePerSecond"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "DamagePerSecond * Duration=2",
+      "modifies": "DamagePerSecond",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.1
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamagePerSecond",
+       "Duration"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "RellQ",
+  "W": "RellW_Dismount",
+  "E": "RellE",
+  "R": "RellR",
+  "P": "RellP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 320,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Rell",
+  "name": "Rell",
+  "partype": "Mana",
+  "passive": "Break the Mold",
+  "spells": [
+   {
+    "id": "RellQ",
+    "name": "Shattering Strike",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10.5,
+     10,
+     9.5,
+     9
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "RellW_Dismount",
+    "name": "Ferromancy: Crash Down",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "RellE",
+    "name": "Full Tilt",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "RellR",
+    "name": "Magnet Storm",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Break the Mold": {
+    "damagetype": "magic",
+    "spelleffects": "proc",
+    "spellshield": "false",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Shattering Strike": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Ferromancy: Crash Down": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Ferromancy: Mount Up": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Full Tilt": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "{{dv|[[Unit-targeted|Unit]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self, Allies, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Magnet Storm": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

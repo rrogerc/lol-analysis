@@ -1,0 +1,107 @@
+{
+ "name": "Tides of Blood",
+ "cooldown": {
+  "values": [13, 11, 9, 7, 5],
+  "quote": "{{ap|13 to 5}}"
+ },
+ "cost": {
+  "values": [0.02, 0.08],
+  "quote": "{{pp|2 to 8|0 to 0.75 by 0.25|key=%|type=charge time|label1=seconds|color=health}}",
+  "resource": "{{as|'''maximum''' health}}",
+  "binNote": "The wiki ramps this cost from 2% to 8% of maximum health in four 0.25s steps (2/4/6/8% at 0/0.25/0.5/0.75s of charge). The bin only exposes the ramp's ceiling as VladimirE.MaxHealthCost=8 (matching the wiki's max); there is no bin data value for the 2% starting cost."
+ },
+ "castTime": null,
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [30, 45, 60, 75, 90],
+   "terms": [{"stat": "maxHp", "coef": 0.015}, {"stat": "ap", "coef": 0.35}],
+   "quote": "{{ap|30 to 90}} {{as|(+ {{fd|1.5}}% '''maximum''' health)}} {{as|(+ 35% AP)}}",
+   "bin": ["VladimirE.BaseDamage", "VladimirE#MinDamageTooltip"]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Maximum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [60, 90, 120, 150, 180],
+   "terms": [{"stat": "maxHp", "coef": 0.06}, {"stat": "ap", "coef": 0.8}],
+   "quote": "{{ap|60 to 180}} {{as|(+ 6% '''maximum''' health)}} {{as|(+ 80% AP)}}",
+   "bin": ["VladimirE.BaseMaxDamage", "VladimirE#MaxDamageTooltip"]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Maximum charge time (the channel can be held this long before it auto-fires)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "'''Vladimir''' {{tip|channel|charges}} for up to {{fd|1.5}} seconds",
+   "bin": ["VladimirE.MaxChannelTime"]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Time to ramp from minimum to maximum damage while charging",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "increases ''Tides of Blood's'' damage over the first second of the channel",
+   "bin": ["VladimirE.TimetoRampMaxDamage"]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Maximum health cost once Tides of Blood's charge cost has ramped up fully",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.08,
+   "terms": [],
+   "quote": "{{pp|2 to 8|0 to 0.75 by 0.25|key=%|type=charge time|label1=seconds|color=health}}",
+   "bin": ["VladimirE.MaxHealthCost", "VladimirE#ChargeHealthTooltip"]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Tides of Blood is a channel held for up to 1.5s; damage ramps up over the first second, and Vladimir is slowed for the remainder once that ramp completes. It can be recast (released) manually within the duration, and releases automatically once the duration ends or if the channel is interrupted.",
+   "quote": "''Tides of Blood'' can be recast within the duration, and does so automatically afterwards or if it is {{tip|interrupt|interrupted}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "On release, Vladimir fires a nova of 15 blood bolts, each dealing magic damage to the first enemy it hits; an enemy can intercept multiple of the 15 bolts but is only damaged once by the cast.",
+   "quote": "''Enemies can intercept multiple bolts, but can be damaged only once.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Vladimir is below 12% of his maximum health, Tides of Blood costs no health at all.",
+   "quote": "''If '''Vladimir''' is below {{as|12% of his '''maximum''' health}}, Tides of Blood will not cost any {{as|health}}.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The health cost is applied per tick during the channel: it can still drop Vladimir below the 12% threshold from above it, but once he is at or below the threshold, further ticks in that cast stop costing health.",
+   "quote": "This is verified for every tick of {{as|health}} cost, i.e if the first tick drops him below it, the next ones will stop affecting him if he remains below it.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tides of Blood's cooldown starts on cast (when the channel begins), not when it resolves.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While charging Tides of Blood, Sanguine Pool can still be cast without interrupting the channel, but casting Transfusion or Hemoplague interrupts it (after a 0.25s delay), forcing an early release.",
+   "quote": "{{ai|Sanguine Pool|Vladimir}} is usable. {{ai|Transfusion|Vladimir}} and {{ai|Hemoplague|Vladimir}} both interrupt after {{fd|0.25}} seconds.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "VladimirE.SlowPercent", "reason": "not-in-a-dummy-fight"},
+  {"ref": "VladimirE.TotalMaxHPDamage", "reason": "unknown"}
+ ]
+}

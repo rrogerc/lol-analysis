@@ -1,0 +1,640 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "DrMundoP",
+    "key": "Characters/DrMundo/Spells/DrMundoPassiveAbility/DrMundoP",
+    "cooldown": 0,
+    "dataValues": {
+     "CannisterGroundDuration": 7,
+     "CannisterPickupRadius": 115,
+     "CannisterDistanceAway": 525,
+     "CannisterMaxAngle": 70,
+     "VFXLineIndicatorRange": 1000,
+     "PassiveCooldownRefund": 15,
+     "CurrentHealthLoss": 0.04,
+     "MaxHealthGain": 0.04
+    },
+    "calcs": {
+     "PassiveCooldown": {
+      "expr": "byLevelL[60/60/51/51/51/42/42/42/33/33/33/24/24/24/15/15/15/15]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        60,
+        60,
+        51,
+        51,
+        51,
+        42,
+        42,
+        42,
+        33,
+        33,
+        33,
+        24,
+        24,
+        24,
+        15,
+        15,
+        15,
+        15
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "MaxHealthRegen": {
+      "expr": "byLevelL[0.004/0.0045/0.005/0.0055/0.006/0.0065/0.0075/0.0085/0.0095/0.0105/0.0115/0.0125/0.014/0.0155/0.017/0.019/0.021/0.023]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.004,
+        0.004500000213738531,
+        0.0050000002374872565,
+        0.005500000261235982,
+        0.006,
+        0.0065,
+        0.007500000356230885,
+        0.0085,
+        0.009500000451225787,
+        0.010500000498723239,
+        0.01150000054622069,
+        0.0125,
+        0.014,
+        0.015500000619795173,
+        0.017,
+        0.019000000727828592,
+        0.021000000822823495,
+        0.023
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "DrMundoQ",
+    "key": "Characters/DrMundo/Spells/DrMundoQAbility/DrMundoQ",
+    "cooldown": 4,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowDuration": 2,
+     "SlowAmount": 0.4,
+     "CurrentHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.225,
+       0.25,
+       0.275,
+       0.3
+      ]
+     },
+     "MinimumDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       130,
+       180,
+       230,
+       280
+      ]
+     },
+     "MaximumMonsterDamage": {
+      "axis": "rank",
+      "v": [
+       250,
+       325,
+       400,
+       475,
+       550
+      ]
+     },
+     "HealthCost": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90
+      ]
+     },
+     "HealthRefundOnHitChampionMonsterPercent": 1,
+     "HealthRefundOnHitMinionPercent": 0.5
+    },
+    "calcs": {
+     "HealthRestoreOnHitChampionMonster": {
+      "expr": "(HealthRefundOnHitChampionMonsterPercent=1)*(HealthCost=[50/60/70/80/90])",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        60,
+        70,
+        80,
+        90
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "HealthCost",
+       "HealthRefundOnHitChampionMonsterPercent"
+      ]
+     },
+     "HealthRestoreOnHitMinion": {
+      "expr": "(HealthRefundOnHitMinionPercent=0.5)*(HealthCost=[50/60/70/80/90])",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        30,
+        35,
+        40,
+        45
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "HealthCost",
+       "HealthRefundOnHitMinionPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "DrMundoW",
+    "key": "Characters/DrMundo/Spells/DrMundoWAbility/DrMundoW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      17,
+      16.5,
+      16,
+      15.5,
+      15
+     ]
+    },
+    "dataValues": {
+     "Duration": 3,
+     "CurrentHealthCost": 0.08,
+     "GrayHealthStorage": 0.25,
+     "GrayHealthInitialDuration": 0.75,
+     "GrayHealthBigMod": 1,
+     "GrayHealthSmallMod": 0.5,
+     "SecondCastRange": 325,
+     "SecondCastLockout": 0.5,
+     "DamagePerTick": {
+      "axis": "rank",
+      "v": [
+       5,
+       8.75,
+       12.5,
+       16.25,
+       20
+      ]
+     },
+     "RecastBaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "RecastBaseDamage=[20/35/50/65/80] + 0.07xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.07
+       }
+      ],
+      "refs": [
+       "RecastBaseDamage"
+      ]
+     },
+     "GrayHealthStorageInitial": {
+      "expr": "byLevel(0.8..0.95)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.8,
+        0.8088235,
+        0.8176470679395339,
+        0.8264706,
+        0.8352941,
+        0.84411765,
+        0.85294118,
+        0.8617647,
+        0.87058824,
+        0.87941176,
+        0.8882353,
+        0.89705882,
+        0.90588235,
+        0.9147059,
+        0.9235294,
+        0.9323529320604661,
+        0.9411765,
+        0.95
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   },
+   {
+    "script": "DrMundoWRecast",
+    "key": "Characters/DrMundo/Spells/DrMundoWAbility/DrMundoWRecast",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      6,
+      5.5,
+      5,
+      4.5,
+      4
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "FlatHeal": {
+      "axis": "rank",
+      "v": [
+       60,
+       70,
+       80,
+       90,
+       100
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       20,
+       25,
+       30,
+       35
+      ]
+     },
+     "CastRange": 200,
+     "Duration": 5,
+     "MaxStacks": 5,
+     "HealOverTime": 0.01,
+     "HealAmpPerStack": 0.2
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "1xad + BaseDamage=[15/20/25/30/35] + 0.05xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        20,
+        25,
+        30,
+        35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "DrMundoE",
+    "key": "Characters/DrMundo/Spells/DrMundoEAbility/DrMundoE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8.25,
+      7.5,
+      6.75,
+      6
+     ]
+    },
+    "castTime": 1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AttackOverrideDuration": 4,
+     "FlatHealthCost": {
+      "axis": "rank",
+      "v": [
+       10,
+       25,
+       40,
+       55,
+       70
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       15,
+       25,
+       35,
+       45
+      ]
+     },
+     "BonusHealthRatio": 0.05,
+     "MaxMissingHealthThreshold": 0.7,
+     "MaxDamageAmp": 1.4,
+     "MinionMod": 1.4,
+     "MissileDistance": 800,
+     "MonsterMod": 1.4,
+     "HealthToADRatio": {
+      "axis": "rank",
+      "v": [
+       2,
+       2.3,
+       2.6,
+       2.9,
+       3.2
+      ]
+     }
+    },
+    "calcs": {
+     "AdditionalDamage": {
+      "expr": "BaseDamage=[5/15/25/35/45] + (BonusHealthRatio=0.05)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        15,
+        25,
+        35,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.05,
+        "dataValue": "BonusHealthRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusHealthRatio"
+      ]
+     },
+     "MaxDamageAmpTooltip": {
+      "expr": "MaxDamageAmp=1.4 + -1",
+      "flat": 0.4,
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "MaxDamageAmp"
+      ]
+     },
+     "PassiveBonusAD": {
+      "expr": "((HealthToADRatio=[2/2.3/2.6/2.9/3.2])xmaxHp) * 0.01",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.02,
+          0.023,
+          0.026,
+          0.029,
+          0.032
+         ]
+        },
+        "dataValue": "HealthToADRatio"
+       }
+      ],
+      "refs": [
+       "HealthToADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "DrMundoR",
+    "key": "Characters/DrMundo/Spells/DrMundoRAbility/DrMundoR",
+    "cooldown": 120,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 10,
+     "SpeedBoostAmount": {
+      "axis": "rank",
+      "v": [
+       0.15,
+       0.25,
+       0.35
+      ]
+     },
+     "MissingHealthHeal": {
+      "axis": "rank",
+      "v": [
+       0.15,
+       0.2,
+       0.25
+      ]
+     },
+     "MaxHealthHoT": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.4,
+       0.6
+      ]
+     },
+     "TakedownDurationExtension": 2,
+     "BonusPerNearbyChampion": 0.05
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "DrMundoQ",
+  "W": "DrMundoW",
+  "E": "DrMundoE",
+  "R": "DrMundoR",
+  "P": "DrMundoP"
+ },
+ "resource": {
+  "arType": null,
+  "values": {
+   "{726ee5cd}": 0,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1396875
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "DrMundo",
+  "name": "Dr. Mundo",
+  "partype": "None",
+  "passive": "Goes Where He Pleases",
+  "spells": [
+   {
+    "id": "DrMundoQ",
+    "name": "Infected Bonesaw",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "DrMundoW",
+    "name": "Heart Zapper",
+    "maxrank": 5,
+    "cooldown": [
+     17,
+     16.5,
+     16,
+     15.5,
+     15
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "DrMundoE",
+    "name": "Blunt Force Trauma",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8.25,
+     7.5,
+     6.75,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "DrMundoR",
+    "name": "Maximum Dosage",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     120,
+     120
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Goes Where He Pleases": {
+    "projectile": "false",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Infected Bonesaw": {
+    "damagetype": "magic",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "{{as|Health}}"
+   }
+  },
+  "W": {
+   "Heart Zapper": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "{{as|'''current''' health}}"
+   }
+  },
+  "E": {
+   "Blunt Force Trauma": {}
+  },
+  "R": {
+   "Maximum Dosage": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  }
+ }
+}

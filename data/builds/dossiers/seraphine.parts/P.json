@@ -1,0 +1,167 @@
+{
+ "name": "Stage Presence",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_echo_delay",
+   "meaning": "delay before the Echo-triggered additional cast",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.01,
+   "terms": [],
+   "quote": "{{rutngt|0.01}}",
+   "bin": [
+    "SeraphinePassive.EchoCastDelay"
+   ]
+  },
+  {
+   "id": "p_note_stack_cap",
+   "meaning": "Notes stack cap per unit",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "stacks up to 4 times on each unit",
+   "bin": [
+    "SeraphinePassive.MaxNotes"
+   ]
+  },
+  {
+   "id": "p_note_duration",
+   "meaning": "duration of a Note before it expires",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "lasts 6 seconds, refreshes on subsequent ''Notes''",
+   "bin": [
+    "SeraphinePassive.NoteDuration"
+   ]
+  },
+  {
+   "id": "p_note_damage",
+   "meaning": "magic damage per Note fired by the empowered attack",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    4,
+    5.2353,
+    6.4706,
+    7.7059,
+    8.9412,
+    10.1765,
+    11.4118,
+    12.6471,
+    13.8824,
+    15.1176,
+    16.3529,
+    17.5882,
+    18.8235,
+    20.0588,
+    21.2941,
+    22.5294,
+    23.7647,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.04
+    }
+   ],
+   "quote": "{{pp|4 + (25-4)/17*(x-1) for 20}} {{as|(+ 4% AP)}} magic damage",
+   "bin": [
+    "SeraphinePassive#AutoDamage",
+    "SeraphinePassive.NoteAPRatio"
+   ]
+  },
+  {
+   "id": "p_ally_note_reduction",
+   "meaning": "damage reduction for Notes originally granted by an ally (fired from Seraphine's own stack)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "reduced by 75% for ''Notes'' from allies",
+   "bin": [
+    "SeraphinePassive.AllyNoteDamagePercent"
+   ],
+   "binNote": "wiki states a 75% reduction; bin field AllyNoteDamagePercent=0.25, i.e. ally notes deal 25% of the value (a 75% reduction), consistent but stored as the retained fraction rather than the reduction."
+  },
+  {
+   "id": "p_note_fire_delay",
+   "meaning": "delay between successive Note damage instances firing at the target",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.075,
+   "terms": [],
+   "quote": "''Notes'' are fired one after another with a short delay",
+   "bin": [
+    "SeraphinePassive.DelayBetweenNoteCasts"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "At 2 Echo stacks, the next basic ability cast consumes them to cast an additional time at no cost.",
+   "quote": "At 2 stacks, the next basic ability cast consumes them all to cast an additional time at no cost after a {{rutngt|0.01}} delay.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The additional Echo cast counts as a separate cast instance (e.g. for Electrocute/Conqueror), and does not affect the mimicked ability's cooldown.",
+   "quote": "The additional cast does not affect the {{sti|cooldown}} of the mimicked ability.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The additional cast must complete or Echo stacks are retained (not consumed).",
+   "quote": "if the cast time does not finish, does not begin at all, or if the ability fails to cast, '''Seraphine''' will keep her stacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While any Notes are active, Seraphine's next basic attack is empowered with an uncancellable windup and fires all Notes at the target as separate magic damage instances.",
+   "quote": "'''Seraphine's''' next {{tip|basic attack}} is empowered to have an {{tip|uncancellable windup}}, gain {{sti|25 '''bonus''' attack range}} per ''Note'', and fire all ''Notes'' at the target",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack can critically strike.",
+   "quote": "The empowered attack can {{tip|critically strike}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ability casts grant Notes to Seraphine and nearby allied champions.",
+   "quote": "'''Seraphine's''' ability casts grant a ''Note'' to herself and nearby allied {{tip|champions}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SeraphinePassive.AutoAPRatio",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SeraphinePassive.BonusAARange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SeraphinePassive.NoteRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SeraphinePassive.DelayBetweenNoteCastsDecayRate",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "SeraphinePassive.MinionDamageMultiplier",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

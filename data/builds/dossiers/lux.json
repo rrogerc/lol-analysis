@@ -1,0 +1,616 @@
+{
+ "champion": "lux",
+ "abilities": {
+  "P": {
+   "name": "Illumination",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage on mark consumption by attack or Final Spark",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      100,
+      110,
+      120,
+      130,
+      140,
+      150,
+      160,
+      170,
+      180,
+      190,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{as|{{pplevel|30 to 200}}|magic damage}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "LuxIlluminationPassive#TotalDamage",
+      "LuxIlluminationPassive.APRatio"
+     ],
+     "binNote": "The bin's LuxIlluminationPassive#TotalDamage formula uses an unresolved ByCharLevelFormulaCalculationPart for the base (the sheet marks it '! unresolved calculation part'), so the per-level base values 30-200 cannot be directly matched against a bin row; only the 0.35 AP ratio is verifiable against LuxIlluminationPassive.APRatio. The base progression is taken from the wiki's {{pplevel|30 to 200}}."
+    },
+    {
+     "id": "p_2",
+     "meaning": "mark duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "apply a mark to enemies hit for 6 seconds",
+     "bin": [
+      "LuxIlluminationPassive.DebuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The mark refreshes its duration on subsequent ability hits.",
+     "quote": "apply a mark to enemies hit for 6 seconds, refreshing on subsequent hits",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacks apply the mark's damage as an on-hit effect, consuming the mark.",
+     "quote": "{{tip|basic attacks}} {{tip|on-hit}}  and ''{{ai|Final Spark|Lux}}'' consume the mark to deal",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Final Spark also consumes the mark to deal this bonus damage.",
+     "quote": "and ''{{ai|Final Spark|Lux}}'' consume the mark to deal",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Starting an attack windup against a soon-to-expire mark refreshes it briefly.",
+     "quote": "Starting an {{tip|attack windup}} against a target with a mark that is about to expire refreshes its duration to {{fd|0.25}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield can block Final Spark's mark consumption but not the on-hit damage from basic attacks.",
+     "quote": "{{tip|Spell shield}} prevents {{ai|Final Spark|Lux}} from consuming the mark.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If a basic attack is blocked, the mark is consumed without dealing damage.",
+     "quote": "''Illumination'' will be consumed but not deal any damage if the basic attack is {{tip|blocked}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The mark is not consumed if the attack misses due to blind or dodge.",
+     "quote": "''Illumination'' will not be consumed if the basic attack misses due to {{tip|blind}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Light Binding",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "LuxLightBinding.BaseDamage",
+      "LuxLightBinding.APRatio",
+      "LuxLightBinding#TotalDamageTT"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Root duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "{{tip|root|roots}} them for 2 seconds",
+     "bin": [
+      "LuxLightBinding.RootDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Light Binding hits the first two enemies hit by the skillshot, each taking damage as a separate instance.",
+     "quote": "deals {{as|magic damage}} to the first two enemies hit and {{tip|root|roots}} them for 2 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Targets immune to the root still count towards the two-target limit, implying each hit target is registered independently for damage purposes.",
+     "quote": "Targets immune to the {{tip|root}} still count towards ''Light Binding's'' two-target limit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Light Binding spawns an additional dummy missile with the same visual effects, but it does not deal separate damage.",
+     "quote": "''Light Binding'' spawns an additional missile at the same location and vector as the main missile.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Prismatic Barrier",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{tt|{{fd|0.25}}|Effect starts at beginning of cast time}}"
+   },
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "This ability only affects allies (a shield), not the target dummy, so it has no damage effect in a solo target-dummy fight.",
+     "quote": "Allied champions hit by the wand gain a {{tip|shield}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LuxPrismaticWave.BaseShieldAmount",
+     "reason": "defensive"
+    },
+    {
+     "ref": "LuxPrismaticWave.APRatio",
+     "reason": "defensive"
+    },
+    {
+     "ref": "LuxPrismaticWave.ShieldDuration",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Lucent Singularity",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ],
+    "quote": "{{ap|70 to 110}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.25,
+      0.3,
+      0.35,
+      0.4,
+      0.45
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 45}}%",
+     "bin": [
+      "LuxLightStrikeKugel.SlowPercent"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      115,
+      165,
+      215,
+      265
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|65 to 265}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "LuxLightStrikeKugel#TotalDamageTT"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Slow zone duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "remaining there for 5 seconds to grant {{tip|sight}}",
+     "bin": [
+      "LuxLightStrikeKugel.SlowZoneDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow linger duration after leaving the area",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "The slow lingers for 1 second after leaving the area.",
+     "bin": [
+      "LuxLightStrikeKugel.SlowLingerDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability can be recast at any time while in flight or during the duration, and automatically detonates after the duration ends.",
+     "quote": "''Lucent Singularity'' can be recast at any time while it is in flight or within the duration, and does so automatically after the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If recast while the projectile is still in flight, it detonates immediately upon arrival instead of waiting.",
+     "quote": "If ''Lucent Singularity'' was recast while in flight, it will detonate upon arrival.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies hit by the detonation are also slowed by the same amount, for 1 second.",
+     "quote": "Enemies hit by ''Lucent Singularity's'' detonation are also slowed by the same amount for 1 second.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast, not on detonation.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial cast counts as an ability activation for on-cast effects, but the manual recast does not.",
+     "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LuxLightStrikeKugel.VisionRadius",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Final Spark",
+   "cooldown": {
+    "values": [
+     60,
+     50,
+     40
+    ],
+    "quote": "{{ap|60 to 40}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 1,
+    "quote": "1"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      300,
+      400,
+      500
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|300 to 500}} {{as|(+ 120% AP)}}",
+     "bin": [
+      "LuxR.Damage",
+      "LuxR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "reveal duration of enemies hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "reveals}} them for {{fd|1.5}} seconds",
+     "bin": [],
+     "binNote": "No bin row for this reveal duration exists in the sheet; it is not a defined DataValue or calculation for slot R, so it cannot be tied to any bin ref."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Final Spark fires a beam in the target direction, dealing magic damage to enemies hit.",
+     "quote": "fires a massive light beam in a line in the target direction that deals {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability has a spell shield interaction, meaning a single instance of damage can be blocked as one spell.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is dealt as an area-of-effect line, not a projectile with travel time.",
+     "quote": "projectile   = False",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LuxR.ResetPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LuxR.ResetAssistWindow",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Light Binding, Lucent Singularity's cast/detonation, and Final Spark each deal on-cast (or fixed-delay) magic damage on cooldown"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Illumination mark, once applied by Q/E/R, is consumed by the next basic attack for bonus on-hit magic damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "the Illumination mark is a binary stack on the dummy applied by any ability hit, refreshed on subsequent hits, and consumed by an attack or Final Spark"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lucent Singularity's slow is a target debuff; irrelevant to damage output itself but listed since it is a defined debuff on the target (no damage amp component, so effectively unused in damage calc)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lucent Singularity is cast then separately recast/auto-detonates for its damage instance, a second timed part"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (50/60-80/70-110/100) can meaningfully cap casts across a 15s fight depending on mana pool/regen"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "cooldown starts on cast rather than on detonation (cdstart = on-cast), affecting how soon E can be recast/reused in the window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Prismatic Barrier only shields allies/self; no damage relevance in a solo target-dummy fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Illumination's mark-and-consume behavior maps to target-stacks (apply/refresh/consume) plus onhit-rider (bonus on-hit damage when consumed by an attack); Final Spark's mark consumption is just an additional consumer of the same target-stacks primitive rather than new logic. Everything else is plain-cast damage or a defensive/irrelevant primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Illumination's per-level base damage (30 to 200) actually match the champion's level in the dummy fight, given the bin's base term is an unresolved ByCharLevelFormulaCalculationPart that cannot be independently verified?",
+   "options": [
+    "Trust the wiki's {{pplevel|30 to 200}} progression as accurate for the fight's chosen level",
+    "Treat the base value as unresolved/unverifiable and flag it separately from the AP ratio"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart",
+    "{{as|{{pplevel|30 to 200}}|magic damage}} {{as|(+ 35% AP)}}"
+   ]
+  },
+  {
+   "question": "In the dummy fight, does Final Spark consuming the Illumination mark happen every time R is cast on a marked target, or only if the mark was freshly reapplied within the window (i.e., does R's own damage count as re-marking for a subsequent R cast to consume again)?",
+   "options": [
+    "R re-applies its own mark on hit, so a second R cast later can consume a mark from the first R's hit (if within 6s / refreshed)",
+    "R's damage does not itself apply an Illumination mark, so R can only consume marks left by Q/E, not chain off itself",
+    "Ambiguous from provided text; the P dossier doesn't state whether R's own hit applies a mark"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Lux's''' {{tip|abilities}} apply a mark to enemies hit for 6 seconds, refreshing on subsequent hits.",
+    "and ''{{ai|Final Spark|Lux}}'' consume the mark to deal"
+   ]
+  },
+  {
+   "question": "Does Q's extra 'Dummy' missile mechanic cause the single dummy target to register a second, independently-timed damage/mark application, or is it purely a visual-only duplicate with no gameplay effect on a single target?",
+   "options": [
+    "The dummy is hit only once per Q cast (single target), dealing one instance of Q damage and one mark application; the extra missile is VFX-only",
+    "The extra missile mechanic causes an additional hit-detection event even though only one damage instance is dealt, which could matter for on-cast-per-hit effects"
+   ],
+   "impact": "low",
+   "quotes": [
+    "''Light Binding'' spawns an additional missile at the same location and vector as the main missile."
+   ]
+  },
+  {
+   "question": "Does Lucent Singularity's automatic detonation after its 5s duration happen exactly at the 5s mark (allowing a fixed damage-timing assumption), or does the player always manually recast earlier for a faster damage instance, and does the cooldown starting on-cast (not on-detonation) let E's next cast begin before the current zone detonates?",
+   "options": [
+    "Always manually recast E as soon as possible after the projectile lands to minimize time-to-damage, since cooldown already started on cast",
+    "Let E auto-detonate after 5s if no earlier recast serves other rotation goals",
+    "Recast timing doesn't matter for total damage over 15s, only cast count matters"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = on-cast",
+    "does so automatically after the duration"
+   ]
+  },
+  {
+   "question": "Is Illumination's bonus on-hit damage available to be triggered by every basic attack against the dummy (once a mark exists), meaning the optimal rotation should attack immediately after each ability lands to consume the mark before the 6s duration or the 0.25s windup-refresh nuance matters, or is there a cap on how often this can proc relative to ability cooldowns?",
+   "options": [
+    "Illumination can be consumed once per ability-application interval (i.e., attack right after each Q/E/R hit for one proc per cast)",
+    "Because the mark refreshes and lasts 6s, several attacks in a row after one ability cast could each need a fresh mark, but only the first attack after landing consumes it, so subsequent attacks deal no bonus until marked again"
+   ],
+   "impact": "high",
+   "quotes": [
+    "apply a mark to enemies hit for 6 seconds, refreshing on subsequent hits",
+    "consume the mark to deal"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: max Q first (or per standard AP mage leveling), start with full mana.",
+   "Open with Q (Light Binding) on the dummy to deal magic damage and apply the Illumination mark.",
+   "Immediately auto-attack the marked dummy to consume Illumination for bonus on-hit magic damage.",
+   "Cast E (Lucent Singularity) on the dummy to deal its impact/zone damage and refresh the Illumination mark.",
+   "Auto-attack again to consume the refreshed mark from E.",
+   "Recast E as soon as available (respecting its cast-on cooldown) to detonate for its second damage instance and refresh the mark again.",
+   "Auto-attack to consume that mark.",
+   "Cast R (Final Spark) when available, both for its own large damage and to consume the current Illumination mark if present (spell shield issues aside).",
+   "Continue looping Q on cooldown into an auto-attack to consume the mark, alternating with E's cast/recast cycle and R whenever it comes off cooldown, always inserting an auto-attack after each ability lands to consume Illumination before it can be wasted.",
+   "Prioritize spending mana on Q/E on cooldown over auto-attacking without a fresh mark, since auto-attacks without Illumination active contribute only base AD damage."
+  ],
+  "questions": [
+   "Should E be recast as fast as possible after landing (near-instant detonation) to front-load damage, or does the fixed 5s duration+recast structure make manual immediate recast always correct regardless of resource cost?",
+   "Does R's own damage instance apply a new Illumination mark that a later attack (or R again) could consume, or is R purely a consumer and never an applier?",
+   "How many total casts of each ability fit in 15s given cast times (Q/E 0.25s, R 1s) plus attack windups, and does the simulator want attacks interleaved between every ability cast or should abilities be chained back-to-back with fewer attacks in between?",
+   "Is base attack speed/AD relevant enough to prioritize weaving multiple attacks, or since Illumination only grants one bonus per mark, is a single attack after each ability sufficient and additional attacks are just base damage?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,739 @@
+{
+ "champion": "nami",
+ "abilities": {
+  "P": {
+   "name": "Surging Tides",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus movement speed granted to allies hit",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 100,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{as|100|ms}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "NamiPassive#TotalMSBonus"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "duration over which the movement speed bonus decays",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "NamiPassive.BuffDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "movement speed bonus from Tidal Wave (doubled)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 200,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "increased to {{as|200|ms}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "NamiPassive.UltMult",
+      "NamiPassive#TotalMSBonus"
+     ],
+     "binNote": "The bin only exposes UltMult=2, a flat multiplier applied to NamiPassive#TotalMSBonus (base 100, ap coef 0.25). 2x100=200 matches the wiki's flat value, but 2x0.25=0.5 for the AP ratio is not a separate data row - it is my derivation from UltMult times TotalMSBonus's ap coefficient, not a value directly named in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Nami's abilities grant bonus movement speed to allied champions hit by them.",
+     "quote": "'''Nami's''' {{tip|abilities}} grant {{sti|ms|{{as|100|ms}}}} {{as|(+ 25% AP)}} {{as|'''bonus''' movement speed}} to allied {{tip|champions}} hit",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Tidal Wave uses a separate, higher-priority empowered buff instead of stacking with the normal buff.",
+     "quote": "''Tidal Wave'' uses a separate empowered buff that has priority over the normal buff, and it will be used even if the full/current strength of the empowered buff is weaker than the full-strength normal buff.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the normal buff is still active when the empowered buff expires, it restarts at full strength and decays over its remaining duration.",
+     "quote": "If the normal buff remains ongoing when the empowered buff expires, it will then begin with full strength and completely decay over its '''remaining''' duration.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Aqua Prison",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      90,
+      145,
+      200,
+      255,
+      310
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|90 to 310}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "NamiQ#TotalDamageTT"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "suspension (stun) duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "NamiQ.StunDuration"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "time from cast start to bubble landing",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.99,
+     "terms": [],
+     "quote": "{{fd|0.99}}",
+     "bin": [],
+     "binNote": "wiki-derived total (0.25 cast time + 0.7 travel); no direct bin row for the 0.7 travel component"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bubble lands and deals damage after the cast time ends, not on cast.",
+     "quote": "launches a bubble at the target location that lands {{tt|after {{rutngt|0.7}}|after the cast time ends}}, dealing {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Targets hit are suspended (stunned) and revealed for the stun's duration.",
+     "quote": "suspending them for {{fd|1.5}} seconds, during which they are {{tip|standard sight|revealed}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "This ability can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NamiQ.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ebb and Flow",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      55,
+      80,
+      105,
+      130,
+      155
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|55 to 155}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "NamiW#TotalHeal"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      95,
+      130,
+      165,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|60 to 200}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "NamiW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Bounce potency modifier applied to each subsequent bounce",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": -0.2,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0015
+      }
+     ],
+     "quote": "each bounce modifying the effectiveness of the next by -20% {{as|(+ 15% per 100 AP)}}",
+     "bin": [
+      "NamiW#BounceScaling"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Maximum number of additional bounces (total targets hit)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "bounces to nearby unaffected champions up to twice, alternating between enemies and allies and Nami",
+     "bin": [
+      "NamiW.MaxTargets"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The stream heals allies and deals magic damage to enemies, alternating target type between allies and enemies (and Nami herself) as it bounces.",
+     "quote": "which then bounces to nearby unaffected champions up to twice, alternating between enemies and allies and Nami",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each subsequent bounce is weaker than the last, reduced by the bounce potency modifier per bounce.",
+     "quote": "each bounce modifying the effectiveness of the next by -20% {{as|(+ 15% per 100 AP)}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the initial target has a spell shield, the shield blocks the damage but the ability still continues to bounce, and the shielding target may be hit again by the final bounce.",
+     "quote": "If cast on an enemy with a {{tip|spell shield}} they will not take damage but ''Ebb and Flow'' will still continue to bounce, and the target who blocked the ability may be targeted again by the final bounce.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NamiW.DamageAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "NamiW.HealAPRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Tidecaller's Blessing",
+   "cooldown": {
+    "values": [
+     11,
+     11,
+     11,
+     11,
+     11
+    ],
+    "quote": "11"
+   },
+   "cost": {
+    "values": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ],
+    "quote": "{{ap|55 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Magic Damage Per Hit",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|20 to 80}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "NamiE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.15,
+      0.2,
+      0.25,
+      0.3,
+      0.35
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.0005,
+        0.0005,
+        0.0005,
+        0.0005,
+        0.0005
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.05
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|15 to 35}}% {{as|(+ 5% per 100 AP)}}",
+     "bin": [
+      "NamiE#TotalSlow"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|slow}} enemies for 1 second",
+     "bin": [
+      "NamiE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Blessing buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "blesses herself or an allied champion for 6 seconds",
+     "bin": [
+      "NamiE.BuffDuration"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Empowered hit count",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "empowering their next 3 [[basic attack]]s or [[champion ability|abilities]]",
+     "bin": [
+      "NamiE.HitCount"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "AoE damage modifier vs non-champions",
+     "role": "utility",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.33,
+      0.3494,
+      0.3688,
+      0.3882,
+      0.4076,
+      0.4271,
+      0.4465,
+      0.4659,
+      0.4853,
+      0.5047,
+      0.5241,
+      0.5435,
+      0.5629,
+      0.5824,
+      0.6018,
+      0.6212,
+      0.6406,
+      0.66
+     ],
+     "terms": [],
+     "quote": "only deal {{pp|key=%|33 to 66}} of the '''bonus''' damage to non-champions",
+     "bin": [
+      "NamiE#AoeMod"
+     ],
+     "binNote": "Sheet gives only the byLevel(0.33..0.66) range endpoints; the 18 intermediate values are linearly interpolated here and not individually confirmed by either source."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The blessing empowers the next 3 basic attacks or abilities, each dealing bonus magic damage and slowing.",
+     "quote": "empowering their next 3 [[basic attack]]s or [[champion ability|abilities]] to each deal {{as|'''bonus''' magic damage}} and {{tip|slow}} enemies for 1 second",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The effect does not trigger against structures or wards.",
+     "quote": "The effect will not trigger against [[structures]] nor [[ward]]s.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage instances beyond the first do not count as separate applications for Electrocute.",
+     "quote": "Damage instances of ''Tidecaller's Blessing'' beyond the first do not count as separate applications for the purposes of {{ri|Electrocute}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Has no cast time.",
+     "quote": "cast time = none",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NamiE.DamageRatio",
+     "reason": null
+    },
+    {
+     "ref": "NamiE.BaseSlow",
+     "reason": null
+    },
+    {
+     "ref": "NamiE.SlowRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Tidal Wave",
+   "cooldown": {
+    "values": [
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|120|110|100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|150|250|350}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "NamiR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "knock up duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{tip|airborne|knocking them up}} for {{tt|{{fd|0.5}}|Estimated}} seconds",
+     "bin": [
+      "NamiR.KnockupDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 70,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 70%",
+     "bin": [
+      "NamiR.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "slow duration range based on distance traveled",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      2,
+      4
+     ],
+     "terms": [],
+     "quote": "{{pp|type=distance traveled|2 to 4 by 0.2|0 to 2750|formula = ''Capped at 2750 range.''}} seconds",
+     "bin": [
+      "NamiR.MinSlowDuration",
+      "NamiR.MaxSlowDuration",
+      "NamiR.DistToSlowRatio"
+     ],
+     "binNote": "Wiki gives min/max duration 2 to 4 seconds directly matching NamiR.MinSlowDuration=2 and NamiR.MaxSlowDuration=4. NamiR.DistToSlowRatio=0.002 would imply a 2750-range wave adds only 2750*0.002=5.5s beyond min if additive, or does not obviously reduce to the wiki's 'by 0.2' per some distance step description; the exact interpolation formula (how DistToSlowRatio maps distance to the 2-4s range) is not stated in either source, so the ratio itself is not separately restated as a duration number here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting the ultimate immediately triggers Nami's passive buff on herself.",
+     "quote": "{{ai|Surging Tides|Nami}} will trigger immediately on '''Nami''' on-cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The wave is a projectile that travels in the target direction, dealing damage and knock-up as it hits enemies, not instantly on cast.",
+     "quote": "Nami surges a tidal wave in the target direction ... dealing {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tidal Wave can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NamiR.PassiveUpdateAreaLength",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's bubble and R's wave each deal a single burst of magic damage on a fixed cast-time/travel delay, on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ebb and Flow is a single cast that produces up to three separately-resolved bounce instances (initial hit plus up to two bounces), each with its own damage/heal value modified by the bounce-potency term."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tidecaller's Blessing arms the next 3 basic attacks or ability-hits from the blessed unit (Nami herself in the solo dummy fight) with bonus magic damage, consumed on hit."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (Q 60, W 70-90, E 55-75, R 100); base mana pool/regen are not in either source, so whether Nami can sustain full-rotation casting for 15s is unclear."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's bounce alternates between enemy and ally/Nami targets and skips already-affected champions; with only one enemy dummy and no allies present, how many of the up-to-three hits actually land on the dummy is a geometry/target-availability assumption, not a stated rule."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Nami's damage-relevant mechanics (single-instance Q/R casts, W's multi-part bounce, E's empowered-hit charges, and mana costs) are each expressible with one closed-list primitive; the open questions are about how those primitives resolve in the no-ally dummy fight, not about missing mechanics."
+ },
+ "unsettled": [
+  {
+   "question": "In a 1v1 fight with no allied champions, how many of W's up-to-three hits actually land on the single enemy dummy?",
+   "options": [
+    "The initial cast on the dummy deals one full-potency hit, then bounces alternate to Nami (ally-type) and then fail to find a second unaffected enemy, so the dummy is only hit once per cast",
+    "The ability still resolves three hits total (enemy, Nami, and a repeat hit on the same dummy) because 'unaffected' only restricts consecutive same-cycle targeting, not the whole cast",
+    "Nami should self-cast W first so the bounce sequence lands on the dummy as the very next (still full/near-full potency) hit instead of the initial hit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "which then bounces to nearby unaffected champions up to twice, alternating between enemies and allies and Nami",
+    "each bounce modifying the effectiveness of the next by -20% {{as|(+ 15% per 100 AP)}}"
+   ]
+  },
+  {
+   "question": "Do Nami's own ability casts (Q/W/R) count as the 'abilities' that consume and trigger Tidecaller's Blessing's empowered bonus damage against the dummy, or is the buff effectively only consumed by basic attacks in practice?",
+   "options": [
+    "Any of Q, W, or R landing on the dummy while blessed consumes a charge and adds the full bonus magic damage, same as a basic attack",
+    "Only basic attacks realistically consume charges within the rotation because ability cooldowns rarely line up three casts inside the 6s buff window, so charges are mostly spent on autos",
+    "Sources do not specify whether an AoE ability hitting a single target consumes exactly one charge (vs. per unit hit), though with only one dummy this is moot"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Nami''' blesses herself or an allied champion for 6 seconds, empowering their next 3 [[basic attack]]s or [[champion ability|abilities]] to each deal {{as|'''bonus''' magic damage}}"
+   ]
+  },
+  {
+   "question": "Neither source states Nami's base mana pool or mana regeneration, so it is unclear whether she can sustain a full Q/W/E(+autos)/R rotation for the full 15s damage fight without going oom.",
+   "options": [
+    "Assume unlimited/sufficient mana for the simulator (ignore resource-budget as a binding constraint)",
+    "Pull base mana/regen from champion stats outside these two sources and enforce it as a real cast limiter"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: cast Tidecaller's Blessing (E) on herself to arm the next 3 attacks/abilities with bonus magic damage.",
+   "Open with Tidal Wave (R) on the dummy for the large upfront magic-damage burst (also instantly triggers her own Surging Tides passive, which is offense-irrelevant).",
+   "Cast Aqua Prison (Q) on the dummy as soon as its 0.25s cast/0.7s travel resolves, on cooldown thereafter (8-12s depending on rank).",
+   "Cast Ebb and Flow (W) on the dummy on cooldown (10s) for its direct magic-damage hit.",
+   "Auto-attack the dummy in all gaps between ability casts to keep consuming/refreshing the Tidecaller's Blessing empowered charges and to add base AA damage.",
+   "Recast E on cooldown (11s) to keep the empowered-attack buff active as much as possible.",
+   "Do not plan to recast R; its 100-120s cooldown exceeds the ~15s fight, so it is a once-per-fight opener only."
+  ],
+  "questions": [
+   "Should R be cast first (to front-load burst and passive uptime) or held until E/Q are already active so the wave benefits from an empowered charge, or does that not matter since R's damage is not itself flagged as empowerable?",
+   "What is Nami's actual mana pool/regen at the fight's assumed level/items, and does it actually force skipping W or auto-attacking more to stay in mana?",
+   "Given the W bounce-target-availability question above, is it ever correct to self-cast W first instead of enemy-casting it, for maximum total damage to the dummy?",
+   "Does the 0.99s total Q travel time and 0.5s R cast+travel meaningfully change optimal cast order versus treating all abilities as instant for a 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

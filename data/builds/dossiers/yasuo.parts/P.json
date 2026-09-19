@@ -1,0 +1,105 @@
+{
+ "name": "Way of the Wanderer",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_shield",
+   "meaning": "shield strength when Flow is consumed",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    125,
+    145.1,
+    166.2,
+    188.3,
+    211.4,
+    235.4,
+    260.4,
+    286.4,
+    313.4,
+    341.3,
+    370.2,
+    400.1,
+    431.0,
+    462.9,
+    495.7,
+    529.5,
+    564.3,
+    600
+   ],
+   "terms": [],
+   "quote": "{{pp|{{#var:b1}}+(({{#var:b18}}-{{#var:b1}})/17*(x-1)*(0.7025+0.0175*(x-1))) for 20}}",
+   "bin": [
+    "YasuoPassive#ShieldValue"
+   ],
+   "binNote": "Wiki computes the shield with a nonlinear per-level formula (quadratic acceleration term 0.7025+0.0175*(x-1)) that back-calculates to the values listed here; the bin's YasuoPassive#ShieldValue instead appears to be a plain linear interpolation from 125 at level 1 to 600 at level 18 (step ~27.94/level, e.g. 152.9 at level 2 vs the wiki's 145.1). The endpoints (125, 600) agree but the intermediate levels do not; using the wiki's stated formula here."
+  },
+  {
+   "id": "p_shield_duration",
+   "meaning": "duration the shield lasts",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "grant himself a {{tip|shield}} for ... that lasts for 1 second",
+   "bin": [],
+   "binNote": "No bin row for the 1 second shield lifetime; it is only stated in the description text."
+  },
+  {
+   "id": "p_critdmgmod",
+   "meaning": "Yasuo's critical strikes deal only a reduced percentage of normal crit damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": 95,
+   "terms": [],
+   "quote": "{{fd|{{#expr:{{ccd|Yasuo|crit_mod}}*100}}}}% of the {{sti|{{as|critical damage}}}} champions usually have",
+   "bin": [
+    "YasuoPassive.CritDamageMod"
+   ],
+   "binNote": "Bin stores this as a 0.95 multiplier (CritDamageMod); wiki expresses the same value as 95%."
+  },
+  {
+   "id": "p_critexcess",
+   "meaning": "bonus AD gained per 1% critical strike chance in excess of 100%",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{as|1% critical strike chance}} in excess of {{as|100%|critical strike chance}} is converted into {{sti|{{as|{{fd|0.5}} '''bonus''' attack damage}}}}",
+   "bin": [
+    "YasuoPassive.YasuoCritToAD"
+   ],
+   "binNote": "Bin stores YasuoCritToAD as 50, which is the wiki's 0.5 bonus AD scaled by 100 (per 100% excess crit rather than per 1%)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Yasuo's total critical strike chance is doubled from all other sources.",
+   "quote": "'''Yasuo's''' {{as|{{sti|'''total''' critical strike chance}}}} is doubled from all other sources.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Yasuo gains the shield before the triggering damage instance resolves, so it mitigates the hit that triggered it.",
+   "quote": "'''Yasuo''' gains the shield before the damage instance; the shield will mitigate the damage that triggered it.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The shield only triggers upon reaching 100 Flow stacks and then taking damage from an enemy champion or monster, consuming all stacks.",
+   "quote": "upon taking damage from an enemy {{tip|champion}} or {{tip|monster}}, '''Yasuo''' consumes all {{tip|Flow}} to grant himself a {{tip|shield}}",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YasuoPassive.CritChanceMultiplier",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

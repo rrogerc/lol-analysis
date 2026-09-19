@@ -1,0 +1,103 @@
+{
+ "champion": "zilean",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Time Bomb deals AoE magic damage on a fixed 3s delay after attaching (or on death of the target), dummy has no way to die early so treat as fixed-delay damage"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "landing a second bomb on an already-bombed target instantly detonates the first bomb (separately timed damage instance vs. the normal 3s fuse), letting Q be effectively double-cast for burst"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Rewind cuts the remaining cooldown of Q and E by a flat 10s each, requires one of them to be on cooldown to cast"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q 60-80, W 35, E 50, R 125-175) are large relative to typical early mana pools and may gate how many casts fit in 15s"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R",
+    "P",
+    "E"
+   ],
+   "note": "Chronoshift's heal/invulnerability only helps in the survival fight (as the ally-target or self), Time in a Bottle never deals damage, and Time Warp's ally-speed/enemy-slow effects are pure mobility/CC (ignored per fight rules) though R's heal matters for survival fight when Zilean is the tank being attacked"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Time Bomb's detonation timing is conditional on the target dying or a second bomb attaching, which the dummy fight must approximate (dummy never dies from anything but the ability being tested, and there's no second champion to double-bomb with in the damage fight); the list's 'plain-cast' primitive with a fixed 3s delay approximates the normal case, but the instant-detonation-via-double-bomb interaction (a real damage-maximizing tech versus a solo dummy target) needs bespoke logic to decide whether it's even reachable in a 1v1 dummy fight."
+ },
+ "unsettled": [
+  {
+   "question": "In the damage fight, does Q's bomb count as landing on the dummy at cast (starting its 3s fuse immediately) or only once the projectile travels to the target, and does the dummy's stationary nature let a second Q instantly detonate the first for a faster damage instance?",
+   "options": [
+    "Treat Q as fixed 3s delayed damage from cast, ignore the double-bomb instant-detonation tech since only one target exists",
+    "Allow Zilean to cast Q twice in quick succession to instantly detonate the first bomb (dealing that instance's damage early) then re-time the second bomb's own 3s fuse, maximizing DPS but requiring bespoke double-Q logic",
+    "Model the double-bomb interaction but only as a rotation choice, not as a distinct primitive with separate cooldown timing"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The bomb detonates immediately if another bomb attaches itself to the same unit, {{tip|stun|stunning}} nearby enemies for a duration.",
+    "'''Zilean''' can detonate an enemy counterpart's ''Time Bomb'' by placing his own on the same unit (the first bomb still deals damage)."
+   ]
+  },
+  {
+   "question": "Does Rewind's cooldown reduction on Q (and E) actually let Zilean fit meaningfully more Q casts into the 15s window, and should the rotation assume Rewind is cast every time it's off cooldown purely to shorten Q's cooldown for more damage instances?",
+   "options": [
+    "Yes, weave Rewind whenever Q is on cooldown to shave 10s off Q's cooldown each time, since Q is the only damage source",
+    "No, Rewind's mana cost (35) and cast opportunity cost aren't worth it versus just waiting out Q's short base cooldown (8-10s) in a 15s fight",
+    "Depends on mana budget: only cast Rewind if mana allows both Rewind and the resulting extra Q cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Zilean''' reduces the {{sti|cd|'''remaining'''}} cooldowns of ''{{ai|Time Bomb|Zilean}}'' and ''{{ai|Time Warp|Zilean}}'' by 10 seconds each.",
+    "Either {{ai|Time Bomb|Zilean}} or {{ai|Time Warp|Zilean}} must be on cooldown to cast this ability"
+   ]
+  },
+  {
+   "question": "Does the bomb's attach on the dummy trigger 'combat status' / on-hit-like item procs (Sudden Impact, Elixir of Sorcery) as a distinct zero-damage proc event separate from the detonation damage, and should the damage fight simulate that as a second instance for on-hit item interactions?",
+   "options": [
+    "Model attach as a separate 0-damage proc event that can trigger on-hit/proc-based item effects, then detonation as the real damage instance",
+    "Ignore the attach proc entirely and only simulate the single detonation damage instance, since no on-hit items are guaranteed present in every build"
+   ],
+   "impact": "low",
+   "quotes": [
+    "When ''Time Bomb'' snaps onto an enemy, it  deals 0 {{tip|proc damage}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Time Bomb) on the dummy to start its 3-second fuse.",
+   "Cast Q again as soon as it comes off cooldown, re-applying the fuse for the next damage tick (base cooldown 8-10s depending on rank, so roughly 1-2 casts fit in 15s at low rank, more at max rank).",
+   "Cast W (Rewind) whenever Q is on cooldown and mana allows, to shave 10s off Q's remaining cooldown and fit in an extra Q cast within the 15s window.",
+   "Do not cast E (Time Warp) or R (Chronoshift) in the damage fight since neither deals damage to the target dummy (E is a slow/speed buff, R is a defensive heal for the caster or an ally).",
+   "Repeat Q on cooldown (assisted by W's cooldown reduction) for the remainder of the 15 seconds, maximizing the number of detonation damage instances landed."
+  ],
+  "questions": [
+   "Is the double-bomb instant-detonation tech reachable or relevant in a solo-dummy damage fight, or should it be excluded since there's no second target to bounce bombs between?",
+   "Should Rewind be included in the optimal rotation at all, given it deals no damage itself and only marginally speeds up Q's cooldown, especially at higher Q ranks where the cooldown reduction is proportionally smaller?",
+   "At what champion level/rank assumption should Q's cooldown and cast count be evaluated, since a 15s fight's Q-cast count is highly sensitive to Q's rank (8s to 10s cooldown)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

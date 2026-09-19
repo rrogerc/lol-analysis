@@ -1,0 +1,958 @@
+{
+ "champion": "tahmkench",
+ "abilities": {
+  "P": {
+   "name": "An Acquired Taste",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage on basic attacks and Tongue Lash",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      5,
+      5,
+      5,
+      5,
+      10,
+      10,
+      10,
+      10,
+      10,
+      15,
+      15,
+      20,
+      20,
+      25,
+      30,
+      35,
+      40,
+      60
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.04
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.0125,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.0125
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|5 to 60 for 12}}|magic damage}} ({{as|+ {{fd|1.25}}% AP}} {{as|per 100 '''bonus''' health}}) {{as|(+ 4% of his '''bonus''' health)}}",
+     "bin": [
+      "TahmKenchPassive#TotalDamage"
+     ],
+     "binNote": "The bin computes total damage as byLevel base + 0.04xbonusHp + (APRatioPer100BonusHP=0.0125 x bonusHp x 0.01)xap, matching the wiki's flat-per-level base, +4% bonus HP term, and +1.25% AP per 100 bonus HP term; cited as one calculation since the individual coefficients (0.04, 0.0125) are components of TotalDamage rather than separate named rows."
+    },
+    {
+     "id": "p_2",
+     "meaning": "stack duration before decay",
+     "role": "duration",
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds, refreshing on subsequent hits and stacking up to 3 times",
+     "bin": [
+      "TahmKenchPassive.Duration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "maximum stacks",
+     "role": "count",
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [
+      "TahmKenchPassive.MaxStacks"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "interval at which stacks expire one by one",
+     "role": "interval",
+     "by": "const",
+     "base": 0.67,
+     "terms": [],
+     "quote": "Stacks expire one by one every {{fd|0.67}} seconds when the duration ends.",
+     "bin": [
+      "TahmKenchPassive.PerStackDecayTimer"
+     ],
+     "binNote": "Wiki states 0.67s per-stack decay while the bin's PerStackDecayTimer is 1; treated as the same mechanic but the numbers disagree."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive applies to both basic attacks (on-hit) and Tongue Lash, but the damage instance type differs.",
+     "quote": "the damage is dealt as an '''additional''' instance of damage (as opposed to '''bonus''' damage when applied by basic attacks)",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive bonus damage applies to turrets.",
+     "quote": "The passive bonus damage applies to turrets.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "As an additional damage instance from Tongue Lash, it double-triggers on-hit-style effects like Bloodletter's Curse.",
+     "quote": "This causes effects like {{ri|Bone Plating}} and {{iis|Bloodletter's Curse}} {{nie|Vile Decay}} to be applied twice.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only applies stacks against enemy champions.",
+     "quote": "apply a {{tip|stack}} of ''An Acquired Taste'' against enemy {{tip|champions}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Tongue Lash",
+   "cooldown": {
+    "values": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "quote": "{{ap|7 to 5}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     46,
+     42,
+     38,
+     34
+    ],
+    "quote": "{{ap|50 to 34}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      120,
+      165,
+      210,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|75 to 255}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "TahmKenchQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "missingHp",
+       "coef": [
+        0.05,
+        0.055,
+        0.06,
+        0.065,
+        0.07
+       ]
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ {{ap|5 to 7}}% of '''missing''' health)}}",
+     "bin": [
+      "TahmKenchQ.BaseHeal",
+      "TahmKenchQ.PercentHealthHealing"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The heal on Tongue Lash only occurs if the tongue hits an enemy champion, not any other target type.",
+     "quote": "If this hits an enemy champion, '''Tahm Kench''' also heals himself",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Tahm Kench cannot move, attack, or cast Abyssal Dive/Devour (on a different target) while the Tongue Lash missile is in flight, delaying his next damage instance.",
+     "quote": "'''Tahm Kench''' is unable to move, attack, or cast {{ai|Abyssal Dive|Tahm Kench}} or {{ai|Devour|Tahm Kench}} on a different target while his tongue is in flight",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Devour can be queued during Tongue Lash's cast/travel and will not go on cooldown if Tongue Lash whiffs, allowing a fast follow-up cast.",
+     "quote": "{{ai|Devour|Tahm Kench}} can be 'queued' at any point during ''Tongue Lash'' (including the wind-up animation) and will not go on cooldown if '''Tahm Kench''' fails to hit a valid target with ''Tongue Lash''",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TahmKenchQ.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "TahmKenchQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "TahmKenchQ.StunDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Abyssal Dive",
+   "cooldown": {
+    "values": [
+     21,
+     20,
+     19,
+     18,
+     17
+    ],
+    "quote": "{{ap|21 to 17}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     75,
+     90,
+     105,
+     120
+    ],
+    "quote": "{{ap|60 to 120}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      135,
+      170,
+      205,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|100 to 240}} {{as|(+ 150% AP)}}",
+     "bin": [
+      "TahmKenchW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Cooldown Refund",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.425,
+      0.45,
+      0.475,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 50}}%",
+     "bin": [
+      "TahmKenchW.ChampRefund"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "channel duration before blink",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.35,
+     "terms": [],
+     "quote": "{{tip|channels}} for {{fd|1.35}} seconds",
+     "bin": [
+      "TahmKenchW.ChannelTime"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "mana cost refund on champion hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "40% of ''Abyssal Dive's'' {{sti|{{as|mana}}}} cost",
+     "bin": [
+      "TahmKenchW.ChampRefund"
+     ],
+     "binNote": "wiki's 40% mana refund text matches only the first rank of ChampRefund [0.4/0.425/0.45/0.475/0.5], described in prose as a flat 40% though the leveling table shows it scaling to 50%; likely the prose is unrounded/rank-1-only wording while the actual value uses the same array as the cooldown refund."
+    },
+    {
+     "id": "w_5",
+     "meaning": "knock up and stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "knocking them up and stunning them for 1 second",
+     "bin": [
+      "TahmKenchW.KnockUpDuration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "delay from channel completion to blink/damage",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "{{fd|0.15}}-second delay",
+     "bin": [
+      "TahmKenchW.AoEDelayFromChannelStart",
+      "TahmKenchW.ChannelTime"
+     ],
+     "binNote": "wiki's 0.15s post-channel delay equals AoEDelayFromChannelStart (1.5) minus ChannelTime (1.35)."
+    },
+    {
+     "id": "w_7",
+     "meaning": "lockout duration after blink before Tahm Kench can act",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.65,
+     "terms": [],
+     "quote": "remains {{tip|lockout|unable to act}} for {{fd|0.65}} seconds after the blink",
+     "bin": [
+      "TahmKenchW.TotalTime",
+      "TahmKenchW.AoEDelayFromChannelStart"
+     ],
+     "binNote": "wiki's 0.65s lockout equals TotalTime (2) minus AoEDelayFromChannelStart (1.5)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Tahm Kench blinks to the target location after the channel, dealing damage, knock up, and stun to nearby enemies upon landing, not during the channel.",
+     "quote": "Upon completion of the channel, '''Tahm Kench''' {{tip|blink|blinks}} to the target location after a {{fd|0.15}}-second delay, dealing {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If at least one enemy champion is hit by the emergence, a cooldown and mana refund is granted; against a single dummy target this refund applies.",
+     "quote": "If at least one enemy {{tip|champion}} is hit, 40% of ''Abyssal Dive's'' {{sti|{{as|mana}}}} cost as well as a percentage of its {{sti|cooldown}} are refunded.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast, not on the delayed damage.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "spellshield  = true",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TahmKenchW.EnemyWarningDelayFromChannelStart",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Thick Skin",
+   "cooldown": {
+    "values": [
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "quote": "{{tt|3|Starts upon shield destruction or expiration}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Damage Stored into Grey Health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.15,
+      0.23,
+      0.31,
+      0.39,
+      0.47
+     ],
+     "terms": [],
+     "quote": "{{ap|15 to 47}}%",
+     "bin": [
+      "TahmKenchE.GreyHealthRatio"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Increased Damage Stored into Grey Health (near 2+ enemy champions)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.42,
+      0.44,
+      0.46,
+      0.48,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|42 to 50}}%",
+     "bin": [
+      "TahmKenchE.GreyHealthRatioEnhanced"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Percentage of grey health restored when it decays into a heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.6,
+      0.6235,
+      0.647,
+      0.6706,
+      0.6941,
+      0.7176,
+      0.7412,
+      0.7647,
+      0.7882,
+      0.8118,
+      0.8353,
+      0.8588,
+      0.8824,
+      0.9059,
+      0.9294,
+      0.9529,
+      0.9765,
+      1.0
+     ],
+     "terms": [],
+     "quote": "{{pp|key=%|60 to 100}}",
+     "bin": [
+      "TahmKenchE#GreyHealthHealingRatio"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Grey health decay heal per tick (percent of max health)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "healing for {{as|10% of his '''maximum''' health}} every {{rutngt|0.25}}",
+     "bin": [
+      "TahmKenchE.MaxHPHealRatio"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Grey health decay heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "healing for {{as|10% of his '''maximum''' health}} every {{rutngt|0.25}}",
+     "bin": [],
+     "binNote": "No data value in TahmKenchE's sheet carries the 0.25s tick interval; the wiki's {{rutngt|0.25}} number has no corresponding named row in this spell's bin listing (nearest is R's unrelated ShieldDecayPerSecond, which is per-second shield decay, not this tick rate), so it is left unbacked here."
+    },
+    {
+     "id": "e_6",
+     "meaning": "Time without taking damage before grey health starts decaying into a heal",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "after 4 seconds without taking damage",
+     "bin": [
+      "TahmKenchE.OOCTimer"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Shield duration when Thick Skin is activated",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}}",
+     "bin": [
+      "TahmKenchE.ShieldDuration"
+     ]
+    },
+    {
+     "id": "e_8",
+     "meaning": "Maximum grey health that can be stored",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 3.0
+      }
+     ],
+     "quote": "{{as|300% of his '''maximum''' health}}",
+     "bin": [
+      "TahmKenchE#GreyHealthMaximum"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Thick Skin stores a portion of post-mitigation damage taken as grey health rather than reducing incoming damage directly.",
+     "quote": "'''Tahm Kench''' stores a portion of the {{tt|post-mitigation damage|Damage calculated after modifiers}} he takes as [[Health#Grey health|grey health]] on his [[health bar]]",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The stored damage percentage is increased while at least 2 enemy champions (dead or alive) are within sight/visible range.",
+     "quote": "increased while there are at least 2 nearby {{tip|sight|visible}} enemy champions either dead or alive",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Because grey health converts all post-mitigation damage, Thick Skin effectively grants a form of true damage mitigation.",
+     "quote": "''Grey health'' converts all post-mitigation damage, ''Thick Skin'' effectively grants ''Tahm Kench'' a form of {{as|true damage}} mitigation.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Grey health decays into a heal only while Thick Skin is off cooldown and after 4 seconds without taking damage.",
+     "quote": "While ''Thick Skin'' is not on cooldown, and after 4 seconds without taking damage, '''Tahm Kench''' rapidly consumes his [[Health#Grey health|grey health]] to restore",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The active converts Tahm Kench's current grey health into a shield lasting a fixed duration, and the E cooldown starts upon that shield's destruction or expiration.",
+     "quote": "'''Tahm Kench''' converts his current [[Health#Grey health|grey health]] into a {{tip|shield}} that lasts for {{fd|2.5}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Both the grey-health heal and the shield are boosted by effects that increase healing and shielding power, potentially exceeding normal grey-health/shield caps.",
+     "quote": "''Thick Skin'' shield value and ''grey health'' percentage heal are both boosted by effects that increase heal and shield power.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TahmKenchE.EnhancedThreshold",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TahmKenchE.ThresholdRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Devour / Regurgitate",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}",
+    "binNote": "Sheet's ddragon field and DataCooldown show [120/100/80] matching the wiki; the base cooldown field lists 0 and CDCalc multiplies DataCooldown by an unresolved CooldownMultiplierCalculationPart, so the raw 'cooldown: 0' row is a placeholder, not the live value."
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      650,
+      800,
+      950
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|650 to 950}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "TahmKenchRWrapper#TotalShield"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      250,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.15,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.07
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|100 to 400}} {{as|(+ 15% {{as|(+ 7% per 100 AP)}} of the target's '''maximum''' health)}}",
+     "bin": [
+      "TahmKenchRWrapper.BaseDamage",
+      "TahmKenchRWrapper#PercentHPDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Ally shield decay rate after Regurgitate",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 200,
+     "terms": [],
+     "quote": "decays in strength by 50 every {{fd|0.25}} seconds after they are ''{{ai|Regurgitate|Tahm Kench|Regurgitated}}''",
+     "bin": [
+      "TahmKenchRWrapper.ShieldDecayPerSecond"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Self bonus movement speed while ally swallowed",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.6,
+     "terms": [],
+     "quote": "gain {{sti|{{as|60% '''bonus''' movement speed}}}} for 3 seconds",
+     "bin": [
+      "TahmKenchRWrapper.AllySpeedAmount"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Duration a champion can be swallowed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "carry them in his belly for up to 3 seconds",
+     "bin": [
+      "TahmKenchRWrapper.EnemyDuration",
+      "TahmKenchRWrapper.AllyDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Self-slow while enemy swallowed",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "grounded and {{tip|slow|slowed}} by 40% under those same conditions",
+     "bin": [
+      "TahmKenchRWrapper.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Tahm Kench lockout duration after casting Regurgitate",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "unable to act for {{fd|0.4}} seconds after casting Regurgitate",
+     "bin": [],
+     "binNote": "No bin row carries this 0.4s lockout duration; it does not appear among Regurgitate/Devour data values, so this is wiki-only and unverifiable against the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Regurgitate deals magic damage based on the target's maximum health only when the swallowed champion is an enemy.",
+     "quote": "If they are an enemy, he deals {{as|magic damage}} to them at the end of the displacement.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage instance occurs at the end of the spit displacement, not at the moment of casting Regurgitate.",
+     "quote": "deals {{as|magic damage}} to them at the end of the displacement",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Devour can only be cast on enemies who have 3 stacks of the passive.",
+     "quote": "''Devour'' can only be cast on enemies with 3 stacks of ''{{ai|An Acquired Taste|Tahm Kench}}''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target is an ally, Devour grants a shield instead of dealing damage.",
+     "quote": "If the target is an ally, they become {{tip|lockout|unable to act}} and are granted a {{tip|shield}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield decays in strength by 50 every 0.25 seconds after the ally is Regurgitated.",
+     "quote": "which decays in strength by 50 every {{fd|0.25}} seconds after they are ''{{ai|Regurgitate|Tahm Kench|Regurgitated}}''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Regurgitate automatically casts after Devour's swallow duration ends, or can be manually cast after 1 second.",
+     "quote": "After 1 second, '''Tahm Kench''' can cast ''{{ai|Regurgitate|Tahm Kench}}'' while a target is inside of his belly, and automatically does so after the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown for Devour starts post-effect (after Regurgitate resolves), and the time spent active reduces the cooldown afterward.",
+     "quote": "Starts post-effect, but time spent active will be reduced by current cooldown afterwards",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TahmKenchRWrapper.SpitOutRangeAlly",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TahmKenchRWrapper.SpitOutRangeEnemy",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TahmKenchRWrapper.CastTime",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "TahmKenchRWrapper.MinimumAllyDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TahmKenchRWrapper.DataCooldown",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "TahmKenchRWrapper.DataManaCost",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks and Tongue Lash are empowered with bonus/additional magic damage scaled off bonus HP (+AP ratio), applying a stack of An Acquired Taste on champion hits."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "Attacks and Tongue Lash build stacks on the target (cap 3, 5s refresh, decays one-by-one); at 3 stacks Q gains a bonus effect and R (Devour) becomes castable on the target, consuming all stacks."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Tongue Lash deals immediate magic damage on hit; Abyssal Dive deals delayed AoE magic damage on emergence; Regurgitate deals magic damage at the end of its displacement."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Hitting an enemy champion with Abyssal Dive refunds 40-50% of its cooldown and 40% of its mana cost, letting it recur faster in the fight."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Abyssal Dive channels 1.35s (blocking actions) before its delayed blink/damage; Devour locks Tahm out briefly on cast and again for 0.4s after casting Regurgitate."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Devour (swallow, no direct damage) is a separate timed part from Regurgitate (the actual damage instance), which can be manually recast after 1s or auto-casts after up to 3s."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs on Q (34-50), W (60-120), and R (100 flat) can constrain how often abilities are cast within the ~15s window, especially without refunds."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Thick Skin (grey health storage, decay-heal, and shield) is purely defensive and irrelevant to the damage fight; relevant only to the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage sources (onhit passive, Q, W, R-Regurgitate) and its stack-gating for R are expressible with onhit-rider, target-stacks, plain-cast, cooldown-manipulation, charge-or-channel, and recast-or-multipart. E is fully defensive-only. No mechanic here (e.g. no true pet, no form change, no crit interaction) falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "What is R's (Devour) live effective cooldown in the damage fight?",
+   "options": [
+    "Use the ddragon/DataCooldown array [120, 100, 80] directly, since CooldownMultiplierCalculationPart is likely just standard CDR (1.0 with no items)",
+    "Treat the raw bin 'cooldown: 0' plus unresolved CDCalc as meaning the true base is something other than DataCooldown and should be flagged rather than assumed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "TahmKenchRWrapper#CDCalc = (DataCooldown=[120/100/80])*(<CooldownMultiplierCalculationPart>)",
+    "! unresolved calculation part CooldownMultiplierCalculationPart"
+   ]
+  },
+  {
+   "question": "Is Tongue Lash's An Acquired Taste proc damage a fully separate, independently-mitigated damage instance from Tongue Lash's own damage, or should it be folded into one combined number for kill-time purposes?",
+   "options": [
+    "Model as two separate damage instances (Q hit + P proc hit), each independently subject to resists/on-hit-triggered effects, per the wiki's explicit note",
+    "Model as a single combined damage number since the bin only exposes one TotalDamage formula for the passive with no separate-instance flag"
+   ],
+   "impact": "high",
+   "quotes": [
+    "the damage is dealt as an '''additional''' instance of damage (as opposed to '''bonus''' damage when applied by basic attacks)",
+    "This causes effects like {{ri|Bone Plating}} and {{iis|Bloodletter's Curse}} {{nie|Vile Decay}} to be applied twice."
+   ]
+  },
+  {
+   "question": "Does Abyssal Dive's champion-hit mana refund scale by rank (same array as the cooldown refund) or is it a flat 40% at all ranks?",
+   "options": [
+    "Flat 40% mana refund regardless of rank, per the literal prose wording",
+    "Scales with rank using ChampRefund=[0.4, 0.425, 0.45, 0.475, 0.5], same as the cooldown refund percentage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "40% of ''Abyssal Dive's'' {{sti|{{as|mana}}}} cost as well as a percentage of its {{sti|cooldown}} are refunded.",
+    "TahmKenchW.ChampRefund = [0.4/0.425/0.45/0.475/0.5]"
+   ]
+  },
+  {
+   "question": "How fast do An Acquired Taste stacks expire once their duration ends: one every 0.67s (wiki) or one every 1s (bin PerStackDecayTimer)?",
+   "options": [
+    "0.67s per-stack decay (wiki prose)",
+    "1s per-stack decay (bin PerStackDecayTimer)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Stacks expire one by one every {{fd|0.67}} seconds when the duration ends.",
+    "TahmKenchPassive.PerStackDecayTimer = 1"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Tongue Lash (Q) on cooldown for its own damage plus applying/refreshing a stack of An Acquired Taste on the dummy.",
+   "Auto-attack the dummy between Q casts; each auto-attack also deals the on-hit An Acquired Taste bonus damage and adds/refreshes a stack.",
+   "Cast Abyssal Dive (W) as soon as it is off cooldown for its own delayed AoE damage; since the dummy counts as an enemy champion, this also triggers the cooldown/mana refund, letting it be recast sooner.",
+   "Continue alternating auto-attacks and Q casts to rebuild/maintain 3 stacks of An Acquired Taste on the dummy.",
+   "Once the dummy holds 3 stacks, cast Devour (R) on it, then recast Regurgitate as soon as legally possible to land its max-health-scaling magic damage and consume the stacks.",
+   "Resume the Q/auto-attack/W cadence to rebuild stacks toward a second Devour->Regurgitate cast if the 15s window and cooldowns allow."
+  ],
+  "questions": [
+   "Should Regurgitate be manually recast at its earliest allowed moment (1s after swallow) rather than waiting for the automatic cast at 3s, to minimize the window where the dummy is untargetable and no damage lands on it?",
+   "During Devour's swallow, is the target fully unattackable (no auto-attacks or Q/W can land on it) for the whole attach duration, creating dead time in the 15s fight that should be subtracted from other ability usage?",
+   "Does R's cooldown genuinely start counting only after Regurgitate resolves (cdstart: post-effect), meaning the first Devour->Regurgitate cycle's downtime before a second R cast must include the full swallow duration before the cooldown even begins?",
+   "Is it worth delaying the first Q cast to build the opening auto-attack into the rotation, or does Q's cast time/cooldown make cast-first strictly better for total 15s damage?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

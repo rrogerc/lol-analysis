@@ -1,0 +1,798 @@
+{
+ "champion": "anivia",
+ "abilities": {
+  "P": {
+   "name": "Rebirth",
+   "cooldown": {
+    "values": [
+     240
+    ],
+    "quote": "static       = 240",
+    "binNote": "RebirthMarker.Cooldown = 240 matches; RebirthMarker.Cooldown itself is 240, not 0 (the checker's '0' likely came from a stray field labeled cooldown:0 in the header, which is not RebirthMarker.Cooldown itself)."
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "duration of resurrection",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "enters {{tip|resurrection}} for 6 seconds",
+     "bin": [],
+     "binNote": "No bin row carries the 6-second resurrection duration; it is not present among RebirthMarker's data values."
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus armor and magic resistance while resurrecting, by champion level",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      -40,
+      -40,
+      -40,
+      -40,
+      -25,
+      -25,
+      -25,
+      -10,
+      -10,
+      -10,
+      -10,
+      5,
+      5,
+      5,
+      20,
+      20,
+      20,
+      20
+     ],
+     "terms": [],
+     "quote": "gains {{pp|-40 to 20 for 5|1;5;8;12;15|changedisplay=true}} {{sti|armor|{{as|'''bonus''' armor}}}} and {{sti|mr|{{as|'''bonus''' magic resistance}}}}",
+     "bin": [
+      "RebirthMarker#BonusResists"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rebirth triggers upon taking fatal damage, entering resurrection and restoring full health.",
+     "quote": "upon taking {{tip|death|fatal damage}}, '''Anivia''' enters {{tip|resurrection}} for 6 seconds and restores all of her {{sti|{{as|health}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "While resurrecting, Anivia is unable to act.",
+     "quote": "'''Anivia''' is {{tip|lockout|unable to act}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Anivia survives the duration, she is revived with her current health, not full health.",
+     "quote": "she is revived with her {{as|'''current''' health}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Guardian Angel and Chronoshift take priority over Rebirth.",
+     "quote": "{{ai|Chronoshift|Zilean}} and {{ii|Guardian Angel}} will take priority over ''Rebirth''.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RebirthMarker#BonusResistsTooltip",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Flash Frost",
+   "cooldown": {
+    "values": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "quote": "{{ap|11 to 7}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ],
+    "quote": "{{ap|80 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage (passthrough)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|50 to 130}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "FlashFrost#TotalPassthroughDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Magic Damage (explosion)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      95,
+      130,
+      165,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|60 to 200}} {{as|(+ 45% AP)}}",
+     "bin": [
+      "FlashFrost#TotalExplosionDamage"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Stun Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{ap|1.1 to 1.5}} seconds",
+     "bin": [
+      "FlashFrost.StunDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Slow Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "for 3 seconds",
+     "bin": [
+      "FlashFrost.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The initial cast and the manual recast are separate damage instances, and the initial cast and manual recast each count as ability activations for on-cast effects.",
+     "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the recast is not manually triggered, the explosion still happens automatically at max range but does not count as a separate ability activation.",
+     "quote": "If the ability is not manually recasted, the secondary effect will trigger without being considered as an ability activation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield can block only one of the two damage instances (the active or the recast), not both if the first is blocked.",
+     "quote": "{{tip|Spell shield}} can block the effects of either the active or the recast, but not both if the former is blocked.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown begins after the recast/explosion resolves, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FlashFrost.SlowDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Crystallize",
+   "cooldown": {
+    "values": [
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "quote": "17"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_3",
+     "meaning": "wall lingers as impassable terrain duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "The wall lingers as impassable terrain for 5 seconds.",
+     "bin": [
+      "Crystallize.WallDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The wall knocks all units away from it, not dealing damage but dealing 0 proc damage which can trigger on-hit-like effects.",
+     "quote": "Crystallize's displacement triggers in-combat effects by dealing 0 proc true damage, such as drawing turret aggro, Sudden Impact and applying Elixir of Sorcery",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Champions are knocked back 120 units by the wall, non-champions 250 units.",
+     "quote": "Champions are knocked 120 units to either side of a wall segment, non-champions 250 units.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Crystallize.WallWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Crystallize.WallChunks",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Crystallize.ChampPushDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "Crystallize.NonChampPushDistance",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Frostbite",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "4"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      80,
+      105,
+      130,
+      155
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|55 to 155}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "Frostbite#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Enhanced Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      110,
+      160,
+      210,
+      260,
+      310
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|55*2 to 155*2}} {{as|(+ {{ap|55*2}}% AP)}}",
+     "bin": [
+      "Frostbite#EmpoweredDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Iced debuff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "become ''Iced'' for 3 seconds, refreshing on subsequent hits",
+     "bin": [],
+     "binNote": "Iced duration is not defined in Frostbite's own bin rows; it is a property of Flash Frost/Glacial Storm's mark, not present in the Frostbite spell data shown."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies hit by Flash Frost or a fully formed Glacial Storm become Iced for 3 seconds, refreshing on subsequent hits, and Frostbite deals double damage to Iced targets.",
+     "quote": "Enemies hit by ''{{ai|Flash Frost|Anivia}}'' or a fully formed ''{{ai|Glacial Storm|Anivia}}'' become ''Iced'' for 3 seconds, refreshing on subsequent hits.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Frostbite's damage is calculated on impact, not on cast, so the doubled damage requires the Iced mark to still be active when the projectile lands.",
+     "quote": "The damage of ''Frostbite'' is calculated once it hits. If the target's mark from being hit by {{ai|Flash Frost|Anivia}} or a fully formed {{ai|Glacial Storm|Anivia}} wears off while the projectile is traveling, the damage is not doubled.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Frostbite can be blocked by spell shields.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Frostbite.BaseDamage",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Glacial Storm",
+   "cooldown": {
+    "values": [
+     4,
+     3,
+     2
+    ],
+    "quote": "{{tt|{{ap|4 to 2}}|Starts after storm disappears}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60
+    ],
+    "resource": "mana{{plus}}{{ap|35 to 55 3}} per second",
+    "quote": "60"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Slow Strength Increase (passive buff to Flash Frost's slow)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0,
+      5,
+      10,
+      15,
+      20
+     ],
+     "terms": [],
+     "quote": "{{ap|0 to 20}}%",
+     "bin": [],
+     "binNote": "no data value in GlacialStorm's bin block carries the Flash Frost slow bonus"
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      15,
+      22.5,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0625
+      }
+     ],
+     "quote": "{{ap|15 to 30}} {{as|(+ {{fd|6.25}}% AP)}}",
+     "bin": [
+      "GlacialStorm#TotalDamagePerSecond"
+     ],
+     "binNote": "TotalDamagePerSecond (30/45/60 base, 0.125 ap) is per second; halved for the 0.5s tick to 15/22.5/30 base, 0.0625 ap"
+    },
+    {
+     "id": "r_3",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.3,
+      0.4
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "GlacialStorm.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Empowered Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      45,
+      67.5,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1875
+      }
+     ],
+     "quote": "{{ap|15*3 to 30*3}} {{as|(+ {{ap|6.25*3}}% AP)}}",
+     "bin": [
+      "GlacialStorm.BonusMultiplier",
+      "GlacialStorm#TotalDamagePerSecond"
+     ],
+     "binNote": "empowered per-tick value is 3x the normal per-tick value (BonusMultiplier=300%); GlacialStorm#EmpoweredDamagePerSecondTooltipOnly is a tooltip-only per-second figure (TotalDamagePerSecond*3), not the per-tick number"
+    },
+    {
+     "id": "r_5",
+     "meaning": "Empowered Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.45,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|20*1.5 to 40*1.5}}%",
+     "bin": [
+      "GlacialStorm.SlowPercentEmpoweredTT"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "mana cost per second while channeling",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      35,
+      45,
+      55
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 55 3}} per second",
+     "bin": [
+      "GlacialStorm.ManaCostPerSecond"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "tick interval (normal)",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds",
+     "bin": [
+      "GlacialStorm.TickRate"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "time to grow to maximum (empowered) size",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "increases in size over {{fd|1.5}} seconds",
+     "bin": [
+      "GlacialStorm.GrowthTime"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "slow duration per tick while unempowered",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "slowing them for 1 second, refreshing every {{fd|0.5}} seconds",
+     "bin": [
+      "GlacialStorm.ChillDuration"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "slow duration when empowered",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "instead lasts {{fd|1.5}} seconds and refreshes every {{fd|0.25}} seconds",
+     "bin": [
+      "GlacialStorm.SlowDurationAtMaxMultiplier"
+     ]
+    },
+    {
+     "id": "r_11",
+     "meaning": "tick interval when empowered",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "refreshes every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "no explicit empowered tick-rate data value in the sheet; only the 0.5s TickRate exists, and this 0.25s slow refresh rate is inferred to also be the empowered damage tick rate from the description"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Toggling the ability off (or its final forced deactivation) triggers one final damage tick before ending.",
+     "quote": "Toggling ''Glacial Storm'' off triggers a final tick of damage and incurs its full cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The blizzard deals 3 half-damage ticks (totaling 1.5 normal ticks worth of damage) before it grows to full size and starts dealing empowered damage.",
+     "quote": "''Glacial Storm'' deals 3 half ticks at {{ap|200|267|333}} radius for a total of {{fd|1.5}} normal damage ticks before it starts dealing empowered damage at 400 radius.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Toggled activations of Glacial Storm do not count as an ability cast for on-cast trigger effects.",
+     "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown only begins once the storm itself has disappeared, not on toggle-off.",
+     "quote": "{{tt|{{ap|4 to 2}}|Starts after storm disappears}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Glacial Storm is automatically toggled off if Anivia moves too far from it, cannot pay its per-second mana cost, or is hit by cast-inhibiting crowd control.",
+     "quote": "''Glacial Storm'' is toggled off automatically if '''Anivia''' moves too far away from the blizzard or becomes unable to pay the {{sti|{{as|mana}}}} cost, or is affected by any form of {{tip|cast-inhibiting crowd control}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Stasis (e.g. Zhonya's Hourglass) does not interrupt an active Glacial Storm, but Devour (Tahm Kench) does.",
+     "quote": "{{tip|Stasis (buff)|Stasis}} via {{ii|Zhonya's Hourglass}} doesn't interrupt ''Glacial Storm''.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GlacialStorm.AdditionalSlowPercentAtMax",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "GlacialStorm.LeashWarning",
+     "reason": "utility"
+    },
+    {
+     "ref": "GlacialStorm.LeashBreak",
+     "reason": "utility"
+    },
+    {
+     "ref": "GlacialStorm.MinCooldown",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Flash Frost has an initial passthrough hit and a separate (manual or automatic) recast explosion, each its own damage instance with its own on-cast rules"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Flash Frost or a fully-formed Glacial Storm applies a refreshable 'Iced' mark on the target for 3s; Frostbite reads that mark to decide whether to double its damage"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Frostbite deals double magic damage if the target is currently Iced when the projectile lands (checked on impact, not on cast)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Glacial Storm ticks damage every 0.5s (ramping through 3 half-value ticks during a 1.5s growth phase, then continuous ticks at 300% value once fully formed), plus a final forced tick on toggle-off"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Flat mana costs on Q/W/E, and Glacial Storm's ongoing per-second mana drain, can meaningfully cap how much of the kit fits in a 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Rebirth (health restore + bonus armor/MR while resurrecting) is read only by the survival fight, not the damage fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Glacial Storm's damage ramp is more structured than a generic 'dot': it deals three half-value ticks during a 1.5s growth window, then switches to a 300%-value tick once fully formed (at a tick rate the sources don't clearly restate for damage), plus a mandatory extra tick whenever it is toggled off and a cooldown that only starts once the storm visually disappears. Frostbite's conditional doubling also depends on a timed external mark (from Q or fully-formed R) that must still be active at projectile impact rather than at cast, and Flash Frost's own damage is split into two separately-timed, separately-shieldable instances (initial cast vs. recast) with cooldown starting only after the second instance resolves. Modeling all of this correctly needs explicit sequencing/state logic beyond selecting primitives generically."
+ },
+ "unsettled": [
+  {
+   "question": "Does the Iced mark (which lets Frostbite deal double damage) get applied by Flash Frost's initial passthrough hit, only by its recast explosion, or by both?",
+   "options": [
+    "Only the passthrough hit applies Iced",
+    "Only the recast explosion applies Iced",
+    "Both instances independently apply/refresh Iced"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Enemies hit by ''{{ai|Flash Frost|Anivia}}'' or a fully formed ''{{ai|Glacial Storm|Anivia}}'' become ''Iced'' for 3 seconds, refreshing on subsequent hits."
+   ]
+  },
+  {
+   "question": "Once Glacial Storm is fully formed and empowered, does its damage tick every 0.5s (the base TickRate) at 3x value, or every 0.25s (matching the empowered slow-refresh rate) at 3x value?",
+   "options": [
+    "Damage ticks stay on the 0.5s TickRate even when empowered, just at 3x value per tick",
+    "Damage ticks also speed up to 0.25s once empowered, doubling total DPS versus the 0.5s-tick reading"
+   ],
+   "impact": "high",
+   "quotes": [
+    "GlacialStorm.TickRate = 0.5",
+    "which also instead lasts {{fd|1.5}} seconds and refreshes every {{fd|0.25}} seconds"
+   ]
+  },
+  {
+   "question": "In the survival fight, is Rebirth assumed to be off cooldown and available to trigger once during the ~15s window, or is it assumed already on cooldown from a prior death (never triggers)?",
+   "options": [
+    "Assume Rebirth is available and triggers once when Anivia would take fatal damage",
+    "Assume Rebirth is on cooldown/unavailable for this fight and Anivia simply dies"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "static       = 240",
+    "upon taking {{tip|death|fatal damage}}, '''Anivia''' enters {{tip|resurrection}} for 6 seconds and restores all of her {{sti|{{as|health}}}}"
+   ]
+  },
+  {
+   "question": "How is Glacial Storm's per-second mana cost actually deducted in-fight (once per full second, once per 0.5s tick, or continuously), which determines exactly how long a limited mana pool can sustain the toggle inside 15s?",
+   "options": [
+    "Cost is deducted once per second as stated",
+    "Cost is deducted per 0.5s tick (half the per-second value each tick)",
+    "Cost is deducted continuously/pro-rated"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "costtype     = mana{{plus}}{{ap|35 to 55 3}} per second",
+    "GlacialStorm.ManaCostPerSecond = [35/45/55]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Flash Frost (Q) cast directly at the dummy for its passthrough damage and to apply the Iced mark.",
+   "Immediately cast Frostbite (E) while the target is Iced for doubled magic damage.",
+   "Manually recast Flash Frost's explosion on the dummy as soon as it is available, dealing the explosion damage and refreshing the Iced mark and slow.",
+   "Toggle on Glacial Storm (R) on the dummy's position and leave it running continuously for the rest of the fight, since the stationary dummy stays inside it and each of R's ticks (once fully formed) keeps refreshing the Iced mark.",
+   "Recast Frostbite every time it comes off cooldown (4s) for the rest of the fight, timed so each cast lands while the target is Iced (which R's own ticks should guarantee once fully formed).",
+   "Recast Flash Frost again on cooldown throughout the fight purely for its own passthrough+explosion damage, since Frostbite is already being kept doubled by Glacial Storm's ticks.",
+   "Keep Glacial Storm toggled on for the full ~15s rather than turning it off early, since turning it off both forces a wait for the post-effect cooldown and only grants one extra forced tick."
+  ],
+  "questions": [
+   "Is the simulated Anivia assumed to have enough mana (e.g. via items/runes) to sustain Glacial Storm's per-second drain plus Q/E costs for the full 15s, or does she realistically run out and have to toggle it off partway through?",
+   "Should Frostbite be cast strictly on cooldown regardless of the Iced state (for baseline DPS), or should its timing be adjusted to guarantee it always lands while Iced, even if that means occasionally holding it a fraction of a second?",
+   "Does Glacial Storm's growth radius (200 to 400 units) matter for a single stationary dummy assumed to be at the cast location, or should the dummy be treated as inside the zone (and therefore hit by every tick) from the moment R is cast?",
+   "Should Flash Frost's recast be timed as fast as possible after its 0.25s cast-time window, or does the automatic-max-range recast in a target-dummy setup happen at a specific delay that should instead be used for consistency with in-game play?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

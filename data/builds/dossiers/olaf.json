@@ -1,0 +1,855 @@
+{
+ "champion": "olaf",
+ "abilities": {
+  "P": {
+   "name": "Berserker Rage",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "maximum bonus attack speed (at 70%+ missing health) by champion level",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      50,
+      52.12,
+      54.34,
+      56.66,
+      59.09,
+      61.62,
+      64.25,
+      66.99,
+      69.82,
+      72.76,
+      75.81,
+      78.96,
+      82.21,
+      85.56,
+      89.01,
+      92.57,
+      96.24,
+      100
+     ],
+     "terms": [],
+     "quote": "{{pp|{{as|{{pp|50+(50/17)*(x-1)*(0.7025+0.0175*(x-1)) for 20|key=%}} '''bonus''' attack speed}}}}",
+     "bin": [
+      "OlafBerzerkerRage#MaxAttackSpeed"
+     ],
+     "binNote": "Bin gives this as byLevel(0.5..1); the wiki's closed-form formula reproduces the same 50%->100% range across levels 1-18."
+    },
+    {
+     "id": "p_2",
+     "meaning": "maximum life steal (at 70%+ missing health) by champion level",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      8,
+      8.72,
+      9.48,
+      10.27,
+      11.09,
+      11.95,
+      12.85,
+      13.78,
+      14.74,
+      15.74,
+      16.78,
+      17.85,
+      18.95,
+      20.09,
+      21.27,
+      22.48,
+      23.72,
+      25
+     ],
+     "terms": [],
+     "quote": "{{pp|{{as|{{pp|8+(17/17)*(x-1)*(0.7025+0.0175*(x-1)) for 20|key=%}} life steal}}}}",
+     "bin": [
+      "OlafBerzerkerRage#MaxLifeSteal"
+     ],
+     "binNote": "Bin gives this as byLevel(0.08..0.25); the wiki's closed-form formula reproduces the same 8%->25% range across levels 1-18."
+    },
+    {
+     "id": "p_3",
+     "meaning": "fraction of the max attack speed/life steal granted per point of missing health (scales to 100% of max at 70% missing health)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "missingHp",
+       "coef": 1.42857
+      }
+     ],
+     "quote": "1% per 0.7% '''missing''' health. ''This is capped at 70% '''missing''' health.''",
+     "bin": [],
+     "binNote": "Bin exposes OlafBerzerkerRage.AttackSpeedPerMissingHPPerc=0.009 and MaxStatsThreshold=0.3, but neither maps cleanly to the wiki's stated '1% per 0.7% missing health, capped at 70% missing' scaling curve (1/0.7=1.42857, not 0.009); MaxStatsThreshold=0.3 is consistent with the 70%-missing cap (1-0.3=0.7) but AttackSpeedPerMissingHPPerc's exact role is unclear, flagged as a disagreement/uncertainty rather than resolved by guessing."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Olaf passively gains bonus attack speed and life steal that scale with his missing health, reaching their level-based maximum at 70% missing health.",
+     "quote": "gains {{sti|{{as|'''bonus''' attack speed}}}} and {{as|{{sti|life steal}}}} based on {{as|his '''missing''' health}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OlafBerzerkerRage.AttackSpeedPerMissingHPPerc",
+     "reason": "unknown"
+    },
+    {
+     "ref": "OlafBerzerkerRage.MaxStatsThreshold",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Undertow",
+   "cooldown": {
+    "values": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "quote": "9"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      120,
+      170,
+      220,
+      270
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|70 to 270}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "OlafAxeThrowCast#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "OlafAxeThrowCast.SlowAmount"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Monster Bonus Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      45,
+      70,
+      95,
+      120
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 120}}",
+     "bin": [
+      "OlafAxeThrowCast.MonsterDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "armor reduction on champions hit",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "{{sti|armor penetration|{{as|20% armor reduction}}}} for 4 seconds",
+     "bin": [
+      "OlafAxeThrowCast.ShredAmount"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "armor reduction duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "OlafAxeThrowCast.DebuffDuration"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "minimum cooldown when axe retrieved immediately",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "reduce ''Undertow's'' {{sti|'''current''' cooldown}} to {{pp|2.5 to 0 for 6|0 to 2.5|type=seconds elapsed since axe landed|formula=2.5 (affected by ability haste) - seconds}}",
+     "bin": [
+      "OlafAxeThrowCast.MinimumCooldown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Undertow deals bonus physical damage against monsters instead of the normal damage.",
+     "quote": "''Undertow'' deals {{as|'''bonus''' physical damage}} against {{tip|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The axe may hit additional targets upon landing, but not targets already struck in-flight.",
+     "quote": "''Undertow'' may hit additional targets upon landing, but not targets already struck in-flight.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Olaf can pick up the axe to reduce the cooldown down toward a minimum based on time elapsed since it landed.",
+     "quote": "'''Olaf''' can pick up the axe to reduce the {{sti|cd|'''total''' cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast, not on landing.",
+     "quote": "cdstart  = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OlafAxeThrowCast.MinimumRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OlafAxeThrowCast.MaxSlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "OlafAxeThrowCast.MinSlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "OlafAxeThrowCast.MaxSlowDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OlafAxeThrowCast.MinSlowDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Tough It Out",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|16 to 12}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 80}}%",
+     "bin": [
+      "OlafFrenziedStrikes.Attackspeed"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      40,
+      70,
+      100,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "missingHp",
+       "coef": 0.175
+      }
+     ],
+     "quote": "{{ap|10 to 130}} {{as|(+ {{fd|17.5}}% '''missing''' health)}}",
+     "bin": [
+      "OlafFrenziedStrikes#ShieldCalc"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the attack speed buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds",
+     "bin": [
+      "OlafFrenziedStrikes.Duration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration of the shield",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds for an amount",
+     "bin": [
+      "OlafFrenziedStrikes.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Recasting Tough It Out while already active refreshes the attack speed value rather than stacking it.",
+     "quote": "''Tough It Out's'' {{as|'''bonus''' attack speed}} value is updated when it is cast, even if it was already active.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Tough It Out resets Olaf's basic attack timer.",
+     "quote": "''Tough It Out {{tip|basic attack reset|resets}} '''Olaf's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The missing-health portion of the shield is capped once Olaf is at or below 30% missing health (i.e. at or above 70% missing health), equal to 12.5% of maximum health.",
+     "quote": "At {{as|70% '''missing''' health}}, the health ratio portion of the shield is capped at the equivalent of {{as|{{fd|12.5}}% '''maximum''' health}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OlafFrenziedStrikes.ShieldPercMissingHP",
+     "reason": null
+    },
+    {
+     "ref": "OlafFrenziedStrikes.ThresholdForMax",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Reckless Swing",
+   "cooldown": {
+    "values": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "quote": "{{ap|11 to 7}}"
+   },
+   "cost": {
+    "values": [
+     28,
+     46,
+     64,
+     82,
+     100
+    ],
+    "quote": "{{as|{{ap|70*0.4 to 250*0.4}} {{as|(+ {{ap|50*0.4}}% AD)}}|health}}",
+    "resource": "health"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{pp|0.25 to 0.175|0 to 125 by 12.5|key1=%|type='''bonus''' attack speed|color=as|round=3}}",
+    "binNote": "Base cast time is 0.25 (Cast_Time_Base), shrinking to a minimum of 0.175 (Cast_Time_Min) as bonus attack speed rises to 125% (Cast_Time_Attack_Speed_Cap); the field records the base value only."
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      70,
+      115,
+      160,
+      205,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 250}} {{as|(+ 50% AD)}}",
+     "bin": [
+      "OlafRecklessStrike#TotalDamage",
+      "OlafRecklessStrike.ADRatio"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Health cost paid to cast",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      28,
+      46,
+      64,
+      82,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{as|{{ap|70*0.4 to 250*0.4}} {{as|(+ {{ap|50*0.4}}% AD)}}|health}}",
+     "bin": [
+      "OlafRecklessStrike.BaseHealthCost",
+      "OlafRecklessStrike.HealthCostADRatio",
+      "OlafRecklessStrike.HealthCostPercent"
+     ],
+     "binNote": "The wiki writes the cost as 40% of the true-damage value (base and AD ratio both scaled by 0.4), which matches the bin's separate BaseHealthCost/HealthCostADRatio track (28/46/64/82/100 base, 0.2 AD ratio = 0.5*0.4) computed via HealthCostCalc = TotalDamage * HealthCostPercent."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Cooldown reduction per basic attack on a champion",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "Basic attacks reduce ''Reckless Swing's'' {{sti|cooldown}} by 1 second, increased to 2 against monsters.",
+     "bin": [
+      "OlafRecklessStrike.ChampionRefresh"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Cooldown reduction per basic attack on a monster",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "Basic attacks reduce ''Reckless Swing's'' {{sti|cooldown}} by 1 second, increased to 2 against monsters.",
+     "bin": [
+      "OlafRecklessStrike.MonsterRefresh"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "If Reckless Swing kills the target, Olaf heals himself for the amount of the health cost paid.",
+     "quote": "If ''Reckless Swing'' kills the target, '''Olaf''' {{tip|heals}} himself equal to the {{as|{{sti|health|health cost}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Reckless Swing's cast time shortens with bonus attack speed, down to a minimum, so higher attack speed lets it be cast (and thus deal its true damage) more quickly.",
+     "quote": "{{pp|0.25 to 0.175|0 to 125 by 12.5|key1=%|type='''bonus''' attack speed|color=as|round=3}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reckless Swing can be cast even without enough health to pay the cost, and it will never reduce Olaf's health below 1.",
+     "quote": "''Reckless Swing'' can be cast even if '''Olaf''' doesn't have the sufficient amount of health to pay for the health cost.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The health refund from a kill is a heal, so it is affected by healing modifiers.",
+     "quote": "''Reckless Swing's'' health refund is considered a {{tip|heal}} therefore it is affected by healing modifiers.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Basic attacks reduce Reckless Swing's cooldown by 1 second against champions, increased to 2 seconds against monsters.",
+     "quote": "Basic attacks reduce ''Reckless Swing's'' {{sti|cooldown}} by 1 second, increased to 2 against monsters.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The health cost is not a separate resource pool but computed as 40% of the true damage value.",
+     "quote": "The health cost is equal to 40% of ''Reckless Swing's'' {{as|true damage}} value.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OlafRecklessStrike.Cast_Time_Base",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "OlafRecklessStrike.Cast_Time_Min",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OlafRecklessStrike.Cast_Time_Attack_Speed_Cap",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Ragnarok",
+   "cooldown": {
+    "values": [
+     100,
+     90,
+     80
+    ],
+    "quote": "{{ap|100 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Resistances",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 20}}",
+     "bin": [
+      "OlafRagnarok.Resists"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 25% AD)}}",
+     "bin": [
+      "OlafRagnarok#AD"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Duration of the enraged state (AD/resist buff, cc-immunity)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "becomes enraged for 3 seconds",
+     "bin": [
+      "OlafRagnarok.Duration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Duration extension per basic attack on-hit or Reckless Swing cast against a champion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "increased by and up to {{fd|2.5}} seconds for each basic attack {{tip|on-hit}} or cast of ''{{ai|Reckless Swing|Olaf}}'' against an enemy {{tip|champion}}",
+     "bin": [
+      "OlafRagnarok.DurationExtension"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bonus attack damage recalculates continuously over the duration, so later AD changes still get amplified by the 25% ratio.",
+     "quote": "The {{as|'''bonus''' attack damage}} updates dynamically over the duration; Increases or reductions in {{as|attack damage}} after the effect has been applied will still be amplified.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The 25% AD ratio also amplifies the flat AD bonus, not just Olaf's base/bonus AD.",
+     "quote": "The {{as|25% attack damage}} scaling amplifies the flat {{as|attack damage '''bonus'''}} as well.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ragnarok will not expire mid-cast of Reckless Swing, extending effective uptime of the AD buff during a Reckless Swing cast.",
+     "quote": "''Ragnarok'' will not expire during {{ais|Reckless Swing|Olaf}} cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The duration extension only occurs against enemy champions, not against monsters/minions.",
+     "quote": "increased by and up to {{fd|2.5}} seconds for each basic attack {{tip|on-hit}} or cast of ''{{ai|Reckless Swing|Olaf}}'' against an enemy {{tip|champion}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cleansing and cc-immunity are defensive, not offensive, effects.",
+     "quote": "cleansing himself of all {{tip|crowd control}} and becoming {{tip|Cc-immune|immune to them}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown starts on cast, not on the end of the effect duration.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OlafRagnarok.HasteDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "OlafRagnarok.Haste",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Undertow's physical damage lands on the axe's travel/impact; Reckless Swing's true damage lands on cast (after its variable cast time), both on cooldown."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Undertow inflicts 20% armor reduction on champions hit for 4s, increasing damage taken from all sources."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Undertow's cooldown can be cut toward a 2.5s floor by retrieving the thrown axe; Reckless Swing's cooldown is refunded 1s per basic attack (2s vs monsters, not relevant here)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Tough It Out grants bonus attack speed for 5s; Ragnarok grants bonus AD (flat + %AD) for a base 3s, extendable."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Tough It Out resets Olaf's basic attack timer on cast."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Berserker Rage grants bonus attack speed scaling with Olaf's missing health up to a level-based cap; Reckless Swing's cast time itself shrinks with bonus attack speed down to a floor."
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "E"
+   ],
+   "note": "Reckless Swing costs health (scaling with rank and AD) rather than mana, capped so it cannot drop Olaf below 1 HP."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R",
+    "E"
+   ],
+   "note": "Q/W/R cost mana (50-70/50/100) and E costs health; in a 15s fight these budgets can cap how many casts are affordable depending on mana pool/regen and current HP."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Berserker Rage's lifesteal, Tough It Out's shield, and Ragnarok's bonus resistances/cc-immunity affect damage taken/survival, not damage dealt in the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Berserker Rage's attack speed/lifesteal and Tough It Out's shield both scale continuously with Olaf's own current missing health (not target state, not stacks accumulated from casts/attacks, not a level-gated on/off switch). No primitive in the closed list expresses a self-buff/shield magnitude that is a live function of the caster's own missing-health percentage; this needs bespoke handling to evaluate correctly during the fight (especially since Reckless Swing's self-damage can move Olaf's missing-health % mid-fight and change Passive's live attack speed)."
+ },
+ "unsettled": [
+  {
+   "question": "What is the correct formula/cap for Berserker Rage's missing-health-to-buff conversion: the bin's AttackSpeedPerMissingHPPerc=0.009/MaxStatsThreshold=0.3, or the wiki's stated '1% per 0.7% missing health, capped at 70% missing health' plus its by-level max AS/lifesteal formula?",
+   "options": [
+    "Use the wiki's explicit ratio (1% buff per 0.7% missing HP, full effect at 70% missing HP) scaled to the by-level max values",
+    "Use the bin's raw AttackSpeedPerMissingHPPerc=0.009 literally (which does not obviously match either the ratio or the by-level max)",
+    "Treat the bin field as an internal/legacy artifact and trust the wiki formula entirely"
+   ],
+   "impact": "high",
+   "quotes": [
+    "1% per 0.7% '''missing''' health. ''This is capped at 70% '''missing''' health.''",
+    "OlafBerzerkerRage.AttackSpeedPerMissingHPPerc = 0.009"
+   ]
+  },
+  {
+   "question": "How does ability haste reduce Undertow's minimum retrieval cooldown (2.5s base)? The bin's TooltipCDRefund calculation references an unresolved 'CooldownMultiplierCalculationPart'.",
+   "options": [
+    "Ability haste multiplies the 2.5s floor down further (standard haste formula)",
+    "The 2.5s floor is fixed regardless of ability haste, and only the elapsed-time countdown is affected",
+    "Undo/ignore this refund path entirely for the sim since neither source resolves it"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "OlafAxeThrowCast#TooltipCDRefund (tooltip only) = (MinimumCooldown=2.5) * <CooldownMultiplierCalculationPart>",
+    "! unresolved calculation part CooldownMultiplierCalculationPart"
+   ]
+  },
+  {
+   "question": "Does the simulator apply Reckless Swing's attack-speed-scaled cast time (0.25s down to a 0.175s floor at 125% bonus AS), or treat cast time as the flat 0.25s base?",
+   "options": [
+    "Model the scaling cast time using Olaf's bonus attack speed at time of cast",
+    "Always use the flat 0.25s base cast time regardless of bonus AS"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|0.25 to 0.175|0 to 125 by 12.5|key1=%|type='''bonus''' attack speed|color=as|round=3}}",
+    "OlafRecklessStrike.Cast_Time_Min = 0.175"
+   ]
+  },
+  {
+   "question": "Is Ragnarok's duration extension from on-hit attacks/Reckless Swing casts against a champion uncapped (each hit adds up to 2.5s, potentially keeping the buff active for most/all of the 15s fight against a stationary dummy target), or is there an unstated cap on total extended duration?",
+   "options": [
+    "Uncapped: continuous attacking/casting on the dummy can keep Ragnarok's AD buff active for the whole 15s fight",
+    "Each hit's extension diminishes or the total duration is capped at some maximum not stated in either source",
+    "Only the first extension per cast of Reckless Swing counts; basic attacks alone cannot indefinitely extend it"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Ragnarok's'' duration is increased by and up to {{fd|2.5}} seconds for each basic attack {{tip|on-hit}} or cast of ''{{ai|Reckless Swing|Olaf}}'' against an enemy {{tip|champion}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Undertow (Q) on the dummy at range to land the physical damage and apply the 20% armor shred immediately, maximizing its 4s uptime overlap with the rest of the burst.",
+   "Immediately cast Tough It Out (W) to gain bonus attack speed for 5s and reset the basic attack timer, then start auto-attacking.",
+   "Cast Ragnarok (R) as soon as possible after engaging so its bonus AD buff (and duration-extension mechanic from continued attacks/E casts) covers as much of the 15s window as possible.",
+   "Cast Reckless Swing (E) on cooldown for its true damage, weaving basic attacks between casts so its cooldown keeps refunding via the 1s-per-attack reduction.",
+   "Continue auto-attacking throughout to sustain Ragnarok's duration extension and Reckless Swing's cooldown refund, while accepting the self-inflicted health cost from Reckless Swing.",
+   "Recast Undertow again once its cooldown is up (~9s in, faster if axe-retrieval cooldown reduction is modeled) to refresh the armor shred and add another instance of physical damage.",
+   "Recast Tough It Out again near its ~12-16s cooldown if the fight extends, to refresh attack speed and re-trigger the attack reset."
+  ],
+  "questions": [
+   "Should Ragnarok be cast at the very start of the fight (to maximize AD-buff uptime via the extension mechanic) even though it also costs 100 mana that competes with Q/W's mana budget across only 15s?",
+   "Can Undertow's axe-retrieval cooldown reduction be modeled at all in a stationary-dummy damage fight, given it normally requires Olaf to walk back to the landed axe (a positional assumption a dummy fight may not support)?",
+   "Given Reckless Swing's cast time shrinks with bonus attack speed, should the rotation prioritize stacking attack speed (via W and gear) before spamming E, or is the cast-time difference negligible enough to ignore for sequencing?",
+   "Since a target dummy never fights back, does Berserker Rage's attack-speed/lifesteal scaling ever activate meaningfully in the damage fight, or does it only matter via Olaf's own health loss from casting Reckless Swing?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

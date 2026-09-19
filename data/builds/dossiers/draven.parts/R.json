@@ -1,0 +1,148 @@
+{
+ "name": "Whirling Death / Whirling Death 2",
+ "cooldown": {
+  "values": [
+   100,
+   90,
+   80
+  ],
+  "quote": "{{ap|100 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    200,
+    300,
+    400
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": [
+      1.1,
+      1.3,
+      1.5
+     ]
+    }
+   ],
+   "quote": "{{ap|200 to 400}} {{as|(+ {{ap|110 to 150}}% '''bonus''' AD)}}",
+   "bin": [
+    "DravenRCast#RCalculatedDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Minimum Physical Damage (after falloff cap)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    100,
+    150,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": [
+      0.55,
+      0.65,
+      0.75
+     ]
+    }
+   ],
+   "quote": "{{ap|200*0.5 to 400*0.5}} {{as|(+ {{ap|110*0.5 to 150*0.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "DravenRCast.RBaseDamage",
+    "DravenRCast.RCoefficient",
+    "DravenRCast.RMinDamagePercent"
+   ],
+   "binNote": "No calculation row directly computes the minimum; it is the wiki-stated 50% floor (RMinDamagePercent) applied to RCalculatedDamage's base and ratio, matching the sheet's numbers exactly."
+  },
+  {
+   "id": "r_9",
+   "meaning": "per-enemy-hit damage falloff multiplier and its floor",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    0.95,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{pp|key=%|type=enemies hit|100*0.95^(x-1);50|x-1 for 15|formula=(100%-5%)^(1 per enemy hit). ''This is capped at 50% damage.''}}",
+   "bin": [
+    "DravenRCast.RDamageReductionPerHit",
+    "DravenRCast.RMinDamagePercent"
+   ],
+   "binNote": "0.95 = 1-RDamageReductionPerHit(0.05) per additional enemy hit; 0.5 is the same RMinDamagePercent floor used for r_3, here confirmed as the multiplicative cap rather than an independent value."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Whirling Death can be recast after 1 second while the axes are traveling.",
+   "quote": "''Whirling Death'' can be recast after 1 second while the axes are traveling",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The axes automatically recast (reverse) upon hitting an enemy champion or reaching the edge of the map.",
+   "quote": "does so automatically after the axes hit an enemy {{tip|champion}} or the edge of the [[Map (League of Legends)|map]]",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "On the return pass the recast deals the same base damage/ratio formula as the outbound cast (subject to the same per-hit falloff, reset on reversal).",
+   "quote": "'''Draven''' forces the axes to reverse direction, slowly coming to a stop before homing back to him, dealing the same damage to enemies hit.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The per-enemy-hit damage falloff resets when the axes reverse direction (recast).",
+   "quote": "resetting upon reversing direction",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each enemy can only be hit once per pass (outbound or return), i.e. a single target dummy takes at most one hit per pass.",
+   "quote": "''Enemies can be hit only once per pass.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemy champions damaged to or while below a health threshold equal to Draven's current League of Draven stacks are executed (killed outright).",
+   "quote": "Enemy {{tip|champions}} that are damaged to or while below a {{sti|{{as|health}}}} threshold equal to the number of ''{{ai|League of Draven|Draven|Adoration}}'' stacks are {{tip|execute|executed}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown begins when the ability is cast, not when the axes return.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "A spell shield blocks only one instance of the damage (i.e. one pass, not both outbound and return).",
+   "quote": "{{tip|Spell shield}} will block one instance of damage.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "DravenRCast.RPassiveStacksCoefficient",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

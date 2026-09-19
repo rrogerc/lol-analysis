@@ -1,0 +1,501 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TalonPassive",
+    "key": "Characters/Talon/Spells/TalonPassiveAbility/TalonPassive",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MonsterMod": 1,
+     "StackDuration": 6,
+     "BleedDuration": 2,
+     "BonusADRatio": 2.1
+    },
+    "calcs": {
+     "BleedDamage": {
+      "expr": "byLevel(80..280) + (BonusADRatio=2.1)xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        80,
+        91.76471,
+        103.52941,
+        115.29412,
+        127.05882,
+        138.82353,
+        150.58824,
+        162.35294,
+        174.11765,
+        185.88235,
+        197.64706,
+        209.41176,
+        221.17647,
+        232.94118,
+        244.70588,
+        256.47059,
+        268.2353,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.1,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "TalonQ",
+    "key": "Characters/Talon/Spells/TalonQAbility/TalonQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": 40,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       65,
+       85,
+       105,
+       125,
+       145
+      ]
+     },
+     "BonusADRatio": 1,
+     "EnhancedDamageMod": 1.5,
+     "CooldownRefund": 0.5
+    },
+    "calcs": {
+     "TotalHealing": {
+      "expr": "byLevel(9..55)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        9,
+        11.705882,
+        14.411765,
+        17.117647,
+        19.82353,
+        22.529412,
+        25.235294,
+        27.941177,
+        30.647059,
+        33.35294,
+        36.058824,
+        38.764706,
+        41.47059,
+        44.17647,
+        46.882353,
+        49.588235,
+        52.294118,
+        55
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "LeapDamage": {
+      "expr": "BaseDamage=[65/85/105/125/145] + (BonusADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        85,
+        105,
+        125,
+        145
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     },
+     "CriticalDamage": {
+      "expr": "LeapDamage * EnhancedDamageMod=1.5 + 1xbonus critDamage",
+      "modifies": "LeapDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "EnhancedDamageMod"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "TalonW",
+    "key": "Characters/Talon/Spells/TalonWAbility/TalonW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8.5,
+      8,
+      7.5,
+      7
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "InitialBaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90
+      ]
+     },
+     "ReturnBaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "MovespeedSlow": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "SlowDuration": 1,
+     "ReturnDelay": 0.7,
+     "MonsterDamageMod": 1,
+     "InitialBonusADRatio": 0.4,
+     "ReturnBonusADRatio": 0.9
+    },
+    "calcs": {
+     "TotalInitialDamage": {
+      "expr": "InitialBaseDamage=[50/60/70/80/90] + (InitialBonusADRatio=0.4)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        60,
+        70,
+        80,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.4,
+        "dataValue": "InitialBonusADRatio"
+       }
+      ],
+      "refs": [
+       "InitialBaseDamage",
+       "InitialBonusADRatio"
+      ]
+     },
+     "TotalReturnDamage": {
+      "expr": "ReturnBaseDamage=[60/90/120/150/180] + (ReturnBonusADRatio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "ReturnBonusADRatio"
+       }
+      ],
+      "refs": [
+       "ReturnBaseDamage",
+       "ReturnBonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TalonE",
+    "key": "Characters/Talon/Spells/TalonEAbility/TalonE",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "WallCD": {
+      "axis": "rank",
+      "v": [
+       160,
+       135,
+       110,
+       85,
+       60
+      ]
+     },
+     "WallJumpDistance": 625,
+     "WallLockoutWidth": 1250,
+     "DisplayCD": 2
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "TalonR",
+    "key": "Characters/Talon/Spells/TalonRAbility/TalonR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      80,
+      60
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       135,
+       180
+      ]
+     },
+     "MoveSpeed": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.55,
+       0.7
+      ]
+     },
+     "Duration": 2.5
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[90/135/180] + 1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        135,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "TalonQ",
+  "W": "TalonW",
+  "E": "TalonE",
+  "R": "TalonR",
+  "P": "TalonPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 400,
+   "{6216bf7b}": 37,
+   "{c4ab3550}": 1.52,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Talon",
+  "name": "Talon",
+  "partype": "Mana",
+  "passive": "Blade's End",
+  "spells": [
+   {
+    "id": "TalonQ",
+    "name": "Noxian Diplomacy",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "TalonW",
+    "name": "Rake",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "TalonE",
+    "name": "Assassin's Path",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "TalonR",
+    "name": "Shadow Assault",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     80,
+     60
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Blade's End": {
+    "damagetype": "Physical",
+    "spelleffects": "proc",
+    "spellshield": "Special",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Noxian Diplomacy": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Rake": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Assassin's Path": {
+    "targeting": "Location",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "Shadow Assault": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

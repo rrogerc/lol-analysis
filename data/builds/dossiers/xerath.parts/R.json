@@ -1,0 +1,188 @@
+{
+ "name": "Rite of the Arcane",
+ "cooldown": {
+  "values": [
+   130,
+   115,
+   100
+  ],
+  "quote": "{{ap|130 to 100}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Number of Recasts",
+   "role": "count",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    4,
+    5,
+    6
+   ],
+   "terms": [],
+   "quote": "{{ap|4 to 6}}",
+   "bin": [
+    "XerathLocusOfPower2.NumberOfShots"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Magic Damage per Arcane Barrage cast",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    170,
+    220,
+    270
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|170 to 270}} {{as|(+ 45% AP)}}",
+   "bin": [
+    "XerathLocusOfPower2#TooltipTotalDamage"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "Maximum Stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    3,
+    4,
+    5
+   ],
+   "terms": [],
+   "quote": "{{ap|3 to 5}}",
+   "bin": [],
+   "binNote": "No bin row carries this stack cap; NumberOfShots=[4/5/6] is a different value (max recasts, not max Arcane Perfection stacks)."
+  },
+  {
+   "id": "r_5",
+   "meaning": "Increased Damage per Stack (Arcane Perfection)",
+   "role": "self-buff",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    25,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|20 to 30 3}} {{as|(+ 5% AP)}}",
+   "bin": [
+    "XerathLocusOfPower2.RampBaseDamage",
+    "XerathLocusOfPower2#RampDamageCalc"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Static recast delay/cooldown between shots",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.6,
+   "terms": [],
+   "quote": "{{tt|static cooldown|Unaffected by ability haste}} of {{rutngt|0.6}}",
+   "bin": [
+    "XerathLocusOfPower2.CDPerShot"
+   ],
+   "binNote": "Bin also has DamageDelay=0.5, a different (older/unused) missile-impact delay value that disagrees with the wiki's stated 0.6s recast delay; wiki's 0.6 matches CDPerShot."
+  },
+  {
+   "id": "r_8",
+   "meaning": "Channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "channels for up to 10 seconds",
+   "bin": [
+    "XerathLocusOfPower2.Duration"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Cooldown refund fraction if no recast used",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "half of its {{sti|cooldown}} is refunded",
+   "bin": [
+    "XerathLocusOfPower2.FailCastRefund"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Xerath channels for up to 10 seconds, gaining the ability to recast after the first 0.5 seconds within the duration.",
+   "quote": "channels for up to 10 seconds, gaining the ability to recast ''Rite of the Arcane'' multiple times after {{fd|0.5}} seconds within the duration",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the channel ends without using any recasts, half of the ability's cooldown is refunded.",
+   "quote": "If ''Rite of the Arcane'' ends without any of the recasts being used, half of its {{sti|cooldown}} is refunded.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each Arcane Barrage recast has a fixed 0.6s cooldown that is unaffected by ability haste, in addition to a 0.6s missile travel delay before impact.",
+   "quote": "'''Xerath''' catapults an arcane missile that strikes the target location after a {{rutngt|0.6}} delay",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Hitting at least one enemy champion with a cast grants a stack of Arcane Perfection during the channel, up to a max, which increases the damage of subsequent Arcane Barrage casts.",
+   "quote": "Hitting at least one enemy champion grants a stack of ''Arcane Perfection'' during the channel, stacking up to a maximum amount. Each stack increases ''Arcane Barrage's'' damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cast that grants an Arcane Perfection stack does not itself benefit from the stack's increased damage; only later casts do.",
+   "quote": "''Arcane Barrage'' will not apply its increased damage per stack to the cast that granted the stack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each recast counts as a separate ability activation, triggering on-cast effects like Spellblade.",
+   "quote": "Each cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown starts only after the channel/recast sequence ends, not on initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "XerathLocusOfPower2.AoESize",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

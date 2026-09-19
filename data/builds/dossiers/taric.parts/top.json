@@ -1,0 +1,134 @@
+{
+ "champion": "taric",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Bravado arms Taric's next two basic attacks (within a 5s window, refreshed and re-granted by subsequent ability casts, capped at two stored attacks) with 100% total attack speed and bonus magic damage; this is the primary attack-side damage source in the fight."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Bonus armor is converted into magic damage: 15% bonus armor on each Bravado-empowered attack, 50% bonus armor on Dazzle. Armor bought/gained during the fight directly scales both damage sources."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every ability cast (Q/W/E/R) triggers Bravado, which reduces the *remaining* cooldowns of Taric's other basic abilities via an ability-haste-based formula. In the damage fight this mainly matters for how often Dazzle (E) can be recast."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Dazzle deals a single instance of magic damage to the dummy after a fixed 1s wind-up, then goes on cooldown; recast on cooldown for the whole fight."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's passive grants Taric bonus armor (6-10% of his own armor) while self-bound; this raises the bonus-armor pool that feeds P's and E's stat-conversion damage."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (60/60/40/100) and E's cooldown limit how many Bravado-triggering casts Taric can fit into the 15s window; whether Q can be spammed at 0 charges purely to proc Bravado changes the achievable cast cadence substantially."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two things fall outside a simple primitive: (1) Bravado's empowered-attack queue is stateful in a way generic 'empowered-attack' doesn't capture — it stores up to two charges, the first landed attack refreshes the 5s timer, and a subsequent ability cast both refreshes the timer AND grants a second stored charge only if exactly one remains; this queue must be tracked explicitly against attack timing. (2) The cooldown reduction from Bravado is not a flat number but a saturating ability-haste curve (1 + Haste/(Haste+100)) applied to *remaining* cooldown, and the bin itself marks the underlying calculation piece ('CooldownMultiplierCalculationPart') as unresolved — this needs bespoke logic rather than a static cooldown-manipulation value."
+ },
+ "unsettled": [
+  {
+   "question": "What is the exact ability-haste-to-cooldown-reduction curve Bravado applies, and is the bin's unresolved 'CooldownMultiplierCalculationPart' equivalent to the wiki's stated formula 1 + (Haste/(Haste+100))?",
+   "options": [
+    "Trust the wiki formula as-is and apply it to Taric's total ability haste each proc",
+    "Treat the bin's unresolved term as authoritative and withhold/zero the CDR effect until resolved"
+   ],
+   "impact": "high",
+   "quotes": [
+    "reduce the {{sti|'''remaining''' cooldowns}} of his basic abilities by {{pp|1;( 1 + ( ( x * 10 ) / ( ( x * 10 ) + 100 ) ) );2;0;10 to 100 for 10;∞}}",
+    "TaricPassive#CDR = 1 + 1 + (<CooldownMultiplierCalculationPart>)*(-1)",
+    "! unresolved calculation part CooldownMultiplierCalculationPart"
+   ]
+  },
+  {
+   "question": "Can Starlight's Touch (Q) be cast with zero stocked charges purely to trigger Bravado (and pay its mana cost for no heal), or does it require at least one charge to cast at all?",
+   "options": [
+    "Q can be cast at 0 charges, healing for 0, purely as a Bravado-proc/CDR tool — enabling near-permanent Bravado uptime and maximal CDR procs on E",
+    "Q requires at least 1 stocked charge to be cast, limiting its use as a pure Bravado-proc tool to once every 15s (recharge) per charge available"
+   ],
+   "impact": "high",
+   "quotes": [
+    "costtype     = Mana + all charges",
+    "TaricQ.MaxCharges = [1/2/3/4/5]"
+   ]
+  },
+  {
+   "question": "In a solo damage fight with no allies, does self-cast Bastion (W) still resolve normally (shield self, grant self bonus armor) and trigger Bravado, given the wiki text implies self-cast tries to tether the 'nearest ally'?",
+   "options": [
+    "W self-cast works fully with no ally present, still shields Taric, grants bonus armor, and triggers Bravado",
+    "W cannot be legally cast with zero allies in range, removing it from the damage-fight rotation entirely"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Taric''' can also [[self-targeted|self-cast]] to shield himself; if he self-casts and is untethered, he will become tethered to the nearest ally."
+   ]
+  },
+  {
+   "question": "During Dazzle's 1-second wind-up, can Taric still land Bravado-empowered basic attacks (only movement is explicitly permitted), or does the wind-up block basic attacks/other ability casts like a channel?",
+   "options": [
+    "The wind-up only restricts nothing but is a cast-time-like delay before the damage instance; other actions (attacks, other ability casts) are freely available during it",
+    "The wind-up functions as a channel that blocks basic attacks and other ability casts until the beam fires"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Taric''' winds up over 1 second, granting {{tip|ghosting}} to nearby units, then projects a beam of starlight",
+    "'''Taric''' can move during ''Dazzle''."
+   ]
+  },
+  {
+   "question": "Is the bonus armor used by Bravado's on-attack damage and Dazzle's damage snapshotted at cast/attack time, or read live at the moment the damage instance resolves, given W's own armor buff can change Taric's bonus armor mid-fight?",
+   "options": [
+    "Bonus armor is read live at the moment each damage instance resolves, so W's armor buff being up or down changes P/E damage output within the same fight",
+    "Bonus armor is snapshotted once per cast/attack independent of any buffs gained mid-fight"
+   ],
+   "impact": "low",
+   "quotes": [
+    "TaricW#BonusArmor = (ArmorBonusPercentage=[0.06/0.07/0.08/0.09/0.1])xarmor?",
+    "TaricPassive#TotalDamage = (byLevel(25..93))*(BaseDamageMultiplierForModesBalance=1) + (ArmorDamageValue=0.15)xbonus armor?"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Dazzle (E) on the dummy to deal its magic damage and trigger Bravado, arming the next two basic attacks.",
+   "Immediately land the two Bravado-empowered basic attacks (100% total attack speed, bonus magic damage from bonus armor) before the 5s window expires.",
+   "Self-cast Bastion (W) to retrigger Bravado for another pair of empowered attacks and to add to Taric's bonus armor pool (which scales both P's and E's damage).",
+   "Cast Starlight's Touch (Q) repeatedly on its short cooldown/recharge purely to keep retriggering Bravado (assuming a 0-charge cast is legal) and to stack up the ability-haste-based cooldown reduction, shortening Dazzle's cooldown.",
+   "Recast Dazzle (E) as soon as it comes off cooldown throughout the 15s window, weaving in the Bravado-empowered attacks after every ability cast.",
+   "Do not use Cosmic Radiance (R): it grants invulnerability only and contributes no damage in the damage fight."
+  ],
+  "questions": [
+   "Can Q be cast at 0 stocked charges just to proc Bravado, or does it require at least 1 charge — this determines how aggressively Q can be spammed for CDR/attack procs?",
+   "Does W's self-cast function normally (shield, armor buff, Bravado proc) with zero allies present in the arena?",
+   "Can Taric weave basic attacks during Dazzle's 1-second wind-up, or must the empowered attacks wait until after the beam fires?",
+   "What ability-haste value should be assumed for computing Bravado's cooldown reduction on E (base haste only, or itemized haste), since this changes how many times E can be cast in 15s?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

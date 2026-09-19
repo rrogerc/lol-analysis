@@ -1,0 +1,849 @@
+{
+ "champion": "diana",
+ "abilities": {
+  "P": {
+   "name": "Moonsilver Blade",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_as_base",
+     "meaning": "innate bonus attack speed by champion level",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      15,
+      16.18,
+      17.35,
+      18.53,
+      19.71,
+      20.88,
+      22.06,
+      23.24,
+      24.41,
+      25.59,
+      26.76,
+      27.94,
+      29.12,
+      30.29,
+      31.47,
+      32.65,
+      33.82,
+      35
+     ],
+     "terms": [],
+     "quote": "{{pplevel|15 to 35|key=%}} '''bonus''' attack speed",
+     "bin": [
+      "DianaPassive#BonusAS"
+     ],
+     "binNote": "Bin row stores the value as a fraction (0.15 to 0.35); wiki states it as a percentage (15 to 35), same number scaled by 100."
+    },
+    {
+     "id": "p_as_empowered",
+     "meaning": "tripled bonus attack speed for 5s after casting an ability",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      45,
+      48.53,
+      52.06,
+      55.59,
+      59.12,
+      62.65,
+      66.18,
+      69.71,
+      73.24,
+      76.76,
+      80.29,
+      83.82,
+      87.35,
+      90.88,
+      94.41,
+      97.94,
+      101.47,
+      105
+     ],
+     "terms": [],
+     "quote": "this bonus is tripled to {{pplevel|15*3 to 35*3|key=%|color=as}} for 5 seconds",
+     "bin": [
+      "DianaPassive#EmpoweredAS"
+     ],
+     "binNote": "Bin's EmpoweredAS is BonusAS*3 as a fraction (0.45 to 1.05); wiki states it as a percentage (45 to 105), same number scaled by 100."
+    },
+    {
+     "id": "p_empowered_buff_duration",
+     "meaning": "duration of the tripled attack speed buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds",
+     "bin": [
+      "DianaPassive.BuffDuration"
+     ]
+    },
+    {
+     "id": "p_stack_duration",
+     "meaning": "duration a Moonsilver Blade stack lasts before falling off",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "generate a {{tip|stack}} of ''Moonsilver Blade'' for 5 seconds, refreshing on subsequent attacks",
+     "bin": [
+      "DianaPassive.BuffDuration"
+     ]
+    },
+    {
+     "id": "p_stack_cap",
+     "meaning": "maximum number of Moonsilver Blade stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "stacking up to 2 times",
+     "bin": [],
+     "binNote": "No bin field carries the stack cap of 2; AttackCount (3) instead corresponds to the total attack that triggers the empowered cleave, not the stack cap."
+    },
+    {
+     "id": "p_trigger_count",
+     "meaning": "the Nth basic attack (in quick succession) that becomes empowered",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "Every third basic attack in quick succession will cleave nearby enemies",
+     "bin": [
+      "DianaPassive.AttackCount"
+     ]
+    },
+    {
+     "id": "p_cleave_damage",
+     "meaning": "magic damage dealt by the empowered cleave attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      55,
+      65,
+      75,
+      85,
+      95,
+      110,
+      125,
+      140,
+      155,
+      170,
+      195,
+      220
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{pplevel|20+5*(x-1) for 6; then + 10*x for 5; then + 15*x for 5; then + 25*x}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "DianaPassive#CleaveDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks on-hit generate a stack of Moonsilver Blade, refreshing its duration on subsequent attacks, up to 2 stacks.",
+     "quote": "basic attacks {{tip|on-hit}} generate a {{tip|stack}} of ''Moonsilver Blade'' for 5 seconds, refreshing on subsequent attacks and stacking up to 2 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 2 stacks, the next basic attack is empowered and consumes the stacks on-hit to additionally cleave nearby enemies for bonus magic damage.",
+     "quote": "At 2 stacks, '''Diana''' empowers her next basic attack to consume the stacks {{tip|on-hit}} to additionally cleave nearby enemies, dealing them ... magic damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When stacks are consumed by another on-hit effect (e.g. Guinsoo's Rageblade), the additional damage is only applied to the on-hit target without triggering the cleave on nearby enemies.",
+     "quote": "When the stacks are consumed {{tip|on-hit}} (e.g {{ii|Guinsoo's Rageblade}}, {{ii|Dusk and Dawn}}), additional damage is only applied to the on-hit target, without triggering the cleave on nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack sometimes fails to consume the stacks, in which case it also fails to deal its damage (bug).",
+     "quote": "Sometimes, the empowered basic attack will not consume the stacks. ... In this case, the attack will also not deal its damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Moonsilver Blade deals 270% damage against monsters.",
+     "quote": "''Moonsilver Blade'' deals 270% damage against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "DianaPassive.AttackSpeedValue",
+     "reason": "unknown"
+    },
+    {
+     "ref": "DianaPassive.MonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Crescent Strike",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "DianaQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Moonlight duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "afflicting them with ''Moonlight'' for 3 seconds",
+     "bin": [
+      "DianaQ.MoonlightDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies hit are marked with Moonlight, which Lunar Rush interacts with.",
+     "quote": "''{{ai|Lunar Rush|Diana}}'' interacts with ''Moonlight''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Even if the target spell shields the bolt, they may still be damaged by the explosion, and Moonlight is not applied if the bolt itself is blocked.",
+     "quote": "Even if the target {{tip|spell shield|spell shields}} the bolt, they may still be damaged by the explosion. ''Moonlight'' is not applied to the protected target if blocked.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bolt consists of two projectiles with slightly different trajectories, potentially hitting twice.",
+     "quote": "The bolt consists of two {{tip|projectiles}} with slightly different trajectories.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "DianaQ.MoonlightDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Pale Cascade",
+   "cooldown": {
+    "values": [
+     15,
+     13.5,
+     12,
+     10.5,
+     9
+    ],
+    "quote": "{{ap|15 to 9}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      45,
+      60,
+      75,
+      90,
+      105
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.11
+      }
+     ],
+     "quote": "{{ap|45 to 105}} {{as|(+ 30% AP)}} {{as|(+ 11% '''bonus''' health)}}",
+     "bin": [
+      "DianaOrbs#ShieldValue"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Magic Damage per Orb",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      32,
+      44,
+      56,
+      68
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.18
+      }
+     ],
+     "quote": "{{ap|20 to 68}} {{as|(+ 18% AP)}}",
+     "bin": [
+      "DianaOrbs#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      96,
+      132,
+      168,
+      204
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.54
+      }
+     ],
+     "quote": "{{ap|20*3 to 68*3}} {{as|(+ 54% AP)}}",
+     "bin": [
+      "DianaOrbs#TotalMaxDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Maximum Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      90,
+      120,
+      150,
+      180,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.22
+      }
+     ],
+     "quote": "{{ap|45*2 to 105*2}} {{as|(+ 60% AP)}} {{as|(+ {{ap|11*2}}% '''bonus''' health)}}",
+     "bin": [],
+     "binNote": "This is a wiki-computed maximum (double the ShieldValue), not a value the bin calculates separately; it restates DianaOrbs#ShieldValue doubled, so no dedicated bin row exists."
+    },
+    {
+     "id": "w_5",
+     "meaning": "shield/orb duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "shields herself...for up to 5 seconds and creates three spheres that orbit her counterclockwise for the same duration",
+     "bin": [
+      "DianaOrbs.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The three spheres detonate individually upon contact with an enemy, each dealing damage to nearby enemies.",
+     "quote": "creates three spheres that orbit her counterclockwise for the same duration, detonating upon contact with an enemy to deal {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If all three spheres detonate, the shield is reapplied and stacks with the original, refreshing duration.",
+     "quote": "If all three spheres detonate, ''Pale Cascade's'' shield is reapplied, stacking with its original shield and refreshing the duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown only starts after a sphere detonates, not on cast.",
+     "quote": "After sphere detonation",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Shield power applies twice (with reduced efficiency the second time) when the shield is reapplied after all three orbs detonate.",
+     "quote": "shield power'' effectively applies to the second shield twice, but with reduced efficiency, for up to an increase of 50% of ''shield power''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "DianaOrbs.ShieldBHPRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Lunar Rush",
+   "cooldown": {
+    "values": [
+     22,
+     20,
+     18,
+     16,
+     14
+    ],
+    "quote": "{{ap|22 to 14}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|50 to 130}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "DianaTeleport#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "current cooldown reduced to this when Moonlight is consumed from the target",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{sti|'''current''' cooldown}} is reduced to {{fd|0.25}} seconds",
+     "bin": [
+      "DianaTeleport.CDResetTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Diana dashes to the target's location and deals damage upon completion.",
+     "quote": "'''Diana''' {{tip|dashes}} to the target enemy's location, and upon completion, she deals them {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Diana will attempt to basic attack the target after the dash.",
+     "quote": "'''Diana''' will attempt to basic attack the target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Diana can cast any of her abilities during the dash.",
+     "quote": "'''''Diana''' can cast any of her abilities during the dash.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lunar Rush consumes Moonlight from all enemies upon ending the dash, even if interrupted, and this reduces the current cooldown drastically.",
+     "quote": "''Lunar Rush'' consumes ''Moonlight'' upon ending the dash (even if {{tip|interrupt|interrupted}}).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If blocked by spell shield, Moonlight is still consumed but the cooldown reset does not occur.",
+     "quote": "If ''Lunar Rush'' is blocked by {{tip|spell shield}} the ''Moonlight'' debuff is still consumed but ''Lunar Rush's'' cooldown is not reset.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lunar Rush still deals damage even if the target becomes untargetable by the end of the dash.",
+     "quote": "''Lunar Rush'' will still deal damage even if the target is {{tip|untargetable}} by the end of the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown can also reset if the target dies during the dash while affected by Moonlight.",
+     "quote": "''Lunar Rush's'' cooldown will also be reset if the target dies during the dash while being affected by ''Moonlight''.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Moonfall",
+   "cooldown": {
+    "values": [
+     100,
+     90,
+     80
+    ],
+    "quote": "{{ap|100 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "DianaR.Damage",
+      "DianaR#RExplosionDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Bonus Damage Per Champion",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      60,
+      85
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|35 to 85}} {{as|(+ 15% AP)}}",
+     "bin": [
+      "DianaR.MultihitAmp",
+      "DianaR#RMultiHitAmplification"
+     ],
+     "binNote": "Sheet flags '! calculation names a missing data value MultiHitAmp' - the calculation DianaR#RMultiHitAmplification reads a field named 'MultiHitAmp' while the data value is spelled 'MultihitAmp'; the numbers [35,60,85] match the wiki's per-rank values so this is treated as a spelling/casing mismatch, not a numeric disagreement."
+    },
+    {
+     "id": "r_5",
+     "meaning": "Delay before the moonlight beam strikes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "after 1 second",
+     "bin": [
+      "DianaR.Delay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The explosion damage is delayed roughly 1 second after the pull, not instant.",
+     "quote": "she calls down a beam of moonlight to strike upon the area around her after 1 second, dealing {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Total explosion damage increases for each additional enemy champion pulled beyond the first, uncapped at 4.",
+     "quote": "increased for each champion pulled beyond the first.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Moonfall's additional per-champion damage bonus scales without an upper cap on champion count.",
+     "quote": "''Moonfall's'' additional damage is not capped at 4 champions.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If every champion hit by the initial pull blocks it with spell shield, the delayed explosion does not occur at all.",
+     "quote": "The beam of moonlight does not crash down if champions hit blocked the initial effect with {{tip|spell shield}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemy champions who block the pull with spell shield are excluded from the count that increases the explosion's damage.",
+     "quote": "Enemy champions protected by ''spell shield'' do not count towards the damage increase.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "DianaR.SlowPotency",
+     "reason": "utility"
+    },
+    {
+     "ref": "DianaR.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "DianaR.SlowTooltip",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every 3rd basic attack in quick succession consumes 2 Moonsilver Blade stacks to deal bonus cleave magic damage."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Innate bonus attack speed is tripled for 5s after casting any ability."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Crescent Strike applies a 3s Moonlight debuff on the target; Lunar Rush consumes Moonlight from the target on dash-end."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lunar Rush's current cooldown is reduced to 0.25s when it consumes Moonlight from its target."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Diana attempts a basic attack on the target immediately upon completing the Lunar Rush dash."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "Q"
+   ],
+   "note": "Pale Cascade's three orbs detonate as separately timed hits (cooldown starts only after a detonation); Crescent Strike's bolt is two distinct projectiles."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Base cast damage for Crescent Strike, Pale Cascade orbs, Lunar Rush, and Moonfall's delayed explosion."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50, W 40-60, E 40-60, R 100) may cap how many casts fit in the 15s fight without regen from items/runes."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Pale Cascade's shield (and its reapplication/stacking on full orb detonation) only matters for the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two interactions exceed a static primitive: (1) Pale Cascade's cooldown explicitly starts 'After sphere detonation' rather than on cast, so its effective cooldown depends on when/whether all three orbs actually hit the target - a timing dependency the catalog's plain cooldown model doesn't capture; (2) Lunar Rush's cooldown reset is gated on consuming Moonlight, and the wiki notes it 'is possible for Lunar Rush to be reset multiple times during the same Crescent Strike cast, until it finishes its trajectory' (e.g. re-casting Q mid-dash), which is a chained cross-ability cooldown-manipulation sequence beyond a single cooldown-manipulation primitive tied to one ability pair."
+ },
+ "unsettled": [
+  {
+   "question": "Does Crescent Strike's bolt (two distinct projectiles per the wiki note) deal damage to a single stationary dummy target once or twice?",
+   "options": [
+    "Only one of the two projectiles can hit a single target, so Q deals its listed damage once per cast",
+    "Both projectiles can connect with the same single target, doubling Q's direct damage (before the explosion) per cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The bolt consists of two {{tip|projectiles}} with slightly different trajectories."
+   ]
+  },
+  {
+   "question": "In a point-blank dummy fight, do Pale Cascade's three orbs detonate effectively simultaneously with cast (since the dummy is in melee range), or do they retain meaningful travel/orbit delay before each detonation, delaying the cooldown-start and the shield-reapplication?",
+   "options": [
+    "Orbs detonate near-instantly on the adjacent target, so W's effective cooldown ≈ listed cooldown",
+    "Orbs orbit for a noticeable duration before hitting, meaningfully delaying cooldown-start and pushing total DPS down"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = After sphere detonation",
+    "creates three spheres that orbit her counterclockwise for the same duration, detonating upon contact with an enemy"
+   ]
+  },
+  {
+   "question": "Does the basic attack Diana performs at the end of Lunar Rush's dash count toward the Moonsilver Blade attack-count (progressing/consuming the every-3rd-attack cleave), i.e. is it a normal on-hit attack for passive-stacking purposes?",
+   "options": [
+    "The post-dash attack is a normal basic attack and counts fully toward Moonsilver Blade stacking/consumption",
+    "The post-dash attack is a special forced attack that does not interact with Moonsilver Blade's stack/consume logic"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Diana''' will attempt to basic attack the target."
+   ]
+  },
+  {
+   "question": "Can Lunar Rush's cooldown be reset multiple times within a single fight window by re-casting Crescent Strike mid-dash (per the wiki tip), and if so how many extra E casts should the rotation assume are achievable in 15s?",
+   "options": [
+    "Treat each Q cast as granting at most one E cooldown reset (conservative, one Moonlight application consumed per Q)",
+    "Allow chained resets where a well-timed Q cast during an active E dash can grant additional resets beyond the simple one-per-cast pairing"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "it is possible for ''Lunar Rush'' to be reset multiple times during the same ''Crescent Strike'' cast, until it finishes its trajectory."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Diana enters the fight at full level/build with all cooldowns available and 0 Moonsilver Blade stacks.",
+   "Open with Crescent Strike (Q) on the dummy for direct damage and to apply Moonlight.",
+   "Immediately follow with Lunar Rush (E) onto the dummy, consuming Moonlight for its damage and resetting E's cooldown to 0.25s.",
+   "Cast Moonfall (R) to pull/burst the dummy for its delayed explosion damage.",
+   "Cast Pale Cascade (W) for its orb damage sequence.",
+   "Basic-attack continuously in every gap between ability casts, letting every 3rd attack consume Moonsilver Blade stacks for the empowered cleave, and keeping the tripled attack-speed buff refreshed by casting on cooldown.",
+   "Re-cast Q the moment it comes off cooldown to reapply Moonlight, then immediately re-cast E while its cooldown is still near-zero from the prior reset, looping this Q→E pair as often as Q's cooldown allows.",
+   "Re-cast W and R on cooldown throughout the remaining fight window, interleaved with the Q→E loop and autoattacks.",
+   "Prioritize spending mana on the highest-damage-per-mana loop (Q→E) once R is on cooldown, watching for mana exhaustion late in the 15s window."
+  ],
+  "questions": [
+   "At what level/rank and with what ability order (Q/E/W maxed first) should the simulated Diana be, since this changes how tight the Q→E reset loop is?",
+   "Is there enough mana regen (from runes/items assumed in the build) to sustain the full Q-E-R-W-attack loop for the entire 15s, or does the rotation need an idle/attack-only phase once mana runs out?",
+   "Should Moonfall (R) be front-loaded immediately for burst, or held until Diana has stacked attack-speed/on-hit procs, given its 1s cast delay and long cooldown means it likely only fires once in a 15s window?",
+   "How many Q→E reset loops are realistically achievable within 15s given Q's cooldown floor (6-8s) versus E's reset to 0.25s each time - does this bottleneck the whole rotation on Q's cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

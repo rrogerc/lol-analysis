@@ -1,0 +1,714 @@
+{
+ "champion": "janna",
+ "abilities": {
+  "P": {
+   "name": "Tailwind",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage on basic attacks and Zephyr as a portion of bonus movement speed",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "moveSpeed",
+       "coef": 0.3
+      }
+     ],
+     "quote": "deal {{as|'''bonus''' magic damage}} equal to {{as|30% of her '''bonus''' movement speed}}",
+     "bin": [
+      "TailwindSelf.MSBonusMagicDamage",
+      "TailwindSelf#BonusDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Janna's basic attacks (on-hit) and Zephyr deal bonus magic damage equal to a portion of her bonus movement speed.",
+     "quote": "'''Janna's''' {{tip|basic attacks}} {{tip|on-hit}} and ''{{ai|Zephyr|Janna}}'' deal {{as|'''bonus''' magic damage}} equal to {{as|30% of her '''bonus''' movement speed}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TailwindSelf.MSPercentAlly",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Howling Gale",
+   "cooldown": {
+    "values": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "quote": "14"
+   },
+   "cost": {
+    "values": [
+     90,
+     95,
+     100,
+     105,
+     110
+    ],
+    "quote": "{{ap|90 to 110}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Minimum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      90,
+      125,
+      160,
+      195
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|55 to 195}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "HowlingGale#MinimumDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Damage Per Second (charged)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "HowlingGale#ExtraDamagePerSecondCharged"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "recast missile travel time",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{fd|1.25}} seconds",
+     "bin": [
+      "HowlingGale.MissileTravelTime"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "maximum charge duration (seconds until damage/knockup is fully matured)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "charges up over 3 seconds",
+     "bin": [
+      "HowlingGale.MaxDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The whirlwind charges for up to 3 seconds, increasing its damage every second; the manual or automatic recast fires the missile that deals the damage.",
+     "quote": "'''Janna''' summons a whirlwind at her current location that charges up over 3 seconds, increasing its range, speed, damage, and {{tip|airborne|knock up}} duration every second over the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage is dealt only on the recast, when the whirlwind is launched and travels for 1.25 seconds before it can hit the target.",
+     "quote": "'''Janna''' launches the whirlwind in the direction she targeted over {{fd|1.25}} seconds, dealing {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts when Howling Gale is initially cast, not when it is recast/launched.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the initial cast and the manual recast count as separate ability activations, e.g. for triggering on-cast effects.",
+     "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HowlingGale.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "HowlingGale.BaseRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "HowlingGale.ChargeDistancePercent",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "HowlingGale.BaseKnockup",
+     "reason": "utility"
+    },
+    {
+     "ref": "HowlingGale.ChargeKnockup",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Zephyr",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.245,
+    "quote": "{{fd|0.245}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0002
+      }
+     ],
+     "quote": "{{ap|6 to 10}}% {{as|(+ 2% per 100 AP)}}",
+     "bin": [
+      "SowTheWind#TotalMS"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      85,
+      115,
+      145,
+      175
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|55 to 175}} {{as|(+ 50% AP)}} {{as|(+ 30% '''bonus''' movement speed)}}",
+     "bin": [
+      "SowTheWind#TotalDamage"
+     ],
+     "binNote": "Wiki lists an additional '+30% bonus movement speed' damage scaling from the Tailwind passive that is not part of SowTheWind#TotalDamage; that conversion is defined in TailwindSelf#BonusDamage/MSToOnHitConversionRate, not in this ability's own calculation."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      24,
+      28,
+      32,
+      36
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.06
+      }
+     ],
+     "quote": "{{ap|20 to 36}}% {{as|(+ 6% per 100 AP)}}",
+     "bin": [
+      "SowTheWind#TotalSlow"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slows them for 2 seconds",
+     "bin": [
+      "SowTheWind.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The slow is capped at 99% regardless of AP.",
+     "quote": "slows them for 2 seconds, capped at 99%",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Zephyr's passive grants Janna permanent ghosting and bonus movement speed, which is not a factor in stationary dummy or survival fights.",
+     "quote": "'''Janna''' is {{tip|ghosting|ghosted}} and gains {{sti|ms|{{as|'''bonus''' movement speed}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Zephyr can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SowTheWind.MSAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "SowTheWind.SlowAPRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Eye of the Storm",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|16 to 12}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "EyeOfTheStorm#TotalShield"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "EyeOfTheStorm#TotalAD"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "a {{tip|shield}} for 4 seconds",
+     "bin": [
+      "EyeOfTheStorm.ShieldDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Cooldown refund percent on slow/knockup",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "20% of ''Eye of the Storm's'' cooldown is refunded",
+     "bin": [
+      "EyeOfTheStorm.ECDRefundforCC"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield grants bonus attack damage to the target for as long as the shield holds, which changes damage dealt by the shielded ally (relevant if the shield is on self or an ally attacking the dummy).",
+     "quote": "While the shield holds, the target gains {{sti|attack damage|{{as|'''bonus''' attack damage}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shield itself reduces damage taken while it holds (a flat absorb), a defensive effect.",
+     "quote": "a {{tip|shield}} for 4 seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown refund only triggers when a Janna ability slows or knocks up at least one enemy champion, once per cast.",
+     "quote": "Whenever '''Janna's''' abilities {{tip|slow}} or {{tip|airborne|knock up}} at least one enemy {{tip|champion}}, 20% of ''Eye of the Storm's'' cooldown is refunded. This may occur once per spell cast.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Allied turrets shielded by Eye of the Storm also gain the bonus attack damage.",
+     "quote": "Allied turrets will benefit from the bonus attack damage when targeted by ''Eye of the Storm''.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EyeOfTheStorm.DecayGracePeriod",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EyeOfTheStorm.EmpowerDuration",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Monsoon",
+   "cooldown": {
+    "values": [
+     130,
+     115,
+     100
+    ],
+    "quote": "{{ap|130 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Heal Per Tick",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      37.5,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.125
+      }
+     ],
+     "quote": "{{ap|300/12 to 600/12}} {{as|(+ {{ap|150/12}}% AP)}}",
+     "bin": [
+      "ReapTheWhirlwind#HealPerSecond"
+     ],
+     "binNote": "HealPerSecond is a per-second rate (base [100/150/200], +0.5xAP); the wiki's per-tick value divides this by 4 ticks per second (0.25s interval), giving base 25/37.5/50 and +0.125 AP per tick — numbers agree once divided by 4."
+    },
+    {
+     "id": "r_3",
+     "meaning": "channel/heal duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "channels for up to 3 seconds",
+     "bin": [
+      "ReapTheWhirlwind.Duration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "healing herself and nearby allies every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No bin row states the tick interval directly; it is implied by dividing the tooltip total heal (base 300/450/600 over 3s, i.e. HealPerSecond*Duration) by the per-tick value (25/37.5/50) shown in the wiki's leveling table, giving 12 ticks over 3 seconds = 0.25s per tick. The bin has no explicit tick-rate field."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The heal is a channel that ticks every 0.25 seconds for up to 3 seconds, and is interrupted by attacking, casting, moving, or most item uses.",
+     "quote": "{{ct|channel|attack=interrupts|cast=interrupts|move=interrupts|items=interrupts,true,,false|spells=true, interrupts, interrupts, interrupts, interrupts}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Monsoon can be blocked by spell shields.",
+     "quote": "spellshield  = true",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The knockback pushes enemies back based on proximity, up to 875 units, over 0.5 seconds, but not through terrain.",
+     "quote": "knocks back all nearby enemies to up to 875 units over {{fd|0.5}} seconds based on their proximity, though not through terrain",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ReapTheWhirlwind.Range",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ReapTheWhirlwind.MaxKnockback",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ReapTheWhirlwind.KnockbackBaseRange",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ReapTheWhirlwind.KnockbackSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ReapTheWhirlwind.KnockbackGravity",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ReapTheWhirlwind.KnockbackDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Tailwind converts Janna's bonus movement speed into bonus magic damage on basic attacks (on-hit) and on Zephyr's damage instance (30% of bonus MS)."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Tailwind adds bonus magic damage to every basic attack against the dummy."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Howling Gale is cast to charge, then manually or automatically recast to launch the whirlwind and deal its magic damage/knockup; cooldown starts on the initial cast."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Zephyr deals its magic damage directly on hit after a 0.245s cast time and travel."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Eye of the Storm grants bonus AD to the shielded target (Janna herself in the damage fight) for as long as the 4s shield holds."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Eye of the Storm's own cooldown is refunded 20% when a Janna ability slows or knocks up an enemy champion (once per cast), increasing E uptime and thus AD-buff uptime."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (90-110 Q, 50-70 W, 70-90 E, 100 R) can meaningfully limit how many casts fit in the 15s window depending on mana pool/regen assumed."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Eye of the Storm's shield (damage absorb) and Monsoon's channelled heal are defensive effects read only in the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Howling Gale's damage scales continuously with elapsed charge time (0 to 3s, both min-damage base and a per-second bonus-damage term keyed to seconds charged) before the player chooses to recast it. None of the closed-list primitives cleanly express a continuous, player-controlled charge-duration-to-damage ramp that also doesn't block other actions while charging (it isn't a channel that locks out attacking/casting, and it isn't a fixed-step recast/multipart or a per-cast stack); the simulator needs bespoke logic to pick a charge time and compute the resulting minimum+bonus damage before the launch."
+ },
+ "unsettled": [
+  {
+   "question": "Is Howling Gale's charge-scaling damage continuous with exact elapsed seconds, or does it step up only at whole-second increments (0/1/2/3s) as the description implies ('increasing... every second')?",
+   "options": [
+    "Continuous: damage = MinDamage + BonusDamage x (exact seconds charged, e.g. 1.5) + AP terms",
+    "Discrete: damage only increases at the 1s, 2s, 3s marks, so charging 1.5s yields the same bonus as charging 1.0s"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "increasing its range, speed, damage, and knock up duration every second over the duration."
+   ]
+  },
+  {
+   "question": "Does Tailwind's 'bonus movement speed' input (which converts to bonus magic damage on attacks and Zephyr) include movement speed granted by Zephyr's own passive buff, creating a self-referential MS-to-damage stack, or only MS from items/base kit outside Zephyr?",
+   "options": [
+    "Includes all current bonus MS, including Zephyr's own passive bonus MS",
+    "Excludes Zephyr's own passive MS (only counts MS from other sources such as boots/runes)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "deal {{as|'''bonus''' magic damage}} equal to {{as|30% of her '''bonus''' movement speed}}",
+    "'''Janna''' is {{tip|ghosting|ghosted}} and gains {{sti|ms|{{as|'''bonus''' movement speed}}}}"
+   ]
+  },
+  {
+   "question": "In the survival fight, does taking damage from the attacking champion interrupt Monsoon's healing channel, or does only Janna's own actions (attack/cast/move/most items) interrupt it as the interaction table states?",
+   "options": [
+    "Only Janna's own listed actions interrupt the channel; incoming damage does not stop the heal",
+    "Being attacked/damaged also interrupts the channel like a standard channelled ability"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ct|channel|attack=interrupts|cast=interrupts|move=interrupts|items=interrupts,true,,false|spells=true, interrupts, interrupts, interrupts, interrupts}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Eye of the Storm on herself to gain the bonus AD buff before attacking.",
+   "Cast Howling Gale, then recast it promptly (minimizing charge time) so its magic damage instance lands early and its 14s cooldown starts as soon as possible, leaving room for a second cast later in the fight if time allows.",
+   "Cast Zephyr on the dummy for its direct magic damage plus Tailwind's bonus-MS-derived magic damage, on cooldown throughout the fight.",
+   "Auto-attack the dummy continuously between ability casts and during Howling Gale's charge window to benefit from Tailwind's on-hit magic damage bonus and Eye of the Storm's AD buff.",
+   "Recast Eye of the Storm on herself whenever it is off cooldown to maintain the AD buff uptime.",
+   "Do not cast Monsoon; it deals no damage to the dummy and its heal is irrelevant in the damage-only fight."
+  ],
+  "questions": [
+   "Should Howling Gale be charged partway (e.g. to 1-3s) for higher per-cast damage at the cost of delaying its single hit within the 15s window, or is an instant recast always better for total damage/kill time?",
+   "Does Eye of the Storm's cooldown-refund-on-CC ever trigger in the damage fight (i.e., does Howling Gale's knockup or Zephyr's slow count as landing on the target dummy), increasing E's uptime beyond its base cooldown?",
+   "Is there a minimum charge time before Howling Gale can be manually recast, or can it be recast at effectively 0s charge immediately after the initial cast?",
+   "For the survival fight, should Monsoon be held until low health to maximize survival, and does the heal's value in the closed-list model rely on the channel-interruption ruling above?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

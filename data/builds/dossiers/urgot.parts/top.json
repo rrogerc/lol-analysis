@@ -1,0 +1,150 @@
+{
+ "champion": "urgot",
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Six shotguns (legs), each fires once on Urgot's next on-hit attack within its arc, then goes on its own cooldown (30s at level 1 down to 2.5s at level 18). Only one leg is ever aimed at a stationary single dummy, so it behaves as one recurring charge gated by that per-leg cooldown."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Echoing Flames damage includes a component scaling with the target's maximum health (capped vs monsters, uncapped vs champions/dummy)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Corrosive Charge (delayed AoE explosion), Disdain's dash hit, and Fear Beyond Death's initial chem-drill each deal a single on-cast/on-delay damage instance on cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (Q flat 70, W 40->0 by rank, E 60->100 by rank, R flat 100); over a 15s fight with a finite mana pool this limits how many casts/how long Purge can be sustained."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "Purge overrides Urgot's attack speed with a fixed 3.0 attacks/second for its duration, independent of his normal (item/stat-driven) attack speed."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Each Purge shot deals its own modified physical damage (12 + %AD) and applies on-hit/on-attack effects at 50% effectiveness; cannot crit."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Purge is a 4s (25000s at max rank) effect that recasts to end, and auto-recasts if not manually ended before max rank. Fear Beyond Death has a separate, differently-timed recast (Mercy) once the target crosses a health threshold."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "Mercy's recast unconditionally kills the leashed target once the channel completes, regardless of their current health (bypassing normal damage/resist calculation), available once they are at or below 25% missing... i.e. 25% of maximum health remaining."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Disdain's shield (base + bonus AD + bonus HP ratio) is read only in the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Fear Beyond Death's recast (Mercy) is not a damage number at all: after a channel it unconditionally sets the target's health to 0 (an instant, unresistable kill) rather than dealing a computable physical/true-damage amount, except for edge cases like Undying Rage which floor it at 1 HP instead. None of the closed primitives (including execute-or-threshold, which implies a bonus-damage step) cleanly express an unconditional non-damage kill; the simulator needs bespoke logic to decide how/whether to model this against a target dummy that starts at full HP and may never cross the 25%-remaining-health gate that unlocks the recast within a 15s window."
+ },
+ "unsettled": [
+  {
+   "question": "During a single (pre-max-rank) 4-second Purge activation at 3.0 fixed attacks/second, does Urgot fire 12 shots (4 x 3, straightforward math) or 13 shots (as explicitly stated in the wiki notes)?",
+   "options": [
+    "12 shots (duration x attack speed)",
+    "13 shots (per wiki note 'Urgot will attack 13 times')"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Before maximum rank, if continuously attacking without being interrupted or interrupting or canceling the cast, '''Urgot''' will attack 13 times.",
+    "UrgotW.WAttacksPerSecond = 3",
+    "UrgotW.Duration = [4/4/4/4/25000]"
+   ]
+  },
+  {
+   "question": "How should the simulator model Fear Beyond Death's Mercy recast against a target dummy: as an unconditional instant kill once triggerable (ending the damage fight immediately), as a large true-damage burst approximating 'current health,' or as never triggering because the dummy's health rarely crosses the 25%-remaining threshold within a 15s window?",
+   "options": [
+    "Treat as instant kill / zero remaining health once the 25% threshold and 1.5s(or 1s) channel complete",
+    "Approximate as a damage instance equal to the dummy's current HP",
+    "Exclude Mercy from the damage-fight simulation entirely and only count the initial cast's physical damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon completing the channel, the target is {{ccs|{{tip|execute|executed}}|true}}.",
+    "The target will die regardless of their {{as|'''current''' health}} once the recast's chains hit, even if they are {{tip|heal|healed}}."
+   ]
+  },
+  {
+   "question": "Mercy's channel duration before the execute lands: is it 1.5 seconds (wiki description) or 1.0 second (bin's RChannelTimeReel)?",
+   "options": [
+    "1.5 seconds (wiki text)",
+    "1.0 second (UrgotR.RChannelTimeReel)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "channels for {{fd|1.5}} seconds once they latch on",
+    "UrgotR.RChannelTimeReel = 1"
+   ]
+  },
+  {
+   "question": "When Corrosive Charge or Disdain is cast while Purge is active, does Purge merely pause firing for the stated 0.05s/1.25s and then resume its remaining duration/shot count, or does the cast end/reset the Purge activation (losing remaining attacks)?",
+   "options": [
+    "Purge pauses briefly then resumes, preserving total shots for that activation",
+    "Casting another ability cancels/ends the current Purge activation early"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Corrosive Charge'' prevents {{ai|Purge|Urgot}} from firing for {{fd|0.05}} seconds after the cast time.",
+    "''Disdain'' prevents {{ai|Purge|Urgot}} from firing for {{fd|1.25}} seconds.",
+    "{{ai|Purge|Urgot}} can be cast during the dash."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "If Fear Beyond Death (R) is off cooldown at the start, cast it immediately for its upfront physical damage and to mark/leash the target (the execute recast likely will not be available yet on a full-health dummy).",
+   "Cast Corrosive Charge (Q) next for its delayed AoE physical damage and to (re)apply the mark.",
+   "Cast Disdain (E) to dash in (or through) the target for its physical damage, shield, and to refresh the mark, closing to melee range.",
+   "Activate Purge (W) to auto-attack at fixed 3.0 attacks/second for its duration, prioritizing the marked target and letting every shot apply on-hit effects and consume the currently-facing Echoing Flames shotgun charge when it's off its per-leg cooldown.",
+   "Recast Q and E again the instant each comes off cooldown, accepting the brief (0.05s/1.25s) pause each causes to Purge's shots, then re-toggle/re-cast Purge whenever it is not already running.",
+   "Between Purge windows and spell cooldowns, basic-attack normally so Echoing Flames and any on-hit effects keep triggering.",
+   "If the dummy's health ever drops to or below 25% remaining within the 15s window, recast Fear Beyond Death (Mercy) to attempt the guaranteed execute and end the fight.",
+   "Repeat the Q -> E -> Purge cycle for the remainder of the 15 seconds, keeping mana spend in mind since Q/E/R all draw from the same pool."
+  ],
+  "questions": [
+   "At the simulated level/rank distribution, is Urgot's ultimate assumed to be up at the start of the 15s window, or on cooldown from a prior engagement (its 100-70s cooldown makes a second cast within the window essentially impossible)?",
+   "Should the rotation assume max-rank Purge (indefinite toggle) is reachable at the tested level, changing it from a recastable 4s burst into a sustained always-on autoattack mode for the whole fight?",
+   "Given Purge only delays rather than cancels on other casts, is it optimal to keep Purge running continuously and simply weave Q/E into it, rather than treating Purge as a discrete 4-second cooldown ability in the rotation?",
+   "Is it realistic within a 15s single-target dummy fight for the target's health to ever cross the 25%-remaining threshold needed for the Mercy execute, or should the proposal drop step 7 entirely for most build/level combinations?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

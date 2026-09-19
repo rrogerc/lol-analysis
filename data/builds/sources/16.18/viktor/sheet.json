@@ -1,0 +1,697 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ViktorPassive",
+    "key": "Characters/Viktor/Spells/ViktorPassiveAbility/ViktorPassive",
+    "dataValues": {
+     "MinionStacks": 1,
+     "CannonStacks": 10,
+     "ChampionStacks": 20,
+     "EvolutionStackBreakpoint": 100,
+     "ARAMStacksoverTime": 1,
+     "ARAMStackCadence": 5
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ViktorQ",
+    "key": "Characters/Viktor/Spells/ViktorQAbility/ViktorQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      45,
+      50,
+      55,
+      60,
+      65
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MissileDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       75,
+       90,
+       105,
+       120
+      ]
+     },
+     "AABonusDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       45,
+       70,
+       95,
+       120
+      ]
+     },
+     "BuffDuration": 2.5,
+     "MissileAPRatio": 0.4,
+     "HitAPRatio": 0.5,
+     "ShieldManaRatio": 0.08,
+     "ShieldAPRatio": 0.25,
+     "AugmentShieldBonus": 1.6,
+     "AugmentMoveSpeedBonus": 30,
+     "TurretDamageMod": 1
+    },
+    "calcs": {
+     "TotalMissileDamage": {
+      "expr": "MissileDamage=[60/75/90/105/120] + (MissileAPRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        75,
+        90,
+        105,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "MissileAPRatio"
+       }
+      ],
+      "refs": [
+       "MissileAPRatio",
+       "MissileDamage"
+      ]
+     },
+     "AttackTotalDMG": {
+      "expr": "AABonusDamage=[20/45/70/95/120] + (HitAPRatio=0.5)xap + 1xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        45,
+        70,
+        95,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "HitAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "AABonusDamage",
+       "HitAPRatio"
+      ]
+     },
+     "{147c7de9}": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "ShieldLevelScaling": {
+      "expr": "byLevel(40..140) + (ShieldAPRatio=0.25)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        45.882353,
+        51.764706,
+        57.64706,
+        63.52941,
+        69.411765,
+        75.29412,
+        81.17647,
+        87.05882,
+        92.94118,
+        98.82353,
+        104.70588,
+        110.588235,
+        116.47059,
+        122.35294,
+        128.23529,
+        134.11765,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "ShieldAPRatio"
+      ]
+     },
+     "TotalAugmentedShieldValue": {
+      "expr": "ShieldLevelScaling * AugmentShieldBonus=1.6",
+      "modifies": "ShieldLevelScaling",
+      "flat": {
+       "axis": "level",
+       "v": [
+        64,
+        73.411765,
+        82.82353,
+        92.2353,
+        101.64706,
+        111.05882,
+        120.47059,
+        129.88235,
+        139.29411,
+        148.70589,
+        158.11765,
+        167.5294,
+        176.94118,
+        186.352944,
+        195.764704,
+        205.176464,
+        214.58824,
+        224
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "AugmentShieldBonus",
+       "ShieldAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ViktorW",
+    "key": "Characters/Viktor/Spells/ViktorWAbility/ViktorW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      17,
+      16,
+      15,
+      14,
+      13
+     ]
+    },
+    "cost": 65,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowPotency": {
+      "axis": "rank",
+      "v": [
+       -33,
+       -36,
+       -39,
+       -42,
+       -45
+      ]
+     },
+     "StunDuration": 1.5,
+     "FieldDuration": 4,
+     "StackCadence": 0.5,
+     "StacksForStun": 6,
+     "SlowDuration": 1,
+     "AugmentSlow": 20,
+     "Size": 275
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ViktorE",
+    "key": "Characters/Viktor/Spells/ViktorEAbility/ViktorE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "LaserRange": 700,
+     "BaseDamageLaser": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "BaseDamageAftershock": {
+      "axis": "rank",
+      "v": [
+       20,
+       50,
+       80,
+       110,
+       140
+      ]
+     },
+     "Delay": 1,
+     "LaserAPRatio": 0.5,
+     "AftershockAPRatio": 0.8,
+     "AftershockMinionMulti": 0.5
+    },
+    "calcs": {
+     "LaserDamage": {
+      "expr": "BaseDamageLaser=[70/110/150/190/230] + (LaserAPRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "LaserAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamageLaser",
+       "LaserAPRatio"
+      ]
+     },
+     "AftershockDamage": {
+      "expr": "BaseDamageAftershock=[20/50/80/110/140] + (AftershockAPRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        50,
+        80,
+        110,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "AftershockAPRatio"
+       }
+      ],
+      "refs": [
+       "AftershockAPRatio",
+       "BaseDamageAftershock"
+      ]
+     },
+     "{86b88e5d}": {
+      "expr": "(BaseDamageAftershock=[20/50/80/110/140] + (AftershockAPRatio=0.8)xap) * AftershockMinionMulti=0.5",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        25,
+        40,
+        55,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "AftershockAPRatio"
+       }
+      ],
+      "refs": [
+       "AftershockAPRatio",
+       "AftershockMinionMulti",
+       "BaseDamageAftershock"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ViktorR",
+    "key": "Characters/Viktor/Spells/ViktorRAbility/ViktorR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "InitialBurstBaseDamage": {
+      "axis": "rank",
+      "v": [
+       100,
+       175,
+       250
+      ]
+     },
+     "SubsequentBurstBaseDamage": {
+      "axis": "rank",
+      "v": [
+       65,
+       105,
+       145
+      ]
+     },
+     "StormDuration": 6.5,
+     "TickCadence": 1,
+     "MaxTicks": 6,
+     "MaxStormSpeed": 275,
+     "MinStormSpeed": 200,
+     "MinDistance": 300,
+     "MaxDistance": 1000,
+     "AugmentBoost": 0.25,
+     "StormRadius": 325,
+     "EnhancedSizeMult": 0.4,
+     "EnhancedSlow": 40,
+     "EnhancedSlowDuration": 2,
+     "MaxGrowths": 6,
+     "SubsequentBurstAPRaio": 0.35,
+     "InitialBurstAPRatio": 0.5,
+     "Tooltip_DurationExtension": 3
+    },
+    "calcs": {
+     "InitialBurstDamage": {
+      "expr": "InitialBurstBaseDamage=[100/175/250] + (InitialBurstAPRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        175,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "InitialBurstAPRatio"
+       }
+      ],
+      "refs": [
+       "InitialBurstAPRatio",
+       "InitialBurstBaseDamage"
+      ]
+     },
+     "SubsequentBurstDamage": {
+      "expr": "SubsequentBurstBaseDamage=[65/105/145] + (SubsequentBurstAPRaio=0.35)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        105,
+        145
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35,
+        "dataValue": "SubsequentBurstAPRaio"
+       }
+      ],
+      "refs": [
+       "SubsequentBurstAPRaio",
+       "SubsequentBurstBaseDamage"
+      ]
+     },
+     "{d3c6a7eb}": {
+      "expr": "3",
+      "flat": 3,
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "Crepe_ViktorVsJayce_ViktorReward",
+    "key": "{40cdc0c2}",
+    "dataValues": {
+     "BonusADPercent": 0.35,
+     "APPercent": 0.25,
+     "BaseDamage": 400,
+     "DetectionRange": 700,
+     "BuffDuration": 2
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=400 + (APPercent=0.25)xap + (BonusADPercent=0.35)xbonus ad",
+      "flat": 400,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "APPercent"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.35,
+        "dataValue": "BonusADPercent"
+       }
+      ],
+      "refs": [
+       "APPercent",
+       "BaseDamage",
+       "BonusADPercent"
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "ViktorQ",
+  "W": "ViktorW",
+  "E": "ViktorE",
+  "R": "ViktorR",
+  "P": "ViktorPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 405,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.12
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Viktor",
+  "name": "Viktor",
+  "partype": "Mana",
+  "passive": "Glorious Evolution",
+  "spells": [
+   {
+    "id": "ViktorQ",
+    "name": "Siphon Power",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ]
+   },
+   {
+    "id": "ViktorW",
+    "name": "Gravity Field",
+    "maxrank": 5,
+    "cooldown": [
+     17,
+     16,
+     15,
+     14,
+     13
+    ],
+    "cost": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ]
+   },
+   {
+    "id": "ViktorE",
+    "name": "Hextech Ray",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "ViktorR",
+    "name": "Arcane Storm",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Glorious Evolution": {
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "Glorious Evolution 2": {},
+   "Glorious Evolution 3": {},
+   "Glorious Evolution 4": {},
+   "Glorious Evolution 5": {}
+  },
+  "Q": {
+   "Siphon Power": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "Unit",
+    "affects": "Enemies / Self",
+    "costtype": "mana"
+   },
+   "Discharge": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "Unit",
+    "affects": "Enemies / Self",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Gravity Field": {
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Hextech Ray": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Vector",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Arcane Storm": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "targeting": "{{dv|[[Location-targeted|Location]]|[[Unit-targeted|Unit]]}}",
+    "affects": "Enemies",
+    "costtype": "mana"
+   },
+   "Arcane Storm 2": {},
+   "Arcane Storm 3": {}
+  }
+ }
+}

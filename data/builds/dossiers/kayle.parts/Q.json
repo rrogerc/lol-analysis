@@ -1,0 +1,100 @@
+{
+ "name": "Radiant Blast",
+ "cooldown": {
+  "values": [12, 11, 10, 9, 8],
+  "quote": "{{ap|12 to 8}}"
+ },
+ "cost": {
+  "values": [60, 70, 80, 90, 100],
+  "quote": "{{ap|60 to 100}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.30968,
+  "quote": "{{tt|Attack Windup Time|Cast time is equal to this period.}}",
+  "binNote": "The bin's flat KayleQ castTime=0.25 does not match the wiki's documented mechanic: cast time equals Kayle's current attack windup time (dynamic, formula windup percent 0.193555 / total attack speed), giving 0.30968s at base attack speed (quoted here), up to 0.96775s at the 0.2 minimum attack speed, and down to 0.06445s at the 3.003 attack speed cap. The wiki itself flags this as uncertain: patch V9.17 made cast time a flat 0.25s, then V10.4 'undocumentedly changed back' to windup-scaling, and whether that reversion was intentional is unknown. The bin's flat 0.25 instead matches KayleQ.CastDelay exactly (see value q_4), a separately documented fixed delay from cast start to the sword's launch; it is unclear whether the bin's castTime field is stale/simplified or reflects a real flat-cast-time behavior that supersedes the wiki's windup-scaling description."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic damage dealt to targets struck by the sword's explosion",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [60, 90, 120, 150, 180],
+   "terms": [
+    {"stat": "bonusAd", "coef": 0.6},
+    {"stat": "ap", "coef": 0.5}
+   ],
+   "quote": "{{ap|60 to 180}} {{as|(+ 60% '''bonus''' AD)}} {{as|(+ 50% AP)}}",
+   "bin": ["KayleQ.Damage", "KayleQ#TotalDamage"]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Armor and magic resistance reduction (Sundered) inflicted on targets struck",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "inflicted with 15% '''reduced''' {{sti|armor|{{as|armor}}}} and {{sti|magic resistance|{{as|magic resistance}}}} for 4 seconds",
+   "bin": ["KayleQ.ShredPercent"]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Duration of the armor/magic resistance reduction",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for 4 seconds",
+   "bin": ["KayleQ.ShredDuration"]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Fixed delay from the start of the cast to the sword launching (independent of the cast time itself)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "which is always {{rutngt|0.25}} seconds, starting from the beginning of the cast time",
+   "bin": ["KayleQ.CastDelay"]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The portal spawns at the start of the cast time and Kayle does not need to be alive for it to still launch the sword.",
+   "quote": "the portal is created at the start of the cast time and '''Kayle''' does not have to be alive for it to launch the sword.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The armor/magic resistance reduction is applied after the damage of the hit that inflicts it has already been dealt.",
+   "quote": "The resistance reduction is applied after the damage has been dealt.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The wiki documents cast time as scaling with attack windup, but flags that this is uncertain: it was flat 0.25s after patch V9.17, then reverted to windup-scaling in V10.4 without patch notes, and whether that reversion was intentional is unknown.",
+   "quote": "in patch [[V9.17]], ''Radiant Blast's'' cast time was changed to be a flat {{fd|0.25}} seconds, rather than scaling with the attack windup time. In patch [[V10.4]], this was undocumentedly changed back. Whether the change to scale with windup time again was intentional or not is unknown.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cast time equals Kayle's windup percent (0.193555) divided by her current total attack speed, so higher attack speed casts Q faster.",
+   "quote": "The cast time can be calculated by dividing '''Kayle's''' ''windup percent'' value ({{fd|0.193555}}) with her current total attack speed.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "KayleQ.ManaRefundPercent", "reason": "unknown"},
+  {"ref": "KayleQ.SlowPercent", "reason": "utility"},
+  {"ref": "KayleQ.SlowDuration", "reason": "utility"},
+  {"ref": "KayleQ.ExplosionLeftRightDist", "reason": "range-or-geometry"},
+  {"ref": "KayleQ.ExplosionLeftRightWidth", "reason": "range-or-geometry"},
+  {"ref": "KayleQ.ExplosionForwardDist", "reason": "range-or-geometry"},
+  {"ref": "KayleQ.ExplosionBackwardDist", "reason": "range-or-geometry"},
+  {"ref": "KayleQ.ExplosionForwardBackWidth", "reason": "range-or-geometry"},
+  {"ref": "KayleQ.ExplosionCenterAoERadius", "reason": "range-or-geometry"},
+  {"ref": "KayleQ.ExplosionForwardOffset", "reason": "range-or-geometry"}
+ ]
+}

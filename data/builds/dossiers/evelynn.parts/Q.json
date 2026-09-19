@@ -1,0 +1,211 @@
+{
+ "name": "Hate Spike",
+ "cooldown": {
+  "values": [
+   4,
+   4,
+   4,
+   4,
+   4
+  ],
+  "quote": "4"
+ },
+ "cost": {
+  "values": [
+   40,
+   45,
+   50,
+   55,
+   60
+  ],
+  "quote": "{{ap|40 to 60}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.3,
+  "quote": "{{dv|{{tt|{{fd|0.3}}|Initial cast}}|{{tt|None|Recast}}}}",
+  "binNote": "Bin's EvelynnQ.castTime is 0.25 but the wiki states the initial cast time as {{fd|0.3}} with recast being None; recording the wiki's value per instructions and noting the disagreement."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    30,
+    35,
+    40,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|25 to 45}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "EvelynnQ#MissileDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Bonus Magic Damage",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    15,
+    25,
+    35,
+    45,
+    55
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|15 to 55}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "EvelynnQ#TotalBonusDamage"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Magic Damage (recast)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    30,
+    35,
+    40,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|25 to 45}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "EvelynnQ#MissileDamage"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "marked target duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "marking them for 4 seconds",
+   "bin": [],
+   "binNote": "No bin row stores the mark duration; the sheet has no such value, only stack count and per-hit damage."
+  },
+  {
+   "id": "q_8",
+   "meaning": "number of bonus-damage attacks/abilities against marked target",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "next 3 {{tip|basic attacks}} {{tip|on-hit}} or {{tip|abilities}}",
+   "bin": [
+    "EvelynnQ.QStackCount"
+   ]
+  },
+  {
+   "id": "q_9",
+   "meaning": "recast count / uses",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "may be recast up to 3 times at no cost until the ability comes off cooldown",
+   "bin": [],
+   "binNote": "No dedicated data value for the number of recasts exists in the sheet; it is implied by the 4x total damage tooltip but not stated as its own row."
+  },
+  {
+   "id": "q_10",
+   "meaning": "barrage cooldown between recasts",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{fd|0.5}}",
+   "bin": [],
+   "binNote": "Wiki's custominfo gives 0.5s between recasts; the bin's EvelynnQ.FakeCD=4 is a different value (matches the wiki-listed base cooldown of 4, not the barrage interval), so it is not used here."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The dart marks the first enemy hit; Evelynn's next 3 basic attacks (on-hit) or abilities against the marked target deal bonus magic damage.",
+   "quote": "'''Evelynn's''' next 3 {{tip|basic attacks}} {{tip|on-hit}} or {{tip|abilities}} against the marked target deal {{as|'''bonus''' magic damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast is a separate line-shaped AoE hitting all enemies hit, not just the marked target.",
+   "quote": "'''Evelynn''' unleashes a line of deadly spikes in the direction of the nearest {{tip|sight|visible}} enemy that deals {{as|magic damage}} to all enemies struck.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Recasts are free (no additional mana cost) and are limited to 3 uses until the ability's cooldown resets.",
+   "quote": "''Hate Spike'' may be recast up to 3 times at no cost until the ability comes off cooldown.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The initial dart applies spell damage (not on-hit) while the recast spikes deal area damage as separate instances.",
+   "quote": "The dart applies {{tip|spell damage}} and the spikes deal {{tip|area damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each cast (including recasts) counts as a separate ability activation for on-cast effects.",
+   "quote": "Each cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A nearby visible enemy is required in order to recast the ability.",
+   "quote": "''A nearby {{tip|sight|visible}} enemy is required to recast this ability.''",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "EvelynnQ.CooldownRefund",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "EvelynnQ.HateSpikeBaseDamage",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "EvelynnQ.HateSpikeAPRatio",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "EvelynnQ.MissileBaseDamage",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "EvelynnQ.BonusDamageAPRatio",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "EvelynnQ.FakeCD",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

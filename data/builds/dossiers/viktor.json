@@ -1,0 +1,785 @@
+{
+ "champion": "viktor",
+ "abilities": {
+  "P": {
+   "name": "Glorious Evolution / Glorious Evolution 2 / Glorious Evolution 3 / Glorious Evolution 4 / Glorious Evolution 5",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "Viktor can augment each of his abilities at the cost of 100 Hex Fragments, which he gains from killing enemies.",
+     "quote": "'''Viktor''' can augment each of his {{tip|abilities}} at the cost of 100 ''Hex Fragments'', which he gains from killing enemies",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Minions and monsters generate 1 Hex Fragment; siege minions, super minions, and epic monsters generate 10; enemy champion takedowns generate 20.",
+     "quote": "{{tip|Minions}} and {{tip|monsters}} generate 1 ''Hex Fragment''.\n* Siege minions, super minions, and epic monsters generate 10 ''Hex Fragments''.\n* Enemy {{tip|champion}} {{tip|takedown|takedowns}} generate 20 ''Hex Fragments''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Arcane Storm can only be augmented after all of Viktor's basic abilities have been augmented.",
+     "quote": "''{{ai|Arcane Storm|Viktor}}'' can be augmented after all of '''Viktor's''' basic abilities have been augmented.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViktorPassive.MinionStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorPassive.CannonStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorPassive.ChampionStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorPassive.EvolutionStackBreakpoint",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorPassive.ARAMStacksoverTime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorPassive.ARAMStackCadence",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Siphon Power / Discharge",
+   "cooldown": {
+    "values": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "quote": "{{ap|9 to 5}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      75,
+      90,
+      105,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|60 to 120}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "ViktorQ#TotalMissileDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Modified Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      45,
+      70,
+      95,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|20 to 120}} {{as|(+ 100% AD)}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "ViktorQ#AttackTotalDMG"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      },
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|60+20 to 120+120}} {{as|(+ 100% AD)}} {{as|(+ {{ap|40+50}}% AP)}}",
+     "bin": [
+      "ViktorQ#TotalMissileDamage",
+      "ViktorQ#AttackTotalDMG"
+     ],
+     "binNote": "This wiki row is just the sum of q_1 (ViktorQ#TotalMissileDamage) and q_2 (ViktorQ#AttackTotalDMG); the bin has no separate calculation for the combined total since the two hits are applied as distinct damage instances."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The initial hit shields Viktor for a duration in addition to dealing damage.",
+     "quote": "grants himself a {{tip|shield}} for {{pp|40 to 140}} {{as|(+ 25% AP)}} for {{fd|2.5}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Hitting the target grants Discharge for 4 seconds, empowering the next basic attack.",
+     "quote": "gains ''Discharge'' for 4 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Discharge converts the next basic attack into a guaranteed-hit, non-projectile attack with modified magic damage instead of the normal on-hit damage.",
+     "quote": "'''Viktor's''' next {{tip|basic attack}} is empowered to become {{tip|projectile|non-projectile}} and deal {{as|'''modified''' magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Discharge does not convert Spellblade's bonus damage from physical to magic, and disables bonus critical strike damage.",
+     "quote": "''Discharge'' disables the '''bonus''' damage from {{tip|critical strike|critical strikes}}.{{bug}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViktorQ.BuffDuration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ViktorQ.ShieldManaRatio",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ViktorQ.ShieldAPRatio",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ViktorQ.AugmentShieldBonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorQ.AugmentMoveSpeedBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "ViktorQ.TurretDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Gravity Field",
+   "cooldown": {
+    "values": [
+     17,
+     16,
+     15,
+     14,
+     13
+    ],
+    "quote": "{{ap|17 to 13}}"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      33,
+      36,
+      39,
+      42,
+      45
+     ],
+     "terms": [],
+     "quote": "{{ap|33 to 45}}%",
+     "bin": [
+      "ViktorW.SlowPotency"
+     ],
+     "binNote": "Bin stores ViktorW.SlowPotency as negative values [-33/-36/-39/-42/-45] (a subtraction applied to move speed); wiki states the magnitude as positive percentages. Same numbers, sign convention differs."
+    },
+    {
+     "id": "w_2",
+     "meaning": "field duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4.5,
+     "terms": [],
+     "quote": "deploys a gravity field at the target location for {{fd|4.5}} seconds",
+     "bin": [
+      "ViktorW.FieldDuration"
+     ],
+     "binNote": "Wiki states total field duration 4.5s; bin's ViktorW.FieldDuration=4 does not match, likely a different internal measurement point (e.g. excluding some portion of the animation); reporting the wiki's stated number as a disagreement."
+    },
+    {
+     "id": "w_3",
+     "meaning": "activation delay before field slows",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "After a {{fd|0.75}}-second delay, it activates",
+     "bin": [],
+     "binNote": "No bin data value matches 0.75; the sheet has no separate activation-delay field, only FieldDuration=4."
+    },
+    {
+     "id": "w_4",
+     "meaning": "slow refresh/stack tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "refreshing every {{fd|0.25}} seconds while they remain inside",
+     "bin": [
+      "ViktorW.StackCadence"
+     ],
+     "binNote": "Wiki states the refresh/stack cadence as 0.25s; bin's ViktorW.StackCadence = 0.5, a disagreement."
+    },
+    {
+     "id": "w_5",
+     "meaning": "individual slow/stack debuff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "to {{tip|slow}} enemies within for 1 second",
+     "bin": [
+      "ViktorW.SlowDuration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "stack cap before knockdown/stun trigger",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "stacking up to 5 times",
+     "bin": [
+      "ViktorW.StacksForStun"
+     ],
+     "binNote": "Wiki says stacking up to 5 times, but bin's ViktorW.StacksForStun = 6, a disagreement."
+    },
+    {
+     "id": "w_7",
+     "meaning": "stun/knockdown duration on 5th stack",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "knock down}} and {{tip|stun}} the target for {{fd|1.5}} seconds",
+     "bin": [
+      "ViktorW.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Gravity Field is a delayed-activation zone, not an instant effect; it applies a slow and separately builds stacks of Heavy Gravity toward a stun, both crowd control and not damage.",
+     "quote": "deploys a gravity field at the target location for {{fd|4.5}} seconds. After a {{fd|0.75}}-second delay, it activates to {{tip|slow}} enemies within",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The knockdown/stun can only trigger once per cast per enemy, even though stacks can continue to accumulate afterward.",
+     "quote": "The knockdown and stun can be triggered only once per cast per enemy.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The field persists even if Viktor dies.",
+     "quote": "''Gravity Field'' will remain active if '''Viktor''' dies.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Gravity Field deals no damage itself; it can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Magnetize augment adds a 20% slow for 1 second to Viktor's other abilities (excluding Arcane Storm's persistent damage), which is a control effect, not damage.",
+     "quote": "'''Viktor's''' other abilities, excluding ''{{ais|Arcane Storm|Viktor}}'' persistent damage, {{tip|slow}} enemies hit by 20% for 1 second.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViktorW.AugmentSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorW.Size",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Hextech Ray",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "ViktorE#LaserDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage (Augment: Aftershock)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      50,
+      80,
+      110,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|20 to 140}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "ViktorE#AftershockDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Viktor may freely act while the ray is traveling.",
+     "quote": "'''Viktor''' may freely act while the ray is traveling.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The affected area is set upon casting; the beam does not break off even if Viktor moves.",
+     "quote": "The effected area is set upon casting, no matter how far away '''Viktor''' moves. Unlike a leash, ''Hextech Ray'' will not break off its own effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the laser is blocked by a spell shield/wall as it hits the ground, it is intercepted; Viktor can cast over a wall without interception.",
+     "quote": "If ''Hextech Ray'' is {{tip|projectile|intercepted}}, the initial ray is not destroyed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Aftershock explosion still covers the entire target area even if the laser itself was blocked.",
+     "quote": "''Augmented Hextech Ray'' will still cause the entire target area to explode even if the laser is blocked.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Viktor dies while firing the beam, it only deals damage up to the location at the time of his death.",
+     "quote": "If '''Viktor''' dies while he is firing the beam it only deals damage up to the location at the time of his death.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Aftershock explosion occurs after a 1 second delay along the beam's wake.",
+     "quote": "The path explodes along the beam's wake after 1 second, dealing {{as|magic damage}} to enemies hit.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViktorE.LaserRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViktorE.Delay",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ViktorE.AftershockMinionMulti",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Arcane Storm / Arcane Storm 2 / Arcane Storm 3",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Initial Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      175,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|100 to 250}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "ViktorR#InitialBurstDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      105,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|65 to 145}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "ViktorR#SubsequentBurstDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "storm duration after initial cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6.5,
+     "terms": [],
+     "quote": "remains active as a moving storm for {{fd|6.5}} seconds",
+     "bin": [
+      "ViktorR.StormDuration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "tick interval of the storm's damage",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "striking a bolt of electricity onto enemies within it every second",
+     "bin": [
+      "ViktorR.TickCadence"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "maximum number of damage ticks (including initial hit) over the base duration",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "The base duration allows for 7 strikes (including the initial one).",
+     "bin": [
+      "ViktorR.MaxTicks"
+     ],
+     "binNote": "Wiki states 7 total strikes (initial burst + 6 subsequent ticks over the 6.5s duration at 1s cadence), while the bin's MaxTicks field is 6 - likely counting only the subsequent/DoT ticks and excluding the separate initial burst instance. Reporting the wiki's stated total of 7 as the count that matters for total damage dealt; the bin's 6 corresponds to the number of subsequent-tick instances."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spell shield only blocks the initial burst damage, not the subsequent storm ticks.",
+     "quote": "Spell shield will only block the initial damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The singularity automatically targets and follows the nearest champion hit by the initial damage.",
+     "quote": "The singularity will target the nearest champion hit by its initial damage and will follow them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the effect (recast/expiration), not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be recast at any time while the singularity is active, redirecting it.",
+     "quote": "''Arcane Storm'' can be recast at any time while the singularity is active.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViktorR.MaxStormSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViktorR.MinStormSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViktorR.MinDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViktorR.MaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViktorR.StormRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViktorR.AugmentBoost",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorR.EnhancedSizeMult",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorR.EnhancedSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorR.EnhancedSlowDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorR.MaxGrowths",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViktorR.Tooltip_DurationExtension",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's initial missile hit and E's laser are fixed-damage instances dealt on cast/after travel time, recastable on cooldown against the stationary dummy."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Discharge arms Viktor's next basic attack to deal separate modified magic damage (base + AD + AP) instead of a normal auto-attack."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Arcane Storm has a distinct initial burst followed by a separately-timed ticking storm phase; it can be recast to redirect the storm, which has no effect against a single stationary target."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "After the initial burst, the singularity ticks roughly once per second on the dummy for the storm's duration, dealing the subsequent-burst damage per tick."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs and cooldowns (especially R's 80-120s cooldown, castable at most once in a 15s window) limit how many times each ability is recast during the fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Viktor's damage-relevant kit reduces to standard shapes: Q is a plain-cast missile plus a separately-instanced empowered next attack (Discharge), E is a plain-cast laser, and R is an initial-burst-plus-DoT recastable ability. W deals no damage and its crowd control has no effect on a dummy that doesn't move or fight back, so it's outside the damage fight entirely. The Glorious Evolution augment system requires 100 Hex Fragments from kills/takedowns, which are unreachable in a 15s single-target dummy fight, so augmented ability variants never activate and need no bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "Over Arcane Storm's 6.5s base duration at a 1s tick cadence, how many total damage instances (initial burst + subsequent ticks) does it actually deal?",
+   "options": [
+    "6 total instances: bin's ViktorR.MaxTicks = 6 is the count of subsequent-tick instances, giving initial + 5 subsequent ticks (6 total hits)",
+    "7 total instances: wiki explicitly states 'The base duration allows for 7 strikes (including the initial one)', i.e. initial + 6 subsequent ticks"
+   ],
+   "impact": "high",
+   "quotes": [
+    "ViktorR.MaxTicks = 6",
+    "The base duration allows for 7 strikes (including the initial one)."
+   ]
+  },
+  {
+   "question": "Is Discharge granted immediately when Q is cast, or only once the Q missile actually lands on the target?",
+   "options": [
+    "Discharge (and the shield) apply on cast, unconditional on the missile hitting",
+    "Discharge is only granted after the missile connects with the target (consistent with the Turbocharge augment's 'After the device hits' language for its bonus effects)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Viktor''' throws a draining device at the target enemy that deals {{as|magic damage}}. He also grants himself a {{tip|shield}}... and gains ''Discharge'' for 4 seconds.",
+    "{{sbc|{{ai|Glorious Evolution|Viktor|Augment: Turbocharge}} — }} After the device hits, '''Viktor''' gains..."
+   ]
+  },
+  {
+   "question": "Does casting Q reset/advance Viktor's basic attack timer, or does the Discharge-empowered attack simply wait for the next naturally scheduled auto-attack?",
+   "options": [
+    "No attack-timer reset; Discharge just marks whichever auto-attack comes next on the existing swing timer",
+    "Casting Q also functions as an attack reset, letting Viktor immediately follow up with the empowered attack without losing swing-timer progress"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Siphon Power) on the dummy for its initial magic missile damage, which also grants Discharge.",
+   "Immediately follow with a basic attack to consume Discharge for its separate modified magic damage before it can expire.",
+   "Cast E (Hextech Ray) through the dummy for its laser damage; it has no cast time, so weave it freely between attacks and other casts.",
+   "Cast R (Arcane Storm) on the dummy for its initial burst damage, then let the singularity tick on the dummy roughly once per second for the remainder of its ~6.5s duration; a recast to redirect it is unnecessary since there is only one stationary target.",
+   "For the rest of the 15s window, recast Q and E on cooldown, always pairing each Q with a following basic attack to use Discharge, and keep auto-attacking between casts to maximize on-hit and empowered-attack uptime.",
+   "Never cast W: it deals no damage, and its slow/stun has no effect on a stationary dummy that does not move or fight back.",
+   "R will not come off cooldown again inside the 15s window (80-120s cooldown, post-effect start), so it is cast exactly once."
+  ],
+  "questions": [
+   "Does Q's cast reset or otherwise interact with Viktor's basic-attack swing timer, and should the auto-attack that consumes Discharge be thrown just before or just after the Q cast for maximum uptime?",
+   "Given R's long cooldown means it fires at most once regardless of sequencing, does opening the fight with R (to front-load its 6.5s DoT before the fight ends) beat opening with Q/E to build early Discharge/attack-speed uptime?",
+   "Should E be cast before or after Q and the first auto-attack, given its instant cast time but nonzero travel delay before the laser actually connects with the dummy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,81 @@
+{
+ "champion": "ashe",
+ "primitives": [
+  {"id": "onhit-rider", "abilities": ["P"], "note": "Frost Shot's guaranteed bonus physical damage lands on every basic attack (and ability hit)."},
+  {"id": "crit-interaction", "abilities": ["P"], "note": "Critical strikes deal no extra damage; the passive substitutes a guaranteed on-hit bonus derived from crit chance/crit damage stats instead of a normal crit multiplier."},
+  {"id": "stacking-self-buff", "abilities": ["Q"], "note": "Basic attacks build Focus stacks (cap 4, generated only while Ranger's Focus is inactive) that gate its activation."},
+  {"id": "timed-self-buff", "abilities": ["Q"], "note": "Activating Ranger's Focus grants bonus attack speed for 6 seconds."},
+  {"id": "empowered-attack", "abilities": ["Q"], "note": "While active, every basic attack fires a 5-arrow flurry (6 on the first one after activation) of modified physical damage instead of a normal hit."},
+  {"id": "attack-reset", "abilities": ["Q"], "note": "Each empowered attack resets Ashe's basic attack timer."},
+  {"id": "resource-budget", "abilities": ["Q", "W", "R"], "note": "Mana costs (30 / 75-55 / 100) plus Q's 4-Focus-stack gate meaningfully limit casts inside a 15 s fight."},
+  {"id": "plain-cast", "abilities": ["W", "R"], "note": "Both deal fixed damage on a cast/travel delay, on cooldown; neither builds or consumes a resource beyond mana."}
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic in the kit (on-hit rider, crit substitution, stacking self-buff, timed self-buff, empowered attacks, attack reset, plain-cast nukes, mana budget) maps onto an existing primitive. The one open problem is numeric, not structural: Frost Shot's (P) on-hit bonus is computed in the bin from a product of two crit-related stats that the schema's linear base+terms cannot reconstruct, and one of those two stats is itself unresolved by the sheet tool - see the first unsettled question and P.json's binNote."
+ },
+ "unsettled": [
+  {
+   "question": "What is Frost Shot's (P) actual on-hit damage formula? The bin's AshePassive#DamageBonus calc is '1 + (1 + 1 x StatA) x critDamage', where StatA prints as 'bonus cooldownReduction' and both StatA and critDamage carry the sheet's own '?' (unresolved-reference) flag. The wiki gives only a prose range ('0 to 100') with no explicit formula.",
+   "options": [
+    "StatA is really critChance and the formula is effectively a critChance/critDamage product as commonly described for this passive, with the sheet mis-resolving the stat name",
+    "The formula is exactly as printed, including a genuine (if unusual) dependency on a cooldown-reduction-like stat",
+    "Some other resolution not visible from these two sources"
+   ],
+   "impact": "high",
+   "quotes": ["'''Ashe's''' {{tip|basic attacks}} deal {{as|'''bonus''' physical damage}} equal to {{critical damage|0 to 100|0 to 100|critScaling=true}} of the {{as|attack's damage}}."]
+  },
+  {
+   "question": "Does Frost Shot's (P) on-hit bonus apply once per empowered attack during Ranger's Focus (like other on-hit effects, which the wiki says apply only once per flurry) or once per individual arrow (5 instances)?",
+   "options": [
+    "Once per flurry, same as other on-hit effects",
+    "Once per arrow (5x during a normal flurry, 6x on the first one of an activation)"
+   ],
+   "impact": "high",
+   "quotes": ["The flurries {{tip|applies life steal|apply}} {{as|{{sti|life steal}}}} and ''{{ai|Frost Shot|Ashe}}'' per arrow, but apply {{tip|on-hit}} effects only once."]
+  },
+  {
+   "question": "Is Ranger's Focus's (Q) 'first flurry fires six arrows for 20% more total damage' bonus still live at patch 16.18? No data value anywhere in the AsheQ bin block (ShotsPerStrike is a flat 5) carries a 6-arrow count or a 1.2x/20% multiplier.",
+   "options": [
+    "Yes - implemented directly in ability script rather than as a separate tunable data value",
+    "No - the wiki text is stale and every flurry (including the first of an activation) is a plain 5-arrow, un-bonused flurry"
+   ],
+   "impact": "high",
+   "quotes": ["The first flurry of a ''Ranger's Focus'' cast fires{{ft|one additional arrow, dealing 20% increased total damage."]
+  },
+  {
+   "question": "Which Volley (W) damage progression is live: the primary 'Volley' bin object (60/95/130/165/200 base, +100% bonus AD - matches the wiki exactly) or the four duplicate 'VolleyRank2..5' bin objects (20/35/50/65/80 base, +100% of total AD)?",
+   "options": [
+    "'Volley' is live and Rank2-5 are stale legacy duplicate spell objects (favored here: matches the wiki, and ddragon's own cooldown line also matches Volley/Rank3-5 rather than Rank2)",
+    "One of the Rank2-5 objects is actually what the live client uses"
+   ],
+   "impact": "high",
+   "quotes": ["{{st|Physical Damage|{{ap|60 to 200}} {{as|(+ 100% '''bonus''' AD)}}}}"]
+  },
+  {
+   "question": "How much travel time should the dummy fight assume between Enchanted Crystal Arrow's (R) cast (launched at cast-time start, per the wiki's 'Effect at cast time start' note) and its impact, given it is a global-range, accelerating (1500 to 2100 units/s) skillshot and neither source states an assumed target distance?",
+   "options": [
+    "Treat it as negligible/near-instant beyond the 0.25 s cast time, as if the dummy were at short range",
+    "Assume some specific longer travel distance/time that meaningfully delays when its damage lands in the 15 s window"
+   ],
+   "impact": "low",
+   "quotes": ["{{Effect at cast time start}}"]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast Enchanted Crystal Arrow (R) as soon as the fight starts: it has by far the longest cooldown (100-60 s, so only one cast fits in 15 s regardless of timing) and a cast-plus-travel delay before its damage lands, so casting it first gets that delay out of the way soonest.",
+   "Attack continuously from the start; Frost Shot's (P) on-hit physical bonus applies automatically to every attack with no separate action needed.",
+   "Once 4 basic attacks have built 4 Focus stacks, activate Ranger's Focus (Q) immediately - it is free of cooldown, instant, and resets the attack timer, so it costs no tempo.",
+   "For the next 6 seconds keep attacking; each attack fires an empowered flurry (6 arrows on the first one, 5 on the rest) instead of a normal hit.",
+   "When the Ranger's Focus buff expires, resume plain attacks to rebuild 4 Focus stacks, then reactivate Q; repeat this cycle for the rest of the fight.",
+   "Cast Volley (W) on cooldown whenever doing so does not appear to cost an attack that would otherwise land first, since it is flat added damage paid for only in mana."
+  ],
+  "questions": [
+   "Does reaching 4 Focus stacks auto-cast Ranger's Focus, or does the simulator need to explicitly trigger it - and is there any delay in doing so?",
+   "Is weaving Volley in on cooldown actually correct, or does its 0.25 s cast time (which delays the next attack) cost more attack/flurry damage than it adds, especially once Ranger's Focus's attack-speed buff is active?",
+   "Should Enchanted Crystal Arrow be delayed until after the first Ranger's Focus activation so its cast does not interrupt stack-building, or does casting it immediately regardless of Q's state maximize total damage?",
+   "At what champion level and starting mana/attack-speed is this fight run, and does Ashe have enough mana across the fight to cast Q, W and R as proposed without being capped by the resource-budget primitive?"
+  ]
+ }
+}

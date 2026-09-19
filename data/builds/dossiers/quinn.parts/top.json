@@ -1,0 +1,124 @@
+{
+ "champion": "quinn",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Blinding Assault (primary target only), Vault, and Skystrike apply a single-charge Harrier mark to the target; the mark is read/consumed by Quinn's next basic attack."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Quinn's basic attack against a Harrier-marked target is empowered on-hit to consume the mark for bonus physical damage (byLevel base + 40% bonus AD)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming a Harrier mark (or attacking a marked target) grants Quinn 2s of bonus attack speed and movement speed."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Vault resets Quinn's remaining basic-attack cooldown a short delay after the initial dash, and Quinn auto-attempts an attack on the target when the dash completes."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Behind Enemy Lines channels for 2s before uniting; the channel is interrupted by attacking/casting and blocks other actions during it."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a channel phase (Behind Enemy Lines) plus a separately-timed follow-up nuke (Skystrike), which can also be auto-triggered by a basic attack or Q/E cast during BEL, or manually recast to cancel early."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-70, E 50 flat, R 50/25/0) constrain how often Q/E/R can be cast within the 15s window."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Blinding Assault, Vault, and Skystrike each deal a fixed on-cast damage instance on cooldown."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Harrier is a single shared mark/consume state machine spanning P (consume-for-damage), Q/E/Skystrike (apply), and W (buff-on-consume), with a 1s internal Harrier cooldown after any mark ends/consumes/overwrites; this cross-ability trigger chain (mark applied -> next attack consumes for bonus damage -> that consumption also grants the W buff) is not a single primitive. Additionally, Skystrike's auto-activation off any basic attack or Q/E cast while Behind Enemy Lines is active (rather than being cast directly) is a trigger-condition on other actions that the closed list's primitives don't cleanly express as one entry; both need bespoke sequencing logic on top of the listed primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Does the automatic attack Quinn performs immediately after landing Vault consume the Harrier mark Vault itself just applied (granting the P bonus on-hit damage and triggering the W buff), or is this auto-attempted attack independent/unreliable and not guaranteed to land as the mark-consuming hit?",
+   "options": [
+    "The forced post-Vault attack reliably lands on the marked target and consumes the mark for full P bonus damage plus W buff",
+    "The forced attack is merely 'attempted' and not guaranteed to be the mark-consuming hit within the simulated window, so a separate manual auto-attack must be counted for the consume"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Quinn''' will automatically attempt to attack the target once she completes ''Vault''.",
+    "''Vault'' {{tip|basic attack reset|resets}} '''Quinn's''' remaining attack cooldown a short delay after the first dash ends (even if interrupted)."
+   ]
+  },
+  {
+   "question": "When Skystrike auto-activates off a basic attack or a Q/E cast during Behind Enemy Lines, does the triggering basic attack or Q/E cast still deal its own separate damage instance in addition to Skystrike's damage, or does the triggering action only serve as the proc condition without its own hit occurring that cast?",
+   "options": [
+    "Both the triggering attack/spell and Skystrike deal their full separate damage instances",
+    "Only Skystrike's damage is dealt on that trigger; the underlying attack/spell's own damage does not also land"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Declaring a {{tip|basic attack}} or casting ''{{ai|Blinding Assault|Quinn}}'' or ''{{ai|Vault|Quinn}}'' during ''{{ai|Behind Enemy Lines|Quinn}}'' automatically activates ''Skystrike''."
+   ]
+  },
+  {
+   "question": "What does QuinnR.HarrierCooldown = 7 in the bin actually gate, given the wiki's Harrier notes describe a separate 1-second cooldown after any mark ends/is consumed/overwritten — is this a longer, R-specific reapplication cooldown for Valor's periodic mark while R is available, or does it override/interact with Q/E/Skystrike's ability-applied marks and thus limit how often Harrier can be reapplied via R within the fight?",
+   "options": [
+    "HarrierCooldown=7 only governs Valor's autonomous periodic marking (irrelevant to the ability-applied marks from Q/E/Skystrike used in the dummy fight)",
+    "HarrierCooldown=7 also throttles how soon Skystrike (or R generally) can reapply a Harrier mark, extending the effective mark-refresh cadence used in the rotation"
+   ],
+   "impact": "low",
+   "quotes": [
+    "QuinnR.HarrierCooldown = 7",
+    "If a mark applied by an ability is overwritten, consumed, or timed out, ''Harrier'' goes on a 1-second cooldown if it's not already on cooldown."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Blinding Assault (Q) on the dummy for cast damage plus a Harrier mark.",
+   "Auto-attack the marked target immediately to consume the mark for the P on-hit bonus damage and trigger the W attack speed/movement speed buff.",
+   "Cast Vault (E) as soon as it is off cooldown for its dash damage and a fresh Harrier mark, letting the forced post-dash attack (or a manual follow-up attack) consume the new mark.",
+   "Between Q/E cooldowns, keep auto-attacking continuously so the W attack-speed buff uptime and mark consumption cadence stay maximized.",
+   "Re-cast Q and E on cooldown for the rest of the 15s window, always pairing each cast with an immediate consuming auto-attack.",
+   "Weigh using R (Behind Enemy Lines -> Skystrike) only if its 2s channel (which blocks attacking) plus Skystrike's AoE damage and mark application outweighs the auto-attack DPS lost during the channel; if used, trigger Skystrike immediately via a queued attack or Q/E cast rather than idling."
+  ],
+  "questions": [
+   "In the simulated 15s dummy fight, is R worth channeling at all given it blocks Quinn's attacks for 2s, or should it be skipped entirely in favor of continuous Q/E/auto-attack weaving?",
+   "What baseline attack speed and crit itemization should be assumed, since higher attack speed increases how many Harrier-consuming attacks and W-buff refreshes land per Q/E cooldown cycle?",
+   "Does casting Q or E while a Harrier mark is already active on the target (before it's consumed) overwrite/refresh the mark rather than stack, and does that put Harrier on cooldown, changing how tightly Q/E can be chained back-to-back for marking purposes?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

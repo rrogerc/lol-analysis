@@ -1,0 +1,1474 @@
+{
+ "champion": "ksante",
+ "abilities": {
+  "P": {
+   "name": "Dauntless Instinct",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_flat",
+     "meaning": "flat physical damage on mark consumption",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 12,
+     "terms": [],
+     "quote": "{{as|12|physical damage}}",
+     "bin": [
+      "KSanteP.FlatDamage"
+     ]
+    },
+    {
+     "id": "p_percent",
+     "meaning": "percent of target's maximum health bonus physical damage on mark consumption",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.13,
+        0.13,
+        0.13,
+        0.13,
+        0.13,
+        0.16,
+        0.16,
+        0.16,
+        0.16,
+        0.16,
+        0.19,
+        0.19,
+        0.19
+       ]
+      }
+     ],
+     "quote": "{{as|(+ {{pplevel|1 to 2|key=%}} of target's '''maximum''' health)}}",
+     "bin": [
+      "KSanteP#{281dd874}"
+     ]
+    },
+    {
+     "id": "p_mark_duration",
+     "meaning": "duration the mark persists before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "mark enemies hit for 4 seconds",
+     "bin": [
+      "KSanteP.MarkDuration"
+     ]
+    },
+    {
+     "id": "p_allout_percent",
+     "meaning": "All Out bonus physical damage as percent of target's maximum health, base plus scaling per 100 bonus armor and per 100 bonus MR",
+     "role": "target-debuff",
+     "damageType": "physical",
+     "by": "const",
+     "base": 0.01,
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.0001
+      },
+      {
+       "stat": "bonusMr",
+       "coef": 0.0001
+      }
+     ],
+     "quote": "{{as|1% {{as|(+ 1% per 100 '''bonus''' armor)}} {{as|(+ 1% per 100 '''bonus''' magic resistance)}} of the target's '''maximum''' health}}",
+     "bin": [
+      "KSanteP#MaxHealthDamagePercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks against marked enemies are empowered to consume the mark, dealing the mark's bonus physical damage.",
+     "quote": "His {{tip|basic attack|basic attacks}} against marked enemies are empowered to consume the mark",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The mark's damage procs as a separate damage instance in sequence after the basic attack, which can trigger on-hit-adjacent effects an extra time.",
+     "quote": "The mark deals {{tip|proc damage}} in sequence after the basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the mark's application, but not the mark's consumption from an attack.",
+     "quote": "{{tip|Spell shield}} will block the mark's application, but not the mark's consumption from an attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack can be dodged, blocked, or missed while blinded, in which case the mark is not consumed.",
+     "quote": "The empowered attack can be {{tip|dodge|dodged}}, {{tip|block|blocked}}, and missed while {{tip|blind|blinded}} but the mark will not be consumed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Starting the empowered attack while the mark is about to expire does not extend the mark, but the attack still completes and deals its bonus damage.",
+     "quote": "Starting the empowered attack while the mark is about to time out will not extend the mark duration, but still complete the attack and apply the bonus damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "All Out's bonus damage on abilities that hit multiple enemies only applies to the first target hit.",
+     "quote": "All Out's bonus damage on abilities only applies to the first target hit when damaging multiple enemies (including minions and monsters).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "All Out's bonus damage amplifies the existing damage instance rather than applying as a separate extra damage instance, so it does not trigger effects an extra time.",
+     "quote": "All Out's bonus damage amps the benefiting damage instance without applying an extra damage instance.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KSanteP.RecoveryPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "KSanteP.ArmorMRMultiplier",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "KSanteP.PassiveStartingDamage",
+     "reason": "unknown"
+    },
+    {
+     "ref": "KSanteP.MarkDamagePercentMin",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteP.MarkDamagePercentMax",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Ntofo Strikes",
+   "cooldown": {
+    "values": [
+     3.5,
+     3.5,
+     3.5,
+     3.5,
+     3.5
+    ],
+    "quote": "{{dv|{{pp|3.5 to 2 by 0.05|0 to 120|type='''bonus''' resistances|label=cooldown|label1=bonus resistances|formula= 3.5 - 0.0125 × bonus resistances, capped at 120 bonus resistances.}}|{{pp|3.5*2/3 to 2*2/3 by 0.3/9|0 to 120|type='''bonus''' resistances|label=cooldown|label1=bonus resistances|formula= During All Out. 3.5 * 2 / 3 - (0.0125 * 2 / 3) × bonus resistances, capped at 120 bonus resistances.|showtype=false}}}}",
+    "binNote": "Base cooldown is a flat 3.5s at all ranks (bin cooldown: 3.5, BaseCD=3.5), but is reduced by bonus resistances down to a floor of 2s at 120 bonus resistances (MinCD=2, DefenseCapforCooldown=120), and further reduced by 33% during All Out (RCooldownReduction=0.33333). Recorded value is the undiscounted base."
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.45,
+    "quote": "{{pp|0.45 to 0.35 by 0.01|0 to 120|type='''bonus''' resistances|label=cast time|label1=bonus resistances|formula= 0.45 - (1/1200) × bonus resistances, capped at 120 bonus resistances.}}",
+    "binNote": "Bin lists castTime: 0.35 for the base slot, but the wiki's formula shows base cast time is 0.45 with no bonus resistances, decreasing to 0.35 at 120 bonus resistances (MinCastTime=0.35, MaxCastTime=0.45). Recorded value is the wiki's undiscounted base (0 bonus resistances)."
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.4
+      },
+      {
+       "stat": "bonusMr",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|70 to 190}} {{as|(+ 40% '''bonus''' armor)}} {{as|(+ 40% '''bonus''' magic resistance)}}",
+     "bin": [
+      "KSanteQ#BaseDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "slow amount applied to enemies hit",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "{{tip|slow|slows}} them by 80% for {{fd|0.5}} seconds",
+     "bin": [
+      "KSanteQ.SlowPercent"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "slows them by 80% for {{fd|0.5}} seconds",
+     "bin": [
+      "KSanteQ.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "stack duration before expiry",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "'''K'Sante''' generates a {{tip|stack}} for 6 seconds, stacking up to 2 times and refreshing on subsequent hits",
+     "bin": [
+      "KSanteQ.RecastWindow"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "stack cap needed to empower next cast",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "stacking up to 2 times and refreshing on subsequent hits. At 2 stacks, the next ''Ntofo Strikes'' cast consumes them all to become empowered with a new effect",
+     "bin": [],
+     "binNote": "No bin data value stores the stack cap as a plain number; KSanteQ#{9c9367bc} = 1xbuffStacks + 1xbuffStacks references buffStacks but does not carry the cap of 2 itself. The stack cap is presumably set on the buff definition, not in this ability's data values."
+    },
+    {
+     "id": "q_6",
+     "meaning": "empowered pull duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.65,
+     "terms": [],
+     "quote": "pulls them towards him over {{fd|0.65}} seconds",
+     "bin": [
+      "KSanteQ.KnockupDuration"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "empowered stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "{{tip|stun|stuns}} them for {{fd|0.8}} seconds",
+     "bin": [
+      "KSanteQ.StunDuration"
+     ],
+     "binNote": "Wiki states the empowered active's stun as 0.8 seconds, but the bin's KSanteQ.StunDuration is 1; this may correspond to a different variable, or the wiki figure is out of date."
+    },
+    {
+     "id": "q_8",
+     "meaning": "All Out bonus cooldown reduction percent",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.33333,
+     "terms": [],
+     "quote": "''Ntofo Strikes' '' {{sti|cooldown}} is reduced by 33%",
+     "bin": [
+      "KSanteQ.RCooldownReduction"
+     ],
+     "binNote": "Bin's RCooldownReduction is 0.33333; wiki rounds this to '33%' in prose. Recorded the bin's precise value."
+    },
+    {
+     "id": "q_9",
+     "meaning": "shared queue/cast time applying to all casts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "|queue time       = {{tt|{{fd|0.25}}|All casts}}",
+     "bin": [],
+     "binNote": "No matching KSanteQ data value of 0.25 exists in the sheet; the queue time appears to be a separate/hardcoded engine constant not exposed among the listed data values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The non-empowered active is not a projectile and applies instantly along a rectangle in the target direction.",
+     "quote": "Only the empowered active is a {{tip|projectile}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ntofo Strikes resets K'Sante's basic attack timer.",
+     "quote": "Ntofo Strikes {{tip|basic attack reset|resets}} '''K'Sante's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the cast hits at most one enemy champion, K'Sante is automatically ordered to attack that champion.",
+     "quote": "If ''Ntofo Strikes'' hits no more than one enemy champion, '''K'Sante''' will be ordered an attack command against them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting at least one enemy grants a stack lasting 6 seconds, stacking up to 2 and refreshing on subsequent hits; at 2 stacks the next cast is empowered and consumes all stacks.",
+     "quote": "If this hits at least one enemy, '''K'Sante''' generates a {{tip|stack}} for 6 seconds, stacking up to 2 times and refreshing on subsequent hits. At 2 stacks, the next ''Ntofo Strikes'' cast consumes them all to become empowered with a new effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While in All Out, Ntofo Strikes no longer slows enemies hit, and its stacks are reset upon entering All Out; if K'Sante had 2 stacks before entering All Out, the cooldown is also reset.",
+     "quote": "Upon entering ''All Out'', ''Ntofo Strikes' '' stacks are reset. ''Ntofo Strikes' '' {{sti|cooldown}} is reset if '''K'Sante''' had 2 stacks before entering ''All Out''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Temporary changes to bonus resistances affect Ntofo Strikes' cooldown and cast time in real time.",
+     "quote": "Temporary increases/decreases in bonus resistances will count for reducing/increasing ''Ntofo Strikes''' cooldown.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KSanteQ.RectangleWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.RectangleLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.Range",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.RecastLockoutAO",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "KSanteQ.PullSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.PullDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.KnockGrav",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.MaxCastTime",
+     "reason": "unknown"
+    },
+    {
+     "ref": "KSanteQ.MinCastTime",
+     "reason": "unknown"
+    },
+    {
+     "ref": "KSanteQ.MinCastTimeQ3",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "KSanteQ.BaseCD",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "KSanteQ.MinCD",
+     "reason": "unknown"
+    },
+    {
+     "ref": "KSanteQ.DefenseCapforCooldown",
+     "reason": "unknown"
+    },
+    {
+     "ref": "KSanteQ.PullSpeedMin",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.PullSpeedMax",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.PullDistanceMin",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.PullDistanceMax",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteQ.LifetimeMax",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Path Maker",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      45,
+      75,
+      105,
+      135,
+      165
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.08,
+       "coefScaling": [
+        {
+         "stat": "bonusArmor",
+         "per": 100,
+         "coef": 0.02
+        },
+        {
+         "stat": "bonusMr",
+         "per": 100,
+         "coef": 0.02
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|45 to 165}} {{as|(+ 8%|hp}} {{as|(+ 2% per 100 '''bonus''' armor)}} {{as|(+ 2% per 100 '''bonus''' magic resistance)}} {{as|of target's '''maximum''' health)}}",
+     "bin": [
+      "KSanteW.BaseDamage",
+      "KSanteW#TotalMaxHealthDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Minimum Bonus True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      4.5,
+      7.5,
+      10.5,
+      13.5,
+      16.5
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.008,
+       "coefScaling": [
+        {
+         "stat": "bonusArmor",
+         "per": 100,
+         "coef": 0.002
+        },
+        {
+         "stat": "bonusMr",
+         "per": 100,
+         "coef": 0.002
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|45*0.1 to 165*0.1}} {{as|(+ {{ap|8*0.1}}%|hp}} {{as|(+ {{ap|2*0.1}}% per 100 '''bonus''' armor)}} {{as|(+ {{ap|2*0.1}}% per 100 '''bonus''' magic resistance)}} {{as|of target's '''maximum''' health)}}",
+     "bin": [
+      "KSanteW.BaseDamage",
+      "KSanteW#TotalMaxHealthDamage",
+      "KSanteW.RDamageIncreaseMin"
+     ],
+     "binNote": "Value is BaseDamage/TotalMaxHealthDamage multiplied by RDamageIncreaseMin=0.1 (10%), no dedicated bin row exists for the multiplied result."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Maximum Bonus True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      36,
+      60,
+      84,
+      108,
+      132
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.064,
+       "coefScaling": [
+        {
+         "stat": "bonusArmor",
+         "per": 100,
+         "coef": 0.016
+        },
+        {
+         "stat": "bonusMr",
+         "per": 100,
+         "coef": 0.016
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|45*0.8 to 165*0.8}} {{as|(+ {{ap|8*0.8}}%|hp}} {{as|(+ {{ap|2*0.8}}% per 100 '''bonus''' armor)}} {{as|(+ {{ap|2*0.8}}% per 100 '''bonus''' magic resistance)}} {{as|of target's '''maximum''' health)}}",
+     "bin": [
+      "KSanteW.BaseDamage",
+      "KSanteW#TotalMaxHealthDamage",
+      "KSanteW.RDamageIncreaseMax"
+     ],
+     "binNote": "Value is BaseDamage/TotalMaxHealthDamage multiplied by RDamageIncreaseMax=0.8 (80%), no dedicated bin row exists for the multiplied result."
+    },
+    {
+     "id": "w_6",
+     "meaning": "Damage reduction gained while channeling",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "gains {{tip|displacement immunity}} and 30% damage reduction",
+     "bin": [
+      "KSanteW.DamageReduction"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "Damage reduction increased during All Out",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "damage reduction is increased to 75%",
+     "bin": [
+      "KSanteW.RDamageReduction"
+     ]
+    },
+    {
+     "id": "w_8a",
+     "meaning": "Minimum channel duration before recast is possible",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "charging for a minimum of {{fd|0.4}} seconds",
+     "bin": [
+      "KSanteW.MinChargeTime"
+     ]
+    },
+    {
+     "id": "w_8b",
+     "meaning": "Maximum channel duration (full charge)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "and up to 1 second",
+     "bin": [
+      "KSanteW.MaxDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Upon entering All Out, Path Maker's cooldown is fully refreshed, letting it be recast immediately.",
+     "quote": "Upon entering ''All Out'', ''Path Maker's'' {{sti|cooldown}} is refreshed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While charging, K'Sante gains displacement immunity and 30% damage reduction, reducing incoming damage during the wind-up.",
+     "quote": "gains {{tip|displacement immunity}} and 30% damage reduction",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "During All Out, the recast deals bonus true damage instead of the normal physical damage/knockback/stun, and its damage reduction rises to 75% while dash speed increases 20%.",
+     "quote": "''Path Maker'' no longer applies its {{tip|airborne|knock back}} and {{tip|stun}}, but its damage reduction is increased to 75%, the dash deals {{sti|true damage|...bonus true damage}}, and the dash speed is increased by 20%.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Path Maker's cooldown starts only after the dash/recast resolves, not on initial cast.",
+     "quote": "cdstart          = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The channel (and thus the eventual recast) cannot be interrupted by crowd control.",
+     "quote": "''Path Maker's'' charge cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KSanteW.MaxHealthDamage",
+     "reason": null
+    },
+    {
+     "ref": "KSanteW.MaxHealthDamageResistRatio",
+     "reason": null
+    },
+    {
+     "ref": "KSanteW.TimeToFullCharge",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteW.DashSpeedBase",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.DashSpeedAO",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.VictimDashMod",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.MinKnockbackDuration",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.MaxKnockbackDuration",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.KnockbackSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.KnockbackDist",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.KnockbackDistOnTopOfMod",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.MinDashBase",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.MaxDashBase",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteW.MinDurationTOOLTIP",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteW.AOMinDurationTOOLTIP",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteW.HexflashBugfixLockout",
+     "reason": "utility"
+    },
+    {
+     "ref": "KSanteW.RDamageIncreaseMin",
+     "reason": null
+    },
+    {
+     "ref": "KSanteW.RDamageIncreaseMax",
+     "reason": null
+    },
+    {
+     "ref": "KSanteW.MinimumMinionDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "KSanteW.DamageReduction",
+     "reason": null
+    },
+    {
+     "ref": "KSanteW.RDamageReduction",
+     "reason": null
+    },
+    {
+     "ref": "KSanteW.MaxMonsterDamage",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Footwork",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      70,
+      112.5,
+      155,
+      197.5,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.135
+      }
+     ],
+     "quote": "{{ap|70 to 240}} {{as|(+ {{fd|13.5}}% '''bonus''' health)}}",
+     "bin": [
+      "KSanteE#TotalShield"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "grants himself a {{tip|shield}} for 2 seconds",
+     "bin": [
+      "KSanteE.ShieldDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "cooldown reduction during All Out",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "its cooldown is reduced by 50%",
+     "bin": [
+      "KSanteE.CooldownModAO"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield is granted instantly on cast for both K'Sante and the potential allied champion, not on arrival.",
+     "quote": "The shield is granted instantly on cast for both '''K'Sante''' and the potential allied champion.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "K'Sante can cast any of his abilities during the Footwork dash.",
+     "quote": "'''''K'Sante''' can cast any of his {{tip|abilities}} during the dash.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shield does not refresh if cast while the shield is already active, and there is a short window after expiry where it also fails to refresh.",
+     "quote": "The shield will not refresh if K'sante casts ''Footwork'' while the shield is already active, nor will it always refresh for a short duration after the shield expires.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target ally is a champion, they also receive the shield.",
+     "quote": "If the target ally is a {{tip|champion}}, they receive the {{tip|shield}} as well.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KSanteE.DashDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteE.TargetingForgiveness",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteE.FreeTargetRangeBase",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteE.FreeTargetSpeedBase",
+     "reason": "utility"
+    },
+    {
+     "ref": "KSanteE.AllySpeedBase",
+     "reason": "utility"
+    },
+    {
+     "ref": "KSanteE.FreeTargetRangeAO",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteE.FreeTargetSpeedAO",
+     "reason": "utility"
+    },
+    {
+     "ref": "KSanteE.AllySpeedAO",
+     "reason": "utility"
+    },
+    {
+     "ref": "KSanteE.DashArrivial",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "All Out",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.4,
+    "quote": "{{fd|0.4}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      115,
+      150
+     ],
+     "terms": [],
+     "quote": "{{ap|80 to 150}}",
+     "bin": [
+      "KSanteR.BaseDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Strike Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      115,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|80 to 150}} {{as|(+ 5% of his '''bonus''' health)}}",
+     "bin": [
+      "KSanteR#TotalDamageSlamDown",
+      "KSanteR.SlamDownStrikeDamage"
+     ],
+     "binNote": "Wiki's 5% bonus health ratio does not match the bin's KSanteR#TotalDamageSlamDown ratio of 0.05xbonus maxHp, which agrees; SlamDownStrikeDamage base values match the wiki's leveling exactly."
+    },
+    {
+     "id": "r_3",
+     "meaning": "Total Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      160,
+      230,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|80*2 to 150*2}} {{as|(+ 5% of his '''bonus''' health)}}",
+     "bin": [],
+     "binNote": "This is a restated sum of r_1 and r_2 (base damage + strike damage), not a separate bin row; the checker rule for restated totals would normally delete this, but it is kept here because the two hits are separate damage instances rather than a pure max value. No independent bin row exists for the summed total."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.6,
+      0.8
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 80}}%",
+     "bin": [
+      "KSanteR.AttackSpeed"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "All Out duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 15,
+     "terms": [],
+     "quote": "he enters ''All Out'' for 15 seconds",
+     "bin": [
+      "KSanteR.AllOutDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "All Out health threshold percentage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.65,
+     "terms": [],
+     "quote": "a [[Health#Health_threshold|health threshold]] equal to {{sti|{{as|65% '''maximum''' health}}}}",
+     "bin": [
+      "KSanteR.HealthLost"
+     ],
+     "binNote": "Wiki states the surviving health threshold as 65% max health; bin's HealthLost=0.35 is the complementary percentage lost (1-0.65=0.35), same underlying number."
+    },
+    {
+     "id": "r_7",
+     "meaning": "base armor and MR reduction while All Out",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.85,
+     "terms": [],
+     "quote": "his {{sti|armor|{{as|'''base''' armor}}}} and {{sti|mr|{{as|'''base''' magic resistance}}}} are reduced by {{as|85% '''bonus''' armor}} and {{as|85% '''bonus''' magic resistance}}",
+     "bin": [
+      "KSanteR.DefensesLost"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "bonus armor penetration (lethality) while All Out",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{sti|lethality|{{as|50% {{tt|'''bonus'''-armor penetration|Affects bonus armor only}}}}}}",
+     "bin": [
+      "KSanteR.ArmorPenPercent"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "omnivamp while All Out",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "{{as|20% omnivamp}}",
+     "bin": [
+      "KSanteR.Omnivamp"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "stun duration on target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "stunned}} for {{fd|0.3}} seconds once it ends",
+     "bin": [],
+     "binNote": "Wiki says 0.3s stun (no-wall case); bin's KSanteR.NoWallStunDuration=0.25 disagrees with the wiki's stated 0.3."
+    },
+    {
+     "id": "r_11",
+     "meaning": "root duration on cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "roots}} the target enemy {{tip|champion}} for {{tt|{{fd|0.5}} seconds|Duration unaffected by tenacity}}",
+     "bin": [
+      "KSanteR.WallStunDuration"
+     ],
+     "binNote": "Bin field name WallStunDuration=0.5 matches the wiki's initial root duration of 0.5s despite the naming suggesting a stun; the wiki calls this a root."
+    },
+    {
+     "id": "r_12",
+     "meaning": "post-terrain airborne then stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "they remain {{tip|airborne}} for {{rutngt|0.25}}, after which they are {{tip|stun|stunned}} for {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No matching bin row found for the terrain-case 0.5s stun or 0.25s airborne; closest named fields (WallStunDuration=0.5, NoWallStunDuration=0.25) may be mismatched/swapped versus wiki's usage."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The strike near the end of the displacement is a separate damage instance from the terrain-emergence strike, and if pulled through terrain a third strike occurs partway through the airborne duration.",
+     "quote": "'''K'Sante''' strikes them after {{rutngt|0.125}} into the airborne duration to deal {{as|physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target is pulled through terrain, K'Sante deals the strike damage a second time (base damage doubled as 'Total Physical Damage').",
+     "quote": "{{st|Total Physical Damage|{{ap|80*2 to 150*2}} {{as|(+ 5% of his '''bonus''' health)}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "K'Sante's strike at the end of the terrain displacement does not apply his passive mark.",
+     "quote": "K'Sante's''' strike at the end of the displacement when the target is pulled over terrain does not apply {{ais|Dauntless Instinct|K'Sante}} mark.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During All Out, K'Sante's basic abilities (Q/W/E) can be cast at no mana cost.",
+     "quote": "modifies his {{tip|ability|basic abilities}} which can be cast at no cost",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The health threshold reduces current health to the threshold upon entering All Out if above it, and this lost health is not restored when All Out ends.",
+     "quote": "Health lost from gaining the health threshold is '''not''' restored after the effect ends.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "K'Sante's maximum health and bonus resistances are unaffected by All Out; only current health and base resistances change.",
+     "quote": "'''K'Sante''' retains his {{as|'''maximum''' health}} and '''bonus''' resistances during All Out.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The percentage bonus armor penetration from All Out stacks additively with other percentage armor penetration sources.",
+     "quote": "The percentage bonus armor penetration {{tip|stacks additively}} with other sources of percentage armor penetration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown for All Out starts only after its full effect (the displacement/blink sequence) completes.",
+     "quote": "cdstart          = post-effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "K'Sante is restored to 100% max mana upon entering All Out, then it decays to 0 over the buff's duration before the pre-All-Out mana amount is restored.",
+     "quote": "Upon entering ''All Out'', '''K'Sante''' is restored to {{as|100% '''maximum''' mana}}. His {{as|mana}} then decays to {{as|0|mana}} over the duration of the buff",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KSanteR.NoWallStunDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "KSanteR.MaxSuppressTime",
+     "reason": "unknown"
+    },
+    {
+     "ref": "KSanteR.TackleRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.TackleSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.CarrySpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.MaxWallCarry",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.MaxWallCarrySR",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.WallCheckDist",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.KSanteLandingOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.WallBuffer",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.KsanteArrivesFirstBySec",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.AfterImageArrivesFirstBySec",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.ManaRegenPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "KSanteR.KnockGrav",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.TimeToLast",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.TackleRangeOverstatedNoWall",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.CarrySpeedUnderstatedNoWall",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.CarrySpeedNoWall",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.KsanteAnimLockWall",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.DistanceTriggerFasterCarrySpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.FasterCarrySpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.AuraOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.LingeringPerceptionPostStun",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.WallLookAhead",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.VfxInWallPerDistance",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.AnimationDashTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.DistanceRatioMin",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.DistanceRatioMax",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.CarrySpeedRatioMin",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.CarrySpeedRatioMax",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.CameraHoldRatioMin",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.CameraHoldRatioMax",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.InitialAnimHoldMax",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.CastTime",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "KSanteR.WallBufferFailCase",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KSanteR.VictimCameraZoomMin",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KSanteR.VictimCameraZoomMax",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mark consumption on next basic attack against a marked target deals flat + %maxHP physical damage as a proc after the attack lands"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "P's All Out bonus converts K'Sante's own bonus armor/MR into extra %maxHP damage; R's lethality converts a share of K'Sante's target's bonus armor into penetration"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Hitting with Q grants a stack (6s, refreshes, caps at 2); at 2 stacks the next Q cast is empowered and consumes them"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q's empowered form is a distinct effect gated by stacks; W is charge-then-recast with a separate damage/true-damage formula per charge length; R has a near-end strike plus a second terrain-emergence strike if terrain is involved"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Ntofo Strikes resets K'Sante's basic attack timer on cast"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "Path Maker channels 0.4-1s (damage/true-damage/stun scale with channel length) before its automatic or manual recast; charge cannot be interrupted by CC"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "All Out (15s): bonus attack speed, 50% bonus-armor penetration (lethality), 20% omnivamp, free-cost basic abilities"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "R"
+   ],
+   "note": "Flat bonus attack speed percent granted for the All Out duration"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q's cooldown scales down with K'Sante's bonus resistances and is cut 33% in All Out; W's cooldown is fully refreshed on entering All Out; E's cooldown is halved in All Out"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on Q/W/E/R; entering All Out restores 100% mana and makes Q/W/E free for its duration, mana then decays back to the pre-cast amount"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q and W scale off the target's max health and K'Sante's own bonus armor/MR; R's strike scales off K'Sante's own bonus health"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals a second (near-doubled) damage instance only if the target is pulled through valid terrain; a dummy fight has no terrain to test this against"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "All Out imposes a non-exceedable/non-restorable current-health ceiling at 65% max health and slashes base armor/MR by 85% of bonus armor/MR — relevant chiefly to the survival fight if K'Sante is the tanky defender"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Footwork deals no damage; it is a pure mobility/shield tool relevant only to damage taken in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "K'Sante's damage output is governed by feedback loops the primitive list cannot express as independent pieces: (1) R's All Out simultaneously slashes K'Sante's own base armor/MR and imposes a health ceiling while ALSO empowering Q/W's damage (which itself scales off K'Sante's own bonus armor/MR) and P's mark bonus (which scales off K'Sante's own bonus armor/MR) — so the caster's own stat state must be tracked and re-derived mid-fight rather than treated as a flat self-buff; (2) P's All Out bonus explicitly amplifies an existing damage instance rather than adding a new one, and only ever applies to the first target of a multi-target hit, which is a multiplicative-not-additive rule not covered by onhit-rider/stat-conversion alone; (3) R's damage is genuinely conditional on unmodeled terrain geometry, producing either one or two separate physical damage instances of different magnitude; (4) Q's live cooldown is itself a function of the build's bonus resistances (a dynamic, resistance-driven cooldown-reduction formula, not a fixed per-rank cooldown), which interacts with mana budget and attack-reset timing all at once."
+ },
+ "unsettled": [
+  {
+   "question": "Is Ntofo Strikes' (Q) cooldown the flat bin value (3.5s at all ranks) or the wiki's dynamic formula that scales down with K'Sante's bonus armor/MR (to a 2s floor at 120 bonus resistances, further -33% in All Out)?",
+   "options": [
+    "Use the static bin cooldown (3.5s, ignore resistances)",
+    "Apply the wiki's resistance-scaling formula using the simulated item build's bonus armor/MR",
+    "Apply the resistance-scaling formula only while All Out is active"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: 3.5",
+    "{{pp|3.5 to 2 by 0.05|0 to 120|type='''bonus''' resistances|label=cooldown|label1=bonus resistances|formula= 3.5 - 0.0125 × bonus resistances, capped at 120 bonus resistances.}}"
+   ]
+  },
+  {
+   "question": "Should the survival fight model K'Sante casting R (All Out) and applying its self-stat swap — the non-restorable current-health ceiling at 65% max health and the -85% cut to base armor/MR — for the remainder of the fight, given it also grants omnivamp/attack speed that could help him survive?",
+   "options": [
+    "Always have the tanky defender cast R and apply the full stat swap for the fight duration",
+    "Never cast R defensively; treat it purely as an offensive damage-fight cooldown",
+    "Cast R only if the net effect (health ceiling loss vs. omnivamp/damage-reduction) is calculated to be favorable"
+   ],
+   "impact": "high",
+   "quotes": [
+    "gains a [[Health#Health_threshold|health threshold]] equal to {{sti|{{as|65% '''maximum''' health}}}} which cannot be ... exceeded ... by any means",
+    "his {{sti|armor|{{as|'''base''' armor}}}} and {{sti|mr|{{as|'''base''' magic resistance}}}} are reduced by {{as|85% '''bonus''' armor}} and {{as|85% '''bonus''' magic resistance}}"
+   ]
+  },
+  {
+   "question": "In a fight against a single stationary dummy with no terrain, does R's terrain-pull second damage instance ever occur, or should it be assumed to never trigger (only the single near-end-of-displacement strike lands)?",
+   "options": [
+    "Assume no terrain is present; only the base strike lands",
+    "Assume terrain is always available and both strikes (near-doubled total damage) always land"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If there is {{tt|valid map-generated terrain|...}} 350 units in the cast direction ... the target is instead ... pulled ... dealing them the {{as|physical damage}} near their emergence from the terrain ... K'Sante strikes them after ... to deal {{as|physical damage}}."
+   ]
+  },
+  {
+   "question": "The bin's KSanteQ3.CritBonus = 1.5 has no corresponding mention in the wiki's Ntofo Strikes text of any part of the empowered cast being able to critically strike. Is this value live and applied to some component of the empowered attack, or is it stale/unused data?",
+   "options": [
+    "CritBonus is unused/stale data with no live effect on damage",
+    "CritBonus applies a 1.5x multiplier to some sub-component (e.g. the sweet-spot or strike hit) of the empowered Q3 when it crits"
+   ],
+   "impact": "low",
+   "quotes": [
+    "KSanteQ3.CritBonus = 1.5"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start in melee range of the dummy so all abilities and autos connect immediately.",
+   "Cast R (All Out) on the dummy first: it grants bonus attack speed, 50% bonus-armor penetration, omnivamp, refreshes W's cooldown, restores mana to 100%, and makes Q/W/E free for the rest of the fight.",
+   "Weave Ntofo Strikes (Q) on cooldown between autos; each hit resets the attack timer and builds a stack, so cast it right after each auto-attack lands to avoid losing attack tempo.",
+   "Let Q reach 2 stacks and fire the empowered (pull) cast as soon as it becomes available, since it deals higher single-target damage than two normal casts and re-marks the target for the passive.",
+   "Cast Path Maker (W) as soon as its cooldown is up (it was already refreshed by entering All Out); hold the charge for its maximum ~0.9-1s duration to maximize the All Out true-damage percentage before releasing the recast dash through the dummy.",
+   "Auto-attack continuously between ability casts to consume Dauntless Instinct marks (refreshed by each Q hit) for the extra on-hit physical damage.",
+   "Recast Q and W again as they come off cooldown for the remainder of the 15s window; do not cast Footwork (E), since it deals no damage and only provides mobility/shield."
+  ],
+  "questions": [
+   "Should R be delayed to let item-driven bonus armor/MR accumulate first (raising P's and Q/W's resistance-scaling terms) before committing to the All Out window, or is opening with R immediately always correct given the fixed 15s fight length?",
+   "During Path Maker's channel, can Q (Ntofo Strikes) be cast in parallel per the 'can be cast during the dash' note, or only once the dash itself begins (not during the initial charge)? This changes how much DPS is lost while holding W's charge for maximum true damage.",
+   "Is it correct to always hold W's charge to the max ~0.9-1s for maximum true damage, or does the lost auto-attack/Q tempo during that hold ever make an instant (minimum charge) recast higher overall DPS in a 15s window?",
+   "For the damage fight, should R's terrain double-strike ever be assumed to trigger, or is 'no terrain, single strike only' the correct simulation baseline?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

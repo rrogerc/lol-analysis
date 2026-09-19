@@ -1,0 +1,718 @@
+{
+ "champion": "jax",
+ "abilities": {
+  "P": {
+   "name": "Relentless Assault",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus attack speed per stack, by champion level",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.05,
+      0.05,
+      0.05,
+      0.065,
+      0.065,
+      0.065,
+      0.08,
+      0.08,
+      0.08,
+      0.095,
+      0.095,
+      0.095,
+      0.11,
+      0.11,
+      0.11,
+      0.125,
+      0.125,
+      0.125
+     ],
+     "terms": [],
+     "quote": "{{pplevel|key=%|5 to 14 for 7|1 to 19}} '''bonus''' attack speed",
+     "bin": [
+      "JaxPassive#AttackSpeedPerStack"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "maximum stacks of Relentless Assault",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "stacking up to 8 times",
+     "bin": [
+      "JaxPassive.MaxStacks"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "seconds a stack lasts before falling off, refreshed on each attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "for {{fd|2.5}} seconds, refreshing on subsequent attacks",
+     "bin": [
+      "JaxPassive.BuffDuration"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "interval between stacks expiring once the buff duration ends",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "Stacks expire one by one every {{fd|0.25}} seconds when the duration ends.",
+     "bin": [
+      "JaxPassive.FallOffRate"
+     ],
+     "binNote": "Wiki text states stacks fall off one every 0.25s. The bin's only candidate row, JaxPassive.FallOffRate, is 0.35, not 0.25 - same apparent quantity (seconds per stack lost on expiry), different number. Not changed to match; a dummy fight with continuous auto-attacks keeps stacks refreshed well inside either interval, so this mostly matters only if the sim models a gap in attacks (e.g. during Counter Strike's evasion)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Stacks are generated on-attack and each attack refreshes the 2.5s duration, so continuous auto-attacking keeps Jax permanently at max stacks in a dummy fight.",
+     "quote": "'''Jax's''' {{tip|basic attacks}} generate a {{tip|stack}} of ''Relentless Assault'' {{tip|on-attack}} for {{fd|2.5}} seconds, refreshing on subsequent attacks and stacking up to 8 times.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JaxPassive.BelvethVsJaxQuestRewardStacks",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  },
+  "Q": {
+   "name": "Leap Strike",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana",
+    "binNote": "Wiki states a flat cost of 50 mana (matching ddragon's client-facing champion data). The bin's actual JaxQ spell cost data value is 65 mana. Kept the wiki's number rather than changing it to match; this is a genuine wiki/bin disagreement."
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      65,
+      105,
+      145,
+      185,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|65 to 225}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "JaxQ#TotalDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The damage lands when Jax arrives at the target's location, not at the moment of cast.",
+     "quote": "upon arrival, '''Jax''' deals {{as|physical damage}} to them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Jax can cast any of his other abilities during the Leap Strike dash, so it does not block the rest of the rotation.",
+     "quote": "Jax''' can cast any of his {{tip|abilities}} during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After the dash ends, Jax is automatically ordered to basic attack the target he leapt to.",
+     "quote": "If the target is an enemy champion, '''Jax''' will be ordered to {{tip|basic attack}} them after the dash ends.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": []
+  },
+  "W": {
+   "name": "Empower",
+   "cooldown": {
+    "values": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "quote": "{{ap|7 to 3}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Additional Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      85,
+      120,
+      155,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|50 to 190}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "JaxW#TotalDamage",
+      "JaxW#FinalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "seconds the empower buff lasts on Jax before it lapses if his next basic attack or Leap Strike does not use it",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "against an enemy within 10 seconds",
+     "bin": [],
+     "binNote": "No JaxW data value in the sheet exposes this 10s window; the buff is only referenced indirectly via a buff-name hash gating JaxW#FinalDamage, and that buff's own duration is not listed as a spell data value here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Empower can be applied to either Jax's next basic attack or his next Leap Strike against an enemy, not only a plain auto-attack.",
+     "quote": "empowers his next {{tip|basic attack}} or ''{{ai|Leap Strike|Jax}}'' against an enemy within 10 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empower resets Jax's basic attack timer when it triggers.",
+     "quote": "Empower {{tip|basic attack reset|resets}} '''Jax's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empower's bonus damage is a separate damage instance from the basic attack it rides on, not merged into the attack's own damage.",
+     "quote": "''Empower'' is applied in a separate damage instance from '''Jax's''' basic attacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empower's cooldown starts only after its effect resolves (the empowered attack or Leap Strike landing), not at the moment W is cast.",
+     "quote": "cdstart = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JaxW.StructureMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  },
+  "E": {
+   "name": "Counter Strike",
+   "cooldown": {
+    "values": [
+     17,
+     15,
+     13,
+     11,
+     9
+    ],
+    "quote": "{{ap|17 to 9}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Minimum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      70,
+      100,
+      130,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.04
+      }
+     ],
+     "quote": "{{ap|40 to 160}} {{as|(+ 70% AP)}} {{as|(+ 4% of target's '''maximum''' health)}}",
+     "bin": [
+      "JaxE#TotalDamage",
+      "JaxE.PercentHealthDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "seconds Jax remains in Evasion before it automatically recasts if not recast sooner",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "enters ''Evasion'' for 2 seconds",
+     "bin": [
+      "JaxE.DodgeDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "seconds after casting before Counter Strike can be manually recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "can be recast after 1 second, and does so automatically after the duration.",
+     "bin": [],
+     "binNote": "The wiki states this 1s minimum recast delay separately from the on-hit stun duration on the recast. The sheet's only data value of 1 for this ability is JaxE.StunDuration, which by name matches the recast's stun instead; it is not clear whether the same field also gates this minimum recast delay or whether that delay is simply not exposed as a data value here, so it is not cited as the source."
+    },
+    {
+     "id": "e_4",
+     "meaning": "damage increase to the recast, per basic attack (or on-hit-triggering ability) dodged during Evasion",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "increased by 20% for each attack dodged",
+     "bin": [
+      "JaxE.PercentIncreasedPerDodge"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "maximum number of dodges counted toward the recast's damage increase (each worth 20%, capping the increase at 100%)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "up to a 100% increase",
+     "bin": [
+      "JaxE.MaxDodgesForDamageIncrease"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Counter Strike's cooldown starts only once its effect resolves (after the recast), not at the moment it is initially cast.",
+     "quote": "cdstart = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the initial cast and the recast of Counter Strike each count as a separate ability activation, e.g. for on-cast item effects like Spellblade.",
+     "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast's bonus damage scales only with attacks or on-hit-triggering abilities Jax actually dodged during Evasion; since this simulator's target dummy never attacks, no dodges can ever occur, so Counter Strike always deals its Minimum (undoubled) damage in this fight model.",
+     "quote": "with the '''total''' damage increased by 20% for each attack dodged, up to a 100% increase",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JaxE.StunDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "JaxE.AoEDamageReduction",
+     "reason": "defensive"
+    }
+   ]
+  },
+  "R": {
+   "name": "Grandmaster-at-Arms",
+   "cooldown": {
+    "values": [
+     110,
+     100,
+     90
+    ],
+    "quote": "{{ap|110 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Additional Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      130,
+      185
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|75 to 185}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "JaxR#OnHitDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      175,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|100 to 250}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "JaxR#SwingDamageTotal"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "stacks of Grandmaster-at-Arms needed before the empowered on-hit consumes them, outside the active swing's buff window",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "stacking up to 2 times",
+     "bin": [],
+     "binNote": "No data value for this threshold appears in the sheet. The wiki's own texts disagree: the detailed description says stacks cap at 2 and the proc consumes 'At 2 stacks'; the short blurb2 instead says the passive normally applies 'every 3' stacks (see r_4 and the blurb2 quote in mechanics). Using the detailed description's number here."
+    },
+    {
+     "id": "r_4",
+     "meaning": "stacks needed to trigger the empowered on-hit while Grandmaster-at-Arms' active swing buff is up (reduced threshold)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "the empowered attack triggers at 1 stack instead.",
+     "bin": [],
+     "binNote": "No data value for this threshold appears in the sheet. Same wiki-internal disagreement as r_3: blurb2 states this reduced, active-window threshold is 'every 2' rather than 1. Using the detailed description's number here."
+    },
+    {
+     "id": "r_5",
+     "meaning": "seconds a Grandmaster-at-Arms stack lasts before falling off, refreshed on each on-hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "for {{fd|2.5}} seconds, refreshing on subsequent hits",
+     "bin": [
+      "JaxR.PassiveFallOffTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Grandmaster-at-Arms' on-hit proc (Additional Magic Damage) and its active swing (Magic Damage) are independent effects: the on-hit stacks and consumes from basic attacks on its own timer, while the swing is a separate AoE cast on R's own cooldown.",
+     "quote": "The on-hit deals {{tip|proc damage}}. The swing deals {{tip|area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The wiki's short blurb and its detailed description disagree on the on-hit's stack threshold: blurb2 says the passive normally procs every 3 stacks (every 2 while the swing's buff is active); the description instead says stacks cap at 2 and the proc consumes at 2 stacks (1 while active).",
+     "quote": "He applies his passive {{tip|on-hit}} every 2 stacks instead of every 3 while active.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered on-hit attack is applied as a damage instance separate from Jax's basic attack, not merged into it.",
+     "quote": "The empowered attack is applied in a separate damage instance from '''Jax's''' basic attacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Grandmaster-at-Arms' cooldown starts immediately on cast, not after its effect resolves (unlike Empower and Counter Strike, which start post-effect).",
+     "quote": "cdstart = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active swing's damage lands when the 0.25s cast time ends, not at the instant of casting.",
+     "quote": "{{Effect at cast time end}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JaxR.Duration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "JaxR.BaseResists",
+     "reason": "defensive"
+    },
+    {
+     "ref": "JaxR.ResistsPerExtraTarget",
+     "reason": "defensive"
+    },
+    {
+     "ref": "JaxR.MRMult",
+     "reason": "defensive"
+    },
+    {
+     "ref": "JaxR.AoESize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "JaxR.StructureMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Relentless Assault: up to 8 stacks from basic attacks, each granting bonus attack speed by level, refreshed on-attack, falling off over time once attacks stop."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Leap Strike deals physical damage when Jax arrives at the target, a fixed short delay after cast, on cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Empower arms Jax's next basic attack (or Leap Strike) with bonus magic damage, applied as a separate damage instance."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Empower resets Jax's basic attack timer when it triggers."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Counter Strike casts into a 2s Evasion window, then recasts (manually after 1s, or automatically at 2s) to deal magic damage and stun."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Evasion's dodge-all-attacks and 25% reduced AoE damage taken are excluded from values; irrelevant since the target dummy never attacks."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Grandmaster-at-Arms' passive empowers Jax's on-hit every 2 stacks normally (every 1 while the active swing's buff is up, per the detailed description; blurb2 instead says 3/2)."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "R"
+   ],
+   "note": "The stack-consuming on-hit is an empowered basic attack, applied as a separate damage instance from the attack itself."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "The active swing deals its magic damage AoE when the 0.25s cast time ends, on cooldown."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "The swing's bonus armor/MR (and 10% size) on champion hit are excluded from values; irrelevant since Jax never takes damage in this fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities draw from one mana pool over the 15s fight: flat costs for Q/W/R, a per-rank cost for E."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Everything that matters to the damage fight reduces to the listed primitives plus ordinary mana costs and cooldowns. Counter Strike's per-dodge damage ramp (its 20%-per-dodge increase, capped at 5 dodges) is the one piece of logic the closed list has no entry for, but it can never trigger in this fight model since the target dummy never attacks Jax - so no bespoke dodge-tracking is actually needed; the engine can just always use Counter Strike's flat Minimum damage."
+ },
+ "unsettled": [
+  {
+   "question": "How many Grandmaster-at-Arms stacks does the empowered on-hit actually need to trigger?",
+   "options": [
+    "2 stacks normally / 1 while the swing's buff is active, per the detailed description ('stacking up to 2 times', 'At 2 stacks...', 'the empowered attack triggers at 1 stack instead').",
+    "3 stacks normally / 2 while the swing's buff is active, per blurb2 ('every 2 stacks instead of every 3 while active')."
+   ],
+   "impact": "high",
+   "quotes": [
+    "stacking up to 2 times",
+    "the empowered attack triggers at 1 stack instead.",
+    "He applies his passive {{tip|on-hit}} every 2 stacks instead of every 3 while active."
+   ]
+  },
+  {
+   "question": "Can Jax auto-attack or cast other abilities while Counter Strike's 2-second Evasion is active?",
+   "options": [
+    "Jax can act freely during Evasion (nothing in the ability text restricts him), so E adds damage and a stun with no DPS downtime.",
+    "Evasion also suppresses Jax's own actions until it ends or is recast, creating a DPS gap of up to 2 seconds."
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Jax''' enters ''Evasion'' for 2 seconds: a defensive stance that causes him to {{tip|dodge}} all incoming non-{{tip|turret}} basic attacks and take 25% reduced damage from all {{tip|area of effect}} {{tip|abilities}} sourced from {{tip|champions}}."
+   ]
+  },
+  {
+   "question": "Is Leap Strike's mana cost 50 (wiki and ddragon) or 65 (the bin's JaxQ data value)?",
+   "options": [
+    "50 mana flat, per the wiki text and ddragon's client-facing data.",
+    "65 mana flat, per the bin's JaxQ cost data value."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cost         = 50"
+   ]
+  },
+  {
+   "question": "Does the bin's JaxE.StunDuration=1 also define Counter Strike's 1-second minimum recast delay, or are they unrelated fields that happen to share a value?",
+   "options": [
+    "Same field: the 1s figure gates both the recast's stun length and the minimum recast delay.",
+    "Different fields: the minimum recast delay is a separate, unexposed timer that coincidentally also equals 1 second."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Counter Strike'' can be recast after 1 second, and does so automatically after the duration.",
+    "{{tip|stun|stuns}} them for 1 second"
+   ]
+  },
+  {
+   "question": "Does a Relentless Assault stack fall off every 0.25s (wiki) or every 0.35s (the bin's JaxPassive.FallOffRate) once the buff duration lapses?",
+   "options": [
+    "Every 0.25 seconds, per the wiki text.",
+    "Every 0.35 seconds, per the bin's FallOffRate data value."
+   ],
+   "impact": "low",
+   "quotes": [
+    "Stacks expire one by one every {{fd|0.25}} seconds when the duration ends."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast R (Grandmaster-at-Arms) immediately at the start of the fight for its AoE magic damage swing, since its ~90-110s cooldown means it fires at most once in a 15s fight and using it first still lets every other cooldown fire within the window.",
+   "Cast W (Empower) as the next action so the opening basic attack is empowered for bonus magic damage.",
+   "Basic-attack the target to consume the Empower buff, dealing its bonus magic damage as a separate instance and resetting the attack timer.",
+   "Cast Q (Leap Strike) on the target whenever it is off cooldown; it deals physical damage on arrival and Jax is auto-ordered to basic-attack afterward, so it adds a hit without breaking the auto-attack routine.",
+   "Re-cast W (Empower) every time its cooldown is up, timed onto the next basic attack, since it resets the attack timer and adds a separate magic damage instance each time.",
+   "Keep auto-attacking between ability casts throughout, since basic attacks are what generate and refresh both Relentless Assault (attack speed) and Grandmaster-at-Arms (bonus on-hit magic damage) stacks.",
+   "Cast E (Counter Strike) when mana allows, and recast it as soon as it is eligible (after 1s) rather than waiting the full 2s, to land its guaranteed (dodge-less) Minimum magic damage and stun sooner.",
+   "Treat mana as the binding constraint late in the fight: Counter Strike's rank-scaled cost (up to 90) and Grandmaster-at-Arms' 100 are the first casts to skip if mana runs short, since Empower and Leap Strike are cheaper and keep the auto-attack/proc loop running."
+  ],
+  "questions": [
+   "Can Jax auto-attack or cast Q/W during Counter Strike's Evasion window? This decides whether E is free bonus damage or a DPS gap, and therefore whether/when it belongs in the rotation at all.",
+   "Is Grandmaster-at-Arms' on-hit threshold 2 stacks (1 while active) or 3 (2 while active)? This changes how often its bonus magic damage fires relative to the auto-attack/Empower loop.",
+   "At what champion level and ability ranks is this 15s fight evaluated, and does the fight start with R already available, or could it start on cooldown from a prior engagement?",
+   "Once Jax is already adjacent to the stationary target, does Leap Strike's mana cost and cooldown outweigh the value of the single extra attack it forces, compared to just continuing to auto-attack?"
+  ]
+ }
+}

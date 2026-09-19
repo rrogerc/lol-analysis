@@ -1,0 +1,585 @@
+{
+ "champion": "kassadin",
+ "abilities": {
+  "P": {
+   "name": "Void Stone",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "Kassadin is permanently ghosted and takes 10% reduced magic damage; this is damage he receives, not deals, and the dummy never attacks back.",
+     "quote": "'''Kassadin''' is permanently {{tip|ghosted}} and takes 10% reduced {{tip|magic damage|{{as|magic damage}}}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VoidStone.DamageReductionPercent",
+     "reason": "defensive"
+    }
+   ]
+  },
+  "Q": {
+   "name": "Null Sphere",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9 to 7}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      95,
+      125,
+      155,
+      185
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|65 to 185}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "NullLance#TotalDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Null Sphere is a unit-targeted projectile (speed 1400) rather than an instant hit; the cast time is separate from its travel time to the target.",
+     "quote": "speed        = 1400",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Null Sphere also disrupts the target's ongoing channel, a crowd-control effect a stationary, non-casting dummy never triggers.",
+     "quote": "and {{tip|disrupt|disrupts}} their ongoing {{tip|channel|channels}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Kassadin also gains a magic damage shield lasting 1.5s, granted at the start of the cast time; the dummy never attacks back so the shield never absorbs anything.",
+     "quote": "The shield is granted at the start of the cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NullLance.ShieldAmount",
+     "reason": "defensive"
+    },
+    {
+     "ref": "NullLance.ShieldDuration",
+     "reason": "defensive"
+    }
+   ]
+  },
+  "W": {
+   "name": "Nether Blade",
+   "cooldown": {
+    "values": 7,
+    "quote": "7"
+   },
+   "cost": {
+    "values": 1,
+    "quote": "1",
+    "resource": "mana"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Increased Bonus Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "NetherBlade#ActiveDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Mana Restored Against Champions",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "missingMana",
+       "coef": [
+        0.2,
+        0.225,
+        0.25,
+        0.275,
+        0.3
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|4*5 to 6*5}}% of '''missing''' mana}}",
+     "bin": [
+      "NetherBlade.ChampionMissingManaRatio"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Passive Bonus Magic Damage (on-hit)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 25,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{as|25|magic damage}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "NetherBlade#OnHitDamage"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Empowered Attack Window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "within 5 seconds",
+     "bin": [],
+     "binNote": "No sheet data value for this window; it only appears in the wiki's description text (the empowered attack expires unused after 5 seconds)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Landing the empowered attack resets Kassadin's basic attack timer.",
+     "quote": "Nether Blade {{tip|basic attack reset|resets}} '''Kassadin's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The 7-second cooldown does not start when W is cast; it starts only after the empowered attack resolves (post-effect), so casting W early and attacking later delays when it is next available.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive on-hit damage is classified as proc damage while the active empowered-attack damage is classified as spell damage, a distinction that matters for item/on-hit interactions.",
+     "quote": "The passive damage applies {{tip|proc damage}} and the active damage applies {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack still applies other on-hit effects and can critically strike normally, like an ordinary basic attack.",
+     "quote": "The enhanced attack will apply other {{tip|on-hit}} effects and can {{tip|critical strike|critically strike}} as normal.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NetherBlade.MissingManaRatio",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  },
+  "E": {
+   "name": "Force Pulse",
+   "cooldown": {
+    "values": [
+     21,
+     20,
+     19,
+     18,
+     17
+    ],
+    "quote": "{{ap|21 to 17}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|70 to 190}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "ForcePulse#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Cooldown Reduction per Ability Cast",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}}",
+     "bin": [
+      "ForcePulse.ReductionPerSpellCast"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Each time Kassadin (or a nearby champion) casts an ability, Force Pulse's current cooldown is reduced by 0.75 seconds.",
+     "quote": "Each time '''Kassadin''' or a nearby {{tip|champion}} casts an [[champion ability|ability]], ''Force Pulse's'' {{sti|'''current''' cooldown}} is reduced by {{fd|0.75}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Force Pulse also slows enemies hit for 1 second; a slow does not change damage against a stationary target that never repositions.",
+     "quote": "{{tip|slow|slows}} them for 1 second",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ForcePulse.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "ForcePulse.SlowDuration",
+     "reason": "utility"
+    }
+   ]
+  },
+  "R": {
+   "name": "Riftwalk",
+   "cooldown": {
+    "values": [
+     5,
+     3.5,
+     2
+    ],
+    "quote": "{{ap|5 to 2}}"
+   },
+   "cost": {
+    "values": 40,
+    "quote": "{{pp|40*2^(x-1)|0 to 4 for 5|type=Stacks|formula=40 {{times}} 2^stacks}}",
+    "resource": "mana",
+    "binNote": "40 is only the 0-stack cost (matches RiftWalk.RBaseCost and the sheet's flat cost:40). The wiki's own formula scales cost with accumulated stacks (40 x 2^stacks, stacks 0-4); see value r_7."
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      95,
+      110
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      },
+      {
+       "stat": "maxMana",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{ap|80 to 110}} {{as|(+ 50% AP)}} {{as|(+ 2% '''maximum''' mana)}}",
+     "bin": [
+      "RiftWalk#BaseDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Bonus Damage Per Stack",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      45,
+      55
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.07
+      },
+      {
+       "stat": "maxMana",
+       "coef": 0.01
+      }
+     ],
+     "quote": "{{ap|35 to 55}} {{as|(+ 7% AP)}} {{as|(+ 1% '''maximum''' mana)}}",
+     "bin": [
+      "RiftWalk#BonusDamage"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Riftwalk Stack Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 15,
+     "terms": [],
+     "quote": "for 15 seconds",
+     "bin": [
+      "RiftWalk.RStackDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Riftwalk Max Stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "stacking up to 4 times",
+     "bin": [
+      "RiftWalk.MaxStacks"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Cast Cost Scaling With Riftwalk Stacks",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [],
+     "quote": "{{pp|40*2^(x-1)|0 to 4 for 5|type=Stacks|formula=40 {{times}} 2^stacks}}",
+     "bin": [
+      "RiftWalk.RBaseCost",
+      "RiftWalk.RManaRatio",
+      "RiftWalk.RStackManaRatio"
+     ],
+     "binNote": "The wiki states cost = 40 x 2^stacks for stacks 0-4 (40/80/160/320/640 mana), which is exponential and cannot be written as this schema's flat base + linear terms. RBaseCost=40 is the 0-stack base; RManaRatio=2 and RStackManaRatio=1 look like the formula's base and per-stack exponent rate (2^(1*stacks)), matching the wiki's numbers exactly, but no calc row in the sheet derives this - it is my reading of two otherwise-unexplained data values, not a stated calculation."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "After the blink deals damage, Kassadin gains a Riftwalk stack for 15 seconds; casting again refreshes the duration on all held stacks, up to a cap of 4.",
+     "quote": "He then gains a stack of ''Riftwalk'' for 15 seconds, refreshing on subsequent casts and stacking up to 4 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Riftwalk's damage is dealt to all nearby enemies upon arrival at the blink destination, not at the instant of casting.",
+     "quote": "dealing {{as|magic damage}} to all nearby enemies upon arrival",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each held Riftwalk stack both adds the per-stack bonus damage and raises the cast's mana cost; the wiki does not say whether a cast's own new stack (gained after arrival) counts toward that same cast's damage/cost or only affects the next cast.",
+     "quote": "For each stack, ''Riftwalk'' deals {{as|'''bonus''' magic damage}} at an increased {{sti|{{as|mana cost}}}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RiftWalk.RiftWalkBaseDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "RiftWalk.CastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RiftWalk.BaseCD",
+     "reason": "tooltip-only"
+    }
+   ]
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Null Sphere and Force Pulse each land one magic-damage instance after a 0.25s cast, off a per-rank cooldown."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Nether Blade's passive: every basic attack deals 25 (+10% AP) bonus on-hit magic damage (proc damage)."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Nether Blade's active arms the next basic attack (within 5s) with bonus magic damage (50-150 +80% AP, classed as spell damage) and a mana refund."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Landing the Nether Blade-empowered attack resets Kassadin's basic attack timer."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana (60-80 for Q/E; 40 x 2^stacks, up to 640, for R) is a real limiter on casts across 15s; Nether Blade's on-hit mana restoration is the only in-kit refill."
+  },
+  {
+   "id": "ramping-per-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Each held Riftwalk stack (cap 4, 15s duration, refreshed on recast) adds bonus damage to the next cast and roughly doubles its mana cost."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Every ability cast by Kassadin (Q/W/E/R) cuts Force Pulse's current cooldown by 0.75s."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Riftwalk's cast cost scales with held stacks as 40 x 2^stacks (stacks 0-4: 40/80/160/320/640), an exponential relationship the base+linear-terms value schema cannot express (unlike its damage ramp, which is a plain additive per-stack amount). A simulator needs bespoke logic that tracks Kassadin's current Riftwalk stack count through the fight and computes each cast's cost (and damage) from it, rather than a fixed base/ratio."
+ },
+ "unsettled": [
+  {
+   "question": "RiftWalk has two base-damage-shaped rows: RBaseDamage=[80/95/110], which the BaseDamage calc actually reads and which matches the wiki's leveling table, and RiftWalkBaseDamage=[70/90/110], which no calc reads and which the wiki contradicts. Is RiftWalkBaseDamage truly dead data, or could it still apply in some case the archived sources don't show?",
+   "options": [
+    "RBaseDamage is live; RiftWalkBaseDamage is stale leftover data",
+    "RiftWalkBaseDamage applies in some unmodeled case (e.g. a different cast type)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{st|Magic Damage|{{ap|80 to 110}} {{as|(+ 50% AP)}} {{as|(+ 2% '''maximum''' mana)}}}}"
+   ]
+  },
+  {
+   "question": "When a Riftwalk cast both deals bonus damage per held stack and gains a new stack on arrival, does that cast's own damage (and mana cost) use the stack count from before or after this cast's increment? Equivalently, is the first Riftwalk cast of the fight unbuffed (0 stacks) or does it already count its own new stack?",
+   "options": [
+    "Pre-increment: this cast's damage/cost uses stacks held before the cast; the first cast is base-only",
+    "Post-increment: this cast's damage/cost already includes the stack it just gained"
+   ],
+   "impact": "high",
+   "quotes": [
+    "He then gains a stack of ''Riftwalk'' for 15 seconds, refreshing on subsequent casts and stacking up to 4 times.",
+    "For each stack, ''Riftwalk'' deals {{as|'''bonus''' magic damage}} at an increased {{sti|{{as|mana cost}}}}."
+   ]
+  },
+  {
+   "question": "Does Nether Blade's empowered-attack bonus damage (50-150 +80% AP, spell damage) replace the passive's always-on on-hit damage (25 +10% AP, proc damage) on that one attack, or do both apply together on the same hit? The sheet computes them as two separate calcs (ActiveDamage, OnHitDamage), which suggests both could fire, but the wiki only says the attack deals 'increased' bonus damage.",
+   "options": [
+    "The active's damage replaces the passive's on that attack (one on-hit magic instance)",
+    "Both the passive and active on-hit damage apply together on that attack"
+   ],
+   "impact": "high",
+   "quotes": [
+    "deal increased {{as|'''bonus''' magic damage}}",
+    "'''Kassadin's''' {{tip|basic attacks}} deal {{as|25|magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}"
+   ]
+  },
+  {
+   "question": "Force Pulse's passive says an ability cast by Kassadin reduces its current cooldown by 0.75s. Does casting Force Pulse itself count toward this (shaving 0.75s off the cooldown it just started), or only casts of Q/W/R?",
+   "options": [
+    "Force Pulse's own cast also counts",
+    "Only other ability casts (Q/W/R) count"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Each time '''Kassadin''' or a nearby {{tip|champion}} casts an [[champion ability|ability]], ''Force Pulse's'' {{sti|'''current''' cooldown}} is reduced by {{fd|0.75}} seconds."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Riftwalk (R) on the dummy: it lands immediate magic damage on arrival and grants the first stack, which lasts 15 seconds so it holds for the rest of a 15s fight.",
+   "Cast Null Sphere (Q) and Force Pulse (E) whenever they are off cooldown; both are flat magic-damage casts, and every cast of any ability also shaves 0.75s off Force Pulse's own current cooldown.",
+   "Use Nether Blade's active (W) as soon as it is available and follow it immediately with a basic attack, since it resets the attack timer; keep auto-attacking between spell casts so the passive's 25 (+10% AP) on-hit magic damage lands on every swing and the empowered attack's mana refund keeps the mana pool up.",
+   "Re-cast Riftwalk again as its cooldown (5 to 2s by rank) allows, but only while mana allows: each held stack adds bonus damage yet roughly doubles the next cast's cost (40/80/160/320/640 for 0-4 stacks), so it quickly competes with Q/E/W for the same mana pool.",
+   "For the remainder of the 15 seconds, cast whichever of Q/E/W's active is off cooldown and affordable, filling every gap between casts with basic attacks for the passive on-hit damage."
+  ],
+  "questions": [
+   "Does spending mana on repeated Riftwalk casts for the escalating stack bonus ever out-damage spending the same mana on Q/E casts and basic attacks once the cost passes 160-320 per cast?",
+   "Does a Riftwalk cast's damage/cost use the stack count before or after its own increment (changes how much the opening R, and every later R, actually deals and costs)?",
+   "Does the Nether Blade empowered attack replace or add to the passive on-hit damage on that hit (changes how much weaving W into the auto-attack rhythm is worth relative to plain auto-attacks)?",
+   "Does casting Force Pulse count toward its own cooldown-reduction passive (changes how often E re-enters the rotation)?"
+  ]
+ }
+}

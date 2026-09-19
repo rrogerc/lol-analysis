@@ -1,0 +1,147 @@
+{
+ "champion": "diana",
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every 3rd basic attack in quick succession consumes 2 Moonsilver Blade stacks to deal bonus cleave magic damage."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Innate bonus attack speed is tripled for 5s after casting any ability."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Crescent Strike applies a 3s Moonlight debuff on the target; Lunar Rush consumes Moonlight from the target on dash-end."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lunar Rush's current cooldown is reduced to 0.25s when it consumes Moonlight from its target."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Diana attempts a basic attack on the target immediately upon completing the Lunar Rush dash."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "Q"
+   ],
+   "note": "Pale Cascade's three orbs detonate as separately timed hits (cooldown starts only after a detonation); Crescent Strike's bolt is two distinct projectiles."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Base cast damage for Crescent Strike, Pale Cascade orbs, Lunar Rush, and Moonfall's delayed explosion."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50, W 40-60, E 40-60, R 100) may cap how many casts fit in the 15s fight without regen from items/runes."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Pale Cascade's shield (and its reapplication/stacking on full orb detonation) only matters for the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two interactions exceed a static primitive: (1) Pale Cascade's cooldown explicitly starts 'After sphere detonation' rather than on cast, so its effective cooldown depends on when/whether all three orbs actually hit the target - a timing dependency the catalog's plain cooldown model doesn't capture; (2) Lunar Rush's cooldown reset is gated on consuming Moonlight, and the wiki notes it 'is possible for Lunar Rush to be reset multiple times during the same Crescent Strike cast, until it finishes its trajectory' (e.g. re-casting Q mid-dash), which is a chained cross-ability cooldown-manipulation sequence beyond a single cooldown-manipulation primitive tied to one ability pair."
+ },
+ "unsettled": [
+  {
+   "question": "Does Crescent Strike's bolt (two distinct projectiles per the wiki note) deal damage to a single stationary dummy target once or twice?",
+   "options": [
+    "Only one of the two projectiles can hit a single target, so Q deals its listed damage once per cast",
+    "Both projectiles can connect with the same single target, doubling Q's direct damage (before the explosion) per cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The bolt consists of two {{tip|projectiles}} with slightly different trajectories."
+   ]
+  },
+  {
+   "question": "In a point-blank dummy fight, do Pale Cascade's three orbs detonate effectively simultaneously with cast (since the dummy is in melee range), or do they retain meaningful travel/orbit delay before each detonation, delaying the cooldown-start and the shield-reapplication?",
+   "options": [
+    "Orbs detonate near-instantly on the adjacent target, so W's effective cooldown ≈ listed cooldown",
+    "Orbs orbit for a noticeable duration before hitting, meaningfully delaying cooldown-start and pushing total DPS down"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = After sphere detonation",
+    "creates three spheres that orbit her counterclockwise for the same duration, detonating upon contact with an enemy"
+   ]
+  },
+  {
+   "question": "Does the basic attack Diana performs at the end of Lunar Rush's dash count toward the Moonsilver Blade attack-count (progressing/consuming the every-3rd-attack cleave), i.e. is it a normal on-hit attack for passive-stacking purposes?",
+   "options": [
+    "The post-dash attack is a normal basic attack and counts fully toward Moonsilver Blade stacking/consumption",
+    "The post-dash attack is a special forced attack that does not interact with Moonsilver Blade's stack/consume logic"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Diana''' will attempt to basic attack the target."
+   ]
+  },
+  {
+   "question": "Can Lunar Rush's cooldown be reset multiple times within a single fight window by re-casting Crescent Strike mid-dash (per the wiki tip), and if so how many extra E casts should the rotation assume are achievable in 15s?",
+   "options": [
+    "Treat each Q cast as granting at most one E cooldown reset (conservative, one Moonlight application consumed per Q)",
+    "Allow chained resets where a well-timed Q cast during an active E dash can grant additional resets beyond the simple one-per-cast pairing"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "it is possible for ''Lunar Rush'' to be reset multiple times during the same ''Crescent Strike'' cast, until it finishes its trajectory."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Diana enters the fight at full level/build with all cooldowns available and 0 Moonsilver Blade stacks.",
+   "Open with Crescent Strike (Q) on the dummy for direct damage and to apply Moonlight.",
+   "Immediately follow with Lunar Rush (E) onto the dummy, consuming Moonlight for its damage and resetting E's cooldown to 0.25s.",
+   "Cast Moonfall (R) to pull/burst the dummy for its delayed explosion damage.",
+   "Cast Pale Cascade (W) for its orb damage sequence.",
+   "Basic-attack continuously in every gap between ability casts, letting every 3rd attack consume Moonsilver Blade stacks for the empowered cleave, and keeping the tripled attack-speed buff refreshed by casting on cooldown.",
+   "Re-cast Q the moment it comes off cooldown to reapply Moonlight, then immediately re-cast E while its cooldown is still near-zero from the prior reset, looping this Q→E pair as often as Q's cooldown allows.",
+   "Re-cast W and R on cooldown throughout the remaining fight window, interleaved with the Q→E loop and autoattacks.",
+   "Prioritize spending mana on the highest-damage-per-mana loop (Q→E) once R is on cooldown, watching for mana exhaustion late in the 15s window."
+  ],
+  "questions": [
+   "At what level/rank and with what ability order (Q/E/W maxed first) should the simulated Diana be, since this changes how tight the Q→E reset loop is?",
+   "Is there enough mana regen (from runes/items assumed in the build) to sustain the full Q-E-R-W-attack loop for the entire 15s, or does the rotation need an idle/attack-only phase once mana runs out?",
+   "Should Moonfall (R) be front-loaded immediately for burst, or held until Diana has stacked attack-speed/on-hit procs, given its 1s cast delay and long cooldown means it likely only fires once in a 15s window?",
+   "How many Q→E reset loops are realistically achievable within 15s given Q's cooldown floor (6-8s) versus E's reset to 0.25s each time - does this bottleneck the whole rotation on Q's cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

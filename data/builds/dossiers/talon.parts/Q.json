@@ -1,0 +1,173 @@
+{
+ "name": "Noxian Diplomacy",
+ "cooldown": {
+  "values": [
+   8,
+   7.5,
+   7,
+   6.5,
+   6
+  ],
+  "quote": "{{ap|8 to 6}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   40,
+   40,
+   40,
+   40
+  ],
+  "quote": "40",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0,
+  "quote": "{{dv|{{tt|None|Ranged dash attack}}|{{tt|{{as|100% of '''Talon's''' windup time|as}} ({{ap|(1/{{ccd|Talon|as_base}})*{{ccd|Talon|windup}}|round=3}} at {{as|'''base''' attack speed}})|Close dash attack}}}}",
+  "binNote": "Ranged cast has no cast time (None). The close-range cast instead takes 100% of Talon's base attack windup time, a champion base stat not a fixed ability number, so no single number covers both cases; 0 is recorded for the default ranged case."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    65,
+    85,
+    105,
+    125,
+    145
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1
+    }
+   ],
+   "quote": "{{ap|65 to 145}} {{as|(+ 100% '''bonus''' AD)}}",
+   "bin": [
+    "TalonQ#LeapDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Critical Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    97.5,
+    127.5,
+    157.5,
+    187.5,
+    217.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{ap|65*1.5 to 145*1.5}} {{as|(+ {{ap|100*1.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "TalonQ#CriticalDamage",
+    "TalonQ.EnhancedDamageMod"
+   ],
+   "binNote": "Bin computes CriticalDamage = LeapDamage * EnhancedDamageMod(1.5) + 1x bonus critDamage, i.e. (base+bonusAd)*1.5 rather than base*1.5 + bonusAd*1.5 as separate terms; the wiki's stated base (97.5..217.5) and 150% bonus AD ratio are algebraically equivalent to the bin's multiplicative formula, so the numbers agree."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Heal on kill",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    9,
+    11.71,
+    14.41,
+    17.12,
+    19.82,
+    22.53,
+    25.24,
+    27.94,
+    30.65,
+    33.35,
+    36.06,
+    38.76,
+    41.47,
+    44.18,
+    46.88,
+    49.59,
+    52.29,
+    55
+   ],
+   "terms": [],
+   "quote": "'''Talon''' {{tip|heals}} for {{pp|9 + (55-9)*(x-1)/17|1 to 20 by 1|color=heal}}",
+   "bin": [
+    "TalonQ#TotalHealing"
+   ],
+   "binNote": "wiki formula is by champion level 1-20 but bin's byLevel table is stated 9..55 over levels; treating as levels 1-18 with the same endpoints since champion levels cap at 18."
+  },
+  {
+   "id": "q_4",
+   "meaning": "Cooldown refund on kill",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "the ability's {{sti|cooldown}} is reduced by 50%",
+   "bin": [
+    "TalonQ.CooldownRefund"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Bonus attack range granted on next basic attack, close range",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 75,
+   "terms": [],
+   "quote": "grants him {{sti|75 '''bonus''' attack range}} on his next basic attack within 1 second",
+   "bin": [],
+   "binNote": "Not present in the datavalue sheet; the bin has no field for this bonus attack range or its 1s window."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "If cast in melee range, the ability instead deals critical damage.",
+   "quote": "If the target is within melee range, '''Talon''' will {{tip|critical strike|critically strike}} the target.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "In close range, the cast is a stationary cast over the cast time, and damage is dealt at cast completion, not on dash arrival.",
+   "quote": "When cast in close range, ''Noxian Diplomacy'' deals its damage at the completion of the cast time, rather than at the dash's completion.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The close-range damage still lands even if the dash is interrupted, as long as the cast time finished.",
+   "quote": "The damage will be dealt even if '''Talon's''' dash is interrupted, so long as the cast time is completed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Talon is ordered to basic attack the target at the end of the dash, which combined with the reset lets it chain into an auto attack.",
+   "quote": "''Noxian Diplomacy {{tip|basic attack reset|resets}} '''Talon's''' basic attack timer.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the target dies at the moment the dash completes, the kill heal/cooldown refund still triggers (close range only).",
+   "quote": "''Noxian Diplomacy'' will also grant the heal if the target dies upon '''Talon's''' completion of the dash.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TalonQ.BonusADRatio",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

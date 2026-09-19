@@ -1,0 +1,114 @@
+{
+ "champion": "yone",
+ "primitives": [
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Passive doubles total crit chance from all sources and reduces crit damage multiplier to 0.95x AD bonus (2x AD total instead of usual); Mortal Steel's AD-ratio damage can critically strike on every enemy hit (thrust, whirlwind, dash each roll independently)."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Excess crit chance beyond 100% converts to bonus AD at 0.5 AD per 1% excess crit chance."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks permanently alternate between Steel (pure physical) and Azakana (50% physical / 50% magic, two simultaneous damage instances) sword states; governs every auto-attack in the fight."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Spirit Cleave's total mixed damage scales with the target's maximum health (8-12% by rank, split evenly physical/magic)."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Landing Mortal Steel grants a Gathering Storm stack (cap 2, 6s expiry); at 2 stacks the next Q cast is automatically empowered into a dash+whirlwind that deals the same damage formula twice more, each able to crit."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Soul Unbound is an initial dash plus a separately-timed recast (auto or manual after 0.5s) that deals a true-damage burst; Fate Sealed is a cast-time strike/knockdown followed 0.3s later by a separately-timed mixed-damage gust."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spirit Form marks enemy champions hit by attacks/abilities, storing a portion of post-mitigation damage dealt to them; the recast consumes and detonates the stored amount as true damage."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two mechanics exceed the closed primitives: (1) the Steel/Azakana auto-attack alternation produces two same-tick damage instances of different types with a specific kill-order rule (physical-dies-skips-magic on auto, magic-dies-skips-physical on W), which is more than a flat onhit-rider; (2) Soul Unbound's marks accumulate a running percentage of post-mitigation damage from every attack and ability landed during a multi-second window before being released as a single true-damage burst on recast, which needs bespoke accumulate-then-release logic rather than a simple target-stacks read/consume-per-cast model."
+ },
+ "unsettled": [
+  {
+   "question": "Does Soul Unbound's stored mark amount use the wiki's stated formula (25-35% of post-mitigation damage dealt) or the bin's separate flat+AD-ratio formula (DeathmarkBase[20/35/50/65/80] + 0.25xAD) found in YoneE#{df232269}?",
+   "options": [
+    "Percent-of-damage-dealt formula (wiki description2/leveling2)",
+    "Flat base + 0.25xAD formula (bin calculation df232269, possibly legacy/stale)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Damage Stored|{{ap|25 to 35}}% of damage dealt}}",
+    "YoneE#{df232269} = DeathmarkBase=[20/35/50/65/80] + 0.25xad"
+   ]
+  },
+  {
+   "question": "Does Spirit Cleave's (W) damage include a flat 100% AD ratio term in addition to the base+%maxHP damage, as the bin's calculation shows, or is W purely base+%maxHP as the wiki's leveling table states with no AD ratio mentioned?",
+   "options": [
+    "W deals base + %maxHP only (wiki leveling table, no AD term shown)",
+    "W deals base + 1x AD + %maxHP (bin YoneW#WDamage = BaseDamage + 1xad)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Total Mixed Damage|{{ap|10 to 50}} {{as|(+ {{ap|8 to 12}}% of target's '''maximum''' health)}}|...}}",
+    "YoneW#WDamage = BaseDamage=[10/20/30/40/50] + 1xad"
+   ]
+  },
+  {
+   "question": "When Gathering Storm's empowered Mortal Steel (dash + whirlwind, two separate damage applications) lands, does each of the two hits independently grant/refresh a Gathering Storm stack (potentially re-arming the empowerment almost immediately), or does the empowered cast grant at most one stack per cast regardless of how many hits land?",
+   "options": [
+    "Each hit (dash and whirlwind) grants its own stack, so an empowered cast landing on the dummy could immediately re-stack to 2",
+    "The empowered cast, like the regular cast, grants only a single stack total per activation"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If this hits at least one enemy, '''Yone''' generates a {{tip|stack}} of ''Gathering Storm'' for 6 seconds, stacking up to 2 times and refreshing on subsequent hits."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight by casting Fate Sealed (R) immediately if it is off cooldown at the simulated level, for its large upfront mixed damage burst.",
+   "Weave a basic attack whenever available between ability casts, letting Steel and Azakana sword states alternate naturally (every other auto includes the 50/50 physical/magic Azakana split).",
+   "Cast Mortal Steel (Q) on cooldown every ~4 seconds (adjusted for cast time reduction from bonus attack speed); when Gathering Storm reaches 2 stacks, the next Q cast is automatically empowered into the dash+whirlwind and should still be taken on cooldown rather than held.",
+   "Cast Spirit Cleave (W) on cooldown (~14s base, reduced by bonus attack speed) whenever it does not delay a Q cast, for its mixed max-health damage.",
+   "Cast Soul Unbound (E) once mid-fight: enter Spirit Form, continue attacking and casting Q/W on the dummy so their post-mitigation damage is marked, then recast E (manually, as soon as the 0.5s minimum lockout allows, or hold near the 5s cap) to detonate the stored true damage.",
+   "Fill all remaining time with basic attacks between ability cooldowns to maximize Azakana-sword magic damage uptime and overall DPS."
+  ],
+  "questions": [
+   "At what champion level and with what item build is this dummy fight run, and is Fate Sealed (R) unlocked and off cooldown at the start (it will likely only be usable once given its 80-120s cooldown)?",
+   "Should Soul Unbound's recast be taken as early as possible (0.5s minimum) to secure the true damage burst sooner, or held closer to the full 5s Spirit Form duration to mark more attacks/abilities before detonating, and which maximizes total damage in a 15s window?",
+   "Given Q's low cooldown and cast time overlapping with auto-attack windup, should Q be prioritized over queued basic attacks whenever both are available, or does weaving attacks between Q casts (rather than casting Q the instant it is off cooldown) produce more total damage?",
+   "Does entering Spirit Form (E) interrupt or delay the auto-attack alternation cadence, and should E's initial dash be timed to not waste a queued basic attack?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,961 @@
+{
+ "champion": "nidalee",
+ "abilities": {
+  "P": {
+   "name": "Prowl",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "duration of the Hunted mark applied to a hit target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "applies a ''Hunted'' mark to the target for 4 seconds",
+     "bin": [],
+     "binNote": "no bin data rows are given for slot P; the wiki's 4-second duration is not present in the sheet"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Hitting an enemy champion or monster with Javelin Toss or Bushwhack applies the Hunted mark, and the first cast of Takedown and Pounce against a Hunted target is empowered.",
+     "quote": "the first cast of both ''{{ai|Takedown|Nidalee}}'' and ''{{ai|Pounce|Nidalee}}'' against a ''Hunted'' target is enhanced",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Prowl's ghosting and movement speed bonuses, and Hunt's movement speed bonus, do not affect damage dealt or taken.",
+     "quote": "'''Nidalee''' gains {{tip|ghosting}} and {{sti|ms|{{as|10% '''bonus''' movement speed}}}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Javelin Toss / Takedown",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "6"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Minimum Magic Damage (Javelin Toss)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      90,
+      110,
+      130,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 150}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "JavelinToss#HumanMinimumDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Minimum Magic Damage (Takedown)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      30,
+      55,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.75
+      },
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|5 to 80 4}} {{as|(+ 75% AD)}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "AspectOfTheCougar#TotalTakedownDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Increased Damage Modifier (per 1% of target's missing health, at Cougar/R rank)",
+     "role": "other",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": [
+        1,
+        1.25,
+        1.5,
+        1.75
+       ]
+      }
+     ],
+     "quote": "{{ap|1 to 1.75 4}}%",
+     "bin": [
+      "AspectOfTheCougar.TakedownDamageAmp"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Javelin Toss damage is increased based on the distance traveled from Nidalee's cast-end location to the target, from 0% at short range up to 225% at 1300 range.",
+     "quote": "increased by {{pp|type=distance traveled|key=%|0 to 225 for 6|525 to 1300}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The distance amplification is measured from Nidalee's position at the end of the cast time, not where she started casting, and has no distinct thresholds.",
+     "quote": "The damage amplification is based on the distance from '''Nidalee's''' location at the ''end'' of the cast time to the struck target's center at the time of collision.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown resets Nidalee's basic attack timer.",
+     "quote": "Takedown {{tip|basic attack reset|resets}} '''Nidalee's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown's cooldown starts only after the empowered attack lands (post-effect), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown's attack can critically strike, dealing 100% AD bonus magic damage on crit, but Takedown's own damage modifier (missing-health scaling) does not apply to that bonus crit damage.",
+     "quote": "''Takedown'' can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Nidalee|crit_base}}|100|base = 100}}|critical damage}} {{as|AD}} {{as|'''bonus''' magic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown's damage modifier does not affect the bonus critical strike damage.",
+     "quote": "''Takedown's'' damage modifier does not affect the '''bonus''' damage dealt by the critical strike.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown's attack deals basic damage but is also tagged as spell damage, triggering spell-effect interactions.",
+     "quote": "''Takedown's'' attack deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting a Hunted target with Takedown increases its damage by 30%.",
+     "quote": "Hitting a ''Hunted'' target {{ccs|increases|magic}} ''Takedown's'' damage by 30%.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown's damage modifier does not apply against structures; only the minimum damage is dealt to them.",
+     "quote": "''Takedown's'' damage modifier does not apply against structures; the minimum damage is always applied.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JavelinToss.TooltipCougarMinimumDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "JavelinToss.SpearMaximumDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "JavelinToss.DamageMulti",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "JavelinToss.RangeThreshold",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Bushwhack / Pounce",
+   "cooldown": {
+    "values": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "quote": "{{ap|13 to 9}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "quote": "{{ap|30 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30,
+      40,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|10 to 50}} {{as|(+ 5% AP)}}",
+     "bin": [
+      "Bushwhack.BaseDamagePerTick",
+      "Bushwhack#DamagePerSecond"
+     ],
+     "binNote": "The AP ratio is not on BaseDamagePerTick itself but on the tooltip-only calculation Bushwhack#DamagePerSecond = BaseDamagePerTick + 0.05xap, which matches the wiki's per-tick figure."
+    },
+    {
+     "id": "w_5",
+     "meaning": "duration over which the trap's damage ticks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every second over 4 seconds",
+     "bin": [
+      "Bushwhack.DotDuration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "trap lifetime before it expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 120,
+     "terms": [],
+     "quote": "lasting for up to 120 seconds",
+     "bin": [
+      "Bushwhack.TrapLifetime"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "maximum number of traps active at once",
+     "role": "count",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      6,
+      6,
+      6,
+      6,
+      6,
+      8,
+      8,
+      8,
+      8,
+      8,
+      10,
+      10,
+      10
+     ],
+     "terms": [],
+     "quote": "{{pp|4 to 10 for 4|1 to 16}} traps may be active at once",
+     "bin": [
+      "Bushwhack#MaxTraps"
+     ],
+     "binNote": "Bushwhack#MaxTraps also adds an unresolved ModesBonusMaxTraps term the sheet flags as missing; base by-level values match the wiki."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Reduced Cooldown (Pounce's cooldown after a takedown or Hunt bonus)",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3,
+      2.5,
+      2,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{tt|{{ap|3 to 1.5 4}} seconds|Affected by ability haste}}",
+     "bin": [
+      "AspectOfTheCougar.PounceCooldown"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Magic Damage (Pounce impact damage)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      100,
+      145,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      },
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|55 to 190 4}} {{as|(+ 50% '''bonus''' AD)}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "AspectOfTheCougar#TotalPounceDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pounce's cooldown starts counting down as soon as it is cast, not on landing.",
+     "quote": "{{tt|6|Starts on cast}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Killing an enemy while in Cougar Form or using Pounce's Hunt bonus reduces Pounce's current cooldown to a minimum value, letting it be used again sooner.",
+     "quote": "Killing an enemy while in ''Cougar Form'' or using ''Pounce's Hunt'' bonus reduces ''Pounce's'' {{sti|'''current''' cooldown}} to a minimum value.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Takedown and Aspect of the Cougar can be cast during the Pounce dash, so the dash does not block the next cast.",
+     "quote": "''{{ai|Takedown|Nidalee}} and {{ai|Aspect of the Cougar|Nidalee}} can be cast during the dash.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Bushwhack trap becomes stealthed only after a 1.5 second arming period, and springs on contact with an enemy to begin its damage-over-time.",
+     "quote": "lays a trap at the target location that becomes {{tip|stealthed trap|stealthed}} after arming over {{fd|1.5}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Bushwhack's damage is persistent, indirect damage and applies spell effects (e.g. on-hit-like triggers that key off spell effects).",
+     "quote": "''Bushwhack'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Traps have only 6 maximum health and can be destroyed by basic attacks, so they are not durable, persistent damage sources in a fight.",
+     "quote": "Traps have {{as|{{sti|health|6 '''maximum''' health}}}} and can only be damaged by champion [[basic attacks]]",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Bushwhack.TotalFlatDamage",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Primal Surge / Swipe",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 70}}%",
+     "bin": [
+      "PrimalSurge.BonusAS"
+     ]
+    },
+    {
+     "id": "e_1b",
+     "meaning": "Attack Speed buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "for 7 seconds",
+     "bin": [
+      "PrimalSurge.ASDuration"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Minimum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "PrimalSurge#TotalHealing",
+      "PrimalSurge.BaseHeal"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Maximum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200,
+      250,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|50*2 to 150*2}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "PrimalSurge#MaxHealing"
+     ]
+    },
+    {
+     "id": "e_3b",
+     "meaning": "Heal scaling with target's missing health (1% per 0.95% missing health, cap at 100% missing health for max heal)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 1.0526
+      }
+     ],
+     "quote": "{{pp|label1=target's '''missing''' health|label=Heal increase|key=%|0 to 100 for 11|key1=%|0 to 95|formula=1% per 0.95% of target's '''missing''' health}}",
+     "bin": [
+      "PrimalSurge.MaxHealThreshold",
+      "PrimalSurge.MaxHealMult"
+     ],
+     "binNote": "The wiki's stated scaling (1% heal increase per 0.95% missing health, i.e. coefficient ~1.0526) cannot be derived from MaxHealThreshold=0.05 or MaxHealMult=1.0 as printed; these two data values do not by themselves encode the 1/0.95 slope shown in the tooltip formula (they likely feed a hidden curve/threshold not exposed in the sheet). Reporting the wiki's number as a disagreement rather than altering it to match the bin."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      130,
+      190,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.7
+      },
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|70 to 250 4}} {{as|(+ 70% '''bonus''' AD)}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "AspectOfTheCougar#TotalSwipeDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bonus attack speed persists through Cougar Form when cast on herself.",
+     "quote": "The {{as|'''bonus''' attack speed}} will persist through {{ai|Aspect of the Cougar 2|Nidalee|Cougar Form}} if '''Nidalee''' uses ''Primal Surge'' on herself.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Swipe deals damage to all enemies hit in an arc, chosen at cast start, and can be blocked by a spell shield.",
+     "quote": "slashes in an arc in the target direction, dealing {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Swipe's targets are picked at cast start, before the visual effect plays.",
+     "quote": "{{Effect at cast time start}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Aspect of the Cougar / Aspect of the Cougar 2",
+   "cooldown": {
+    "values": [
+     3,
+     3,
+     3,
+     3
+    ],
+    "quote": "cooldown     = 3"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_takedown_damage",
+     "meaning": "Takedown damage (Cougar Form ability, scales with Aspect of the Cougar rank)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      30,
+      55,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.75
+      },
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "'''Cougar Form's''' abilities scale based on ''Aspect of the Cougar's'' rank.",
+     "bin": [
+      "AspectOfTheCougar#TotalTakedownDamage"
+     ],
+     "binNote": "Wiki does not print Takedown's own numeric tooltip on this slot's template (it lives on the Cougar sub-ability tooltip); value taken directly from the bin calculation since no wiki quote carries the numbers."
+    },
+    {
+     "id": "r_takedown_damage_amp",
+     "meaning": "Takedown execute-style damage amplification vs low-health targets",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": [
+        1,
+        1.25,
+        1.5,
+        1.75
+       ]
+      }
+     ],
+     "quote": "'''Cougar Form's''' abilities scale based on ''Aspect of the Cougar's'' rank.",
+     "bin": [
+      "AspectOfTheCougar.TakedownDamageAmp"
+     ],
+     "binNote": "No wiki text on this slot's template states this multiplier; recorded directly from the bin data value since it changes damage dealt."
+    },
+    {
+     "id": "r_pounce_cooldown",
+     "meaning": "Pounce ability cooldown (Cougar Form), scales with Aspect of the Cougar rank",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3,
+      2.5,
+      2,
+      1.5
+     ],
+     "terms": [],
+     "quote": "'''Cougar Form's''' abilities scale based on ''Aspect of the Cougar's'' rank.",
+     "bin": [
+      "AspectOfTheCougar.PounceCooldown"
+     ],
+     "binNote": "Not stated in this slot's wikitext; taken directly from bin data value, relevant since it affects damage cadence in the damage fight."
+    },
+    {
+     "id": "r_pounce_damage",
+     "meaning": "Pounce damage (Cougar Form ability)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      55,
+      100,
+      145,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      },
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "'''Cougar Form's''' abilities scale based on ''Aspect of the Cougar's'' rank.",
+     "bin": [
+      "AspectOfTheCougar#TotalPounceDamage"
+     ],
+     "binNote": "Not printed on this slot's template; taken directly from the bin calculation."
+    },
+    {
+     "id": "r_swipe_damage",
+     "meaning": "Swipe damage (Cougar Form ability)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      130,
+      190,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.7
+      },
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "'''Cougar Form's''' abilities scale based on ''Aspect of the Cougar's'' rank.",
+     "bin": [
+      "AspectOfTheCougar#TotalSwipeDamage"
+     ],
+     "binNote": "Not printed on this slot's template; taken directly from the bin calculation."
+    },
+    {
+     "id": "r_human_range",
+     "meaning": "Human Form attack range",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 525,
+     "terms": [],
+     "quote": "gaining {{tip|ranged}} attacks with {{sti|range|525 range}}",
+     "bin": [],
+     "binNote": "Pure range value; not present as such in this bin slot."
+    },
+    {
+     "id": "r_cougar_range",
+     "meaning": "Cougar Form attack range",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 125,
+     "terms": [],
+     "quote": "gaining {{tip|melee}} attacks with {{sti|range|125 range}}",
+     "bin": [],
+     "binNote": "Pure range value; not present as such in this bin slot."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability is a toggle-like transformation between Human Form (ranged, human abilities) and Cougar Form (melee, cougar abilities), not a damaging or defensive effect itself.",
+     "quote": "'''Nidalee''' switches between her '''Human Form''' and '''Cougar Form'''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "While in Human Form, landing a Prowl/Hunted mark on a target resets Aspect of the Cougar's cooldown, allowing faster re-entry into Cougar Form to attack again.",
+     "quote": "applying a ''{{ai|Prowl|Nidalee|Hunted}}'' mark will reset ''Aspect of the Cougar's'' {{sti|cooldown}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cougar Form's sub-abilities (Takedown, Pounce, Swipe) scale their damage based on Aspect of the Cougar's own rank, not independent ranks.",
+     "quote": "'''Cougar Form's''' abilities scale based on ''Aspect of the Cougar's'' rank.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Switching forms does not count as an ability cast for on-cast trigger effects, so it does not proc things like Spellblade.",
+     "quote": "Transformations do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AspectOfTheCougar.PassivePercentMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "AspectOfTheCougar.TakedownADRatio",
+     "reason": null
+    },
+    {
+     "ref": "AspectOfTheCougar.TakedownAPRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R",
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Aspect of the Cougar swaps Nidalee between Human Form (Javelin Toss/Bushwhack/Primal Surge, ranged) and Cougar Form (Takedown/Pounce/Swipe, melee); Q/W/E's active abilities and their damage are entirely different depending on form."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Javelin Toss (Q, Human), Pounce impact damage (W, Cougar), and Swipe (E, Cougar) deal on-cast/on-arrival damage on cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown (Cougar Q) empowers Nidalee's next basic attack with bonus magic damage."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown's attack resets Nidalee's basic attack timer, allowing an extra auto immediately after."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown's damage is amplified continuously based on the target's missing health (up to +75%/+100%/+125%/+175% at rank, i.e. TakedownDamageAmp)."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "P"
+   ],
+   "note": "Hunted mark (applied by Javelin Toss/Bushwhack hits) increases Takedown's damage by 30% while it lasts."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Pounce's current cooldown is reduced to a minimum on a Cougar-Form kill or its Hunt bonus; in Human Form landing a Hunted mark resets Aspect of the Cougar's own cooldown, enabling rapid form-swap loops."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown's empowered attack can critically strike; the bonus crit damage (as AD) is converted to bonus magic damage and is not itself amplified by Takedown's missing-health modifier."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Primal Surge grants 30-70% bonus attack speed for 7s when cast on self, persisting through a form swap into Cougar Form."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bushwhack traps tick magic damage every second for 4s once sprung; usability against a stationary dummy target is uncertain (see unsettled)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Human Form Q/W/E cost mana (Cougar Form's Q/W/E cost 0); mana can meaningfully cap how often Javelin Toss/Bushwhack/Primal Surge are recast in a 15s fight."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Javelin Toss's damage scales up to +225% based on the travel distance from Nidalee's cast-end position to the target, requiring an assumed cast range against the stationary dummy."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The whole kit -- the Human/Cougar ability swap, Takedown's empower/reset/missing-health scaling, Hunted's damage amp, Pounce/R cooldown resets, Primal Surge's AS buff, Bushwhack's DoT, the crit conversion, and Javelin Toss's range scaling -- maps onto existing primitives (form-or-stance, empowered-attack, attack-reset, conditional-damage, target-debuff, cooldown-manipulation, timed-self-buff, dot, crit-interaction, positional-assumption, resource-budget) without needing logic the closed list can't express."
+ },
+ "unsettled": [
+  {
+   "question": "What travel distance should Javelin Toss be assumed to have when cast at a stationary dummy in the damage fight, since its damage scales from 0% at short range up to 225% at 1300+ range and the amp is measured from Nidalee's end-of-cast position?",
+   "options": [
+    "Always cast at max range (1300) against the dummy for the full +225% bonus",
+    "Cast at whatever range the fight places Nidalee relative to the dummy (could be point-blank, near 0% bonus)",
+    "Use the 525-range Range Threshold as a baseline assumption"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{pp|type=distance traveled|key=%|0 to 225 for 6|525 to 1300}}",
+    "The damage amplification is based on the distance from '''Nidalee's''' location at the ''end'' of the cast time to the struck target's center at the time of collision."
+   ]
+  },
+  {
+   "question": "Can a Bushwhack trap deal its DoT damage to a stationary dummy at all, given the trap must be sprung by contact with an enemy and the dummy never moves onto it?",
+   "options": [
+    "A trap placed directly at/under the dummy's location counts as immediate contact once armed, so it triggers normally",
+    "The dummy never triggers a trap since it does not walk into it, making Bushwhack's damage unusable in the damage fight",
+    "Trigger radius (150) around a stationary dummy standing on the cast location counts as contact"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The trap will spring upon contact with an enemy, dealing {{as|magic damage}} every second over 4 seconds.",
+    "collision radius= {{tip|cr|icononly = true}} {{tt|150|Detection radius}}"
+   ]
+  },
+  {
+   "question": "Takedown's attack deals basic damage but is also tagged as spell damage ('also being tagged as spell damage'); which classification governs on-hit/on-cast item and rune triggers in the simulator?",
+   "options": [
+    "Treated as a basic attack for on-hit effects (e.g. on-hit riders, Spellblade consumption) since it is a basic attack",
+    "Treated as a spell cast for on-cast effects since it is tagged as spell damage",
+    "Both apply simultaneously"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Takedown's'' attack deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "What numeric critical-strike damage multiplier does Takedown's bonus magic damage use ({{ccd|Nidalee|crit_base}} is not resolved to a number by either source)?",
+   "options": [
+    "The standard 200% crit multiplier (100% bonus) like a normal attack",
+    "A Nidalee-specific crit_base value different from the champion-generic default",
+    "Takedown's crit bonus should be treated as unknown/excluded until the crit_base constant is found"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Takedown'' can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Nidalee|crit_base}}|100|base = 100}}|critical damage}} {{as|AD}} {{as|'''bonus''' magic damage}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Max Q (Javelin Toss/Takedown) first, then R, then E, then W, since Bushwhack has little to no use against a stationary target and Primal Surge's damage-relevant part is only its attack-speed buff.",
+   "Open by casting Primal Surge (E) on self for the attack-speed buff before attacking, to widen the DPS window early.",
+   "In Human Form, cast Javelin Toss at maximum travel distance against the dummy for the largest distance-based damage bonus and to apply the Hunted mark.",
+   "Immediately cast Aspect of the Cougar (R) to swap into Cougar Form; the Hunted mark just applied resets R's cooldown so this costs no delay.",
+   "In Cougar Form, use the empowered first Takedown against the Hunted dummy for its missing-health-scaled nuke, then Pounce, then Swipe on their cooldowns, auto-attacking between casts and letting Takedown's reset chain extra autos.",
+   "Swap back to Human Form (R) to recast Javelin Toss once its 6s cooldown is up, reapplying Hunted and again resetting R's cooldown, then repeat the Human-poke / Cougar-combo cycle for the remaining fight duration.",
+   "Skip Bushwhack entirely unless a trap cast at the dummy's exact location is confirmed to trigger its DoT."
+  ],
+  "questions": [
+   "Does swapping forms interrupt an in-progress basic attack windup, and does it reset the attack timer the same way Takedown does, affecting how tightly the swap loop can weave in autos?",
+   "Is repeatedly cycling Human Javelin Toss into Cougar combo (to keep resetting R's cooldown and re-empowering Takedown/Pounce via fresh Hunted marks) actually higher DPS than simply staying in Cougar Form and auto-attacking/Swiping/Pouncing continuously, given Javelin Toss's cast time and mana cost?",
+   "Should Primal Surge be recast every 12s cooldown for AS uptime, or is casting it once at the start (given its 7s duration) sufficient, considering its mana cost competes with Javelin Toss/Bushwhack casts?",
+   "Does the Hunted-empowered first cast of Takedown and Pounce apply independently per re-entry into Cougar Form, or only once per fight/per unique Hunted application, which changes how much value the swap loop provides on later cycles?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

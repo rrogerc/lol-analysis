@@ -1,0 +1,183 @@
+{
+ "name": "Prophet of an Elder God",
+ "cooldown": {
+  "values": [
+   18,
+   17.35,
+   16.71,
+   16.06,
+   15.41,
+   14.76,
+   14.12,
+   13.47,
+   12.82,
+   12.18,
+   11.53,
+   10.88,
+   10.24,
+   9.59,
+   8.94,
+   8.29,
+   7.65,
+   7
+  ],
+  "quote": "{{pplevel|18 to 7}}"
+ },
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_slam_damage",
+   "meaning": "Tentacle slam physical damage to enemies struck",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "level",
+   "base": [
+    9,
+    19.06,
+    29.12,
+    39.18,
+    49.24,
+    59.29,
+    69.35,
+    79.41,
+    89.47,
+    99.53,
+    109.59,
+    119.65,
+    129.71,
+    139.76,
+    149.82,
+    159.88,
+    169.94,
+    180
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1
+    },
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{pplevel|9 to 180}} {{as|(+ 110% AD)}} {{as|(+ 40% AP)}} physical damage",
+   "bin": [],
+   "binNote": "IllaoiQ#TentacleDamageTotal = (byLevel(9..180) + TotalADRatio(1.1)xad + APRatio(0.4)xap) * 1 + TentacleDamageAmp[rank]; the by-level base literal 9..180 is embedded inline in the calculation string and is not exposed as its own named DataValue, so it cannot be cited as a bin row on its own - only the named DataValues TotalADRatio, APRatio and TentacleDamageAmp are addressable rows, and the wiki reports TentacleDamageAmp separately as a rank-based percent increase in the description text rather than folding it into the base 9-to-180 number, matching the wiki's presentation used here."
+  },
+  {
+   "id": "p_slam_amp",
+   "meaning": "Percent increase to Tentacle slam damage from Tentacle Smash rank",
+   "role": "other",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3
+   ],
+   "terms": [],
+   "quote": "increased by {{pp|0;10 to 30|0 to 5 for 6|key=%|formula=100% + 10% at rank 1, then 5% per rank|type = [[File:Tentacle Smash.png|20px|link=]] Tentacle Smash's rank}}",
+   "bin": [
+    "IllaoiQ.TentacleDamageAmp"
+   ]
+  },
+  {
+   "id": "p_slam_reduction",
+   "meaning": "Per-slam damage reduction on a target hit repeatedly within a short window, capped",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    0.5,
+    0.75,
+    0.66
+   ],
+   "terms": [],
+   "quote": "Each enemy individually reduces the slam damage by 50% for every slam they were hit by in the last {{fd|0.66}} seconds, capped at 75% less damage.",
+   "bin": [],
+   "binNote": "No corresponding IllaoiQ/IllaoiPassive data value carries this 50%/75%/0.66s stacking-reduction mechanic; it appears to be tooltip/hardcoded logic not exposed as a bin data value."
+  },
+  {
+   "id": "p_heal",
+   "meaning": "Illaoi is healed for a percent of her missing health when a Tentacle hits at least one enemy champion",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{as|5% of her '''missing''' health}}",
+   "bin": [
+    "IllaoiPassive.MissingHPPercentHeal"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "A Tentacle's slam is an area-of-effect instance dealing damage to all enemies struck simultaneously, not a single-target hit.",
+   "quote": "dealing {{as|{{pplevel|9 to 180}} {{as|(+ 110% AD)}} {{as|(+ 40% AP)}} physical damage|physical damage}} to all enemies struck",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Repeated slams on the same target within 0.66 seconds stack a damage reduction on that hit, up to a 75% cap, lowering the damage the tentacle deals to a heavily-hit target.",
+   "quote": "Each enemy individually reduces the slam damage by 50% for every slam they were hit by in the last {{fd|0.66}} seconds, capped at 75% less damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tentacles attack only when commanded by Illaoi's abilities; they do not attack on their own.",
+   "quote": "{{as|Tentacles|buzzword2}} are commanded to attack by '''Illaoi's''' {{tip|abilities}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The missing-health heal from a Tentacle hit only triggers if it hits at least one enemy champion (not on non-champion targets), and is a self-heal that does not change damage dealt.",
+   "quote": "'''Illaoi''' for {{as|5% of her '''missing''' health}} if it hits at least one enemy {{tip|champion}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The Tentacle heal is applied after omnivamp is calculated.",
+   "quote": "The healing applies after {{tip|omnivamp}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "When multiple Tentacles hit simultaneously, the resulting heal is computed iteratively off updated missing health rather than as one flat sum, per hit count n.",
+   "quote": "the received healing is calculated iteratively based on the new amount of '''missing''' health, as per this formula: {{as|('''maximum''' health{{minus}}'''current''' health)}}{{times}}(1{{minus}}0.95<sup>n</sup>), with 'n' the number of {{as|Tentacle|buzzword2}} hits.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Newly spawned Tentacles are untargetable for 2 seconds before they can attack.",
+   "quote": "Tentacles fully spawn after a 2 second delay and are {{tip|untargetable}} in the meantime.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "IllaoiPassive.TentacleDisabledLifetime",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "IllaoiPassive.SpawnRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "IllaoiPassive.SpawnDensity",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "IllaoiPassive.PassiveTentacleLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "IllaoiPassive.PassiveTentacleWidth",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

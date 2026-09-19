@@ -1,0 +1,241 @@
+{
+ "name": "Snowball Barrage",
+ "cooldown": {
+  "values": [
+   14,
+   13,
+   12,
+   11,
+   10
+  ],
+  "quote": "{{ap|14 to 10}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "{{dv|{{tt|None|Initial cast}}|{{tt|None|Recasts}}}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage Per Hit",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    15,
+    22.5,
+    30,
+    37.5,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.12
+    }
+   ],
+   "quote": "{{ap|15 to 45}} {{as|(+ 12% AP)}}",
+   "bin": [
+    "NunuE.BaseDamage",
+    "NunuE#TotalSnowballDamage"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    -0.3,
+    -0.35,
+    -0.4,
+    -0.45,
+    -0.5
+   ],
+   "terms": [],
+   "quote": "{{ap|30 to 50}}%",
+   "bin": [
+    "NunuE.SlowAmount"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Magic Damage (Snowbound root damage)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    30,
+    40,
+    50,
+    60
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.8
+    }
+   ],
+   "quote": "{{ap|20 to 60}} {{as|(+ 80% AP)}}",
+   "bin": [
+    "NunuE.RootDamage",
+    "NunuE#TotalRootDamage"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Slow duration on enemies hit 3 times",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "slowed}} for 1 second",
+   "bin": [
+    "NunuE.SlowDuration"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "Root duration on Snowbound trigger, by champion level",
+   "role": "duration",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.5,
+    0.5588,
+    0.6176,
+    0.6765,
+    0.7353,
+    0.7941,
+    0.8529,
+    0.9118,
+    0.9706,
+    1.0294,
+    1.0882,
+    1.1471,
+    1.2059,
+    1.2647,
+    1.3235,
+    1.3824,
+    1.4412,
+    1.5
+   ],
+   "terms": [],
+   "quote": "{{tip|root|rooted}} for {{pp|0.5 + (1.5-0.5)/17*(x-1) for 20}} seconds",
+   "bin": [
+    "NunuE#RootDuration"
+   ]
+  },
+  {
+   "id": "e_9",
+   "meaning": "Delay after first cast before Snowbound enemies take root damage",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "After 3 seconds from the first cast, ''Snowbound'' enemies near '''Willump''' take",
+   "bin": [
+    "NunuE.TotalSpellDuration"
+   ]
+  },
+  {
+   "id": "e_10",
+   "meaning": "Recast window during which Snowball Barrage may be recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "can be recast twice within 3 seconds at no additional cost",
+   "bin": [
+    "NunuE.TotalSpellDuration"
+   ]
+  },
+  {
+   "id": "e_11",
+   "meaning": "Cooldown between recasts",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "1-second cooldown|Affected by ability haste}} between casts",
+   "bin": [
+    "NunuESnowballBurstFire.cooldown"
+   ],
+   "binNote": "The sheet's NunuESnowballBurstFire.cooldown is 0.9, while the wiki states a 1-second cooldown between recasts; this is a genuine disagreement between wiki and bin, not resolved here."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Snowball Barrage can be recast twice within a short time at no additional cost, adding up to two extra volleys of damage.",
+   "quote": "''Snowball Barrage'' can be recast twice within 3 seconds at no additional cost",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each cast volley (initial and each recast) is a separate ability activation, triggering on-cast effects independently.",
+   "quote": "Each cast volley of snowballs counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each volley is also a separate cast instance, so the ability can generate up to 6 stacks of Conqueror across recasts.",
+   "quote": "Each volley of snowballs is also a separate {{tip|cast instance}}, allowing ''Snowball Barrage'' to generate 6 stacks of {{ri|Conqueror}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The delayed root damage from Snowbound consumption does not trigger on-cast effects and does not count as a separate cast instance for Conqueror stacking.",
+   "quote": "''Snowbound'' consumption does not trigger on-cast effects, neither does it count as a separate {{tip|cast instance}} (e.g. for the purposes of {{ri|Conqueror}})",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemy champions and large monsters hit once by a volley are marked Snowbound, and subsequent hits refresh the mark rather than stacking it.",
+   "quote": "Enemy {{tip|champions}} and large {{tip|monsters}} hit once are marked ''Snowbound'' for 4 seconds, refreshing on subsequent hits",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A target may only be slowed once by the ability's 3-hits slow, regardless of how many volleys land.",
+   "quote": "An enemy may be {{tip|slow|slowed}} only once for being hit by snowballs",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The three snowballs of a single volley are thrown independently over 0.4 seconds, so a single cast can land as up to 3 separate damage instances.",
+   "quote": "The three snowballs are thrown independently from one another over the {{fd|0.4}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ability has no cast time on either the initial cast or recasts.",
+   "quote": "{{dv|{{tt|None|Initial cast}}|{{tt|None|Recasts}}}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NunuE.DelayBetweenSnowballs",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "NunuE.SplashConeLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuE.SplashConeAngle",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

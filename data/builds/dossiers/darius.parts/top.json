@@ -1,0 +1,178 @@
+{
+ "champion": "darius",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Hemorrhage stacks (0-5) applied/refreshed by damaging attacks and abilities, read by R to scale its true damage and to trigger Noxian Might at 5 stacks."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every damaging basic attack or ability application adds/refreshes a Hemorrhage stack on the target (the trigger mechanism for the DoT stacking, not a flat bonus damage number itself)."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Hemorrhage bleed: per-stack physical damage ticking over a 5s duration (bin tick interval 1.26s vs wiki's stated 1.25s)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Noxian Might: bonus AD for 5s, granted when Darius applies 5 Hemorrhage stacks to the target or kills it with R."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's blade/handle AoE damage resolves after its wind-up; R's true damage resolves on cast/leap."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "0.75s wind-up before the swing, during which Darius cannot basic-attack or cast E/R; can be cancelled by dash/stasis."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Crippling Strike arms the next basic attack within 4s with bonus AD-ratio physical damage (crit-affected)."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "The empowered attack from Crippling Strike resets Darius' basic attack timer."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W: killing with the empowered attack halves its cooldown and refunds cost. R: killing shortly after the hit resets the recast window (free recast within 20s, permanent at rank 3)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a free recast within 20s of a successful execute, refreshing on further kills."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's true damage is increased 20% per Hemorrhage stack on the target, capped at 100% bonus at 5 stacks."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs on Q/W/R (E has no damage payoff so is unlikely to be cast) can gate how often abilities are recast inside 15s at low mana pools."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Darius' kit maps onto the primitive list: a stacking target debuff feeding a DoT and a conditional-damage execute, an empowered on-hit attack with a reset, and cooldown refund/recast mechanics. E's passive armor penetration is a flat stat modifier to the standard physical-damage formula (not a kit-specific mechanic) and needs no bespoke logic; E's active deals no damage in these sources and is treated as a non-damage utility skill."
+ },
+ "unsettled": [
+  {
+   "question": "Is the Hemorrhage bleed's tick interval 1.25s (wiki description) or 1.26s (bin's SecondsPerTick), and does this change how many ticks land within the 5s duration / interact with refreshes?",
+   "options": [
+    "Use 1.25s (wiki, 4 ticks per 5s application)",
+    "Use 1.26s (bin, live value)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "every {{fd|1.25}} seconds over the duration",
+    "DariusHemoMarker.SecondsPerTick = 1.26"
+   ]
+  },
+  {
+   "question": "Do the Hemorrhage bleed's own damage ticks count as 'abilities dealing damage' that add/refresh another Hemorrhage stack, or only the initiating attack/ability cast applies/refreshes the stack?",
+   "options": [
+    "Only the initiating hit (attack/ability cast) applies or refreshes a stack; ticks are pure DoT payout",
+    "Each DoT tick also refreshes/re-applies a stack, extending duration indefinitely while ticking"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Darius'''' attacks and abilities have to deal damage to apply ''Hemorrhage''.",
+    "refreshing on subsequent applications"
+   ]
+  },
+  {
+   "question": "When R's true-damage bonus scales 20% per Hemorrhage stack, does that 20%/stack multiply the entire Damage term (RBaseDamage + 0.75x bonus AD) as the wiki's per-stack row implies, or is the per-stack bonus computed only against RBaseDamage with bonus AD scaling separately?",
+   "options": [
+    "20%/stack multiplies the whole Damage value (base + 0.75x bonus AD), matching wiki's per-stack figures (0.2 base, 0.15 AD)",
+    "20%/stack applies to RBaseDamage only, with bonus AD scaling handled by a separate unlisted term"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ap|125*0.2 to 375*0.2}} {{as|(+ 15% '''bonus''' AD)}}",
+    "DariusExecute.RDamagePercentPerHemoStack = 0.2"
+   ]
+  },
+  {
+   "question": "Does Crippling Strike's dual tagging (basic damage + spell damage) mean its single hit is treated as two separate damage/on-hit trigger instances for item and passive procs, or one damage instance that merely satisfies both trigger conditions?",
+   "options": [
+    "One damage instance that triggers both on-hit and spell-effect conditions",
+    "Two logically separate procs (on-hit set + spell-effect set) off the same single damage number"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Crippling Strike'' deals {{tip|basic damage}} but will also trigger {{tip|spell effects}} by also being tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "Hemorrhage's spelleffects flag is annotated 'proc' with an unresolved wiki comment ('used to say default, undocumented change'). Does the bleed currently proc on-hit/spell-effect-dependent item passives at all, and if so on application or per tick?",
+   "options": [
+    "Hemorrhage does not proc on-hit/spell-effect item passives (treated as a non-proccing DoT)",
+    "Hemorrhage procs spell effects once on application",
+    "Hemorrhage procs spell effects on every tick"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "spelleffects = proc <!--used to say default, undocumented change?-->"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Decimate): no cast-time delay but a 0.75s ghosted wind-up before the AoE blade damage lands and applies a Hemorrhage stack.",
+   "Weave basic attacks in every available window; use W (Crippling Strike) on cooldown to empower the next attack with bonus AD-ratio damage and reset the attack timer, chaining another auto immediately after.",
+   "Recast Q every time its (short, 5-9s) cooldown is up as a filler AoE hit that also refreshes a Hemorrhage stack.",
+   "Skip E (Apprehend) entirely: its active deals no damage against a stationary target already in range, and its cast/lockout time would only delay damage-dealing casts.",
+   "Once the target reaches 5 Hemorrhage stacks (via autos/Q/W), Noxian Might triggers, granting bonus AD for 5s; use this window to land as many autos/W procs as possible before casting R.",
+   "Cast R (Noxian Guillotine) once stacks are near/at the 5-stack cap so its true damage gets the full 100% stack bonus; if it would finish the target, its free recast is irrelevant in a single sustained-health dummy fight but note the recast is available for 20s if a kill is registered mid-simulation.",
+   "Continue autos/W/Q on cooldown for the remainder of the 15s, re-casting R again as soon as it comes off cooldown if the fight is still ongoing."
+  ],
+  "questions": [
+   "At what champion level and with what attack speed/AD stats is this fight run, since that determines how many autos land between ability casts and how quickly 5 Hemorrhage stacks accumulate?",
+   "Should R be cast as early as possible (lower stack bonus, but starts its long cooldown sooner for a possible second cast in 15s) or held until 5 stacks for the full 100% bonus?",
+   "Does Q's 0.75s wind-up block basic attacks in a way that should be scheduled around ongoing auto-attack timers, or can it be weighted purely by cooldown availability?",
+   "Is E ever worth casting solely to guarantee closing distance/keeping the target in range, even though it deals no damage, or is the dummy assumed always in range so E is a pure loss?",
+   "Should Crippling Strike (W) be reserved to fire immediately as R comes off cooldown (to front-load Noxian Might's buff before the big true-damage hit), or fired purely on cooldown regardless of R's timing?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

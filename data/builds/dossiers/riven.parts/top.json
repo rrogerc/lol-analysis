@@ -1,0 +1,135 @@
+{
+ "champion": "riven",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Ability casts grant a stack of Charge (cap 3, 6s duration, refreshed by casts and by consumption)"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks consume a Charge stack (when available) to deal bonus physical on-hit damage, crit-modified, applies lifesteal at 100%"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Up to 3 sequential activations of Broken Wings, each a separate damage instance, within a 4s window and 0.3125s static inter-cast gap"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Broken Wings cast resets Riven's basic attack timer and orders an attack on the target"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ki Burst deals a single instance of AoE physical damage on cast"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Valor deals no damage; only shield + dash, relevant to survival fight (shield) not the damage fight"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Blade of the Exile grants 15s of bonus AD (locked in at cast) and attack/ability range"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Wind Slash is a separately-timed follow-up cast available 0.5s into the Blade of the Exile buff, usable once per activation"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Wind Slash's damage interpolates between MinDamage and MaxDamage based on the target's missing health, capped at 75% missing health"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The Charge stack-and-consume mechanic (stacking-self-buff + onhit-rider), the multi-part Q, and Wind Slash's missing-health interpolation (conditional-damage) are all expressible with existing primitives; no additional bespoke logic is required."
+ },
+ "unsettled": [
+  {
+   "question": "Does each of Broken Wings' three sub-casts independently generate/refresh a Runic Blade Charge stack (since each is its own 'ability activation'), or does the whole three-cast sequence only count as generating stacks from its initial activation?",
+   "options": [
+    "Each of the 3 sub-casts is a separate Charge-generating event, allowing Q alone to fill the 3-stack cap and continuously refresh duration",
+    "Only the ability's overall activation grants/refreshes a stack, regardless of how many of the 3 sub-casts are used"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Riven's''' {{tip|ability}} casts generate a {{tip|stack}} of ''Charge'' for 6 seconds, refreshing on subsequent casts and stacking up to 3 times.",
+    "Each cast counts as a single ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive."
+   ]
+  },
+  {
+   "question": "What is the exact formula the bin uses to interpolate Wind Slash's damage between MinDamage and MaxDamage based on target missing health, since no bin DataValue for the ratio/interpolation exists (only tooltip text)?",
+   "options": [
+    "Linear scale: damage = Min + (Max-Min) * min(missingHealth%/0.75, 1)",
+    "Some other non-linear or per-rank-varying interpolation not captured by the wiki's flat 2.667%-per-1% description"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{as|{{pp|type= target's '''missing''' health|key=%|0 to 200 for 9|key1=%|0 to 75|formula=2.667% per 1% missing health. ''This is capped at 200% bonus damage at 75% missing health.''}}|health}}"
+   ]
+  },
+  {
+   "question": "Does Riven begin the damage fight with 0 Runic Blade Charge stacks (since none of her abilities have been cast yet), or should the simulation assume some pre-fight stacking from an assumed opener before the timer starts?",
+   "options": [
+    "0 stacks at t=0; first empowered attack only available after the first ability cast lands and its 6s window is active",
+    "Assume Riven enters combat with a pre-built stack (e.g. from casting an ability just before engage) so an empowered attack is available immediately"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "Does the forced basic attack that each Broken Wings cast triggers ('ordering her to basic attack the target') land as an immediate guaranteed hit, or is it subject to normal attack windup/queue timing that could delay or skip it within the 0.3125s static gap between Q casts?",
+   "options": [
+    "The forced attack fires and lands within each 0.3125s gap, effectively guaranteeing 3 extra attacks during the Q combo",
+    "The forced attack is just a standard attack command that follows normal windup and may not complete before the next Q cast, reducing attack count during the combo"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{tip|Basic attack reset|resetting}} her basic attack timer, and ordering her to basic attack the target of ''Broken Wings'' if there are any."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (Blade of the Exile) to start its 0.25s cast and 0.5s bonus-application delay as early as possible, since its 20% bonus AD, range, and Wind Slash access are locked in for the rest of the fight and the bonus AD amount is fixed at the moment of cast (best cast when bonus AD is already maximized by items).",
+   "Immediately chain all three casts of Q (Broken Wings), spaced by the 0.3125s static inter-cast cooldown, each dealing its physical damage, generating/refreshing a Runic Blade Charge stack, resetting the basic attack timer, and forcing an attack on the dummy.",
+   "Cast W (Ki Burst) as soon as it is off cooldown for its upfront AoE physical damage burst, and to keep Charge stacks topped up.",
+   "As soon as the R empowerment's 0.5s delay has passed, cast Wind Slash for its large single hit, timed as late as feasible in the fight to maximize the dummy's missing-health bonus (subject to the unsettled question above about whether waiting actually increases net damage).",
+   "Continuously auto-attack between and after ability casts; each basic attack consumes an available Runic Blade Charge stack for bonus on-hit physical damage (crit- and lifesteal-eligible), and each consumption refreshes the Charge duration.",
+   "Recast the full 3-part Q combo again once its 13s cooldown is available near the end of the 15s window for another burst of damage plus attack resets.",
+   "Do not cast E (Valor) in the damage fight: it deals no damage and only provides a shield/dash, which the damage fight does not use."
+  ],
+  "questions": [
+   "Should Wind Slash be cast early (guaranteed base+AD value) or delayed to exploit the missing-health scaling, given the interpolation formula is not settled and the dummy's health trajectory over the 15s fight depends on prior damage dealt?",
+   "Is it correct to assume Riven can cast R at the very start of the fight without losing damage uptime, given its 0.25s cast time plus 0.5s delay before bonuses (including Wind Slash access) apply?",
+   "Does the simulator model the forced basic attack from each Q sub-cast as landing reliably, and does it count as a separate attack for Runic Blade charge consumption on top of manually-issued auto-attacks?",
+   "Should the 3-part Q combo be front-loaded entirely before W/R, or interleaved with basic attacks between each of the three sub-casts to maximize Charge-consumption uptime?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

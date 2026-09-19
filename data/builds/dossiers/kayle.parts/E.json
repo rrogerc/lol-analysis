@@ -1,0 +1,98 @@
+{
+ "name": "Starfire Spellblade",
+ "cooldown": {
+  "values": [8, 7.5, 7, 6.5, 6],
+  "quote": "{{ap|8 to 6}}"
+ },
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Passive bonus magic damage dealt on-hit by basic attacks",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [15, 20, 25, 30, 35],
+   "terms": [
+    {"stat": "bonusAd", "coef": 0.1},
+    {"stat": "ap", "coef": 0.2}
+   ],
+   "quote": "{{ap|15 to 35}} {{as|(+ 10% '''bonus''' AD)}} {{as|(+ 20% AP)}}",
+   "bin": ["KayleE.PassiveDamage", "KayleE#EPassiveTotalDamage"]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Active's bonus magic damage on-hit, as a percent of target's missing health",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {"stat": "targetMissingHp", "coef": [0.08, 0.085, 0.09, 0.095, 0.10], "coefScaling": [{"stat": "ap", "per": 100, "coef": 0.015}]}
+   ],
+   "quote": "{{as|{{ap|8 to 10}}% {{as|(+ {{fd|1.5}}% per 100 AP)}} of target's '''missing''' health}}",
+   "bin": ["KayleE.ActiveExecutePercent", "KayleE#ActiveTotalExecuteDamage"]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Duration of the active's empowerment window on Kayle's next basic attack",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "empowering her next [[basic attack]] within 6 seconds",
+   "bin": ["KayleE.BuffDuration"],
+   "binNote": "The bin's KayleE.BuffDuration is 5, but the wiki text says the empowered attack window is 'within 6 seconds'. Stating the wiki's number (6) here; the bin row disagrees (5)."
+  },
+  {
+   "id": "e_4",
+   "meaning": "Queue time for activating Starfire Spellblade's active",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "{{fd|0.1}}",
+   "bin": [],
+   "binNote": "The sheet's KayleE data values have no queue-time row; this number only appears in the wiki infobox ('queue time'). Its exact effect on cast/attack timing is not stated by the wiki text."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Starfire Spellblade resets Kayle's basic attack timer.",
+   "quote": "Starfire Spellblade {{tip|basic attack reset|resets}} '''Kayle's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown starts only after its effect resolves, not when it is activated.",
+   "quote": "cdstart = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The active grants the empowered attack an uncancellable windup.",
+   "quote": "empowering her next [[basic attack]] within 6 seconds to have an {{tip|uncancellable windup}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While Aflame (level 11+, Exalted), the active's empowered attack explodes on the target, dealing its damage to surrounding enemies, applying on-hit effects again, and rolling critical strike.",
+   "quote": "The attack explodes upon the target, dealing its damage to surrounding enemies and applying {{tip|on-hit}} effects. This is affected by {{tip|critical strike}} modifiers.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Even though it shares one cast instance with the triggering attack, the active's on-hit effect is a separate proc instance from the basic attack's own on-hit effect.",
+   "quote": "Despite being one cast instance, ''Starfire Spellblade'' triggers {{iis|Muramana}} {{nie|Shock}} twice on each target, dealing normal bonus damage after the basic attack and increased bonus damage after the spell",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Starfire Spellblade deals no bonus damage against structures (not applicable to a dummy that counts as an enemy champion).",
+   "quote": "Starfire Spellblade does not deal bonus damage against [[structure|structures]].",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {"ref": "KayleE.MaxExecuteVsMonsters", "reason": "not-in-a-dummy-fight"},
+  {"ref": "KayleE.ExplosionRadius", "reason": "range-or-geometry"}
+ ]
+}

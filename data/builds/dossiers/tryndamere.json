@@ -1,0 +1,741 @@
+{
+ "champion": "tryndamere",
+ "abilities": {
+  "P": {
+   "name": "Battle Fury",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "Fury generated per basic attack (on-hit)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "{{#vardefine:regular|5}}",
+     "bin": [],
+     "binNote": "Fury gain values not present in the sheet excerpt for this slot; only CherryFuryModifier and crit-conversion rows are listed."
+    },
+    {
+     "id": "p_2",
+     "meaning": "Fury generated per critical strike (or enemy kill)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "{{#vardefine:increased|10}}",
+     "bin": [],
+     "binNote": "Fury gain values not present in the sheet excerpt for this slot; only CherryFuryModifier and crit-conversion rows are listed."
+    },
+    {
+     "id": "p_3",
+     "meaning": "Fury decay delay: seconds without dealing or taking damage before Fury begins to decay",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "After 8 seconds without dealing or taking damage, '''Tryndamere''' loses {{as|5 Fury}} per second.",
+     "bin": [],
+     "binNote": "Not present in the sheet excerpt for this slot."
+    },
+    {
+     "id": "p_4",
+     "meaning": "Fury decay rate once decay begins (Fury lost per second)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "'''Tryndamere''' loses {{as|5 Fury}} per second",
+     "bin": [],
+     "binNote": "Not present in the sheet excerpt for this slot."
+    },
+    {
+     "id": "p_5",
+     "meaning": "Critical strike chance gained based on current Fury (0 to 100 Fury grants 0% to 50% crit chance)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.005
+      }
+     ],
+     "quote": "{{pp|0 to {{#var:max}}|key=%|0 to 100 by 5|type=Fury|color=Fury|label=Crit chance}} critical strike chance",
+     "bin": [
+      "TryndamerePassive#PassiveCritConversionTooltip"
+     ],
+     "binNote": "Sheet gives PassiveCritConversionTooltip = 0.5, matching the 50% maximum crit chance at 100 Fury implied by the wiki's 0 to 50 percentage scale; the sheet does not expose the Fury cap or per-point coefficient directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Fury generation stacks additively: if the given action triggers multiple ways of generating Fury, all of them apply.",
+     "quote": "Fury generation stacks additively: if the given action triggers multiple ways of generating Fury, all of them apply.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Fury is only granted if the basic attack hits, and is not granted if Tryndamere cancels his attack windup.",
+     "quote": "Fury is only granted if the {{tip|basic attack}} hits and will not be granted if '''Tryndamere''' cancels his {{tip|attack windup}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tryndamere will not generate Fury if the attack is dodged or misses due to blind.",
+     "quote": "'''Tryndamere''' will not generate {{as|Fury}} if the attack is {{tip|dodged}} or misses due to {{tip|blind}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TryndamerePassive.CherryFuryModifier",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TryndamerePassive#{dc63b617}",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Bloodlust",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "quote": "{{as|100%|Fury}}",
+    "resource": "{{as|'''current''' fury}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Maximum Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 80}}",
+     "bin": [
+      "TryndamereQ.MaximumBonusAD"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Attack Damage per 1% missing health",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.22,
+      0.39,
+      0.56,
+      0.72,
+      0.89
+     ],
+     "terms": [],
+     "quote": "{{ap|{{#expr:{{#var:h1}} round 2}} to {{#expr:{{#var:h5}} round 2}}}}",
+     "bin": [],
+     "binNote": "Wiki derives this as MaximumBonusAD / 90 (low threshold); bin has no direct data value for it, only the max AD figures used to compute it."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Minimum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      40,
+      50,
+      60,
+      70
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|30 to 70}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "TryndamereQ.BaseHealing",
+      "TryndamereQ#BaseHeal"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Heal Per 1 Fury",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.5,
+      0.95,
+      1.4,
+      1.85,
+      2.3
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.012
+      }
+     ],
+     "quote": "{{ap|0.5 to 2.3}} {{as|(+ {{fd|1.2}}% AP)}}",
+     "bin": [
+      "TryndamereQ.BonusHealPerFury",
+      "TryndamereQ#HealPerFury"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Maximum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      80,
+      135,
+      190,
+      245,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|30+0.5*100 to 70+2.3*100}} {{as|(+ 150% AP)}}",
+     "bin": [
+      "TryndamereQ#MaximumHeal"
+     ],
+     "binNote": "Restates BaseHeal + HealPerFury*100 fury; tooltip-only calc, not an independent value"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Bloodlust can still be activated even if Tryndamere does not have any Fury.",
+     "quote": "''Bloodlust'' can still be activated even if '''Tryndamere''' does not have any '''Fury'''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Casting Bloodlust during an attack windup uses the crit chance from before the cast, but Fury is granted once the windup completes, letting Tryndamere start building Fury immediately.",
+     "quote": "This means that if {{ai|Bloodlust|Tryndamere}} is cast during Tryndamere's {{tip|attack windup}}, the attack will use the {{tip|critical strike}} chance given by the {{as|Fury}} '''before''' the {{ai|Bloodlust|Tryndamere}} cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bloodlust's passive grants bonus attack damage based on missing health, up to a maximum at a set missing-health percentage.",
+     "quote": "'''Tryndamere''' gains {{sti|{{as|'''bonus''' attack damage}}}} based on his {{as|'''missing''' health}}, up to a maximum amount at {{as|{{#var:low}}% '''missing''' health}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active consumes all current Fury to heal, with the heal amount increased per point of Fury consumed.",
+     "quote": "'''Tryndamere''' consumes all of his {{tip|fury|{{as|Fury}}}} to {{tip|heal}} himself, increased for every point of {{as|Fury}} consumed.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TryndamereQ.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "TryndamereQ.APRatioPerFury",
+     "reason": null
+    },
+    {
+     "ref": "TryndamereQ.RemainingHealthThreshold",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Mocking Shout",
+   "cooldown": {
+    "values": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "quote": "14"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.3,
+    "quote": "{{fd|0.3}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Attack Damage Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 80}}",
+     "bin": [
+      "TryndamereW.ADReduction"
+     ],
+     "binNote": "Wiki states the reduction as a positive magnitude (20 to 80); the bin stores it as a negative modifier ([-20/-35/-50/-65/-80]) since it's subtracted from AD. Same magnitude, opposite sign convention."
+    },
+    {
+     "id": "w_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "TryndamereW.SlowPotency"
+     ],
+     "binNote": "Wiki states the slow as a positive percentage (30 to 50); the bin stores it as a negative modifier ([-0.3/-0.35/-0.4/-0.45/-0.5]) applied to move speed. Same magnitude, opposite sign convention."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Attack damage reduction duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "TryndamereW.ReductionDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3.25,
+     "terms": [],
+     "quote": "{{fd|3.25}} seconds",
+     "bin": [
+      "TryndamereW.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The attack damage reduction applies only to bonus attack damage, not base AD.",
+     "quote": "reduces the {{sti|{{as|'''bonus''' attack damage}}}} of nearby enemy champions for 4 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If reduction would push bonus AD below 0, base AD is unaffected but total AD is still reduced, and effects that scale off total AD reflect the reduction while those scaling off base/bonus AD do not.",
+     "quote": "If the attack damage reduction would reduce the target's {{as|'''bonus''' attack damage}} below {{as|0|ad}}, the target's {{as|'''base''' attack damage}} value is unaffected, but their {{as|'''total''' attack damage}} will still be reduced.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mocking Shout prevents Tryndamere from using Undying Rage during its cast time.",
+     "quote": "''Mocking Shout'' prevents '''Tryndamere''' from using ''Undying Rage'' during its cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Spinning Slash",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      },
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "TryndamereE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Fury generated per enemy hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "generating {{tip|fury|{{as|2 Fury}}}} per enemy hit",
+     "bin": [
+      "TryndamereE.NonChampFuryGain"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Fury generated per champion hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "increased to {{as|5 Fury}} against champions",
+     "bin": [
+      "TryndamereE.ChampFuryGain"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Cooldown reduction on critical strike vs non-champions",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "reduce ''Spinning Slash's'' {{sti|'''current''' cooldown}} by {{fd|0.75}} seconds",
+     "bin": [
+      "TryndamereE.NonChampCDRefund"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Cooldown reduction on critical strike vs champions",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "doubled to {{fd|1.5}} seconds against {{tip|champions}}",
+     "bin": [
+      "TryndamereE.ChampCDRefund"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Bloodlust and Undying Rage can be cast during the Spinning Slash dash.",
+     "quote": "{{ai|Bloodlust|Tryndamere}} and {{ai|Undying Rage|Tryndamere}} can be cast during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Critical strikes with on-hit basic attacks reduce Spinning Slash's current cooldown, and enemies already hit cannot be damaged more than once per cast.",
+     "quote": "{{tip|Critical strikes}} {{tip|on-hit}} reduce ''Spinning Slash's'' {{sti|'''current''' cooldown}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies already hit by Spinning Slash cannot be damaged more than once.",
+     "quote": "Enemies already hit by ''Spinning Slash'' cannot be damaged more than once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown reduction on critical strike triggers even if the attack is blocked, but not if it misses due to blind.",
+     "quote": "even if the attack is {{tip|blocked}}, but not if it misses due to {{tip|blind}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TryndamereE.DamageAoE",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Undying Rage",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Fury Gained",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|50|75|100}}|Fury}}",
+     "bin": [
+      "UndyingRage.TryndRFuryGain"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Minimum Health Threshold",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      50,
+      70
+     ],
+     "terms": [],
+     "quote": "{{ap|30|50|70}}",
+     "bin": [
+      "UndyingRage.TryndRMinHealth"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Undying Rage duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds",
+     "bin": [
+      "UndyingRage.TryndRDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Tryndamere's health cannot be reduced below the threshold while the effect lasts, preventing death.",
+     "quote": "The target's health cannot be reduced below the threshold.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Undying Rage can be used even while affected by crowd control that normally prevents casting abilities.",
+     "quote": "Undying Rage can be used while affected by {{tip|cast-inhibiting crowd control}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Fury is a capped resource built by basic attacks (+5), crits/kills (+10), stacking additively per instance, decaying at 5/s after 8s without dealing/taking damage; drives the crit-chance conversion."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Current Fury (0-100) is converted directly into critical strike chance (0-50%), i.e. Fury is a proxy resource that ultimately buffs crit chance/damage."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q",
+    "E"
+   ],
+   "note": "Tryndamere has no innate base crit; all crit chance comes from Fury via P. Q's cast-timing note (crit roll locked in at windup start, before a mid-windup Bloodlust cast) and E's crit-triggered cooldown refund both depend on this crit chance."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bloodlust's passive grants bonus AD scaling linearly with Tryndamere's missing health, capped at 90% missing health."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bloodlust's active consumes 100% of current Fury; casting it zeroes the Fury pool and therefore Fury-derived crit chance, trading crit/damage potential for a heal (heal itself is defensive-only)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "On-hit critical strikes reduce Spinning Slash's current cooldown by 0.75s (1.5s vs champions), stacking with normal cooldown countdown."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spinning Slash deals a single instance of physical damage (base + 100% bonus AD + 80% AP) to each enemy hit by the dash, on a fixed cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spinning Slash's hit depends on dash geometry (max 660 range, 225 hit radius, cast-at-max-range if out of range); a stationary single-target dummy fight must assume Tryndamere dashes onto/through the dummy every cast."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Reduces the target's bonus AD (and slows if facing away) for 4s; irrelevant to the damage-dealing (Tryndamere-attacks-dummy) fight since the dummy never attacks, but reduces damage taken from Tryndamere's target in the survival fight when Tryndamere is the tanky side attacked by a champion... actually here W is cast BY Tryndamere, so it only matters if Tryndamere is the survival-fight tank being hit by a champion and can reach/cast W on the attacker to reduce incoming damage."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Undying Rage instantly grants a flat burst of Fury (50/75/100), which feeds directly into the P crit-chance conversion."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Bloodlust's heal (min/max heal formulas) and Undying Rage's minimum-health-threshold/duration are never read by the damage-only dummy fight; they matter only for Tryndamere's own survivability in the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Tryndamere's entire crit chance is generated dynamically by a shared Fury resource that is built by attacks/crits/kills/E-hits/R, decays after 8s of inactivity, and can be entirely zeroed out by casting Q. Correctly simulating damage requires modeling this closed loop (attack -> Fury -> crit chance -> expected crit damage -> more Fury) tick-by-tick across the 15s window, plus E's on-crit cooldown refunds feeding back into cast frequency, and the timing quirk where a mid-windup Bloodlust cast uses the pre-cast crit chance but grants Fury only after the windup completes. This is more than the closed-list primitives can express as independent, composable effects; it needs bespoke stateful simulation of the Fury/crit feedback loop."
+ },
+ "unsettled": [
+  {
+   "question": "Bloodlust's passive AD scales with Tryndamere's missing health, but in the damage-fight the dummy never damages Tryndamere, so his missing health stays at (or very near) 0 for the whole 15s. Should the simulator treat this passive as contributing ~0 bonus AD for the entire damage fight, or assume some non-zero missing-health baseline?",
+   "options": [
+    "Compute missing health as 0 throughout, so the passive contributes 0 AD in the damage fight (literal reading of the fight rules)",
+    "Assume a fixed/average missing-health value (e.g. some percent) to approximate realistic play",
+    "Treat the passive AD term as not applicable to the damage-fight simulation at all"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Tryndamere''' gains {{sti|{{as|'''bonus''' attack damage}}}} based on his {{as|'''missing''' health}}, up to a maximum amount at {{as|{{#var:low}}% '''missing''' health}}."
+   ]
+  },
+  {
+   "question": "Does Spinning Slash's damage instance resolve instantly on cast (front-loaded), or only when the dash physically reaches/passes the target's location (delayed by travel time)? This changes exactly when damage lands relative to other actions in a tight 15s window.",
+   "options": [
+    "Damage is dealt at the moment of cast (instant hit, dash is purely visual/positional)",
+    "Damage is dealt when the dash reaches the enemy's position (small travel-time delay based on 660 range and dash speed)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Tryndamere''' {{tip|dashes}} to the target location, dealing {{as|physical damage}} to enemies hit"
+   ]
+  },
+  {
+   "question": "The bin's TryndamerePassive#{dc63b617} formula '(byLevel0.05) * 0.1' suggests the Fury-to-crit-chance conversion (or some related passive value) may scale by champion level, but the wiki describes a flat 0.5% crit per Fury point (0 to 50% over 0 to 100 Fury) at all levels. Which is correct for computing crit chance during the fight?",
+   "options": [
+    "Flat conversion regardless of level, as stated on the wiki (0.5% crit per Fury point, cap 50%)",
+    "Conversion coefficient scales with champion level per the unexplained bin formula",
+    "The bin term is unrelated to the crit conversion (e.g. a different, unused passive value)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "TryndamerePassive#{dc63b617} = (byLevel0.05) * 0.1",
+    "{{pp|0 to {{#var:max}}|key=%|0 to 100 by 5|type=Fury|color=Fury|label=Crit chance}} critical strike chance"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by auto-attacking the dummy immediately to start generating Fury (5 per hit, more on crits) since Tryndamere has zero Fury and zero crit chance at fight start.",
+   "Cast Spinning Slash (E) as soon as it is available (no cast time) to land a large upfront physical-damage instance, generate 5 Fury (champion target), and start its cooldown-refund-on-crit loop.",
+   "Cast Undying Rage (R) early for its instant Fury gain (50-100 depending on rank) purely to spike Fury-derived crit chance sooner, since its defensive minimum-health-threshold effect is not read in the damage fight.",
+   "Continue auto-attacking between E casts; recast Spinning Slash on cooldown, with cooldown further shortened by any on-hit crits landed since its last cast.",
+   "Do not cast Bloodlust (Q): consuming 100% of current Fury would zero out Fury-derived crit chance (reducing subsequent auto-attack and E damage) for a heal that the damage fight never rewards, and its passive AD bonus is near-zero since the dummy deals no damage back.",
+   "Do not cast Mocking Shout (W) in the damage fight: it only reduces the target's own AD, which a non-attacking dummy never uses, so it deals and enables no extra damage."
+  ],
+  "questions": [
+   "At what Fury value (if any) does the simulator assume Tryndamere starts the fight — 0, or some pre-fight-buildup value?",
+   "Should Undying Rage be assumed available/used at all in the pure damage fight given its primary purpose is defensive, or should the rotation instead assume R is saved (not cast) since it contributes only a secondary Fury/crit side-effect?",
+   "In the survival fight, is Tryndamere expected to spend actions casting Mocking Shout on the attacking champion for its AD-reduction/slow, or does the fixed enemy rotation make that impractical to model?",
+   "Does the simulator's crit-chance model apply Fury-derived crit multiplicatively/additively with any itemized crit chance, and is total crit chance capped at 100% as normal?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

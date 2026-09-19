@@ -1,0 +1,539 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MordekaiserPassive",
+    "key": "Characters/Mordekaiser/Spells/MordekaiserPassiveAbility/MordekaiserPassive",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CombatTrackingDuration": 4,
+     "MaximumStacks": 3,
+     "PercentAPAddedToAutos": 0.4,
+     "FuryForQHit": 1,
+     "FuryForAutoHit": 1,
+     "FuryForEHit": 1,
+     "DoTRadius": 375,
+     "MovementSpeed": 0.03
+    },
+    "calcs": {
+     "AuraDamagePerStack": {
+      "expr": "5 + 0.3xap",
+      "flat": 5,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": []
+     },
+     "PercentHealthForAura": {
+      "expr": "byLevel(1..5)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1,
+        1.2352941,
+        1.4705882,
+        1.7058823,
+        1.94117647,
+        2.1764706,
+        2.4117647,
+        2.6470588,
+        2.8823529,
+        3.1176471,
+        3.3529412,
+        3.5882353,
+        3.8235294,
+        4.0588235,
+        4.2941176,
+        4.529412,
+        4.76470588,
+        5
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "MaxAuraMonsterDamage": {
+      "expr": "byLevel(40..200)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        49.411765,
+        58.82353,
+        68.23529,
+        77.64706,
+        87.05882,
+        96.47059,
+        105.882353,
+        115.29412,
+        124.70588,
+        134.11765,
+        143.529412,
+        152.94118,
+        162.35294,
+        171.76471,
+        181.17647,
+        190.58824,
+        200
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "BonusAPAuto": {
+      "expr": "0.4xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": []
+     },
+     "PassiveMovementSpeed": {
+      "expr": "byLevelL[0.03/0.03/0.03/0.03/0.03/0.06/0.06/0.06/0.06/0.06/0.09/0.09/0.09/0.09/0.09/0.09/0.09/0.09]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.06,
+        0.06,
+        0.06,
+        0.06,
+        0.06,
+        0.08999999798834324,
+        0.08999999798834324,
+        0.08999999798834324,
+        0.08999999798834324,
+        0.08999999798834324,
+        0.08999999798834324,
+        0.08999999798834324,
+        0.08999999798834324
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "MordekaiserQ",
+    "key": "Characters/Mordekaiser/Spells/MordekaiserQAbility/MordekaiserQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7,
+      6,
+      5,
+      4
+     ]
+    },
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "QBaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       115,
+       150,
+       185,
+       220
+      ]
+     },
+     "APRatio": 0.7,
+     "IsolationScalar": {
+      "axis": "rank",
+      "v": [
+       1.3,
+       1.35,
+       1.4,
+       1.45,
+       1.5
+      ]
+     },
+     "IsolationTooltip": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "MaceStartDistance": 400,
+     "MaceLength": 625,
+     "RectangleWidth": 160,
+     "ADRatio": 1.2
+    },
+    "calcs": {
+     "QDamage": {
+      "expr": "QBaseDamage=[80/115/150/185/220] + byLevelL[0/0/0/0/0/0/0/0/0/5/10/15/20/25/30/35/40/45] + (ADRatio=1.2)xbonus ad + (APRatio=0.7)xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "QBaseDamage"
+      ]
+     },
+     "EmpoweredDamageTooltip": {
+      "expr": "QDamage * IsolationScalar=[1.3/1.35/1.4/1.45/1.5]",
+      "modifies": "QDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "IsolationScalar",
+       "QBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "MordekaiserW",
+    "key": "Characters/Mordekaiser/Spells/MordekaiserWAbility/MordekaiserW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 5,
+     "DamageConversion": 0.45,
+     "BaseShield": 0.05,
+     "HealingPercent": {
+      "axis": "rank",
+      "v": [
+       0.35,
+       0.375,
+       0.4,
+       0.425,
+       0.45
+      ]
+     },
+     "MinionPenalty": 0.25,
+     "DamageTakenConversion": 0.075,
+     "MaxHealthCap": 0.3,
+     "TimeBeforeDecay": 1,
+     "DecayPerSecond": 0.005
+    },
+    "calcs": {
+     "HealthDecay": {
+      "expr": "(DecayPerSecond=0.005)xbase maxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "base",
+        "coef": 0.005,
+        "dataValue": "DecayPerSecond"
+       }
+      ],
+      "refs": [
+       "DecayPerSecond"
+      ]
+     },
+     "MaxHealthTooltip": {
+      "expr": "0.3xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": []
+     },
+     "MinHealthTooltip": {
+      "expr": "0.05xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "MordekaiserE",
+    "key": "Characters/Mordekaiser/Spells/MordekaiserEAbility/MordekaiserE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      16,
+      14,
+      12,
+      10
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       60,
+       80,
+       100,
+       120,
+       140
+      ]
+     },
+     "DelayBeforeMovement": 0.5,
+     "MaxDistance": 550,
+     "KnockTowardsDistance": 250,
+     "StandAsideRange": 900,
+     "MagicPen": {
+      "axis": "rank",
+      "v": [
+       0.05,
+       0.075,
+       0.1,
+       0.125,
+       0.15
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[60/80/100/120/140] + 0.45xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        80,
+        100,
+        120,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.45
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "MordekaiserR",
+    "key": "Characters/Mordekaiser/Spells/MordekaiserRAbility/MordekaiserR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      120,
+      100
+     ]
+    },
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SpiritRealmDuration": 7,
+     "StatStealPercentScalar": 0.1,
+     "ZoneRadius": 1200,
+     "GhostAPRatio": 0.6
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "MordekaiserSkin54Manager",
+    "key": "Characters/Mordekaiser/Spells/MordekaiserSkin54Manager",
+    "dataValues": {
+     "StatsStolenToNextForm": 325,
+     "SecondsOutOfCombatTillTransform": 5
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "MordekaiserQ",
+  "W": "MordekaiserW",
+  "E": "MordekaiserE",
+  "R": "MordekaiserR",
+  "P": "MordekaiserPassive"
+ },
+ "resource": {
+  "arType": 3,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Mordekaiser",
+  "name": "Mordekaiser",
+  "partype": "Shield",
+  "passive": "Darkness Rise",
+  "spells": [
+   {
+    "id": "MordekaiserQ",
+    "name": "Obliterate",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7,
+     6,
+     5,
+     4
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "MordekaiserW",
+    "name": "Indestructible",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "MordekaiserE",
+    "name": "Death's Grasp",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "MordekaiserR",
+    "name": "Realm of Death",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     120,
+     100
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Darkness Rise": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "false",
+    "targeting": "Passive",
+    "affects": "Self / Enemies"
+   }
+  },
+  "Q": {
+   "Obliterate": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Indestructible": {
+    "targeting": "Auto",
+    "affects": "Self"
+   },
+   "Indestructible 2": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  },
+  "E": {
+   "Death's Grasp": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Location",
+    "affects": "Self, Enemies"
+   }
+  },
+  "R": {
+   "Realm of Death": {
+    "spellshield": "special",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

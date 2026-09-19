@@ -1,0 +1,139 @@
+{
+ "name": "Bravado",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_duration",
+   "meaning": "duration of empowered attack window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "empowers his next two {{tip|basic attacks}} within 5 seconds",
+   "bin": [
+    "TaricPassive.Duration"
+   ]
+  },
+  {
+   "id": "p_attackspeed",
+   "meaning": "total attack speed on empowered attacks",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 1.0,
+   "terms": [],
+   "quote": "gain {{sti|as|{{as|100% '''total''' attack speed}}}}",
+   "bin": [],
+   "binNote": "wiki-only text value, no bin data row found; attack speed multiplier not in numbers sheet"
+  },
+  {
+   "id": "p_damage",
+   "meaning": "bonus magic damage on empowered attacks based on level and bonus armor",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    25,
+    29,
+    33,
+    37,
+    41,
+    45,
+    49,
+    52.6,
+    56.6,
+    60.6,
+    64.6,
+    68.6,
+    72.6,
+    76.6,
+    80.6,
+    84.6,
+    88.6,
+    93
+   ],
+   "terms": [
+    {
+     "stat": "armor",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{as|{{pp|25 + (93-25)/17*(x-1) for 20}}|magic damage}} {{as|(+ 15% '''bonus''' armor)}} {{as|'''bonus''' magic damage}}",
+   "bin": [
+    "TaricPassive#TotalDamage"
+   ],
+   "binNote": "sheet's byLevel(25..93) matches wiki's linear 25 to 93 over levels 1-18; sheet uses bonus armor coefficient 0.15 matching TaricPassive.ArmorDamageValue"
+  },
+  {
+   "id": "p_cdr",
+   "meaning": "remaining cooldown reduction on ability haste applied to basic abilities",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100
+   ],
+   "terms": [],
+   "quote": "reduce the {{sti|'''remaining''' cooldowns}} of his basic abilities by {{pp|1;( 1 + ( ( x * 10 ) / ( ( x * 10 ) + 100 ) ) );2;0;10 to 100 for 10;∞}}",
+   "bin": [],
+   "binNote": "TaricPassive#CDR references an unresolved calculation part 'CooldownMultiplierCalculationPart' in the sheet; the base values listed here are the wiki's stated ability-haste input steps (0 to 100 by 10), not the resulting % reduction, which depends on caster's ability haste via formula 1+(Haste/(Haste+100)); sheet marks the calculation unresolved"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Bravado triggers after casting any ability, empowering the next two basic attacks.",
+   "quote": "After casting an {{tip|ability}}, '''Taric''' empowers his next two {{tip|basic attacks}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first empowered attack refreshes the 5-second duration.",
+   "quote": "The first attack refreshes ''Bravado's'' duration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting another ability while one empowered attack remains refreshes duration and grants another empowered attack, but no more than two stored at once.",
+   "quote": "Subsequent ability casts will refresh the duration and grant another empowered attack if '''Taric''' has one attack remaining.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bravado may only grant up to two empowered attacks at a time.",
+   "quote": "''Bravado'' may only grant up to two empowered attacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bonus magic damage does not apply to structures.",
+   "quote": "The bonus damage will not apply against {{tip|structures}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The damage is dealt on-attack (an on-hit effect tied to the basic attack landing).",
+   "quote": "{{tip|on-attack}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bravado cannot miss due to blind, but cooldown reduction does not apply if the attack is dodged or blocked.",
+   "quote": "it cannot ''miss'' if '''Taric''' is {{tip|blind|blinded}}. The cooldown reduction still applies when {{tip|blind|blinded}}, however it does not apply on {{tip|dodged}} or {{tip|blocked}} ''Bravado'' attacks.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TaricPassive.BaseDamageMultiplierForModesBalance",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

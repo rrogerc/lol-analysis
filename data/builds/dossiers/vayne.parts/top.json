@@ -1,0 +1,152 @@
+{
+ "champion": "vayne",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Tumble arms next basic attack within 3s to deal bonus physical damage and reset attack timer"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Tumble resets the basic attack timer, but the dash animation delays the actual next swing"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Silver Bolts stacks are applied by on-hit attacks and Condemn"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "3 stacks (each refreshing on reapplication, 3.5s duration) consumed on the 3rd to deal bonus true damage based on target max HP, min floor"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Condemn deals physical damage on hit after a 0.25s cast/travel delay, on a mana-gated cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Condemn's bonus damage + stun only trigger if the knocked-back target collides with terrain, which a dummy fight does not have unless assumed"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Final Hour grants flat bonus AD for its duration"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "Final Hour reduces Tumble's cooldown by 30-50% for its duration"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q/E/R) may limit casts inside a 15s fight depending on build"
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "R"
+   ],
+   "note": "Empowered Tumble under Final Hour grants 1s stealth; irrelevant to a damage-only dummy fight but the pre-fight R decision matters for buff uptime"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Night Hunter is pure movement speed, never read by a damage sim"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanical piece (Tumble empowered-attack/reset, Silver Bolts on-hit stacking true damage, Condemn plain-cast physical damage with a terrain-conditional bonus, Final Hour timed self-buff plus cooldown manipulation, Night Hunter as pure defensive movement) maps onto existing primitives. The only open item is how to treat Condemn's terrain-collision bonus damage given the dummy fight has no terrain, which is an unsettled question, not a missing primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Condemn's terrain-collision bonus damage (stun + extra physical damage, doubling the hit to ~2.5x total) ever trigger in a stationary-dummy fight with no terrain behind the target?",
+   "options": [
+    "Never triggers: dummy fight has no terrain, so Condemn only ever deals its base Damage (VayneCondemn.Damage + 0.5x bonus AD)",
+    "Simulator should assume terrain is present behind the dummy (a common competitive setup) so Condemn always lands the terrain bonus, dealing the full 2.5x/150% bonus AD total"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target collides with [[terrain]], they take {{ccs|{{as|'''bonus''' physical damage}}|physical}} and become {{tip|stun|stunned}} for {{ap|1.5}} seconds."
+   ]
+  },
+  {
+   "question": "Does Tumble's bonus damage (on the empowered next attack) count as a separate damage instance from the basic attack it rides on, for the purposes of applying Silver Bolts on-hit stacking and any on-hit item effects?",
+   "options": [
+    "Single combined attack event: the empowered attack (base AD + Tumble bonus) counts as one on-hit application, adding one Silver Bolts stack",
+    "Two separate instances: the basic-attack-tagged portion and the spell-damage-tagged bonus portion are distinct, potentially each triggering separate on-hit/on-cast interactions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The basic attack portion of ''Tumble's'' damage is tagged as {{tip|basic damage}} and {{tip|spell damage}}, while the bonus damage is tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "Does casting Condemn (which also applies a Silver Bolts stack) count toward Silver Bolts' 3-stack threshold as its own instance separate from on-hit attacks, and can it itself consume/trigger the true-damage proc if it is the 3rd application?",
+   "options": [
+    "Condemn applies a stack like any other application (refresh/increment) and can trigger the proc as the 3rd stack, dealing bonus true damage on top of Condemn's own hit",
+    "Condemn only applies a stack but never itself triggers/consumes the proc; the proc only fires on the 3rd basic attack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Vayne's''' {{tip|basic attacks}} {{tip|on-hit}} and ''{{ai|Condemn|Vayne}}'' apply a {{tip|stack}} of ''Silver Bolts'' for {{fd|3.5}} seconds, refreshing on subsequent applications, expiring upon attacking a new enemy, and stacking up to 3 times."
+   ]
+  },
+  {
+   "question": "Should Final Hour (R) be assumed pre-cast (already active/opener) or cast during the 15s window, given its long cooldown (70-100s) and cost, affecting how many seconds of the AD buff and Tumble CDR are actually available?",
+   "options": [
+    "Cast R at the very start of the fight, consuming cast time/none but immediately granting buffs for the rest of the 15s",
+    "Treat R as already active before the timer starts (a pre-fight opener), so the full buff duration and CDR apply throughout"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = on-cast"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Final Hour (R) for the bonus AD self-buff and Tumble cooldown reduction, since it has no cast time and immediately boosts subsequent attacks and Q casts.",
+   "Cast Tumble (Q) as the first ability to arm the next basic attack with bonus physical damage and reset the attack timer; then follow with basic attacks.",
+   "Weave Tumble again whenever its (Final Hour-reduced) cooldown is up, using it to reset the attack timer and add another empowered-attack instance, since it also applies a Silver Bolts stack via the resulting attack.",
+   "Auto-attack continuously between Q casts; every 3rd on-hit application (from attacks and/or Condemn) consumes Silver Bolts stacks for bonus true damage based on target max HP.",
+   "Cast Condemn (E) on cooldown when it does not interrupt the auto-attack/Tumble rhythm, both for its own physical damage and to feed a Silver Bolts stack.",
+   "Prioritize mana-cost management (Q/E/R all cost mana) so casts are not blocked mid-fight; if mana runs low, favor basic attacks (free) and Tumble resets over Condemn."
+  ],
+  "questions": [
+   "Should Final Hour be treated as pre-active before the timer starts, or must its cast (and mana cost) be counted inside the 15s window?",
+   "Is there terrain behind the dummy for Condemn's collision bonus, or should the sim assume open ground with only the base Condemn hit?",
+   "Given Tumble's cooldown (2-6s, further reduced under R) versus its animation-locked next-attack delay, how many Tumble casts realistically fit in 15s without wasting basic-attack uptime?",
+   "Does the simulator model Condemn's 0.25s cast time and travel time as attack-timer-blocking, affecting how tightly it can be weaved between autos?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

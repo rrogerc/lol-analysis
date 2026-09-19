@@ -1,0 +1,127 @@
+{
+ "champion": "akali",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Five Point Strike deals magic damage on a fixed delay into its 0.25s cast time, cooldown 1.5s at all ranks, gated by energy cost 110→70."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Assassin's Mark arms Akali's next basic attack (Swinging Kama) with bonus magic damage and doubled range once she exits the ring created by a damaging ability hit."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "P"
+   ],
+   "note": "Triggering Swinging Kama requires Akali to move away from the ring's center then back toward the enemy; against a single stationary dummy with no terrain/movement modeled, whether and how often this maneuver happens each ring cycle (~4-8s) must be assumed."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "W"
+   ],
+   "note": "Q (110→70 energy) and E (30 energy) are capped by Akali's energy pool; W restores 100 energy over 0.4s and raises max energy by 100 while active, extending how many Q/E casts fit in 15s."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Shuriken Flip (initial throw + mark-consuming recast dash) and Perfect Execution (initial dash + a 2.5s-later recast dash) each deal two separately-timed damage instances."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Perfect Execution's recast (R2) damage scales up with the target's missing health, capped at 70% missing health for 3x the base minimum."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "After Shuriken Flip's recast dash lands on the target, Akali is automatically ordered to basic-attack it, potentially inserting/advancing an attack right after the E2 damage instance."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Akali's damage kit maps onto the closed primitive list: plain-cast Q, an empowered-attack passive (with an assumed positional trigger), two recast-or-multipart abilities (E, R), missing-health conditional-damage on R2, an ordered attack after E2, and an energy resource-budget shaped by W. No mechanic (stacking auras, stat conversion, forms, pets, etc.) requires logic outside this list."
+ },
+ "unsettled": [
+  {
+   "question": "How often, if at all, does the simulated Akali trigger Swinging Kama (P's empowered attack) in a fight against a single stationary dummy, given the mechanic requires physically exiting a ring by moving away from then back toward the target?",
+   "options": [
+    "She performs the exit maneuver every time the ring is available (roughly once per ~4-8s cycle: 4s ring duration + up to 4s Swinging Kama lockout), so P's onhit damage is included on a recurring cadence",
+    "The maneuver is never modeled since the dummy fight has no real movement/positioning, so P's empowered attack is excluded from the damage rotation entirely",
+    "The exit is treated as instantaneous/free on every ability-hit, letting Swinging Kama re-arm as soon as its 4s internal lockout expires regardless of movement"
+   ],
+   "impact": "high",
+   "quotes": [
+    "For 2 seconds, she gains {{as|{{pp|key=%|30 to 60 for 4|1 to 16}} {{sti|'''bonus''' movement speed}}}} while moving away from the center of the ring.",
+    "When '''Akali''' exits the ring, for 2 seconds, she regains the {{as|'''bonus''' movement speed}} while facing nearby enemy champions and becomes empowered with ''Swinging Kama''"
+   ]
+  },
+  {
+   "question": "Does Shuriken Flip's recast (E2) use the wiki-stated 0.1s cast time, or does it share the bin's single 0.25s castTime value since the bin lists no separate recast cast time?",
+   "options": [
+    "Recast cast time is 0.1s as the wiki states, letting E2 fire almost immediately after the mark is applied",
+    "Recast cast time equals the initial 0.25s, since the numbers sheet only provides one castTime field for AkaliE"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cast time    = {{dv|{{tt|{{fd|0.25}}|Initial cast}}|{{tt|{{fd|0.1}}|Recast}}}}"
+   ]
+  },
+  {
+   "question": "Does Shuriken Flip's forced basic attack after the recast dash actually reset/insert an extra attack into the auto-attack timer (an attack-reset), or does it merely issue a normal attack-move order that respects the existing attack cooldown?",
+   "options": [
+    "It functions as an attack-reset, granting an effectively free basic attack right after E2 lands",
+    "It is just an attack-move command and does not bypass or reset the normal basic-attack timer"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Akali''' will be ordered to basic attack the target after the recast's dash ends."
+   ]
+  },
+  {
+   "question": "Does AkaliR.MaxExecuteThreshold=0.3 in the bin indicate an undocumented execute component on R below 30% target health, separate from the wiki's 70%-missing-health-cap scaling on the recast?",
+   "options": [
+    "Vestigial/unused bin field; R behaves purely as the wiki describes (recast damage scales with missing health, capped at 70%)",
+    "There is an additional, wiki-undocumented execute effect that triggers when the target is at or below 30% health"
+   ],
+   "impact": "low",
+   "quotes": [
+    "AkaliR.MaxExecuteThreshold = 0.3"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with W (Twilight Shroud) purely for its 100 energy restore and the +100 max energy while active, ignoring its stealth/movement-speed value since neither matters in a stationary dummy fight.",
+   "Cast Q (Five Point Strike) immediately and then again every time its 1.5s cooldown is up and energy allows; treat Q as the primary energy-efficient filler for the whole 15s.",
+   "Cast E (Shuriken Flip) to mark the dummy and land the smaller E1 damage share, then immediately recast E (E2) to consume the mark for the larger damage share and its forced follow-up basic attack.",
+   "Whenever Swinging Kama (P) is armed, insert a basic attack to collect its bonus onhit magic damage before continuing the Q/E cycle.",
+   "Cast R (Perfect Execution) once available for its initial dash damage, then recast it as late as practical within the 10s recast window (subject to the 2.5s static minimum) to maximize the target's missing-health percentage for the scaled R2 damage.",
+   "Re-cast W again mid-fight solely for its energy refill/max-energy bump if energy is running low, not for any defensive purpose.",
+   "Fill any remaining time with Q on cooldown and basic attacks (empowered when available) until the fight ends."
+  ],
+  "questions": [
+   "Should the simulator actually model Akali moving in and out of Assassin's Mark's ring against a stationary dummy, or should P's empowered-attack damage be dropped from the rotation as unreliable in a no-movement fight?",
+   "At what champion level/rank is R assumed for this 15s fight, given rank-1 R has a 120s base cooldown that makes only a single R1+R2 sequence feasible regardless of ability haste?",
+   "Is it better to recast R immediately after R1 lands (simpler, guaranteed) or delay it toward the end of the 2.5s-to-10s window to raise the target's missing-health percentage, and does the fight's dummy health/regen model make that delay actually beneficial?",
+   "Does Akali's energy economy (Q cost 110→70, E cost 30, base regen, W's 100 restore + 100 max) actually sustain near-continuous Q/E casting for the full 15s, or does she run dry partway through and need idle turns to regenerate energy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

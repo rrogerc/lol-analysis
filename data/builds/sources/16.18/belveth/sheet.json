@@ -1,0 +1,673 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "BelvethPassive",
+    "key": "Characters/Belveth/Spells/BelvethPassiveAbility/BelvethPassive",
+    "dataValues": {
+     "MonsterStacks": 1,
+     "ChampionStacks": 2,
+     "ARAMBonusStacks": 1,
+     "TakedownDuration": 4,
+     "SheenDuration": 3,
+     "BaronBuffDuration": 180,
+     "SheenNumberOfAttacks": 2,
+     "AttackADRatio": 1,
+     "OnHitRatio": 1,
+     "BrawlBonusStacks": 2,
+     "ASPerStackLevel1Value": 0.1,
+     "ASPerStackInitialBonusPerLevel": 0.05,
+     "ASPerStackLevel6BonusPerLevel": 0.1,
+     "ASPerStackLevel11BonusPerLevel": 0.15
+    },
+    "calcs": {
+     "AttackSpeedPerStack": {
+      "expr": "<{4ce08984}>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "SheenSpeedPerStack": {
+      "expr": "byLevel(0.2..0.2)",
+      "flat": 0.2,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "TotalAttackSpeedFromStacks": {
+      "expr": "AttackSpeedPerStack * 1xbuffStacks",
+      "modifies": "AttackSpeedPerStack",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {4ce08984}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "BelvethQ",
+    "key": "Characters/Belveth/Spells/BelvethQAbility/BelvethQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      4,
+      3.25,
+      2.5,
+      1.75,
+      1
+     ]
+    },
+    "dataValues": {
+     "PerSideCooldown": {
+      "axis": "rank",
+      "v": [
+       16,
+       15,
+       14,
+       13,
+       12
+      ]
+     },
+     "PerSideCDAttackSpeedMultiplier": 0.2,
+     "BaseDashSpeed": 850,
+     "DashDistance": 400,
+     "MaxDistanceOverWalls": 625,
+     "RiftDashSpeed": 1500,
+     "CDReduction": 0.5,
+     "AttackSpeed": 0.4,
+     "NumberOfAttacks": 2,
+     "SpeedDuration": 4,
+     "AttackSpeedDuration": 2,
+     "BaseHealthSteal": {
+      "axis": "rank",
+      "v": [
+       0.01,
+       0.02,
+       0.03,
+       0.04,
+       0.05
+      ]
+     },
+     "ADRatio": 1.05,
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       12,
+       14,
+       16,
+       18,
+       20
+      ]
+     },
+     "MonsterMod": 70,
+     "MinonMod": 1
+    },
+    "calcs": {
+     "BaseDamage": {
+      "expr": "Damage=[12/14/16/18/20] + (ADRatio=1.05)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        12,
+        14,
+        16,
+        18,
+        20
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.05,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "Damage"
+      ]
+     },
+     "{290ee56e}": {
+      "expr": "1xattackWindup?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "BelvethW",
+    "key": "Characters/Belveth/Spells/BelvethWAbility/BelvethW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.7,
+       0.8,
+       0.9,
+       1
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       140,
+       200,
+       260,
+       320
+      ]
+     },
+     "SlowPercent": 0.3,
+     "SlowDuration": 2
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[80/140/200/260/320] + 1.5xbonus ap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        140,
+        200,
+        260,
+        320
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "BelvethE",
+    "key": "Characters/Belveth/Spells/BelvethEAbility/BelvethE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      24,
+      21,
+      18,
+      15,
+      12
+     ]
+    },
+    "dataValues": {
+     "TotalDuration": 1.5,
+     "AttackSpeedMult": 8,
+     "DamagePerHit": {
+      "axis": "rank",
+      "v": [
+       10,
+       12,
+       14,
+       16,
+       18
+      ]
+     },
+     "OnHitRatio": 0.12,
+     "NumberOfStrikes": 6,
+     "MonsterMod": 2,
+     "MissingHealthMult": 1,
+     "DRPercent": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.3,
+       0.4,
+       0.5,
+       0.6
+      ]
+     },
+     "BonusLifeSteal": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     }
+    },
+    "calcs": {
+     "TotalStrikes": {
+      "expr": "NumberOfStrikes=6 + (NumberOfStrikes=6)*(0.4xbonus attackWindup?)",
+      "flat": 6,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 2.4
+       }
+      ],
+      "refs": [
+       "NumberOfStrikes"
+      ]
+     },
+     "DamagePerStrike": {
+      "expr": "DamagePerHit=[10/12/14/16/18] + 0.12xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        12,
+        14,
+        16,
+        18
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.12
+       }
+      ],
+      "refs": [
+       "DamagePerHit"
+      ]
+     },
+     "TotalLifesteal": {
+      "expr": "BonusLifesteal",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": [
+       "BonusLifesteal"
+      ]
+     },
+     "MaxDamagePerStrikeTooltip": {
+      "expr": "DamagePerStrike * 2",
+      "modifies": "DamagePerStrike",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        24,
+        28,
+        32,
+        36
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.24
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DamagePerHit"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value BonusLifesteal"
+    ]
+   }
+  ],
+  "R": [
+   {
+    "script": "BelvethR",
+    "key": "Characters/Belveth/Spells/BelvethRAbility/BelvethR",
+    "cooldown": 1,
+    "castTime": 1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PassiveStacksOnDevour": 1,
+     "OnHitDamage": {
+      "axis": "rank",
+      "v": [
+       2,
+       4,
+       6
+      ]
+     },
+     "CorpseDuration": 15,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       200,
+       250
+      ]
+     },
+     "MissingHealthDamage": 0.2,
+     "AoERange": 500,
+     "MaxExecuteVsMonsters": 1500,
+     "SteroidDuration": 45,
+     "SteroidDurationUpgrade": 90,
+     "StackThresholdForUpgrade": 40,
+     "StackThresholdForPermanent": 80,
+     "VoidDuration": 180,
+     "MinionRadius": 1000,
+     "BonusAARange": {
+      "axis": "rank",
+      "v": [
+       25,
+       75,
+       125
+      ]
+     },
+     "RPassiveStackDuration": 5,
+     "BaseMaxHealth": {
+      "axis": "rank",
+      "v": [
+       100,
+       250,
+       400
+      ]
+     },
+     "TotalASMod": {
+      "axis": "rank",
+      "v": [
+       0.06,
+       0.13,
+       0.2
+      ]
+     },
+     "MaxEpicMonsterStacks": 8,
+     "VoidlingHPScale": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.45,
+       0.7
+      ]
+     },
+     "VoidlingADScale": 1.1,
+     "MeleeVoidlingSkinScaleMod": 0.15,
+     "VoidlingMovementSpeedMod": 100,
+     "SizeIncreasePercent": {
+      "axis": "rank",
+      "v": [
+       0.05,
+       0.13,
+       0.21
+      ]
+     }
+    },
+    "calcs": {
+     "FinalOnHitDamage": {
+      "expr": "OnHitDamage=[2/4/6] + 0.03xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        2,
+        4,
+        6
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.03
+       }
+      ],
+      "refs": [
+       "OnHitDamage"
+      ]
+     },
+     "MaxHealthOnDevour": {
+      "expr": "BaseMaxHealth=[100/250/400] + 1.5xbonus ad + 1.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        250,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "BaseMaxHealth"
+      ]
+     },
+     "TotalExplosionDamage": {
+      "expr": "BaseDamage=[150/200/250] + 1.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        200,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MaxMonsterOnHitTooltip": {
+      "expr": "FinalOnHitDamage * MaxEpicMonsterStacks=8",
+      "modifies": "FinalOnHitDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        16,
+        32,
+        48
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.24
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "MaxEpicMonsterStacks",
+       "OnHitDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "BelvethQ",
+  "W": "BelvethW",
+  "E": "BelvethE",
+  "R": "BelvethR",
+  "P": "BelvethPassive"
+ },
+ "resource": {
+  "arType": 14,
+  "values": {
+   "{726ee5cd}": 45,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Belveth",
+  "name": "Bel'Veth",
+  "partype": "",
+  "passive": "Death in Lavender ",
+  "spells": [
+   {
+    "id": "BelvethQ",
+    "name": "Void Surge",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     3.25,
+     2.5,
+     1.75,
+     1
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "BelvethW",
+    "name": "Above and Below",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "BelvethE",
+    "name": "Royal Maelstrom",
+    "maxrank": 5,
+    "cooldown": [
+     24,
+     21,
+     18,
+     15,
+     12
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "BelvethR",
+    "name": "Endless Banquet",
+    "maxrank": 3,
+    "cooldown": [
+     1,
+     1,
+     1
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Death in Lavender": {
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Void Surge": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "true",
+    "targeting": "Direction",
+    "affects": "Self, Enemies"
+   }
+  },
+  "W": {
+   "Above and Below": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Royal Maelstrom": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   }
+  },
+  "R": {
+   "Endless Banquet": {
+    "damagetype": "True",
+    "spelleffects": "special",
+    "spellshield": "true",
+    "targeting": "Unit",
+    "affects": "Self, Enemies"
+   }
+  }
+ }
+}

@@ -1,0 +1,231 @@
+{
+ "name": "Living Forge / Master Craftsman",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_brittle_immobilize_damage",
+   "meaning": "bonus magic damage dealt when an immobilize/silence consumes Brittle",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    9.0,
+    9.5,
+    10.0,
+    10.5,
+    11.0,
+    11.5,
+    12.0,
+    12.5,
+    13.0,
+    13.5,
+    14.0,
+    14.5,
+    15.0,
+    15.5,
+    16.0,
+    16.5,
+    17.0,
+    17.0
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{pp|key=%|type='''Ornn's''' level|9 + (17-9)/17*(x-1) for 20}} of the target's '''maximum''' health",
+   "bin": [],
+   "binNote": "Wiki gives this scaling as a percent of target max health by Ornn's level (9% to 17%); no matching bin row is present in this sheet slice."
+  },
+  {
+   "id": "p_brittle_monster_cap",
+   "meaning": "cap on Brittle consumption bonus damage against monsters, scaling with Bellows Breath rank",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    200,
+    260,
+    320,
+    380,
+    440,
+    500
+   ],
+   "terms": [],
+   "quote": "capped at {{pp|type=[[File:Bellows Breath.png|20px|border]] ''Bellows Breath's'' rank|200 to 500 for 6|0 to 5|formula=200 + 60 per rank of ''Bellows Breath''}} against {{tip|monsters}}",
+   "bin": [],
+   "binNote": "No monster damage cap value appears among the OrnnP data rows in this sheet."
+  },
+  {
+   "id": "p_cc_extension",
+   "meaning": "crowd control duration extension when Brittle is consumed",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "cause the crowd control to last 30% longer (if applicable)",
+   "bin": [],
+   "binNote": "Not present in this sheet slice; utility (CC), not scored in a dummy/survival fight anyway but kept for completeness."
+  },
+  {
+   "id": "p_knockback_duration",
+   "meaning": "duration of the on-hit knockback against Brittle targets",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "knock them back}} a short distance over {{tt|{{fd|0.4}} seconds|Estimated}}",
+   "bin": [],
+   "binNote": "Estimated value in wiki (tagged 'Estimated'); no corresponding bin row in this sheet."
+  },
+  {
+   "id": "p_forge_channel_duration",
+   "meaning": "duration of the Living Forge channel to purchase/upgrade items",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "causing him to {{tip|channel}} for 4 seconds",
+   "bin": [],
+   "binNote": "Not-in-a-dummy-fight: purchasing/upgrading items has no effect in either simulated fight."
+  },
+  {
+   "id": "p_stat_amp_base",
+   "meaning": "base percent increase to Ornn's bonus armor, MR, and health from all sources",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [
+    {
+     "stat": "bonusArmor",
+     "coef": 0.1
+    },
+    {
+     "stat": "bonusMr",
+     "coef": 0.1
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.1
+    }
+   ],
+   "quote": "increases his {{sti|{{as|'''bonus''' armor}}}}, {{sti|{{as|'''bonus''' magic resistance}}}} and {{sti|{{as|'''bonus''' health}}}} by 10% from all sources",
+   "bin": [
+    "OrnnP.BaseStatAmp"
+   ]
+  },
+  {
+   "id": "p_stat_amp_per_upgrade",
+   "meaning": "additional percent stat amp per Legendary item upgraded to Masterwork (up to 5 upgrades)",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.04,
+   "terms": [
+    {
+     "stat": "bonusArmor",
+     "coef": 0.04
+    },
+    {
+     "stat": "bonusMr",
+     "coef": 0.04
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.04
+    }
+   ],
+   "quote": "further increased by 4% each time he upgrades a ''Legendary'' item into a {{sbc|Masterwork}} item, for a total increase of 30% to each stat after the maximum of 5 upgrades",
+   "bin": [
+    "OrnnP.AdditionalMythicStatAmp"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Ornn's basic attacks on-hit against Brittle enemies knock them back; other allied/Ornn immobilize or silence effects instead consume Brittle for bonus magic damage and extended CC.",
+   "quote": "His {{tip|basic attacks}} {{tip|on-hit}} against enemies afflicted with ''Brittle'' are empowered to {{tip|airborne|knock them back}} a short distance",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Brittle is applied by hits from Bellows Breath (W) and Call of the Forge God (R).",
+   "quote": "'''Ornn''' applies {{tip|Brittle}} to enemies hit by ''{{ai|Bellows Breath|Ornn}}'' and ''{{ai|Call of the Forge God|Ornn}}''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A basic attack against a Brittle target ends the debuff on-hit even without the knockback landing, but this does not trigger the bonus damage from consumption unless the target is an epic monster.",
+   "quote": "'''Ornn's''' basic attacks against {{tip|Brittle}} enemies will end the duration of the debuff {{tip|on-hit}} prematurely even if the {{tip|airborne|knock back}} was not applied. This does not trigger the consumed effect that deals the bonus damage, unless the target was an epic {{tip|monster}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks both the knockback and the bonus damage from the empowered Brittle attack.",
+   "quote": "{{tip|Spell shield}} will block both the knock back and the bonus damage from '''Ornn's''' empowered {{tip|brittle}} attack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Brittle-consumption bonus magic damage is credited to Ornn and scales with his magic penetration.",
+   "quote": "The {{as|'''bonus''' magic damage}} inflicted by ''Brittle'' is credited to '''Ornn''', and benefits from his {{sti|{{as|magic penetration}}}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Master Craftsman stat amplification applies to bonus armor, bonus magic resistance and bonus health from all sources, relevant to survival (damage taken).",
+   "quote": "'''Ornn''' increases his {{sti|{{as|'''bonus''' armor}}}}, {{sti|{{as|'''bonus''' magic resistance}}}} and {{sti|{{as|'''bonus''' health}}}} by 10% from all sources",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The Living Forge channel to purchase or upgrade items is interrupted if Ornn takes damage from enemy champions or turrets, and is unrelated to dealing or taking combat damage otherwise.",
+   "quote": "The channel is {{tip|interrupt|interrupted}} if '''Ornn''' takes damage from enemy {{tip|champions}} or {{tip|turrets}}",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "OrnnP.MasterworkLevel",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.GameModeInteger",
+   "reason": "unknown"
+  },
+  {
+   "ref": "OrnnP.UpgradeTotalGoldValue",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeADEff",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeAPEff",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeHPEff",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeAREff",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeMREff",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeAHEff",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OrnnP.UpgradeASEff",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

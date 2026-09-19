@@ -1,0 +1,579 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TaliyahPassive",
+    "key": "Characters/Taliyah/Spells/TaliyahPassiveAbility/TaliyahPassive",
+    "dataValues": {
+     "FallOffTime": 3
+    },
+    "calcs": {
+     "TotalMS": {
+      "expr": "byLevelL[0.1/0.1/0.1/0.1/0.1/0.1/0.1/0.1/0.15/0.15/0.15/0.25/0.25/0.25/0.4/0.4/0.4/0.4]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.15,
+        0.15,
+        0.15,
+        0.25,
+        0.25,
+        0.25,
+        0.4,
+        0.4,
+        0.4,
+        0.4
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "TaliyahQ",
+    "key": "Characters/Taliyah/Spells/TaliyahQAbility/TaliyahQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6,
+      5,
+      4,
+      3
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      55,
+      60,
+      65,
+      70,
+      75
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "WorkedGroundCDR": 0.5,
+     "MinimumWorkedGroundCD": 0.75,
+     "BigRockDamageMult": 1.8,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       55,
+       72.5,
+       90,
+       107.5,
+       125
+      ]
+     },
+     "ExtraMissileReducedDamagePercent": 60,
+     "MonsterBonusFlatDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "SlowDuration": 1.5,
+     "MonsterStunDuration": 3,
+     "AoERadius": 175,
+     "AoERadiusBig": 225,
+     "APRatio": 0.5,
+     "GroundExhaustDuration": 30,
+     "BigRockManaCost": 10,
+     "GroundExhaustRadius": 400
+    },
+    "calcs": {
+     "RockDamage": {
+      "expr": "BaseDamage=[55/72.5/90/107.5/125] + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        72.5,
+        90,
+        107.5,
+        125
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "BigRockDamage": {
+      "expr": "RockDamage * BigRockDamageMult=1.8",
+      "modifies": "RockDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        99,
+        130.5,
+        162,
+        193.5,
+        225
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "BigRockDamageMult"
+      ]
+     },
+     "MaxDamageTooltip": {
+      "expr": "RockDamage * 2.6",
+      "modifies": "RockDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        143,
+        188.5,
+        234,
+        279.5,
+        325
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.3,
+        "dataValue": "APRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalBonusFlatMonsterDamage": {
+      "expr": "MonsterBonusFlatDamage=[20/25/30/35/40]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "MonsterBonusFlatDamage"
+      ]
+     },
+     "{c363b92e}": {
+      "expr": "TotalBonusFlatMonsterDamage * BigRockDamageMult=1.8",
+      "modifies": "TotalBonusFlatMonsterDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        36,
+        45,
+        54,
+        63,
+        72
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "BigRockDamageMult",
+       "MonsterBonusFlatDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "TaliyahWVC",
+    "key": "Characters/Taliyah/Spells/TaliyahWVCAbility/TaliyahWVC",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      12.5,
+      11,
+      9.5,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      30,
+      20,
+      10,
+      0
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "KnockupDelay": 0.5,
+     "ThrowDistance": 400
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TaliyahE",
+    "key": "Characters/Taliyah/Spells/TaliyahEAbility/TaliyahE",
+    "cooldown": 14,
+    "cost": 90,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       105,
+       150,
+       195,
+       240
+      ]
+     },
+     "BaseDetonationDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       40,
+       55,
+       70,
+       85
+      ]
+     },
+     "MonsterModPercent": 2.25,
+     "StunDuration": 0.75,
+     "MaxStunDuration": 2,
+     "MineDamageFalloff": 0.25,
+     "DelayBetweenRows": 0.17,
+     "SlowPercent": 0.2,
+     "MineLifetime": 4,
+     "MineRadius": 85
+    },
+    "calcs": {
+     "ScatterDamage": {
+      "expr": "BaseDamage=[60/105/150/195/240] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        105,
+        150,
+        195,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "DetonationDamage": {
+      "expr": "BaseDetonationDamage=[25/40/55/70/85] + 0.3xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        40,
+        55,
+        70,
+        85
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": [
+       "BaseDetonationDamage"
+      ]
+     },
+     "MaxDetonationDamageTooltip": {
+      "expr": "DetonationDamage * 2.5",
+      "modifies": "DetonationDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        62.5,
+        100,
+        137.5,
+        175,
+        212.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDetonationDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "TaliyahR",
+    "key": "Characters/Taliyah/Spells/TaliyahRAbility/TaliyahR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      180,
+      150,
+      120
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamageLockoutTime": 3,
+     "MaxJumpRange": 700,
+     "MinJumpRange": 150,
+     "MaxJumpRangeOverWalls": 1000,
+     "WallDuration": 4,
+     "WallLength": {
+      "axis": "rank",
+      "v": [
+       2500,
+       4500,
+       6500
+      ]
+     },
+     "DCapPassive": 0.1,
+     "MissileSpeed": 2000,
+     "ManaCost": 100
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "TaliyahQ",
+  "W": "TaliyahWVC",
+  "E": "TaliyahE",
+  "R": "TaliyahR",
+  "P": "TaliyahPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 470,
+   "{6216bf7b}": 30,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.13854167
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Taliyah",
+  "name": "Taliyah",
+  "partype": "Mana",
+  "passive": "Rock Surfing",
+  "spells": [
+   {
+    "id": "TaliyahQ",
+    "name": "Threaded Volley",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "cost": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ]
+   },
+   {
+    "id": "TaliyahWVC",
+    "name": "Seismic Shove",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     12.5,
+     11,
+     9.5,
+     8
+    ],
+    "cost": [
+     40,
+     30,
+     20,
+     10,
+     0
+    ]
+   },
+   {
+    "id": "TaliyahE",
+    "name": "Unraveled Earth",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ]
+   },
+   {
+    "id": "TaliyahR",
+    "name": "Weaver's Wall",
+    "maxrank": 3,
+    "cooldown": [
+     180,
+     150,
+     120
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Rock Surfing": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Threaded Volley": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Threaded Volley 2": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Seismic Shove": {
+    "damagetype": "<!--magic-->",
+    "spelleffects": "<!--aoe-->",
+    "spellshield": "True",
+    "targeting": "Vector",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Unraveled Earth": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Weaver's Wall": {
+    "spellshield": "false",
+    "projectile": "true",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Weaver's Wall 2": {
+    "spellshield": "false",
+    "projectile": "true",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

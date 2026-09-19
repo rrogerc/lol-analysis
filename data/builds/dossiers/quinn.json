@@ -1,0 +1,727 @@
+{
+ "champion": "quinn",
+ "abilities": {
+  "P": {
+   "name": "Harrier",
+   "cooldown": {
+    "values": null,
+    "quote": "{{tt|{{pp|type=critical strike chance|color=critical chance|7*(0.99^((x-1)*10))|key1=%|0 to 100 by 10|formula=7*(0.99^critical strike chance %)}}|Starts after the mark expired or was consumed or overwritten by another mark.}}",
+    "binNote": "This is not a rank-based ability cooldown but a chance-scaling formula for Valor's periodic mark (dependent on the caster's critical strike chance); no corresponding bin row was found, and it is not usable in either simulated fight since it governs an autonomous companion's targeting outside a 1v1 dummy/enemy scenario."
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus physical damage on-hit when consuming a Harrier mark",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      15,
+      21.18,
+      27.35,
+      33.53,
+      39.71,
+      45.88,
+      52.06,
+      58.24,
+      64.41,
+      70.59,
+      76.76,
+      82.94,
+      89.12,
+      95.29,
+      101.47,
+      107.65,
+      113.82,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{pp|15 + (120-15)/17*(x-1) for 20|color=physical damage}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [
+      "QuinnPassive#BonusDamage",
+      "QuinnPassive.ADRatio"
+     ],
+     "binNote": "Values match QuinnPassive#BonusDamage's flat-by-level array (e.g. 21.17647 vs wiki-rounded 21.18) and ADRatio=0.4; only rounded for display, not a real disagreement."
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus physical damage from Harrier against monsters",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 75,
+     "terms": [],
+     "quote": "''Harrier'' deals {{as|75 '''bonus''' physical damage}} against {{tip|monsters}}.",
+     "bin": [
+      "QuinnPassive#BonusMonsterDmg"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "duration a Harrier mark lasts (and target is revealed)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "mark enemies hit with ''Harrier'' for 4 seconds, during which they are {{tip|standard sight|revealed}}",
+     "bin": [
+      "QuinnPassive.RevealDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Quinn's basic attacks on-hit against a Harrier-marked target consume the mark to deal bonus physical damage.",
+     "quote": "'''Quinn's''' {{tip|basic attacks}} {{tip|on-hit}} against ''Harrier'' targets are empowered to consume the mark to deal {{pp|15 + (120-15)/17*(x-1) for 20|color=physical damage}} {{as|(+ 40% '''bonus''' AD)}} {{as|'''bonus''' physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Harrier is consumed by the empowered attack even if that attack is parried/negated.",
+     "quote": "''Harrier'' is consumed even if it is parried, the attack is negated in any case.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Blinding Assault, Vault, and Skystrike apply the Harrier mark to enemies they hit, which is a separate proc from the on-hit consume damage.",
+     "quote": "'''Quinn's''' ''{{ai|Blinding Assault|Quinn}}'' against the primary target, ''{{ai|Vault|Quinn}}'', and ''{{ai|Skystrike|Quinn}}'' mark enemies hit with ''Harrier''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While Behind Enemy Lines (R) is active, Harrier is disabled and all marks are removed, preventing the on-hit consume damage.",
+     "quote": "While ''{{ai|Behind Enemy Lines|Quinn}}'' is active, ''Harrier'' is disabled and all ''Harrier'' marks are removed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If a mark is overwritten, consumed, or times out, Harrier goes on a 1-second cooldown before it can be reapplied.",
+     "quote": "If a mark applied by an ability is overwritten, consumed, or timed out, ''Harrier'' goes on a 1-second cooldown if it's not already on cooldown.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "QuinnPassive.ModesPassiveDamageMultiplier",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Blinding Assault",
+   "cooldown": {
+    "values": [
+     11,
+     10.5,
+     10,
+     9.5,
+     9
+    ],
+    "quote": "{{ap|11 to 9}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      65,
+      100,
+      135,
+      170,
+      205
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.8,
+        0.85,
+        0.9,
+        0.95,
+        1
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|65 to 205}} {{as|(+ {{ap|80 to 100}}% '''bonus''' AD)}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "QuinnQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "monster damage multiplier",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "increased to 200% against {{tip|monsters}}",
+     "bin": [
+      "QuinnQ.BonusMonsterDmgMult",
+      "QuinnQ#TotalDamageMonster"
+     ],
+     "binNote": "The calculation is 'TotalDamage * 1 + BonusMonsterDmgMult=1', i.e. TotalDamage*(1+BonusMonsterDmgMult), so BonusMonsterDmgMult=1 represents a +100% add-on that doubles the base damage to 200%, matching the wiki's 200% figure; the bin never states '2.0' as a literal value, it is produced by the formula's structure."
+    },
+    {
+     "id": "q_3",
+     "meaning": "nearsight/disarm duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}} seconds",
+     "bin": [
+      "QuinnQ.VisionReductionDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Valor stops upon hitting an enemy and deals damage to all nearby enemies, dealt as a single instance when the projectile stops rather than per-target travel.",
+     "quote": "sends '''{{ci|Valor}}''' in the target direction who stops upon hitting an enemy, marking them with ''{{ai|Harrier|Quinn}}'' and dealing {{as|physical damage}} to all nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary target is disarmed (deals no damage) if non-champion, or nearsighted if a champion; disarm does not affect damage dealt by Quinn.",
+     "quote": "Otherwise, they are {{tip|disarm|disarmed}} for the same duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "QuinnQ.VisionReductionRadius",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Heightened Senses",
+   "cooldown": {
+    "values": [
+     50,
+     45,
+     40,
+     35,
+     30
+    ],
+    "quote": "{{ap|50 to 30}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.28,
+      0.41,
+      0.54,
+      0.67,
+      0.8
+     ],
+     "terms": [],
+     "quote": "{{ap|28 to 80}}%",
+     "bin": [
+      "QuinnW.AttackSpeedBonus"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "QuinnW.MovespeedAmount"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the attack speed and movement speed buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "for 2 seconds.",
+     "bin": [
+      "QuinnW.BuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The buff is granted on-attack against a Harrier-marked target, or when the mark is consumed.",
+     "quote": "Whenever '''Quinn''' uses a basic attack {{tip|on-attack}} against a target marked by ''{{ai|Harrier|Quinn}}'' or consumes their mark, she gains {{sti|{{as|'''bonus''' attack speed}}}} and {{sti|ms|{{as|'''bonus''' movement speed}}}} for 2 seconds.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "QuinnW.CherryBonusHaste",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "QuinnW.VisionRadius",
+     "reason": "utility"
+    },
+    {
+     "ref": "QuinnW.VisionDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Vault",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      65,
+      90,
+      115,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|40 to 140}} {{as|(+ 20% '''bonus''' AD)}}",
+     "bin": [
+      "QuinnE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "slowing them by 50% decaying over {{fd|1.5}} seconds",
+     "bin": [
+      "QuinnE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "slow decay duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "decaying over {{fd|1.5}} seconds",
+     "bin": [
+      "QuinnE.SlowDecayTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Vault knocks the target back a short distance, interrupting uncancellable attack windups, and resets Quinn's attack timer shortly after the dash, after which she automatically attacks the target.",
+     "quote": "''Vault'' {{tip|basic attack reset|resets}} '''Quinn's''' remaining attack cooldown a short delay after the first dash ends (even if interrupted).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Quinn will automatically attempt to attack the target once she completes Vault.",
+     "quote": "'''Quinn''' will automatically attempt to attack the target once she completes ''Vault''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vault's knockback interrupts uncancellable attack windups.",
+     "quote": "''Vault's'' {{tip|airborne|knock back}} also interrupts the windup of basic attacks with {{tip|uncancellable windup|uncancellable windups}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vault has no cast time.",
+     "quote": "cast time = none",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Behind Enemy Lines / Skystrike",
+   "cooldown": {
+    "values": [
+     3,
+     3,
+     3
+    ],
+    "quote": "3"
+   },
+   "cost": {
+    "values": [
+     50,
+     25,
+     0
+    ],
+    "quote": "{{ap|50 to 0}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Total Movement Speed Increase",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.7,
+      1.0,
+      1.3
+     ],
+     "terms": [],
+     "quote": "{{ap|70 to 130}}%",
+     "bin": [
+      "QuinnR.MovementSpeedMod"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|60 to 120}} {{as|(+ 35% '''bonus''' AD)}}",
+     "bin": [
+      "QuinnR#Damage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "channel duration before Behind Enemy Lines activates",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "'''Quinn''' {{tip|channels}} for 2 seconds, signaling '''{{ci|Valor}}''' to pair up",
+     "bin": [],
+     "binNote": "Channel duration not found among QuinnR data values; not present in sheet."
+    },
+    {
+     "id": "r_4",
+     "meaning": "recast window during channel",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "can be recast after {{fd|0.5}} seconds during the channel",
+     "bin": [],
+     "binNote": "Not present among QuinnR data values in sheet."
+    },
+    {
+     "id": "r_5",
+     "meaning": "duration of movement speed loss when taking non-minion damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "causes her to lose the {{as|'''bonus total''' movement speed}} for 3 seconds",
+     "bin": [
+      "QuinnR.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Harrier mark duration applied by Skystrike",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4.5,
+     "terms": [],
+     "quote": "marking them with ''{{ai|Harrier|Quinn}}''",
+     "bin": [
+      "QuinnR.RHarrierMarkDuration"
+     ],
+     "binNote": "Wiki description text for Skystrike does not state the mark duration number explicitly, but names the Harrier mark it applies; the bin value RHarrierMarkDuration=4.5 is used since the wiki text refers to this mark by name without listing the duration itself."
+    },
+    {
+     "id": "r_7",
+     "meaning": "effect radius of Skystrike",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 700,
+     "terms": [],
+     "quote": "{{tip|cr|icononly = true}} 700",
+     "bin": [],
+     "binNote": "Radius is geometry, not present among QuinnR data values in sheet (sheet has no CastRange/EffectRadius row for R)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Quinn's basic attacks and damaging abilities (Blinding Assault, Vault) automatically activate Skystrike while Behind Enemy Lines is active.",
+     "quote": "Declaring a {{tip|basic attack}} or casting ''{{ai|Blinding Assault|Quinn}}'' or ''{{ai|Vault|Quinn}}'' during ''{{ai|Behind Enemy Lines|Quinn}}'' automatically activates ''Skystrike''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Skystrike ends Behind Enemy Lines' movement speed and ghost effects when it triggers.",
+     "quote": "'''Quinn''' detaches from '''Valor''', ending ''{{ais|Behind Enemy Lines|Quinn}}'' effects and raining arrows down around her",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Upon respawning or recalling, Quinn's first Skystrike deals double damage if activated by an ability (a bug).",
+     "quote": "Upon respawning or recalling, '''Quinn's''' first ''Skytrike'' will deal double the normal amount of damage to enemies hit if activated by an ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Taking damage from non-minions suppresses the bonus movement speed for 3 seconds via a slow-type status effect, but does not end Behind Enemy Lines.",
+     "quote": "Taking damage from non-{{tip|minions}} removes the bonus movement speed buff temporarily by suppressing it with the status effect of a {{tip|slow}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Becoming immobilized, grounded, or silenced ends Behind Enemy Lines immediately and puts it on cooldown without casting Skystrike.",
+     "quote": "Becoming {{tip|immobilize|immobilized}}, {{tip|ground|grounded}}, or {{tip|silence|silenced}} ends ''Behind Enemy Lines'' immediately and puts it on {{sti|cooldown}} without performing ''{{ai|Skystrike|Quinn}}''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Behind Enemy Lines does not refund its mana cost if canceled via recast, except to top Quinn back up to the cost if her mana fell below it.",
+     "quote": "''Behind Enemy Lines'' does not refund its {{sti|{{as|mana cost}}}} if the channel was canceled via recast.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown starts after the effect completes, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Skystrike deals area-of-effect physical damage and can be blocked by spell shields.",
+     "quote": "damagetype   = Physical",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "QuinnR.HarrierCooldown",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Blinding Assault (primary target only), Vault, and Skystrike apply a single-charge Harrier mark to the target; the mark is read/consumed by Quinn's next basic attack."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Quinn's basic attack against a Harrier-marked target is empowered on-hit to consume the mark for bonus physical damage (byLevel base + 40% bonus AD)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming a Harrier mark (or attacking a marked target) grants Quinn 2s of bonus attack speed and movement speed."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Vault resets Quinn's remaining basic-attack cooldown a short delay after the initial dash, and Quinn auto-attempts an attack on the target when the dash completes."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Behind Enemy Lines channels for 2s before uniting; the channel is interrupted by attacking/casting and blocks other actions during it."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a channel phase (Behind Enemy Lines) plus a separately-timed follow-up nuke (Skystrike), which can also be auto-triggered by a basic attack or Q/E cast during BEL, or manually recast to cancel early."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-70, E 50 flat, R 50/25/0) constrain how often Q/E/R can be cast within the 15s window."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Blinding Assault, Vault, and Skystrike each deal a fixed on-cast damage instance on cooldown."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Harrier is a single shared mark/consume state machine spanning P (consume-for-damage), Q/E/Skystrike (apply), and W (buff-on-consume), with a 1s internal Harrier cooldown after any mark ends/consumes/overwrites; this cross-ability trigger chain (mark applied -> next attack consumes for bonus damage -> that consumption also grants the W buff) is not a single primitive. Additionally, Skystrike's auto-activation off any basic attack or Q/E cast while Behind Enemy Lines is active (rather than being cast directly) is a trigger-condition on other actions that the closed list's primitives don't cleanly express as one entry; both need bespoke sequencing logic on top of the listed primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Does the automatic attack Quinn performs immediately after landing Vault consume the Harrier mark Vault itself just applied (granting the P bonus on-hit damage and triggering the W buff), or is this auto-attempted attack independent/unreliable and not guaranteed to land as the mark-consuming hit?",
+   "options": [
+    "The forced post-Vault attack reliably lands on the marked target and consumes the mark for full P bonus damage plus W buff",
+    "The forced attack is merely 'attempted' and not guaranteed to be the mark-consuming hit within the simulated window, so a separate manual auto-attack must be counted for the consume"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Quinn''' will automatically attempt to attack the target once she completes ''Vault''.",
+    "''Vault'' {{tip|basic attack reset|resets}} '''Quinn's''' remaining attack cooldown a short delay after the first dash ends (even if interrupted)."
+   ]
+  },
+  {
+   "question": "When Skystrike auto-activates off a basic attack or a Q/E cast during Behind Enemy Lines, does the triggering basic attack or Q/E cast still deal its own separate damage instance in addition to Skystrike's damage, or does the triggering action only serve as the proc condition without its own hit occurring that cast?",
+   "options": [
+    "Both the triggering attack/spell and Skystrike deal their full separate damage instances",
+    "Only Skystrike's damage is dealt on that trigger; the underlying attack/spell's own damage does not also land"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Declaring a {{tip|basic attack}} or casting ''{{ai|Blinding Assault|Quinn}}'' or ''{{ai|Vault|Quinn}}'' during ''{{ai|Behind Enemy Lines|Quinn}}'' automatically activates ''Skystrike''."
+   ]
+  },
+  {
+   "question": "What does QuinnR.HarrierCooldown = 7 in the bin actually gate, given the wiki's Harrier notes describe a separate 1-second cooldown after any mark ends/is consumed/overwritten — is this a longer, R-specific reapplication cooldown for Valor's periodic mark while R is available, or does it override/interact with Q/E/Skystrike's ability-applied marks and thus limit how often Harrier can be reapplied via R within the fight?",
+   "options": [
+    "HarrierCooldown=7 only governs Valor's autonomous periodic marking (irrelevant to the ability-applied marks from Q/E/Skystrike used in the dummy fight)",
+    "HarrierCooldown=7 also throttles how soon Skystrike (or R generally) can reapply a Harrier mark, extending the effective mark-refresh cadence used in the rotation"
+   ],
+   "impact": "low",
+   "quotes": [
+    "QuinnR.HarrierCooldown = 7",
+    "If a mark applied by an ability is overwritten, consumed, or timed out, ''Harrier'' goes on a 1-second cooldown if it's not already on cooldown."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Blinding Assault (Q) on the dummy for cast damage plus a Harrier mark.",
+   "Auto-attack the marked target immediately to consume the mark for the P on-hit bonus damage and trigger the W attack speed/movement speed buff.",
+   "Cast Vault (E) as soon as it is off cooldown for its dash damage and a fresh Harrier mark, letting the forced post-dash attack (or a manual follow-up attack) consume the new mark.",
+   "Between Q/E cooldowns, keep auto-attacking continuously so the W attack-speed buff uptime and mark consumption cadence stay maximized.",
+   "Re-cast Q and E on cooldown for the rest of the 15s window, always pairing each cast with an immediate consuming auto-attack.",
+   "Weigh using R (Behind Enemy Lines -> Skystrike) only if its 2s channel (which blocks attacking) plus Skystrike's AoE damage and mark application outweighs the auto-attack DPS lost during the channel; if used, trigger Skystrike immediately via a queued attack or Q/E cast rather than idling."
+  ],
+  "questions": [
+   "In the simulated 15s dummy fight, is R worth channeling at all given it blocks Quinn's attacks for 2s, or should it be skipped entirely in favor of continuous Q/E/auto-attack weaving?",
+   "What baseline attack speed and crit itemization should be assumed, since higher attack speed increases how many Harrier-consuming attacks and W-buff refreshes land per Q/E cooldown cycle?",
+   "Does casting Q or E while a Harrier mark is already active on the target (before it's consumed) overwrite/refresh the mark rather than stack, and does that put Harrier on cooldown, changing how tightly Q/E can be chained back-to-back for marking purposes?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

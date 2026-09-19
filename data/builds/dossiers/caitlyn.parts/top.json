@@ -1,0 +1,169 @@
+{
+ "champion": "caitlyn",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Headshot: stacks reach threshold, next basic attack is empowered with bonus physical damage scaling with AD and crit chance/damage"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "on-attack stack counter toward Headshot, capped at 5 (4 in brush), no expiry stated"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "trapped/netted status grants an extra ranged Headshot at bonus damage; consumed on the next attack"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piltover Peacemaker dealing damage resets Caitlyn's basic attack timer"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q, E, R each deal on-cast/on-delay damage on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piltover Peacemaker is two separately-computed damage instances: full damage to first target, 60% to subsequent targets"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Ace in the Hole channels for 1s before firing, blocking other actions during the channel (though other abilities can be cast during the recoil-analog window per notes for E; R's channel is a true block)"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Headshot's bonus and Ace in the Hole's damage both scale with critChance/critDamage without the base attack itself needing to crit for those bonus terms"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs across abilities may limit casts within the 15s window depending on mana pool/regen"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "attacking a target that becomes trapped/netted refunds part of Caitlyn's ongoing attack cooldown"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Headshot's stack-to-empower mechanic interacts with basic attacks in a way not fully captured by a single primitive: it is simultaneously a stacking counter (stacking-self-buff), the trigger for an empowered attack (empowered-attack), and its bonus damage term depends on the attacker's own crit chance/damage even on non-crit-rolled portions (crit-interaction) — the combination of stack-gating, only-base-portion-can-crit, and ability-granted bonus Headshots off W/E consuming a separate 'trapped' state needs bespoke sequencing logic to simulate correctly inside 15s (e.g., tracking attack count, brush assumption, and whether W/E procs are available)."
+ },
+ "unsettled": [
+  {
+   "question": "Does the Headshot 110% AD bonus against non-champions apply to the target dummy in the damage fight (since the dummy 'counts as an enemy champion' per the fight rules)?",
+   "options": [
+    "Dummy is treated as a champion so the champion-rate Headshot bonus (0.6/0.8/1.0 by level, per wiki quote) applies",
+    "Dummy is non-champion-like and gets the 110% flat bonus"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased to {{as|110% (+ {{critical damage|0 to 100|critScaling=true}}) AD}} against non-champions"
+   ]
+  },
+  {
+   "question": "How many basic attacks does it actually take to charge a Headshot while in brush: the wiki says 4, but the bin's BrushStackBonus=1 (doubling to 2 stacks/attack) with AttacksPerHeadshot=5 arithmetically implies 3 attacks (ceil(5/2))?",
+   "options": [
+    "Trust wiki's stated 4 attacks in brush",
+    "Trust bin arithmetic implying 3 attacks in brush",
+    "Some other stacking rule not captured by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "At 5 stacks, or 4 while in ''brush''"
+   ]
+  },
+  {
+   "question": "Should the damage-fight rotation assume the target dummy is standing in brush (doubling Headshot stack gain) or not, since neither source specifies brush presence in this fight setup?",
+   "options": [
+    "Assume no brush (worst case, 5 attacks to stack)",
+    "Assume brush is available (best case, 3-4 attacks to stack)"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "Does Piltover Peacemaker's first-hit-full/60%-after damage apply as two separate damage instances against a single stationary dummy target (i.e. can the dummy be hit twice by the same cast, once as 'first' and once as 'expanded'), or does a single target only ever receive one of the two values?",
+   "options": [
+    "A single target can only be the 'first' hit (full damage) since the projectile passes through it once",
+    "A single target could conceivably be hit by both the initial and expanded portions if it has significant hitbox width, doubling instances"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "deals {{as|physical damage}} to the first enemy it passes through, after which it expands in width but deals only 60% damage to enemies it hits thereafter"
+   ]
+  },
+  {
+   "question": "In Ace in the Hole, can Caitlyn queue/cast Q, W, E during the 1-second channel, or does the channel fully block other actions (affecting total rotation DPS accounting)?",
+   "options": [
+    "Channel fully blocks all other ability casts and attacks (per the channel interaction table's cast=false)",
+    "Some buffered actions can still execute after the channel similar to E's cast-time buffering rules"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ct|channel|attack=false|move=false|cast=false|items=false,true,false,false,false|spells=true,false,false,false,false}}"
+   ]
+  },
+  {
+   "question": "Does Yordle Snap Trap's bonus Headshot damage (target-stacks) require Caitlyn to actually walk the dummy over a placed trap, which the fight's 'no terrain, dummy never moves' rules make impossible unless the trap is placed directly under the stationary target - is this proc available at all in the damage fight?",
+   "options": [
+    "W's target-stacks Headshot bonus is usable since the trap can be placed on the stationary dummy's location",
+    "W's bonus is not meaningfully usable/rotation should exclude it since dummy doesn't move onto traps"
+   ],
+   "impact": "low",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with 90 Caliber Net (E) on the dummy for magic damage and the attack-reset-adjacent slow (slow itself doesn't matter for a stationary dummy, but the damage does)",
+   "Follow immediately with Piltover Peacemaker (Q) for its full first-hit physical damage, casting it during/after E's cast time",
+   "Weave in basic attacks throughout, tracking Headshot stack count (assume no brush unless ruled otherwise) so that every 5th attack becomes an empowered Headshot",
+   "Place a Yordle Snap Trap (W) at the dummy's location before or during the opener if the trapped-target Headshot bonus is deemed usable in this fight, to add bonus damage to the next Headshot",
+   "Cast Ace in the Hole (R) as soon as it is off cooldown, accepting the 1-second channel block, since its base+bonus-AD+crit-scaling damage is very large",
+   "Recast Q and E on cooldown throughout the 15s window, using basic attacks to fill all remaining time between casts",
+   "Prioritize aligning a Headshot-empowered attack with Q's attack-reset so the reset does not waste attack progress"
+  ],
+  "questions": [
+   "Should the simulated dummy be assumed to sit in brush for Headshot stacking purposes, or never?",
+   "Is Yordle Snap Trap's ground-trap bonus considered usable against a stationary, non-moving dummy target that never 'steps on' the trap unless it's placed directly under it at time zero?",
+   "Does Ace in the Hole's 1-second channel actually block basic attacks and other ability casts entirely, reducing total attacks/casts landed in the 15s window?",
+   "Is the level-1-vs-18 Headshot AD ratio (0.6/0.8/1.0) meant to represent per-level growth within a single 15s fight, or is a single champion level assumed for the whole fight (affecting which of the three bin brackets applies)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

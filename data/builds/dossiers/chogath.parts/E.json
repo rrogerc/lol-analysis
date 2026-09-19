@@ -1,0 +1,189 @@
+{
+ "name": "Vorpal Spikes",
+ "cooldown": {
+  "values": [
+   8,
+   7,
+   6,
+   5,
+   4
+  ],
+  "quote": "{{ap|8 to 4}}"
+ },
+ "cost": {
+  "values": [
+   30,
+   30,
+   30,
+   30,
+   30
+  ],
+  "quote": "30",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage per attack",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    30,
+    50,
+    70,
+    90,
+    110
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.025,
+      0.0285,
+      0.032,
+      0.0355,
+      0.039
+     ],
+     "coefScaling": [
+      {
+       "stat": "stacks",
+       "per": 1,
+       "coef": 0.005
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|30 to 110}} {{as|(+ 30% AP)}} {{as|(+ {{ap|2.5 to 3.9}}% {{as|(+ {{fd|0.5}}% per ''{{ai|Feast|Cho'Gath}}'' stack)|buzzword}} of target's '''maximum''' health)}}",
+   "bin": [
+    "VorpalSpikes#FlatDamageCalc",
+    "VorpalSpikes#MaxHealthPercentCalc"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Monster Damage per attack (capped)",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    110,
+    160,
+    210,
+    260,
+    310
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|110 to 310}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "VorpalSpikes.BaseDamage",
+    "VorpalSpikes.ModifiedMonsterCap"
+   ],
+   "binNote": "Wiki's monster-damage row (base+30%AP) equals BaseDamage + ModifiedMonsterCap per rank (e.g. 30+80=110, 110+200=310), i.e. against monsters the max-health-% term is replaced by the flat ModifiedMonsterCap value; MonsterDamageCap=200 is a separate constant not reflected in this row."
+  },
+  {
+   "id": "e_5",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    30,
+    35,
+    40,
+    45,
+    50
+   ],
+   "terms": [],
+   "quote": "{{ap|30 to 50}}%",
+   "bin": [
+    "VorpalSpikes.SlowAmountPercentage"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Slow decay duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{fd|1.5}} seconds",
+   "bin": [
+    "VorpalSpikes.SlowDuration"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "Number of empowered attacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "empowers its next 3 {{tip|basic attacks}}",
+   "bin": [
+    "VorpalSpikes.MaximumAttacks"
+   ]
+  },
+  {
+   "id": "e_8",
+   "meaning": "Empowerment window duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "within 6 seconds",
+   "bin": [
+    "VorpalSpikes.BuffDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Vorpal Spikes resets Cho'Gath's basic attack timer.",
+   "quote": "Vorpal Spikes {{tip|basic attack reset|resets}} '''Cho'Gath's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each empowered attack is a separate on-attack magic damage instance triggered on-attack-complete, applying to whatever is struck.",
+   "quote": "gain {{sti|range|50 '''bonus''' range}} and launch a blast of spikes {{tip|on-attack}} in the target's direction",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown only begins after the empowered attacks are used (or the buff expires), not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack triggers but does not apply its damage/slow against structures.",
+   "quote": "The empowered attack will trigger but not apply its effects against [[structures]].",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "VorpalSpikes.MonsterDamageCap",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "VorpalSpikes.AttackRangeIncrease",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

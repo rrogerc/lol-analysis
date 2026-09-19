@@ -1,0 +1,689 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AkshanPassive",
+    "key": "Characters/Akshan/Spells/AkshanPassiveAbility/AkshanPassive",
+    "dataValues": {
+     "MaxStacks": 3,
+     "DebuffDuration": 4.5,
+     "ShieldBADRatio": 0.35,
+     "ShieldDuration": 2,
+     "SecondAutoADRatio": 0.5,
+     "HasteDuration": 1,
+     "SecondAutoFlexedAttackRange": 200,
+     "SecondAutoCritRatio": 1,
+     "APRatio": 0.6
+    },
+    "calcs": {
+     "MS": {
+      "expr": "byLevel(20..75)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        23.235294,
+        26.470588,
+        29.7058824,
+        32.941176,
+        36.17647,
+        39.411765,
+        42.64706,
+        45.882353,
+        49.117647,
+        52.35294,
+        55.588235,
+        58.82353,
+        62.058824,
+        65.29412,
+        68.52941,
+        71.76471,
+        75
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TotalShieldAmount": {
+      "expr": "byLevel(40..280) + (ShieldBADRatio=0.35)xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        54.117647,
+        68.23529,
+        82.35294,
+        96.47059,
+        110.588235,
+        124.70588,
+        138.82353,
+        152.94118,
+        167.05882,
+        181.17647,
+        195.29412,
+        209.41176,
+        223.529412,
+        237.64706,
+        251.76471,
+        265.88235,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.35,
+        "dataValue": "ShieldBADRatio"
+       }
+      ],
+      "refs": [
+       "ShieldBADRatio"
+      ]
+     },
+     "PassiveProcDamage": {
+      "expr": "byLevelL[15/15/15/15/15/40/40/40/40/40/80/80/80/80/80/150/150/150] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        15,
+        15,
+        15,
+        15,
+        40,
+        40,
+        40,
+        40,
+        40,
+        80,
+        80,
+        80,
+        80,
+        80,
+        150,
+        150,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "SecondAutoDamage": {
+      "expr": "(SecondAutoADRatio=0.5)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "SecondAutoADRatio"
+       }
+      ],
+      "refs": [
+       "SecondAutoADRatio"
+      ]
+     },
+     "PassiveCooldown": {
+      "expr": "byLevelL[16/16/16/16/16/12/12/12/12/12/8/8/8/8/8/4/4/4]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        16,
+        16,
+        16,
+        16,
+        16,
+        12,
+        12,
+        12,
+        12,
+        12,
+        8,
+        8,
+        8,
+        8,
+        8,
+        4,
+        4,
+        4
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "ASModdedMS": {
+      "expr": "MS * 1 + 1xbonus attackWindup?",
+      "modifies": "MS",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "{82593567}": {
+      "expr": "SecondAutoDamage * 1 + (SecondAutoCritRatio=1)*(1xcritDamage + -1)",
+      "modifies": "SecondAutoDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "SecondAutoCritRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AkshanQ",
+    "key": "Characters/Akshan/Spells/AkshanQAbility/AkshanQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       45,
+       75,
+       105,
+       135,
+       165
+      ]
+     },
+     "ADRatio": 0.7,
+     "SecondaryTargetDamage": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.5,
+       0.6,
+       0.7,
+       0.8
+      ]
+     },
+     "HasteDuration": 1,
+     "HasteValue": 0.2,
+     "ExtensionDistance": 500,
+     "RevealDuration": 1,
+     "HasteAPRatio": 0.0005
+    },
+    "calcs": {
+     "FinalDamage": {
+      "expr": "BaseDamage=[45/75/105/135/165] + (ADRatio=0.7)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        45,
+        75,
+        105,
+        135,
+        165
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.7,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalHaste": {
+      "expr": "HasteValue=0.2 + (HasteAPRatio=0.0005)xap",
+      "flat": 0.2,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0005,
+        "dataValue": "HasteAPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "HasteAPRatio",
+       "HasteValue"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "AkshanW",
+    "key": "Characters/Akshan/Spells/AkshanWAbility/AkshanW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      14,
+      10,
+      6,
+      2
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      30,
+      20,
+      10,
+      0
+     ]
+    },
+    "castTime": 0.5,
+    "dataValues": {
+     "VengeanceDuration": 60,
+     "MSValue": {
+      "axis": "rank",
+      "v": [
+       80,
+       90,
+       100,
+       110,
+       120
+      ]
+     },
+     "ShredValue": {
+      "axis": "rank",
+      "v": [
+       15,
+       17.5,
+       20,
+       22.5,
+       25
+      ]
+     },
+     "DeathTimer": 1,
+     "PassiveSecondAutoRatio": {
+      "axis": "rank",
+      "v": [
+       0.46,
+       0.52,
+       0.58,
+       0.64,
+       0.7
+      ]
+     },
+     "WallGracePeriod": 2,
+     "MissingManaRegen": 0.12,
+     "GoldReward": 100,
+     "RecentlyDamagedWindow": 3,
+     "VFXTrailSpeed": 3,
+     "PassiveWallRange": 175,
+     "StealthDetectionRange": 800,
+     "GameModeInteger": 1,
+     "ReviveHealthPercent": 1
+    },
+    "calcs": {
+     "SecondAutoDamage": {
+      "expr": "(PassiveSecondAutoRatio=[0.46/0.52/0.58/0.64/0.7])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.46,
+          0.52,
+          0.58,
+          0.64,
+          0.7
+         ]
+        },
+        "dataValue": "PassiveSecondAutoRatio"
+       }
+      ],
+      "refs": [
+       "PassiveSecondAutoRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "AkshanE",
+    "key": "Characters/Akshan/Spells/AkshanEAbility/AkshanE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      16.5,
+      15,
+      13.5,
+      12
+     ]
+    },
+    "cost": 70,
+    "castTime": 0.1,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       8,
+       16,
+       24,
+       32,
+       40
+      ]
+     },
+     "ADRatio": 0.25,
+     "AttackSpeedCoefficient": 0.3,
+     "CritDamageMod": 0.5,
+     "OnHitDamageReduction": 0.25,
+     "AttackFrequency": 0.2,
+     "TimeToCastE2": 2,
+     "AnchorLifetime": 3,
+     "MinJumpbackDistance": 250,
+     "EdgeToEdgeCollisionRadius": 50,
+     "ResetCooldownToSet": 0.5,
+     "DistanceShiftTowardsWall": 175,
+     "E3LockoutDuration": 0.5,
+     "SpinDuration": 25000
+    },
+    "calcs": {
+     "DamageToDeal": {
+      "expr": "(BaseDamage=[8/16/24/32/40] + (ADRatio=0.25)xad) * 1 + (AttackSpeedCoefficient=0.3)xbonus attackWindup?",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "AttackSpeedCoefficient",
+       "BaseDamage"
+      ]
+     },
+     "CriticalCalc": {
+      "expr": "DamageToDeal * 1 + (CritDamageMod=0.5)*(1xcritDamage + -1)",
+      "modifies": "DamageToDeal",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CritDamageMod"
+      ]
+     },
+     "{36ebd3cf}": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "AkshanR",
+    "key": "Characters/Akshan/Spells/AkshanRAbility/AkshanR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      85,
+      70
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BonusDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       35,
+       45
+      ]
+     },
+     "ADRatio": 0.15,
+     "CritDamageMod": 0.3,
+     "MaxIncrease": 3,
+     "ChannelDuration": 2.5,
+     "GraceCooldown": 5,
+     "CastTimePerBullet": 0.15,
+     "MinimumChannelDuration": 0.5,
+     "NumberOfBullets": {
+      "axis": "rank",
+      "v": [
+       5,
+       6,
+       7
+      ]
+     }
+    },
+    "calcs": {
+     "MaxDamagePerBullet": {
+      "expr": "DamagePerBulletWithCrit * MaxIncrease=3",
+      "modifies": "DamagePerBulletWithCrit",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "BonusDamage",
+       "CritDamageMod",
+       "MaxIncrease"
+      ]
+     },
+     "DamagePerBulletWithCrit": {
+      "expr": "(BonusDamage=[25/35/45] + (ADRatio=0.15)xad) * 1 + ((CritDamageMod=0.3)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "BonusDamage",
+       "CritDamageMod"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "AkshanQ",
+  "W": "AkshanW",
+  "E": "AkshanE",
+  "R": "AkshanR",
+  "P": "AkshanPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.64,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Akshan",
+  "name": "Akshan",
+  "partype": "Mana",
+  "passive": "Dirty Fighting",
+  "spells": [
+   {
+    "id": "AkshanQ",
+    "name": "Avengerang",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "AkshanW",
+    "name": "Going Rogue",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     14,
+     10,
+     6,
+     2
+    ],
+    "cost": [
+     40,
+     30,
+     20,
+     10,
+     0
+    ]
+   },
+   {
+    "id": "AkshanE",
+    "name": "Heroic Swing",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     16.5,
+     15,
+     13.5,
+     12
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "AkshanR",
+    "name": "Comeuppance",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     85,
+     70
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Dirty Fighting": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "special",
+    "spellshield": "false",
+    "projectile": "true",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Avengerang": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Going Rogue": {
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Heroic Swing": {
+    "damagetype": "Physical",
+    "spelleffects": "basic",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "[[Auto-targeted|Auto]] / [[Location-targeted|Location]]",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Heroic Swing 2": {
+    "damagetype": "Physical",
+    "spelleffects": "basic",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "[[Auto-targeted|Auto]] / [[Location-targeted|Location]]",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Comeuppance": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

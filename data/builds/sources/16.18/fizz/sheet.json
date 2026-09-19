@@ -1,0 +1,618 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "FizzPassive",
+    "key": "Characters/Fizz/Spells/FizzPassiveAbility/FizzPassive",
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamageReduction": 4,
+     "DamageReductionMax": 0.5,
+     "MonsterDamageReduction": 14,
+     "APRatio": 0.01
+    },
+    "calcs": {
+     "DamageReductionCalc": {
+      "expr": "DamageReduction=4 + (APRatio=0.01)xap",
+      "flat": 4,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.01,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "DamageReduction"
+      ]
+     },
+     "MonsterDamageReductionCalc": {
+      "expr": "MonsterDamageReduction=14 + (APRatio=0.01)xap",
+      "flat": 14,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.01,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "MonsterDamageReduction"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "FizzQ",
+    "key": "Characters/Fizz/Spells/FizzQAbility/FizzQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "calcs": {
+     "QDamage": {
+      "expr": "Effect1[10/25/40/55/70] + 0.55xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        25,
+        40,
+        55,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55
+       }
+      ],
+      "refs": []
+     },
+     "TotalDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "FizzW",
+    "key": "Characters/Fizz/Spells/FizzWAbility/FizzW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6,
+      5,
+      4,
+      3
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      40,
+      50,
+      60,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DoTBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60,
+       75,
+       90
+      ]
+     },
+     "DoTRatio": 0.25,
+     "ActiveBaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "ActiveRatio": 0.45,
+     "OnHitBuffBaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "OnHitRatio": 0.3,
+     "BleedDuration": 3,
+     "DoTTicksPerSecond": 2,
+     "ActiveDuration": 4,
+     "OnHitBuffDuration": 5,
+     "OnKillManaRefund": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50,
+       60,
+       70
+      ]
+     },
+     "OnKillNewCooldown": 1,
+     "PassiveDoTDuration": 3,
+     "TurretMod": 0.5,
+     "BonusMonsterDamage": 90
+    },
+    "calcs": {
+     "DoTDamage": {
+      "expr": "DoTBaseDamage=[30/45/60/75/90] + (DoTRatio=0.25)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        45,
+        60,
+        75,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "DoTRatio"
+       }
+      ],
+      "refs": [
+       "DoTBaseDamage",
+       "DoTRatio"
+      ]
+     },
+     "ActiveDamage": {
+      "expr": "ActiveBaseDamage=[50/75/100/125/150] + (ActiveRatio=0.45)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100,
+        125,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.45,
+        "dataValue": "ActiveRatio"
+       }
+      ],
+      "refs": [
+       "ActiveBaseDamage",
+       "ActiveRatio"
+      ]
+     },
+     "OnHitBuffDamage": {
+      "expr": "OnHitBuffBaseDamage=[20/25/30/35/40] + (OnHitRatio=0.3)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "OnHitRatio"
+       }
+      ],
+      "refs": [
+       "OnHitBuffBaseDamage",
+       "OnHitRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "FizzE",
+    "key": "Characters/Fizz/Spells/FizzEAbility/FizzE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      14,
+      12,
+      10,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      80,
+      85,
+      90,
+      95
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       130,
+       180,
+       230,
+       280
+      ]
+     },
+     "SmallAoESize": 225,
+     "LargeAoESize": 375,
+     "SlowDuration": 2,
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     }
+    },
+    "calcs": {
+     "EDamage": {
+      "expr": "BaseDamage=[80/130/180/230/280] + 0.95xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        130,
+        180,
+        230,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.95
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "FizzR",
+    "key": "Characters/Fizz/Spells/FizzRAbility/FizzR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SmallDamage": {
+      "axis": "rank",
+      "v": [
+       180,
+       300,
+       420
+      ]
+     },
+     "SmallAPRatio": 0.6,
+     "MidDamageMulti": 1.25,
+     "LargeDamageMulti": 1.5,
+     "SmallFishSize": 200,
+     "MidFishSize": 325,
+     "BigFishSize": 450,
+     "MissileWidthTiers": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160
+      ]
+     },
+     "MaxDistance": 1300,
+     "DetonationTime": 2,
+     "SlowDuration": 2,
+     "SlowAmount": 60
+    },
+    "calcs": {
+     "SmallSharkDamage": {
+      "expr": "SmallDamage=[180/300/420] + (SmallAPRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        180,
+        300,
+        420
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "SmallAPRatio"
+       }
+      ],
+      "refs": [
+       "SmallAPRatio",
+       "SmallDamage"
+      ]
+     },
+     "{262c3c02}": {
+      "expr": "SmallSharkDamage * MidDamageMulti=1.25",
+      "modifies": "SmallSharkDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        225,
+        375,
+        525
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "SmallAPRatio"
+       }
+      ],
+      "refs": [
+       "MidDamageMulti",
+       "SmallAPRatio",
+       "SmallDamage"
+      ]
+     },
+     "BigSharkDamage": {
+      "expr": "SmallSharkDamage * LargeDamageMulti=1.5",
+      "modifies": "SmallSharkDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        270,
+        450,
+        630
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9,
+        "dataValue": "SmallAPRatio"
+       }
+      ],
+      "refs": [
+       "LargeDamageMulti",
+       "SmallAPRatio",
+       "SmallDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "FizzQ",
+  "W": "FizzW",
+  "E": "FizzE",
+  "R": "FizzR",
+  "P": "FizzPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 317,
+   "{6216bf7b}": 52,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.097
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Fizz",
+  "name": "Fizz",
+  "partype": "Mana",
+  "passive": "Nimble Fighter",
+  "spells": [
+   {
+    "id": "FizzQ",
+    "name": "Urchin Strike",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "FizzW",
+    "name": "Seastone Trident",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "cost": [
+     30,
+     40,
+     50,
+     60,
+     70
+    ]
+   },
+   {
+    "id": "FizzE",
+    "name": "Playful / Trickster",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "cost": [
+     75,
+     80,
+     85,
+     90,
+     95
+    ]
+   },
+   {
+    "id": "FizzR",
+    "name": "Chum the Waters",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Nimble Fighter": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Urchin Strike": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Seastone Trident": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana",
+    "occurrence": "On-hit"
+   }
+  },
+  "E": {
+   "Playful": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Trickster": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Chum the Waters": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

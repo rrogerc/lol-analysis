@@ -1,0 +1,250 @@
+{
+ "name": "Cultivation of War / Determination",
+ "cooldown": {
+  "values": [
+   300,
+   300,
+   300,
+   300,
+   300,
+   240,
+   240,
+   240,
+   240,
+   240,
+   180,
+   180,
+   180,
+   180,
+   180,
+   120,
+   120,
+   120
+  ],
+  "quote": "{{pp|300 to 120 for 4|1 to 16|label=cooldown}}",
+  "binNote": "This is the revive's static cooldown (ZaahenPassive#ReviveCooldownCalc), by champion level; matches bin exactly."
+ },
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_stack_duration",
+   "meaning": "duration a Determination stack lasts before beginning to fall off",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "lasting for 5 seconds",
+   "bin": [
+    "ZaahenPassive.FallOffDuration"
+   ]
+  },
+  {
+   "id": "p_max_stacks",
+   "meaning": "maximum Determination stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 12,
+   "terms": [],
+   "quote": "stacking up to 12 times",
+   "bin": [
+    "ZaahenPassive.MaxStacks"
+   ]
+  },
+  {
+   "id": "p_bonus_ad_per_stack",
+   "meaning": "bonus AD gained per stack of Determination, as a % of bonus AD",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    1.5,
+    1.576470588,
+    1.652941176,
+    1.729411765,
+    1.805882353,
+    1.882352941,
+    1.958823529,
+    2.035294118,
+    2.111764706,
+    2.188235294,
+    2.264705882,
+    2.341176471,
+    2.417647059,
+    2.494117647,
+    2.570588235,
+    2.647058824,
+    2.723529412,
+    2.8
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": [
+      1.5,
+      1.576470588,
+      1.652941176,
+      1.729411765,
+      1.805882353,
+      1.882352941,
+      1.958823529,
+      2.035294118,
+      2.111764706,
+      2.188235294,
+      2.264705882,
+      2.341176471,
+      2.417647059,
+      2.494117647,
+      2.570588235,
+      2.647058824,
+      2.723529412,
+      2.8
+     ]
+    }
+   ],
+   "quote": "'''bonus''' attack damage}}}} equal to {{as|{{pp|1.5 + (2.8-1.5)/17*(x-1) for 20|key=%}} AD}}",
+   "bin": [
+    "ZaahenPassive.PBonusADMin",
+    "ZaahenPassive.PBonusADMax",
+    "ZaahenPassive#PercentBonusADCalc"
+   ],
+   "binNote": "PBonusADMin=0.015 and PBonusADMax=0.028 bound the wiki's 1.5% to 2.8% range at level 1 and 18 respectively; the calculation ZaahenPassive#PercentBonusADCalc that would give the exact per-level interpolation is an unresolved calculation part ({ee18a47b}) in the sheet, so the linear interpolation formula is taken from the wiki text instead."
+  },
+  {
+   "id": "p_revive_duration",
+   "meaning": "duration of the resurrection (invulnerable/untargetable/unable to act) state",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "enters {{tip|resurrection}} for 4 seconds",
+   "bin": [
+    "ZaahenPassive.ReviveDuration"
+   ]
+  },
+  {
+   "id": "p_revive_tick_interval",
+   "meaning": "interval between resurrection health-restoration ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.125,
+   "terms": [],
+   "quote": "every {{fd|0.125}} seconds",
+   "bin": [
+    "ZaahenPassive.NumberOfTicks",
+    "ZaahenPassive.ReviveDuration"
+   ],
+   "binNote": "0.125 = ReviveDuration(4) / NumberOfTicks(32); no direct data value stores 0.125 itself."
+  },
+  {
+   "id": "p_revive_heal_percent",
+   "meaning": "total % of maximum health restored over the resurrection duration",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.45,
+    0.45,
+    0.45,
+    0.45,
+    0.45,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.75,
+    0.75,
+    0.75
+   ],
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": [
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.45,
+      0.45,
+      0.45,
+      0.45,
+      0.45,
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.75,
+      0.75,
+      0.75
+     ]
+    }
+   ],
+   "quote": "{{pp|30 to 75 for|1;6;11;16|key=%}} of his '''maximum''' health",
+   "bin": [
+    "ZaahenPassive.ReviveLevel1Value",
+    "ZaahenPassive.ReviveAdditionalBonusAtThisLevel",
+    "ZaahenPassive#RevivePercentCalc"
+   ],
+   "binNote": "30% base (ReviveLevel1Value) plus 15% (ReviveAdditionalBonusAtThisLevel) added at levels 6/11/16 reproduces the wiki's 30/45/60/75% by-level values; the calculation ZaahenPassive#RevivePercentCalc that would combine these is an unresolved calculation part ({4ce08984}) in the sheet, and RevivePercent=0.6 does not match any of these numbers directly."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "A stack of Determination is generated for each enemy champion damaged by Zaahen's basic attacks and abilities, refreshing the fall-off duration.",
+   "quote": "generates a {{tip|stack}} of ''Determination'' for each enemy {{tip|champion}} damaged by his {{tip|basic attacks}} and {{tip|abilities}}, lasting for 5 seconds, refreshing on subsequent triggers",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Determination stacks are generated per damage instance per champion damaged, so multi-hit abilities can generate multiple stacks.",
+   "quote": "''Determination'' stacks are generated per damage instance per champion damaged with '''Zaahen's''' attacks and abilities.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bonus AD from stacks scales dynamically with Zaahen's current total AD.",
+   "quote": "The bonus attack damage granted by ''Determination'' stacks will update dynamically with '''Zaahen's''' total attack damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At maximum (12) stacks, the per-stack bonus AD doubles.",
+   "quote": "At maximum stacks, '''Zaahen''' becomes filled with ''Determination'', causing him to double the bonus",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Invulnerability prevents stack generation because no damage is dealt.",
+   "quote": "{{tip|Invulnerable|Invulnerability}} will prevent stacks from being generated, as no damage is dealt.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During the resurrection, Zaahen is invulnerable, untargetable and unable to act, and his current health is forcibly overridden to match the restoration percentage each tick, preventing other healing from applying.",
+   "quote": "becoming {{tip|invulnerable}}, {{tip|untargetable}}, and {{tip|lockout|unable to act}}",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZaahenPassive.PercentBonusAD",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "ZaahenPassive.RevivePercent",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "ZaahenPassive.MaxStacksMultiplier",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

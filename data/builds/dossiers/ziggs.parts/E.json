@@ -1,0 +1,196 @@
+{
+ "name": "Hexplosive Minefield",
+ "cooldown": {
+  "values": [
+   16,
+   16,
+   16,
+   16,
+   16
+  ],
+  "quote": "16"
+ },
+ "cost": {
+  "values": [
+   70,
+   80,
+   90,
+   100,
+   110
+  ],
+  "quote": "{{ap|70 to 110}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage per Mine",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    30,
+    70,
+    110,
+    150,
+    190
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.25,
+      0.3,
+      0.35,
+      0.4,
+      0.45
+     ]
+    }
+   ],
+   "quote": "{{ap|30 to 190}} {{as|(+ {{ap|25 to 45}}% AP)}}",
+   "bin": [
+    "ZiggsE#TotalDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Reduced Damage per Mine (subsequent mine hits)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    12,
+    28,
+    44,
+    60,
+    76
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.1,
+      0.12,
+      0.14,
+      0.16,
+      0.18
+     ]
+    }
+   ],
+   "quote": "{{ap|30*0.4 to 190*0.4}} {{as|(+ {{ap|25*0.4 to 45*0.4}}% AP)}}",
+   "bin": [
+    "ZiggsE.DamagePerMine",
+    "ZiggsE.APRatioPerMine",
+    "ZiggsE.SubsequentMineDamageMod"
+   ],
+   "binNote": "Wiki value is derived: DamagePerMine and APRatioPerMine each multiplied by SubsequentMineDamageMod=0.4; no direct bin calculation named ReducedDamage besides a tooltip-only reference."
+  },
+  {
+   "id": "e_4",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{ap|10 to 50}}%",
+   "bin": [
+    "ZiggsE.Slow"
+   ],
+   "binNote": "Bin stores the slow as negative values [-0.1 to -0.5] (a movement speed modifier), the wiki states the magnitude as a positive percentage; same numbers, sign convention differs."
+  },
+  {
+   "id": "e_5",
+   "meaning": "Slow duration per mine hit",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{fd|1.5}} seconds",
+   "bin": [
+    "ZiggsE.SlowDuration"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Minefield lasts up to this long (arming after 0.5s)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "lasting for up to 10 seconds",
+   "bin": [
+    "ZiggsE.MineDuration"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "Mine arming delay before it can detonate",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "arming after {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "No bin data value found for the 0.5s arming delay; likely tooltip-only/hardcoded timing not exposed in listed rows."
+  },
+  {
+   "id": "e_8",
+   "meaning": "Number of mines scattered",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 11,
+   "terms": [],
+   "quote": "scatters a cluster of 11 proximity mines",
+   "bin": [],
+   "binNote": "No bin data value for mine count found among listed ZiggsE rows; likely hardcoded in spawn logic, not a DataValue."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Each mine explodes on contact with terrain or an enemy, dealing damage and slowing.",
+   "quote": "Each mine within the area explodes upon contact with terrain or an enemy, dealing {{as|magic damage}} and {{tip|slow|slowing}} them for {{fd|1.5}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "An enemy takes only 40% damage from mines after the first one hits it.",
+   "quote": "An enemy takes 40% damage from subsequent mines.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Mines do not explode from player-generated terrain (e.g. Anivia wall).",
+   "quote": "Mines will not explode upon contact with [[Terrain#Player-Generated|player-generated terrain]].",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "A spell shield blocks only one mine detonation's effects, not the whole field.",
+   "quote": "{{tip|Spell shield}} will block the effects of a single detonation.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZiggsE.TriggerRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ZiggsE.MinePerceptionBubbleSize",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

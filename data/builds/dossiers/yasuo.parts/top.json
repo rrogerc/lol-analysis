@@ -1,0 +1,134 @@
+{
+ "champion": "yasuo",
+ "primitives": [
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "Yasuo's total critical strike chance is doubled from all other sources and his crits deal only 95% of normal crit damage; Steel Tempest and Last Breath's crit-affecting damage can crit; Steel Tempest's crit multiplier applies only to its AD-ratio term, not its flat base damage (see unsettled)."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every 1% total critical strike chance in excess of 100% converts into 0.5 bonus AD."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "For 15s after Last Breath, Yasuo's critical strikes ignore 60% of the target's bonus armor (stacks additively with other percent armor pen)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Steel Tempest builds Gathering Storm (max 2 stacks, 6s each, refreshing on hit) which empowers the next Q into a whirlwind; Sweeping Blade builds Ride the Wind (max 4 stacks, 5s each) adding +25% E damage per stack, up to +100% at max stacks."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "At 2 Gathering Storm stacks the next Steel Tempest cast is consumed to become an empowered whirlwind instead of a thrust; against a single target both variants deal the same base+ratio (and crit) damage."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Steel Tempest's cooldown (base 4s) and thrust cast time (base 0.35s) both shrink with Yasuo's bonus attack speed per the wiki's static/custominfo formulas; the bin only lists a flat per-rank 4s cooldown."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Base on-cast/on-impact damage instances: Q's thrust/whirlwind, E's impact damage, R's knockup-resolution damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Way of the Wanderer's Flow shield (125-600 by level, lasting 1s) triggers once 100 Flow stacks are reached and Yasuo takes champion/monster damage; relevant only when Yasuo is the survival-fight target, not to damage dealt."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two mechanics fall outside the closed primitive list's expected shape. (1) Steel Tempest's crit formula (TotalDamageCrit = BaseDamage + (ADRatio x critDamage) x ad) applies the crit multiplier only to the AD-ratio term, not to the flat base damage, unlike the usual whole-instance crit scaling a generic crit-interaction primitive would assume; combined with Yasuo's doubled crit chance, 0.95 crit-damage multiplier, and excess-crit-to-AD conversion, the layered crit math needs bespoke computation rather than a single multiplier. (2) Last Breath's cast requirement (a nearby airborne enemy champion from a genuinely 'enemy' source, excluding self/ally-applied displacement per the wiki notes) creates an open question about whether Yasuo can even cast R off his own Q-whirlwind knockup in a 1v1 dummy fight with no third-party CC; resolving whether R is castable at all, and when, needs bespoke rotation logic rather than a generic plain-cast/target-debuff treatment."
+ },
+ "unsettled": [
+  {
+   "question": "Can Yasuo cast Last Breath (R) on the dummy using his own Steel Tempest whirlwind knock-up, or does R require an airborne source other than Yasuo himself, making R uncastable in a 1v1 fight with no other champion's CC?",
+   "options": [
+    "Yasuo's own Q-whirlwind knockup on the enemy counts as an enemy-applied airborne source (from the target's perspective) and satisfies R's cast requirement, matching the known live-game Q3->R combo",
+    "The wiki's note that self/ally-applied displacements do not qualify excludes Yasuo's own knockup, so R cannot be cast in a pure 1v1 fight without an external CC source"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Last Breath'' requires the target to be affected by {{tip|airborne}} from an {{tt|enemy source|from the target's perspective}}",
+    "Self-applied or allied-applied {{tip|airborne|displacements}} do not allow ''Last Breath'' to target the champion. Those applied by the ''neutral'' team (e.g. {{uis|Dragon}} initial knock back) '''can''' be targeted."
+   ]
+  },
+  {
+   "question": "Is Steel Tempest's crit-damage scaling truly limited to only the AD-ratio portion of its damage (per the bin's explicit formula), or should the whole Q damage instance (base + ratio) be scaled by the crit multiplier as the wiki's single leveling line for 'Critical Strike Damage' might suggest?",
+   "options": [
+    "Only the 105% AD-ratio term is multiplied by crit damage; the flat base damage never benefits from crits, per YasuoQ1Wrapper#TotalDamageCrit = BaseDamage + (ADRatio x critDamage) x ad",
+    "The entire Q damage value (base + AD ratio) is scaled uniformly by the crit multiplier when it crits"
+   ],
+   "impact": "high",
+   "quotes": [
+    "YasuoQ1Wrapper#TotalDamageCrit = BaseDamage=[20/45/70/95/120] + ((ADRatio=1.05)xcritDamage)xad"
+   ]
+  },
+  {
+   "question": "Does Sweeping Blade's per-target cooldown (6-10s by rank, starting on dash-start) gate how often E can be recast on the single dummy target, effectively overriding the much shorter 0.5-0.1s ability cooldown in this fight?",
+   "options": [
+    "Yes: against a lone target E can only be recast once the per-target cooldown (6-10s) expires, so E contributes far less frequently than its raw cooldown implies",
+    "No: the per-target cooldown is a niche anti-stacking rule not meant to bind a single-target dummy simulation, so E should be modeled at its raw 0.5-0.1s cooldown"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{tt|{{ap|10 to 6}}|Starts upon starting the dash}}"
+   ]
+  },
+  {
+   "question": "Do the damage-fight and survival-fight environments let Yasuo move enough to generate Flow stacks (needed for his passive shield), or is he treated as effectively stationary like the dummy so Flow never completes?",
+   "options": [
+    "Yasuo is assumed to move (attack-moving, dashing with E) enough over the ~15s window to reach 100 Flow stacks and gain the shield at least once",
+    "Yasuo, like the dummy, is treated as stationary aside from ability casts, so Flow accumulation is negligible and the shield essentially never triggers within the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Yasuo''' generates a {{tip|stack}} of {{tip|Flow}} for every {{pp|{{#var:f1}} to {{#var:f13}} for 3|1 to 13}} units he travels by any means."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Steel Tempest (Q) on the dummy to start Gathering Storm stacking and apply its on-hit/on-attack effects.",
+   "Auto-attack the dummy continuously, weaving attacks between ability casts and letting Q's on-hit effects and any crit-derived bonus AD apply.",
+   "Cast Sweeping Blade (E) toward the dummy once available to deal its magic damage and build a Ride the Wind stack, respecting its per-target cooldown before recasting it on the same target.",
+   "Recast Steel Tempest (Q) every time its (attack-speed-reduced) cooldown is up; every second hit consumes 2 Gathering Storm stacks to fire the empowered whirlwind instead of the thrust, dealing the same damage against the single target.",
+   "If Last Breath (R) is castable against the dummy (pending the airborne-source ruling), cast it immediately after a Q-whirlwind knockup for its large burst damage and to open the 15s bonus-armor-penetration window on Yasuo's crits, then keep auto-attacking/critting to benefit from that debuff.",
+   "Repeat the Q-on-cooldown / auto-attack / periodic-E loop, using R again if its 30-70s cooldown (rank-dependent) comes back up within the fight window, for the remainder of the ~15s fight."
+  ],
+  "questions": [
+   "Is Last Breath actually castable in this 1v1 dummy scenario given the airborne-source ambiguity, and if not, should R be dropped from the rotation entirely?",
+   "What gear/attack-speed assumption should be used to compute Steel Tempest's reduced cooldown and cast time, since these scale continuously with bonus attack speed rather than by discrete ability rank?",
+   "How should Sweeping Blade's per-target cooldown be handled against a single dummy target: is E cast once as an opener, or repeatedly at its 6-10s per-target cadence throughout the fight?",
+   "Should the rotation prioritize weaving basic attacks between every Q cast (to benefit from on-hit effects) over minimizing ability-cast downtime, or does Q's cast time make pure ability-priority higher DPS?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

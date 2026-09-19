@@ -1,0 +1,1017 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "YuumiP",
+    "key": "Characters/Yuumi/Spells/YuumiPAbility/YuumiP",
+    "dataValues": {
+     "TakedownCompanionship": 2,
+     "HealDelayTime": 4,
+     "MinionKillCompanionship": 2,
+     "PityTimer": 6
+    },
+    "calcs": {
+     "PassiveCooldown": {
+      "expr": "byLevelL[20/19/18/17/16/15/14/13/12/11/10/9/8/7/6/5/4/3]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        19,
+        18,
+        17,
+        16,
+        15,
+        14,
+        13,
+        12,
+        11,
+        10,
+        9,
+        8,
+        7,
+        6,
+        5,
+        4,
+        3
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "{656dde8a}": {
+      "expr": "byLevel50",
+      "flat": 50,
+      "terms": [],
+      "refs": []
+     },
+     "HealAmount": {
+      "expr": "byLevel(20..110) + 0.3xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        25.2941176,
+        30.588235,
+        35.882353,
+        41.17647,
+        46.47059,
+        51.764706,
+        57.058824,
+        62.35294,
+        67.64706,
+        72.94118,
+        78.23529,
+        83.52941,
+        88.82353,
+        94.117647,
+        99.411765,
+        104.70588,
+        110
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "YuumiQ",
+    "key": "Characters/Yuumi/Spells/YuumiQAbility/YuumiQ",
+    "cooldown": 6.5,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70,
+      75
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MissileDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       95,
+       130,
+       165,
+       200,
+       235
+      ]
+     },
+     "SlowAmount": 20,
+     "SlowDuration": 1,
+     "TimeToAfterburners": 1.35,
+     "MissileLifetime": 1.85,
+     "StartingSpeed": 650,
+     "AfterburnerSpeed": 950,
+     "InitialTimeDelay": 0.2,
+     "MissileStartingOffset": 75,
+     "EmpoweredSlowAmount": {
+      "axis": "rank",
+      "v": [
+       50,
+       53,
+       56,
+       59,
+       62,
+       65
+      ]
+     },
+     "EmpoweredSlowDuration": 2,
+     "EmpoweredMissileDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       135,
+       190,
+       245,
+       300,
+       355
+      ]
+     },
+     "OnHitBase": {
+      "axis": "rank",
+      "v": [
+       10,
+       12,
+       14,
+       16,
+       18,
+       20
+      ]
+     },
+     "AllyCritChanceMaxAmp": 0.75,
+     "BuffDuration": 5,
+     "APRatio": 0.2,
+     "EmpoweredAPRatio": 0.3
+    },
+    "calcs": {
+     "TotalMissileDamage": {
+      "expr": "MissileDamage=[60/95/130/165/200/235] + (APRatio=0.2)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        95,
+        130,
+        165,
+        200,
+        235
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "MissileDamage"
+      ]
+     },
+     "TotalMissileDamageEmpowered": {
+      "expr": "EmpoweredMissileDamage=[80/135/190/245/300/355] + (EmpoweredAPRatio=0.3)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        135,
+        190,
+        245,
+        300,
+        355
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "EmpoweredAPRatio"
+       }
+      ],
+      "refs": [
+       "EmpoweredAPRatio",
+       "EmpoweredMissileDamage"
+      ]
+     },
+     "OnHitDamageCalc": {
+      "expr": "0.05xap + OnHitBase=[10/12/14/16/18/20]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        12,
+        14,
+        16,
+        18,
+        20
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": [
+       "OnHitBase"
+      ]
+     }
+    }
+   },
+   {
+    "script": "YuumiQRelease",
+    "key": "Characters/Yuumi/Spells/YuumiQAbility/YuumiQRelease",
+    "cooldown": 0.5,
+    "dataValues": {
+     "MSDuration": 2,
+     "MSAmount": {
+      "axis": "rank",
+      "v": [
+       35,
+       40,
+       45,
+       50,
+       55,
+       60
+      ]
+     },
+     "HealAmountMin": {
+      "axis": "rank",
+      "v": [
+       35,
+       45,
+       55,
+       65,
+       75,
+       85
+      ]
+     },
+     "HealAmountMultiplier": 2,
+     "MaxHealThreshold": 0.2
+    },
+    "calcs": {
+     "MinAmountToHeal": {
+      "expr": "HealAmountMin=[35/45/55/65/75/85] + 0.2xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        45,
+        55,
+        65,
+        75,
+        85
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "HealAmountMin"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "YuumiW",
+    "key": "Characters/Yuumi/Spells/YuumiWAbility/YuumiW",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashSpeed": {
+      "axis": "rank",
+      "v": [
+       1300,
+       1350,
+       1400,
+       1450,
+       1500
+      ]
+     },
+     "CastForgivenessRange": 200,
+     "CastRange": 700,
+     "MaxBonusHealShieldPower": 0.15,
+     "BaseHealthOnHit": {
+      "axis": "rank",
+      "v": [
+       3,
+       4,
+       5,
+       6,
+       7
+      ]
+     },
+     "HealAndShieldPower": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.05,
+       0.06,
+       0.07,
+       0.08
+      ]
+     },
+     "MinBonusHealShieldPower": 0.05
+    },
+    "calcs": {
+     "AttachCooldown": {
+      "expr": "byLevelL[10/10/10/10/10/5/5/5/5/5/0/0/0/0/0/0/0/0]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        5,
+        5,
+        5,
+        5,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "CCAttachLockout": {
+      "expr": "5",
+      "flat": 5,
+      "terms": [],
+      "refs": []
+     },
+     "HealthOnHit": {
+      "expr": "BaseHealthOnHit=[3/4/5/6/7] + 0.03xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        3,
+        4,
+        5,
+        6,
+        7
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.03
+       }
+      ],
+      "refs": [
+       "BaseHealthOnHit"
+      ]
+     }
+    }
+   },
+   {
+    "script": "YuumiWAttach",
+    "key": "Characters/Yuumi/Spells/YuumiWAbility/YuumiWAttach",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashSpeed": {
+      "axis": "rank",
+      "v": [
+       1200,
+       1300,
+       1400,
+       1500,
+       1600
+      ]
+     }
+    }
+   },
+   {
+    "script": "YuumiWCast",
+    "key": "Characters/Yuumi/Spells/YuumiWAbility/YuumiWCast",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashSpeed": {
+      "axis": "rank",
+      "v": [
+       1200,
+       1300,
+       1400,
+       1500,
+       1600
+      ]
+     }
+    }
+   },
+   {
+    "script": "YuumiWEndWrapper",
+    "key": "Characters/Yuumi/Spells/YuumiWAbility/YuumiWEndWrapper",
+    "cooldown": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CastForgivenessRange": 125,
+     "AdaptiveStatSharing": {
+      "axis": "rank",
+      "v": [
+       0.12,
+       0.14,
+       0.16,
+       0.18,
+       0.2
+      ]
+     },
+     "FlatAdaptiveStats": {
+      "axis": "rank",
+      "v": [
+       12,
+       14,
+       16,
+       18,
+       20
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "YuumiE",
+    "key": "Characters/Yuumi/Spells/YuumiEAbility/YuumiE",
+    "cost": {
+     "axis": "rank",
+     "v": [
+      80,
+      90,
+      100,
+      110,
+      120
+     ]
+    },
+    "dataValues": {
+     "MSDuration": 3,
+     "MSAmount": 20,
+     "AttackSpeedAmount": {
+      "axis": "rank",
+      "v": [
+       25,
+       27.5,
+       30,
+       32.5,
+       35
+      ]
+     },
+     "BaseShielding": {
+      "axis": "rank",
+      "v": [
+       65,
+       90,
+       115,
+       140,
+       165
+      ]
+     },
+     "ManaRestore": {
+      "axis": "rank",
+      "v": [
+       20,
+       24,
+       28,
+       32,
+       36
+      ]
+     },
+     "MaxManaPercIncrease": 1,
+     "APRatio": 0.4
+    },
+    "calcs": {
+     "TotalShielding": {
+      "expr": "BaseShielding=[65/90/115/140/165] + (APRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        90,
+        115,
+        140,
+        165
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseShielding"
+      ]
+     },
+     "TotalAttackSpeed": {
+      "expr": "AttackSpeedAmount=[25/27.5/30/32.5/35] + 0.08xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        27.5,
+        30,
+        32.5,
+        35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.08
+       }
+      ],
+      "refs": [
+       "AttackSpeedAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "YuumiR",
+    "key": "Characters/Yuumi/Spells/YuumiRAbility/YuumiR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      110,
+      100
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "UltLength": 1300,
+     "BaseMissileDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       125,
+       175
+      ]
+     },
+     "MultiMissileReduction": 0.25,
+     "CCDuration": 1.25,
+     "UltDuration": 3.5,
+     "NumberOfWaves": 5,
+     "WavesToRoot": 3,
+     "TimeBetweenWaves": 0.75,
+     "MissileSlowPercent": -0.4,
+     "SpaceBehindWave": 200,
+     "BaseHealPerWave": {
+      "axis": "rank",
+      "v": [
+       30,
+       50,
+       70
+      ]
+     },
+     "BaseSlow": -0.1,
+     "BonusSlowPerWave": -0.1,
+     "OvershieldBonusDuration": 1.5,
+     "DegreesPerTick": 10
+    },
+    "calcs": {
+     "TotalMissileDamage": {
+      "expr": "BaseMissileDamage=[75/125/175] + 0.25xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        125,
+        175
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25
+       }
+      ],
+      "refs": [
+       "BaseMissileDamage"
+      ]
+     },
+     "TotalSingleTargetDamage": {
+      "expr": "TotalMissileDamage * 1 + (NumberOfWaves=5 + -1)*(MultiMissileReduction=0.25)",
+      "modifies": "TotalMissileDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseMissileDamage",
+       "MultiMissileReduction",
+       "NumberOfWaves"
+      ]
+     },
+     "MultiMissileTotal": {
+      "expr": "TotalMissileDamage * MultiMissileReduction=0.25",
+      "modifies": "TotalMissileDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        18.75,
+        31.25,
+        43.75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0625
+       }
+      ],
+      "refs": [
+       "BaseMissileDamage",
+       "MultiMissileReduction"
+      ]
+     },
+     "TotalHealPerWave": {
+      "expr": "BaseHealPerWave=[30/50/70] + 0.12xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        50,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.12
+       }
+      ],
+      "refs": [
+       "BaseHealPerWave"
+      ]
+     },
+     "EnhancedHealPerWave": {
+      "expr": "TotalHealPerWave * <{f3cbe7b2}>",
+      "modifies": "TotalHealPerWave",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "AllyHealingPerc": {
+      "expr": "byLevelL[1.3/1.3/1.3/1.3/1.3/1.3/1.35/1.4/1.45/1.5/1.55/1.6/1.65/1.7/1.75/1.8/1.85/1.9]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1.3,
+        1.3,
+        1.3,
+        1.3,
+        1.3,
+        1.3,
+        1.3499999,
+        1.4,
+        1.44999995,
+        1.5,
+        1.55,
+        1.59999996,
+        1.65,
+        1.69999996,
+        1.75,
+        1.8,
+        1.84999996,
+        1.9
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "other": [
+   {
+    "script": "YuumiEURF",
+    "key": "Characters/Yuumi/Spells/YuumiEURF",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      13.75,
+      12.5,
+      11.25,
+      10,
+      10
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      80,
+      90,
+      100,
+      110,
+      120,
+      130
+     ]
+    },
+    "dataValues": {
+     "MSDuration": 3,
+     "MSAmount": 20,
+     "AttackSpeedAmount": {
+      "axis": "rank",
+      "v": [
+       25,
+       27.5,
+       30,
+       32.5,
+       35,
+       37.5
+      ]
+     },
+     "BaseShielding": {
+      "axis": "rank",
+      "v": [
+       65,
+       90,
+       115,
+       140,
+       165,
+       190
+      ]
+     },
+     "ManaRestore": {
+      "axis": "rank",
+      "v": [
+       20,
+       24,
+       28,
+       32,
+       36,
+       40
+      ]
+     },
+     "MaxManaPercIncrease": 1,
+     "APRatio": 0.4
+    },
+    "calcs": {
+     "TotalShielding": {
+      "expr": "BaseShielding=[65/90/115/140/165/190] + (APRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        90,
+        115,
+        140,
+        165,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseShielding"
+      ]
+     },
+     "TotalAttackSpeed": {
+      "expr": "AttackSpeedAmount=[25/27.5/30/32.5/35/37.5] + 0.08xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        27.5,
+        30,
+        32.5,
+        35,
+        37.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.08
+       }
+      ],
+      "refs": [
+       "AttackSpeedAmount"
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "YuumiQ",
+  "W": "YuumiW",
+  "E": "YuumiE",
+  "R": "YuumiR",
+  "P": "YuumiP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 440,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 2,
+   "{3a509002}": 0.08
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Yuumi",
+  "name": "Yuumi",
+  "partype": "Mana",
+  "passive": "Feline Friendship",
+  "spells": [
+   {
+    "id": "YuumiQ",
+    "name": "Prowling Projectile",
+    "maxrank": 6,
+    "cooldown": [
+     6.5,
+     6.5,
+     6.5,
+     6.5,
+     6.5,
+     6.5
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70,
+     75
+    ]
+   },
+   {
+    "id": "YuumiW",
+    "name": "You and Me!",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YuumiE",
+    "name": "Zoomies",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     80,
+     90,
+     100,
+     110,
+     120
+    ]
+   },
+   {
+    "id": "YuumiR",
+    "name": "Final Chapter",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     110,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Feline Friendship": {
+    "projectile": "False",
+    "targeting": "Passive",
+    "affects": "Self, Allies, Enemies"
+   }
+  },
+  "Q": {
+   "Prowling Projectile": {
+    "damagetype": "Magic",
+    "spelleffects": "Spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Prowling Projectile 2": {}
+  },
+  "W": {
+   "You and Me!": {
+    "targeting": "[[Unit-targeted|Unit]] / [[Direction-targeted|Direction]]",
+    "affects": "Allies"
+   },
+   "Change of Plan": {
+    "targeting": "[[Unit-targeted|Unit]] / [[Direction-targeted|Direction]]",
+    "affects": "Allies"
+   }
+  },
+  "E": {
+   "Zoomies": {
+    "targeting": "Auto",
+    "affects": "Self / Allies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Final Chapter": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Self, Allies, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

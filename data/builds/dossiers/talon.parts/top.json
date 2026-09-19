@@ -1,0 +1,144 @@
+{
+ "champion": "talon",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Wound stacks (cap 3, 6s duration, refreshed by abilities/attacks) built up on the target by Talon's abilities and attacks"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "next basic attack on-hit against a maxed Wound target is empowered to consume the stacks and trigger the bleed"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "bleed damage dealt over 2s in 0.125s ticks once the empowered attack lands"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "baseline on-cast/on-cooldown damage for the leap, the outgoing dagger fan, and the dispersed ring of blades"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Noxian Diplomacy resets Talon's basic attack timer on landing"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Noxian Diplomacy critically strikes (150% damage) if cast within close/melee range instead of dashing from afar"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "killing the target with Noxian Diplomacy heals Talon and cuts the ability's cooldown by 50%"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Rake's outgoing and returning dagger passes are two separately timed damage instances; Shadow Assault's outward dispersal and its (auto or manual) recast convergence are two separately timed damage instances"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q's crit/cast-time behavior depends on cast range to the target; W's return pass and damage only occur if the daggers reach maximum range before homing back; R's recast convergence damage landing on a stationary target depends on blade geometry relative to Talon/target position"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "mana costs (40/50-70/100) on a limited mana pool constrain how often Q/W/R can be recast inside the 15s window"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The passive's stack-then-consume-into-a-DoT pattern maps to target-stacks + empowered-attack + dot; Q's range-conditional crit/cast-time and attack reset map to crit-interaction + positional-assumption + attack-reset + cooldown-manipulation; W's two-pass and R's cast-plus-recast structures map to recast-or-multipart with positional-assumption governing whether both passes connect. No mechanic here (stat conversion, forms, ammo, execute thresholds, etc.) falls outside this set."
+ },
+ "unsettled": [
+  {
+   "question": "For maximum damage, should the simulator have Talon cast Noxian Diplomacy from close range (getting the crit multiplier and attack reset, but incurring a cast time equal to his basic-attack windup) or from beyond close range (instant, no cast time, but no crit)?",
+   "options": [
+    "Always cast at close range: the crit multiplier (150% damage, ~250% bonus AD) outweighs the windup-length cast-time delay",
+    "Always cast from range when possible: the zero cast-time ranged dash maximizes casts-per-second even without the crit",
+    "Simulator should compute both and pick whichever yields higher rotation DPS, varying by build attack speed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If cast within close range, ... over the cast time instead and ''Noxian Diplomacy'' {{tip|critical strike|critically strikes}} for {{as|{{critical damage|150|100}}|critical damage}} damage",
+    "{{dv|{{tt|None|Ranged dash attack}}|{{tt|{{as|100% of '''Talon's''' windup time|as}}"
+   ]
+  },
+  {
+   "question": "Does Shadow Assault's recast (convergence) damage reliably land on a single stationary dummy, so the wiki's doubled 'Total Physical Damage' figure is achievable in the damage fight, or does the outward ring only guarantee one hit while the converging blades' return path (to Talon or to an attacked target) may not re-cross the dummy's position?",
+   "options": [
+    "Assume both the outward and convergence passes always hit the stationary target, i.e. use the full 2x 'Total Physical Damage' figure",
+    "Assume only the outward pass reliably hits; the convergence pass connecting depends on unmodeled geometry and should not be assumed guaranteed",
+    "Model convergence as hitting only if Talon breaks stealth with a basic attack or Q on the target (which redirects convergence to the target explicitly)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Shadow Assault'' casts a total of 12 blades evenly distributed in all directions",
+    "Breaking stealth with a basic attack or ''{{ai|Noxian Diplomacy|Talon}}'' will converge the blades to the target instead."
+   ]
+  },
+  {
+   "question": "Does Rake's returning dagger pass reliably hit the same stationary target as the outgoing pass in a no-terrain dummy fight (i.e., is the return damage always assumed to land), or does it require the target to remain within the lingering-blade radius at the end of the 0.7s delay, which a positioned/stationary-but-off-axis dummy might not satisfy?",
+   "options": [
+    "Assume the return pass always lands on a stationary target that was hit by the outgoing pass (full 'Total Physical Damage' each cast)",
+    "Assume the return pass only lands if the target sits at or near maximum Rake range when the daggers linger, which is a positional assumption the fight must fix explicitly",
+    "Treat return-pass connection as build/position-independent since the dummy never moves, making it a non-issue in practice"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "At maximum range, the daggers linger for {{fd|0.7}} seconds before homing back to '''Talon''', dealing {{as|physical damage}} to enemies hit"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Talon opens with Shadow Assault (R) at close range so the outward ring of blades hits the dummy immediately, dealing its damage and applying a Wound stack.",
+   "Immediately casts Noxian Diplomacy (Q) from close range (within melee/150 units) to trigger its critical-strike damage variant, apply a second Wound stack, and reset the basic attack timer.",
+   "The reset basic attack fires right after Q lands, applying a third Wound stack (or, once 3 stacks are already up, consuming them via Blade's End to start the bleed DoT).",
+   "Casts Rake (W) so both the outgoing and returning volleys hit the target, adding two more damage instances and a Wound stack application.",
+   "Recasts Shadow Assault as soon as its minimum lifetime (0.8-1s) has elapsed, converging the blades onto the target for the second half of its damage.",
+   "Between ability cooldowns, Talon continues auto-attacking on-cooldown to keep re-applying/consuming Wound stacks and benefit from Blade's End's periodic empowered attacks.",
+   "Recasts Q, W, and R again as soon as each comes off cooldown and mana allows, roughly Q > W > R by cooldown length, filling remaining time with basic attacks."
+  ],
+  "questions": [
+   "Should Q be cast at close range every time to guarantee the crit (accepting the windup-length cast time), or does ranged Q's zero cast time produce more total damage over 15s at high attack speed?",
+   "Is Shadow Assault's second (recast) damage instance guaranteed to connect on a stationary single target, or should the fight assume only the outward pass always lands?",
+   "Does Rake's return pass reliably hit a stationary dummy standing at Talon's chosen engage range, or only if the dummy is placed at Rake's maximum range?",
+   "Should the rotation prioritize waiting for 3 Wound stacks before auto-attacking (to always trigger Blade's End) at the cost of attack tempo, or attack on-cooldown regardless?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

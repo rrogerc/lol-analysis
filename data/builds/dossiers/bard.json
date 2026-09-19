@@ -1,0 +1,721 @@
+{
+ "champion": "bard",
+ "abilities": {
+  "P": {
+   "name": "Traveler's Call / Traveler's Call 2",
+   "cooldown": {
+    "values": null,
+    "quote": "{{dv|{{tt|50|Chime spawn rate}}|{{tt|{{pp|changedisplay=true|type = number of Chimes|8 to 4 for 5|0;20;40;55;70}}|Meep spawn rate}}}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_meep_damage",
+     "meaning": "bonus magic damage dealt by meep-empowered basic attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 30,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{as|30|magic damage}} (''+ {{as|6|magic damage}} per 5 {{as|Chimes|buzzword2}} collected'') {{as|(+ 40% AP)}} {{as|'''bonus''' magic damage}}",
+     "bin": [
+      "BardPTooltip_D_nS#MeepDamageNoChime"
+     ]
+    },
+    {
+     "id": "p_meep_damage_per_chime_checkpoint",
+     "meaning": "additional flat meep damage per 5 Chimes collected",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "+ {{as|6|magic damage}} per 5 {{as|Chimes|buzzword2}} collected",
+     "bin": [
+      "BardPTooltip_D_nS.DamagePerCheckpoint"
+     ],
+     "binNote": "TooltipChimeDamageCheckpoint=5 is the chime-count denominator ('per 5 Chimes'), not a damage number itself; the damage-per-checkpoint value is DamagePerCheckpoint=6, matching the wiki's +6."
+    },
+    {
+     "id": "p_meep_slow",
+     "meaning": "slow applied by meeps at 5+ Chimes, duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|slow}} damaged enemies by {{pp|type = number of Chimes|key=%|25 to 75 for 6|5;25;45;60;75;85}} for 1 second",
+     "bin": [
+      "BardPTooltip_D_nS.SlowDuration"
+     ]
+    },
+    {
+     "id": "p_meep_spawn_cd",
+     "meaning": "base cooldown for meep generation",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "{{ci|Bard}} generates {{as|meeps|buzzword3}} that are each consumed in his basic attacks",
+     "bin": [
+      "BardPTooltip_D_nS.BaseMeepSpawnCD"
+     ],
+     "binNote": "The wiki does not state the base meep spawn cooldown number in the description text (only the reduced-by-Chimes progression in the static box); recorded from the bin as it directly affects on-hit damage frequency in a dummy fight."
+    },
+    {
+     "id": "p_max_meep_stacks",
+     "meaning": "maximum number of Meeps Bard can hold at once",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "'''Bard''' can have up to {{pp|type = number of Chimes|1 to 9 for 9|0;10;30;50;65;80;90;95;100}} {{as|Meeps|buzzword3}} at a time.",
+     "bin": [],
+     "binNote": "No data value named 'MaxPacks' exists on BardPTooltip_D_nS; the sheet lists MaxPacks under BardW instead (BardW.MaxPacks=3), and the wiki's own progression (1 to 9) does not match that number either. This is a disagreement/mismatch across sources that could not be resolved to a single bin row; kept the wiki's stated number and left bin empty rather than cite a wrong or unrelated row."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Meep-empowered attacks are consumed on-attack, dealing bonus magic damage on top of the basic attack.",
+     "quote": "his basic attacks are empowered to each consume a {{as|Meep|buzzword3}} {{tip|on-attack}} to deal {{as|30|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 15+ Chimes, meep damage also hits enemies within 150 units of the primary target and in a cone behind them, as a separate area-damage instance.",
+     "quote": "At {{as|15 Chimes|buzzword2}}, {{as|Meeps|buzzword3}} deal the damage to enemies within 150 units of the primary target as well as those in a cone behind them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Meep damage on the primary target applies as spell damage, while the cone/splash damage on secondary targets applies as area damage.",
+     "quote": "The damage from {{as|Meeps|buzzword3}}:\n** Applies as {{tip|spell damage}} on the primary target.\n** Applies as {{tip|area damage}} on secondary target(s).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the meep-empowered attack is dodged, blocked, or Bard is blinded, the basic attack itself deals no damage but the meep damage is still applied separately.",
+     "quote": "If a {{as|Meep|buzzword3}} empowered auto attack is {{tip|dodged}}, {{tip|blocked}} or when '''Bard''' is {{tip|blind|blinded}}, the basic attack itself will deal no damage, but the {{as|Meep|buzzword3}} damage will still be applied.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not trigger against structures and wards.",
+     "quote": "The empowered attack will not trigger against [[structures]] and [[ward]]s.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Meeps grant additional stacks of Electrocute and Conqueror.",
+     "quote": "{{as|Meeps|buzzword3}} grant additional stacks of {{ri|Electrocute}} and {{ri|Conqueror}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Collecting a Chime restores mana equal to a percentage of maximum mana.",
+     "quote": "restores {{sti|mana|{{as|12% '''maximum''' mana}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Only Meep cone attacks (not the combined basic-attack instance) are absorbed by spell shields.",
+     "quote": "Only {{as|Meep|buzzword3}} cone attacks are absorbed by {{tip|spell shield|spell shields}}. Those that deal damage together with the basic attack don't.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BardPTooltip_D_nS.TooltipMSPerStack",
+     "reason": "utility"
+    },
+    {
+     "ref": "BardPTooltip_D_nS.TooltipMSMax",
+     "reason": "utility"
+    },
+    {
+     "ref": "BardPTooltip_D_nS.TooltipManaRestore",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "BardPTooltip_D_nS.ChimesPerUpgrade",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "BardPTooltip_D_nS.MeepAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "BardPTooltip_D_nS.MaxSpeedStacks",
+     "reason": "utility"
+    },
+    {
+     "ref": "BardPTooltip_D_nS.SpeedStackDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "BardPTooltip_D_nS.TooltipChimeDamageCheckpoint",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "BardPTooltip_D_nS#ChimesForSlowUpgrade",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "BardPTooltip_D_nS#ChimesForSplashDamageUpgrade",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "BardPTooltip_D_nS#ChimesForSplashAreaUpgrade",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Cosmic Binding",
+   "cooldown": {
+    "values": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "quote": "{{ap|11 to 7}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "BardQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Disable Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.2,
+      1.4,
+      1.6,
+      1.8
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 1.8}} seconds",
+     "bin": [
+      "BardQ.SlowDuration",
+      "BardQ.StunDuration"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Slow Amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "slows them by 60%",
+     "bin": [
+      "BardQ.SlowAmountPercentage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "After hitting the first enemy, the bolt continues and can hit terrain or a second enemy, dealing the same damage and stunning both targets.",
+     "quote": "If the bolt hits terrain or a second enemy, it {{tip|stun|stuns}} both targets for the same duration, dealing the same damage to the secondary target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield on the first target blocks the damage but the bolt still passes through, and can still stun/damage a second target.",
+     "quote": "If the first target has a spell shield, they will block the damage but the bolt will still pass through them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the second target has a spell shield, they block the stun and damage, but the first target is still stunned.",
+     "quote": "If the second target has a spell shield, they will block the stun and damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The stun still applies even if a target dies to the ability itself before the projectile can bind them.",
+     "quote": "The {{tip|stun}} is still applied even if the first or second target dies to the ability itself or before the projectile can bind them.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BardQ.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "BardQ.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Caretaker's Shrine",
+   "cooldown": {
+    "values": [
+     0
+    ],
+    "quote": "|recharge     = 18",
+    "binNote": "The wiki template has no explicit cooldown field (Bard's shrine uses a charge/ammo system instead, shown as 'recharge'). The bin's Spell cooldown is 0, matching the absence of a per-cast cooldown; the recharge value governs the separate Ammo_Cooldown charge system (see w_8)."
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Minimum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      50,
+      75,
+      100,
+      125
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|25 to 125}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "BardW#InitialHeal"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Maximum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      87.5,
+      125,
+      162.5,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|50 to 200}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "BardW#MaxHeal"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.2,
+        0.225,
+        0.25,
+        0.275,
+        0.3
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.06
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|20 to 30}}% {{as|(+ 6% per 100 AP)}}",
+     "bin": [
+      "BardW#Calc_MoveSpeed"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "shrine charge-up time to reach maximum heal",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "gathers power over 5 seconds",
+     "bin": [
+      "BardW.ChargeupTime"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "movement speed bonus decay duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "BardW.MoveSpeed_Duration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "maximum shrines active at once",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "Up to 3 shrines may be active at a time",
+     "bin": [
+      "BardW.MaxPacks"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "maximum stocked charges",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "up to a maximum of 2",
+     "bin": [
+      "BardW.Ammo_Limit"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "charge recharge time",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 18,
+     "terms": [],
+     "quote": "|recharge     = 18",
+     "bin": [
+      "BardW.Ammo_Cooldown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Movement speed bonus from multiple shrines can stack.",
+     "quote": "The {{as|'''bonus''' movement speed}} can [[stack]] with subsequent shrines triggered.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Leveling up the ability retroactively updates the healing of already-placed shrines.",
+     "quote": "Leveling up ''Caretaker's Shrine'' will update the healing of existing shrines.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If an enemy champion steps on a shrine it is destroyed instead of granting its effect.",
+     "quote": "If the champion is an enemy, the shrine is destroyed.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BardW.HealingMult",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Magical Journey",
+   "cooldown": {
+    "values": [
+     22,
+     20.5,
+     19,
+     17.5,
+     16
+    ],
+    "quote": "{{ap|22 to 16}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "duration the portal remains open",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "opens a one-way magical corridor through a piece of [[terrain]] in the target direction for 10 seconds",
+     "bin": [
+      "BardE.DoorDuration"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "increased travel speed for Bard and allies through the portal",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 33,
+     "terms": [],
+     "quote": "'''Bard''' and allies travel through the portal at 33% increased speed.",
+     "bin": [
+      "BardE.FriendlyMovementBonusPercentage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Magical Journey does not deal damage or apply any debuff; it is a self/ally/enemy-usable one-way traversal effect through terrain.",
+     "quote": "Champions can enter by moving into the portal, however allies will be faster.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BardE.BaseTravelSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Tempered Fate",
+   "cooldown": {
+    "values": [
+     110,
+     95,
+     80
+    ],
+    "quote": "{{ap|110|95|80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "stasis/stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "BardR.RStasisDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Puts all units hit into stasis and stuns enemy champions, minions, and turrets for the same duration.",
+     "quote": "it puts all units within into {{tip|stasis}} for {{fd|2.5}} seconds, as well as {{tip|stun|stunning}} all enemy {{tip|champions}}, {{tip|minions}}, and {{tip|turret|turrets}} struck for the same duration",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Tempered Fate deals 0 true damage on hit, which still triggers on-hit/in-combat effects.",
+     "quote": "''Tempered Fate'' deals 0 {{tip|proc damage|proc}} {{tip|true damage}}, which triggers [[combat status|in-combat]] effects such as drawing turret and [[Monster#Monster_Behavior|monster aggression]], {{ri|Sudden Impact}} or applying {{ii|Elixir of Sorcery}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Travel time varies with distance, delaying impact by roughly 1.15 to 2.3 seconds including cast time.",
+     "quote": "''Tempered Fate's'' travel time varies between ~{{fd|0.65}} at point blank and ~{{fd|1.8}} at max range, resulting in an overall delay of ~{{fd|1.15}}-{{fd|2.3}} seconds including the cast time depending on distance covered.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Meep charges consumed on-attack deal bonus magic damage (base 30 +6 per 5 Chimes collected, +40% AP) on top of the basic attack"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Meeps regenerate on an ~8s cooldown (faster with more Chimes) up to a cap, limiting how many onhit procs are available inside the 15s window"
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P"
+   ],
+   "note": "Meep flat damage bonus and the 5/15/35-Chime splash unlocks depend on a Chime count accumulated over the whole game; the dummy fight needs an assumed Chime count as an input"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Cosmic Binding fires a flat+AP magic damage bolt on cast, usable on cooldown against the dummy"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Caretaker's Shrine heals + speeds up whoever triggers it (ally or self); never deals damage to the dummy, only relevant if Bard is healing himself in the survival fight"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "A placed shrine gathers power over 5s between minimum and maximum heal before it is consumed, gating how strong a self-heal is if triggered early vs. late"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shrine casts are limited to 2 stocked charges recharging every 18s, capping how many heals/casts are available in a 15s fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Bard's only damage-fight-relevant offense (Traveler's Call meeps) scales with a Chime count that accumulates over the whole match from a random map-wide spawn system, not from anything that happens inside the 15s fight itself, and it unlocks qualitatively different behavior (slow at 5, splash at 15, wider splash at 35). No primitive captures 'pick an assumed external stack count that also gates unlocked behavior tiers.' Separately, Caretaker's Shrine's usefulness as self-sustain in the survival fight depends on a 5s power-charge curve between a stated minimum and maximum heal plus a 2-charge/18s-recharge ammo system layered on top of a per-cast mana cost that doesn't apply to charge use — this combination of charge-or-channel + weapon-or-ammo-system with a continuous power curve needs explicit bespoke handling rather than a single primitive."
+ },
+ "unsettled": [
+  {
+   "question": "What Chime count should be assumed as already collected when the damage/survival fight starts, since it changes Traveler's Call's flat meep damage bonus, whether the 5-Chime slow and 15/35-Chime splash are active, and the meep spawn cooldown?",
+   "options": [
+    "0 Chimes (fresh game state)",
+    "A fixed mid-game assumption (e.g. enough for the 15-Chime splash tier) tied to the champion's simulated level/items",
+    "Ignore Chime scaling entirely and use only the base 30 damage + 0.4 AP"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "How many Meeps can Bard have banked at the start of the fight, and what is the true cap — the wiki's own progression (1 to 9 scaling with Chimes) or the bin's unrelated MaxPacks=3 (which the P part flagged as not matching any P-scoped bin value)?",
+   "options": [
+    "Use the wiki's stated 1-to-9 cap at an assumed Chime tier",
+    "Use bin MaxPacks=3 as the true cap regardless of Chimes",
+    "Treat starting Meep count as 0 and only count Meeps generated during the 15s via the 8s spawn timer"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Bard''' can have up to {{pp|type = number of Chimes|1 to 9 for 9|0;10;30;50;65;80;90;95;100}} {{as|Meeps|buzzword3}} at a time.",
+    "BardW.MaxPacks = 3"
+   ]
+  },
+  {
+   "question": "In the survival fight, should Bard ever self-cast Caretaker's Shrine for sustain, and if so does he trigger it immediately (minimum heal) or wait out the 5s charge for the maximum heal, given he also has only 2 stocked charges on an 18s recharge?",
+   "options": [
+    "Always trigger immediately for the minimum heal to maximize heals-per-second",
+    "Wait the full 5s each time for the maximum heal value",
+    "Only cast it opportunistically once per fight since 15s barely covers one full charge-up plus recast delay"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with an auto-attack if a Meep charge is already available, to bank its onhit magic damage immediately.",
+   "Cast Cosmic Binding (Q) on cooldown throughout the fight for its flat+AP magic damage burst.",
+   "Continue basic-attacking on-cooldown between Q casts so that regenerated Meep charges are consumed as soon as they come off their spawn timer.",
+   "Do not cast Caretaker's Shrine (W), Magical Journey (E), or Tempered Fate (R) against the dummy: W only heals/speeds an ally or self and deals no damage, E is a terrain traversal tool, and R's stasis/stun deals 0 proc damage."
+  ],
+  "questions": [
+   "What starting Chime/Meep state should be assumed at the start of the 15s damage fight (see unsettled questions above), since it directly sets the onhit damage per attack?",
+   "Does the Meep-empowered onhit damage benefit from crit chance/on-hit item effects the same as a normal basic attack, or is it a separate non-crittable proc?",
+   "In the survival fight, is Bard ever the attacker whose full rotation is being simulated against a tanky target, or is he only ever the survival-fight defender (in which case his own Q/auto rotation here is irrelevant and only W's self-heal matters)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

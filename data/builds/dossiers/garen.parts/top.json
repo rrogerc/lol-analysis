@@ -1,0 +1,143 @@
+{
+ "champion": "garen",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Decisive Strike arms Garen's next basic attack (within a 4.5s window) with bonus physical damage, a lunge, and a silence"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Decisive Strike resets Garen's basic attack timer on cast"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment deals physical damage in periodic ticks (spins) to nearby enemies over its active duration"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment is a channelled spin that locks Garen out of basic attacks while active; it can be recast after 1s to end early or auto-ends after its ticks complete"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment's spin (tick) count increases with bonus attack speed from items/level growth (1 extra spin per 25% bonus AS), directly determining total dot damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment builds a hit-counter on the enemy champion target that triggers a 25% armor-reduction debuff on the 6th hit, refreshing every 6th hit thereafter"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment's per-spin damage can critically strike, but only for a reduced (30% of normal crit bonus) amount rather than full crit damage"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment deals 25% increased damage to the 'nearest' enemy hit; with a single stationary dummy target this bonus is always satisfied"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demacian Justice deals a burst of true damage on a fixed 0.435s cast time, on a long cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demacian Justice's true damage scales with a percentage of the target's current missing health, so its value depends on prior damage dealt"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (Q's empowered-attack-plus-reset, E's AS-scaling channelled dot with a target hit-counter and crit-capable ticks, R's flat-plus-missing-health true damage) map onto existing primitives; no unique logic beyond combining them is required. W and P are purely defensive/self-sustain and never read by a damage-only fight."
+ },
+ "unsettled": [
+  {
+   "question": "Does Decisive Strike's bonus damage scale with 50% AD (as stated in the wiki leveling line) or 150% AD (as the bin's tADRatio=1.5 computes)?",
+   "options": [
+    "50% bonus AD per the wiki's displayed tooltip value",
+    "150% bonus AD per the bin's tADRatio constant, treating the wiki tooltip as stale/wrong"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|30 to 150}} {{as|(+ 50% AD)}}",
+    "GarenQ.tADRatio = 1.5"
+   ]
+  },
+  {
+   "question": "How long is the basic-attack lockout that Decisive Strike imposes on Garen, and how exactly does attack speed shorten it? Neither source gives a base duration value.",
+   "options": [
+    "Lockout is simply the normal attack windup/timer with no separate penalty",
+    "There is a distinct, undocumented base lockout value that is reduced by bonus attack speed"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Decisive Strike'' locks '''Garen''' out of using basic attacks for a short period of time.<!--The enhanced attack or the ability itself?--> This is shortened with {{as|{{sti|attack speed}}}}."
+   ]
+  },
+  {
+   "question": "Is Judgment's 'nearest enemy' 25% bonus damage a single damage instance (base tick already multiplied by 1.25) or two separate simultaneous damage instances (a base tick plus a distinct bonus tick)?",
+   "options": [
+    "Single instance: each spin against the (only) target deals TotalDamage*1.25 as one hit",
+    "Two instances: each spin deals a base-tick hit and a separate 'increased damage' hit"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Judgment'' deals {{ap|({{#var:near}}-1)*100}}% increased damage against the nearest enemy hit."
+   ]
+  },
+  {
+   "question": "Does Judgment's 6-hit counter (for triggering the 25% armor-reduction debuff) persist cumulatively across separate casts of Judgment regardless of gaps, or does it reset if the prior armor-reduction debuff instance expires (6s) before 6 more hits land?",
+   "options": [
+    "Counter is a persistent lifetime/fight hit-tally on the target, independent of the debuff's own 6s timer",
+    "Counter resets to 0 whenever the active debuff instance expires before reaching the next 6-hit threshold"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemy champions hit 6 times by ''Judgment'' are inflicted with {{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds, with the duration refreshing upon the 7th hit and every 6th hit thereafter."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Judgment (E) to start the continuous spin, generating dot damage ticks and building toward the 6-hit armor-shred debuff on the dummy.",
+   "Weave in Decisive Strike (Q) on its 8s cooldown as soon as it is available; its cast does not require a target and grants the empowered next-attack (bonus physical damage, silence) plus an attack-timer reset, so use it to refresh/queue an auto-attack whenever Garen is not locked out by E's spin.",
+   "Auto-attack whenever not locked out by Judgment's channel, prioritizing landing Q's empowered attack as soon as the window opens after each Q cast.",
+   "Let each Judgment fully run its spins (do not manually recast/cancel early) to maximize tick count and hit-counter progress toward the armor-shred, then recast Judgment again as soon as its post-effect cooldown allows.",
+   "Cast Demacian Justice (R) once it is off cooldown; because R's true damage scales with the target's missing health percentage and its cooldown (80-120s) allows only a single cast within the 15s window, time it after some sustained Q/E/auto-attack damage has already lowered the dummy's health, to maximize the missing-health term.",
+   "Ignore Courage (W) and Perseverance (P) entirely, since neither deals damage or debuffs the target."
+  ],
+  "questions": [
+   "Can Decisive Strike be cast while Judgment's spin-lockout is active (to queue the empowered attack for right after the spin ends), or does casting Q during E's channel get blocked/delayed?",
+   "Given R's cooldown exceeds the 15s fight window, is there any scenario where casting R immediately (for guaranteed inclusion) beats delaying it for a larger missing-health percentage, e.g. if the dummy's health/resist profile makes early flat damage more valuable than the later missing-health scaling?",
+   "During Judgment's channel, is Garen able to walk into attack range/reposition for a real fight, and does that matter for a stationary dummy with no range constraints (i.e., is there ever a reason to delay E to stay in auto-attack range)?",
+   "Does landing Decisive Strike's empowered attack during Judgment's active channel interrupt or delay the ongoing spin ticks?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,910 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "LilliaP",
+    "key": "Characters/Lillia/Spells/LilliaPAbility/LilliaP",
+    "dataValues": {
+     "Duration": 3,
+     "DotDamagePercent": 5,
+     "DotTicks": 6,
+     "MonsterHealingPercent": 0.25,
+     "ChampionHealingPercent": 1,
+     "LargeMonsterHealMod": 1.5,
+     "SmallMonsterHealMod": 0.25,
+     "MultiHealMod": 0.15
+    },
+    "calcs": {
+     "DotPercentTotal": {
+      "expr": "DotDamagePercent=5 + 0.0125xap",
+      "flat": 5,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0125
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "DotDamagePercent"
+      ]
+     },
+     "MonsterDamageCap": {
+      "expr": "byLevel(70..180)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        70,
+        76.47059,
+        82.94118,
+        89.411765,
+        95.882353,
+        102.35294,
+        108.82353,
+        115.29412,
+        121.76471,
+        128.23529,
+        134.70588,
+        141.17647,
+        147.64706,
+        154.11765,
+        160.58824,
+        167.05882,
+        173.529412,
+        180
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "{b5d0316f}": {
+      "expr": "6.5 + 0.025xap",
+      "flat": 6.5,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.025
+       }
+      ],
+      "refs": []
+     },
+     "{395ffd44}": {
+      "expr": "{b5d0316f} * SmallMonsterHealMod=0.25",
+      "modifies": "{b5d0316f}",
+      "flat": 1.625,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00625
+       }
+      ],
+      "refs": [
+       "SmallMonsterHealMod"
+      ]
+     },
+     "ChampionHeal": {
+      "expr": "byLevel(1..15) + 0.05xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1,
+        1.8235294,
+        2.6470588,
+        3.4705882,
+        4.2941176,
+        5.117647,
+        5.9411765,
+        6.76470588,
+        7.5882353,
+        8.411765,
+        9.235294,
+        10.058824,
+        10.882353,
+        11.705882,
+        12.52941176,
+        13.3529412,
+        14.176471,
+        15
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": []
+     },
+     "ChampionHealTT": {
+      "expr": "ChampionHeal * DotTicks=6",
+      "modifies": "ChampionHeal",
+      "flat": {
+       "axis": "level",
+       "v": [
+        6,
+        10.941176,
+        15.882353,
+        20.823529,
+        25.764706,
+        30.705882,
+        35.64706,
+        40.588235,
+        45.52941,
+        50.47059,
+        55.411764,
+        60.352944,
+        65.29412,
+        70.23529,
+        75.17647,
+        80.117647,
+        85.058826,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DotTicks"
+      ]
+     },
+     "MonsterHealTT": {
+      "expr": "{b5d0316f} * DotTicks=6",
+      "modifies": "{b5d0316f}",
+      "flat": 39,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DotTicks"
+      ]
+     },
+     "{7969ffc2}": {
+      "expr": "{b5d0316f} * (DotTicks=6)*(SmallMonsterHealMod=0.25)",
+      "modifies": "{b5d0316f}",
+      "flat": 9.75,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0375
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DotTicks",
+       "SmallMonsterHealMod"
+      ]
+     },
+     "DotPercentTooltip": {
+      "expr": "DotPercentTotal * 0.01",
+      "modifies": "DotPercentTotal",
+      "flat": 0.05,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.000125
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DotDamagePercent"
+      ]
+     }
+    }
+   },
+   {
+    "script": "LilliaPDoT",
+    "key": "Characters/Lillia/Spells/LilliaPAbility/LilliaPDoT",
+    "dataValues": {
+     "MonsterHealingMod": 0.5,
+     "Duration": 3,
+     "DotDamageFlat": 10,
+     "MultipleHealMod": 0.5,
+     "LowHealthMod": 1.5,
+     "LowHealthThreshold": 0.25,
+     "DotDamagePercent": 0.05,
+     "BaseHealPercentConversion": 0.25,
+     "DotTicks": 6,
+     "AttackSpeedSlow": 0.3,
+     "MoveSpeedSlow": 0.3
+    },
+    "calcs": {
+     "{77823978}": {
+      "expr": "byLevel(0.05..0.11)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.05,
+        0.05352941,
+        0.05705882411669282,
+        0.0605882358025102,
+        0.06411765,
+        0.06764706,
+        0.07117647,
+        0.07470588254577973,
+        0.07823529,
+        0.0817647059174145,
+        0.08529412,
+        0.08882353,
+        0.09235294,
+        0.09588235266068403,
+        0.09941176,
+        0.10294118,
+        0.10647058771813617,
+        0.11
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "HealPerSecond": {
+      "expr": "byLevel7 + 0.1xap",
+      "flat": 7,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": []
+     },
+     "{44c2f9d7}": {
+      "expr": "DotDamageFlat=10 + 0.05xap",
+      "flat": 10,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": [
+       "DotDamageFlat"
+      ]
+     },
+     "{8abdf228}": {
+      "expr": "(byLevel10 + 0.1xap) * LowHealthMod=1.5",
+      "flat": 15,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15
+       }
+      ],
+      "refs": [
+       "LowHealthMod"
+      ]
+     },
+     "DotPercentTotal": {
+      "expr": "DotDamagePercent=0.05",
+      "flat": 0.05,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "DotDamagePercent"
+      ]
+     },
+     "MonsterDamageCap": {
+      "expr": "byLevel(40..100)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        43.52941,
+        47.058824,
+        50.588235,
+        54.117647,
+        57.64706,
+        61.17647,
+        64.70588,
+        68.23529,
+        71.76471,
+        75.29412,
+        78.82353,
+        82.35294,
+        85.882353,
+        89.411765,
+        92.94118,
+        96.47059,
+        100
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "{18849f10}": {
+      "expr": "BaseHealPercentConversion=0.25 + 0.0025xap",
+      "flat": 0.25,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0025
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseHealPercentConversion"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "LilliaQ",
+    "key": "Characters/Lillia/Spells/LilliaQAbility/LilliaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      6,
+      5.5,
+      5,
+      4.5,
+      4
+     ]
+    },
+    "cost": 65,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinimumRadius": 225,
+     "MaximumRadius": 485,
+     "FlatDamageBase": {
+      "axis": "rank",
+      "v": [
+       35,
+       45,
+       55,
+       65,
+       75
+      ]
+     },
+     "FlatDamageTrue": {
+      "axis": "rank",
+      "v": [
+       35,
+       45,
+       55,
+       65,
+       75
+      ]
+     },
+     "MinionDamageMod": 1,
+     "PranceDuration": 6.5,
+     "PranceMaxStacks": 4,
+     "PranceFalloffTime": 1,
+     "PranceBonusPerStack": {
+      "axis": "rank",
+      "v": [
+       0.03,
+       0.04,
+       0.05,
+       0.06,
+       0.07
+      ]
+     },
+     "APRatio": 0.35
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "FlatDamageBase=[35/45/55/65/75] + (APRatio=0.35)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        45,
+        55,
+        65,
+        75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "FlatDamageBase"
+      ]
+     },
+     "PranceSpeed": {
+      "expr": "PranceBonusPerStack=[0.03/0.04/0.05/0.06/0.07] + 0.0003xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.07
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0003
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "PranceBonusPerStack"
+      ]
+     },
+     "BonusTrueDamage": {
+      "expr": "FlatDamageTrue=[35/45/55/65/75] + (APRatio=0.35)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        45,
+        55,
+        65,
+        75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "FlatDamageTrue"
+      ]
+     }
+    }
+   },
+   {
+    "script": "LilliaQSpellPassive",
+    "key": "Characters/Lillia/Spells/LilliaQAbility/LilliaQSpellPassive",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      24,
+      22,
+      20,
+      18,
+      16
+     ]
+    },
+    "cost": 25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DodgeDuration": 3,
+     "MSDuration": 3,
+     "MSAmount": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5,
+       0.6,
+       0.7
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "LilliaW",
+    "key": "Characters/Lillia/Spells/LilliaWAbility/LilliaW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "FlatDamageBase": {
+      "axis": "rank",
+      "v": [
+       80,
+       100,
+       120,
+       140,
+       160
+      ]
+     },
+     "MaximumDistance": 700,
+     "MaxSpeed": 500,
+     "MinimumDistance": 500,
+     "LandingOffset": 150,
+     "MaximumCastTime": 0.75,
+     "MinimumCastTime": 0.6,
+     "MinimumRadius": 250,
+     "SweetSpotRadius": 65,
+     "SweetSpotBonus": 3,
+     "AnimRangeCutoff": 300,
+     "MinionDamageMod": 0.5
+    },
+    "calcs": {
+     "FlatDamage": {
+      "expr": "FlatDamageBase=[80/100/120/140/160] + 0.35xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        100,
+        120,
+        140,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35
+       }
+      ],
+      "refs": [
+       "FlatDamageBase"
+      ]
+     },
+     "FlatDamageSweetSpot": {
+      "expr": "(FlatDamageBase=[80/100/120/140/160] + 0.35xap) * SweetSpotBonus=3",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        240,
+        300,
+        360,
+        420,
+        480
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.05
+       }
+      ],
+      "refs": [
+       "FlatDamageBase",
+       "SweetSpotBonus"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "LilliaE",
+    "key": "Characters/Lillia/Spells/LilliaEAbility/LilliaE",
+    "cooldown": 12,
+    "cost": 70,
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowAmount": 0.4,
+     "SlowDuration": 3,
+     "BounceRange": 25000,
+     "ImpactDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     },
+     "ImpactRangeCheck": 115,
+     "HitboxWidth": 350,
+     "HitboxLength": 200,
+     "AnimCutoffRange": 350,
+     "APRatio": 0.5
+    },
+    "calcs": {
+     "ImpactDamageTotal": {
+      "expr": "ImpactDamage=[60/85/110/135/160] + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        85,
+        110,
+        135,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "ImpactDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "LilliaESpellPassive",
+    "key": "Characters/Lillia/Spells/LilliaEAbility/LilliaESpellPassive",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      24,
+      22,
+      20,
+      18,
+      16
+     ]
+    },
+    "cost": 25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DodgeDuration": 3,
+     "MSDuration": 3,
+     "MSAmount": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5,
+       0.6,
+       0.7
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "LilliaR",
+    "key": "Characters/Lillia/Spells/LilliaRAbility/LilliaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      150,
+      130,
+      110
+     ]
+    },
+    "cost": 50,
+    "castTime": 0.4,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DrowsyDuration": 1.5,
+     "SleepDuration": 2,
+     "ImpactDamage": 25,
+     "BreakDamageBase": {
+      "axis": "rank",
+      "v": [
+       100,
+       150,
+       200
+      ]
+     },
+     "InitialSlow": -0.1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BreakDamageBase=[100/150/200] + 0.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        150,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "BreakDamageBase"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "LilliaQ",
+  "W": "LilliaW",
+  "E": "LilliaE",
+  "R": "LilliaR",
+  "P": "LilliaP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 410,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 2.3,
+   "{3a509002}": 0.19
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Lillia",
+  "name": "Lillia",
+  "partype": "Mana",
+  "passive": "Dream-Laden Bough",
+  "spells": [
+   {
+    "id": "LilliaQ",
+    "name": "Blooming Blows",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     5.5,
+     5,
+     4.5,
+     4
+    ],
+    "cost": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ]
+   },
+   {
+    "id": "LilliaW",
+    "name": "Watch Out! Eep!",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "LilliaE",
+    "name": "Swirlseed",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "LilliaR",
+    "name": "Lilting Lullaby",
+    "maxrank": 3,
+    "cooldown": [
+     150,
+     130,
+     110
+    ],
+    "cost": [
+     50,
+     50,
+     50
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Dream-Laden Bough": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "true",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Blooming Blows": {
+    "damagetype": "Magic True",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Prance": {
+    "damagetype": "Magic True",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Watch Out! Eep!": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Swirlseed": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "special",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Lilting Lullaby": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

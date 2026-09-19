@@ -1,0 +1,151 @@
+{
+ "name": "Fired Up!",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_burst",
+   "meaning": "bonus magic damage on the enchanted attack/ability hit, based on enchanted ally's AD",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.07,
+      0.07,
+      0.07,
+      0.07,
+      0.07,
+      0.11,
+      0.11,
+      0.11,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|7;11;15|1;6;9|key=%}} of enchanted target's AD}} {{ccs|{{as|'''bonus''' magic damage}}|magic}}",
+   "bin": [
+    "MilioPassive#ADBurstRatio"
+   ]
+  },
+  {
+   "id": "p_burn_total",
+   "meaning": "total burn damage over 1.5s, split into ticks",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    10,
+    12.35,
+    14.71,
+    17.06,
+    19.41,
+    21.76,
+    24.12,
+    26.47,
+    28.82,
+    31.18,
+    33.53,
+    35.88,
+    38.24,
+    40.59,
+    42.94,
+    45.29,
+    47.65,
+    50
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{as|{{pplevel|10 to 50}}|magic damage}} {{as|(+ 20% of '''Milio's''' AP)}} {{as|magic damage}}",
+   "bin": [
+    "MilioPassive.BaseDamageStart",
+    "MilioPassive.BaseDamageEnd",
+    "MilioPassive#BurnDamage"
+   ],
+   "binNote": "BurnDamage's flat part is an unresolved constant {ee18a47b} in the sheet; the wiki's 10-to-50 by-level values (BaseDamageStart/BaseDamageEnd) are assumed to be that interpolated constant, and the 0.2xap ratio matches the wiki's 20% AP."
+  },
+  {
+   "id": "p_burn_duration",
+   "meaning": "duration over which the burn tick damage is dealt",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "over {{fd|1.5}} seconds",
+   "bin": [
+    "MilioPassive.BurnDuration"
+   ]
+  },
+  {
+   "id": "p_burn_tick_interval",
+   "meaning": "interval between burn damage ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "every {{fd|0.25}} seconds",
+   "bin": [],
+   "binNote": "No explicit tick-interval data value on the sheet; derived from the wiki's per-tick formula footnote which divides the total by intervals of 0.25s."
+  },
+  {
+   "id": "p_enchant_duration",
+   "meaning": "duration of the Fired Up! enchantment before it expires unused",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "grant an enchantment for 4 seconds",
+   "bin": [],
+   "binNote": "No matching data value found on the passive's sheet entry for the 4-second enchantment window."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The enchantment triggers on the next basic attack or ability hit against an enemy after being granted, dealing the burst damage immediately followed by the burn DoT.",
+   "quote": "causes the next {{tip|basic attack}}<!--not on-hit--> or ability hit against enemies to deal {{as|{{pp|7;11;15|1;6;9|key=%}} of enchanted target's AD}} {{ccs|{{as|'''bonus''' magic damage}}|magic}} and apply a burn",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Reapplying the enchantment before it triggers only refreshes its duration, it does not stack multiple triggers.",
+   "quote": "Subsequent applications of ''Fired Up!'' only refresh the duration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield cannot block the effect when it is delivered by a basic attack.",
+   "quote": "{{tip|Spell shield}} will not block the effect if applied by a basic attack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "When triggered by an ally's hit, the damage is tagged as proc damage.",
+   "quote": "When the damage is triggered by allies, it is additionally tagged as {{tip|proc damage}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MilioPassive.MaxMonsterDamage",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

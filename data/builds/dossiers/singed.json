@@ -1,0 +1,711 @@
+{
+ "champion": "singed",
+ "abilities": {
+  "P": {
+   "name": "Noxious Slipstream",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus movement speed per stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{sti|ms|{{as|25% '''bonus''' movement speed}}}}",
+     "bin": [
+      "SingedP.MSPercent"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "duration of each stack of Noxious Slipstream",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "for 2 seconds, refreshing on subsequent passes",
+     "bin": [
+      "SingedP.MSDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "maximum stacks of Noxious Slipstream",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "stacking up to 25 times",
+     "bin": [],
+     "binNote": "The bin has no explicit stack cap field; SingedP.MSPercent (0.25) x 25 stacks = 6.25 (625%), matching the wiki's stated maximum bonus movement speed of 625%, but no bin row directly states the cap of 25."
+    },
+    {
+     "id": "p_4",
+     "meaning": "per-target cooldown before the same champion can retrigger a stack",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "This effect cannot occur on the same target more than once every few seconds.",
+     "bin": [
+      "SingedP.PerTargetCD"
+     ],
+     "binNote": "Wiki text does not state the exact number; the 8 second cooldown is only visible in the ontargetcdstatic field / bin, not in the prose."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive only affects Singed's own movement speed, not damage dealt or taken.",
+     "quote": "{{sbc|Innate:}} Whenever '''Singed''' moves near a {{tip|champion}}, he gains a {{tip|stack}} of ''Noxious Slipstream''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SingedP.TriggerArea",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Poison Trail",
+   "cooldown": {
+    "values": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "quote": "1",
+    "binNote": "ddragon lists cooldown as 0 for all ranks (the ability itself has no cooldown), but the bin's PoisonTrail.ToggleCooldown = 1 defines a separate 1s cooldown on re-toggling the ability."
+   },
+   "cost": {
+    "values": [
+     13,
+     13,
+     13,
+     13,
+     13
+    ],
+    "quote": "13",
+    "resource": "mana per second"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      7.5,
+      10,
+      12.5,
+      15
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.10625
+      }
+     ],
+     "quote": "{{ap|20/4 to 60/4}} {{as|(+ {{ap|42.5/4}}% AP)}}",
+     "bin": [
+      "PoisonTrail#DamagePerSecond",
+      "PoisonTrail.TicksPerSecond"
+     ],
+     "binNote": "Per-tick values are the per-second BaseDamagePerSecond/APRatioPerSecond values (from PoisonTrail#DamagePerSecond) divided by TicksPerSecond=4; no bin row states the per-tick number directly."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Magic Damage per Second",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.425
+      }
+     ],
+     "quote": "{{ap|20 to 60}} {{as|(+ {{fd|42.5}}% AP)}}",
+     "bin": [
+      "PoisonTrail#DamagePerSecond"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "poison debuff duration per infliction",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "The target takes {{as|magic damage}} every {{fd|0.25}} seconds over 2 seconds",
+     "bin": [
+      "PoisonTrail.PoisonDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "poison damage tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "The target takes {{as|magic damage}} every {{fd|0.25}} seconds over 2 seconds",
+     "bin": [
+      "PoisonTrail.TicksPerSecond"
+     ],
+     "binNote": "The wiki states the interval directly as 0.25 seconds; the bin instead stores the reciprocal rate PoisonTrail.TicksPerSecond=4 (4 ticks per second = 1/4 = 0.25s interval), so the two numbers are the same quantity expressed as a rate vs. a period."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Poison Trail is a toggle that continually damages enemies standing in its lingering cloud; the on-hit poison debuff deals magic damage every 0.25s over 2 seconds, and reapplication refreshes the duration.",
+     "quote": "The target takes {{as|magic damage}} every {{fd|0.25}} seconds over 2 seconds as well as upon being hit if not currently affected. Subsequent inflictions refresh the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When the poison debuff is first applied (not refreshed), the target is dealt one extra instance of the debuff's damage at the same time, via a 0.1s delayed second application.",
+     "quote": "When ''Poison Trail's'' debuff is applied instead of refreshed, the target is dealt one additional instance of the debuff at the same time as the application. This is done by delaying the actual debuff by {{fd|0.1}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A cloud rechecks for valid targets within it every 0.25 seconds, refreshing the debuff duration on targets it re-hits.",
+     "quote": "a cloud checks for valid targets who remain in or re-enter a cloud every {{fd|0.25}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Toggling Poison Trail does not count as an ability activation, so it does not trigger on-cast effects.",
+     "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Poison Trail automatically toggles off if Singed cannot pay its mana-per-second cost.",
+     "quote": "''Poison Trail'' is toggled off automatically if '''Singed''' becomes unable to pay its {{sti|{{as|mana}}}} cost.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Individual toxic clouds spawn based on Singed's movement, spawning less frequently and closer together when he has moved little.",
+     "quote": "If '''Singed''' has moved fewer than 90 units since spawning the last poison cloud, it will spawn 35 units in front of him. They also only spawn every 1 second in this case.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PoisonTrail.CloudDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PoisonTrail.MaxLingerTicks",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Mega Adhesive",
+   "cooldown": {
+    "values": [
+     17,
+     16,
+     15,
+     14,
+     13
+    ],
+    "quote": "{{ap|17 to 13}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ],
+     "terms": [],
+     "quote": "{{ap|50 to 70}}%",
+     "bin": [
+      "MegaAdhesive.SlowPercent"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "duration of the adhesive field",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "creating a field for 3 seconds that grounds enemies within and slows them",
+     "bin": [
+      "MegaAdhesive.WDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "delay before the field lands",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.375,
+     "terms": [],
+     "quote": "'''Singed''' spills a potent adhesive that lands at the target location after {{fd|0.375}} seconds",
+     "bin": [
+      "MegaAdhesive.DelayExecute"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability creates a delayed-impact zone rather than applying its effect instantly on cast; the goo missile is a projectile with its own travel time.",
+     "quote": "The goo missile is a projectile. It has a fixed travel time but is independent from when the zone is established.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The slow and ground effects are non-dispellable, resisting most cleanse effects.",
+     "quote": "Mega Adhesive's slow and ground debuffs are each marked as non-dispellable, so they are not removed by most cleanses.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MegaAdhesive.WRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Fling",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.06,
+        0.065,
+        0.07,
+        0.075,
+        0.08
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|50 to 90}} {{as|(+ {{ap|6 to 8}}% of target's '''maximum''' health)}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "Fling.BaseDamageValue",
+      "Fling.MaxHPDamage",
+      "Fling#BaseDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 2}} seconds",
+     "bin": [
+      "Fling.RootDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "damage cap against minions and monsters",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": 300,
+     "terms": [],
+     "quote": "capped at 300 against {{tip|minions}} and {{tip|monsters}}",
+     "bin": [
+      "Fling.NonChampionDamageCap"
+     ],
+     "binNote": "Not applicable in the champion-only damage/survival fights, but recorded since the bin states it."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Fling deals magic damage based on the target's maximum health, capped against non-champions.",
+     "quote": "dealing {{as|magic damage}} based on {{as|their '''maximum''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During the cast time windup, the enemy's Flash is locked, making the spell non-reactable.",
+     "quote": "During ''Fling'' cast time (the windup not during the actual fling) the enemy's flash is already locked, making it a non reactable spell.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Singed can land a basic attack on the target while it is airborne mid-fling.",
+     "quote": "'''Singed''' may successfully issue a basic attack against the target of ''Fling'' while it is mid-air.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target lands on Mega Adhesive after being flung, it is rooted for a duration.",
+     "quote": "If the target lands on ''{{ais|Mega Adhesive|Singed}}'' area of effect after the displacement, they are {{tip|root|rooted}} for a duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Slow-immune enemies will not be rooted when flung into Mega Adhesive.",
+     "quote": "{{tip|Slow-immune}} enemies will not be {{tip|root|rooted}} when ''flung'' into {{ai|Mega Adhesive|Singed}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Fling.FlingDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Insanity Potion",
+   "cooldown": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Stats (AP/Armor/MR/MS)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      55,
+      85
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 85}}",
+     "bin": [
+      "InsanityPotion.StatAmount"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Duration of Insanity Potion buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "empowers himself for 25 seconds",
+     "bin": [
+      "InsanityPotion.Duration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Grievous Wounds duration applied by Poison Trail",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "applies {{tip|Grievous Wounds}} for 1 second",
+     "bin": [
+      "InsanityPotion.GrievousDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Grievous Wounds heal reduction amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "applies {{tip|Grievous Wounds}}",
+     "bin": [
+      "InsanityPotion.GrievousAmount"
+     ],
+     "binNote": "Wiki description gives no explicit percentage for the Grievous Wounds strength, only naming the effect via tooltip link; the 40% value is taken from InsanityPotion.GrievousAmount in the bin."
+    },
+    {
+     "id": "r_7",
+     "meaning": "Grievous Wounds refresh interval while poison persists",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "refreshes every {{fd|0.25}} seconds while the {{tip|poison}} persists",
+     "bin": [],
+     "binNote": "No bin row carries this refresh-interval value; the sheet's PoisonTrail.TicksPerSecond=4 (0.25s per tick) matches but is not part of the R slot's own data values, so it is not named as a source here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Insanity Potion grants bonus AP, bonus armor, bonus magic resist, bonus movement speed, bonus health regeneration, and bonus mana regeneration for its duration.",
+     "quote": "empowers himself for 25 seconds with {{sti|ap|{{as|ability power}}}}, {{sti|armor|{{as|'''bonus''' armor}}}}, {{sti|mr|{{as|'''bonus''' magic resistance}}}}, {{sti|ms|{{as|'''bonus''' movement speed}}}}, {{sti|{{as|'''bonus''' health regeneration}}}}, and {{sti|{{as|'''bonus''' mana regeneration}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While Insanity Potion is active, Poison Trail additionally applies Grievous Wounds to targets standing in it, refreshing periodically while they remain in the poison.",
+     "quote": "During this time, ''{{ai|Poison Trail|Singed}}'' additionally applies {{tip|Grievous Wounds}} for 1 second, which refreshes every {{fd|0.25}} seconds while the {{tip|poison}} persists.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "InsanityPotion.GrievousAmount",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "dot",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Poison Trail toggle applies a poison debuff dealing magic damage per tick over 2s, refreshed on re-hit"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q per-second, W/E/R flat) constrain how much can be cast in the 15s window"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Fling deals a one-time magic damage burst on cast (with 0.25s cast time)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Fling's damage scales with the target's maximum health (capped vs non-champions, irrelevant in a champion-vs-champion dummy fight)"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Insanity Potion grants bonus AP/armor/MR/MS/regen for 25s, boosting Q's AP ratio damage output"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "While R is active, Poison Trail additionally applies Grievous Wounds (reduces healing on target) for 1s, refreshed while poisoned"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Noxious Slipstream stacks give Singed bonus movement speed only; does not affect damage dealt or taken"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Mega Adhesive's slow/ground/root and R's armor/MR/regen only affect damage taken or crowd control, not relevant to the damage-dealing rotation in a dummy fight; ground/slow don't change damage in a stationary-dummy fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Poison Trail's toggle-on-cooldown-1s mechanic with periodic re-application/refresh ticking is expressible as a dot primitive with per-tick base+AP scaling; Fling's max-HP-based damage is a conditional-damage primitive; Insanity Potion's stat buff and Grievous Wounds application on Q are expressible as timed-self-buff and target-debuff. No unique mechanic (recast chains, stacks consumed on cast, crit interactions, etc.) falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "Does Poison Trail's 'double tick on first application' (the 0.1s-delayed extra instance when the debuff is newly applied rather than refreshed) apply every time Singed re-enters melee range/re-toggles on the dummy, effectively doubling the first tick's damage repeatedly, or only on the very first application of the whole fight?",
+   "options": [
+    "Only once, on the very first poison application of the fight",
+    "Every time the debuff lapses (2s duration) and is freshly re-applied rather than refreshed, i.e. periodically throughout sustained Q uptime"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "When ''Poison Trail's'' debuff is applied instead of refreshed, the target is dealt one additional instance of the debuff at the same time as the application. This is done by delaying the actual debuff by {{fd|0.1}} seconds."
+   ]
+  },
+  {
+   "question": "Is Poison Trail's effective uptime against a single stationary dummy 100% (clouds always overlap the target under Singed) or reduced because clouds only spawn near Singed's current position/movement, meaning a stationary dummy fight must assume Singed stands on/near the dummy the whole time?",
+   "options": [
+    "Assume 100% uptime (Singed stands in place on the dummy for the whole toggle duration)",
+    "Uptime is less than 100% because of the movement-based cloud-spawn mechanic (clouds spawn in front of Singed every 1s if he barely moves) requiring some minimum motion to keep clouds on the dummy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If '''Singed''' has moved fewer than 90 units since spawning the last poison cloud, it will spawn 35 units in front of him. They also only spawn every 1 second in this case."
+   ]
+  },
+  {
+   "question": "Does the 1s ToggleCooldown on Poison Trail (from the bin) mean Singed cannot toggle Q off and back on more than once per second, or does it also gate the very first activation cast at the start of the fight (adding a small delay before Q's damage starts)?",
+   "options": [
+    "Only limits re-toggling after the first activation; first cast is instant",
+    "Also applies to initial activation, delaying the start of poison damage by up to 1s"
+   ],
+   "impact": "low",
+   "quotes": [
+    "PoisonTrail.ToggleCooldown = 1"
+   ]
+  },
+  {
+   "question": "Does Fling's magic damage crit or interact with basic attacks landed on the airborne target (the wiki notes a basic attack can be landed mid-fling), and should that attack be counted as a bonus attack-reset/extra attack in the rotation, or is it purely a flavor/positional note not modeled in a dummy fight?",
+   "options": [
+    "Model it as an extra guaranteed basic attack whenever Fling is cast (since the target cannot escape or move)",
+    "Ignore it as a corner-case/positional note not reliably repeatable in the simulated fight"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Singed''' may successfully issue a basic attack against the target of ''Fling'' while it is mid-air."
+   ]
+  },
+  {
+   "question": "Grievous Wounds (from R + Q) reduces healing received, which affects the survival fight if Singed is the one being hit by an enemy applying Grievous Wounds is irrelevant, but reduces effectiveness of Singed's own self-healing/regen when Singed is the tanky survival-fight defender under R — does the sim need to model Grievous Wounds being applied by Singed onto the attacking enemy (only matters in the damage fight, where the dummy doesn't heal) or is it dead weight in both fight types?",
+   "options": [
+    "Grievous Wounds is essentially irrelevant since the target dummy doesn't heal and enemy champions in the survival fight aren't Singed's target",
+    "Grievous Wounds should still be tracked as a target-debuff for completeness even though it never changes outcomes in either fight type as modeled"
+   ],
+   "impact": "low",
+   "quotes": [
+    "applies {{tip|Grievous Wounds}} for 1 second, which refreshes every {{fd|0.25}} seconds while the {{tip|poison}} persists"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: toggle on Poison Trail (Q) and stand on the dummy so its lingering cloud continuously ticks poison damage for the whole fight.",
+   "On engage, cast Insanity Potion (R) immediately for the AP/stat buff, which raises Poison Trail's AP-scaled damage per tick for its 25s duration (covers the whole 15s fight).",
+   "Cast Fling (E) on cooldown (every 8-10s depending on rank) for its burst magic damage based on the target's max health plus AP ratio.",
+   "Do not cast Mega Adhesive (W) for damage purposes in the damage fight, since it deals no damage and only slows/grounds — it is irrelevant against a stationary dummy that cannot flee.",
+   "Weave in basic attacks between Q's passive ticking and E's cooldown windows to add auto-attack damage on top of the poison DoT and Fling bursts.",
+   "Maintain mana to sustain Q's per-second cost plus E's cast cost; if mana runs low, deprioritize extra E casts over keeping Q toggled on, since Q is the primary sustained damage source."
+  ],
+  "questions": [
+   "In a stationary-dummy damage fight, does Singed have to physically move to keep spawning fresh Poison Trail clouds under the dummy, or does an existing cloud simply persist and keep ticking on a target that doesn't move away?",
+   "Should Mega Adhesive ever be cast in the damage fight (e.g., to check whether grounding the dummy has any interaction with tooltip damage), or is it truly dead weight since the target is already stationary and doesn't need slowing?",
+   "For the survival fight, does the tanky Singed use Insanity Potion primarily for the extra armor/MR/health regen rather than the AP, and should the rotation proposal differ (prioritize R for defense, E only to peel/reposition — irrelevant here since CC is ignored) versus the offensive proposal above?",
+   "How should the sim treat Fling's cast time (0.25s) and travel time (0.666s to complete the fling) relative to when its damage is dealt — instantly on cast, or after the full displacement animation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

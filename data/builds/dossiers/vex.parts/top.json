@@ -1,0 +1,117 @@
+{
+ "champion": "vex",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Q, W, E deal on-cast/near-instant magic damage on cooldown; R's initial missile hit is also a plain cast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Shadow Surge has two separately-timed damage instances: the initial missile hit, then a free recast dash-strike that deals larger damage and consumes the mark."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Personal Space's shield component only matters in the survival fight, not the damage fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (W flat 75, others scale by rank); over a 15s window with limited mana regen this can cap how often Q/W/E are recast."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's cooldown is stated to start post-effect of the initial cast rather than on button press, changing when it is available again relative to a naive on-cast cooldown model."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Vex's kit reduces to standard plain casts plus one recast-or-multipart ultimate; nothing requires bespoke logic beyond the listed primitives. The Passive (Doom 'n Gloom) is deliberately excluded from primitives: Gloom only marks enemies that dash or blink, which a stationary target dummy never does, so under the stated fight rules the passive's bonus damage and Doom's CDR refund cannot trigger and Doom's own empowerment only grants knockdown/fear (crowd control, explicitly ignored)."
+ },
+ "unsettled": [
+  {
+   "question": "Should the damage fight simulator model any passive (P) damage at all, given Gloom requires the target to dash/blink and the target dummy is stationary and never dashes?",
+   "options": [
+    "P contributes zero damage in the damage fight; Doom's periodic empowerment only ever grants CC (ignored) since Gloom can never be applied to a non-moving dummy",
+    "The simulator should assume some artificial periodic Gloom application (e.g. treat Doom's ready state as always able to detonate) to approximate real play, adding VexP#GloomProcCalc damage on some cadence"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Nearby enemy {{tip|champions}} and {{tip|monsters}} that {{tip|dash}} or {{tip|blink}} will be marked with ''Gloom''",
+    "Doom's cooldown starts as soon as the basic ability is cast."
+   ]
+  },
+  {
+   "question": "Looming Darkness's (E) cooldown: the bin lists a flat 13 at all ranks, but the wiki states 12 at all ranks. Which is live?",
+   "options": [
+    "12 seconds (wiki)",
+    "13 seconds (bin)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: 13",
+    "cooldown     = 12"
+   ]
+  },
+  {
+   "question": "The Gloom detonation damage-vs-champions formula is written as a 20-step progression ('for 20') while the bin's corresponding row (VexP#GloomProcCalc) is indexed by 18 champion levels. Does the wiki's per-step value line up 1:1 with champion level 1-18, or does it imply extra steps beyond level 18 (e.g. from some other scaling variable)?",
+   "options": [
+    "The 20 steps map onto levels 1-18 with the last two steps unused/capped (matches bin's byLevel[1..18] exactly, as the numeric values line up)",
+    "There is a genuine extra scaling dimension not captured by champion level in the bin snippet provided"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{pp|40 + (150-40)/17*(x-1) for 20|color=magic damage}}"
+   ]
+  },
+  {
+   "question": "Does Vex's basic attack (used to weave between spell casts) ever detonate a Gloom mark or otherwise interact with Doom in the damage fight, or is it a plain, unmodified basic attack given the dummy never dashes?",
+   "options": [
+    "Plain basic attacks only; no Gloom/Doom interaction is reachable against a stationary dummy",
+    "Some other passive trigger (untested/undocumented) still allows Doom to fire off cooldown against any target, adding periodic bonus damage to an attack or ability"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Vex's''' next {{tip|basic attack}}, which becomes {{tip|projectile|non-projectile}}, or basic ability hit against an enemy with ''Gloom'' will detonate the mark"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the fight with Shadow Surge (R) fired directly at the dummy to land the initial missile hit and apply the mark.",
+   "Immediately recast Shadow Surge to dash in and land the larger recast damage instance (this is Vex's single largest burst and her only long-cooldown resource, so front-load it).",
+   "Weave in Mistral Bolt (Q) on cooldown throughout the fight, since it has the shortest cooldown (8s down to 4s) and highest AP ratio among the basic abilities.",
+   "Cast Looming Darkness (E) on cooldown for its magic damage, prioritizing it whenever mana allows since its cooldown is fixed and independent of rank.",
+   "Cast Personal Space (W) on cooldown for its magic damage component even though its shield is irrelevant in the pure damage fight; its damage still contributes to total output.",
+   "Fill all remaining time between ability cooldowns with basic attacks against the dummy.",
+   "Do not expect or rely on any Gloom/Doom passive proc, since the stationary dummy never dashes or blinks to apply the Gloom mark.",
+   "Do not plan for a second full use of R within the 15s window; its cooldown (140s down to 100s) is far longer than the fight duration, so only the opening cast-and-recast sequence is available."
+  ],
+  "questions": [
+   "Given mana costs scale up by rank on Q/W/E/R (and Vex's base mana/regen at the assumed level), is there enough mana to cast every ability on cooldown for the full 15s, or does the simulator need to model a point where casts are skipped for lack of mana?",
+   "Should R be cast immediately at t=0, or is there a benefit to holding it briefly so its recast damage lands after some Q/W/E damage has already reduced the dummy's health (relevant only if execute-style interactions existed, which they don't here, but worth confirming there's no hidden order dependency)?",
+   "Is the dummy ever treated as 'moving' or capable of triggering Gloom via any built-in dash-like behavior in the simulator's target-dummy implementation, which would change whether P's Gloom/Doom mechanic should be modeled at all?",
+   "Does basic-attack weave order matter (i.e., should attacks be delayed to line up with ability cooldowns, or fired continuously regardless of upcoming casts) for maximizing total damage in the 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

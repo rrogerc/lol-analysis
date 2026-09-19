@@ -1,0 +1,648 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SionPassive",
+    "key": "Characters/Sion/Spells/SionPassiveAbility/SionPassive",
+    "dataValues": {
+     "Lifesteal": 1,
+     "PercentMaxHP": 0.1,
+     "NonChampCap": 75,
+     "StructureMod": 0.4
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SionQ",
+    "key": "Characters/Sion/Spells/SionQAbility/SionQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 45,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ADRatioMin": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.5,
+       0.6,
+       0.7,
+       0.8
+      ]
+     },
+     "ADRatioMax": {
+      "axis": "rank",
+      "v": [
+       1.2,
+       1.5,
+       1.8,
+       2.1,
+       2.4
+      ]
+     },
+     "LowDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60,
+       75,
+       90
+      ]
+     },
+     "HighDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       155,
+       220,
+       285,
+       350
+      ]
+     },
+     "MinionRatio": 60,
+     "MonsterRatio": 165,
+     "BaseStunTime": 1.25,
+     "SlowAmount": -0.8
+    },
+    "calcs": {
+     "MinDamageTotal": {
+      "expr": "LowDamage=[30/45/60/75/90] + (ADRatioMin=[0.4/0.5/0.6/0.7/0.8])xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        45,
+        60,
+        75,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8
+         ]
+        },
+        "dataValue": "ADRatioMin"
+       }
+      ],
+      "refs": [
+       "ADRatioMin",
+       "LowDamage"
+      ]
+     },
+     "MaxDamageTotal": {
+      "expr": "HighDamage=[90/155/220/285/350] + (ADRatioMax=[1.2/1.5/1.8/2.1/2.4])xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        155,
+        220,
+        285,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          1.2,
+          1.5,
+          1.8,
+          2.1,
+          2.4
+         ]
+        },
+        "dataValue": "ADRatioMax"
+       }
+      ],
+      "refs": [
+       "ADRatioMax",
+       "HighDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SionW",
+    "key": "Characters/Sion/Spells/SionWAbility/SionW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      14,
+      13,
+      12,
+      11
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      80,
+      85,
+      90,
+      95
+     ]
+    },
+    "costLegacy": {
+     "axis": "rank",
+     "v": [
+      65,
+      70,
+      75,
+      80,
+      85
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ShieldPercentHealthTooltip": {
+      "axis": "rank",
+      "v": [
+       0.08,
+       0.1,
+       0.12,
+       0.14,
+       0.16
+      ]
+     },
+     "DamagePercentHealthTooltip": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.11,
+       0.12,
+       0.13,
+       0.14
+      ]
+     },
+     "HPPerChampKill": 15,
+     "HPPerKill": 4,
+     "HPPerLargeKill": 15,
+     "ShieldAPRatio": 0.4,
+     "DamageAPRatio": 0.4,
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       60,
+       75,
+       90,
+       105,
+       120
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       65,
+       90,
+       115,
+       140
+      ]
+     },
+     "MaxHPDamageRatio": 14,
+     "DetonateRecastCooldown": 3,
+     "ShieldDuration": 6
+    },
+    "calcs": {
+     "TotalShield": {
+      "expr": "BaseShield=[60/75/90/105/120] + (ShieldAPRatio=0.4)xap + (ShieldPercentHealthTooltip=[0.08/0.1/0.12/0.14/0.16])xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        75,
+        90,
+        105,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "ShieldAPRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.08,
+          0.1,
+          0.12,
+          0.14,
+          0.16
+         ]
+        },
+        "dataValue": "ShieldPercentHealthTooltip"
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldAPRatio",
+       "ShieldPercentHealthTooltip"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[40/65/90/115/140] + (DamageAPRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        65,
+        90,
+        115,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SionE",
+    "key": "Characters/Sion/Spells/SionEAbility/SionE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      35,
+      40,
+      45,
+      50,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       65,
+       100,
+       135,
+       170,
+       205
+      ]
+     },
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       40,
+       45,
+       50,
+       55,
+       60
+      ]
+     },
+     "ArmorShred": 25,
+     "SlowDuration": 2.5,
+     "ArmorShredDuration": 4,
+     "APRatio": 0.55
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[65/100/135/170/205] + (APRatio=0.55)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        100,
+        135,
+        170,
+        205
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SionR",
+    "key": "Characters/Sion/Spells/SionRAbility/SionR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      100,
+      60
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       300,
+       450
+      ]
+     },
+     "MaxDamage": {
+      "axis": "rank",
+      "v": [
+       400,
+       800,
+       1200
+      ]
+     },
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       40,
+       45,
+       50
+      ]
+     },
+     "MinionDamagePercent": 500,
+     "MinStunDuration": 0.75,
+     "MaxStunDuration": 1.75,
+     "MoveSpeedCap": 950
+    },
+    "calcs": {
+     "MinDamageTotal": {
+      "expr": "MinDamage=[150/300/450] + 0.6xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        300,
+        450
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "MinDamage"
+      ]
+     },
+     "MaxDamageTotal": {
+      "expr": "MaxDamage=[400/800/1200] + 1.2xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        400,
+        800,
+        1200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "MaxDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SionQ",
+  "W": "SionW",
+  "E": "SionE",
+  "R": "SionR",
+  "P": "SionPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 400,
+   "{6216bf7b}": 52,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.12
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.05090579763054848
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Sion",
+  "name": "Sion",
+  "partype": "Mana",
+  "passive": "Glory in Death",
+  "spells": [
+   {
+    "id": "SionQ",
+    "name": "Decimating Smash",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ]
+   },
+   {
+    "id": "SionW",
+    "name": "Soul Furnace",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "cost": [
+     75,
+     80,
+     85,
+     90,
+     95
+    ]
+   },
+   {
+    "id": "SionE",
+    "name": "Roar of the Slayer",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     35,
+     40,
+     45,
+     50,
+     55
+    ]
+   },
+   {
+    "id": "SionR",
+    "name": "Unstoppable Onslaught",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     100,
+     60
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Glory in Death": {
+    "damagetype": "physical",
+    "spelleffects": "proc",
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "Death Surge": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Decimating Smash": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Soul Furnace": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Soul Furnace 2": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Roar of the Slayer": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Unstoppable Onslaught": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Unstoppable Onslaught 2": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

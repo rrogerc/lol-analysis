@@ -1,0 +1,523 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AhriPassive",
+    "key": "Characters/Ahri/Spells/AhriPassiveAbility/AhriPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "TakedownWindow": 3,
+     "MaxStacks": 9
+    },
+    "calcs": {
+     "ChampionHeal": {
+      "expr": "byLevel(75..165) + 0.3xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        75,
+        80.29412,
+        85.588235,
+        90.882353,
+        96.17647,
+        101.47059,
+        106.76471,
+        112.05882,
+        117.35294,
+        122.64706,
+        127.94118,
+        133.23529,
+        138.529412,
+        143.82353,
+        149.11765,
+        154.41176,
+        159.70588,
+        165
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": []
+     },
+     "MinionHeal": {
+      "expr": "byLevel(35..95) + 0.2xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        35,
+        38.52941,
+        42.058824,
+        45.588235,
+        49.117647,
+        52.64706,
+        56.17647,
+        59.705882,
+        63.235294,
+        66.76471,
+        70.29412,
+        73.82353,
+        77.35294,
+        80.882353,
+        84.411765,
+        87.94118,
+        91.47059,
+        95
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AhriQ",
+    "key": "Characters/Ahri/Spells/AhriQAbility/AhriQ",
+    "cooldown": 7,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      55,
+      65,
+      75,
+      85,
+      95
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       35,
+       60,
+       85,
+       110,
+       135
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[35/60/85/110/135] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        60,
+        85,
+        110,
+        135
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "AhriW",
+    "key": "Characters/Ahri/Spells/AhriWAbility/AhriW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": 30,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MovementSpeed": 0.4,
+     "MovementSpeedDuration": 2,
+     "MinionBonusDamageMultiplier": 2,
+     "MinionBonusDamageThreshold": 0.2,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "RepeatDamageMod": 0.4,
+     "AcquisitionRange": 550,
+     "BonusAcquisitionRange": 725,
+     "InitialDelay": 0.25,
+     "SecondaryDelay": 0.4,
+     "FlameDuration": 2.5,
+     "OrbitRadius": 150,
+     "APRatio": 0.4
+    },
+    "calcs": {
+     "SingleFireDamage": {
+      "expr": "BaseDamage=[40/60/80/100/120] + (APRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "MultiFireDamage": {
+      "expr": "SingleFireDamage * RepeatDamageMod=0.4",
+      "modifies": "SingleFireDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        16,
+        24,
+        32,
+        40,
+        48
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.16,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "RepeatDamageMod"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "AhriE",
+    "key": "Characters/Ahri/Spells/AhriEAbility/AhriE",
+    "cooldown": 12,
+    "cost": 60,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "SlowPercent": -0.65,
+     "CharmDuration": {
+      "axis": "rank",
+      "v": [
+       1.2,
+       1.35,
+       1.5,
+       1.65,
+       1.8
+      ]
+     },
+     "APRatio": 0.85
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + (APRatio=0.85)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.85,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "AhriR",
+    "key": "Characters/Ahri/Spells/AhriRAbility/AhriR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      120,
+      100
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       125,
+       175
+      ]
+     },
+     "RMaxTargetsPerCast": 3,
+     "RMaxCasts": 3,
+     "RDashDistance": 500,
+     "RBaseDashSpeed": 1200,
+     "RRecastWindow": 15,
+     "RAcquisitionRange": 600,
+     "RDashCooldown": 1,
+     "RAPCoefficient": 0.35,
+     "RResetCasts": 1,
+     "PDurationExtension": 10
+    },
+    "calcs": {
+     "RCalculatedDamage": {
+      "expr": "RBaseDamage=[75/125/175] + rAPCoefficientxap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        125,
+        175
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": null,
+        "dataValue": "rAPCoefficient"
+       }
+      ],
+      "refs": [
+       "RBaseDamage",
+       "rAPCoefficient"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "AhriSkin86Manager",
+    "key": "Characters/Ahri/Spells/AhriSkin86Manager",
+    "dataValues": {
+     "GoldToNextForm": 6000,
+     "SecondsOutOfCombatTillTransform": 5,
+     "SecondsOutOfCombatTillEmote": 3
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "AhriQ",
+  "W": "AhriW",
+  "E": "AhriE",
+  "R": "AhriR",
+  "P": "AhriPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 418,
+   "{6216bf7b}": 25,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Ahri",
+  "name": "Ahri",
+  "partype": "Mana",
+  "passive": "Essence Theft",
+  "spells": [
+   {
+    "id": "AhriQ",
+    "name": "Orb of Deception",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     55,
+     65,
+     75,
+     85,
+     95
+    ]
+   },
+   {
+    "id": "AhriW",
+    "name": "Fox-Fire",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "AhriE",
+    "name": "Charm",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "AhriR",
+    "name": "Spirit Rush",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     120,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Essence Theft": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Orb of Deception": {
+    "damagetype": "Magic True",
+    "spelleffects": "Area of effect",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Fox-Fire": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Charm": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Spirit Rush": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

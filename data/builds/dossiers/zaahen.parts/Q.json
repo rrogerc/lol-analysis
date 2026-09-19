@@ -1,0 +1,266 @@
+{
+ "name": "The Darkin Glaive / The Darkin Glaive 2",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": {
+  "values": [
+   25,
+   25,
+   25,
+   25,
+   25
+  ],
+  "quote": "25",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Total Physical Damage (first cast, both strikes combined)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    15,
+    30,
+    45,
+    60,
+    75
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.0
+    },
+    {
+     "stat": "bonusAd",
+     "coef": [
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4
+     ]
+    }
+   ],
+   "quote": "{{ap|15 to 75}} {{as|(+ 100% AD)}} {{as|(+ {{ap|{{#var:q_bad1}} to {{#var:q_bad5}}}}% '''bonus''' AD)}}",
+   "bin": [
+    "ZaahenQ#InitialDamage"
+   ],
+   "binNote": "ZaahenQ#InitialDamage = Q1BaseDamage + QCoeff x bonus AD only; it contains no full-AD (100% AD) term. The wiki's total states an additional (+100% AD) component that the bin's InitialDamage calculation does not carry. This may reflect a base-attack-damage component folded in separately from the ability calculation (i.e. the underlying basic attack's own AD damage) rather than an ability-side ratio; flagging as a disagreement between the wiki's stated total and the named bin calculation."
+  },
+  {
+   "id": "q_2",
+   "meaning": "Physical Damage per Hit (first cast, each of the two strikes, half of total)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    7.5,
+    15,
+    22.5,
+    30,
+    37.5
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.5
+    },
+    {
+     "stat": "bonusAd",
+     "coef": [
+      0.1,
+      0.125,
+      0.15,
+      0.175,
+      0.2
+     ]
+    }
+   ],
+   "quote": "{{ap|15/2 to 75/2}} {{as|(+ {{ap|100/2}}% AD)}} {{as|(+ {{ap|20/2 to 40/2}}% '''bonus''' AD)}}",
+   "bin": [],
+   "binNote": "No bin row states the per-hit split directly; it is simply half of q_1's total (see q_1 for the bin-named total and its own disagreement note regarding the 100% AD component)."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Champion Healing",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": [
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|5 to 9}}% of his '''maximum''' health}}",
+   "bin": [
+    "ZaahenQ.HealPercent"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Non-Champion Healing (minions/monsters, 50% of champion heal)",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": [
+      0.025,
+      0.03,
+      0.035,
+      0.04,
+      0.045
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|5*0.5 to 9*0.5}}% of his '''maximum''' health}}",
+   "bin": [
+    "ZaahenQ.HealPercent",
+    "ZaahenQ.MinionHealPercent"
+   ],
+   "binNote": "No single bin row states this combined percentage; it is the product of ZaahenQ.HealPercent ([0.05,0.06,0.07,0.08,0.09]) and ZaahenQ.MinionHealPercent (0.5), matching the wiki's stated halved values."
+  },
+  {
+   "id": "q_5",
+   "meaning": "Bonus Physical Damage (recast)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    60,
+    90,
+    120,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": [
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4
+     ]
+    }
+   ],
+   "quote": "{{ap|30 to 150}} {{as|(+ {{ap|20 to 40}}% '''bonus''' AD)}}",
+   "bin": [
+    "ZaahenQ#SecondHitDamage"
+   ]
+  },
+  {
+   "id": "q_recastwindow",
+   "meaning": "Time after the empowered attack lands within which the recast can be used (and time within which the initial empowered attack must be triggered)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "can be recast within the next 4 seconds at no additional cost",
+   "bin": [
+    "ZaahenQ.RecastWindow"
+   ]
+  },
+  {
+   "id": "q_recastdelay",
+   "meaning": "Delay after the empowered attack before the recast becomes available",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "After {{fd|1.5}} seconds of using the empowered attack, ''The Darkin Glaive'' can be recast",
+   "bin": [
+    "ZaahenQ.TimeBetweenAttacks"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Both the first cast and the recast reset Zaahen's basic attack timer.",
+   "quote": "Both casts of The Darkin Glaive {{tip|basic attack reset|reset}} '''Zaahen's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first cast's double strike counts as a single basic attack (one windup) that deals two damage instances, not two attacks.",
+   "quote": "Does not cause '''Zaahen''' to attack twice.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The two strikes of the first cast roll a critical strike only once, applying the same crit outcome to both hits.",
+   "quote": "Rolls {{tip|critical strike}} once for both strikes.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each strike (both casts) applies on-hit effects separately.",
+   "quote": "Each strike applies {{tip|on-hit}} effects",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only one on-attack trigger occurs despite two strikes, so effects like Lethal Tempo/Hail of Blades only trigger once per empowered attack.",
+   "quote": "Effects that trigger on-attack or interact with the attack windup will only trigger once and thus do not interact with ''The Darkin Glaive''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack has an uncancellable windup and gains bonus range, but no separate cast time before the attack fires.",
+   "quote": "empowers his next {{tip|basic attack}} within 4 seconds to have an {{tip|uncancellable windup}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The heal is granted only when the target was a champion, minion, or monster (not wards, plants, or structures), and applies on-attack so is not prevented by parry.",
+   "quote": "Since the healing is granted on-attack, parrying effects will not prevent '''Zaahen''' from gaining the heal.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability's cooldown does not begin until after the full effect (including the recast window) completes.",
+   "quote": "post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The damage is tagged as basic damage and spell damage, allowing it to trigger spell effects.",
+   "quote": "''The Darkin Glaive's'' damage is tagged as {{tip|basic damage}} and {{tip|spell damage}}, which allows it to trigger {{tip|spell effects}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZaahenQ.KnockUpDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "ZaahenQ.QBonusRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ZaahenQ.MonsterDamagePercent",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

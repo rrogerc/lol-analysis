@@ -1,0 +1,533 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SivirPassive",
+    "key": "Characters/Sivir/Spells/SivirPassiveAbility/SivirPassive",
+    "dataValues": {
+     "HasteDuration": 1.5
+    },
+    "calcs": {
+     "FlatMS": {
+      "expr": "byLevelL[55/55/55/55/55/60/60/60/60/60/65/65/65/65/65/70/70/75]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        55,
+        55,
+        55,
+        55,
+        55,
+        60,
+        60,
+        60,
+        60,
+        60,
+        65,
+        65,
+        65,
+        65,
+        65,
+        70,
+        70,
+        75
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SivirQ",
+    "key": "Characters/Sivir/Spells/SivirQAbility/SivirQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9.5,
+      9,
+      8.5,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      55,
+      60,
+      65,
+      70,
+      75
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     },
+     "ADRatio": 0.7,
+     "FallOffRatio": 0.15,
+     "FallOffMinimum": 0.4,
+     "QAttackSpeedCastReductionPercent": 0.5,
+     "QBaseCastTime": 0.25,
+     "QAttackSpeedCastReductionMax": 0.6,
+     "CritRatio": 0.4,
+     "APRatio": 0.6
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "(BaseDamage=[60/85/110/135/160] + (ADRatio=0.7)xbonus ad + (APRatio=0.6)xap) * 1 + ((CritRatio=0.4)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage",
+       "CritRatio"
+      ]
+     },
+     "PreCritDamage": {
+      "expr": "BaseDamage=[60/85/110/135/160] + (ADRatio=0.7)xbonus ad + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        85,
+        110,
+        135,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.7,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "CritScaling": {
+      "expr": "(CritRatio=0.4)xcritChance",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critChance",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "CritRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "CritRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SivirW",
+    "key": "Characters/Sivir/Spells/SivirWAbility/SivirW",
+    "cooldown": 12,
+    "cost": 60,
+    "dataValues": {
+     "BounceADRatio": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.425,
+       0.45,
+       0.475,
+       0.5
+      ]
+     },
+     "BounceAttacks": 3,
+     "BuffDuration": 4,
+     "MaxBounces": 8,
+     "RicochetAttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "MinionDamageMod": 0.65
+    },
+    "calcs": {
+     "BounceDamage": {
+      "expr": "(BounceADRatio=[0.4/0.425/0.45/0.475/0.5])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.4,
+          0.425,
+          0.45,
+          0.475,
+          0.5
+         ]
+        },
+        "dataValue": "BounceADRatio"
+       }
+      ],
+      "refs": [
+       "BounceADRatio"
+      ]
+     },
+     "FirstTargetDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "TotalMaxDamage": {
+      "expr": "1xad + (MaxBounces=8)*((BounceADRatio=[0.4/0.425/0.45/0.475/0.5])xad)",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       },
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          3.2,
+          3.4,
+          3.6,
+          3.8,
+          4
+         ]
+        },
+        "dataValue": "BounceADRatio"
+       }
+      ],
+      "refs": [
+       "BounceADRatio",
+       "MaxBounces"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SivirE",
+    "key": "Characters/Sivir/Spells/SivirEAbility/SivirE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      24,
+      22.5,
+      21,
+      19.5,
+      18
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HealRatio": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.65,
+       0.7,
+       0.75,
+       0.8
+      ]
+     },
+     "SpellShieldDuration": 1.5,
+     "HealAPRatio": 0.5
+    },
+    "calcs": {
+     "TotalHeal": {
+      "expr": "(HealRatio=[0.6/0.65/0.7/0.75/0.8])xad + (HealAPRatio=0.5)xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8
+         ]
+        },
+        "dataValue": "HealRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "HealAPRatio"
+       }
+      ],
+      "refs": [
+       "HealAPRatio",
+       "HealRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SivirR",
+    "key": "Characters/Sivir/Spells/SivirRAbility/SivirR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HuntAttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.05,
+       0.06,
+       0.07
+      ]
+     },
+     "MaxMS": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3
+      ]
+     },
+     "MinMS": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "MaxMSDuration": {
+      "axis": "rank",
+      "v": [
+       2,
+       3,
+       4
+      ]
+     },
+     "UltDuration": {
+      "axis": "rank",
+      "v": [
+       8,
+       10,
+       12
+      ]
+     },
+     "AuraRange": 1000,
+     "BuffExtension": {
+      "axis": "rank",
+      "v": [
+       8,
+       10,
+       12
+      ]
+     },
+     "DamagedMarkerDuration": 3,
+     "AttackCooldownRefund": 0.5
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SivirQ",
+  "W": "SivirW",
+  "E": "SivirE",
+  "R": "SivirR",
+  "P": "SivirPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 340,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.18
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Sivir",
+  "name": "Sivir",
+  "partype": "Mana",
+  "passive": "Fleet of Foot",
+  "spells": [
+   {
+    "id": "SivirQ",
+    "name": "Boomerang Blade",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "cost": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ]
+   },
+   {
+    "id": "SivirW",
+    "name": "Ricochet",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "SivirE",
+    "name": "Spell Shield",
+    "maxrank": 5,
+    "cooldown": [
+     24,
+     22.5,
+     21,
+     19.5,
+     18
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "SivirR",
+    "name": "On The Hunt",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Fleet of Foot": {
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Boomerang Blade": {
+    "damagetype": "Physical",
+    "spelleffects": "AoE",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Ricochet": {
+    "damagetype": "Physical",
+    "spelleffects": "proc",
+    "onhiteffects": "Special",
+    "spellshield": "False",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Spell Shield": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "On the Hunt": {
+    "targeting": "Auto",
+    "affects": "Allies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

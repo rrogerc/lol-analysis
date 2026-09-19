@@ -1,0 +1,159 @@
+{
+ "name": "Tormented Shadow",
+ "cooldown": {
+  "values": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "quote": "12"
+ },
+ "cost": {
+  "values": [
+   70,
+   80,
+   90,
+   100,
+   110
+  ],
+  "quote": "{{ap|70 to 110}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Minimum Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    9,
+    15.5,
+    22,
+    28.5,
+    35
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{ap|9 to 35}} {{as|(+ 10% AP)}}",
+   "bin": [
+    "MorganaW.BaseDamage"
+   ],
+   "binNote": "Wiki's 'minimum' per-tick value (9 to 35, +10% AP) is exactly half of the bin's MorganaW.BaseDamage/BaseAPRatio ([18..70], 0.2xap), which is what MorganaW#TotalMinDamage computes. The bin calculation named 'TotalMinDamage' therefore numerically matches the wiki's MAXIMUM tick value, not the minimum; the wiki's minimum appears to be BaseDamage halved (i.e. 0% missing-health case) which has no dedicated bin row."
+  },
+  {
+   "id": "w_2",
+   "meaning": "Maximum Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    18,
+    31,
+    44,
+    57,
+    70
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|9*2 to 35*2}} {{as|(+ {{ap|10*2}}% AP)}}",
+   "bin": [
+    "MorganaW.BaseDamage",
+    "MorganaW.BaseAPRatio",
+    "MorganaW.MissingHealthAmpPercent",
+    "MorganaW#TotalMinDamage",
+    "MorganaW#TotalMaxDamage"
+   ],
+   "binNote": "MorganaW#TotalMinDamage (BaseDamage+0.2xap) equals this 'maximum per tick' value at full missing health per MorganaW.MissingHealthAmpPercent=1 (100%); see w_1 for the naming disagreement with the wiki's 'minimum' label."
+  },
+  {
+   "id": "w_3",
+   "meaning": "duration of the desecrated zone",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "causing the area to become desecrated for 5 seconds",
+   "bin": [
+    "MorganaW.WDuration"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "interval between damage ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{fd|0.5}} seconds thereafter",
+   "bin": [
+    "MorganaW.TickRate"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "current cooldown reduction per Soul Siphon trigger, as a fraction of total cooldown",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [],
+   "quote": "'''current''' cooldown}} is reduced by 5% of its '''total''' cooldown whenever ''{{ai|Soul Siphon|Morgana}}'' triggers",
+   "bin": [
+    "MorganaW.CDRefundPercent"
+   ]
+  }
+ ],
+ "extraValues": [],
+ "mechanics": [
+  {
+   "claim": "Damage lands on-cast and then every 0.5 seconds while the zone persists.",
+   "quote": "Enemies within take {{as|magic damage}} on-cast and every {{fd|0.5}} seconds thereafter",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tick damage scales up the more missing health the target has, up to double damage at 100% missing health.",
+   "quote": "increased by {{pp|type=target's '''missing''' health|key=%|key1=%|0 to 100 for 11|0 to 100|formula=1% per 1% of target's '''missing''' health}}|health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage from multiple overlapping casts of Tormented Shadow does not stack.",
+   "quote": "Damage from multiple ''Tormented Shadows'' does not stack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tormented Shadow's own damage ticks trigger Soul Siphon, which reduces the ability's current cooldown by 5% of its total cooldown per trigger, and simultaneous triggers stack.",
+   "quote": "''Tormented Shadow's'' {{sti|'''current''' cooldown}} is reduced by 5% of its '''total''' cooldown whenever ''{{ai|Soul Siphon|Morgana}}'' triggers. Simultaneous triggers from multiple targets will stack the cooldown reduction.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tormented Shadow deals bonus damage against monsters.",
+   "quote": "''Tormented Shadow'' deals 170% damage against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "values_extra_note": "added w_3/w_4/w_5 duration, interval, and cdr refund below in place of deleted total rows",
+ "binUnused": [
+  {
+   "ref": "MorganaW.MonsterMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

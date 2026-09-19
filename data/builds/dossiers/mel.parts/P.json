@@ -1,0 +1,184 @@
+{
+ "name": "Searing Brilliance",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "magic damage stored on the target by the first Overwhelm stack",
+   "role": "target-debuff",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    60,
+    70,
+    80
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{pp|type=[[File:Golden Eclipse.png|20px|border]] Golden Eclipse's rank|50;60;70;80|0 to 3|color=magic damage}} {{as|(+ 10% AP)}}",
+   "bin": [
+    "MelR#PassiveFlatDamage"
+   ],
+   "binNote": "Wiki gives 4 values (50/60/70/80) for Golden Eclipse ranks 0-3, but MelR.BasePassiveFlatDamage only lists 3 values [60,70,80] for ranks 1-3; the rank-0 (before R is taken) value of 50 has no bin row."
+  },
+  {
+   "id": "p_2",
+   "meaning": "additional magic damage stored per Overwhelm stack",
+   "role": "target-debuff",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0075
+    }
+   ],
+   "quote": "an additional {{pp|type=[[File:Golden Eclipse.png|20px|border]] Golden Eclipse's rank|2;3;4;5|0 to 3|color=magic damage}} {{as|(+ {{fd|0.75}}% AP)}} {{as|magic damage}}",
+   "bin": [
+    "MelR#PassiveStackDamage"
+   ],
+   "binNote": "Wiki gives 4 values (2/3/4/5) for Golden Eclipse ranks 0-3, but MelR.BasePassiveStackDamage only lists 3 values [3,4,5] for ranks 1-3; the rank-0 value of 2 has no bin row."
+  },
+  {
+   "id": "p_3",
+   "meaning": "magic damage per blazing projectile fired on the attack that consumes Searing Brilliance stacks",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    8,
+    9.294118,
+    10.588235,
+    11.882353,
+    13.176471,
+    14.47058824,
+    15.764706,
+    17.058823,
+    18.352941,
+    19.647059,
+    20.941177,
+    22.235294,
+    23.529412,
+    24.82353,
+    26.117647,
+    27.411765,
+    28.7058824,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.04
+    }
+   ],
+   "quote": "Each projectile deals {{as|{{pplevel|8 to 30}}|magic damage}} {{as|(+ 4% AP)}} {{as|magic damage}}",
+   "bin": [
+    "MelPassive#PassiveBonusMissileDamage"
+   ]
+  },
+  {
+   "id": "p_4",
+   "meaning": "duration an Overwhelm stack lasts before expiring",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "apply a {{tip|stack}} of ''Overwhelm'' for each instance of damage they deal to enemies for 5 seconds, refreshing on {{tt|subsequent damage instances|From her attacks/abilities}} and stacking infinitely",
+   "bin": [
+    "MelPassive.OverwhelmDuration"
+   ]
+  },
+  {
+   "id": "p_5",
+   "meaning": "duration a Searing Brilliance (bonus missile) stack lasts before expiring",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "'''Mel's''' ability casts each generate 3 stacks of ''Searing Brilliance'' for 5 seconds, refreshing on subsequent casts and stacking up to 9 times",
+   "bin": [
+    "MelPassive.BonusAttackDuration"
+   ]
+  },
+  {
+   "id": "p_6",
+   "meaning": "Searing Brilliance stacks generated per ability cast",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "'''Mel's''' ability casts each generate 3 stacks of ''Searing Brilliance''",
+   "bin": [
+    "MelPassive.PassiveBonusMissiles"
+   ]
+  },
+  {
+   "id": "p_7",
+   "meaning": "maximum Searing Brilliance stacks (and thus maximum bonus projectiles on the next attack)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 9,
+   "terms": [],
+   "quote": "stacking up to 9 times",
+   "bin": [
+    "MelPassive.MaxPassiveBonusMissiles"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Mel's basic attacks and abilities apply an Overwhelm stack for every separate instance of damage they deal, so a multi-hit ability generates multiple stacks in one cast.",
+   "quote": "apply a {{tip|stack}} of ''Overwhelm'' for each instance of damage they deal to enemies for 5 seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first Overwhelm stack applied stores both the flat first-stack damage and the per-stack bonus damage.",
+   "quote": "The first stack also benefits from the per-stack bonus stored damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If total stored post-mitigation Overwhelm damage exceeds the target's current health and shields, the next stack applied detonates all stored damage as a single burst.",
+   "quote": "If the total {{tt|post-mitigation damage|Damage calculated after modifiers}} stored exceeds the target's {{as|'''current''' health}} and {{tip|shields}}, the next stack applied against them will consume them all to deal the stored damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Overwhelm damage against minions is reduced to 50% (irrelevant to a champion-target dummy fight).",
+   "quote": "reduced{{ft|to 50%|to {{as|{{pp|type=[[File:Golden Eclipse.png|20px|border]] Golden Eclipse's rank|50*0.5;60*0.5;70*0.5;80*0.5|0 to 3}}|magic damage}} {{as|(+ {{ap|10*0.5}}% AP)}}}}against {{tip|minions}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Every ability cast generates 3 Searing Brilliance stacks, which refresh (not add) on subsequent casts, capping at 9.",
+   "quote": "'''Mel's''' ability casts each generate 3 stacks of ''Searing Brilliance'' for 5 seconds, refreshing on subsequent casts and stacking up to 9 times",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Mel's next basic attack after gaining Searing Brilliance stacks consumes all of them to fire that many extra magic-damage projectiles at the target, in addition to the normal attack.",
+   "quote": "Her next basic attack consumes all stacks of ''Searing Brilliance'' to additionally fire an equal number of blazing projectiles at the target.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "On-hit effects (e.g. Guinsoo's Rageblade) do not apply Overwhelm stacks, but effects that inherit the origin basic attack (e.g. Runaan's Hurricane) do.",
+   "quote": "Effects that apply {{tip|on-hit|on-hits}} (e.g {{ii|Guinsoo's Rageblade}}) will not apply stacks.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

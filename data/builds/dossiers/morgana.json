@@ -1,0 +1,651 @@
+{
+ "champion": "morgana",
+ "abilities": {
+  "P": {
+   "name": "Soul Siphon",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "percent of post-mitigation ability damage healed",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.18,
+     "terms": [],
+     "quote": "'''Morgana''' {{tip|heal|heals}} herself for 18% of the {{tt|post-mitigation damage|Damage calculated after modifiers}} dealt by her {{tip|abilities}}",
+     "bin": [
+      "MorganaPassive.HealPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Morgana heals for a portion of post-mitigation damage dealt by her abilities against champions, large minions, and medium/large monsters.",
+     "quote": "heals herself for 18% of the {{tt|post-mitigation damage|Damage calculated after modifiers}} dealt by her {{tip|abilities}} against {{tip|champions}}, large {{tip|minions}}, and medium and large {{tip|monsters}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Dark Binding",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50|55|60|65|70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      135,
+      190,
+      245,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|80|135|190|245|300}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "MorganaQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3
+     ],
+     "terms": [],
+     "quote": "{{ap|2 to 3}} seconds",
+     "bin": [
+      "MorganaQ.RootDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability is a skillshot projectile that hits the first enemy in its path and deals damage and roots them.",
+     "quote": "throws a sphere of dark magic in the target direction that deals {{as|magic damage}} to the first enemy hit and {{tip|root|roots}} them for a duration",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Tormented Shadow",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ],
+    "quote": "{{ap|70 to 110}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Minimum Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      9,
+      15.5,
+      22,
+      28.5,
+      35
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|9 to 35}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "MorganaW.BaseDamage"
+     ],
+     "binNote": "Wiki's 'minimum' per-tick value (9 to 35, +10% AP) is exactly half of the bin's MorganaW.BaseDamage/BaseAPRatio ([18..70], 0.2xap), which is what MorganaW#TotalMinDamage computes. The bin calculation named 'TotalMinDamage' therefore numerically matches the wiki's MAXIMUM tick value, not the minimum; the wiki's minimum appears to be BaseDamage halved (i.e. 0% missing-health case) which has no dedicated bin row."
+    },
+    {
+     "id": "w_2",
+     "meaning": "Maximum Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      18,
+      31,
+      44,
+      57,
+      70
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|9*2 to 35*2}} {{as|(+ {{ap|10*2}}% AP)}}",
+     "bin": [
+      "MorganaW.BaseDamage",
+      "MorganaW.BaseAPRatio",
+      "MorganaW.MissingHealthAmpPercent",
+      "MorganaW#TotalMinDamage",
+      "MorganaW#TotalMaxDamage"
+     ],
+     "binNote": "MorganaW#TotalMinDamage (BaseDamage+0.2xap) equals this 'maximum per tick' value at full missing health per MorganaW.MissingHealthAmpPercent=1 (100%); see w_1 for the naming disagreement with the wiki's 'minimum' label."
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the desecrated zone",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "causing the area to become desecrated for 5 seconds",
+     "bin": [
+      "MorganaW.WDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "interval between damage ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds thereafter",
+     "bin": [
+      "MorganaW.TickRate"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "current cooldown reduction per Soul Siphon trigger, as a fraction of total cooldown",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [],
+     "quote": "'''current''' cooldown}} is reduced by 5% of its '''total''' cooldown whenever ''{{ai|Soul Siphon|Morgana}}'' triggers",
+     "bin": [
+      "MorganaW.CDRefundPercent"
+     ]
+    }
+   ],
+   "extraValues": [],
+   "mechanics": [
+    {
+     "claim": "Damage lands on-cast and then every 0.5 seconds while the zone persists.",
+     "quote": "Enemies within take {{as|magic damage}} on-cast and every {{fd|0.5}} seconds thereafter",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tick damage scales up the more missing health the target has, up to double damage at 100% missing health.",
+     "quote": "increased by {{pp|type=target's '''missing''' health|key=%|key1=%|0 to 100 for 11|0 to 100|formula=1% per 1% of target's '''missing''' health}}|health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage from multiple overlapping casts of Tormented Shadow does not stack.",
+     "quote": "Damage from multiple ''Tormented Shadows'' does not stack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tormented Shadow's own damage ticks trigger Soul Siphon, which reduces the ability's current cooldown by 5% of its total cooldown per trigger, and simultaneous triggers stack.",
+     "quote": "''Tormented Shadow's'' {{sti|'''current''' cooldown}} is reduced by 5% of its '''total''' cooldown whenever ''{{ai|Soul Siphon|Morgana}}'' triggers. Simultaneous triggers from multiple targets will stack the cooldown reduction.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tormented Shadow deals bonus damage against monsters.",
+     "quote": "''Tormented Shadow'' deals 170% damage against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "values_extra_note": "added w_3/w_4/w_5 duration, interval, and cdr refund below in place of deleted total rows",
+   "binUnused": [
+    {
+     "ref": "MorganaW.MonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Black Shield",
+   "cooldown": {
+    "values": [
+     26,
+     23.5,
+     21,
+     18.5,
+     16
+    ],
+    "quote": "{{ap|26 to 16}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      155,
+      210,
+      265,
+      320
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|100 to 320}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "MorganaE#TotalShieldStrength"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "for 5 seconds",
+     "bin": [
+      "MorganaE.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield absorbs magic damage only, and grants crowd control immunity while it holds.",
+     "quote": "which absorbs incoming {{as|magic damage}} and grants {{tip|cc-immune|crowd control immunity}} while it holds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Black Shield negates crowd control effects before any magic damage is absorbed, even if the shield is broken by enough damage.",
+     "quote": "''Black Shield'' negates {{tip|crowd control}} effects before any magic damage is absorbed; even if the shield is broken by an enemy dealing enough damage, its associated disables will not apply.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Black Shield can be cast on Morgana herself or an allied champion.",
+     "quote": "grants a {{tip|shield}} to the target allied {{tip|champion}} or herself",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Soul Shackles",
+   "cooldown": {
+    "values": [
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|120 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      275,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|200 to 350}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "MorganaR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Total Magic Damage (initial + aftereffect), wiki-computed sum of two applications",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      400,
+      550,
+      700
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.6
+      }
+     ],
+     "quote": "{{ap|200*2 to 350*2}} {{as|(+ {{ap|80*2}}% AP)}}",
+     "bin": [],
+     "binNote": "This is the wiki's own doubling of MorganaR#TotalDamage (base [200,275,350], ap 0.8) to show the combined total across the initial hit and the aftereffect hit; the bin has no separate row for the summed total, it only stores the per-hit values used twice."
+    },
+    {
+     "id": "r_3",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.4,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 60}}%",
+     "bin": [
+      "MorganaR.HastePercent"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Stun Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.5,
+      1.75,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1.5 to 2}} seconds",
+     "bin": [
+      "MorganaR.StunDuration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Tether duration before stun aftereffect triggers",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "forming a {{tip|tether}} between herself and each target for 3 seconds",
+     "bin": [
+      "MorganaR.ChainDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Slow on tethered targets",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "slowed by 20%",
+     "bin": [
+      "MorganaR.SlowPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Damage lands on cast over the cast time, applying to all nearby enemy champions and forming a tether that lasts 3 seconds.",
+     "quote": "latches chains of energy onto nearby enemy champions over the cast time, dealing {{as|magic damage}} and forming a {{tip|tether}} between herself and each target for 3 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the tether is not broken by its end, the same magic damage is dealt again and the target is stunned.",
+     "quote": "If a target does not break their tether by the end of its duration, they are dealt the same {{as|magic damage}} again and become {{tip|stun|stunned}} for a duration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the tether's application and initial damage but not the aftereffect damage/stun of an already-applied tether.",
+     "quote": "{{tip|Spell shield}} will block the tether's application and initial damage but not the aftereffects of one already applied.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An enemy champion within 575 units is required to cast; target need not be visible.",
+     "quote": "An enemy champion within {{tip|cr|icononly=true}} 575 units is required to cast this ability. The target does not have to be {{tip|sight|visible}} to be tethered by this ability.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MorganaR.SlowPercent",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dark Binding: single-target skillshot damage that lands after its 0.25s cast; the root itself is CC and ignored."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Tormented Shadow: on-cast damage instance plus a tick every 0.5s for 5s (up to 10 further ticks) while the zone persists on the dummy."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Each Tormented Shadow tick scales from its base value up to double as the target's missing-health percentage rises."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Every landed Morgana ability hit (including W's own ticks) triggers Soul Siphon, refunding 5% of W's total cooldown per trigger; simultaneous triggers stack."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Soul Shackles deals an initial hit on cast and, since a stationary dummy cannot break the 3s tether, an identical second magic-damage hit lands automatically 3s later."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Soul Siphon converts 18% of post-mitigation ability damage dealt into self-healing; only relevant if Morgana is the survival-fight subject and lands damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Black Shield only absorbs magic damage and grants CC immunity; it deals no damage and is only read in a survival fight where Morgana is the target being kept alive."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-70, W 70-110, R 100) against Morgana's mana pool can cap total casts inside a 15s all-in, particularly at low levels or without mana items."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behavior (a skillshot cast, a ticking zone whose tick size depends on target missing-health, a self-referential cooldown-refund loop off every landed hit, and a two-part tethered burst with a guaranteed delayed second hit against an immobile target) is fully expressible as combinations of plain-cast, dot, conditional-damage, cooldown-manipulation, and recast-or-multipart; nothing requires custom engine logic beyond these."
+ },
+ "unsettled": [
+  {
+   "question": "What is W's actual damage at 0% missing health: half of MorganaW.BaseDamage (as the wiki's 'Minimum Damage Per Tick' states, 9 to 35 +10% AP) or the full BaseDamage+0.2xAP value (as the bin's row literally named MorganaW#TotalMinDamage computes, which numerically equals the wiki's stated MAXIMUM tick)?",
+   "options": [
+    "Use the wiki's stated minimum (BaseDamage halved, +10% AP) as the 0%-missing floor and double it at 100% missing",
+    "Use the bin's TotalMinDamage (full BaseDamage, +20% AP) as the 0%-missing floor and double it via MissingHealthAmpPercent to reach the bin's TotalMaxDamage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Minimum Damage Per Tick|{{ap|9 to 35}} {{as|(+ 10% AP)}}|Maximum Damage Per Tick|{{ap|9*2 to 35*2}} {{as|(+ {{ap|10*2}}% AP)}}}}",
+    "MorganaW#TotalMinDamage = BaseDamage=[18/31/44/57/70] + BaseApRatioxap",
+    "MorganaW#TotalMaxDamage = TotalMinDamage * 1 + MissingHealthAmpPercent=1"
+   ]
+  },
+  {
+   "question": "Is Tormented Shadow's missing-health damage amp recalculated per tick against the dummy's live (falling) health, or fixed once when the zone is cast?",
+   "options": [
+    "Recomputed every 0.5s tick using the target's current health at that moment",
+    "Locked in once at cast time and applied identically to every tick of that cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "increased by {{pp|type=target's '''missing''' health|key=%|key1=%|0 to 100 for 11|0 to 100|formula=1% per 1% of target's '''missing''' health}}|health}}"
+   ]
+  },
+  {
+   "question": "Does Soul Siphon's 5%-of-total-cooldown refund shrink Tormented Shadow's cooldown live while it's counting down (letting a second W be cast well before the nominal 12s if enough hits land), or does it only apply once and get consumed at the next cooldown start?",
+   "options": [
+    "Refund is applied immediately to the live, ticking-down cooldown timer, so W can be recast earlier than 12s",
+    "Refund accumulates but is only realized the next time the ability enters its cooldown, i.e. does not shorten the current wait"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Tormented Shadow's'' {{sti|'''current''' cooldown}} is reduced by 5% of its '''total''' cooldown whenever ''{{ai|Soul Siphon|Morgana}}'' triggers. Simultaneous triggers from multiple targets will stack the cooldown reduction."
+   ]
+  },
+  {
+   "question": "Is Soul Shackles' aftereffect hit a fresh evaluation of MorganaR#TotalDamage at the moment it lands (3s after cast, so it could reflect stat changes mid-fight) or a value snapshotted from the initial cast?",
+   "options": [
+    "Aftereffect recomputes damage (base + 0.8xAP) using stats at the time it lands",
+    "Aftereffect reuses the exact damage number rolled at the initial hit"
+   ],
+   "impact": "low",
+   "quotes": [
+    "If a target does not break their tether by the end of its duration, they are dealt the same {{as|magic damage}} again and become {{tip|stun|stunned}} for a duration"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (Soul Shackles) while all cooldowns are fresh, since it is Morgana's largest one-time burst and starts the 3s tether that guarantees a free second hit later.",
+   "Immediately follow with W (Tormented Shadow) on the dummy's location for its on-cast hit and to start the 5s, 0.5s-interval tick DoT.",
+   "Cast Q (Dark Binding) at the dummy for its flat magic damage.",
+   "Let each landed hit (R's initial hit, W's on-cast hit and every subsequent tick, Q's hit) trigger Soul Siphon and shave 5% off W's total cooldown; recast W again as soon as it comes off cooldown to start another full tick cycle within the 15s window.",
+   "Recast Q again once its 10s cooldown is up (around the 10-11s mark) for another flat hit.",
+   "Allow Soul Shackles' aftereffect (an identical magic-damage hit plus stun) to land automatically ~3s after the initial cast, since the stationary dummy can never break the tether.",
+   "Do not cast E (Black Shield) in the damage fight: it deals no damage and only matters for a survival scenario.",
+   "Sequence casts to stay within the mana pool, prioritizing the second W cast (main DoT/DPS engine) and Q over any non-damaging spend."
+  ],
+  "questions": [
+   "Does the simulator model Soul Siphon's cooldown refund as live-reducing W's ongoing cooldown timer, or only applied at the next cooldown start? This changes how many W casts fit in 15s.",
+   "Should the opening order be R into W into Q, or does the intended combo (informed by real play, where Q's root sets up landing other abilities) put Q first even though CC is ignored in this dummy fight?",
+   "Should R be assumed available at the start of the 15s fight (i.e., the build/level scenario is a full-cooldown burst check), given its 100-120s cooldown otherwise never permits a second cast?",
+   "Is Tormented Shadow's missing-health amp meant to be evaluated per tick against the live, falling dummy health, materially raising total DoT damage over the fight versus a fixed 0%-missing assumption?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

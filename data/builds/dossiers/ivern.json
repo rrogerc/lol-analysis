@@ -1,0 +1,899 @@
+{
+ "champion": "ivern",
+ "abilities": {
+  "P": {
+   "name": "Friend of the Forest",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_channel_duration",
+     "meaning": "channel duration to plant a grove",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} second {{tip|channel}}",
+     "bin": [],
+     "binNote": "Channel duration is not present as a data value or calculation in the sheet."
+    },
+    {
+     "id": "p_channel_uninterruptible_start",
+     "meaning": "seconds at start of channel that cannot be cancelled",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "cannot be cancelled in the first {{fd|0.15}} seconds",
+     "bin": [],
+     "binNote": "Not present in the sheet."
+    },
+    {
+     "id": "p_channel_uninterruptible_end",
+     "meaning": "seconds at end of channel that cannot be cancelled",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "in the last {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "Not present in the sheet."
+    },
+    {
+     "id": "p_health_cost",
+     "meaning": "health cost to place a grove, percent of base health, scaling down with level",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      15,
+      14.118,
+      13.236,
+      12.354,
+      11.472,
+      10.59,
+      9.708,
+      8.826,
+      7.944,
+      7.062,
+      6.18,
+      5.298,
+      4.416,
+      3.534,
+      2.652,
+      1.77,
+      0.888,
+      0.00599951
+     ],
+     "terms": [],
+     "quote": "(15% - 0.882% per level after 1) of base health",
+     "bin": [
+      "IvernP#HealthCostPercent"
+     ]
+    },
+    {
+     "id": "p_mana_cost",
+     "meaning": "mana cost to place a grove, percent of base mana, scaling down with level",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      20,
+      18.825,
+      17.65,
+      16.475,
+      15.3,
+      14.125,
+      12.95,
+      11.775,
+      10.6,
+      9.425,
+      8.25,
+      7.075,
+      5.9,
+      4.725,
+      3.55,
+      2.375,
+      1.2,
+      0.0250008
+     ],
+     "terms": [],
+     "quote": "(20% - 1.175% per level after 1) of base mana",
+     "bin": [
+      "IvernP#{c6433908}"
+     ]
+    },
+    {
+     "id": "p_maturation_time",
+     "meaning": "seconds for the grove to fully mature",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      40,
+      38,
+      36,
+      34,
+      32,
+      30,
+      27,
+      24,
+      21,
+      18,
+      15,
+      11,
+      7,
+      3,
+      1,
+      -1,
+      -3,
+      -5
+     ],
+     "terms": [],
+     "quote": "{{pp|40;38;36;34;32;30;27;24;21;18;15;11;7;3;1|formula = 42 - 2 per level until level 6, then 3 until level 11, then 4 until level 15. ''This is capped at 1 second at level 15.''}}",
+     "bin": [
+      "IvernP#HarvestDuration"
+     ],
+     "binNote": "Sheet gives 18 level values (including negative values for levels 16-18) while the wiki's {{pp}} table only lists 15 (levels 1-15), consistent with the wiki note that maturation is capped at 1 second at level 15."
+    },
+    {
+     "id": "p_free_cast_time",
+     "meaning": "cast time to free a matured grove's camp",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}}-second [[cast time]]",
+     "bin": [],
+     "binNote": "Not present as a distinct data value in the sheet."
+    },
+    {
+     "id": "p_free_true_damage",
+     "meaning": "true damage dealt to monsters when the camp is freed",
+     "role": "damage",
+     "damageType": "true",
+     "by": "const",
+     "base": 5000,
+     "terms": [],
+     "quote": "dealt {{as|5000 true damage}} in the {{tip|raw damage|internalraw damage}} source type",
+     "bin": [],
+     "binNote": "Not present as a data value in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ivern cannot attack or damage non-epic monsters; instead targeting a camp starts a channel that plants a grove.",
+     "quote": "'''Ivern''' cannot attack nor damage non-epic {{tip|monster|monsters}}. Instead, targeting a jungle camp initiates a {{fd|2.5}} second {{tip|channel}} that will plant a {{as|grove|buzzword2}} upon the camp.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ivern cannot place a grove while affected by cast-inhibiting crowd control or an ability lockout.",
+     "quote": "'''''Ivern''' cannot place a grove while he is affected by {{tip|cast-inhibiting crowd control}} or a {{tip|lockout}} that disables abilities.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Using Smite on a monster in the grove instantly frees the camp regardless of maturity.",
+     "quote": "Using {{si|Smite}} on a monster within the {{as|grove|buzzword2}} will instantly ''free'' the camp regardless of maturity.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the large monster is already dead when planting, freeing the camp costs nothing; the grove also matures instantly if the large monster is slain.",
+     "quote": "If the camp's large monster has already been slain prior to planting a {{as|grove|buzzword2}}, '''Ivern''' will ''free'' the camp upon completing the channel at no cost. Similarly, the {{as|grove|buzzword2}} will instantly mature if the large monster is slain.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Ivern cannot afford the health/mana cost, the ability is put on a cooldown equal to the time needed for his regeneration to restore the required amounts.",
+     "quote": "If '''Ivern''' cannot afford the cost to place a grove, ''Friend of the Forest'' is placed on a cooldown equal to the number of seconds it takes for his {{as|{{sti|health regeneration}}}} and/or {{as|{{sti|mana regeneration}}}} to restore him to the amount of health and/or mana needed to afford the cost.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Placing a grove will not reduce Ivern below 1 health, and cannot be cast if he lacks even that.",
+     "quote": "''Friend of the Forest'' will leave '''Ivern''' at {{as|1 health}} if cast with exactly the required amount. ''Friend of the Forest'' cannot be cast with less, unlike other abilities with health costs.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IvernP.LevelForBuffShare",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IvernP.PickupDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "IvernP.KrugExperience",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IvernP.KrugGold",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IvernP.ModeSpeedOverride",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Rootcaller",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      125,
+      170,
+      215,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|80 to 260}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "IvernQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.6,
+      1.7,
+      1.8,
+      1.9,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1.6 to 2}} seconds",
+     "bin": [
+      "IvernQ.RootDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rootcaller can be recast while the target is rooted, allowing Ivern to dash to it.",
+     "quote": "''Rootcaller'' can be recast while the target is {{tip|root|rooted}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability deals no damage to non-epic monsters even though it can hit them.",
+     "quote": "''Rootcaller'' will hit {{tip|monster|monsters}} but does not deal damage to it unless the target is an epic monster.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting a non-epic monster reduces the ability's cooldown by 50%.",
+     "quote": "Hitting a non-epic monster reduces ''Rootcaller's'' {{sti|cooldown}} by 50%.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast, not on hit.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rootcaller hits only the first enemy hit by the vine, a single target.",
+     "quote": "dealing {{as|magic damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IvernQ.DashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Brushmaker",
+   "cooldown": {
+    "values": [
+     0.5
+    ],
+    "quote": "{{fd|0.5}}"
+   },
+   "cost": {
+    "values": [
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Additional Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      27.5,
+      35,
+      42.5,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|20 to 50}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "IvernW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Ally Additional Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 10% of '''Ivern's''' AP)}}",
+     "bin": [
+      "IvernW#TotalAllyDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration bonus persists after leaving brush (Ivern)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "This bonus persists for 3 seconds after leaving brush.",
+     "bin": [
+      "IvernW.BuffDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration bonus persists after leaving brush (ally)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "This bonus persists for {{fd|1.5}} seconds after leaving brush.",
+     "bin": [
+      "IvernW.AllyBuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While Ivern is in brush, his basic attacks are empowered to fire a bolt at the target, dealing additional magic damage.",
+     "quote": "While '''Ivern''' is in {{tip|brush}}, his basic attacks are empowered to fire a bolt at the target, dealing {{as|'''additional''' magic damage|magic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional on-hit damage does not apply to structures.",
+     "quote": "The additional damage does not apply to structures.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Allied champions in brush within ~1000 units of Ivern get the same on-hit empowerment, which respects enchantment redirection.",
+     "quote": "The empowerment given to allies respects {{tip|enchantment redirection}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IvernW.RevealDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IvernW.MaxBrushDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "IvernW.BrushRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IvernW.BrushSpacing",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Triggerseed",
+   "cooldown": {
+    "values": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "quote": "{{ap|11 to 7}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      75,
+      115,
+      155,
+      195,
+      235
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|75 to 235}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "IvernE#TotalShield"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      90,
+      110,
+      130,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|70 to 150}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "IvernE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "IvernE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Shield duration before explosion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "granting the target a {{tip|shield}} for 2 seconds",
+     "bin": [
+      "IvernE.ShieldDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "deal {{as|magic damage}} to nearby enemies and {{tip|slow}} them for 2 seconds",
+     "bin": [
+      "IvernE.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield can be placed on an ally champion, Daisy, or Ivern himself, and explodes after 2 seconds to deal damage to nearby enemies regardless of whether the shield still holds.",
+     "quote": "The explosion occurs regardless of whether the shield is maintained.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the seed does not damage an enemy champion and the shield persists to the end, the shield is reapplied without another explosion.",
+     "quote": "If the seed does not damage an enemy champion and the shield persists by the end of the duration, the shield is reapplied for the same strength and duration without the explosion effect.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The explosion's damage is attributed to the champion the shield was cast on, meaning it can benefit from that champion's magic penetration and trigger their spell effects instead of Ivern's.",
+     "quote": "The damage of ''Triggerseed'' is attributed to the champion the shield was cast on.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When cast on Daisy or Ivern himself, the damage is attributed to Ivern.",
+     "quote": "If cast on {{ui|Daisy}} or himself, the damage is attributed to '''Ivern'''.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Daisy! / Daisy, wait!",
+   "cooldown": {
+    "values": [
+     140,
+     130,
+     120
+    ],
+    "quote": "{{ap|140 to 120}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_daisy_duration",
+     "meaning": "Daisy's lifetime on the field",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 45,
+     "terms": [],
+     "quote": "remains on the field for up to 45 seconds",
+     "bin": [
+      "IvernR.DaisyDuration"
+     ]
+    },
+    {
+     "id": "r_daisy_ad",
+     "meaning": "Daisy's bonus attack damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|140 to 120}}",
+     "bin": [
+      "IvernR#TotalDaisyAD"
+     ],
+     "binNote": "No wiki text states Daisy's attack damage value; taken from bin calculation only."
+    },
+    {
+     "id": "r_daisy_hp",
+     "meaning": "Daisy's total health",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1050,
+      1100,
+      1150,
+      1200,
+      1600,
+      2000,
+      2400,
+      2800,
+      3200,
+      3600,
+      4000,
+      4400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|140 to 120}}",
+     "bin": [
+      "IvernR#TotalDaisyHP"
+     ],
+     "binNote": "No wiki text states Daisy's health value; taken from bin calculation only, not shown in wiki template."
+    },
+    {
+     "id": "r_shockwave_damage",
+     "meaning": "Daisy Smash! shockwave damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      90,
+      140,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "she will send a shockwave that {{tip|airborne|knocks up}} enemies hit within a line",
+     "bin": [
+      "IvernR#TotalShockwaveDamage"
+     ],
+     "binNote": "The shockwave damage numbers are stated in the bin but not given numerically in the wiki description; description confirms the mechanic exists."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Daisy! can be recast any number of times while Daisy is alive, and only the initial cast counts as an ability activation for on-cast effects.",
+     "quote": "Only the initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast cannot be interrupted and can be used while affected by cast-inhibiting crowd control.",
+     "quote": "The recast of Daisy! can be used while affected by {{tip|cast-inhibiting crowd control}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts on cast (the initial summon), not on Daisy's death or recast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Whenever Daisy attacks the same champion three times in a row, she sends a shockwave that knocks up enemies hit in a line - a separate damage instance from her basic attacks.",
+     "quote": "Whenever {{ui|Daisy}} attacks the same champion three times in a row, she will send a shockwave that {{tip|airborne|knocks up}} enemies hit within a line",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Daisy is untargetable until she lands after the initial cast.",
+     "quote": "''Daisy'', when the ability is initially cast, is {{tip|untargetable}} until she lands",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IvernR.SpawnBuffDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "IvernR.MSOnSpawn",
+     "reason": "utility"
+    },
+    {
+     "ref": "IvernR.DROnSpawn",
+     "reason": "defensive"
+    },
+    {
+     "ref": "IvernR.DaisyAS",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IvernR.DaisyAoeDR",
+     "reason": "defensive"
+    },
+    {
+     "ref": "IvernR.ShockwaveCCDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "IvernR.ShockwaveCD",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Rootcaller deals magic damage to the first enemy hit on cast, on cooldown; the recast is a pure dash (mobility) and adds no damage"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Brushmaker gives Ivern's basic attacks a bonus magic damage bolt while he is 'in brush', persisting 3s after leaving"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W"
+   ],
+   "note": "Brushmaker's brush patch is self-created (location-targeted, no terrain required) and lasts up to 45s; the fight must assume Ivern casts it once and stays standing inside it while attacking the stationary dummy to keep the on-hit rider active"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Triggerseed's seed explodes after a fixed 2s delay for magic damage regardless of whether the shield is broken or maintained"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Triggerseed's shield component (heal-shield value) only matters for the survival fight, not the damage fight against a dummy that never attacks"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "R"
+   ],
+   "note": "Daisy is summoned as a separate attacking unit with her own AD (scaling with Ivern's AP) and HP, fighting the target for up to 45s; her recast is pure repositioning (mobility) with no damage"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Daisy Smash!: every 3rd consecutive attack Daisy lands on the same target fires an additional shockwave dealing separate physical damage"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All of Ivern's damage-relevant mechanics decompose into listed primitives (plain-cast Q/E, onhit-rider W, pet-or-summon + nth-hit-or-cast R). The one non-standard piece is that W's on-hit bonus is gated on being 'in brush', but because Brushmaker itself creates a standalone brush patch at Ivern's chosen location (independent of terrain) that lasts up to 45s, this can be modeled as a one-time cast plus a positional assumption that Ivern stays inside it, rather than requiring new engine logic."
+ },
+ "unsettled": [
+  {
+   "question": "The damage-fight arena has no terrain, but Brushmaker's on-hit bonus requires Ivern to physically stand in brush (which he can self-create via W). Should the simulator assume Ivern casts W once at the start and remains inside the created brush for the whole 15s, giving him permanent access to the on-hit bolt, or is this bonus considered unusable/out of scope because the arena is defined as terrain-less?",
+   "options": [
+    "Assume one W cast creates a standing brush Ivern occupies for the whole fight, making the on-hit bolt permanently active",
+    "Treat the on-hit bolt as unusable since the fight environment has no terrain and the brush mechanic is terrain-adjacent",
+    "Only count the bolt as active during brief windows explicitly modeled as 'in brush', reducing its uptime"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Ivern''' grows a patch of {{tip|brush}} at the target location for 45 seconds",
+    "While '''Ivern''' is in {{tip|brush}}, his basic attacks are empowered to fire a bolt at the target, dealing {{as|'''additional''' magic damage|magic damage}}."
+   ]
+  },
+  {
+   "question": "Daisy's own attack speed (bin value IvernR.DaisyAS = [30/45/60]) and her interaction with Ivern's items (attack speed, crit, on-hit effects, lifesteal) are not documented anywhere in the wiki description; only her AD and HP scale with Ivern's AP per the bin calculations. Does Daisy get any of Ivern's item-derived stats (AS/crit/on-hit) for her own attacks, and does DaisyAS represent her base attack speed or a bonus added on top of a baseline, since this materially changes her DPS contribution in the damage fight?",
+   "options": [
+    "Daisy is a fully independent stat block (fixed AD/HP/AS from the bin, no inheritance of Ivern's items) and DaisyAS is her flat base attack speed",
+    "Daisy inherits some subset of Ivern's stats (e.g., AP-scaled AD/HP only, as shown) but not attack speed, crit, or on-hit effects",
+    "Daisy inherits Ivern's full itemized stats including on-hit effects and attack speed, making her attacks benefit from his build"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Is the 'Daisy Smash!' shockwave (triggered on Daisy's 3rd consecutive attack on the same target) a bonus effect layered onto that 3rd basic attack (so it can proc on-hit item effects a second time) or a separate spell-like damage instance exempt from on-hit procs?",
+   "options": [
+    "The shockwave is additional bonus damage on the triggering attack itself (counts as on-hit)",
+    "The shockwave is a distinct spell-effect damage instance that does not proc on-hit effects"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Whenever {{ui|Daisy}} attacks the same champion three times in a row, she will send a shockwave that {{tip|airborne|knocks up}} enemies hit within a line."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting W (Brushmaker) at Ivern's own feet to create a brush patch, then stand inside it for the rest of the fight to keep the Brushmaker on-hit magic damage bolt active on every basic attack.",
+   "Cast R (Daisy!) to summon Daisy next to the target; let her auto-attack the dummy continuously for her own physical damage plus the periodic Daisy Smash! shockwave on every 3rd consecutive hit.",
+   "Weave Rootcaller (Q) on cooldown for its upfront magic damage burst, skipping the recast (it is only a repositioning dash and adds no damage against a stationary target).",
+   "Cast Triggerseed (E) on Ivern (or Daisy) on cooldown for its guaranteed delayed magic-damage explosion; the shield component is irrelevant since the dummy never attacks back.",
+   "Auto-attack the dummy between ability casts to benefit from the Brushmaker on-hit bolt on every attack.",
+   "Do not recast R to move Daisy or recast Q to dash, since both are pure mobility with no damage payload in a stationary 1-target fight."
+  ],
+  "questions": [
+   "Should the simulator model Brushmaker as a one-time setup cost (single W cast) plus a permanent on-hit buff for the rest of the fight, given the terrain-less arena?",
+   "How should Daisy's attack speed and item inheritance be modeled for her independent damage contribution?",
+   "Does casting Triggerseed on Daisy versus on Ivern change anything in the damage fight (e.g., magic penetration source), or are they functionally identical since Ivern always gets credit for the damage number?",
+   "Is there any benefit to delaying the Q cast to first apply the root (irrelevant since CC is ignored) versus simply firing it on cooldown for its damage as soon as available?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

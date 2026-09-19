@@ -1,0 +1,151 @@
+{
+ "champion": "masteryi",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Double Strike: basic attacks on-hit generate a stack (cap 3, 4s duration, refreshes on hit)"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "At 3 stacks the next basic attack is empowered to strike a second time for 50% AD physical on-hit damage, consuming the stacks"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Alpha Strike vanishes Master Yi and makes him unable to act (~1s total) while it resolves"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Alpha Strike places up to 4 marks (primary + up to 3 more, all on the sole dummy target since no other targets exist); primary detonates on reappear, later marks detonate instantly at 25% damage each"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Each Alpha Strike detonation applies on-hit effects at reduced effectiveness (75% on primary, 18.75% on subsequent marks); Wuju Style adds bonus true damage on every basic attack on-hit for its duration"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Alpha Strike's primary and lesser damage instances can critically strike using a custom BonusCritDamageRatio=1 modifier"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "On-hit basic attacks reduce Alpha Strike's current cooldown by 1s, scaled by ability haste"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Wuju Style: bonus true damage on-hit for 5s; Highlander: bonus attack speed (and movement speed) for 7s"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs on Q (50-70), W (40), R (100) can constrain casts within the 15s window at low mana pools/levels"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Meditate is a self-heal/damage-reduction channel that interrupts attacking; irrelevant against a non-attacking dummy and actively costs DPS uptime"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Master Yi's kit is expressible as a combination of listed primitives: a stacking on-hit passive that empowers an attack (P), a multi-part vanish-and-detonate active whose marks each apply on-hit at reduced effectiveness and can crit and refund its own cooldown (Q), a timed true-damage on-hit rider (E), and a timed attack-speed buff (R). No mechanic here (e.g. no pet, no stance/form swap, no ammo system) falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "How many stacks of Double Strike are actually required to trigger the empowered second strike?",
+   "options": [
+    "3 stacks, per the wiki's description and leveling text",
+    "4 stacks/attacks, per the bin's MasterYiPassive.AttackCount = 4"
+   ],
+   "impact": "high",
+   "quotes": [
+    "stacking up to 3 times",
+    "MasterYiPassive.AttackCount = 4"
+   ]
+  },
+  {
+   "question": "Does Wuju Style's bonus true damage on-hit trigger on every one of Alpha Strike's mark detonations (up to 4 per cast, since each applies on-hit effects), or only once per Alpha Strike cast?",
+   "options": [
+    "Once per mark/detonation (up to 4x per cast), since the wiki says Alpha Strike 'applies on-hit effects' at each detonation",
+    "Only once per cast, since the wiki singles out only 'the first instance of damage' as counting for on-hit-triggered effects like Electrocute/Eclipse, implying later marks may not fully re-trigger all on-hit riders"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Master Yi then detonates the marks to deal {{as|physical damage}} and apply {{tip|on-hit}} effects",
+    "Only the first instance of damage counts as a hit for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}"
+   ]
+  },
+  {
+   "question": "How does ability haste scale Alpha Strike's per-basic-attack cooldown reduction (the unresolved CooldownMultiplierCalculationPart)?",
+   "options": [
+    "Standard ability-haste CDR-multiplier formula (reduction scales down with haste)",
+    "A different/bespoke formula not visible in the sheet",
+    "No haste scaling at all in the fight if no haste items are used, making this moot for the base-kit sim"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "! unresolved calculation part CooldownMultiplierCalculationPart",
+    "affected by {{as|{{sti|ability haste}}}}"
+   ]
+  },
+  {
+   "question": "What is the exact total lockout/vanish duration of Alpha Strike against a single stationary target (all 4 marks landing on the same dummy), which determines how much autoattack time is lost per Q cast?",
+   "options": [
+    "The wiki's stated ~1.087s total (4 bounces at 0.2s intervals + 0.15s exit delay, tick-adjusted)",
+    "A different effective duration if bounce timing behaves differently when repeatedly re-marking the same single target"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{tt|{{fd|1.087}} seconds total|Effective time due to game ticks}} after the start of the cast with 4 bounces"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "At the start of the fight, cast R (Highlander) immediately to get its 7s bonus attack speed window running as early as possible (85s cooldown means only one use in the fight).",
+   "Immediately follow with E (Wuju Style) to arm basic attacks with bonus true damage on-hit for the next 5s.",
+   "Cast Q (Alpha Strike) as soon as both buffs are active so its marks land while Wuju Style and Highlander are up (each Alpha Strike hit also refreshes their current durations).",
+   "Between ability casts, basic-attack continuously: this builds Double Strike stacks toward the empowered second strike, applies Wuju Style's true damage on-hit, and reduces Alpha Strike's current cooldown by 1s per hit.",
+   "Recast Q (Alpha Strike) every time it comes off cooldown for the rest of the fight, since attacking accelerates its cooldown.",
+   "Recast E (Wuju Style) as soon as its 14s cooldown is up (around t=14s) to relight the true-damage on-hit window for the fight's final second.",
+   "Never cast W (Meditate): it interrupts autoattacking and its heal/damage-reduction have no value against a dummy that deals no damage."
+  ],
+  "questions": [
+   "Should R (Highlander) be cast at t=0, or delayed slightly to align its 7s window with a burst of Q casts / on-hit procs for maximum overlap?",
+   "Does casting E or Q while auto-attacking interrupt the attack windup (does 'cast time = none' still consume a global action lockout that resets the attack timer), affecting how tightly they can be weaved between autoattacks?",
+   "With only one target available, does Alpha Strike still take the full multi-bounce travel time (0.2s per mark) when re-marking the same target, or does it resolve faster/slower than the wiki's assumed 4-distinct-target scenario?",
+   "Is there any in-game confirmation of whether Wuju Style's true damage rider applies on each of Alpha Strike's on-hit detonations against a single target, since this materially changes whether Q+E together are counted once or up to four times per Q cast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,142 @@
+{
+ "name": "Slicing Maelstrom",
+ "cooldown": {
+  "values": [
+   120,
+   120,
+   120
+  ],
+  "quote": "120"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Bonus Resistances",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    25,
+    50,
+    75
+   ],
+   "terms": [],
+   "quote": "{{ap|25 to 75}}",
+   "bin": [
+    "KennenShurikenStorm.KennenRDefenses"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Magic Damage Per Bolt",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    40,
+    80,
+    120
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|40 to 120}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "KennenShurikenStorm#PerTickDamageCalculated"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Total Single-Target Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    300,
+    600,
+    900
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.875
+    }
+   ],
+   "quote": "{{ap|40*7.5 to 120*7.5}} {{as|(+ {{ap|25*7.5}}% AP)}}",
+   "bin": [],
+   "binNote": "Total single-target damage is a tooltip aggregate (7.5x base per-bolt values over the storm's duration with the damage-amp ramp included), not a direct bin field; PerTickDamageCalculated and KennenRDuration/KennenRTickRate/DamageAmp together produce it but no single bin row states it."
+  },
+  {
+   "id": "r_4",
+   "meaning": "storm duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "summons a storm around himself for 3 seconds",
+   "bin": [
+    "KennenShurikenStorm.KennenRDuration"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "bolt tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "strikes lightning bolts down on nearby enemies every {{fd|0.5}} seconds",
+   "bin": [
+    "KennenShurikenStorm.KennenRTickRate"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "damage amp per subsequent strike",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "gains 10% additional damage for each subsequent strike a target has received, up to a combined total of 150% of the initial strike's damage",
+   "bin": [
+    "KennenShurikenStorm.DamageAmp"
+   ],
+   "binNote": "DamageAmp=0.1 is the per-strike increment stated by the bin; the wiki-stated cap of 150% (1.5) total additional damage is not itself a separate bin row and is only described in the tooltip text."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Kennen can move during Slicing Maelstrom's cast time.",
+   "quote": "''Kennen'' can move during Slicing Maelstrom's cast time.''",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Each subsequent strike on the same target deals stacking bonus damage up to a cap, meaning per-target damage escalates the longer a target stays in range.",
+   "quote": "gains 10% additional damage for each subsequent strike a target has received, up to a combined total of 150% of the initial strike's damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability can be blocked by spell shields.",
+   "quote": "spellshield        = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KennenShurikenStorm.KennenRTickRate",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

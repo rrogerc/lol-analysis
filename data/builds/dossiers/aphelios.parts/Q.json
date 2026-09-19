@@ -1,0 +1,263 @@
+{
+ "name": "Weapons of the Faithful / Moonshot / Onslaught / Binding Eclipse / Duskwave / Sentry",
+ "cooldown": {
+  "values": [10, 10, 9.667, 9.667, 9.334, 9.334, 9.001, 9.001, 8.668, 8.668, 8.335, 8.335, 8.002, 8.002, 8.002, 8.002, 8.002, 8.002],
+  "quote": "{{pp|10 to 8 for 7|1 to 13 for 7}}",
+  "binNote": "This is Moonshot's (Calibrum) and Onslaught's (Severum) shared cooldown, matching CalibrumQCD/SeverumQCD exactly. The generic wrapper spell ApheliosQ_ClientTooltipWrapper reports a flat cooldown of 9, which matches neither of these nor Binding Eclipse's (12 to 10); it happens to equal Duskwave's/Sentry's rank-1 value (9 to 6) but is otherwise a placeholder, since the wiki itself says the five actives 'do not share a cooldown'. Binding Eclipse's and Duskwave's/Sentry's own cooldowns are given as separate values below."
+ },
+ "cost": {
+  "values": 60,
+  "quote": "10 Moonlight + 60",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.4,
+  "quote": "{{fd|0.4}}",
+  "binNote": "Moonshot's (and Duskwave's) cast time. The generic wrapper reports 0.35, which matches none of the five weapons' actual cast times (Moonshot 0.4, Onslaught none, Binding Eclipse 0.3, Duskwave 0.4, Sentry 0.25); it looks like an unused placeholder default."
+ },
+ "values": [
+  {
+   "id": "q_moonshot_dmg",
+   "meaning": "Moonshot (Calibrum's Q): physical damage to the first enemy hit",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "level",
+   "base": [70, 70, 85, 85, 100, 100, 115, 115, 130, 130, 145, 145, 160, 160, 160, 160, 160, 160],
+   "terms": [
+    {"stat": "bonusAd", "coef": [0.42, 0.42, 0.45, 0.45, 0.48, 0.48, 0.51, 0.51, 0.54, 0.54, 0.57, 0.57, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]},
+    {"stat": "ap", "coef": 1.0}
+   ],
+   "quote": "deals {{as|{{pp|70 to 160 for 7|1 to 13 for 7}}|physical damage}} {{as|(+ {{pp|42 to 60 for 7|1 to 13 for 7|key=%}} '''bonus''' AD)}} {{as|(+ 100% AP)}} {{as|physical damage}} to the first enemy hit",
+   "bin": ["ApheliosCalibrumQ#SpellDamage"]
+  },
+  {
+   "id": "q_moonlight_per_cast",
+   "meaning": "Moonlight ammo spent casting a Q (in addition to the mana cost)",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "10 Moonlight + 60",
+   "bin": ["ApheliosCalibrumQ.MoonlightCost"]
+  },
+  {
+   "id": "q_onslaught_duration",
+   "meaning": "Onslaught (Severum's Q): duration of the automatic-attack window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.75,
+   "terms": [],
+   "quote": "'''Aphelios''' enters an onslaught for {{fd|1.75}} seconds",
+   "bin": ["ApheliosSeverumQ.Duration"]
+  },
+  {
+   "id": "q_onslaught_attacks",
+   "meaning": "Onslaught: number of automatic attacks fired over the duration",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [{"stat": "bonusAttackSpeed", "coef": 2}],
+   "quote": "automatically performing up to 6 {{as|(+ 2 per 100% '''bonus''' attack speed)|attack speed}} attacks over the duration",
+   "bin": ["ApheliosSeverumQ.StartingAttacks", "ApheliosSeverumQ#NumAttacks"]
+  },
+  {
+   "id": "q_onslaught_per_attack_dmg",
+   "meaning": "Onslaught: total physical damage of each automatic attack (alternates Severum / current off-hand weapon), as % of AD",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "level",
+   "base": null,
+   "terms": [{"stat": "ad", "coef": [0.2, 0.2, 0.235, 0.235, 0.27, 0.27, 0.305, 0.305, 0.34, 0.34, 0.375, 0.375, 0.41, 0.41, 0.41, 0.41, 0.41, 0.41]}],
+   "quote": "each dealing {{as|{{pp|20 to 41 for 7|1 to 13|key=%}} AD}} {{as|physical damage}}",
+   "bin": ["ApheliosSeverumQ#TotalDamage", "ApheliosSeverumQ#{9480e64f}"],
+   "binNote": "The wiki's displayed ratio (20 to 41% over 7 steps) matches calc {9480e64f} exactly (20, 23.5, 27, 30.5, 34, 37.5, 41). The calc actually used for the damage total, TotalDamage, uses a sequence exactly 1 percentage point lower at every step (19, 22.5, 26, 29.5, 33, 36.5, 40). Stating the wiki's number per instructions; the live per-attack damage may in fact be 1 point lower than shown here."
+  },
+  {
+   "id": "q_onslaught_onhit_effectiveness",
+   "meaning": "Onslaught: on-hit effect damage is reduced to this fraction of normal during the automatic attacks",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "applying {{tip|on-hit}} effects, with on-hit damage reduced to 25% effectiveness",
+   "bin": ["ApheliosSeverumQ#OnHitDamageReduction"]
+  },
+  {
+   "id": "q_bindingeclipse_dmg",
+   "meaning": "Binding Eclipse (Gravitum's Q): magic damage to enemies expunged from Gravitum's slow",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [50, 50, 65, 65, 80, 80, 95, 95, 110, 110, 125, 125, 140, 140, 140, 140, 140, 140],
+   "terms": [
+    {"stat": "bonusAd", "coef": [0.32, 0.32, 0.35, 0.35, 0.38, 0.38, 0.41, 0.41, 0.44, 0.44, 0.47, 0.47, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]},
+    {"stat": "ap", "coef": 0.7}
+   ],
+   "quote": "dealing {{as|{{pp|50 to 140 for 7|1 to 13}}|magic damage}} {{as|(+ {{pp|32 to 50 for 7|1 to 13|key=%}} '''bonus''' AD)}} {{as|(+ 70% AP)}} {{as|magic damage}}",
+   "bin": ["ApheliosGravitumQ#Damage"]
+  },
+  {
+   "id": "q_bindingeclipse_cooldown",
+   "meaning": "Binding Eclipse cooldown by level",
+   "role": "other",
+   "damageType": null,
+   "by": "level",
+   "base": [12, 12, 11.667, 11.667, 11.334, 11.334, 11.001, 11.001, 10.668, 10.668, 10.335, 10.335, 10.002, 10.002, 10.002, 10.002, 10.002, 10.002],
+   "terms": [],
+   "quote": "{{pp|12 to 10 for 7|1 to 13}}",
+   "bin": [],
+   "binNote": "The matching row, ApheliosGravitumQ#GravitumQCD, carries an unresolved '<CooldownMultiplierCalculationPart>' factor (ability haste, unresolved for every weapon's Q cooldown in this sheet), so it cannot be checked as a clean numeric row; its byLevelL portion (12,12,11.667,...,10.002) is exactly the sequence stated here."
+  },
+  {
+   "id": "q_bindingeclipse_casttime",
+   "meaning": "Binding Eclipse cast time",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "{{fd|0.3}}",
+   "bin": [],
+   "binNote": "0.3 does not appear among ApheliosGravitumQ's printed data values; likely a CastInfo field outside SpellDataValues."
+  },
+  {
+   "id": "q_duskwave_dmg",
+   "meaning": "Duskwave (Infernum's Q): physical damage to all enemies hit by the cone, and locks onto each",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "level",
+   "base": [20, 20, 35, 35, 50, 50, 65, 65, 80, 80, 95, 95, 110, 110, 110, 110, 110, 110],
+   "terms": [
+    {"stat": "bonusAd", "coef": [0.15, 0.15, 0.16, 0.16, 0.17, 0.17, 0.18, 0.18, 0.19, 0.19, 0.2, 0.2, 0.21, 0.21, 0.21, 0.21, 0.21, 0.21]},
+    {"stat": "ap", "coef": 0.7}
+   ],
+   "quote": "dealing {{as|{{pp|20 to 110 for 7|1 to 13}}|physical damage}} {{as|(+ {{pp|15 to 21 for 7|1 to 13|key=%}} '''bonus''' AD)}} {{as|(+ 70% AP)}} {{as|physical damage}} to all enemies hit",
+   "bin": ["ApheliosInfernumQ#QWaveDamage"]
+  },
+  {
+   "id": "q_duskwave_sentry_cooldown",
+   "meaning": "Duskwave and Sentry share this cooldown pattern by level",
+   "role": "other",
+   "damageType": null,
+   "by": "level",
+   "base": [9, 9, 8.5, 8.5, 8, 8, 7.5, 7.5, 7, 7, 6.5, 6.5, 6, 6, 6, 6, 6, 6],
+   "terms": [],
+   "quote": "{{pp|9 to 6 for 7|1 to 13}}",
+   "bin": [],
+   "binNote": "The matching rows, ApheliosInfernumQ#InfernumQCD and ApheliosCrescendumQ#CrescendumQCD, both carry the same unresolved '<CooldownMultiplierCalculationPart>' factor as Calibrum/Severum/Gravitum's Q cooldowns, so neither can be checked as a clean numeric row; their byLevelL portions (9,9,8.5,...,6) both exactly equal the sequence stated here."
+  },
+  {
+   "id": "q_duskwave_volley_dmg",
+   "meaning": "Duskwave: 0.25s after the cone lands, a guaranteed off-hand-weapon attack (100% AD) fires at each locked-on target",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [{"stat": "ad", "coef": 1.0}],
+   "quote": "fires a volley of attacks at each locked-on target from his current {{as|off-hand}} weapon, dealing {{as|100% AD}} {{as|physical damage}} and applying {{tip|on-hit}} effects",
+   "bin": [],
+   "binNote": "100% AD is a plain attack's damage; no dedicated data row is expected for it in the sheet."
+  },
+  {
+   "id": "q_duskwave_volley_delay",
+   "meaning": "Delay between Duskwave's cone landing and the off-hand volley firing",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "After {{fd|0.25}} seconds, '''Aphelios''' then fires a volley of attacks at each locked-on target",
+   "bin": [],
+   "binNote": "0.25 does not appear among ApheliosInfernumQ's printed data values."
+  },
+  {
+   "id": "q_sentry_dmg",
+   "meaning": "Sentry (Crescendum's Q): the deployed sentry's per-hit physical damage, using a copy of the current off-hand weapon",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "level",
+   "base": [35, 35, 50, 50, 65, 65, 80, 80, 95, 95, 110, 110, 125, 125, 125, 125, 125, 125],
+   "terms": [
+    {"stat": "bonusAd", "coef": [0.34, 0.34, 0.37, 0.37, 0.4, 0.4, 0.43, 0.43, 0.46, 0.46, 0.49, 0.49, 0.52, 0.52, 0.52, 0.52, 0.52, 0.52]},
+    {"stat": "ap", "coef": 0.5}
+   ],
+   "quote": "dealing {{as|{{pp|35 to 125 for 7|1 to 13}}|physical damage}} {{as|(+ {{pp|34 to 52 for 7|1 to 13|key=%}} '''bonus''' AD)}} {{as|(+ 50% AP)}} {{as|physical damage}} per hit",
+   "bin": ["ApheliosCrescendumQ#TurretDamage"]
+  },
+  {
+   "id": "q_sentry_arm_delay",
+   "meaning": "Time before the deployed sentry arms and can detect enemies",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.35,
+   "terms": [],
+   "quote": "arms after {{fd|0.35}} seconds",
+   "bin": [],
+   "binNote": "0.35 does not appear among ApheliosCrescendumQ's printed data values."
+  },
+  {
+   "id": "q_sentry_active_dur",
+   "meaning": "Once an enemy is within range, the sentry activates (becomes targetable) and its remaining lifetime is cut to this",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "reducing its duration to 4 seconds and becoming targetable",
+   "bin": ["ApheliosCrescendumQ.TurretDurationActive"]
+  },
+  {
+   "id": "q_sentry_casttime",
+   "meaning": "Sentry cast time",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{fd|0.25}}",
+   "bin": [],
+   "binNote": "0.25 does not appear among ApheliosCrescendumQ's printed data values (it is also the value of Duskwave's separate volley delay; the two are unrelated numbers that happen to coincide)."
+  }
+ ],
+ "mechanics": [
+  {"claim": "The five weapon Q actives do not share a cooldown with each other.",
+   "quote": "The individual actives do not share a cooldown.",
+   "affectsDamageFight": true},
+  {"claim": "Onslaught's cooldown starts only after the 1.75s automatic-attack effect ends, not at the moment of casting.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true},
+  {"claim": "Onslaught's attacks are affected by critical strike modifiers and apply on-hit effects (at reduced effectiveness, see values); Aphelios cannot cast Phase or Moonlight Vigil during Onslaught but can still move.",
+   "quote": "'''''Aphelios''' cannot cast {{ai|Phase|Aphelios}} nor {{ai|Moonlight Vigil|Aphelios}} during Onslaught, but he is still able to move.''",
+   "affectsDamageFight": true},
+  {"claim": "Onslaught fires its first automatic attack with Aphelios's off-hand weapon, then alternates.",
+   "quote": "''Onslaught'' begins firing with '''Aphelios'''' {{as|off-hand}} weapon.",
+   "affectsDamageFight": true},
+  {"claim": "Each Onslaught attack counts as a separate cast instance for cast-triggered item/rune effects (e.g. Electrocute, Eclipse).",
+   "quote": "Each attack of ''Onslaught'' counts as a separate {{tip|cast instance}} for effects such as {{ri|Electrocute}} and {{iis|Eclipse}} {{nie|Ever Rising Moon}}.",
+   "affectsDamageFight": true},
+  {"claim": "Binding Eclipse can only be cast on an enemy currently affected by Gravitum's slow, or on an in-flight Gravitum projectile (which it then empowers to apply the effect on arrival); it cannot simply be cast on cooldown like the other weapons' Qs.",
+   "quote": "An enemy affected by Gravitum, or an in-flight Gravitum projectile, is required to cast this ability.",
+   "affectsDamageFight": true},
+  {"claim": "Duskwave's description says its off-hand volley deals damage 'and applying on-hit effects', but the ability's own notes say the automatic attacks do not trigger any on-attack effects; the two statements on the same page contradict each other.",
+   "quote": "dealing {{as|100% AD}} {{as|physical damage}} and applying {{tip|on-hit}} effects",
+   "affectsDamageFight": true},
+  {"claim": "(Contradicts the above) Duskwave's notes state the automatic volley attacks trigger no on-attack effects at all.",
+   "quote": "The automatic attacks do not trigger '''any''' [[on-attack effects]].",
+   "affectsDamageFight": true},
+  {"claim": "Aphelios is locked out of declaring (Crescendum-style) attacks until Duskwave's volley of attacks has resolved, and the volley's damage is affected by critical strike modifiers.",
+   "quote": "'''Aphelios''' is locked out of declaring attacks until the volley of attacks has resolved.",
+   "affectsDamageFight": true},
+  {"claim": "The sentry deployed by Sentry gains a copy of Aphelios's current off-hand weapon and benefits from his attack speed and critical strike chance at 100% effectiveness; it can also critically strike.",
+   "quote": "benefits from both '''Aphelios'''' {{sti|attack speed|{{as|attack speed}}}} and {{sti|critical chance|{{as|critical strike chance}}}} at 100% effectiveness",
+   "affectsDamageFight": true},
+  {"claim": "The dummy in this fight never attacks, so the sentry is never destroyed by return fire; its practical lifetime in the fight is bounded only by its own arm/active-duration timers.",
+   "quote": "Sentries have {{as|6 health}} and take 3 damage per {{tip|ranged}} basic attack and 4 damage per hit by abilities.",
+   "affectsDamageFight": false}
+ ],
+ "binUnused": []
+}

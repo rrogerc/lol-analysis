@@ -1,0 +1,183 @@
+{
+ "champion": "pantheon",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mortal Will: stacks 0-5 gained per landed basic attack on-hit or ability cast; at 5 stacks the next basic ability (Q/W/E) consumes them to become empowered."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q charges up to 4s (auto-releasing at max, or on recast), gaining range; releasing within 0.35s instead casts an immediate thrust."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's charge resolves via a recast (thrust if quick-released, hurl if held past 0.35s); cooldown starts post-effect, not on initial cast."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Quick-release (tap) thrust refunds 60% of Comet Spear's cooldown."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Comet Spear's damage is substantially increased against targets below 20% of their maximum health."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (25/55/80/100) and Pantheon's base mana pool can limit how many casts fit in a 15s window."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shield Vault's damage is a percent of the target's maximum health (plus flat AP/bonus-HP scaling)."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Mortal Will empowers Pantheon's next basic attack (within 4s) to strike the target 3 times for AD-scaling damage instead of a normal attack."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "The empowered 3-hit attack resets Pantheon's basic attack timer upon completion."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "The empowered attack rolls a single crit check that applies uniformly to all 3 strikes (all crit or none do)."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Aegis Assault channels for 1.5s (uninterruptible by CC), dealing continual tick damage, and cannot be interrupted mid-channel."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's channel deals repeated cone strikes, capped at a total of 100% AD physical damage over the channel."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's channel ticks and its recast slam are separately-timed damage instances (recast available after 0.3s, or automatic at 1.5s)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Mortal Will bonus on E recast grants bonus armor and magic resist (scaling with bonus HP) for 4s, plus movement speed for 1.5s."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Grand Starfall runs a 2s channel then a further 2.25s channel (CC-immune, vanished) before dealing its damage and landing."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals a physical spear hit partway through the channel and a separate magic shockwave hit later, at different (estimated) timings within the same cast."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Mortal Will stacking/consumption, Q's charge-tap-vs-hold split with execute scaling and CDR refund, W's percent-health vault plus empowered 3-hit attack with attack-reset and single crit roll, E's channel DoT plus separate recast slam and post-recast resist buff, R's two-stage channel with a spear hit then a shockwave hit) maps onto existing primitives (stacking-self-buff, charge-or-channel, recast-or-multipart, cooldown-manipulation, execute-or-threshold, conditional-damage, empowered-attack, attack-reset, crit-interaction, dot, timed-self-buff, resource-budget)."
+ },
+ "unsettled": [
+  {
+   "question": "What is the correct tick count/rate and per-tick damage for Aegis Assault's channel: the wiki's 8.33% AD every 0.125s (12 ticks) or the bin's AttacksPerSecond=4 (0.25s interval) with a 16.7% AD-per-tick calc?",
+   "options": [
+    "Wiki is live: 12 ticks of 8.33% AD every 0.125s, totalling 100% AD",
+    "Bin is live: 6 ticks of 16.7% AD every 0.25s via AttacksPerSecond=4, totalling ~100% AD"
+   ],
+   "impact": "low",
+   "quotes": [
+    "dealing {{as|{{fd|8.{{recurring|3}}}}% AD}} {{as|physical damage}} every {{fd|0.125}} seconds to enemies hit",
+    "PantheonE.AttacksPerSecond = 4",
+    "PantheonE#{e62bc5e9} = DamageCalc * 0.167"
+   ]
+  },
+  {
+   "question": "Does Comet Spear's low-health 'Increased Hurl Damage' actually carry a 100% AP ratio, since no bin calculation confirms an AP term for that execute-scaled hurl?",
+   "options": [
+    "Wiki is right: execute hurl scales with 100% AP as stated in leveling2",
+    "Bin is authoritative and the execute hurl has no AP scaling beyond the flat ExecuteBaseDamage + bonus AD term shown in ExecuteDamageCalcModified"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ap|155 to 455}} {{as|(+ 230% '''bonus''' AD)}} {{as|(+ 100% AP)}}",
+    "PantheonQ#ExecuteDamageCalcModified = HoldDamage=[70/100/130/160/190] + HoldExecuteDamage=[85/130/175/220/265] + 2.3xbonus ad"
+   ]
+  },
+  {
+   "question": "How long does Pantheon remain locked out during the Mortal-Will-empowered 3-hit basic attack, and how exactly does attack speed scale that total duration (the wiki itself flags this as untested)?",
+   "options": [
+    "Total time = the 0.375s cast time plus Pantheon's normal attack windup, scaled by attack speed as the wiki guesses",
+    "Total time is a fixed animation independent of (or scaled differently by) attack speed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{pending for test}} The attack's total time is the cast time plus '''Pantheon's''' attack windup time.",
+    "'''Pantheon''' will remain {{tip|lockout|unable to act}} until the last strike has been dealt."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Pantheon starts the fight with 5 Mortal Will stacks (guaranteed at game start/after recall/respawn).",
+   "Open by casting Q with a quick release (under 0.35s) so it both consumes the Mortal Will empowerment for bonus physical damage and refunds 60% of its cooldown.",
+   "Cast W (Shield Vault) to land its percent-max-health damage on the dummy.",
+   "Cast E (Aegis Assault), holding the full 1.5s channel to maximize the capped 100% AD tick damage, then let it auto-recast (or recast immediately after 0.3s) for the slam damage.",
+   "Weave in basic attacks whenever no ability is off cooldown, both for direct damage and to regenerate Mortal Will stacks for the next Q/E cast.",
+   "Recast Q on cooldown, always with a quick tap release to keep chaining the CDR refund and maximize cast frequency over the 15s window.",
+   "Fire R (Grand Starfall) once, if it is assumed available (its ~150-180s cooldown normally rules it out of a single 15s window unless the simulator seeds it as ready), targeting the dummy for the spear hit and the shockwave.",
+   "Continue alternating Q (tap) and basic attacks/E-channel for the remainder of the 15s, prioritizing whichever ability is off cooldown, since Q's low cooldown and CDR refund make it the primary DPS loop."
+  ],
+  "questions": [
+   "Should Mortal Will stacks always be spent into Q for maximum single-target damage, or does spending them into W's 3-hit empowered attack ever out-DPS that at the levels/items being simulated?",
+   "Is Grand Starfall (R) assumed available at the start of the 15s damage fight, or excluded entirely given its long cooldown relative to the fight length?",
+   "Should E's channel always be held the full 1.5s to maximize DoT total, or is it better to recast at the 0.3s minimum to fit more E casts (and more Mortal Will generation) into 15s?",
+   "During Q's charge, is holding for the full 4s (bigger single hit, but longer downtime and a self-slow) ever preferable to the quick tap-and-refund loop for maximizing 15s damage?",
+   "Does the empowered W 3-hit attack pause Pantheon's other actions (Q/E casts) for its full locked-out duration, and should the rotation avoid triggering it mid-loop if it stalls higher-DPS abilities?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

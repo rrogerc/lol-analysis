@@ -1,0 +1,200 @@
+{
+ "name": "Moonsilver Blade",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_as_base",
+   "meaning": "innate bonus attack speed by champion level",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    15,
+    16.18,
+    17.35,
+    18.53,
+    19.71,
+    20.88,
+    22.06,
+    23.24,
+    24.41,
+    25.59,
+    26.76,
+    27.94,
+    29.12,
+    30.29,
+    31.47,
+    32.65,
+    33.82,
+    35
+   ],
+   "terms": [],
+   "quote": "{{pplevel|15 to 35|key=%}} '''bonus''' attack speed",
+   "bin": [
+    "DianaPassive#BonusAS"
+   ],
+   "binNote": "Bin row stores the value as a fraction (0.15 to 0.35); wiki states it as a percentage (15 to 35), same number scaled by 100."
+  },
+  {
+   "id": "p_as_empowered",
+   "meaning": "tripled bonus attack speed for 5s after casting an ability",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    45,
+    48.53,
+    52.06,
+    55.59,
+    59.12,
+    62.65,
+    66.18,
+    69.71,
+    73.24,
+    76.76,
+    80.29,
+    83.82,
+    87.35,
+    90.88,
+    94.41,
+    97.94,
+    101.47,
+    105
+   ],
+   "terms": [],
+   "quote": "this bonus is tripled to {{pplevel|15*3 to 35*3|key=%|color=as}} for 5 seconds",
+   "bin": [
+    "DianaPassive#EmpoweredAS"
+   ],
+   "binNote": "Bin's EmpoweredAS is BonusAS*3 as a fraction (0.45 to 1.05); wiki states it as a percentage (45 to 105), same number scaled by 100."
+  },
+  {
+   "id": "p_empowered_buff_duration",
+   "meaning": "duration of the tripled attack speed buff",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "for 5 seconds",
+   "bin": [
+    "DianaPassive.BuffDuration"
+   ]
+  },
+  {
+   "id": "p_stack_duration",
+   "meaning": "duration a Moonsilver Blade stack lasts before falling off",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "generate a {{tip|stack}} of ''Moonsilver Blade'' for 5 seconds, refreshing on subsequent attacks",
+   "bin": [
+    "DianaPassive.BuffDuration"
+   ]
+  },
+  {
+   "id": "p_stack_cap",
+   "meaning": "maximum number of Moonsilver Blade stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "stacking up to 2 times",
+   "bin": [],
+   "binNote": "No bin field carries the stack cap of 2; AttackCount (3) instead corresponds to the total attack that triggers the empowered cleave, not the stack cap."
+  },
+  {
+   "id": "p_trigger_count",
+   "meaning": "the Nth basic attack (in quick succession) that becomes empowered",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "Every third basic attack in quick succession will cleave nearby enemies",
+   "bin": [
+    "DianaPassive.AttackCount"
+   ]
+  },
+  {
+   "id": "p_cleave_damage",
+   "meaning": "magic damage dealt by the empowered cleave attack",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    55,
+    65,
+    75,
+    85,
+    95,
+    110,
+    125,
+    140,
+    155,
+    170,
+    195,
+    220
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{pplevel|20+5*(x-1) for 6; then + 10*x for 5; then + 15*x for 5; then + 25*x}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "DianaPassive#CleaveDamage"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks on-hit generate a stack of Moonsilver Blade, refreshing its duration on subsequent attacks, up to 2 stacks.",
+   "quote": "basic attacks {{tip|on-hit}} generate a {{tip|stack}} of ''Moonsilver Blade'' for 5 seconds, refreshing on subsequent attacks and stacking up to 2 times",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At 2 stacks, the next basic attack is empowered and consumes the stacks on-hit to additionally cleave nearby enemies for bonus magic damage.",
+   "quote": "At 2 stacks, '''Diana''' empowers her next basic attack to consume the stacks {{tip|on-hit}} to additionally cleave nearby enemies, dealing them ... magic damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "When stacks are consumed by another on-hit effect (e.g. Guinsoo's Rageblade), the additional damage is only applied to the on-hit target without triggering the cleave on nearby enemies.",
+   "quote": "When the stacks are consumed {{tip|on-hit}} (e.g {{ii|Guinsoo's Rageblade}}, {{ii|Dusk and Dawn}}), additional damage is only applied to the on-hit target, without triggering the cleave on nearby enemies.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack sometimes fails to consume the stacks, in which case it also fails to deal its damage (bug).",
+   "quote": "Sometimes, the empowered basic attack will not consume the stacks. ... In this case, the attack will also not deal its damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Moonsilver Blade deals 270% damage against monsters.",
+   "quote": "''Moonsilver Blade'' deals 270% damage against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "DianaPassive.AttackSpeedValue",
+   "reason": "unknown"
+  },
+  {
+   "ref": "DianaPassive.MonsterMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

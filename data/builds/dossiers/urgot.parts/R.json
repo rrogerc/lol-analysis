@@ -1,0 +1,200 @@
+{
+ "name": "Fear Beyond Death",
+ "cooldown": {
+  "values": [
+   100,
+   85,
+   70
+  ],
+  "quote": "{{ap|100 to 70}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    100,
+    225,
+    350
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|100 to 350}} {{as|(+ 50% '''bonus''' AD)}}",
+   "bin": [
+    "UrgotR#RCalculatedDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "leash/mark duration before recast is available",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "leashing the target for 4 seconds",
+   "bin": [],
+   "binNote": "No sheet row carries this duration; UrgotE.EShieldDuration is unrelated. Value is text-only in bin."
+  },
+  {
+   "id": "r_3",
+   "meaning": "missing health threshold to allow recast",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 25,
+   "terms": [],
+   "quote": "''Fear Beyond Death'' can be recast if the leashed target is below {{as|{{sti|health|25% of their '''maximum''' health}}}}",
+   "bin": [
+    "UrgotR.RHealthThreshold"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "recast channel duration before execution",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "channels for {{fd|1.5}} seconds once they latch on",
+   "bin": [
+    "UrgotR.RChannelTimeReel"
+   ],
+   "binNote": "Wiki states the channel is 1.5s but the bin's RChannelTimeReel = 1.0. Disagreement noted; stating the wiki's number as instructed."
+  },
+  {
+   "id": "r_5",
+   "meaning": "fear duration on nearby enemies after successful execution",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "fears nearby enemies for {{fd|1.5}} seconds",
+   "bin": [
+    "UrgotR.RFearDuration"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "slow applied to feared enemies",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "slowed by 75%",
+   "bin": [
+    "UrgotR.RSlowMultiplier"
+   ],
+   "binNote": "Wiki states 75% slow but bin's RSlowMultiplier = 1.0 (100%). Disagreement noted; stating the wiki's number as instructed."
+  },
+  {
+   "id": "r_7",
+   "meaning": "Purge interruption on initial cast",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.8,
+   "terms": [],
+   "quote": "''Fear Beyond Death'' prevents {{ai|Purge|Urgot}} from firing for {{fd|0.8}} seconds.",
+   "bin": [],
+   "binNote": "No sheet row for this cross-ability interaction lockout duration; not represented in UrgotR's data values."
+  },
+  {
+   "id": "r_8",
+   "meaning": "Purge interruption on recast",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "The recast prevents {{ai|Purge|Urgot}} from firing for {{fd|1.5}} seconds.",
+   "bin": [],
+   "binNote": "No sheet row for this cross-ability interaction lockout duration; not represented in UrgotR's data values."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The initial cast deals normal spell damage and applies a leash/mark; the target's missing health slows them, capped at 75%.",
+   "quote": "dealing {{as|physical damage}} and leashing the target for 4 seconds, during which they are {{tip|standard sight|revealed}} and {{tip|slow|slowed}} by {{as|{{pp|type=target's '''missing''' health|key=%|0 to 75 for 11|key1=%|0 to 75|formula=1% per 1% missing health. ''This is capped at 75%''}}|health}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The recast (Mercy) deals no separate damage number; it is a guaranteed execute that kills the target outright once the channel completes, ignoring current health and heals.",
+   "quote": "the target is {{ccs|{{tip|execute|executed}}|true}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast damage/effect is raw damage, unlike the initial cast which is spell damage.",
+   "quote": "Applies {{tip|spell damage}} on first cast and {{tip|raw damage}} on recast.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The target will die regardless of current health once the recast's chains hit, even if healed, unless they have persistent invulnerability.",
+   "quote": "The target will die regardless of their {{as|'''current''' health}} once the recast's chains hit, even if they are {{tip|heal|healed}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During the recast channel the target cannot take damage from any other source than the execution itself.",
+   "quote": "preventing them from taking damage from {{tt|other sources|Negates application of damage from any source that is not the execution}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The initial cast automatically triggers the recast if the hit would kill the target outright (without actually reducing their health below 1).",
+   "quote": "does so automatically if the chem-drill {{tt|would kill the target|Damage instance does not reduce their health below 1 in this case}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts on cast if the initial missile misses; if it hits, cooldown starts after the leash/effect resolves.",
+   "quote": "Starts on-cast if it doesn't hit a target, post-effect if it does",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Undying Rage prevents death from the execute but the execute still bypasses its minimum health threshold, reducing the target to 1 health instead.",
+   "quote": "{{ai|Undying Rage|Tryndamere}} will prevent {{ci|Tryndamere}} from dying by the execute. In this case, the execute will bypass his minimum health threshold though and reduce him to {{as|1 health}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only the target's current health at time of execution counts as Urgot's damage in post-game stats and spell vamp healing.",
+   "quote": "Only the target's {{as|'''current''' health}} will count as '''Urgot's''' damage in post-game statistics and {{tip|spell vamp}} healing.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "UrgotR.RMoveSpeedMod",
+   "reason": "utility"
+  },
+  {
+   "ref": "UrgotR.RSlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "UrgotR.RFearRadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

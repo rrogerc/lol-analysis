@@ -1,0 +1,162 @@
+{
+ "name": "Realm of Death",
+ "cooldown": {
+  "values": [
+   140,
+   120,
+   100
+  ],
+  "quote": "{{ap|140 to 100}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "r_duration",
+   "meaning": "Death Realm / stat theft duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 7,
+   "terms": [],
+   "quote": "them with him to the ''Death Realm'' for 7 seconds",
+   "bin": [
+    "MordekaiserR.SpiritRealmDuration"
+   ]
+  },
+  {
+   "id": "r_heal",
+   "meaning": "heal for percent of target's maximum health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{as|10% of their '''maximum''' health}}",
+   "bin": [
+    "MordekaiserR.StatStealPercentScalar"
+   ],
+   "binNote": "Wiki states 10% (StatStealPercentScalar = 0.1) matches the bin value exactly."
+  },
+  {
+   "id": "r_truedamage",
+   "meaning": "true damage from max health reduction (self-heal source)",
+   "role": "dot",
+   "damageType": "true",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.1
+    }
+   ],
+   "quote": "This is the damage dealt by the reduction of {{as|10% of the target's pre-reduction '''maximum''' health}}.",
+   "bin": [
+    "MordekaiserR.StatStealPercentScalar"
+   ],
+   "binNote": "Uses same 0.1 scalar as the stat steal; damage does not apply lifesteal/damage modifiers per dnotes."
+  },
+  {
+   "id": "r_statsteal_percent",
+   "meaning": "percent of target's current AP, total attack speed, max HP, armor, MR, and size reduced/stolen; base AD reduced by percent of current total AD",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [
+    {
+     "stat": "other",
+     "coef": 0.1
+    }
+   ],
+   "quote": "reducing their '''current''' {{sti|{{as|ability power}}}}, {{sti|{{as|'''total''' attack speed}}}}, {{sti|{{as|'''maximum''' health}}}}, {{sti|armor|{{as|armor}}}}, {{sti|{{as|magic resistance}}}}, and {{tip|size}} by 10%",
+   "bin": [
+    "MordekaiserR.StatStealPercentScalar"
+   ]
+  },
+  {
+   "id": "r_slow",
+   "meaning": "slow on target during cast time",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "slowing them by 75%",
+   "bin": [],
+   "binNote": "No bin row named for this slow value; not found in the sheet's R data values."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Mordekaiser gains the stats he takes from the target (AP, attack speed, max HP, armor, MR) for himself for the duration.",
+   "quote": "'''Mordekaiser''' gains the reduced stats of the target for himself for the same duration",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the target dies while in the Death Realm, Mordekaiser keeps the stolen stats until they respawn.",
+   "quote": "if the target dies while inside the ''Death Realm'', he keeps their partial stats until they [[death|respawn]]",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts on cast, not on effect end.",
+   "quote": "cdstart     = on-cast",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The health-reduction true damage ignores invulnerability, shields, and resistances, and does not interact with any effect such as items or runes.",
+   "quote": "It ignores {{tip|invulnerability}}, {{tip|shields}} and resistances.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The health-reduction damage does not apply damage modifiers, lifesteal, or omnivamp, and does not trigger on-hit or damage events.",
+   "quote": "dApplyDamageModifier = false",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Realm of Death cancels and goes on cooldown if the target is displacement immune, CC-immune, or protected by a spell shield during the cast.",
+   "quote": "will cancel and go on cooldown after its cast time if:\n** The target is {{tip|displacement immune}}, {{tip|cc-immune|crowd control immune}} or protected by a {{tip|spell shield}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the target becomes untargetable, dies, is too far away, or Mordekaiser loses sight of them, the ability cancels without going on cooldown.",
+   "quote": "this ability will cancel but does not go on {{sti|cooldown}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Realm of Death does not trigger in-combat status effects.",
+   "quote": "''Realm of Death'' does not trigger [[Combat_status|in-combat]] effects.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The healing from Realm of Death is affected by healing modifiers.",
+   "quote": "''Realm of Death's'' {{tip|healing}} is affected by healing modifiers.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the target's current health is lower than the amount that should be stolen, they are brought down to 1 health, but Mordekaiser still gets the full intended max health.",
+   "quote": "If the target's {{as|'''current''' health}} is lower than the amount that should be stolen, they will be brought down to 1 health. '''Mordekaiser''' will still get the intended amount of {{as|'''maximum''' health}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MordekaiserR.ZoneRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "MordekaiserR.GhostAPRatio",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,115 @@
+{
+ "champion": "renata",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Leverage applies a binary mark on the first attack against an unmarked target for bonus magic damage (% of target max HP + AP ratio); the mark refreshes on every subsequent attack against the same target and expires only on switching targets, so against a single stationary dummy it fires once for the whole fight unless Renata deliberately withholds attacks for 6s to let it drop and re-proc. Ally-consumption of the mark (p_2) is not reachable in a 1v1 fight with no allies."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Handshake deals magic damage on the initial hook hit and, on recast while tethered, deals the same base+ratio damage again to enemies hit by the knockback; two separately-timed damage instances from one cast cycle."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 80, W 80, E 70-110, R 100) plus a champion mana pool could gate casts within the 15s window at low levels/low mana items; cooldowns (Q16, W24-28, E10-14, R110-150) are longer than the fight for W and R so at most one W and zero-to-one R casts fit regardless."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bailout grants Renata bonus attack speed (and move speed, ignored) for 5s, ramping in effectiveness from a base value up to double that value over the 5s duration (per the champion-level pp table and RenataW.TicksPerSecond=4 implying ~0.25s steps); only the attack-speed component changes damage dealt via extra autoattacks."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Loyalty Program deals magic damage (base + 0.55 AP) on a 0.25s cast, on cooldown."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Loyalty Program also shields Renata (and allies) for 3s; irrelevant to the damage-only fight but relevant to Renata's own survivability in a survival fight where she is the target."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bailout's fatal-damage response (restore target to 100% max HP, then a 10-tick 10%-max-HP-per-0.25s true-damage self-burn, cancellable by a takedown, re-triggerable while already burning) never fires in the damage-only fight against a dummy that never damages Renata, but is the central mechanic for a survival fight where Renata is the tanky target."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Bailout's self-targeted fatal-damage mechanic (full heal to 100% max HP, then a ticking true-damage burn that resets Bailout's own duration every 0.25s and can be re-triggered an unbounded number of times while the target stays burning) is a stateful death-prevention/execute interaction the closed primitive list cannot express as a single primitive; it needs bespoke logic for the survival fight (when Renata is the target) even though it is inert in the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "Against a single stationary dummy standing near Renata, how many separate damage instances does Loyalty Program (E) land: just the converged missile's explosion, or also the instant initial side rockets and/or a pass-through hit as the missile travels to the target location?",
+   "options": [
+    "One damage instance only (whichever component the dummy is positioned to be hit by, capped at one hit per cast)",
+    "Up to two instances: the instant initial rocket strike plus the missile's explosion at the target location",
+    "Up to three instances: initial rocket strike, missile pass-through, and missile explosion, if the dummy sits in the path of all three"
+   ],
+   "impact": "high",
+   "quotes": [
+    "sends out chemtech rockets from either side of her that instantly strike targets around her. After {{rutngt|0.4}} they converge and travel to the target location as a single missile, striking targets along its path and exploding upon reaching the target location."
+   ]
+  },
+  {
+   "question": "Does Bailout's attack-speed/movement-speed ramp increase continuously from cast to full effectiveness at 5s, or in discrete steps (matching the bin's implied 0.25s tick interval), and does that change the average bonus attack speed available during the buff window used for DPS calculation?",
+   "options": [
+    "Continuous linear ramp from 0% to 100% effectiveness over 5s",
+    "Discrete 21-step ramp updating every 0.25s (per RenataW.TicksPerSecond=4), effectively a stair-step approximation of the same line"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "with both of the bonuses increasing in effectiveness by {{pp|key=%|type=seconds elapsed|0 to 100 for 21|0 to 5}}"
+   ]
+  },
+  {
+   "question": "In the survival fight, should the simulator let Renata proactively self-cast Bailout so that, when the enemy's rotation would otherwise kill her, she is instead restored to 100% max HP and only loses health gradually to the true-damage burn (net effective-HP gain), or should Bailout be excluded/treated as unavailable for the survival scenario?",
+   "options": [
+    "Model Bailout fully: on lethal damage while buffed, set HP to 100% then apply the 10x 10%-max-HP true-damage burn over 2.5s, materially extending survival time",
+    "Exclude Bailout from the survival-fight model since it requires precise pre-emptive self-targeting and timing that a scripted rotation-fight may not represent"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target takes {{tip|death|fatal damage}} while ''Bailout'' is active, they are restored to {{as|100% of their '''maximum''' health}} but suffer a {{sti|{{as|true damage}}}} burn equal to {{as|10% of their '''maximum''' health}} every {{rutngt|0.25}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "At the start of the fight, self-cast W (Bailout) immediately since it has no cast time, to start its 5s attack-speed ramp as early as possible.",
+   "Cast Q (Handshake) at the dummy for its magic damage and to apply the root/tether.",
+   "Immediately recast Q while the target is tethered for the second magic-damage instance (knockback).",
+   "Cast E (Loyalty Program) for its magic damage burst (and incidental self-shield, irrelevant to damage output).",
+   "Auto-attack the dummy continuously between ability casts; the first auto-attack lands while the dummy is unmarked and triggers Passive (Leverage)'s bonus % max-HP magic damage once.",
+   "Recast Q and E again as soon as each comes off cooldown (Q ~16s, E ~10-14s), interleaved with continuous autoattacks whose attack speed is boosted by W's ramping buff.",
+   "Do not cast R (Hostile Takeover): it deals no direct damage, and its berserk effect has no useful target to redirect a lone dummy's aggression to in a fight with no allies, so it only wastes cast time and mana.",
+   "Re-cast W again only if its cooldown (24-28s) somehow comes back up within the fight window; otherwise it is cast once."
+  ],
+  "questions": [
+   "Is it ever damage-optimal for Renata to deliberately withhold an autoattack for 6+ seconds mid-fight to let the Leverage mark expire and re-trigger its bonus damage, versus just maximizing continuous autoattack uptime?",
+   "Does Q's recast fire reliably within the ~1s tether window in the simulator's cast-timing model, or can animation/queue delays cause the recast to be missed, reducing total Q damage instances landed?",
+   "Given Renata's kit is support-oriented with likely low base AD scaling, is prioritizing uptime on W's attack-speed ramp actually worth more damage than simply casting Q/E on cooldown and treating autoattacks as filler?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

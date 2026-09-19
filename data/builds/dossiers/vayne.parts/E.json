@@ -1,0 +1,119 @@
+{
+ "name": "Condemn",
+ "cooldown": {
+  "values": [
+   20,
+   18,
+   16,
+   14,
+   12
+  ],
+  "quote": "{{ap|20 to 12}}"
+ },
+ "cost": {
+  "values": [
+   90,
+   90,
+   90,
+   90,
+   90
+  ],
+  "quote": "90",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    50,
+    85,
+    120,
+    155,
+    190
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|50 to 190}} {{as|(+ 50% '''bonus''' AD)}}",
+   "bin": [
+    "VayneCondemn.Damage",
+    "VayneCondemn#TotalDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Bonus Physical Damage (on terrain collision)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    25,
+    42.5,
+    60,
+    77.5,
+    95
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|50*1.5 to 190*1.5}} {{as|(+ 75% '''bonus''' AD)}}",
+   "bin": [
+    "VayneCondemn.StunDamage",
+    "VayneCondemn.Damage",
+    "VayneCondemn#EmpoweredDamageTT"
+   ],
+   "binNote": "The bin does not store this bonus as a separate flat/ratio pair; instead VayneCondemn.StunDamage=1.5 is a multiplier applied to the full TotalDamage (base+0.5xbonusAD) via EmpoweredDamageTT = TotalDamage*1.5, i.e. the terrain-collision hit replaces the base hit with 1.5x its damage rather than adding a distinct extra instance. The wiki instead presents this as an additional 'bonus' component (50%*1.5 base, 25% bonusAD extra ratio) on top of the base hit so total = base hit + bonus hit = TotalDamage*2.5. The values here are the wiki's stated bonus-only numbers (0.5x base, 0.25 bonusAD coef), derived as 1.5x-1x of the base formula; the bin encodes the same total via a single multiplier rather than an additive bonus term."
+  },
+  {
+   "id": "e_4",
+   "meaning": "Stun duration on terrain collision",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "become {{tip|stun|stunned}} for {{ap|1.5}} seconds",
+   "bin": [
+    "VayneCondemn.StunDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Condemn fires a projectile that knocks the target back; damage and the airborne effect apply on hit, not on cast.",
+   "quote": "fires a heavy bolt at the target enemy that deals {{as|physical damage}} and {{tip|airborne|knocks them back}} 475 units, though not through terrain.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the knocked-back target collides with terrain, it takes additional bonus physical damage on top of the base hit damage and is stunned; this requires terrain to be present.",
+   "quote": "If the target collides with [[terrain]], they take {{ccs|{{as|'''bonus''' physical damage}}|physical}} and become {{tip|stun|stunned}} for {{ap|1.5}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The knockback direction (and thus whether the target reaches terrain) is determined at the end of the cast time, not at the moment of cast.",
+   "quote": "Condemn's'' {{tip|airborne|displacement}} direction is determined at the end of the cast time.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "VayneCondemn.KnockbackDistance",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

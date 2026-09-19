@@ -1,0 +1,794 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "YorickPassive",
+    "key": "Characters/Yorick/Spells/YorickPassiveAbility/YorickPassive",
+    "dataValues": {
+     "YorickPassiveGhoulMax": 4,
+     "YorickGhoulDamageReductionVsTowers": 0.5,
+     "YorickGhoulLeashRange": 1600,
+     "YorickGhoulSpawnDelay": 1,
+     "CherryGhoulHPMod": 0.7,
+     "GhoulADRatio": 0.2,
+     "GraveDuration": 300,
+     "MinionMoveBonus": 40,
+     "MeleeAttackDamageModifier": 2,
+     "MinionDamageTakenMod": 0.6,
+     "ProcDamageModifier": 0.5,
+     "ARAMPassiveSpawnThreshold": 5,
+     "GhoulMonsterDamageMod": 0.6,
+     "GhoulHealthRatio": 0.15,
+     "MonsterDamageTakenMod": 1
+    },
+    "calcs": {
+     "YorickPassiveGhoulHealth": {
+      "expr": "byLevel(100..300) + (GhoulHealthRatio=0.15)xbonus maxHp",
+      "flat": {
+       "axis": "level",
+       "v": [
+        100,
+        111.76471,
+        123.52941,
+        135.29412,
+        147.05882,
+        158.82353,
+        170.58824,
+        182.35294,
+        194.11765,
+        205.88235,
+        217.64706,
+        229.41176,
+        241.17647,
+        252.94118,
+        264.70588,
+        276.47059,
+        288.2353,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.15,
+        "dataValue": "GhoulHealthRatio"
+       }
+      ],
+      "refs": [
+       "GhoulHealthRatio"
+      ]
+     },
+     "YorickPassiveGhoulDamage": {
+      "expr": "byLevel(15..100) + (GhoulADRatio=0.2)xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2,
+        "dataValue": "GhoulADRatio"
+       }
+      ],
+      "refs": [
+       "GhoulADRatio"
+      ]
+     },
+     "YorickPassiveSpawnThreshold": {
+      "expr": "byLevelL[8/8/7/7/6/6/5/5/4/4/3/3/2/2/2/2/2/2]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        8,
+        8,
+        7,
+        7,
+        6,
+        6,
+        5,
+        5,
+        4,
+        4,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "AOEDamageModifier": {
+      "expr": "byLevelL[0.66/0.64/0.62/0.6/0.58/0.56/0.54/0.52/0.5/0.48/0.46/0.44/0.42/0.4/0.38/0.36/0.34/0.32]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.66,
+        0.64000003,
+        0.62,
+        0.6,
+        0.58000003,
+        0.56,
+        0.54,
+        0.52000003,
+        0.5,
+        0.48000003,
+        0.46000003,
+        0.44000003,
+        0.42000003,
+        0.40000003,
+        0.38000003,
+        0.36000003,
+        0.34000003,
+        0.32000003
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "BonusAttackSpeed": {
+      "expr": "byLevel(0.08..0.8)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.08,
+        0.12235294,
+        0.16470588,
+        0.20705882,
+        0.24941176614340613,
+        0.2917647,
+        0.33411765,
+        0.3764706,
+        0.41882353,
+        0.46117648,
+        0.5035294,
+        0.54588236,
+        0.5882353,
+        0.63058824,
+        0.6729412,
+        0.7152941,
+        0.7576471,
+        0.8
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "YorickQ",
+    "key": "Characters/Yorick/Spells/YorickQAbility/YorickQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      6,
+      5.5,
+      5,
+      4.5,
+      4
+     ]
+    },
+    "cost": 20,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CherryGhoulPassiveSpawnRate": 8,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       50,
+       70,
+       90,
+       110
+      ]
+     },
+     "MissingHealthRatio": {
+      "axis": "rank",
+      "v": [
+       6,
+       7,
+       8,
+       9,
+       10
+      ]
+     },
+     "BuffDuration": 5,
+     "HealReduction": 50,
+     "BonusDamageAD": 0.5
+    },
+    "calcs": {
+     "QHeal": {
+      "expr": "byLevelL[10/12/14/16/18/20/23/26/29/32/35/38/43/48/53/58/63/68]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        23,
+        26,
+        29,
+        32,
+        35,
+        38,
+        43,
+        48,
+        53,
+        58,
+        63,
+        68
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "BonusDamage": {
+      "expr": "BaseDamage=[30/50/70/90/110] + (BonusDamageAD=0.5)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        50,
+        70,
+        90,
+        110
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "BonusDamageAD"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusDamageAD"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "YorickW",
+    "key": "Characters/Yorick/Spells/YorickWAbility/YorickW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "cost": 70,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CircleDuration": 4,
+     "GhoulNumber": 18,
+     "Delay": 0.75,
+     "HPBonus": {
+      "axis": "rank",
+      "v": [
+       0,
+       0,
+       1,
+       1,
+       2
+      ]
+     },
+     "WallHealthTooltip": {
+      "axis": "rank",
+      "v": [
+       2,
+       2,
+       3,
+       3,
+       4
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "YorickE",
+    "key": "Characters/Yorick/Spells/YorickEAbility/YorickE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowAmount": 0.3,
+     "SlowDuration": 1.5,
+     "MarkDuration": 4,
+     "MarkRange": 1500,
+     "HealthDamage": {
+      "axis": "rank",
+      "v": [
+       6,
+       6.5,
+       7,
+       7.5,
+       8
+      ]
+     },
+     "HealthAPRatio": 0.03,
+     "MinimumMinionDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       105,
+       140,
+       175,
+       210
+      ]
+     },
+     "MonsterMaxDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "ArmorShred": {
+      "axis": "rank",
+      "v": [
+       0.13,
+       0.16,
+       0.19,
+       0.22,
+       0.25
+      ]
+     },
+     "HasteAmount": {
+      "axis": "rank",
+      "v": [
+       0.18,
+       0.21,
+       0.24,
+       0.27,
+       0.3
+      ]
+     }
+    },
+    "calcs": {
+     "Calc_MinimumDamage": {
+      "expr": "MinimumMinionDamage=[70/105/140/175/210] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        105,
+        140,
+        175,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "MinimumMinionDamage"
+      ]
+     },
+     "Calc_HealthDamage": {
+      "expr": "(HealthDamage=[6/6.5/7/7.5/8] + (HealthAPRatio=0.03)xap) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.06,
+        0.065,
+        0.07,
+        0.075,
+        0.08
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0003,
+        "dataValue": "HealthAPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "HealthAPRatio",
+       "HealthDamage"
+      ]
+     },
+     "Calc_Slow": {
+      "expr": "SlowAmount=0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "SlowAmount"
+      ]
+     },
+     "Calc_MonsterCapDamage": {
+      "expr": "MonsterMaxDamage=[50/75/100/125/150] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100,
+        125,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "MonsterMaxDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "YorickR",
+    "key": "Characters/Yorick/Spells/YorickRAbility/YorickR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      130,
+      100
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RGhoulNumbers": {
+      "axis": "rank",
+      "v": [
+       2,
+       3,
+       4
+      ]
+     },
+     "RBigGhoulBonusAD": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100
+      ]
+     },
+     "RMarkDamagePercent": {
+      "axis": "rank",
+      "v": [
+       2,
+       2.5,
+       3
+      ]
+     },
+     "RMarkMaxDamage": 30,
+     "RRadius": 700,
+     "RSummonDelay": 1,
+     "RControlTime": 25000,
+     "MinionDamageTakenModifier": 0.3,
+     "MaidenHealthRatio": 0.6,
+     "MaidenADRatio": 0.3
+    },
+    "calcs": {
+     "YorickBigGhoulHealth": {
+      "expr": "byLevelL[1050/1050/1050/1050/1050/1050/1150/1250/1350/1450/1650/1850/2050/2250/2450/2700/2950/3200] + (MaidenHealthRatio=0.6)xbonus maxHp",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1050,
+        1050,
+        1050,
+        1050,
+        1050,
+        1050,
+        1150,
+        1250,
+        1350,
+        1450,
+        1650,
+        1850,
+        2050,
+        2250,
+        2450,
+        2700,
+        2950,
+        3200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "MaidenHealthRatio"
+       }
+      ],
+      "refs": [
+       "MaidenHealthRatio"
+      ]
+     },
+     "YorickBigGhoulDamage": {
+      "expr": "RBigGhoulBonusAD=[50/75/100] + (MaidenADRatio=0.3)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.3,
+        "dataValue": "MaidenADRatio"
+       }
+      ],
+      "refs": [
+       "MaidenADRatio",
+       "RBigGhoulBonusAD"
+      ]
+     },
+     "YorickMaidenResists": {
+      "expr": "byLevelL[30/30/30/30/30/30/35/40/45/50/55/60/65/70/75/80/85/90]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "YorickQ",
+  "W": "YorickW",
+  "E": "YorickE",
+  "R": "YorickR",
+  "P": "YorickPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 60,
+   "{c4ab3550}": 1.5,
+   "{3a509002}": 0.15
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Yorick",
+  "name": "Yorick",
+  "partype": "Mana",
+  "passive": "Shepherd of Souls",
+  "spells": [
+   {
+    "id": "YorickQ",
+    "name": "Last Rites",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     5.5,
+     5,
+     4.5,
+     4
+    ],
+    "cost": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ]
+   },
+   {
+    "id": "YorickW",
+    "name": "Dark Procession",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "YorickE",
+    "name": "Mourning Mist",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "YorickR",
+    "name": "Eulogy of the Isles",
+    "maxrank": 3,
+    "cooldown": [
+     160,
+     130,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Shepherd of Souls": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Last Rites": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Awakening": {
+    "targeting": "Proximity",
+    "affects": "Self"
+   }
+  },
+  "W": {
+   "Dark Procession": {
+    "spellshield": "false",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Mourning Mist": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Mourning Mist 2": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Eulogy of the Isles": {
+    "targeting": "Location",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

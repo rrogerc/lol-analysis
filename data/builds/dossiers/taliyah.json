@@ -1,0 +1,985 @@
+{
+ "champion": "taliyah",
+ "abilities": {
+  "P": {
+   "name": "Rock Surfing",
+   "cooldown": {
+    "values": null,
+    "quote": "2"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus movement speed near terrain",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.15,
+      0.15,
+      0.15,
+      0.25,
+      0.25,
+      0.25,
+      0.4,
+      0.4,
+      0.4,
+      0.4
+     ],
+     "terms": [],
+     "quote": "{{pp|10;15;25;40|1;9;12;15|key=%}}",
+     "bin": [
+      "TaliyahPassive#TotalMS"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "time in range before speed starts building",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "builds up over 1 second while in range for at least {{fd|0.4}} seconds",
+     "bin": [],
+     "binNote": "not present as a distinct data value in this sheet excerpt"
+    },
+    {
+     "id": "p_3",
+     "meaning": "time out of range before speed begins decaying",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "decays {{tt|at the same rate|See notes}} once out of range for at least 3 seconds",
+     "bin": [
+      "TaliyahPassive.FallOffTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting an ability or entering champion combat puts Rock Surfing on cooldown, preventing the speed buff from building.",
+     "quote": "If '''Taliyah''' is casting an {{tip|ability}} or enters [[combat status|champion combat]], ''Rock Surfing'' cannot occur again for a few seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Dealing default or proc damage does not interrupt or put Rock Surfing on cooldown.",
+     "quote": "Dealing {{tip|default damage|default}} or {{tip|proc damage|proc}} damage does not put ''Rock Surfing'' on cooldown.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Threaded Volley / Threaded Volley 2",
+   "cooldown": {
+    "values": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "quote": "{{ap|7 to 3}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ],
+    "quote": "{{ap|55 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage per Stone Shard (first hit on target)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      72.5,
+      90,
+      107.5,
+      125
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|55 to 125}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "TaliyahQ#RockDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Reduced Damage (subsequent Stone Shard hits on same target)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      22,
+      29,
+      36,
+      43,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|55*0.4 to 125*0.4}} {{as|(+ {{ap|50*0.4}}% AP)}}",
+     "bin": [
+      "TaliyahQ#RockDamage",
+      "TaliyahQ.ExtraMissileReducedDamagePercent"
+     ],
+     "binNote": "TaliyahQ.ExtraMissileReducedDamagePercent = 60 means 40% damage retained (100-60), matching the wiki's 0.4 multiplier on RockDamage; no dedicated calculation row for this reduced value."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Empowered (Boulder) Damage to primary target",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      99,
+      130.5,
+      162,
+      193.5,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|55*1.8 to 125*1.8}} {{as|(+ {{ap|50*1.8}}% AP)}}",
+     "bin": [
+      "TaliyahQ#BigRockDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Boulder Secondary Target Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      72.5,
+      90,
+      107.5,
+      125
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|55 to 125}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "TaliyahQ#RockDamage"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Boulder Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "TaliyahQ.SlowPercent"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "Bonus Monster Damage per Stone Shard",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}",
+     "bin": [
+      "TaliyahQ.MonsterBonusFlatDamage"
+     ]
+    },
+    {
+     "id": "q_8",
+     "meaning": "Boulder Bonus Monster Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      36,
+      45,
+      54,
+      63,
+      72
+     ],
+     "terms": [],
+     "quote": "{{ap|20*1.8 to 40*1.8}}",
+     "bin": [
+      "TaliyahQ#{c363b92e}"
+     ]
+    },
+    {
+     "id": "q_9",
+     "meaning": "Stone Shard barrage duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "over {{fd|1.5}} seconds",
+     "bin": [],
+     "binNote": "No bin row carries this barrage-length; description-only value."
+    },
+    {
+     "id": "q_10",
+     "meaning": "Worked Ground area cooldown reduction on empowered cast",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{sti|cd|50%}} reduced cooldown",
+     "bin": [
+      "TaliyahQ.WorkedGroundCDR"
+     ]
+    },
+    {
+     "id": "q_11",
+     "meaning": "Minimum empowered cooldown floor",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "though not below {{fd|0.75}} seconds",
+     "bin": [
+      "TaliyahQ.MinimumWorkedGroundCD"
+     ]
+    },
+    {
+     "id": "q_12",
+     "meaning": "Empowered cast mana cost",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "costing {{sti|{{as|10 mana}}}}",
+     "bin": [
+      "TaliyahQ.BigRockManaCost"
+     ]
+    },
+    {
+     "id": "q_13",
+     "meaning": "Boulder slow/reveal duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "slowing all targets hit for {{fd|1.5}} seconds",
+     "bin": [
+      "TaliyahQ.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_14",
+     "meaning": "Monster stun duration from Boulder",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "'''Monsters''' hit are also {{tip|stun|stunned}} for 3 seconds.",
+     "bin": [
+      "TaliyahQ.MonsterStunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Subsequent Stone Shard hits on the same target within one cast deal only 40% damage.",
+     "quote": "Subsequent hits deal 40% damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Taliyah is unable to basic attack until she launches the third Stone Shard, but can move and cast other abilities during the barrage.",
+     "quote": "is unable to basic attack until she launches the third ''Stone Shard''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Q while standing in Worked Ground consumes it and empowers the cast into the Boulder, with the primary target taking 180% damage.",
+     "quote": "dealing {{ccs|180%|magic}} damage to them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against monsters, each Stone Shard deals bonus flat magic damage, and the Boulder deals 80% bonus damage to the primary target, both unaffected by the subsequent-hit reduction.",
+     "quote": "This '''bonus''' damage is unaffected by the damage modifier from subsequent hits.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks one instance of Q's damage (not all five Stone Shards).",
+     "quote": "{{tip|Spell shield}} only prevents one instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each Stone Shard hit is a separate area-damage instance; the first is area damage, later ones are persistent area damage; the Boulder applies area damage.",
+     "quote": "The first ''Stone Shard'' hit on each target is considered {{tip|area damage}}, while additional ones of the same cast are considered {{tip|persistent area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The five Stone Shards launch on a staggered timeline: first instantly after cast time, second/third over 1 second, fourth/fifth over 0.5 seconds more.",
+     "quote": "The first ''Stone Shard'' is launched instantly after the cast time ends, then the second and third ''Stone Shards'' are both launched over 1 second, and finally the fourth and fifth ''Stone Shards'' are both launched over {{fd|0.5}} seconds.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TaliyahQ.BigRockDamageMult",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.ExtraMissileReducedDamagePercent",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.MonsterBonusFlatDamage",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.SlowPercent",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.SlowDuration",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.MonsterStunDuration",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.AoERadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahQ.AoERadiusBig",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahQ.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.GroundExhaustDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "TaliyahQ.BigRockManaCost",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.GroundExhaustRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahQ.WorkedGroundCDR",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahQ.MinimumWorkedGroundCD",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Seismic Shove",
+   "cooldown": {
+    "values": [
+     14,
+     12.5,
+     11,
+     9.5,
+     8
+    ],
+    "quote": "{{ap|14 to 8}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     30,
+     20,
+     10,
+     0
+    ],
+    "quote": "{{ap|40 to 0}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_delay",
+     "meaning": "delay before the ledge erupts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.792,
+     "terms": [],
+     "quote": "{{tt|{{fd|0.792 seconds}}|Under normal tick interval circumstances, both cast time and 0.5s delay are rounding up}}",
+     "bin": [
+      "TaliyahWVC.KnockupDelay"
+     ],
+     "binNote": "wiki's 0.792s combines the 0.25s cast time and 0.5s KnockupDelay with rounding; bin lists the 0.5s delay component separately"
+    },
+    {
+     "id": "w_knockup_travel",
+     "meaning": "duration enemies are knocked airborne while thrown 400 units",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "knocks enemies hit 400 units in the target direction over 1 second",
+     "bin": [],
+     "binNote": "no bin row found for the 1 second travel duration"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Seismic Shove deals no damage itself; it only knocks enemies airborne and displaces them.",
+     "quote": "briefly {{tip|airborne|knocking}} enemies hit in the target direction",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The eruption delay is measured from the start of the cast, before the cast time elapses.",
+     "quote": "The delay is measured from the start of the cast, before the cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TaliyahWVC.ThrowDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Unraveled Earth",
+   "cooldown": {
+    "values": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "quote": "14"
+   },
+   "cost": {
+    "values": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ],
+    "quote": "90",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      105,
+      150,
+      195,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|60 to 240}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "TaliyahE#ScatterDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Detonation Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      40,
+      55,
+      70,
+      85
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|25 to 85}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "TaliyahE#DetonationDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Total Maximum Detonation Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      62.5,
+      100,
+      137.5,
+      175,
+      212.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|25*(1+0.75+0.5+0.25) to 85*(1+0.75+0.5+0.25)}} {{as|(+ 75% AP)}}",
+     "bin": [],
+     "binNote": "This is a derived total (sum of 4 detonations with falloff) restating e_2 and MineDamageFalloff; no bin row carries the summed total directly."
+    },
+    {
+     "id": "e_4",
+     "meaning": "duration stones remain on the ground",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "The stones then remain for 4 seconds and {{tip|slow}} enemies within the area by 20%.",
+     "bin": [
+      "TaliyahE.MineLifetime"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "slow percent within the stone field",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "slow}} enemies within the area by 20%",
+     "bin": [
+      "TaliyahE.SlowPercent"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "detonation stun duration",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "becoming {{tip|stun|stunned}} for {{fd|0.75}} seconds, increased to 2 seconds if they are a {{tip|monster}}",
+     "bin": [
+      "TaliyahE.StunDuration"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "damage reduction per additional stone detonated (up to 4)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0,
+      25,
+      50,
+      75
+     ],
+     "terms": [],
+     "quote": "the damage is reduced by {{pp|changedisplay=true|key=%|type=stones detonated|0 to 75 for 4}}",
+     "bin": [
+      "TaliyahE.MineDamageFalloff"
+     ],
+     "binNote": "Bin stores the falloff as a fraction per stack (0.25), i.e. damage multiplier per Nth detonation is 1-0.25*(N-1); wiki states the cumulative reduction percentages 0/25/50/75 directly, which are 0.25*(N-1)*100 for N=1..4 - consistent, not a genuine disagreement, just a different representation."
+    },
+    {
+     "id": "e_8",
+     "meaning": "delay between cascading rows of stones",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.17,
+     "terms": [],
+     "quote": "The stones spawn in rows that cascade in {{fd|0.17}} second intervals.",
+     "bin": [
+      "TaliyahE.DelayBetweenRows"
+     ]
+    },
+    {
+     "id": "e_9",
+     "meaning": "damage multiplier against monsters",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2.25,
+     "terms": [],
+     "quote": "''Unraveled Earth'' deals 225% damage against {{tip|monsters}}.",
+     "bin": [
+      "TaliyahE.MonsterModPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Unraveled Earth deals damage to enemies hit while the stones erupt, i.e. on cast/scatter, separate from detonation damage.",
+     "quote": "scatters a field of 22 stones across the ground in the target direction that deals {{as|magic damage}} to enemies hit while they erupt",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A dashing or knocked-up enemy detonates a stone, dealing separate detonation damage and stunning once the displacement ends.",
+     "quote": "Enemies that {{tip|dash}} or are {{tip|airborne|knocked}} over a stone will detonate it, taking {{as|magic damage}} and becoming {{tip|stun|stunned}} for {{fd|0.75}} seconds ... The stun is applied once the displacement ends.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Monster detonation stun is increased to 2 seconds, and the mine damage falloff means up to 4 detonations per cast per enemy with reduced damage each stack.",
+     "quote": "An enemy can detonate up to 4 stones, but the damage is reduced by {{pp|changedisplay=true|key=%|type=stones detonated|0 to 75 for 4}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Unraveled Earth can only apply its effects to a given target once per cast; further stone contact still detonates the stone visually but has no effect.",
+     "quote": "''Unraveled Earth'' can affect targets only once per cast; the stones will still detonate but not apply their effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Unraveled Earth fires in 6 cascading rows, first with 2 stones and the rest with 4 each, over the cast.",
+     "quote": "''Unraveled Earth'' fires 6 rows of stones: the first row has 2 stones, and the rest have 4 each.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability will not detonate if the target is untargetable while dashing over the stones, or if they blink onto the stones.",
+     "quote": "''Unraveled Earth'' will not detonate if the target dashes over the stones while being untargetable. ... will not detonate against enemies that blink onto the stones.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TaliyahE.MaxStunDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TaliyahE.MineRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Weaver's Wall / Weaver's Wall 2",
+   "cooldown": {
+    "values": [
+     180,
+     150,
+     120
+    ],
+    "quote": "{{tt|{{ap|180 to 120}}|Starts after wall expires or is destroyed}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_walllength",
+     "meaning": "wall length (utility/geometry)",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      2500,
+      4500,
+      6500
+     ],
+     "terms": [],
+     "quote": "{{tt|{{ap|2500 to 6500}}|Wall length}}",
+     "bin": [
+      "TaliyahR.WallLength"
+     ]
+    },
+    {
+     "id": "r_walldur",
+     "meaning": "wall duration after completion before disintegrating",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "The wall lasts for 4 seconds after completion, then slowly disintegrates from its starting point.",
+     "bin": [
+      "TaliyahR.WallDuration"
+     ]
+    },
+    {
+     "id": "r_channeldur",
+     "meaning": "channel duration before surf begins",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "Taliyah also {{tip|channels}} for 1 second, during which ''Weaver's Wall'' can be recast and she {{tip|sight|reveals}} herself.",
+     "bin": [],
+     "binNote": "No bin field for the channel duration was found in the sheet; only DamageLockoutTime=3 exists, which is a different (longer) duration."
+    },
+    {
+     "id": "r_staticcd",
+     "meaning": "static cooldown lockout when Taliyah takes champion/turret damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "''Weaver's Wall'' is placed on a {{sti|cd|3-second}} {{tt|static cooldown|Unaffected by ability haste}} upon taking {{tip|champion}} or {{tip|turret}} damage.",
+     "bin": [
+      "TaliyahR.DamageLockoutTime"
+     ],
+     "binNote": "DamageLockoutTime = 3 matches the wiki's 3-second static cooldown on taking champion/turret damage."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Weaver's Wall deals no damage itself; it knocks aside (airborne) champions hit and creates terrain, and the recast is a dash/destroy with no damage instance.",
+     "quote": "summons a torrent of spiraling rocks that cascades in the target direction, knocking aside champions hit and erecting a wall of terrain in its wake",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown does not begin until the wall expires or is destroyed, so the effective time-to-recast in a fight is cooldown value plus wall lifetime.",
+     "quote": "{{tt|{{ap|180 to 120}}|Starts after wall expires or is destroyed}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The initial cast counts as an ability activation for on-cast effects (e.g. Spellblade), but the two recasts do not.",
+     "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wind Wall and Blade Whirl block further wall formation and stun Taliyah for 0.25 seconds if she is surfing during the collision, interrupting the surf.",
+     "quote": "If '''Taliyah''' is surfing during the collision, she immediately becomes {{tip|stun|stunned}} for {{fd|0.25}} seconds, interrupting the surf.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TaliyahR.DamageLockoutTime",
+     "reason": null
+    },
+    {
+     "ref": "TaliyahR.MaxJumpRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahR.MinJumpRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahR.MaxJumpRangeOverWalls",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahR.DCapPassive",
+     "reason": "unknown"
+    },
+    {
+     "ref": "TaliyahR.MissileSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TaliyahR.ManaCost",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q fires 5 Stone Shards over 1.5s (each a separately timed hit), and can be recast while standing in the Worked Ground it creates to fire an empowered Boulder instead"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Subsequent Stone Shard hits on the same target within one cast deal only 40% damage; the Boulder deals 180% damage to its primary target"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Casting Q while standing in self-created Worked Ground consumes it, reducing that cast's cooldown by 50% (floor 0.75s) and its cost to 10 mana"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Mana costs (Q 55-75 or 10 empowered, E 90 flat) meaningfully cap casts inside a 15s fight"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Stones scatter and deal magic damage on eruption, then remain 4s as a slowing zone that can be detonated for further damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "A target can detonate up to 4 stones per cast, with the detonation damage falling off per additional stone detonated"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "E's detonation damage only triggers if the target dashes or is knocked airborne into a stone; against a stationary dummy this requires Taliyah to actively use W to knock it into the field"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Taliyah's Q creates a self-positioned 400-radius 'Worked Ground' zone at her own cast location. If she is still standing in it when she casts Q again, that cast is consumed and empowered (higher damage, 10 mana, cooldown halved to a 0.75s floor). This is a location-gated recast trigger tied to her own position rather than to a target or a simple timer/stack, and the closed primitive list has no entry for 'own self-created zone gates the next cast's power level.' The closest primitives (recast-or-multipart, cooldown-manipulation) capture the mechanical effect once triggered but not the positional precondition or whether the empowered cast itself refreshes the zone for a subsequent empowered cast."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting the empowered Boulder (Q consumed on Worked Ground) also drop a new Worked Ground patch under Taliyah, allowing her to chain empowered Q casts indefinitely, or does empowerment only consume terrain without creating new terrain (forcing alternation between a normal cast that plants ground and an empowered cast that consumes it)?",
+   "options": [
+    "Every Q cast (normal or empowered) creates a fresh Worked Ground patch at her location, so a stationary Taliyah can spam empowered Q on cooldown indefinitely",
+    "Only the normal (non-empowered) cast creates Worked Ground; the empowered cast consumes it without replacing it, so casts must alternate normal/empowered"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Casting ''Threaded Volley'' creates an area of {{as|Worked Ground|terrain}} at '''Taliyah's''' cast location that has a radius of 400 units and lasts 30 seconds. While '''Taliyah''' is within an area of {{as|Worked Ground|terrain}}, ''Threaded Volley's'' cast consumes the area to become empowered"
+   ]
+  },
+  {
+   "question": "In the single-target dummy fight, does E's detonation damage ever trigger, given the dummy never dashes and is never airborne unless Taliyah deliberately knocks it up with W first? If so, should the rotation spend a W cast (with its ~0.79s eruption delay and mana cost) purely to set up E's detonation bonus damage?",
+   "options": [
+    "Detonation damage is unreachable against a passive dummy and should be excluded from the damage fight entirely (only E's scatter damage counts)",
+    "Taliyah should cast W to knock the dummy through the stone field, triggering detonation damage as part of the optimal rotation"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies that {{tip|dash}} or are {{tip|airborne|knocked}} over a stone will detonate it, taking {{as|magic damage}} and becoming {{tip|stun|stunned}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting E (Unraveled Earth) into the target for the scatter magic damage and to lay down a 4-second stone field.",
+   "Cast Q (Threaded Volley), which barrages 5 Stone Shards over 1.5s at the target and drops Worked Ground under Taliyah's feet; weave in a basic attack once the third Stone Shard has launched if attack speed allows.",
+   "Immediately recast Q while still standing in her own Worked Ground to fire the empowered Boulder for bonus primary-target damage at reduced cost and cooldown.",
+   "Continue recasting Q every time it comes off cooldown for the rest of the fight, taking the empowered version whenever standing in unused Worked Ground.",
+   "Recast E again once its 14s cooldown is up (roughly once more before the ~15s fight ends).",
+   "Do not cast R (Weaver's Wall): it deals no damage, only knocks back and builds terrain, which is irrelevant against a stationary dummy with CC ignored.",
+   "Cast W only if it is established that doing so is needed to knock the dummy through E's stone field to trigger detonation damage; otherwise skip it to save mana and tempo for Q casts."
+  ],
+  "questions": [
+   "Does the simulator assume Taliyah stays planted at her cast location for the whole fight (never repositioning), so she is always standing inside her own Worked Ground when Q comes off cooldown?",
+   "Should W be included in the optimal rotation purely to enable E's detonation damage against an otherwise-immobile dummy, or is that damage source meant to be unreachable in this fight format?",
+   "If Worked Ground does not regenerate on an empowered cast, what is the correct alternating pattern (normal, empowered, normal, empowered...) versus casting Q on cooldown with the standard (non-reduced) cooldown between empowered casts?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

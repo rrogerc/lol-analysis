@@ -1,0 +1,129 @@
+{
+ "champion": "sejuani",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q deals damage on the dash, E deals damage on cast (with a fixed 0.25s cast-time delay), R's bola deals damage on hit; each goes on cooldown/costs mana as its own instance"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W has two separately timed physical damage instances (cone swing 0.25s into cast, line lash at cast end); R has up to three separately timed magic damage instances (bola hit, storm detonation, storm shatter), though against a single stationary dummy the storm/shatter never lands because the wiki states the enemy hit by the bola is excluded from the storm's effects"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q orders a basic attack on the dash-target on collision with an enemy champion; Permafrost (E) explicitly resets Sejuani's basic attack timer on cast"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Sejuani's (and melee allies') basic attacks and Winter's Wrath apply stacking 'Frost' on the target (cap 4, 5s duration each); Permafrost consumes all stacks to cast, and the target cannot regain Frost for 8s after consumption (per-champion internal cooldown)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "P (Icebreaker): a target stunned by Sejuani is marked Frozen; her next basic attack or ability against that target consumes the mark for bonus magic damage = 10% of target max HP (capped 250 vs epic monsters, irrelevant to a champion-flagged dummy). R: the bola's damage value itself is conditional on travel distance before impact (base vs. empowered tier)"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's bola must travel at least 425 units before hitting the target to become 'empowered' (200-400 +0.8AP magic damage instead of 125-175 +0.4AP); in a fixed-distance dummy fight this depends on assumed starting range, which materially changes R's total damage"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Frost Armor (bonus armor/MR, slow/cripple immunity, gained after taking damage from champions and restored after time without taking damage) never triggers in the damage fight since the dummy never attacks; it only matters for the survival fight"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q 60-80, W 60, E 20, R 100) could plausibly limit casts of the more expensive abilities across a 15s fight depending on mana pool/regen from the build"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics (multi-part W/R damage, Frost stack building/consumption, Icebreaker's stun-then-consume mark, Q's attack-reset-on-collision) all map onto existing primitives (plain-cast, recast-or-multipart, target-stacks, conditional-damage, attack-reset, positional-assumption). No mechanic requires logic outside that list."
+ },
+ "unsettled": [
+  {
+   "question": "In the fixed-distance damage fight, does Sejuani's Glacial Prison bola travel the required 425+ units before reaching the dummy, so R deals the empowered damage tier instead of the base tier?",
+   "options": [
+    "Assume a starting range >=425 units so R is always empowered when it lands",
+    "Assume Sejuani casts R at close/arbitrary range so it only sometimes or never empowers",
+    "Treat R's damage as always the base (non-empowered) tier for a conservative/simple simulation"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the bola travels at least 425 units, it becomes empowered to detonate upon reaching maximum range or hitting an enemy champion, dealing increased {{as|magic damage}}"
+   ]
+  },
+  {
+   "question": "Does Winter's Wrath's 1-second cast time (and Permafrost's 0.25s cast time) block Sejuani from casting her other abilities during that window, or can other abilities/attacks be queued through it the way Q explicitly can be cast during other abilities?",
+   "options": [
+    "Only Q can be woven through other casts (as stated); W and E cast times are exclusive and block other actions",
+    "All of Sejuani's abilities can be freely interleaved during each other's cast times",
+    "Cast times only block movement-canceling attacks, not other spell casts"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Arctic Assault can be cast during her other abilities without cancelling them and vice versa.",
+    "'''''Sejuani''' can move during Winter's Wrath's cast time.''"
+   ]
+  },
+  {
+   "question": "When Icebreaker's Frozen mark is consumed by an ability (e.g. Permafrost or the R bola) rather than a basic attack, is the bonus damage added as part of that ability's own damage instance (and thus benefits from the same spell-shield block, on-hit item triggers) or is it a wholly separate damage event?",
+   "options": [
+    "Icebreaker bonus damage is bundled into the consuming ability/attack's single damage instance",
+    "Icebreaker bonus damage is always a distinct, separately-applied magic damage instance regardless of what consumes it"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Sejuani's''' next {{tip|basic attack}} or {{tip|ability}} against a ''Frozen'' enemy will consume the mark to deal {{as|'''bonus''' magic damage}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Position at range (at least 425 units from the dummy) rather than in melee at the start of the fight, so the opening R can travel far enough to empower before it lands.",
+   "Open with R (Glacial Prison), thrown so the bola travels its full distance before hitting the dummy, landing the empowered magic damage and stun.",
+   "Immediately follow with Q (Arctic Assault), dashing onto the dummy for its damage and knockup; the dash-collision orders an attack-reset basic attack on arrival, closing to melee range.",
+   "Weave in basic attacks whenever off cooldown; each attack applies/refreshes a Frost stack on the dummy and, on the first attack after a stun, consumes the Icebreaker Frozen mark for bonus true-max-HP magic damage.",
+   "Cast E (Permafrost) as soon as the dummy has 4 Frost stacks, dealing its magic damage, stunning, and resetting the basic attack timer; repeat E once its 8s per-target Frost lockout has expired and stacks have re-accumulated to 4.",
+   "Cast W (Winter's Wrath) on cooldown, timing the cast so both the cone swing (0.25s into cast) and the line lash (at cast end) connect with the dummy as two separate physical damage instances.",
+   "Recast Q and R on cooldown for the rest of the 15s window, subject to mana, continuing to weave basic attacks and E between them."
+  ],
+  "questions": [
+   "Does the simulator assume the fight starts at a range that lets the opening R travel 425+ units before hitting the dummy, or does Sejuani start in melee (in which case R never empowers on the opening cast)?",
+   "How quickly do Frost stacks realistically re-accumulate to 4 within the 8-second per-target lockout given typical attack speed, i.e. is more than one extra E cast realistic in a 15s fight?",
+   "Should Icebreaker's Frozen-mark bonus damage be scored as attached to the ability/attack that consumes it, or tracked as its own separate damage line for kill-time purposes?",
+   "Is the target (a champion-flagged dummy) ever treated as an epic monster for the purposes of Icebreaker's 250-damage cap, or is that cap always irrelevant in the damage fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

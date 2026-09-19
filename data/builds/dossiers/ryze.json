@@ -1,0 +1,625 @@
+{
+ "champion": "ryze",
+ "abilities": {
+  "P": {
+   "name": "Arcane Mastery",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus maximum mana per 100 AP",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.1
+        }
+       ]
+      }
+     ],
+     "quote": "increases his {{as|{{sti|mana|'''maximum''' mana}}}} by {{as|({{#var:am}}% per 100 AP)}}",
+     "bin": [
+      "RyzePassive.PercentManaIncrease",
+      "RyzePassive#PassiveManaCalcTooltip"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Any increase in maximum mana is treated as bonus mana.",
+     "quote": "Any increase in maximum mana is treated as bonus mana.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RyzePassive.APAmount",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Overload / Overload 2 / Overload 3 / Overload 4",
+   "cooldown": {
+    "values": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "quote": "5"
+   },
+   "cost": {
+    "values": [
+     40,
+     38,
+     36,
+     34,
+     32
+    ],
+    "quote": "{{ap|40 to 32}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      95,
+      115,
+      135,
+      155
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      },
+      {
+       "stat": "bonusMana",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{ap|75 to 155}} {{as|(+ 55% AP)}} {{as|(+ 2% '''bonus''' mana)}}",
+     "bin": [
+      "RyzeQWrapper.BaseDamage",
+      "RyzeQWrapper#QDamageCalc"
+     ]
+    },
+    {
+     "id": "q_flux_amp",
+     "meaning": "Spell Flux Bonus damage amplification on Overload",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [],
+     "quote": "''Overload'' deals {{pp|type=[[File:Realm Warp.png|20px|border]] ''Realm Warp's'' Rank|key=%|25 to 100 for 4|0 to 3}} {{ccs|increased damage|magic}}",
+     "bin": [
+      "RyzeQWrapper.DamageAmp"
+     ],
+     "binNote": "Wiki text describes this amplifier as keyed to Realm Warp's rank (0-3) with values 25/50/75/100%, but the bin's RyzeQWrapper.DamageAmp array is indexed by Overload's own rank (1-5) with values 40/50/60/70/80%. The two sources disagree on both the indexing variable and the numbers; recorded the bin's per-Q-rank values here since that is what the data file actually keys on for this spell slot."
+    },
+    {
+     "id": "q_rune_cap",
+     "meaning": "Maximum Overload Rune stacks that can be held/consumed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "refreshing on subsequent casts and stacking up to 2 times",
+     "bin": [
+      "RyzeQWrapper.MaximumRunes"
+     ]
+    },
+    {
+     "id": "q_rune_duration",
+     "meaning": "Duration an Overload Rune stack lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "charge a [[File:Overload 3.png|20px|link=]] ''Rune'' {{tip|stack}} for 4 seconds, refreshing on subsequent casts",
+     "bin": [
+      "RyzeQWrapper.RuneDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting Ryze's other basic abilities (W/E) resets Overload's cooldown and grants a Rune stack, up to 2, letting Overload be recast much more often than its own cooldown suggests.",
+     "quote": "'''Ryze's''' other {{tip|ability|basic ability}} casts reset ''Overload's'' {{sti|cooldown}} and charge a [[File:Overload 3.png|20px|link=]] ''Rune'' {{tip|stack}} for 4 seconds, refreshing on subsequent casts and stacking up to 2 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Overload consumes all currently held Rune stacks at once.",
+     "quote": "deals {{as|magic damage}} to the first enemy hit and consumes all [[File:Overload 4.png|20px|link=]] ''Rune'' stacks",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Ryze consumed the maximum 2 stacks, he also gains bonus movement speed, which does not itself change damage output.",
+     "quote": "If '''Ryze''' consumed 2 stacks, he gains {{sti|ms|{{as|'''bonus''' movement speed}}}} for 2 seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "When enemies are affected by Spell Flux, Overload deals increased damage and spreads to nearby Fluxed enemies, applying spell damage to the primary target and area damage to secondary targets.",
+     "quote": "Applies {{tip|spell damage}} to the primary target and {{tip|area damage}} to secondary targets affected by {{ai|Spell Flux|Ryze|Flux}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Overload can be buffered up to 0.5 seconds before it comes off cooldown, effectively letting it be queued ahead of time.",
+     "quote": "''Overload'' can be buffered {{fd|0.5}} seconds before it comes off cooldown.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RyzeQWrapper.MovementSpeedAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "RyzeQWrapper.MovementSpeedDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Rune Prison",
+   "cooldown": {
+    "values": [
+     11,
+     10.5,
+     10,
+     9.5,
+     9
+    ],
+    "quote": "{{ap|11 to 9}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      },
+      {
+       "stat": "bonusMana",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 60% AP)}} {{as|(+ 3% '''bonus''' mana)}}",
+     "bin": [
+      "RyzeW#WDamageCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "RyzeW.CCDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rune Prison deals magic damage and slows the target by 50% for 1.5 seconds.",
+     "quote": "'''Ryze''' seizes the target enemy, dealing {{as|magic damage}} and {{tip|slow|slowing}} them by 50% for {{fd|1.5}} seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "With Spell Flux applied to the target, the target is rooted instead of slowed.",
+     "quote": "The target is {{tip|root|rooted}} instead of {{tip|slow|slowed}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Rune Prison can be buffered 0.5 seconds before it comes off cooldown.",
+     "quote": "''Rune Prison'' can be buffered {{fd|0.5}} seconds before it comes off cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rune Prison can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RyzeW.SlowAmount",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Spell Flux",
+   "cooldown": {
+    "values": [
+     3.5,
+     3.25,
+     3,
+     2.75,
+     2.5
+    ],
+    "quote": "{{ap|3.5 to 2.5}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     45,
+     55,
+     65,
+     75
+    ],
+    "quote": "{{ap|35 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      },
+      {
+       "stat": "bonusMana",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 50% AP)}} {{as|(+ 2% '''bonus''' mana)}}",
+     "bin": [
+      "RyzeE#EDamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Flux debuff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "marked with ''Flux'' for 4 seconds",
+     "bin": [
+      "RyzeE.DebuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The target and surrounding enemies are marked with Flux; Ryze's basic abilities against Flux targets consume the mark to become empowered with an additional effect.",
+     "quote": "The target and surrounding enemies are also marked with ''Flux'' for 4 seconds. '''Ryze's''' basic abilities against ''Flux'' targets consume the mark to become empowered with an additional effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Spell Flux again on a target reapplies a new Flux debuff and also triggers the previous one, effectively refreshing the duration.",
+     "quote": "''Spell Flux's'' second cast on a target will apply a new ''Flux'' debuff as well as triggering the previous one (effectively refreshing the duration).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial missile can be blocked by projectile-intercepting effects, while the spreading bounce missiles cannot.",
+     "quote": "The {{tt|\"main\"|initial cast}} missile of ''Spell Flux'' is blocked by {{tip|projectile|projectile-intercepting}} effects, while the spreading bounce missiles are not.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Flux can be blocked by spell shields.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RyzeE.BounceRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RyzeE.DamageAmp",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RyzeE.BounceRadiusLargeUnit",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RyzeE.BounceRadiusQSmallUnit",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RyzeE.BounceRadiusQLargeUnit",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Realm Warp",
+   "cooldown": {
+    "values": [
+     180,
+     160,
+     140
+    ],
+    "quote": "{{ap|180 to 140}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Overload Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100
+     ],
+     "terms": [],
+     "quote": "{{ap|50 to 100}}%",
+     "bin": [
+      "RyzeR.OverloadDamageBonus"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "channel duration before the portal completes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "channels for 2 seconds to open a portal",
+     "bin": [
+      "RyzeR.ChargeTimeTooltip"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "root/disarm/silence/untargetable duration on arrival",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|root|rooted}}, {{tip|disarm|disarmed}}, {{tip|silence|silenced}} and {{tip|untargetable}} for {{tt|{{fd|0.75}}|Estimated}} seconds",
+     "bin": [
+      "RyzeR.AllyIndicatorBuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Overload and Spell Flux empowered damage is increased by the bonus amount while Realm Warp is ranked.",
+     "quote": "''{{ais|Overload|Ryze}}'' ''{{ai|Spell Flux|Ryze|Flux}}'' empowered damage is increased.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ryze can act (cast abilities, attack) during the channel; it cancels only if he is interrupted.",
+     "quote": "'''Ryze''' is able to act while channeling, but the portal will cancel if he is {{tip|interrupt|interrupted}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The root/disarm/silence/untargetable effect applies to allies and Ryze upon arrival, which is defensive not offensive utility for a stationary dummy fight.",
+     "quote": "'''Ryze''' and all allied units within the portal will {{tip|blink}} to the location and become {{tip|root|rooted}}, {{tip|disarm|disarmed}}, {{tip|silence|silenced}} and {{tip|untargetable}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RyzeR.ChargeTime",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "RyzeR.TeleportTime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RyzeR.HealPercentMinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RyzeR.OverloadHealPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RyzeR.MinimumCastRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Arcane Mastery converts AP into bonus max mana (10% per 100 AP), and that bonus mana in turn feeds the 'bonus mana' ratio terms in Q/W/E's damage calcs."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Overload, Rune Prison, and Spell Flux each deal a flat+ratio magic damage instance on cast/short delay."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Every W or E cast resets Overload's cooldown, letting Q be recast far more often than its own 5s cooldown."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spell Flux marks the target (and, in a multi-target scene, nearby enemies) with a 4s 'Flux' debuff that Ryze's other basic abilities read/consume for bonus effects."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Overload deals amplified damage when it hits a Flux-marked target (magnitude and whether Realm Warp rank gates it is unsettled)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Mana costs (especially W 50-90 and E 35-75, cast every few seconds) can meaningfully cap total casts inside a 15s window depending on Ryze's mana pool/regen at the tested level/items."
+  },
+  {
+   "id": "level-gated-passive",
+   "abilities": [
+    "R"
+   ],
+   "note": "Realm Warp's passive increases Overload/Spell Flux empowered damage; it only exists once R has at least one point (i.e. champion level 6+)."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behaviors (flat+ratio hits, a cooldown reset chain between Q and W/E, a target mark that conditionally amplifies one ability's damage, mana costs as a soft cap, and a level-gated passive amp) are each expressible with existing primitives; the main difficulty is picking correct numbers, which is captured as unsettled questions rather than requiring new mechanic logic."
+ },
+ "unsettled": [
+  {
+   "question": "What is the correct magnitude/index for Overload's damage bonus against a Spell Flux-marked target, and does it require Realm Warp to be ranked at all?",
+   "options": [
+    "Bin is authoritative: RyzeQWrapper.DamageAmp = 40/50/60/70/80% keyed to Overload's own rank, applied regardless of whether R is ranked",
+    "Wiki's Overload page pp lookup is authoritative: 25/50/75/100% keyed to Realm Warp's rank (0-3), meaning at R rank 0 the bonus may be 0% or 25%, and the effect changes as R levels rather than as Q levels",
+    "Realm Warp's own leveling table (50/75/100% for R ranks 1-3) is the true 'Bonus Overload Damage' value, additively or multiplicatively stacked on top of a separate baseline Flux-bonus that exists independent of R"
+   ],
+   "impact": "high",
+   "quotes": [
+    "RyzeQWrapper.DamageAmp = [40/50/60/70/80]",
+    "''Overload'' deals {{pp|type=[[File:Realm Warp.png|20px|border]] ''Realm Warp's'' Rank|key=%|25 to 100 for 4|0 to 3}} {{ccs|increased damage|magic}} and spreads to surrounding ''Fluxed'' enemies.",
+    "{{st|Bonus Overload Damage|{{ap|50 to 100}}%}}",
+    "''{{ais|Overload|Ryze}}'' ''{{ai|Spell Flux|Ryze|Flux}}'' empowered damage is increased."
+   ]
+  },
+  {
+   "question": "In the single-target dummy fight, does casting W or E on the dummy while it is already Flux-marked from a prior E cast retrigger/refresh the same debuff instance (extra value) or is the second application simply redundant since there is only one target and no bounce spread to model?",
+   "options": [
+    "Re-casting E on an already-Flux target both deals a new damage instance and refreshes the mark, exactly as on the wiki, with no additional interaction in a 1-target scene",
+    "The 'triggers the previous one' note implies some additional proc (e.g., a second damage tick) beyond a simple refresh, which is unclear from the wording alone"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Spell Flux's'' second cast on a target will apply a new ''Flux'' debuff as well as triggering the previous one (effectively refreshing the duration)."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Spell Flux (E) on the dummy to apply the Flux mark and land its own magic damage.",
+   "Immediately follow with Overload (Q), which is amplified by the fresh Flux mark and whose cast also does not consume its own cooldown reset opportunity from W/E.",
+   "Cast Rune Prison (W) next; this both deals its own damage and resets Overload's cooldown, letting Q be cast again right away.",
+   "Recast Overload (Q) again off the reset cooldown.",
+   "Repeat the E -> Q -> W -> Q cycle continuously for the full ~15s, re-applying Spell Flux roughly every time its own (short, 2.5-3.5s) cooldown is up so Overload keeps benefiting from the Flux amplification, and using every W/E cast purely to keep chaining free Overload casts.",
+   "Do not cast Realm Warp (R): it deals no direct damage itself, has a long channel that would forfeit multiple Q/W/E casts, and its only offensive contribution is the passive Overload-damage amp, which is already accounted for passively once ranked."
+  ],
+  "questions": [
+   "Should Realm Warp be assumed ranked (level 6+) for the passive Overload/Flux damage amp even though R itself is never cast in the 15s fight, and if so at what rank given the tested champion level?",
+   "Which of the conflicting Flux-amplification value sets (bin's per-Q-rank array vs wiki's per-R-rank lookup vs Realm Warp's own leveling table) should the simulator use for Overload's bonus damage vs a Flux target?",
+   "Is Ryze assumed to start the fight with full mana, and does the target dummy's mana pool/regen at the tested level make the E/W mana costs a real constraint over 15s, or is mana effectively unlimited given typical AP+mana itemization?",
+   "Does buffering Overload during the E/W cast time (explicitly called out in the wiki notes) let it fire with zero effective downtime between the E/W cast finishing and Q firing, i.e. should the simulated cast sequence treat Q as free time-wise whenever chained after W/E?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,157 @@
+{
+ "champion": "draven",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Spinning Axe arms Draven's next basic attack to deal bonus physical damage (base + % bonus AD)."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Draven can hold up to two armed Spinning Axes (charges) at once via recast/catch, each empowering a future basic attack."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The empowered attack's bonus damage is dealt as a single instance of basic attack damage, so it benefits from crit and on-hit multipliers like a normal auto."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blood Rush grants bonus attack speed for 3s on cast."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Catching a Spinning Axe resets Blood Rush's cooldown, allowing more frequent attack-speed windows."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Stand Aside deals a fixed-cast-time (0.25s) physical damage nuke on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Whirling Death has an outbound pass and a manually- or automatically-triggered return pass, each dealing its own instance of physical damage with independent falloff."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "Assumes the stationary dummy is hit by both the outbound and return pass of R (single-target line fight), and assumes whether/how often Draven catches his own thrown Spinning Axes."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "R executes enemy champions damaged to or below a health threshold equal to Draven's current League of Draven (Adoration) stacks."
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "R"
+   ],
+   "note": "The execute threshold scales with Draven's permanent Adoration stack count, which is external to the fight and must be assumed."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on all four abilities (45/20-40/70/100) can gate how often each is cast inside the 15s window."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Draven's kit maps onto empowered-attack (Q), an ammo-like charge system (Q's two-axe hold), timed-self-buff and cooldown-manipulation (W), plain-cast (E), and a recast-or-multipart execute ability (R) with an infinite-scaling threshold. The unusual 'catch the axe' and 'return-pass axes' mechanics are geometry/positional assumptions the fight must fix, not logic the primitive list cannot express."
+ },
+ "unsettled": [
+  {
+   "question": "Does the single-dummy damage fight assume Draven catches his own thrown Spinning Axes (and Whirling Death's return pass), enabling continuous Q re-arming, Blood Rush cooldown resets, and a second R damage instance on the same target?",
+   "options": [
+    "Assume Draven always catches axes / R always returns through the dummy, maximizing uptime",
+    "Assume no catching occurs (axes simply expire), so Q and R only ever deal one hit per cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Whenever a {{ai|Spinning Axe|Draven}} is caught, ''Blood Rush's'' cooldown will {{sti|ah|reset}}.",
+    "''Enemies can be hit only once per pass.''"
+   ]
+  },
+  {
+   "question": "Which cooldown value for Stand Aside (E) is live: the wiki/ddragon value (16→12) or the DravenDoubleShot bin block's own cooldown array (18→14)?",
+   "options": [
+    "Use wiki/ddragon 16 to 12",
+    "Use the DravenDoubleShot bin cooldown 18 to 14"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown     = {{ap|16 to 12}}",
+    "cooldown: [18/17/16/15/14]"
+   ]
+  },
+  {
+   "question": "What Adoration stack count should be assumed for Whirling Death's execute threshold in the damage fight against a full-health dummy?",
+   "options": [
+    "Assume 0 stacks (execute never fires, ignore the mechanic for damage purposes)",
+    "Assume some representative mid-game stack count (e.g. 20-50) that could meaningfully execute the dummy near its death threshold"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemy {{tip|champions}} that are damaged to or while below a {{sti|{{as|health}}}} threshold equal to the number of ''{{ai|League of Draven|Draven|Adoration}}'' stacks are {{tip|execute|executed}}."
+   ]
+  },
+  {
+   "question": "Does recasting Whirling Death's return pass happen automatically at the earliest opportunity (1s after outbound) for maximum DPS, or is there a reason a player would delay/never recast it in an optimal-damage rotation?",
+   "options": [
+    "Recast immediately at the 1s minimum for a guaranteed second damage instance",
+    "Let it travel to max range/reverse naturally, delaying the second hit"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Whirling Death'' can be recast after 1 second while the axes are traveling, and does so automatically after the axes hit an enemy {{tip|champion}} or the edge of the [[Map (League of Legends)|map]]."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-combat: cast Q (Spinning Axe, no cast time) to arm the next basic attack with bonus physical damage.",
+   "Open with an auto-attack to consume the armed Q for its bonus damage, then immediately cast W (Blood Rush) for bonus attack speed.",
+   "Cast R (Whirling Death) early to send the axes through the dummy for physical damage, then recast it after 1s so the return pass hits the dummy again for a second damage instance.",
+   "Cast E (Stand Aside) as soon as it is off cooldown for its physical damage nuke.",
+   "Recast Q every time it comes off cooldown (or when an axe is assumed caught) to keep an empowered attack ready for the next auto-attack, and keep auto-attacking continuously in between casts.",
+   "Recast W again once its 12s cooldown is up (or sooner if a Q catch is assumed to reset it) to refresh the attack-speed window for the remainder of the fight.",
+   "Recast E again once off cooldown near the end of the 15s window.",
+   "Fill all remaining time with continuous basic attacks, since auto-attacks (empowered by Q, accelerated by W) are Draven's main damage source over 15 seconds."
+  ],
+  "questions": [
+   "Should the fight assume Draven successfully catches every Spinning Axe he throws, and does the simulator model a 'catch' event at all for a single stationary dummy?",
+   "Is Whirling Death cast once or twice within the 15s window given its long cooldown (80-100s), and should its recast (return pass) always be taken at the earliest 1s mark for maximum DPS?",
+   "Which E cooldown value (16-12 vs 18-14) is actually live in the current patch, since it changes how many times Stand Aside can be cast in 15s?",
+   "Is there a meaningful assumed Adoration stack count for the execute part of R against a target dummy, or should the execute be ignored entirely for damage-race purposes?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

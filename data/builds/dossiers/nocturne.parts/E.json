@@ -1,0 +1,168 @@
+{
+ "name": "Unspeakable Horror",
+ "cooldown": {
+  "values": [
+   15,
+   14,
+   13,
+   12,
+   11
+  ],
+  "quote": "{{ap|15 to 11}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   65,
+   70,
+   75,
+   80
+  ],
+  "quote": "{{ap|60 to 80}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Total Magic Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    125,
+    170,
+    215,
+    260
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|80 to 260}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "NocturneUnspeakableHorror#TotalDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Magic Damage per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    31.25,
+    42.5,
+    53.75,
+    65
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|80/4 to 260/4}} {{as|(+ {{ap|100/4}}% AP)}}",
+   "bin": [
+    "NocturneUnspeakableHorror#TotalDamage"
+   ],
+   "binNote": "Derived from the total (DamageToDeal + 1x AP) divided by 4 ticks; the bin has no separate per-tick data row."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Disable Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    1.25,
+    1.5,
+    1.75,
+    2,
+    2.25
+   ],
+   "terms": [],
+   "quote": "{{ap|1.25 to 2.25}} seconds",
+   "bin": [
+    "NocturneUnspeakableHorror.CCDuration"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "tether duration before fear triggers",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "forming a {{tip|tether}} between himself and the target for 2 seconds",
+   "bin": [
+    "NocturneUnspeakableHorror.LeashDuration"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "the target takes {{as|magic damage}} every {{fd|0.5}} seconds over the duration",
+   "bin": [],
+   "binNote": "No bin row states the 0.5s tick interval directly; it is inferred from the wiki's 4-tick breakdown of the 2-second LeashDuration."
+  },
+  {
+   "id": "e_6",
+   "meaning": "fear slow amount",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 90,
+   "terms": [],
+   "quote": "being {{tip|slow|slowed}} by 90%",
+   "bin": [],
+   "binNote": "No bin data value carries the 90% slow amount; TooltipFearMS=0.9 is the passive movement speed bonus, not this slow."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Unspeakable Horror deals persistent damage over its tether duration, tagged indirect damage, and applies spell effects (on-hit) each tick.",
+   "quote": "''Unspeakable Horror'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks the tether's application, but not the damage/aftereffects of a tether already applied.",
+   "quote": "{{tip|Spell shield}} will block the tether's application but not the damage and aftereffects of one already applied.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the tether is not broken by the end of its 2-second duration, the target is feared and slowed by 90%.",
+   "quote": "If the tether is not broken by the end of its duration, the target is {{tip|fear|feared}} for a duration while being {{tip|slow|slowed}} by 90%.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Passively, Nocturne gains bonus movement speed while facing nearby feared targets within a 180° angle.",
+   "quote": "Feared enemies in a {{tip|cr|icononly = true}} 180° total angle within '''Nocturne's''' facing direction will trigger ''Unspeakable Horror's'' passive.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NocturneUnspeakableHorror.TooltipFearMS",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NocturneUnspeakableHorror.LeashBreakRange",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

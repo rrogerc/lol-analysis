@@ -1,0 +1,732 @@
+{
+ "champion": "malphite",
+ "abilities": {
+  "P": {
+   "name": "Granite Shield",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8,
+     8,
+     7,
+     7,
+     7,
+     7,
+     7,
+     7,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "{{pp|8 to 6 for 3|1 to 13}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "shield strength as percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "shield equal to {{as|10% of his '''maximum''' health}}",
+     "bin": [
+      "MalphiteShield#TotalShield"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield lasts until broken and replenishes to full after a period without taking damage.",
+     "quote": "The shield lasts until it is broken, and replenishes to full strength after a few seconds of not taking damage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage mitigated by shields does not refresh the passive's cooldown.",
+     "quote": "''Granite Shield'' does not refresh its cooldown from damage that is mitigated by {{tip|shield|shields}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Seismic Shard",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "8"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      120,
+      170,
+      220,
+      270
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|70 to 270}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "SeismicShard#QDamageCalc"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "SeismicShard.SpeedSteal"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Slow/bonus movement speed duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "slows them for 3 seconds",
+     "bin": [
+      "SeismicShard.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Damage and slow apply on impact of the projectile, not on cast.",
+     "quote": "slows them for 3 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Malphite gains bonus movement speed equal to the raw amount of movement speed the target lost, for the slow duration, but this is a mobility effect that does not affect either fight.",
+     "quote": "gains {{sti|ms|{{as|'''bonus''' movement speed}}}} equal to the {{tt|raw|before movement speed soft caps}} amount of {{as|movement speed}} the target lost",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Thunderclap",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "quote": "{{ap|30 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "None"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Armor",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|10 to 30}}% armor}}",
+     "bin": [
+      "Obduracy.BonusArmorPassive"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Increased Bonus Armor",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60,
+      75,
+      90
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|10*3 to 30*3}}% armor}}",
+     "bin": [
+      "Obduracy.BonusArmorPassive",
+      "Obduracy.BonusArmorPassiveMultiplier"
+     ],
+     "binNote": "No single bin row states 30/45/60/75/90 directly; it is the product of Obduracy.BonusArmorPassive=[0.1,0.15,0.2,0.25,0.3] and Obduracy.BonusArmorPassiveMultiplier=3, matching the tooltip-only calculation Obduracy#{71941255}."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Additional Physical Damage (empowered attack, on-hit)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      40,
+      50,
+      60,
+      70
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      },
+      {
+       "stat": "armor",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|30 to 70}} {{as|(+ {{#var:WApS1}}% AP)}} {{as|(+ {{#var:WRmrS1}}% armor)}}",
+     "bin": [
+      "Obduracy#TotalBonusDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Physical Damage (cone splash from empowered basic attacks)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      15,
+      25,
+      35,
+      45,
+      55
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "armor",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|15 to 55}} {{as|(+ {{#var:WApS2}}% AP)}} {{as|(+ {{#var:WRmrS2}}% armor)}}",
+     "bin": [
+      "Obduracy#ThunderclapSplash"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Window during which Malphite's next basic attack is empowered",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "empowers his next basic attack within 6 seconds",
+     "bin": [],
+     "binNote": "The bin's Obduracy.ThunderclapBuffDuration = 5 matches the description3 5-second cone-splash window, not this 6-second empowered-attack window; no bin field for the 6-second value was found."
+    },
+    {
+     "id": "w_6",
+     "meaning": "Duration of the on-hit cone splash effect",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "basic attacks {{tip|on-hit}} for the next 5 seconds are empowered",
+     "bin": [
+      "Obduracy.ThunderclapBuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The empowered basic attack's main-target hit does not apply life steal, while the cone deals separate area damage without applying spell effects (on-hit/on-attack effects).",
+     "quote": "The main target is dealt {{tip|basic damage}}, though without {{tip|applies lifesteal|applying life steal}}, while the cone deals {{tip|area damage|area}} non-{{tip|proc damage|proc}} damage without applying {{tip|spell effects}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Thunderclap's empowered attack resets Malphite's basic attack timer.",
+     "quote": "''Thunderclap {{tip|basic attack reset|resets}} '''Malphite's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cone does not deal its damage separately if the target has left the area of effect when the attack lands, and does not benefit from Spear of Shojin's damage amp.",
+     "quote": "The cone does not benefit from {{iis|Spear of Shojin}} damage amp.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Thunderclap deals increased (180%) damage against monsters, which does not apply in a champion-dummy fight.",
+     "quote": "''Thunderclap'' deals 180% damage against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The empowered attack cannot have its windup canceled by new movement or attack commands, or by casting Unstoppable Force.",
+     "quote": "''Cannot'' have its {{tip|attack windup|windup}} canceled by new movement or attack commands, or casting {{ai|Unstoppable Force|Malphite}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Thunderclap's cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive bonus armor is tripled while Granite Shield is active, which reduces damage taken rather than dealt.",
+     "quote": "'''Malphite''' gains {{sti|armor|{{as|'''bonus''' armor}}}}, tripled while ''{{ai|Granite Shield|Malphite}}'' is active.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Obduracy.ThunderclapSlowDamage",
+     "reason": "unknown"
+    },
+    {
+     "ref": "Obduracy.ThunderClapSplashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Obduracy.MonsterDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Ground Slam",
+   "cooldown": {
+    "values": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "quote": "7"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.2419,
+    "quote": "{{fd|0.2419}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      95,
+      130,
+      165,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      },
+      {
+       "stat": "armor",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|60 to 200}} {{as|(+ {{#var:EApS}}% AP)}} {{as|(+ {{#var:ERmrS}}% armor)}}",
+     "bin": [
+      "Landslide.BaseDamage",
+      "Landslide#EDamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Cripple Strength",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "Landslide.ASReduction"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Cripple duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "crippling them for 3 seconds",
+     "bin": [
+      "Landslide.Duration"
+     ],
+     "binNote": "duration also given in description text as '3 seconds'; matches Landslide.Duration=3"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ground Slam's damage and cripple apply to all nearby enemies (AoE), not a single target.",
+     "quote": "dealing {{as|magic damage}} to nearby enemies and {{tip|cripple|crippling}} them for 3 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cripple (attack speed reduction) stacks multiplicatively with other attack speed reductions.",
+     "quote": "The {{tip|cripple}} {{tip|stacks multiplicatively}} with other sources of [[Attack_speed#Decreasing_attack_speed|attack speed reductions]].",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Unstoppable Force",
+   "cooldown": {
+    "values": [
+     130,
+     115,
+     100
+    ],
+    "quote": "{{ap|130 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "UFSlash#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "airborne duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "UFSlash.KnockupDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Malphite dashes with displacement immunity and cannot be deterred by crowd control during the dash.",
+     "quote": "The dash cannot be deterred by {{tip|crowd control}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage and knockup are dealt only upon arrival at the destination, to nearby enemies in the effect radius, not along the path.",
+     "quote": "Upon arrival, he deals {{as|magic damage}} to nearby enemies and briefly {{tip|airborne|knocks them up}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Malphite dies during the dash, the ability cancels and deals no damage.",
+     "quote": "If '''Malphite''' dies during his {{tip|dash}}, the ability cancels.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Seismic Shard, Ground Slam, Unstoppable Force deal damage on cast/impact on cooldown"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Thunderclap active empowers next basic attack with on-hit physical damage and 50 bonus range within 6s"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Following the empowered attack, basic attacks trigger a cone splash on-hit for 5s"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Thunderclap's empowered attack resets Malphite's basic attack timer"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "passive bonus armor from Thunderclap ranks, tripled while Granite Shield is up (armor->damage via ratios on W/E)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Seismic Shard slow and Ground Slam attack speed cripple on the target/nearby enemies; cripple only relevant if simulator gives dummy attack speed, otherwise cosmetic in a dummy fight (no damage-taken change to dummy)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs for all four abilities may gate casts over 15s"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Thunderclap cooldown starts on cast, distinguishing it from other abilities in cooldown timing during the fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Granite Shield is a self-shield that reduces damage taken, irrelevant to the damage fight but relevant to the survival fight"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Thunderclap's cone, Ground Slam's radius, and Unstoppable Force's landing radius are AoE effects that in a single-dummy fight are assumed to always hit the one target"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Thunderclap's kit combines an armor-scaling stat-conversion (bonus armor feeds W and E damage via armor ratios) with an empowered-attack that also triggers a distinct, separately-timed cone on-hit rider for a different duration (6s empowered-attack window vs 5s cone-splash window) and an attack-reset — no single closed-list primitive captures the combination of 'armor is itself a damage-scaling stat fed by a self-buff whose magnitude is tripled by a shield state' plus the two-tier empowered-attack/on-hit-cone structure with independent timers. The simulator needs bespoke logic to: (1) track Malphite's armor stat live (base+bonus+item armor, further increased by the passive itself and its own W rank), (2) apply the tripled multiplier only while Granite Shield (a defensive proc-based shield) is currently up, and (3) manage two separate expiring windows (empowered-attack-arm at 6s, cone-active at 5s) stacked on the attack-reset behavior."
+ },
+ "unsettled": [
+  {
+   "question": "Does the armor-ratio damage term in W's on-hit damage (w_3), W's cone splash (w_4), and E's damage (e_1) use Malphite's total armor including the Thunderclap passive's own bonus armor (recursion), or armor excluding that self-buff?",
+   "options": [
+    "Uses total armor including W's own passive bonus armor (recursive, as wiki notes: 'The passive's bonus armor stacks with an instance of recursion')",
+    "Uses only base+item armor excluding the W passive bonus",
+    "Uses armor snapshotted at some fixed point rather than live current armor"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The passive's bonus armor stacks with an instance of [[recursion]]."
+   ]
+  },
+  {
+   "question": "Is the Granite Shield 3x armor multiplier assumed active for the whole 15s damage fight (since the dummy never damages Malphite back, the shield would stay up permanently) or only intermittently?",
+   "options": [
+    "Assume Granite Shield is always up in the damage fight (dummy is stationary/non-damaging per rules, so shield never breaks) → armor bonus always tripled",
+    "Assume shield is broken at fight start and never mentioned as refreshed, so use the base (non-tripled) bonus armor throughout",
+    "Model shield state dynamically based on whether the dummy deals any damage at all"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Malphite''' gains {{sti|armor|{{as|'''bonus''' armor}}}}, tripled while ''{{ai|Granite Shield|Malphite}}'' is active."
+   ]
+  },
+  {
+   "question": "Does the empowered basic attack's on-hit cone damage (w_4) count as a separate simultaneous damage instance from the main attack damage (w_3 + base AD), or are they sequenced/dependent (e.g., cone only triggers if the cone's positional check would hit, which in a 1v1 dummy fight is trivially true)?",
+   "options": [
+    "Cone always lands as a separate simultaneous instance alongside the main hit in a 1-target fight",
+    "Cone damage is a distinct instance but could theoretically be blocked by target leaving the AoE — irrelevant for a stationary dummy, so effectively same as option 1",
+    "Cone damage does not apply to on-hit effects/items at all and must be excluded from item-based on-hit calculations even though it deals raw damage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The cone will trigger {{cai|E|Jax}} damage reduction... It is also special cased to trigger {{ii|Tear of the Goddess}}.",
+    "The cone does not benefit from {{iis|Spear of Shojin}} damage amp."
+   ]
+  },
+  {
+   "question": "Does Thunderclap's on-hit cone damage apply life steal / on-hit item effects (since the main hit explicitly does not apply life steal, but the cone's status re on-hit items besides those explicitly listed is unclear)?",
+   "options": [
+    "Cone damage never applies on-hit/on-attack item effects except the explicitly whitelisted ones (Jax E, Cheap Shot, Conqueror, Dark Harvest, Electrocute, Aery, Eclipse, World Atlas, Ocean Dragon Soul, Tear of the Goddess)",
+    "Cone damage applies all normal on-hit effects like a standard on-hit rider",
+    "Ambiguous which of the whitelisted procs matter for a damage-fight simulator vs which are excluded (e.g., Spear of Shojin amp explicitly excluded)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "while the cone deals {{tip|area damage|area}} non-{{tip|proc damage|proc}} damage without applying {{tip|spell effects}}",
+    "The cone does not benefit from {{iis|Spear of Shojin}} damage amp."
+   ]
+  },
+  {
+   "question": "Is the 6-second empowered-attack arm window (leveling2/description2) refreshed or reset if Thunderclap is recast before the empowered attack lands, or does recasting simply refresh the timer with no stacking?",
+   "options": [
+    "Recasting Thunderclap before the empowered attack lands simply refreshes the 6s timer, attack remains single-empowered",
+    "Recasting has no additional effect since only one empowered-attack charge can exist at a time (bin has no stacking data)",
+    "Unknown/unspecified by either source"
+   ],
+   "impact": "low",
+   "quotes": [
+    "empowers his next basic attack within 6 seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: assume Granite Shield is up (dummy never damages Malphite), so Thunderclap's passive bonus armor is tripled for the whole fight.",
+   "Open with Ground Slam (E) on cooldown for its high magic damage-to-armor/AP scaling and short 7s cooldown.",
+   "Cast Thunderclap (W) to arm the empowered basic attack, then immediately auto-attack to consume the empowerment (also resets attack timer) and to start the on-hit cone window.",
+   "Cast Seismic Shard (Q) on cooldown for magic damage (its slow/speed-steal is not relevant to the dummy fight).",
+   "Keep auto-attacking throughout to benefit from the 5s on-hit cone splash window after each Thunderclap cast, refreshing Thunderclap on cooldown to re-arm the empowered attack and reset the attack timer again.",
+   "Cast Unstoppable Force (R) once available (100/115/130s cooldown, likely only usable once near the start of a 15s fight if at all) for its large magic burst.",
+   "Continue looping E > W(+auto) > Q on cooldown, weaving in basic attacks between casts, prioritizing whichever ability comes off cooldown first to minimize downtime, subject to mana budget."
+  ],
+  "questions": [
+   "In the damage fight's ~15s window with likely level 16-18 CDR-less base cooldowns, will Malphite realistically ever get to cast R (100-130s CD) at all, or should R be excluded from the rotation entirely?",
+   "Should the rotation assume max mana (or infinite mana) is provided, given Q+W+E costs could exceed a fresh Malphite's mana pool well before 15s elapses?",
+   "Does the simulator model auto-attacks between spell casts at all, or does it only count declared abilities — if autos are excluded, does Thunderclap's active even deal its w_3/w_4 damage in this framework?",
+   "Should the opening sequence prioritize maximizing early single large-cooldown casts (R, E) or maximize total auto-attack uptime with W's empowerment, given W's cooldown (8-10s) is much shorter than the empowered-attack arm window (6s) and cone window (5s)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

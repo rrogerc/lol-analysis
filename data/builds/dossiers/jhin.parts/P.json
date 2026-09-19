@@ -1,0 +1,209 @@
+{
+ "name": "Whisper",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_fourthshot_execute",
+   "meaning": "bonus physical damage on 4th shot based on target's missing health",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "level",
+   "base": [
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.15,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|key=%|15 to 25 for 3|1 to 11}} of the target's {{sti|'''missing''' health}}}}",
+   "bin": [
+    "JhinPassive#FourthShotExecutePercent"
+   ]
+  },
+  {
+   "id": "p_bonus_ad",
+   "meaning": "bonus attack damage from Every Moment Matters, scaling with crit chance and bonus attack speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.04,
+    0.05,
+    0.06,
+    0.07,
+    0.08,
+    0.09,
+    0.1,
+    0.11,
+    0.12,
+    0.14,
+    0.16,
+    0.2,
+    0.24,
+    0.28,
+    0.32,
+    0.36,
+    0.4,
+    0.44
+   ],
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.35
+    },
+    {
+     "stat": "bonusAttackSpeed",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{as|{{pp|key=%|4;5;6;7;8;9;10;11;12;14;16;20;24;28;32;36;40;44|formula = 4% at + 1% per level up to 9, then + 2% up to 11, then + 4%, capped at level 18}}|attack damage}}",
+   "bin": [
+    "JhinPassive#TotalADPercent"
+   ]
+  },
+  {
+   "id": "p_reload_time",
+   "meaning": "time Jhin is unable to attack while reloading",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "reload over {{fd|2.5}} seconds",
+   "bin": [
+    "JhinPassive.ReloadTime"
+   ]
+  },
+  {
+   "id": "p_max_ammo",
+   "meaning": "number of basic attacks before Jhin must reload",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "consume [[ammunition]] within 4 rounds",
+   "bin": [
+    "JhinPassive.MaxAmmo"
+   ]
+  },
+  {
+   "id": "p_ooc_reload_time",
+   "meaning": "time out of combat before Jhin auto-reloads leftover rounds",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "withholding leftover rounds after 10 seconds of being [[out of combat]]",
+   "bin": [
+    "JhinPassive.OutOfCombatTimeBeforeReload"
+   ],
+   "binNote": "Wiki text states 10 seconds; bin OutOfCombatTimeBeforeReload = 8. Disagreement between sources, wiki value recorded here."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Jhin's 4th shot always critically strikes, including against structures.",
+   "quote": "always {{tip|critically strike|critically strikes}}, including against {{tip|turrets|structures}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Jhin cannot declare basic attacks during the reload period.",
+   "quote": "'''Jhin''' is {{tip|lockout|unable}} to declare basic attacks during the reload time.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The out-of-combat reload can be interrupted by attacking or casting an ability, unlike the reload after the 4th shot.",
+   "quote": "The latter reload can be interrupted by declaring an attack or casting an ability.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The missing-health bonus damage from the 4th shot heals Jhin via lifesteal.",
+   "quote": "The {{as|{{sti|'''missing''' health}}}} damage benefits from {{sti|life steal}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The missing-health bonus damage does not apply to structures (so is not relevant against turrets, though it does apply against the champion-classified dummy).",
+   "quote": "The '''bonus''' damage based on the target's missing health does not affect structures.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Jhin's attack speed is fixed and cannot be increased except by leveling up, and attack speed slows do not affect his bonus AD from the passive.",
+   "quote": "'''Jhin's''' {{sti|{{as|attack speed}}}} cannot increase except by {{sti|xp|leveling}} up, and he deals reduced {{tip|critically strike|critical strike damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Attack damage reductions apply before Jhin's passive AD multiplier, making them proportionally stronger against him.",
+   "quote": "Attack damage reductions apply before the multiplier causing them to be stronger against '''Jhin''' than advertised or versus other champions.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "JhinPassive.HasteDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "JhinPassive.FourthShotDamageMult",
+   "reason": "unknown"
+  },
+  {
+   "ref": "JhinPassive.CritReductionPercent",
+   "reason": "unknown"
+  },
+  {
+   "ref": "JhinPassive.BaseAttackSpeed",
+   "reason": "unknown"
+  },
+  {
+   "ref": "JhinPassive.PercentAttackSpeedPerLevel",
+   "reason": "unknown"
+  },
+  {
+   "ref": "JhinPassive.CritMoveSpeedPercentASRatio",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,646 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "DianaPassive",
+    "key": "Characters/Diana/Spells/DianaPassiveAbility/DianaPassive",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      28,
+      24,
+      20,
+      16,
+      12,
+      12
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "APRatio": 0.5,
+     "BuffDuration": 5,
+     "AttackSpeedValue": 0.3,
+     "AttackCount": 3,
+     "MonsterMod": 2.7
+    },
+    "calcs": {
+     "CleaveDamage": {
+      "expr": "byLevelL[20/25/30/35/40/45/55/65/75/85/95/110/125/140/155/170/195/220] + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        55,
+        65,
+        75,
+        85,
+        95,
+        110,
+        125,
+        140,
+        155,
+        170,
+        195,
+        220
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "BonusAS": {
+      "expr": "byLevel(0.15..0.35)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.15,
+        0.16176471,
+        0.17352942,
+        0.18529412,
+        0.19705883,
+        0.20882353,
+        0.22058824,
+        0.23235294,
+        0.24411765,
+        0.25588235,
+        0.26764706,
+        0.27941176,
+        0.29117647,
+        0.30294117,
+        0.31470588,
+        0.32647058,
+        0.3382353,
+        0.35
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "EmpoweredAS": {
+      "expr": "BonusAS * 3",
+      "modifies": "BonusAS",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.45,
+        0.48529413,
+        0.5205883,
+        0.55588236,
+        0.5911765,
+        0.62647059,
+        0.66176472,
+        0.6970588,
+        0.732353,
+        0.767647,
+        0.8029412,
+        0.83823528,
+        0.87352941,
+        0.9088235,
+        0.94411764,
+        0.9794117,
+        1.0147059,
+        1.05
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "DianaQ",
+    "key": "Characters/Diana/Spells/DianaQAbility/DianaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MoonlightDuration": 3,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       105,
+       140,
+       175,
+       210
+      ]
+     },
+     "APRatio": 0.7
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/105/140/175/210] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        105,
+        140,
+        175,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "DianaOrbs",
+    "key": "Characters/Diana/Spells/DianaOrbsAbility/DianaOrbs",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      13.5,
+      12,
+      10.5,
+      9
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ShieldBase": {
+      "axis": "rank",
+      "v": [
+       45,
+       60,
+       75,
+       90,
+       105
+      ]
+     },
+     "OrbDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       32,
+       44,
+       56,
+       68
+      ]
+     },
+     "ShieldAPRatio": 0.3,
+     "ShieldDuration": 5,
+     "OrbAPRatio": 0.18,
+     "ShieldBHPRatio": 0.11
+    },
+    "calcs": {
+     "ShieldValue": {
+      "expr": "ShieldBase=[45/60/75/90/105] + (ShieldAPRatio=0.3)xap + (ShieldBHPRatio=0.11)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        45,
+        60,
+        75,
+        90,
+        105
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "ShieldAPRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.11,
+        "dataValue": "ShieldBHPRatio"
+       }
+      ],
+      "refs": [
+       "ShieldAPRatio",
+       "ShieldBHPRatio",
+       "ShieldBase"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "OrbDamage=[20/32/44/56/68] + (OrbAPRatio=0.18)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        32,
+        44,
+        56,
+        68
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.18,
+        "dataValue": "OrbAPRatio"
+       }
+      ],
+      "refs": [
+       "OrbAPRatio",
+       "OrbDamage"
+      ]
+     },
+     "TotalMaxDamage": {
+      "expr": "TotalDamage * 3",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        96,
+        132,
+        168,
+        204
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.54,
+        "dataValue": "OrbAPRatio"
+       }
+      ],
+      "refs": [
+       "OrbAPRatio",
+       "OrbDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "DianaTeleport",
+    "key": "Characters/Diana/Spells/DianaTeleportAbility/DianaTeleport",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      20,
+      18,
+      16,
+      14
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       70,
+       90,
+       110,
+       130
+      ]
+     },
+     "APRatio": 0.6,
+     "CDResetTime": 0.25
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[50/70/90/110/130] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        70,
+        90,
+        110,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "DianaR",
+    "key": "Characters/Diana/Spells/DianaRAbility/DianaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      90,
+      80
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "Delay": 1,
+     "SlowPotency": {
+      "axis": "rank",
+      "v": [
+       -0.4,
+       -0.5,
+       -0.6
+      ]
+     },
+     "SlowDuration": 2,
+     "SlowTooltip": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60
+      ]
+     },
+     "MultihitAmp": {
+      "axis": "rank",
+      "v": [
+       35,
+       60,
+       85
+      ]
+     }
+    },
+    "calcs": {
+     "RExplosionDamage": {
+      "expr": "Damage=[200/300/400] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     },
+     "RMultiHitAmplification": {
+      "expr": "MultiHitAmp + 0.15xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "MultiHitAmp"
+      ]
+     },
+     "MaxDamage": {
+      "expr": "RMultiHitAmplification * 5",
+      "modifies": "RMultiHitAmplification",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "MultiHitAmp"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value MultiHitAmp"
+    ]
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "DianaQ",
+  "W": "DianaOrbs",
+  "E": "DianaTeleport",
+  "R": "DianaR",
+  "P": "DianaPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 375,
+   "{6216bf7b}": 25,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.09166667
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Diana",
+  "name": "Diana",
+  "partype": "Mana",
+  "passive": "Moonsilver Blade",
+  "spells": [
+   {
+    "id": "DianaQ",
+    "name": "Crescent Strike",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "DianaOrbs",
+    "name": "Pale Cascade",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     13.5,
+     12,
+     10.5,
+     9
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "DianaTeleport",
+    "name": "Lunar Rush",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     20,
+     18,
+     16,
+     14
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "DianaR",
+    "name": "Moonfall",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     90,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Moonsilver Blade": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Passive",
+    "affects": "Self / Enemies"
+   }
+  },
+  "Q": {
+   "Crescent Strike": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Pale Cascade": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Lunar Rush": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Moonfall": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

@@ -1,0 +1,193 @@
+{
+ "name": "Mortal Steel",
+ "cooldown": {
+  "values": [
+   4,
+   4,
+   4,
+   4,
+   4
+  ],
+  "quote": "{{as|{{pp|type='''bonus''' attack speed|4 to 1.48 for 8;4/3|key1=%|0 to 105;1000/9|formula=4*(1-(0.01 per 1.67% '''bonus''' attack speed)). ''This is capped at 67% reduction at 111.1% '''bonus''' attack speed.''}}|attack speed}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.35,
+  "quote": "{{tt|{{as|{{pp|type='''bonus''' attack speed|round=3|0.35;0.33;0.297;0.264;0.231;0.198;0.175|key1=%|0;13.72;36.358;58.996;81.634;104.272;120|formula=0.35-0.035 per 24% '''bonus''' attack speed. ''This is capped at 50% reduction at 120% '''bonus''' attack speed.''}}|attack speed}}|Both thrust and whirlwind cast times}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    25,
+    50,
+    75,
+    100,
+    125
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1
+    }
+   ],
+   "quote": "{{ap|25 to 125}} {{as|(+ 110% AD)}}",
+   "bin": [
+    "YoneQ#QDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Critical Strike Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    25,
+    50,
+    75,
+    100,
+    125
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1,
+     "coefScaling": [
+      {
+       "stat": "critDamage",
+       "per": 1,
+       "coef": 1
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|25 to 125}} {{as|(+ {{as|{{critical damage|{{ccd|Yone|crit_base}}*1.1|110|mod={{ccd|Yone|crit_mod}}}}|critical damage}} AD)|ad}}",
+   "bin": [
+    "YoneQ#TotalDamageCrit"
+   ],
+   "binNote": "TotalDamageCrit = BaseDamage + (ADRatio x critDamage) x ad; the bin does not print a separate coefScaling row for the critDamage multiplier (it's embedded in the calculation as 'critDamage' variable, not a flat data value), so no bin row states the coefScaling coefficient of 1 directly - it is read off the calculation's own multiplication of ADRatio by the critDamage stat."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Gathering Storm stack duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "generates a {{tip|stack}} of ''Gathering Storm'' for 6 seconds, stacking up to 2 times",
+   "bin": [
+    "YoneQ.BuffDuration"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "empowered cast dash/whirlwind knockup duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "knocking up enemies hit in their path for {{fd|0.75}} seconds",
+   "bin": [
+    "YoneQ.Q3KnockupDuration"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "cooldown reset when thrust fails due to disarm",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "the {{sti|cooldown}} of the ability is reset to {{fd|0.1}} seconds",
+   "bin": [],
+   "binNote": "This 0.1s reset-on-disarm value is not present anywhere in the numbers sheet for YoneQ; it appears to be tooltip/description-only text not backed by a named data value in this dump."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Mortal Steel applies on-hit and on-attack effects to the first enemy hit only, not secondary enemies.",
+   "quote": "deals {{as|physical damage}} to enemies hit and applies {{tip|on-hit}} and {{tip|on-attack}} effects to the first enemy hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first target hit takes basic (single-target) damage, while secondary targets take area damage, affecting damage amp/reduction interactions.",
+   "quote": "''Mortal Steel'' applies {{tip|basic damage}} for {{tt|the first (closest) enemy hit|including enemies hit by the dash}} and {{tip|area damage}} for secondary enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Life steal only heals from damage dealt to the first target hit.",
+   "quote": "{{as|{{sti|Life steal}}}} will heal based on the damage dealt to the first target hit.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "All three parts of the ability (thrust, whirlwind, dash) can individually critically strike.",
+   "quote": "All three of the thrust, whirlwind and dash roll for a critical strike on each individual target hit.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Mortal Steel does not benefit from the bonus attack speed granted by Hail of Blades.",
+   "quote": "''Mortal Steel'' will not benefit from the bonus attack speed gained by {{ri|Hail of Blades}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered (Gathering Storm) cast cannot hit the same target twice with both dash and whirlwind.",
+   "quote": "being unable to affect the same target twice",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YoneQ.Width",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YoneQ.Q3MaxDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YoneQ.Q3MinDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YoneQ.Q3DashSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YoneQ.Q3AoESize",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YoneQ.QAttackSpeedCDPercent",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneQ.QAttackSpeedCDMax",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneQ.QAttackSpeedCastReductionPercent",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneQ.QAttackSpeedCastReductionMax",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneQ.QBaseCastTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneQ.Q3KnockupHeight",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

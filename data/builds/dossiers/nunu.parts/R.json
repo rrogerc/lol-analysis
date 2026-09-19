@@ -1,0 +1,186 @@
+{
+ "name": "Absolute Zero",
+ "cooldown": {
+  "values": [
+   110,
+   100,
+   90
+  ],
+  "quote": "{{ap|110 to 90}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Shield Strength",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    65,
+    75,
+    85
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.5
+    },
+    {
+     "stat": "bonusHp",
+     "coef": [
+      0.3,
+      0.4,
+      0.5
+     ]
+    }
+   ],
+   "quote": "{{ap|65 to 85}} {{as|(+ 150% AP)}} {{as|(+ {{ap|30 to 50}}% '''bonus''' health)}}",
+   "bin": [
+    "NunuR#TotalShieldAmount"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Maximum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    625,
+    925,
+    1275
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 3.0
+    }
+   ],
+   "quote": "{{ap|625 to 1275}} {{as|(+ 300% AP)}}",
+   "bin": [
+    "NunuR#MaximumDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "channel duration before automatic recast/explosion",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "'''Nunu''' and '''Willump''' {{tip|channel}} a blizzard for up to 3 seconds",
+   "bin": [
+    "NunuR.ChannelDuration"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "damage scales from 0% to 100% of maximum based on channel time, increasing 1% every 0.03s",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.03,
+   "terms": [],
+   "quote": "Increases the damage by 1% of its maximum damage value every 0.03 seconds.",
+   "bin": [],
+   "binNote": "Not a discrete DataValue in the sheet; derives from ChannelDuration=3 (0.03s x 100 steps = 3s), giving damage = MaximumDamage * (channelTime/3). Bin also carries a separate tooltip-only NunuR#MinDamage = MaximumDamage*0.5 which the wiki text does not corroborate (wiki implies 0% at instant cancel, not 50%)."
+  },
+  {
+   "id": "r_5",
+   "meaning": "recast can occur no earlier than 0.5s into the channel",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "''Absolute Zero'' can be recast after {{fd|0.5}} seconds during the channel",
+   "bin": [],
+   "binNote": "No matching DataValue in the sheet; the bin has no field naming this 0.5s recast-eligibility delay (the queue time row 'None|Initial cast' / '0.3|Recast' also doesn't correspond to this number)."
+  },
+  {
+   "id": "r_6",
+   "meaning": "remaining shield decays over this duration once the channel ends",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "any of the duo's remaining shield will decay over 3 seconds",
+   "bin": [
+    "NunuR.ShieldDecayDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The channel can be recast (or auto-detonates) any time from 0.5s after the initial cast up to the 3s channel end, and the explosion damage scales up with how long the channel lasted, from 0% at cast to 100% at 3s.",
+   "quote": "''Absolute Zero'' can be recast after {{fd|0.5}} seconds during the channel, and does so automatically when the channel ends by any means.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "It is possible to deal zero damage if the channel is canceled immediately after starting.",
+   "quote": "it is possible to deal zero damage with ''Absolute Zero'' if canceled as soon as it's started",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The shield is granted at the start of the channel and its size (and the slow strength) also depends on how long the channel is sustained, ramping over the 3s duration.",
+   "quote": "granting themselves a {{tip|shield}} and {{tip|slow|slowing}} nearby enemies by {{pp|type=channel time|key=%|0;50 to 95 for 11;95|0 to 3|formula=Increases by 4.5% every 0.25 seconds.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Both the initial cast and the manual recast each count as separate ability activations, e.g. for on-cast item/rune effects.",
+   "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and {{ai|Force Pulse|Kassadin}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown does not begin until after the recast/explosion resolves.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NunuR.SlowStartAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuR.MaxSlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuR.SlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuR.MaxShieldDuration",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "NunuR.BaseShieldAmount",
+   "reason": null
+  },
+  {
+   "ref": "NunuR.ShieldBonusHealthPercent",
+   "reason": null
+  },
+  {
+   "ref": "NunuR.BaseDamage",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

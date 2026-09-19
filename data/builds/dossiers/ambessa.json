@@ -1,0 +1,1014 @@
+{
+ "champion": "ambessa",
+ "abilities": {
+  "P": {
+   "name": "Drakehound's Step",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "empowered attack bonus physical damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      15,
+      15,
+      15,
+      15,
+      15,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{as|{{pplevel|5 to 30}}|physical damage}} {{as|(+ 25% '''bonus''' AD)}} {{as|'''bonus''' physical damage}}",
+     "bin": [
+      "AmbessaPassive#Calc_OnHit_Damage_Flat"
+     ],
+     "binNote": "Wiki's {{pplevel}} is a stepped table (5 flat until level 7, 10 until level 13, 15 until level 18, 30 at level 18), while the bin's Calc_OnHit_Damage_Flat is a smooth linear interpolation from 5 to 30 across levels 1-18. Both start at 5 and end at 30 but differ at every level in between; recording the wiki's stated stepped values per its own description."
+    },
+    {
+     "id": "p_2",
+     "meaning": "energy restored on empowered attack",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      55,
+      55,
+      55,
+      55,
+      55,
+      55,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70
+     ],
+     "terms": [],
+     "quote": "restore {{sti|energy|{{as|{{pp|40 to 70|1;7;13}} energy}}}}",
+     "bin": [
+      "AmbessaPassive#Calc_OnHit_Energy_Refund"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "empowered attack bonus attack speed",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "gain {{sti|75 '''bonus''' range}} and {{sti|{{as|50% '''bonus''' attack speed}}}}",
+     "bin": [
+      "AmbessaPassive#Calc_Attack_Speed"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "Medarda Maxim stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "refreshing with subsequent casts and stacking up to 3 times",
+     "bin": [
+      "AmbessaPassive.Attack_Buff_Duration"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "Medarda Maxim maximum stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [
+      "AmbessaPassive.Attack_Buff_Max_Stacks"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks consume one Medarda Maxim stack each to become empowered, dealing bonus damage.",
+     "quote": "Basic attacks consume one {{tip|stack}} each to become empowered.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack has an uncancellable windup, meaning it cannot be cancelled once started, which affects attack timing.",
+     "quote": "empowered to have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stacks are consumed on-hit, so applying on-hit effects without an attack (e.g. Guinsoo's Rageblade) consumes a stack without dealing the bonus damage or restoring energy.",
+     "quote": "Stacks of ''Medarda Maxim'' are consumed {{tip|on-hit}}, so means of applying on-hit effects without attacking (eg. {{ii|Guinsoo's Rageblade}}) will consume them without dealing {{as|'''bonus''' physical damage}} or restoring {{as|energy}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A stack of Medarda Maxim is generated after the lockout of each ability cast, refreshing the 4-second duration and stacking up to 3 times.",
+     "quote": "she generates a {{tip|stack}} of ''Medarda Maxim'' after the ability's respective lockout for 4 seconds, refreshing with subsequent casts and stacking up to 3 times",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AmbessaPassive.Buffer_Dash_Time",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaPassive.Buffer_Dash_Distance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AmbessaPassive.Buffer_Dash_Min_Distance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AmbessaPassive.Buffer_Dash_Forgiveness_Window",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaPassive.Buffer_Dash_W_Forgiveness_Window",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaPassive.Buffer_Dash_Wall_Forgiveness",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaPassive.Attack_Range_Amount",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AmbessaPassive.Attack_Range_Total",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Cunning Sweep / Sundering Slam",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage (Cunning Sweep, inner cone hit)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.3
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.02,
+        0.0225,
+        0.025,
+        0.0275,
+        0.03
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.015
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|40/2 to 120/2}} {{as|(+ 30% '''bonus''' AD)}} {{as|(+ {{ap|4/2 to 6/2}}% {{as|(+ {{fd|1.5}}% per 100 '''bonus''' AD)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "AmbessaQ.Damage_1_Base",
+      "AmbessaQ.Damage_1_BAD_Ratio",
+      "AmbessaQ.Damage_1_Min_Ratio",
+      "AmbessaQ.Damage_1_Percent",
+      "AmbessaQ#Calc_Damage_1_Percent_Max"
+     ],
+     "binNote": "The wiki's non-doubled (inner-hit) numbers are exactly half of the outer-hit/'Increased' row (Damage_1_Base=40..120, BAD_Ratio=0.6, Percent=0.04..0.06, and the 3%-per-100-AD scaling in Calc_Damage_1_Percent_Max's 0.0003 AD coefficient), consistent with Damage_1_Min_Ratio=0.5 halving that row. The bin has no separate data row storing the halved 20-60/0.3/0.0075 numbers directly; they are derived by applying Min_Ratio to Calc_Damage_1_Max/Calc_Damage_1_Percent_Max."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Increased Physical Damage (Cunning Sweep, outer edge)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.03
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 60% '''bonus''' AD)}} {{as|(+ {{ap|4 to 6}}% {{as|(+ 3% per 100 '''bonus''' AD)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "AmbessaQ#Calc_Damage_1_Max",
+      "AmbessaQ#Calc_Damage_1_Percent_Max"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Physical Damage (Sundering Slam, non-first target)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      37.5,
+      50,
+      62.5,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.45
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.02,
+        0.0225,
+        0.025,
+        0.0275,
+        0.03
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.02
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|50/2 to 150/2}} {{as|(+ 45% '''bonus''' AD)}} {{as|(+ {{ap|4/2 to 6/2}}% {{as|(+ 2% per 100 '''bonus''' AD)}} of the target's '''maximum''' health)}}",
+     "bin": [
+      "AmbessaQ.Damage_2_Base",
+      "AmbessaQ.Damage_2_BAD_Ratio",
+      "AmbessaQ.Damage_2_Min_Ratio",
+      "AmbessaQ.Damage_2_Percent",
+      "AmbessaQ#Calc_Damage_2_Percent_Max"
+     ],
+     "binNote": "The wiki's non-doubled (non-first-hit) numbers are exactly half of the doubled/'first hit' row (Damage_2_Base=50..150, BAD_Ratio=0.9, Percent=0.04..0.06, and the 4%-per-100-AD scaling in Calc_Damage_2_Percent_Max's 0.0004 AD coefficient), consistent with Damage_2_Min_Ratio=0.5 halving that row. The bin has no separate data row storing the halved 25-75/0.45/0.01 numbers directly; they are derived by applying Min_Ratio to Calc_Damage_2_Max/Calc_Damage_2_Percent_Max."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Increased Physical Damage (Sundering Slam, first enemy hit)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.04
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 90% '''bonus''' AD)}} {{as|(+ {{ap|4 to 6}}% {{as|(+ 4% per 100 '''bonus''' AD)}} of the target's '''maximum''' health)}}",
+     "bin": [
+      "AmbessaQ#Calc_Damage_2_Max",
+      "AmbessaQ#Calc_Damage_2_Percent_Max"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "window after Cunning Sweep to cast Sundering Slam",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Ambessa''' can cast ''{{ai|Sundering Slam|Ambessa}}'' within the next 4 seconds",
+     "bin": [
+      "AmbessaQ.Swap_Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ambessa enters a 0.225-second lockout before the slash/slam lands, and the ability's damage is dealt only when the lockout ends.",
+     "quote": "enters a {{fd|0.225}}-second {{tip|lockout}}, at the end of which she slashes with her twin drakehounds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cunning Sweep deals doubled damage to enemies caught by the outer edge of the cone.",
+     "quote": "The damage is {{ccs|doubled|physical}} against enemies hit by the outer edge.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sundering Slam deals doubled damage to the first enemy hit by the line.",
+     "quote": "The damage is {{ccs|doubled|physical}} against the first enemy hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Landing Cunning Sweep on at least one enemy grants a 4-second window to cast Sundering Slam as a follow-up.",
+     "quote": "If this hits at least one enemy, '''Ambessa''' can cast ''{{ai|Sundering Slam|Ambessa}}'' within the next 4 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against monsters, the ability deals a flat 75 bonus physical damage and its health-ratio damage is capped at a level-scaling value.",
+     "quote": "''Cunning Sweep'' deals {{as|75 '''bonus''' physical damage}} and the damage based on their health ratio is capped at {{pplevel|100 to 300}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AmbessaQ.Swap_Static_Cooldown",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AmbessaQ#Calc_Damage_Monster_Flat_Bonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaQ#Calc_Damage_Monster_Percent_Cap",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Repudiation",
+   "cooldown": {
+    "values": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "quote": "{{ap|18 to 14}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "AmbessaW.BaseDamage",
+      "AmbessaW.DamageADRatio",
+      "AmbessaW#Calc_Damage_Low"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Increased Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      75,
+      112.5,
+      150,
+      187.5,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|50*1.5 to 150*1.5}} {{as|(+ {{ap|50*1.5}}% '''bonus''' AD)}}",
+     "bin": [
+      "AmbessaW.BaseDamage",
+      "AmbessaW.DamageADRatio",
+      "AmbessaW.HighDamageMultiplier",
+      "AmbessaW#Calc_Damage_High"
+     ],
+     "binNote": "50, 0.5 and 1.5 are multiplied together (75=50*1.5, 0.75=0.5*1.5) to reach the wiki's stated numbers, which are not stored as their own data value in the sheet."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Shield amount",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      50,
+      66,
+      82,
+      98,
+      114,
+      129,
+      145,
+      161,
+      177,
+      193,
+      209,
+      225,
+      241,
+      256,
+      272,
+      288,
+      304,
+      320
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{pplevel|50 to 320}} {{as|(+ 150% '''bonus''' AD)}}",
+     "bin": [
+      "AmbessaW#Calc_Shield"
+     ],
+     "binNote": "Sheet only states byLevel(50..320) endpoints, not the per-level breakpoints; intermediate values above are a linear interpolation and may not match the true (possibly non-linear) per-level curve."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Total bracing duration before the smash lands",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "for up to {{fd|0.5}} seconds",
+     "bin": [
+      "AmbessaW.Buff_Duration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Lockout portion of the brace during which Ambessa cannot act",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.225,
+     "terms": [],
+     "quote": "the first {{fd|0.225}} seconds she is {{tip|lockout|unable to act}}",
+     "bin": [
+      "AmbessaW.Dash_Delay"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "for {{fd|1.5}} seconds",
+     "bin": [
+      "AmbessaW.Shield_Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The smash's damage is increased by 50% only if the on-cast shield mitigates damage from a champion, large monster, or turret before the smash lands.",
+     "quote": "If the shield mitigates any amount of damage taken from {{tip|champions}}, large {{tip|monsters}}, or {{tip|turret|turrets}} before '''Ambessa''' smashes the ground, ''Repudiation's'' damage is increased by 50%.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shield is granted at the moment of cast (before the smash resolves), so it can absorb damage during the brace window.",
+     "quote": "'''Ambessa''' {{tip|shield|shields}} herself at the time of cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield buff and shield health are not actually displayed/applied until a short, inconsistent delay after cast, which is a bug.",
+     "quote": "''Repudiation's'' shield buff and shield health on the health bar UI are not granted to and displayed on the caster on-cast, but rather only after a very short, inconsistent delay from the time of cast.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Ambessa is unable to act during the first 0.225 seconds of the brace, and only certain casts are allowed in the remaining 0.275 seconds.",
+     "quote": "Other abilities may be cast in the last {{fd|0.275}} seconds of the brace after the lockout and are otherwise disabled in the first {{fd|0.225}} seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability deals area damage to nearby enemies when the ground smash occurs, after the full brace completes (or at the end of a buffered dash).",
+     "quote": "she smashes the ground beneath her, dealing {{as|physical damage}} to nearby enemies",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AmbessaW.Dash_Delay",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Lacerate",
+   "cooldown": {
+    "values": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "quote": "{{ap|13 to 9}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage per spin",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "AmbessaE#Calc_Damage_Flat"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "lockout duration before the dash-triggered second spin, and dash-buffer window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.225,
+     "terms": [],
+     "quote": "{{fd|0.225}}-second {{tip|lockout}}",
+     "bin": [],
+     "binNote": "AmbessaE has no data value matching 0.225; the E slot's own rows list no lockout/dash-delay field, so this duration cannot be tied to a named bin row."
+    },
+    {
+     "id": "e_4",
+     "meaning": "window after lockout ends in which the dash can still be buffered/initiated to trigger the second spin",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.275,
+     "terms": [],
+     "quote": "buffered during the lockout or initiated within {{fd|0.275}} seconds of the lockout ending",
+     "bin": [],
+     "binNote": "No matching data value in AmbessaE's rows; closest-named field 'Buffer_Dash_Forgiveness_Window' (0.275) exists only under AmbessaPassive, not AmbessaE."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ambessa enters a 0.225-second lockout and spins to deal damage to nearby enemies and slow them.",
+     "quote": "'''Ambessa''' enters a {{fd|0.225}}-second {{tip|lockout}} and spins her twin drakehounds around her to deal {{as|physical damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the dash follows the spin, Ambessa spins a second time at the end of the dash, applying the same damage again at no additional cost (no extra cooldown/cost).",
+     "quote": "she will spin a second time at the end of the dash to apply the same effects at no additional cost",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second spin occurs at wherever Ambessa is at the end of the dash, and happens even if the dash is interrupted.",
+     "quote": "'''Ambessa''' will cast the second spin of ''Lacerate'' from wherever she is at the end of the dash.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AmbessaE.Slow_Duration",
+     "reason": "utility"
+    },
+    {
+     "ref": "AmbessaE.Slow_Amount",
+     "reason": "utility"
+    },
+    {
+     "ref": "AmbessaE.ADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Public Execution",
+   "cooldown": {
+    "values": [
+     130,
+     115,
+     100
+    ],
+    "quote": "{{ap|130 to 100}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.7,
+    "quote": "{{fd|0.7}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Armor Penetration",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.2,
+      0.3
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 30}}%",
+     "bin": [
+      "AmbessaR.Armor_Penetration"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Healing Percentage",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.15,
+      0.175,
+      0.2
+     ],
+     "terms": [
+      {
+       "stat": "critDamage",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|15 to 20}}% {{as|(+ 50% life steal)}}",
+     "bin": [
+      "AmbessaR#Calc_Omnivamp"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 80% '''bonus''' AD)}}",
+     "bin": [
+      "AmbessaR#Calc_Damage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ambessa heals herself for a percentage of the post-mitigation damage she deals to enemies with her active abilities.",
+     "quote": "'''Ambessa''' gains {{sti|{{as|armor penetration}}}} and {{tip|heals}} herself for a percentage of the {{tt|post-mitigation damage|Damage calculated after modifiers}} she deals to enemies with her active abilities.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The healing effectiveness is reduced to 25% of its normal value against minions and monsters (not relevant against a champion-type dummy target).",
+     "quote": "The healing effectiveness is reduced to 25% against {{tip|minions}} and {{tip|monsters}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The armor penetration passive is a persistent self-buff, not tied to casting R, and applies to all of Ambessa's damage.",
+     "quote": "{{sbc|Passive:}} '''Ambessa''' gains {{sti|{{as|armor penetration}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage and stun only apply if Ambessa successfully seizes and suppresses the target; if suppression is not applied or is removed early, damage and stun fail to apply.",
+     "quote": "She will be unable to apply the damage and stun in this case since the suppression was not applied in the first place.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage lands after the target is picked up and crashed back down, following the suppression duration, not immediately on cast.",
+     "quote": "'''Ambessa''' picks them up off the ground before crashing them back down, afterwards dealing {{as|physical damage}} and {{tip|stun|stunning}} them for {{fd|0.4}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ambessa is unable to act during the cast time and while the target is suppressed.",
+     "quote": "'''''Ambessa''' is {{tip|displacement immune}} and {{tip|lockout|unable to act}} during the cast time and while the target is suppressed.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AmbessaR.Suppress_Duration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaR.Stun_Duration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaR.Omnivamp_MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AmbessaR.Omnivamp_MonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Cunning Sweep/Sundering Slam, Repudiation's smash, Lacerate's spin, and Public Execution's damage each land on a short fixed delay after cast (lockout end / cast time end), then go on cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Medarda Maxim stacks arm Ambessa's next basic attack to deal bonus physical on-hit damage, gain range/attack speed, and restore energy; consumed on-hit."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Medarda Maxim: casting any ability grants a stack (up to 3) lasting 4s, refreshing on subsequent casts."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Each empowered basic attack deals extra physical damage (level-scaled + 25% bonus AD) and grants 50% bonus attack speed for that swing."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q: Cunning Sweep opens a 4s window to cast the separately-timed Sundering Slam. E: Lacerate spins once on cast and a second time (same damage, no extra cost) if Drakehound's Step dash is triggered afterward."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's slash/slam doubles damage against the outer-edge (Q1) or first-hit (Q2) target vs. other hits; W's smash deals 50% more damage only if its on-cast shield mitigated champion/large-monster/turret damage before the smash lands."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Whether the single stationary dummy counts as being struck at Cunning Sweep's outer cone edge / as Sundering Slam's first hit must be assumed, since both determine which of two damage values applies."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q, W, and E each cost 70 energy; no energy regen rate is given in the sources, so sustaining a full-ability rotation across 15s requires an assumption."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W grants a 1.5s self-shield on cast; R's passive heals Ambessa for a % of post-mitigation damage she deals. Neither changes the dummy's health/damage-taken, and R's heal specifically triggers off Ambessa's own outgoing damage rather than incoming damage, so it does not aid her in a survival fight either."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Public Execution has a 0.7s cast time during which Ambessa is locked out (unable to act) before the strike/blink resolves."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic (Medarda Maxim's stacking empowered attacks, Q's two-part Cunning Sweep/Sundering Slam combo with edge/first-hit doubling, E's dash-triggered free second spin, W's conditional shield-based damage amp, R's channelled single-target burst with self-heal/armor pen) maps onto existing closed-list primitives; nothing requires logic the list cannot express."
+ },
+ "unsettled": [
+  {
+   "question": "Is Cunning Sweep / Sundering Slam's doubled-damage hit (outer edge / first target) a discrete either/or value, or a continuous interpolation across the cone/line using the unresolved bin calculation, and against a single stationary dummy which value actually applies?",
+   "options": [
+    "Binary: the dummy either counts fully as the 'outer edge'/'first hit' target (doubled value) or fully as an inner/non-first hit (halved value), matching the wiki's discrete description",
+    "Continuous: damage interpolates between the Min_Ratio (0.5x) and full value based on exact hit position via the unresolved {f3cbe7b2} calculation, which is not resolved in the sheet"
+   ],
+   "impact": "high",
+   "quotes": [
+    "AmbessaQ#{a7907b77} = Calc_Damage_1_Max * <{f3cbe7b2}>",
+    "! unresolved calculation part {f3cbe7b2}",
+    "The damage is {{ccs|doubled|physical}} against enemies hit by the outer edge."
+   ]
+  },
+  {
+   "question": "Does the stationary target dummy resist Public Execution's suppression (as CC-immune training dummies typically do), which per the wiki notes would prevent the attach, damage, and stun from ever applying even though Ambessa still blinks to it?",
+   "options": [
+    "Dummy is treated as a normal enemy champion (not CC-immune), so R's suppression, damage, and stun apply normally",
+    "Dummy is CC-immune, so Ambessa blinks to it but the suppression/attach fails and R's damage never lands"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target resists the suppression by being {{tip|cc-immune|immune to crowd control}}, {{tip|displacement immune}}, or having a {{tip|spell shield}}, '''Ambessa''' will not attach them to herself.",
+    "She will be unable to apply the damage and stun in this case since the suppression was not applied in the first place."
+   ]
+  },
+  {
+   "question": "What energy regeneration rate should be assumed for sustaining Q/W/E (70 energy each) across the 15s damage fight, since neither source states Ambessa's energy regen?",
+   "options": [
+    "Assume base champion energy regen is high enough to allow near-continuous casting of all three basic abilities on cooldown",
+    "Energy is a genuine bottleneck, forcing the rotation to skip some casts or attacks to stay within budget"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Ensure a Medarda Maxim stack is available at the start (e.g. from a pre-fight ability cast) so the opening auto-attack can be empowered.",
+   "Open with Public Execution (R) for its large upfront burst and to apply its passive armor penetration for the rest of the fight (only usable once given its 100-130s cooldown).",
+   "Immediately cast Cunning Sweep (Q1), then within the 4s window follow up with Sundering Slam (Q2), positioning both hits for their doubled-damage (outer edge / first-hit) value against the dummy.",
+   "Cast Repudiation (W) for its base smash damage (its 50% conditional bonus will not trigger since the stationary dummy never deals mitigated damage to the shield).",
+   "Cast Lacerate (E) and buffer Drakehound's Step immediately after so the dash triggers a second free spin, doubling E's effective damage per use.",
+   "Weave in empowered basic attacks whenever a Medarda Maxim stack is available (generated after each ability's lockout), prioritizing them over unempowered swings.",
+   "Repeat Q, W, E on cooldown for the remainder of the 15s, continuing to buffer Drakehound's Step after each lockout to keep gaining the E double-spin and stay in melee/attack range without losing tempo.",
+   "Fill any remaining time between ability cooldowns with plain basic attacks."
+  ],
+  "questions": [
+   "Should R be cast first to front-load burst and armor pen, or held until after Q's combo to maximize total damage output over the 15s window?",
+   "Does buffering Drakehound's Step after every ability cost any effective time/tempo in a dummy fight, or is it free as the wiki implies?",
+   "Is the target dummy guaranteed to be hit by Sundering Slam as the 'first enemy' (since it's the only target), or could engine mechanics still classify a single target as a non-first hit?",
+   "Should the rotation assume energy is unconstrained, or does a realistic energy regen value force cutting attacks/casts, changing optimal ability ordering?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

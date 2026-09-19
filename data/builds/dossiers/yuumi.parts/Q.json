@@ -1,0 +1,287 @@
+{
+ "name": "Prowling Projectile / Prowling Projectile 2",
+ "cooldown": {
+  "values": [
+   6.5,
+   6.5,
+   6.5,
+   6.5,
+   6.5,
+   6.5
+  ],
+  "quote": "{{fd|6.5}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70,
+   75
+  ],
+  "quote": "{{ap|50 to 75 6}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    95,
+    130,
+    165,
+    200,
+    235
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|60 to 235 6}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "YuumiQ#TotalMissileDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Increased Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    135,
+    190,
+    245,
+    300,
+    355
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|80 to 355 6}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "YuumiQ#TotalMissileDamageEmpowered"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Enhanced Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    50,
+    53,
+    56,
+    59,
+    62,
+    65
+   ],
+   "terms": [],
+   "quote": "{{ap|50 to 65 6}}%",
+   "bin": [
+    "YuumiQ.EmpoweredSlowAmount"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Minimum Bonus Magic Damage On-Hit",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    10,
+    12,
+    14,
+    16,
+    18,
+    20
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|10 to 20 6}} {{as|(+ 5% AP)}}",
+   "bin": [
+    "YuumiQ#OnHitDamageCalc"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Maximum Bonus Magic Damage On-Hit",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    17.5,
+    21,
+    24.5,
+    28,
+    31.5,
+    35
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0875
+    }
+   ],
+   "quote": "{{ap|10*1.75 to 20*1.75 6}} {{as|(+ {{ap|5*1.75}}% AP)}}",
+   "bin": [],
+   "binNote": "The wiki's maximum is 1.75x the minimum (OnHitDamageCalc scaled by AllyCritChanceMaxAmp=0.75 at max Anchor's crit chance); no separate bin row carries this exact number."
+  },
+  {
+   "id": "q_6",
+   "meaning": "Best Friend bonus on-hit damage buff duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "grants her ''Best Friend'' {{as|'''bonus''' magic damage}} {{tip|on-hit}} for 5 seconds",
+   "bin": [
+    "YuumiQ.BuffDuration"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "base slow amount (non-empowered, non-Best-Friend)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 20,
+   "terms": [],
+   "quote": "slowed}} by 20% for 1 second",
+   "bin": [
+    "YuumiQ.SlowAmount"
+   ]
+  },
+  {
+   "id": "q_7b",
+   "meaning": "base slow duration (non-empowered, non-Best-Friend)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "slowed}} by 20% for 1 second",
+   "bin": [
+    "YuumiQ.SlowDuration"
+   ]
+  },
+  {
+   "id": "q_8",
+   "meaning": "channel/acceleration timing to reach empowered state",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.35,
+   "terms": [],
+   "quote": "'''Yuumi''' {{tip|channels}} for up to {{fd|1.35}} seconds to steer the missile at a slower speed. After being in flight for the same duration, the missile accelerates in its current direction for {{fd|0.5}} seconds",
+   "bin": [
+    "YuumiQ.TimeToAfterburners"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Fires a missile in the target direction that deals magic damage to the first enemy hit.",
+   "quote": "fires an errant missile in the target direction that deals {{as|magic damage}} to the first enemy hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While attached to an ally, Yuumi channels to steer the missile, after which it accelerates and deals increased damage against champions.",
+   "quote": "'''Yuumi''' {{tip|channels}} briefly to steer the missile, after which it accelerates to deal increased damage and apply a stronger slow to champions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "With Feline Friendship (Best Friend) active, the ability always applies its enhanced slow and hitting a champion grants bonus on-hit magic damage for 5 seconds.",
+   "quote": "Always applies the stronger {{tip|slow}} and grants her ''Best Friend'' bonus on-hit damage for a few seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Best Friend bonus on-hit damage is increased by Anchor's critical strike chance, up to a maximum amplification.",
+   "quote": "increased by {{pp|0 to 75 for 11|0 to 100|key=%|key1=%|type=''Anchor's'' critical strike chance|color=critical strike chance}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts on-cast when unattached, starts post-effect when attached, and starts immediately when detaching.",
+   "quote": "Starts on-cast when unattached, starts post-effect when attached, starts immediately when detaching",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability can be buffered 0.5 seconds before it comes off cooldown.",
+   "quote": "''Prowling Projectile'' can be buffered {{fd|0.5}} seconds before it comes off cooldown.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The missile can be blocked by spell shields.",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YuumiQ.MissileLifetime",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiQ.StartingSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiQ.AfterburnerSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiQ.InitialTimeDelay",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiQ.MissileStartingOffset",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiQ.EmpoweredSlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "YuumiQ.EmpoweredMissileDamage",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "YuumiQ.OnHitBase",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "YuumiQ.AllyCritChanceMaxAmp",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "YuumiQ.APRatio",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "YuumiQ.EmpoweredAPRatio",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

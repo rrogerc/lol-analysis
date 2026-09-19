@@ -1,0 +1,148 @@
+{
+ "name": "Decimate",
+ "cooldown": {
+  "values": [
+   9,
+   8,
+   7,
+   6,
+   5
+  ],
+  "quote": "{{ap|9 to 5}}"
+ },
+ "cost": {
+  "values": [
+   25,
+   30,
+   35,
+   40,
+   45
+  ],
+  "quote": "{{ap|25 to 45}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none",
+  "binNote": "The bin lists castTime: 0.2344 for DariusCleave, but the wiki states cast time = none; the wind-up (0.75s, ghosted) is a separate, interruptible effect before the swing, not a cast-time delay. Reporting the wiki's value as instructed."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage (Blade)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    50,
+    80,
+    110,
+    140,
+    170
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      1.0,
+      1.1,
+      1.2,
+      1.3,
+      1.4
+     ]
+    }
+   ],
+   "quote": "{{ap|50 to 170}} {{as|(+ {{ap|100 to 140}}% AD)}}",
+   "bin": [
+    "DariusCleave.BaseDamage",
+    "DariusCleave.TotalADRatio",
+    "DariusCleave#BladeDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Reduced Damage (Handle)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    17.5,
+    28,
+    38.5,
+    49,
+    59.5
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.35,
+      0.385,
+      0.42,
+      0.455,
+      0.49
+     ]
+    }
+   ],
+   "quote": "{{ap|50*0.35 to 170*0.35}} {{as|(+ {{ap|100*0.35 to 140*0.35}}% AD)}}",
+   "bin": [
+    "DariusCleave#HandleDamage"
+   ],
+   "binNote": "HandleDamage = BladeDamage * 0.35 matches the wiki's 35% figure; DariusCleave.InnerCircleDamagePercent = 35 is the same 35% value stored as a separate data row (percent form vs. the *0.35 multiplier used in the calculation) and is not itself read by the BladeDamage/HandleDamage calc chain, so it is not cited here as a source of these specific numbers."
+  },
+  {
+   "id": "q_3",
+   "meaning": "wind-up duration before the axe swings",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{fd|0.75}} seconds",
+   "bin": [],
+   "binNote": "No DariusCleave data row corresponds to the 0.75s wind-up; the bin's castTime (0.2344) is a distinct value the wiki reports as cast time = none, so it is not used here."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Cooldown starts only after the wind-up/swing resolves.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "There is effectively no cast time delay before the wind-up begins (cast time is none, the 0.75s wind-up is separate and can be interrupted, canceling the ability).",
+   "quote": "cast time    = none",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemies hit by the inner radius (handle) take reduced (35%) damage and do not gain a Hemorrhage stack.",
+   "quote": "Enemies within the inner radius take 35% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Hitting a champion with the blade applies a Hemorrhage stack.",
+   "quote": "he applies a {{ai|Hemorrhage|Darius}} stack",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Darius cannot declare basic attacks during the wind-up.",
+   "quote": "is unable to declare basic attacks or cast {{ai|Apprehend|Darius}} or {{ai|Noxian Guillotine|Darius}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "DariusCleave.MissingHealthHeal",
+   "reason": "defensive"
+  },
+  {
+   "ref": "DariusCleave.MissingHealPercent",
+   "reason": "defensive"
+  },
+  {
+   "ref": "DariusCleave.InnerCircleDamagePercent",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

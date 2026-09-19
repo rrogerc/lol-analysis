@@ -1,0 +1,189 @@
+{
+ "name": "Wind Becomes Lightning",
+ "cooldown": {
+  "values": [
+   12,
+   11,
+   10,
+   9,
+   8
+  ],
+  "quote": "{{ap|12 to 8}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   60,
+   60,
+   60,
+   60
+  ],
+  "quote": "60",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}",
+  "binNote": "Wiki lists cast time as 0.5, but the bin's castTime field is 0.6; reporting the wiki's stated value as required, with this discrepancy noted."
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Physical Damage per Slash",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    7.5,
+    10,
+    12.5,
+    15,
+    17.5
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.075
+    }
+   ],
+   "quote": "{{ap|30/4 to 70/4}} {{as|(+ {{ap|30/4}}% AD)}}",
+   "bin": [
+    "XinZhaoW.SlashBaseDamage",
+    "XinZhaoW#SlashDamage"
+   ],
+   "binNote": "Bin's SlashBaseDamage [30/40/50/60/70] and SlashDamage (base + 0.3xad) are the TOTAL across all 4 slashes; per-slash values quoted here are that total divided by 4 (per-slash AD ratio 0.3/4=0.075), matching the wiki's per-slash row."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Thrust Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    50,
+    85,
+    120,
+    155,
+    190
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.9
+    },
+    {
+     "stat": "ap",
+     "coef": 0.65
+    }
+   ],
+   "quote": "{{ap|50 to 190}} {{as|(+ 90% AD)}} {{as|(+ 65% AP)}}",
+   "bin": [
+    "XinZhaoW#ThrustDamage"
+   ],
+   "binNote": "The base values [50/85/120/155/190] match the named ThrustBaseDamage data value inside the ThrustDamage calculation. The 0.9 AD and 0.65 AP coefficients appear only as inline literals within the XinZhaoW#ThrustDamage formula text (\"+ 0.9xad + 0.65xap\") and are not exposed as separate named DataValues in the sheet, so no distinct bin row can be cited for them beyond the calculation itself."
+  },
+  {
+   "id": "w_5",
+   "meaning": "Thrust damage amplification from critical strike chance",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.333,
+   "terms": [],
+   "quote": "{{pp|key=%|key1=%|type=critical strike chance|0 to 33.3 for 11|0 to 100|formula=0.33 * critical strike chance}}",
+   "bin": [
+    "XinZhaoW.CritChanceAmp"
+   ],
+   "binNote": "Bin value is 0.333 (33.3%); wiki's formula multiplies the thrust's total damage by (1 + 0.333*critChance)."
+  },
+  {
+   "id": "w_6",
+   "meaning": "Xin Zhao heals for a percentage of the ability's damage times his life steal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.33333,
+   "terms": [],
+   "quote": "''Wind Becomes Lightning's'' damage {{tip|healing|heals}} '''Xin Zhao''' for {{fd|33.{{recurring|3}}}}% of his {{as|{{sti|life steal}}}}",
+   "bin": [],
+   "binNote": "No matching data value in the provided W bin rows; the life-steal-based heal formula is not present in this sheet excerpt."
+  },
+  {
+   "id": "w_7",
+   "meaning": "Interval between successive slash hits",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [],
+   "quote": "applied every 0.05 seconds thereafter",
+   "bin": [
+    "XinZhaoW.DelayTime"
+   ]
+  },
+  {
+   "id": "w_8",
+   "meaning": "Number of slash hits",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "4 slashes",
+   "bin": [
+    "XinZhaoW.HitNum"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Each of the 4 slashes is a separate damage instance, causing on-hit/on-damage effects to trigger multiple times.",
+   "quote": "Each of ''Wind Becomes Lightning's'' slashes are applied in a separate damage instance from each other.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first slash happens instantly on cast, and the other 3 slashes follow every 0.05s during the first 0.15s of the cast time.",
+   "quote": "First slash happens on-cast instantly, while the remaining 3 are applied every 0.05 seconds thereafter",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The thrust fires at the end of the cast time from Xin Zhao's position at that moment.",
+   "quote": "The thrust will occur from wherever '''Xin Zhao''' is at the end of the cast time.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks both the slashes and the thrust; if it blocks the first (or sometimes second) slash it blocks the rest of the ability including the thrust.",
+   "quote": "If the spell shield blocks the first, or {{tt|sometimes|inconsistent}} the second slash, it will block the rest of the ability, including the thrust.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The thrust's damage is amplified by Xin Zhao's critical strike chance.",
+   "quote": "increased by {{as|{{pp|key=%|key1=%|type=critical strike chance|0 to 33.3 for 11|0 to 100|formula=0.33 * critical strike chance}}|critical chance}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Xin Zhao is healed for a portion of the ability's damage based on his life steal, using the older life-steal-based healing method rather than applying life steal directly, causing Spirit Visage to amplify it twice.",
+   "quote": "Because ''Wind Becomes Lightning'' uses an older type of 'healing based on life steal' and not ''{{tip|applies life steal}}'', {{ii|Spirit Visage}} will amplify the life gain twice",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "XinZhaoW.MarkDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "XinZhaoW.BaseSlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "XinZhaoW#MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "XinZhaoW#TotalSlowDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

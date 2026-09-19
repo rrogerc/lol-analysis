@@ -1,0 +1,236 @@
+{
+ "name": "Jack in the Box",
+ "cooldown": {
+  "values": [
+   15,
+   15,
+   15,
+   15,
+   15
+  ],
+  "quote": "15"
+ },
+ "cost": {
+  "values": [
+   70,
+   65,
+   60,
+   55,
+   50
+  ],
+  "quote": "{{ap|70 to 50}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Fear Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.5,
+    0.75,
+    1,
+    1.25,
+    1.5
+   ],
+   "terms": [],
+   "quote": "{{ap|0.5 to 1.5}} seconds",
+   "bin": [
+    "JackInTheBox.FearDuration"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Root Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.5,
+    0.75,
+    1,
+    1,
+    1
+   ],
+   "terms": [],
+   "quote": "{{ap|0.5|0.75|1|1|1}} seconds",
+   "bin": [],
+   "binNote": "No bin data value carries this root-duration schedule; it is not present in the sheet."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Slow Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.8,
+    1.05,
+    1.3,
+    1.55,
+    1.8
+   ],
+   "terms": [],
+   "quote": "{{ap|0.5+0.3 to 1.5+0.3}} seconds",
+   "bin": [],
+   "binNote": "Derived from FearDuration + 0.3s per the wiki description; no dedicated bin row exists."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Magic Damage (AoE tick)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    10,
+    15,
+    20,
+    25,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.12
+    }
+   ],
+   "quote": "{{ap|10 to 30}} {{as|(+ 12% AP)}}",
+   "bin": [
+    "JackInTheBox#AoEDamage",
+    "JackInTheBox.AoEBaseDamage",
+    "JackInTheBox.WAoEAPRatio"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Increased Damage (single-target tick)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    40,
+    55,
+    70,
+    85
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.18
+    }
+   ],
+   "quote": "{{ap|25 to 85}} {{as|(+ 18% AP)}}",
+   "bin": [
+    "JackInTheBox#STDamage",
+    "JackInTheBox.STBaseDamage",
+    "JackInTheBox.WSingleTargetAPRatio"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Bonus Monster Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    35,
+    50,
+    65,
+    80
+   ],
+   "terms": [],
+   "quote": "{{ap|20 to 80}}",
+   "bin": [
+    "JackInTheBox.MonsterBonusDamage"
+   ]
+  },
+  {
+   "id": "w_9",
+   "meaning": "Box lifetime before it springs (stealthed duration)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 40,
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1
+    }
+   ],
+   "quote": "lasting for up to 40 {{as|(+ 10% AP)}} seconds",
+   "bin": [
+    "JackInTheBox#TrapDuration",
+    "JackInTheBox.BoxDuration"
+   ]
+  },
+  {
+   "id": "w_10",
+   "meaning": "Duration the sprung box remains firing",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "the ''box'' will remain for 5 seconds",
+   "bin": [],
+   "binNote": "No bin data value equals this post-spring active duration; it appears only in the wiki description text."
+  },
+  {
+   "id": "w_11",
+   "meaning": "Interval between the sprung box's automatic attacks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "fire at nearby {{tip|sight|visible}} enemies every {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "No bin data value equals this attack interval; stated only in the wiki description text."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "If the sprung box attacks only one target, it deals increased damage (the single-target tick value instead of the AoE value).",
+   "quote": "If the ''box'' attacks only one target, it deals increased damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Boxes deal bonus magic damage to monsters and 50% reduced damage to structures (dummy in a champion fight is unaffected by either modifier).",
+   "quote": "''Boxes'' deal {{as|'''bonus''' magic damage}} to {{tip|monsters}} and 50% reduced damage to {{tip|turrets|structures}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The box is invulnerable and untargetable to enemies while stealthed, becoming vulnerable only once revealed.",
+   "quote": "The ''box'' is {{tip|invulnerable}} and {{tip|untargetable}} to enemies while stealthed.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Once sprung, the box automatically fires at nearby visible enemies every 0.5 seconds, each attack being a separate magic damage instance.",
+   "quote": "it will automatically fire at nearby {{tip|sight|visible}} enemies every {{fd|0.5}} seconds, dealing {{as|magic damage}} with each attack",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "JackInTheBox.MinionFearDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "JackInTheBox.MaxTraps",
+   "reason": "utility"
+  },
+  {
+   "ref": "JackInTheBox.ArmTime",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

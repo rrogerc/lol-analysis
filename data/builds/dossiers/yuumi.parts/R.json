@@ -1,0 +1,256 @@
+{
+ "name": "Final Chapter",
+ "cooldown": {
+  "values": [
+   120,
+   110,
+   100
+  ],
+  "quote": "{{ap|120 to 100}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Heal per Hit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    30,
+    50,
+    70
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.12
+    }
+   ],
+   "quote": "{{ap|30 to 70}} {{as|(+ 12% AP)}}",
+   "bin": [
+    "YuumiR#TotalHealPerWave"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Magic Damage per Hit",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    75,
+    125,
+    175
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|75 to 175}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "YuumiR#TotalMissileDamage"
+   ],
+   "binNote": "Sheet's TotalMissileDamage uses BaseMissileDamage=[75/125/175] + 0.25xap, matching the wiki's per-hit values and ratio exactly."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Reduced Damage per Hit",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    18.75,
+    31.25,
+    43.75
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0625
+    }
+   ],
+   "quote": "{{ap|75*0.25 to 175*0.25}} {{as|(+ {{ap|25*0.25}}% AP)}}",
+   "bin": [
+    "YuumiR#MultiMissileTotal",
+    "YuumiR.MultiMissileReduction"
+   ],
+   "binNote": "MultiMissileTotal = TotalMissileDamage * MultiMissileReduction(0.25), matching wiki's per-hit reduced damage (75*0.25=18.75 base, 25*0.25=6.25% -> 0.0625 AP coef)."
+  },
+  {
+   "id": "r_duration",
+   "meaning": "channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3.5,
+   "terms": [],
+   "quote": "channel for up to {{fd|3.5}} seconds",
+   "bin": [
+    "YuumiR.UltDuration"
+   ]
+  },
+  {
+   "id": "r_waves",
+   "meaning": "number of waves",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "launch 5 magical waves",
+   "bin": [
+    "YuumiR.NumberOfWaves"
+   ]
+  },
+  {
+   "id": "r_wave_interval",
+   "meaning": "time between waves",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "channel for up to {{fd|3.5}} seconds",
+   "bin": [
+    "YuumiR.TimeBetweenWaves"
+   ],
+   "binNote": "Wiki does not state the inter-wave interval directly; inferred from 5 waves over the channel duration matching bin's TimeBetweenWaves=0.75."
+  },
+  {
+   "id": "r_slow_duration",
+   "meaning": "slow duration per hit",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "slowed by 10% for {{fd|1.25}} seconds",
+   "bin": [
+    "YuumiR.CCDuration"
+   ]
+  },
+  {
+   "id": "r_shield_duration",
+   "meaning": "overshield duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "a {{tip|shield}} that lasts for {{fd|1.5}} seconds plus the remaining channel duration instead",
+   "bin": [
+    "YuumiR.OvershieldBonusDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Subsequent waves against an enemy already hit deal only 25% damage.",
+   "quote": "Subsequent waves against enemies hit deal 25% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Slow from waves stacks and refreshes on subsequent hits, up to 50% total.",
+   "quote": "The slow stacks and refreshes on subsequent hits, up to a total strength of 50%.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Cooldown starts only after the channel/effect ends, not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Excess healing beyond maximum health converts into a shield instead.",
+   "quote": "with each heal instance beyond {{as|'''maximum''' health}} being converted into a {{tip|shield}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Spell shield only blocks a single instance of damage from the multi-wave ability.",
+   "quote": "Spell shield will only block a single instance of damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Yuumi is ghosted during the channel and can move and use W/E while channeling.",
+   "quote": "'''Yuumi''' can move and use {{ai|You and Me!|Yuumi}} and {{ai|Zoomies|Yuumi}} during ''Final Chapter''.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YuumiR.UltLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiR.CCDuration",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.UltDuration",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.NumberOfWaves",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.WavesToRoot",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "YuumiR.TimeBetweenWaves",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.MissileSlowPercent",
+   "reason": "utility"
+  },
+  {
+   "ref": "YuumiR.SpaceBehindWave",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiR.BaseHealPerWave",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.BaseSlow",
+   "reason": "utility"
+  },
+  {
+   "ref": "YuumiR.BonusSlowPerWave",
+   "reason": "utility"
+  },
+  {
+   "ref": "YuumiR.OvershieldBonusDuration",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.DegreesPerTick",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YuumiR.MultiMissileReduction",
+   "reason": null
+  },
+  {
+   "ref": "YuumiR.BaseMissileDamage",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

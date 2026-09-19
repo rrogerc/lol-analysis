@@ -1,0 +1,103 @@
+{
+ "champion": "braum",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Concussive Blows: Braum's basic attacks and Winter's Bite each place a stack (refreshing, cap 4, 4s duration) on the dummy; the 4th stack consumes all stacks to deal burst magic damage and stun."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "After the stun triggers, the target is immune to new stacks for a level-gated duration, during which Braum's basic attacks deal +40% bonus magic damage on-hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Winter's Bite: magic damage (base + %maxHP) to the dummy on a 0.25s cast, on cooldown."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Glacial Fissure: magic damage (base + 60% AP) to the dummy on a 0.5s cast, on cooldown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Self-cast Stand Behind Me instantly grants Braum bonus armor and MR (36% of bonus resists) for 3s; relevant only to the survival fight's damage-taken."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Unbreakable grants a facing damage-reduction percent plus a one-time 100% block of the first champion damage instance from that direction; relevant only to the survival fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana; casting Q/R on cooldown plus any W/E use over a 15s fight is a real mana constraint, though base mana/regen at the tested level/items aren't given in these sheets."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is fully describable with the closed-list primitives: passive stacking-to-consume plus a post-proc conditional on-hit bonus, two plain-cast nukes (Q, R), a timed self-buff (W self-cast) and a pure defensive mechanic (E) that only the survival fight reads, gated by a real mana budget. No extra logic (pets, forms, ammo, crits, stat conversion, etc.) is needed."
+ },
+ "unsettled": [
+  {
+   "question": "Is the passive's 4th-stack burst damage (and its +40% on-hit follow-up) a distinct 'spell' damage instance that can trigger on-cast/spell-based item and rune effects, or is it folded into whichever attack/spell applied the triggering stack for on-hit purposes?",
+   "options": [
+    "Treated as its own proc damage instance (per flags: spelleffects=Proc, spellshield=True), separate from the attack/spell that applied the 4th stack, so on-hit effects from that attack still apply once and the proc is a second, independent magic-damage event",
+    "Bundled with the triggering attack as a single combined damage event for on-hit/on-cast interaction purposes"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The fourth stack against a target consumes them all to deal {{as|{{pplevel|26 to 196|type=his level|label1=level}}|magic damage}} {{as|magic damage}} and {{tip|stun}} them"
+   ]
+  },
+  {
+   "question": "The bin's own passive damage formula (BraumPassive#TotalDamage) is an unresolved ByCharLevelFormulaCalculationPart in this sheet, so the by-level values used (26 to 196) come only from the wiki tooltip. Does the live bin formula match this table exactly, or could it include a hidden scaling term (e.g., AP or bonus health) not reflected in the wiki text?",
+   "options": [
+    "Wiki's flat by-level table (26 to 196) is the complete, correct value with no additional ratio",
+    "The bin formula includes an additional stat ratio (AP, health, etc.) that the wiki tooltip omits or simplifies away"
+   ],
+   "impact": "high",
+   "quotes": [
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart",
+    "{{pplevel|26 to 196|type=his level|label1=level}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the 15s window auto-attacking the dummy continuously to start applying Concussive Blows stacks and generate basic-attack damage.",
+   "Cast Winter's Bite (Q) as soon as it comes off cooldown each time, both for its own magic damage (base + 2.5% max HP) and because it also applies a Concussive Blows stack.",
+   "Let the passive trigger naturally: whenever the 4th stack lands (from an auto or Q), it fires its burst magic damage and stun-flag on the dummy, then Braum's autos deal +40% bonus magic damage during the target's immunity window.",
+   "Cast Glacial Fissure (R) once available (its long cooldown means only one cast fits in 15s) for its flat + 60% AP magic damage, timed so the cast (0.5s) doesn't stall auto-attacking/Q-weaving longer than necessary.",
+   "Do not cast Stand Behind Me (W) or Unbreakable (E) in the damage fight: both are purely defensive/self-buff and add no damage against a stationary, non-retaliating dummy, so casting them would only waste time and mana that could go to Q/R casts and auto-attacks.",
+   "In the survival fight, self-cast W at the opener (or on cooldown) for the self-armor/MR buff, and face Unbreakable (E) toward the attacker to get its facing damage reduction and one-time full block, refreshing E off cooldown."
+  ],
+  "questions": [
+   "At the target level/items being simulated, is there enough mana to cast Q on every cooldown plus one R cast across the full 15s without stalling, or does mana starvation change the realistic rotation?",
+   "Should Glacial Fissure be cast as the very first action (to front-load its long cooldown and start its AoE damage timer) or held until Concussive Blows stacks are already primed, given its 0.5s cast time delays auto-attacking either way?",
+   "Does the simulator model Concussive Blows' 4-stack cap purely from Braum's own attacks/Q in a duel (no allies), and does it correctly track the 4s per-stack refresh window when weaving Q between autos?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

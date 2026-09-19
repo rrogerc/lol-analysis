@@ -1,0 +1,198 @@
+{
+ "name": "Purgatory",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}",
+  "binNote": "wiki's infobox 'cast time' field says {{fd|0.5}} (the totem's travel/queue time), but the sheet's castTime is 0.25; using the bin's castTime value since it reflects the champion-locking cast animation, while 0.5s is the totem's travel duration to the target location (queue time field)."
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    150,
+    225,
+    300
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|150 to 300}} {{as|(+ 60% AP)}}",
+   "bin": [
+    "LockeR#Damage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Execute Threshold",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.1,
+    0.11,
+    0.12
+   ],
+   "terms": [
+    {
+     "stat": "stacks",
+     "coef": 0.005
+    }
+   ],
+   "quote": "{{as|{{ap|10 to 12}}%|hp}} {{as|(+ {{fd|0.5}}% per Sealed Champion stack)|buzzword}} {{as|of the target's '''maximum''' health}}",
+   "bin": [
+    "LockeR.ExecutionThreshold",
+    "LockeR.ExecuteThresholdPerStack",
+    "LockeR#{6c540a3a}"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "totem landing delay before firing nails",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "After landing for {{fd|0.25}} seconds, the totem fires latching nails",
+   "bin": [],
+   "binNote": "no data value in the sheet corresponds to this landing delay; the sheet's castTime=0.25 is a different value (the cast animation, not the post-landing delay)."
+  },
+  {
+   "id": "r_4",
+   "meaning": "mark duration on hit champions",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "marking enemy {{tip|champions}} hit for 5 seconds",
+   "bin": [
+    "LockeR.Duration"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "slow amount from nails",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.99,
+   "terms": [],
+   "quote": "{{tip|slow|slowing}} them by 99% decaying over 2 seconds",
+   "bin": [
+    "LockeR.SlowAmount"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "slow decay duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "slowing them by 99% decaying over 2 seconds",
+   "bin": [
+    "LockeR.SlowDuration"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "totem-drop delay after sealing begins",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.25,
+   "terms": [],
+   "quote": "seals the souls of all executed champions and drops to the ground both over {{fd|2.25}} seconds",
+   "bin": [],
+   "binNote": "no data value in the sheet corresponds to this post-mark-expiry sealing/drop animation delay; it is not present among the LockeR data values."
+  },
+  {
+   "id": "r_8",
+   "meaning": "minimum lingering duration of sealed totem",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "but for no less than 10 seconds",
+   "bin": [],
+   "binNote": "no data value in the sheet corresponds to this minimum lingering-duration floor; it is not present among the LockeR data values."
+  },
+  {
+   "id": "r_9",
+   "meaning": "current cooldown reduction per collected soul",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "reduce ''Purgatory's'' {{sti|'''current''' cooldown}} by 20% of its '''total''' cooldown",
+   "bin": [
+    "LockeR.CooldownReduction"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The totem's nails deal magic damage and the execution deals separate raw (true) damage to already-marked targets below the threshold.",
+   "quote": "Applies {{tip|area damage}} with the nail and deals {{tip|raw damage}} to executed targets.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield blocks the nail damage/mark but not the subsequent execution.",
+   "quote": "{{tip|Spell shield}} will block the nail from the totem but not the execute.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Successful executions refresh the mark duration on all other affected targets, extending the execute window.",
+   "quote": "Successful executions refresh the mark duration on all affected targets.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown begins on cast, not on totem landing or resolution.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "LockeR.Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "LockeR.AbilityHastePerStack",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "LockeR.Anim_BiteTime",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

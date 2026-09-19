@@ -1,0 +1,541 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ViegoPassive",
+    "key": "Characters/Viego/Spells/ViegoPassiveAbility/ViegoPassive",
+    "dataValues": {
+     "MoveSpeedPercent": 0.1,
+     "TransformDuration": 10,
+     "BaseHealPercent": 2,
+     "TakedownWindow": 3,
+     "InvulnTimeWhileAttackingSoul": 1,
+     "SoulDuration": 8
+    },
+    "calcs": {
+     "PercentHealthHeal": {
+      "expr": "BaseHealPercent=2 + 0.025xbonus ad + 0.02xap + 5xbonus attackWindup? + 0.004xbonus maxHp",
+      "flat": 2,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.025
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.02
+       },
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 5
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.004
+       }
+      ],
+      "refs": [
+       "BaseHealPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ViegoQ",
+    "key": "Characters/Viego/Spells/ViegoQAbility/ViegoQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      5,
+      4.5,
+      4,
+      3.5,
+      3
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       25,
+       40,
+       55,
+       70,
+       85
+      ]
+     },
+     "ActiveADRatio": 0.7,
+     "ActiveCritMod": 0.6,
+     "PercentHealthOnHit": {
+      "axis": "rank",
+      "v": [
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     },
+     "MinDamageOnHit": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "MonsterCapOnHit": 80,
+     "RectangleRange": 600,
+     "RectangleWidth": 125,
+     "HealModVsMinions": 1,
+     "HealModVsMonsters": 1.25,
+     "HealModVsChamps": 1.5,
+     "MarkDuration": 4,
+     "HealthCritMod": 0.7,
+     "SecondAttackAPRatio": 0.15
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "(Damage=[25/40/55/70/85] + (ActiveADRatio=0.7)xad) * 1 + ((ActiveCritMod=0.6)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ActiveADRatio",
+       "ActiveCritMod",
+       "Damage"
+      ]
+     },
+     "SecondAttackDamage": {
+      "expr": "0.2xad + (SecondAttackAPRatio=0.15)xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "SecondAttackAPRatio"
+       }
+      ],
+      "refs": [
+       "SecondAttackAPRatio"
+      ]
+     },
+     "TotalPercentHealthOnHit": {
+      "expr": "(PercentHealthOnHit=[2/3/4/5/6]) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "PercentHealthOnHit"
+      ]
+     },
+     "HealthCritDamage": {
+      "expr": "(1 + (HealthCritMod=0.7)*(1xcritDamage + -1)) * (0.01)*(PercentHealthOnHit=[2/3/4/5/6])",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06
+       ]
+      },
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.014,
+          0.021,
+          0.028,
+          0.035,
+          0.042
+         ]
+        }
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "HealthCritMod",
+       "PercentHealthOnHit"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ViegoW",
+    "key": "Characters/Viego/Spells/ViegoWAbility/ViegoW",
+    "cooldown": 8,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       80,
+       135,
+       190,
+       245,
+       300
+      ]
+     },
+     "StunMultPercent": 4,
+     "StunDuration": 0.25,
+     "MaxStunTT": 1.25,
+     "DashDistance": 300,
+     "DashSpeed": 1000,
+     "MinMissileRange": 500,
+     "MaxBonusMissileRange": 400,
+     "SelfSlowPercent": 0.1,
+     "MaxChargeTime": 3,
+     "CDWheninterrupted": 3,
+     "APRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[80/135/190/245/300] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        135,
+        190,
+        245,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ViegoE",
+    "key": "Characters/Viego/Spells/ViegoEAbility/ViegoE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      12,
+      10,
+      8,
+      6
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MistDuration": 8,
+     "MoveSpeed": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.275,
+       0.3,
+       0.325,
+       0.35
+      ]
+     },
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "CamoRadius": 450,
+     "RestealthTime": 0.6,
+     "RestealthTimeAfterHittingLargeMonster": 1.5,
+     "MSAPRatio": 0.0004
+    },
+    "calcs": {
+     "TotalMovespeed": {
+      "expr": "MoveSpeed=[0.25/0.275/0.3/0.325/0.35] + (MSAPRatio=0.0004)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.25,
+        0.275,
+        0.3,
+        0.325,
+        0.35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0004,
+        "dataValue": "MSAPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "MSAPRatio",
+       "MoveSpeed"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ViegoR",
+    "key": "Characters/Viego/Spells/ViegoRAbility/ViegoR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MaxHealthDamage": {
+      "axis": "rank",
+      "v": [
+       12,
+       16,
+       20
+      ]
+     },
+     "SlowDuration": 0.25,
+     "SlowPercent": 0.99,
+     "LockoutTime": 1.5,
+     "KnockbackBonusRange": 100,
+     "KnockbackSpeed": 1000,
+     "KnockbackGravity": 15,
+     "ADRatio": 1.2,
+     "CritMod": 0.7
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "((ADRatio=1.2)xad) * 1 + ((CritMod=0.7)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "CritMod"
+      ]
+     },
+     "TotalPercentHealth": {
+      "expr": "MaxHealthDamage=[12/16/20] + 0.05xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        12,
+        16,
+        20
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.05
+       }
+      ],
+      "refs": [
+       "MaxHealthDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "ViegoSkin43Manager",
+    "key": "{6b528185}",
+    "dataValues": {
+     "NumberOfPossessionsToUnlockBPB": 15
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "ViegoQ",
+  "W": "ViegoW",
+  "E": "ViegoE",
+  "R": "ViegoR",
+  "P": "ViegoPassive"
+ },
+ "resource": {
+  "arType": null,
+  "values": {
+   "{726ee5cd}": 10000,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Viego",
+  "name": "Viego",
+  "partype": "None",
+  "passive": "Sovereign's Domination",
+  "spells": [
+   {
+    "id": "ViegoQ",
+    "name": "Blade of the Ruined King",
+    "maxrank": 5,
+    "cooldown": [
+     5,
+     4.5,
+     4,
+     3.5,
+     3
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ViegoW",
+    "name": "Spectral Maw",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ViegoE",
+    "name": "Harrowed Path",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     12,
+     10,
+     8,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ViegoR",
+    "name": "Heartbreaker",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Sovereign's Domination": {
+    "targeting": "Passive"
+   }
+  },
+  "Q": {
+   "Blade of the Ruined King": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Self, Enemies"
+   }
+  },
+  "W": {
+   "Spectral Maw": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "{{dv|[[Auto-targeted|Auto]]|[[Direction-targeted|Direction]]}}",
+    "affects": "Self, Enemies"
+   }
+  },
+  "E": {
+   "Harrowed Path": {
+    "projectile": "special",
+    "targeting": "Direction",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "Heartbreaker": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "true",
+    "targeting": "Location",
+    "affects": "Self, Enemies"
+   }
+  }
+ }
+}

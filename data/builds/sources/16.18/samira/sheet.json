@@ -1,0 +1,1120 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SamiraPassive",
+    "key": "Characters/Samira/Spells/SamiraPassiveAbility/SamiraPassive",
+    "dataValues": {
+     "SwordRange": 200,
+     "VisualBonusRange": 400,
+     "DurationTOOLTIP": 6
+    },
+    "calcs": {
+     "QueenMaxDashRange": {
+      "expr": "byLevelL[650/650/650/725/725/725/725/800/800/800/800/875/875/875/875/950/950/950]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        650,
+        650,
+        650,
+        725,
+        725,
+        725,
+        725,
+        800,
+        800,
+        800,
+        800,
+        875,
+        875,
+        875,
+        875,
+        950,
+        950,
+        950
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "BonusMeleeDamage": {
+      "expr": "byLevelL[2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19] + (byLevel(0.035..0.105))xad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.035,
+          0.039117647006231195,
+          0.04323529386345078,
+          0.04735294,
+          0.05147059,
+          0.05558823443510953,
+          0.05970588,
+          0.06382353,
+          0.06794117500676827,
+          0.07205882,
+          0.07617647,
+          0.08029412,
+          0.08441176,
+          0.08852941,
+          0.09264705615008578,
+          0.09676470300730537,
+          0.10088235,
+          0.105
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "EmpoweredMeleeDamageTooltip": {
+      "expr": "BonusMeleeDamage * 2",
+      "modifies": "BonusMeleeDamage",
+      "flat": {
+       "axis": "level",
+       "v": [
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24,
+        26,
+        28,
+        30,
+        32,
+        34,
+        36,
+        38
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.07,
+          0.07823529,
+          0.08647059,
+          0.09470588,
+          0.10294118,
+          0.11117647,
+          0.11941176,
+          0.12764706,
+          0.13588235,
+          0.14411764,
+          0.15235294,
+          0.16058824,
+          0.16882352,
+          0.17705882,
+          0.1852941,
+          0.19352941,
+          0.2017647,
+          0.21
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "MSBonusNew": {
+      "expr": "byLevelL[0.0275/0.0275/0.0275/0.0275/0.0275/0.03/0.03/0.03/0.03/0.03/0.0325/0.0325/0.0325/0.0325/0.0325/0.035/0.035/0.035]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.0275,
+        0.0275,
+        0.0275,
+        0.0275,
+        0.0275,
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.0325,
+        0.0325,
+        0.0325,
+        0.0325,
+        0.0325,
+        0.035,
+        0.035,
+        0.035
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SamiraQ",
+    "key": "Characters/Samira/Spells/SamiraQAbility/SamiraQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      6,
+      5,
+      4,
+      3,
+      2
+     ]
+    },
+    "cost": 30,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       0,
+       5,
+       10,
+       15,
+       20
+      ]
+     },
+     "CheatingThreshold": 20,
+     "CritDamageMod": 0.5,
+     "LifestealMod": 1,
+     "QADRatio": 1.1
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=[0/5/10/15/20] + (QADRatio=1.1)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0,
+        5,
+        10,
+        15,
+        20
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.1,
+        "dataValue": "QADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "QADRatio"
+      ]
+     },
+     "CriticalDamageCalc": {
+      "expr": "DamageCalc * 1 + (CritDamageMod=0.5)*(1xcritDamage + -1)",
+      "modifies": "DamageCalc",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CritDamageMod"
+      ]
+     }
+    }
+   },
+   {
+    "script": "SamiraQBufferedSword",
+    "key": "Characters/Samira/Spells/SamiraQAbility/SamiraQBufferedSword",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      19,
+      16,
+      13,
+      10
+     ]
+    },
+    "cost": 30,
+    "castTime": 0.05,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       120,
+       150,
+       180,
+       210
+      ]
+     }
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "0.5xbonus ad + BaseDamage=[90/120/150/180/210]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        120,
+        150,
+        180,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "SamiraQGun",
+    "key": "Characters/Samira/Spells/SamiraQAbility/SamiraQGun",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7,
+      6,
+      5,
+      4
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       15,
+       25,
+       35,
+       45
+      ]
+     },
+     "CDRefund": 1.5,
+     "CDRefundUrf": 0.5,
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.45,
+       0.6,
+       0.75,
+       0.9,
+       1.05
+      ]
+     }
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[5/15/25/35/45] + 1xad + 0.15xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        15,
+        25,
+        35,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "SamiraQSword",
+    "key": "Characters/Samira/Spells/SamiraQAbility/SamiraQSword",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      19,
+      16,
+      13,
+      10
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       120,
+       150,
+       180,
+       210
+      ]
+     }
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "0.5xbonus ad + BaseDamage=[90/120/150/180/210]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        120,
+        150,
+        180,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SamiraW",
+    "key": "Characters/Samira/Spells/SamiraWAbility/SamiraW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      30,
+      28,
+      26,
+      24,
+      22
+     ]
+    },
+    "cost": 60,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     },
+     "SlashDuration": 0.75
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=[20/35/50/65/80] + 0.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SamiraE",
+    "key": "Characters/Samira/Spells/SamiraEAbility/SamiraE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90
+      ]
+     },
+     "BonusAttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "DashSpeed": 1600,
+     "DashTotalDistance": 650,
+     "AttackSpeedDuration": 5
+    },
+    "calcs": {
+     "DashDamage": {
+      "expr": "BaseDamage=[50/60/70/80/90] + 0.2xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        60,
+        70,
+        80,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SamiraR",
+    "key": "Characters/Samira/Spells/SamiraRAbility/SamiraR",
+    "cooldown": 5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       40,
+       60
+      ]
+     },
+     "BaseMSBonus": 0.02,
+     "LifestealMod": 1,
+     "MinionDamageMod": 0.25,
+     "ADRatio": 0.3
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=[20/40/60] + (ADRatio=0.3)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        40,
+        60
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "CriticalDamageCalc": {
+      "expr": "DamageCalc * 1xcritDamage",
+      "modifies": "DamageCalc",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "SamiraEBuff",
+    "key": "Characters/Samira/Spells/SamiraEBuff",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90,
+       100
+      ]
+     },
+     "BonusAttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5,
+       0.55
+      ]
+     },
+     "DashSpeed": 2050,
+     "DashTotalDistance": 650
+    },
+    "calcs": {
+     "DashDamage": {
+      "expr": "BaseDamage=[50/60/70/80/90/100] + 0.2xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        60,
+        70,
+        80,
+        90,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "SamiraPJuggle",
+    "key": "Characters/Samira/Spells/SamiraPJuggle",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 0.5,
+     "NumShots": 6,
+     "RecastLockout": 0.75,
+     "RangeCheck": 650,
+     "PercentDamageAmpToMinions": 200,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     }
+    },
+    "calcs": {
+     "DamagePerBullet": {
+      "expr": "0.17xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.17
+       }
+      ],
+      "refs": []
+     },
+     "TotalDamage": {
+      "expr": "DamagePerBullet * NumShots=6",
+      "modifies": "DamagePerBullet",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.02
+       }
+      ],
+      "refs": [
+       "NumShots"
+      ]
+     }
+    }
+   },
+   {
+    "script": "SamiraPSwordJuggle",
+    "key": "Characters/Samira/Spells/SamiraPSwordJuggle",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 0.5,
+     "NumShots": 6,
+     "RecastLockout": 0.75,
+     "RangeCheck": 650,
+     "PercentDamageAmpToMinions": 200,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     }
+    },
+    "calcs": {
+     "DamagePerBullet": {
+      "expr": "0.1xap + 0.2xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       },
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": []
+     },
+     "TotalDamage": {
+      "expr": "DamagePerBullet * NumShots=6",
+      "modifies": "DamagePerBullet",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       },
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "NumShots"
+      ]
+     }
+    }
+   },
+   {
+    "script": "SamiraPassiveCombo",
+    "key": "Characters/Samira/Spells/SamiraPassiveCombo",
+    "dataValues": {
+     "SwordRange": 200
+    },
+    "calcs": {
+     "QueenMaxDashRange": {
+      "expr": "byLevelL[800/800/800/850/850/850/850/900/900/900/900/950/950/950/950/1000/1000/1000]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        800,
+        800,
+        800,
+        850,
+        850,
+        850,
+        850,
+        900,
+        900,
+        900,
+        900,
+        950,
+        950,
+        950,
+        950,
+        1000,
+        1000,
+        1000
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "BonusMeleeDamage": {
+      "expr": "0.1xad + byLevelL[2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": []
+     }
+    }
+   },
+   {
+    "script": "SamiraTauntMissile",
+    "key": "Characters/Samira/Spells/SamiraTauntMissile",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7,
+      6,
+      5,
+      4,
+      3
+     ]
+    },
+    "castTime": 2.87,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       15,
+       25,
+       35,
+       45,
+       55
+      ]
+     },
+     "CDRefund": 1.5,
+     "CDRefundUrf": 0.5,
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.45,
+       0.6,
+       0.75,
+       0.9,
+       1.05,
+       1.2
+      ]
+     }
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[5/15/25/35/45/55] + 1xad + 0.15xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        15,
+        25,
+        35,
+        45,
+        55
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "SamiraQ",
+  "W": "SamiraW",
+  "E": "SamiraE",
+  "R": "SamiraR",
+  "P": "SamiraPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 349,
+   "{6216bf7b}": 38,
+   "{c4ab3550}": 1.64,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.15
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Samira",
+  "name": "Samira",
+  "partype": "Mana",
+  "passive": "Daredevil Impulse",
+  "spells": [
+   {
+    "id": "SamiraQ",
+    "name": "Flair",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     5,
+     4,
+     3,
+     2
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "SamiraW",
+    "name": "Blade Whirl",
+    "maxrank": 5,
+    "cooldown": [
+     30,
+     28,
+     26,
+     24,
+     22
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "SamiraE",
+    "name": "Wild Rush",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "SamiraR",
+    "name": "Inferno Trigger",
+    "maxrank": 3,
+    "cooldown": [
+     5,
+     5,
+     5
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Daredevil Impulse": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "special",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   },
+   "splash coin": {}
+  },
+  "Q": {
+   "Flair": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "true",
+    "projectile": "special",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Blade Whirl": {
+    "damagetype": "Physical",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Wild Rush": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Inferno Trigger": {
+    "damagetype": "Physical",
+    "spelleffects": "aoedot",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Proximity",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

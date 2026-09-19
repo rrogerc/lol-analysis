@@ -1,0 +1,202 @@
+{
+ "name": "Royal Maelstrom",
+ "cooldown": {
+  "values": [
+   24,
+   21,
+   18,
+   15,
+   12
+  ],
+  "quote": "{{ap|24 to 12}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "None"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Damage Reduction",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    20,
+    30,
+    40,
+    50,
+    60
+   ],
+   "terms": [],
+   "quote": "{{ap|20 to 60}}%",
+   "bin": [
+    "BelvethE.DRPercent"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Life Steal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    20,
+    25,
+    30,
+    35,
+    40
+   ],
+   "terms": [],
+   "quote": "{{ap|20 to 40}}%",
+   "bin": [
+    "BelvethE.BonusLifeSteal"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Minimum Physical Damage per hit",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    10,
+    12,
+    14,
+    16,
+    18
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.12
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|10 to 18}} {{as|(+ 12% AD)}}",
+   "bin": [
+    "BelvethE#DamagePerStrike",
+    "BelvethE.MissingHealthMult"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Minimum Monster Damage per hit",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    20,
+    24,
+    28,
+    32,
+    36
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.24
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|10*2 to 18*2}} {{as|(+ {{ap|12*2}}% AD)}}",
+   "bin": [
+    "BelvethE.MonsterMod",
+    "BelvethE#DamagePerStrike"
+   ],
+   "binNote": "The wiki's monster damage is 200% of the base per-strike damage (BelvethE#DamagePerStrike flat=[10,12,14,16,18], ad=0.12), i.e. multiplied by BelvethE.MonsterMod=2, giving base=[20,24,28,32,36] and ad coef=0.24. No bin row states these doubled numbers directly; they are derived by applying MonsterMod as a multiplier to DamagePerStrike, consistent with the wiki's '200% damage to monsters' text."
+  },
+  {
+   "id": "e_7",
+   "meaning": "Frenzy duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{fd|1.5}} seconds",
+   "bin": [
+    "BelvethE.TotalDuration"
+   ]
+  },
+  {
+   "id": "e_8",
+   "meaning": "Base maximum number of slashes, increased by bonus attack speed",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [
+    {
+     "stat": "bonusAttackSpeed",
+     "coef": 2.5
+    }
+   ],
+   "quote": "6 (+ 1 per {{tt|{{as|40% '''bonus''' attack speed}}",
+   "bin": [
+    "BelvethE.NumberOfStrikes",
+    "BelvethE#TotalStrikes"
+   ],
+   "binNote": "BelvethE.AttackSpeedMult = 8 does not match the calculation's 0.4 divisor or the wiki's '40% bonus attack speed per extra strike' text; the calc BelvethE#TotalStrikes reads a literal 0.4, not the AttackSpeedMult data value."
+  },
+  {
+   "id": "e_10",
+   "meaning": "On-hit/on-attack damage effectiveness (percent of target's missing health)",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": 0.12
+    }
+   ],
+   "quote": "{{pp|key=%|key1=%|type=target's '''missing''' health|12 to 24 for 11|0 to 100|formula=0.12% per 1% of target's '''missing''' health}}",
+   "bin": [
+    "BelvethE.OnHitRatio"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Royal Maelstrom rapidly slashes at the nearest enemy with the lowest current health percentage, up to the strike cap, applying on-hit, on-attack, and spell effects on each slash.",
+   "quote": "she rapidly slashes at the nearest enemy with the lowest {{as|'''current''' health}} percentage for up to 6 ... times over the duration ... and applies {{tip|on-hit}}, {{tip|on-attack}}, and {{tip|spell effects|spell}} effects",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bel'Veth cannot perform slashes while affected by cast-inhibiting crowd control, reducing damage output during the channel.",
+   "quote": "'''Bel'Veth''' cannot perform slashes while she is affected by {{tip|cast-inhibiting crowd control|cast-inhibiting crowd control}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Royal Maelstrom deals 200% damage to monsters, applies life steal, and is affected by critical strike modifiers.",
+   "quote": "''Royal Maelstrom'' deals 200% damage to {{tip|monsters}}, {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}}, and is affected by {{tip|critical strike}} modifiers.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown starts on cast, but cannot be reduced by Navori Flickerblade/Transcendence during its own effect.",
+   "quote": "Despite this ability's cooldown starts on cast, it cannot be reduced by {{iis|Navori Flickerblade}} {{nie|Transcendence}} during the effect of this ability.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Royal Maelstrom can be recast to end early, or ends automatically after its duration or when Bel'Veth casts another ability.",
+   "quote": "''Royal Maelstrom'' can be recast within the duration, and does so automatically afterwards or when '''Bel'Veth''' casts an ability.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "BelvethE.AttackSpeedMult",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

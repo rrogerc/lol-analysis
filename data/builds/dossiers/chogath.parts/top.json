@@ -1,0 +1,114 @@
+{
+ "champion": "chogath",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Rupture (delayed AoE), Feral Scream (cone), Feast (single-target) each deal damage on cast/short delay, on cooldown, for mana"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (50/70-90/30/100) against Cho'Gath's mana pool can gate how many casts fit into the 15s window, especially W's rank-scaling cost and R's flat 100"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Vorpal Spikes arms the next 3 basic attacks (within 6s) to fire an on-attack magic damage blast; E itself has no cast time and deals no direct damage"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Vorpal Spikes resets Cho'Gath's basic attack timer when cast, letting an immediate empowered auto follow"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "each empowered attack deals bonus magic damage equal to a % of the target's maximum health (a champion-dummy target uses the champion formula, not the capped monster formula)"
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "R",
+    "E"
+   ],
+   "note": "permanent Feast stacks (gained only on a Feast kill) grant Cho'Gath bonus health that feeds R's own damage (10% bonus health) and add +0.5%/stack to E's max-health-% damage term; needs an assumed stack count for the fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Rupture/Feral Scream/Feast are plain-cast nukes, Vorpal Spikes is a standard empowered-attack+attack-reset onhit rider with a target-max-health-% conditional term, and the Feast-stack interplay (bonus health -> R and E damage) is exactly what the infinite-scaling primitive covers once a stack count is assumed. No mechanic here (recasts, channels, forms, stance changes, ammo systems) falls outside the listed primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Is Feast's noted +8/+12/+16 (per rank) damage increase per Feast stack an additional additive term on top of Feast#RDamage/RMonsterDamage (base + 50% AP + 10% bonus health), or is it fully explained by the 10% bonus-health ratio already applied to the bonus health each stack grants?",
+   "options": [
+    "It is a separate flat additive term per stack not present in the sheet's RDamage/RMonsterDamage calculations",
+    "It is not a separate term; it is the wiki's shorthand for the 10% bonus-health ratio acting on the RHealthPerStack bonus health from each stack",
+    "Moot in the dummy fight because the simulator assumes 0 Feast stacks throughout"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Each stack of ''Feast'' increases the damage by {{ap|8|12|16}}.",
+    "Feast#RDamage = RBaseDamage=[300/475/650] + 0.5xap + 0.1xbonus maxHp"
+   ]
+  },
+  {
+   "question": "What Feast stack count (and thus bonus health) should be assumed for the 15s single-target-dummy damage fight, given the dummy 'never fights back' and has substantial health so a Feast kill is unlikely?",
+   "options": [
+    "0 stacks: no pre-fight stacks assumed and none gained mid-fight since the dummy never dies",
+    "A nonzero pre-fight stack count representing a mid/late-game Cho'Gath who has picked up stacks before the encounter",
+    "1+ stacks if the dummy's health/resists are set low enough that Feast's true damage executes it, granting a stack mid-fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If this attack kills the target, '''Cho'Gath''' gains a permanent ''Feast'' {{tip|stack}} that infinitely stacks.",
+    "Each stack of ''Feast'' increases the cast range of the ability by {{fd|2.5}}, for a maximum increase of 25 at 10 stacks, and grants '''Cho'Gath''' {{as|{{sti|health|'''bonus''' health}}}} as well as {{sti|range|'''bonus''' attack range}} and increased {{tip|size}}, capping at {{sti|range|75 '''bonus''' attack range}} and 100% increased size."
+   ]
+  },
+  {
+   "question": "Within Vorpal Spikes' 6s empowerment window, is the target-max-health-% damage term (and its per-stack buzzword bonus) evaluated using the Feast stack count at the moment each of the 3 empowered attacks lands, or fixed at the moment E is cast?",
+   "options": [
+    "Recomputed per landed attack using the current stack count at that instant",
+    "Fixed for all 3 attacks based on the stack count when E was cast"
+   ],
+   "impact": "low",
+   "quotes": [
+    "VorpalSpikes#MaxHealthPercentCalc (percent) = (PercentHealthDamage=[2.5/2.85/3.2/3.55/3.9] + (FeastStackMultiplier=0.5)xbuffStacks) * 0.01"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Rupture (Q) on the dummy; it deals magic damage after its cast time plus a short delay.",
+   "Follow with Feral Scream (W) for its cone magic damage.",
+   "Cast Vorpal Spikes (E) to arm the next 3 basic attacks and get the free attack-timer reset, then auto-attack immediately to start consuming the empowered attacks.",
+   "Cast Feast (R) as soon as it is in range and off cooldown for a burst of true damage scaled off Cho'Gath's bonus health; recast it every time its long cooldown (60-80s) comes back up.",
+   "Between ability casts, keep auto-attacking so all 3 Vorpal Spikes charges land inside the 6s window before it expires, and recast E again as soon as its cooldown (which starts only after the charges are used) is available.",
+   "Recast Rupture and Feral Scream on cooldown for the remainder of the 15s, weaving auto attacks (empowered when available) in the gaps.",
+   "Track mana spend across Q/W/E/R casts; if mana runs low, prioritize E (cheapest, enables onhit damage) and R (highest single hit) over repeated W casts."
+  ],
+  "questions": [
+   "At what level and with what item build does the simulator run this fight, and is mana actually a binding constraint at that build (affecting whether all four abilities can be cast repeatedly for 15s)?",
+   "Should Feast (R) be assumed pre-charged/off cooldown at the start of the fight, or does its 60-80s cooldown mean it is realistically cast at most once or twice within 15s?",
+   "What Feast-stack count (see unsettled question above) should the rotation assume Cho'Gath enters the fight with, since it changes both R's own damage and E's per-hit scaling, and thus whether R or auto-attack-heavy E play is prioritized?",
+   "Is Vorpal Spikes best recast immediately every time it's available (maximizing onhit uptime) even if it interrupts otherwise-queued Q/W casts, or should Q/W be prioritized first each time they're off cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

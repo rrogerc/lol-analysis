@@ -1,0 +1,162 @@
+{
+ "name": "Indestructible / Indestructible 2",
+ "cooldown": {
+  "values": [
+   12,
+   11,
+   10,
+   9,
+   8
+  ],
+  "quote": "{{ap|12 to 8}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Shield to Healing",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.35,
+    0.375,
+    0.4,
+    0.425,
+    0.45
+   ],
+   "terms": [],
+   "quote": "{{ap|0.35*100 to 0.45*100}}%",
+   "bin": [
+    "MordekaiserW.HealingPercent"
+   ]
+  },
+  {
+   "id": "w_duration",
+   "meaning": "duration of the shield granted by the active",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "grant himself a {{tip|shield}} for the same amount for 4 seconds",
+   "bin": [
+    "MordekaiserW.Duration"
+   ],
+   "binNote": "Wiki states the shield lasts 4 seconds; the bin's MordekaiserW.Duration is 5. Wiki number kept, disagreement flagged."
+  },
+  {
+   "id": "w_damageDealtConv",
+   "meaning": "percent of post-mitigation damage dealt converted to Potential Shield",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.45,
+   "terms": [],
+   "quote": "{{#vardefine:dam_dealt|45}}",
+   "bin": [
+    "MordekaiserW.DamageConversion"
+   ]
+  },
+  {
+   "id": "w_damageTakenConv",
+   "meaning": "percent of pre-mitigation damage taken converted to Potential Shield",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.075,
+   "terms": [],
+   "quote": "{{#vardefine:dam_taken|7.5}}",
+   "bin": [
+    "MordekaiserW.DamageTakenConversion"
+   ]
+  },
+  {
+   "id": "w_maxCap",
+   "meaning": "maximum Potential Shield, as a percent of maximum health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{#vardefine:max|30}}",
+   "bin": [
+    "MordekaiserW.MaxHealthCap"
+   ]
+  },
+  {
+   "id": "w_minThreshold",
+   "meaning": "minimum Potential Shield maintained while the ability is off cooldown, as a percent of maximum health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{#vardefine:min|5}}",
+   "bin": [
+    "MordekaiserW.BaseShield"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Passively, Mordekaiser stores a portion of the post-mitigation damage he deals and pre-mitigation damage he takes as Potential Shield, up to a cap based on max health.",
+   "quote": "'''Mordekaiser''' stores {{fd|{{#var:dam_dealt}}}}% of the {{tt|post-mitigation|Damage calculated after modifiers}} damage he deals and {{fd|{{#var:dam_taken}}}}% of the {{tt|pre-mitigation|Damage calculated before modifiers}} damage he takes",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The active consumes all stored Potential Shield and grants a shield of that amount, which decays exponentially over 4 seconds.",
+   "quote": "'''Mordekaiser''' consumes his ''Potential Shield'' to grant himself a {{tip|shield}} for the same amount for 4 seconds. The shield decays exponentially over the duration.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Indestructible can be recast (after 0.5s) while the shield from the active is up; the recast consumes the remaining shield to heal for a portion of it.",
+   "quote": "''Indestructible'' can be recast after {{fd|0.5}} seconds while the shield is active.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Both the initial cast and the recast count as separate ability activations for on-cast trigger effects.",
+   "quote": "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown begins only after the shield effect (and any recast) has resolved, not on initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Potential Shield gain from non-champion sources is reduced to 25% of the normal amount.",
+   "quote": "reduced to {{ap|{{#var:dam_dealt}}*{{#var:minion}}}}% of damage dealt and {{ap|{{#var:dam_taken}}*{{#var:minion}}}}% of damage taken for non-champion sources",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MordekaiserW.MinionPenalty",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "MordekaiserW.TimeBeforeDecay",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "MordekaiserW.DecayPerSecond",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

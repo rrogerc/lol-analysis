@@ -1,0 +1,168 @@
+{
+ "champion": "galio",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Colossal Smash periodically arms Galio's next basic attack to deal bonus magic damage to the primary target and nearby enemies with an uncancellable windup."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Galio gains 40% bonus attack speed as long as Colossal Smash is off cooldown, even on non-empowered attacks."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Landing any ability on an enemy champion or epic monster cuts Colossal Smash's current cooldown by 3s, once per cast, even through spell shield."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "The AD-ratio portion of Colossal Smash's damage can critically strike against all targets hit."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Colossal Smash's basic-attack damage is tagged so on-hit effects apply to the primary target, reportedly twice (flagged bug)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The two converging windblasts deal a direct magic damage instance to everything they pass through and again on convergence."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The tornado formed on convergence ticks every 0.5s for 2s dealing magic damage as % of target's max HP."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Justice Punch's dash deals a single magic damage instance (80% vs non-champions) to everything it passes through."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shield of Durand channels up to 2s (blocking other actions per the interaction table), self-slowing and gaining DR; charging over the first 1.25s scales the eventual recast's radius/damage/taunt."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "The channel resolves in a mandatory recast (manual or automatic on timeout/interrupt) that is the actual magic-damage-dealing part, refreshes DR for 2s, and imposes a 0.4s action lockout afterward."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Anti-Magic Bulwark passive shield (% max HP, magic-only, regenerates only after a no-damage-taken timer) and the channel's physical/magic damage reduction only matter for the survival fight, not the damage fight."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hero's Entrance channels for 2.75s (CC-immune/untargetable after 1.25s) before impact, blocking Galio's other actions for the duration."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "On landing, Hero's Entrance deals a single magic damage instance to all nearby enemies."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (periodic empowered attack, AS uptime buff, ability-hit CDR, crit-eligible AD ratio, gust+tornado dot, dash-through damage, channel-then-recast burst, channel-then-impact burst) maps onto existing primitives (empowered-attack, timed-self-buff, cooldown-manipulation, crit-interaction, onhit-rider, plain-cast, dot, charge-or-channel, recast-or-multipart). The only open items are numeric/targeting ambiguities, not missing mechanics, captured under unsettled."
+ },
+ "unsettled": [
+  {
+   "question": "Hero's Entrance targets an 'allied champion's location; in a fight with no allies present, can Galio target himself to use R at all?",
+   "options": [
+    "Galio counts as his own ally and can self-target R normally",
+    "R has no valid target and must be excluded from both the damage and survival fights"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Galio''' prepares to make an entrance, {{tip|channel|channeling}} for {{fd|2.75}} seconds and designating the target allied {{tip|champion|champion's}} location at the time of cast as his landing spot."
+   ]
+  },
+  {
+   "question": "Colossal Smash's actual proc cadence: the bin's PassiveCooldownModified formula multiplies the 5s base cooldown by an unresolved 'CooldownMultiplierCalculationPart' that isn't defined in the sheet.",
+   "options": [
+    "Effective cooldown is a flat 5s between empowered-attack procs",
+    "Effective cooldown is reduced by an unknown multiplier (e.g. tied to attack speed), giving more procs per 15s than a flat 5s would"
+   ],
+   "impact": "high",
+   "quotes": [
+    "GalioPassive#PassiveCooldownModified = (<CooldownMultiplierCalculationPart>)*(PassiveCooldown=5)",
+    "! unresolved calculation part CooldownMultiplierCalculationPart"
+   ]
+  },
+  {
+   "question": "Colossal Smash is noted to apply on-hit effects to its primary target twice, but this is flagged as a bug; does the simulator's item interaction model this doubling or treat it as a single on-hit application?",
+   "options": [
+    "On-hit effects trigger twice per attack on the primary target as documented",
+    "On-hit effects trigger once as presumably intended, treating the note as a live-game anomaly not to be modeled"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Colossal Smash'' applies {{tip|on-hit}} effects to its primary target twice.{{bug}}"
+   ]
+  },
+  {
+   "question": "Winds of War's tornado damage cap against monsters disagrees between sources (bin: 50/tick, 200 total via SuperQMonsterMaxDamageTotal; wiki: 150/tick, 600 total); irrelevant if the dummy is flagged purely as a champion, but relevant if it is also flagged as a monster/large-monster type.",
+   "options": [
+    "Bin values (50/tick, 200 total) are live",
+    "Wiki values (150/tick, 600 total) are live",
+    "Cap never applies because the dummy is treated strictly as an enemy champion"
+   ],
+   "impact": "low",
+   "quotes": [
+    "GalioQ.SuperQMonsterMaxDamage = 50",
+    "capped at{{ft|150 per tick|600 total}}against {{tip|monsters}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Winds of War (Q) cast directly onto the dummy so both windblasts converge on it immediately, dealing the gust damage and forming the tornado dot.",
+   "Immediately follow with Justice Punch (E), dashing through the dummy for its magic damage instance.",
+   "Auto-attack continuously between ability casts to both deal basic damage and trigger/benefit from Colossal Smash (P) empowered attacks and its attack-speed uptime.",
+   "Recast Q and E again as soon as each comes off cooldown (further reduced if an ability hit on the dummy procs P's 3s cooldown refund on Colossal Smash, which is irrelevant to Q/E cooldowns but should still be tracked for P itself).",
+   "Activate Shield of Durand (W), holding the channel to at least 1.25s to reach its damage/taunt cap before recasting (manually or letting it auto-fire) for the larger magic damage burst, accepting the ~0.4s post-recast action lockout.",
+   "If Hero's Entrance (R) is usable in a no-ally fight (see unsettled), cast it early for its flat impact damage burst despite the long channel, since its long cooldown means it can be used at most once in 15s.",
+   "Fill any remaining time with auto-attacks and repeated Q/E casts until the 15s window ends."
+  ],
+  "questions": [
+   "Is R actually castable with no ally present (self-target), and should it be included in the damage-fight rotation at all?",
+   "What is Colossal Smash's true proc interval given the unresolved cooldown-multiplier term — does it proc more than once every 5s during sustained auto-attacking?",
+   "Should W be charged to the 1.25s scaling cap every time it's used, or does spamming a 0-charge W (faster tempo, lower per-cast damage) produce more total damage in a 15s window?",
+   "Does the simulator model Colossal Smash's dual on-hit application on the primary target, and if so does that double on-hit-item procs (e.g. Nashor's Tooth, Wit's End) as well as the base damage?",
+   "Does the target dummy count as a 'monster' for Winds of War's tornado damage cap, or purely as a champion (making the cap irrelevant)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

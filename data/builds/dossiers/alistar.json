@@ -1,0 +1,733 @@
+{
+ "champion": "alistar",
+ "abilities": {
+  "P": {
+   "name": "Triumphant Roar",
+   "cooldown": {
+    "values": [
+     3
+    ],
+    "quote": "3"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "self heal at 7 stacks",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "heal himself for {{as|5% of his '''maximum''' health}}",
+     "bin": [
+      "AlistarPassive.AlistarPassiveHealRatio",
+      "AlistarPassive#BaseHeal"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "ally heal at 7 stacks",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.07
+      }
+     ],
+     "quote": "nearby allied champions for {{as|7% of his '''maximum''' health}}",
+     "bin": [
+      "AlistarPassive.AlistarPassiveHealRatio",
+      "AlistarPassive.AlistarPassiveAllyHealRatio",
+      "AlistarPassive#AllyHeal"
+     ],
+     "binNote": "0.05 x 1.4 = 0.07 matches the wiki's stated 7% ally heal."
+    },
+    {
+     "id": "p_3",
+     "meaning": "stacks needed to trigger heal",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "At 7 stacks, '''Alistar''' consumes them all",
+     "bin": [
+      "AlistarPassive.PassiveMaxStacks"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "stacks generated on nearby champion/epic monster death",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "He generates 7 stacks if a nearby enemy champion or epic monster dies.",
+     "bin": [
+      "AlistarPassive.PassiveStacksChampionKill"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Alistar heals himself and allies simultaneously when the passive triggers.",
+     "quote": "Healing occurs simultaneously for '''Alistar''' and his allies.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal is on a cooldown separate from stack generation; stacks can build even while the heal is unavailable.",
+     "quote": "''Triumphant Roar'' can occur only once every few seconds, though '''Alistar''' may still generate stacks before then.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Alistar reaches 7 stacks while the heal is on cooldown, it fires automatically once the cooldown ends.",
+     "quote": "If '''Alistar''' is at 7 stacks when ''Triumphant Roar'' comes off cooldown, he will roar as soon as it elapses.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Stacks are lost entirely if Alistar dies.",
+     "quote": "'''Alistar''' loses all ''Triumph'' stacks upon dying.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Stacks are generated for stunning or displacing enemy champions, or nearby minion/monster deaths, not just from the heal trigger.",
+     "quote": "generates a {{tip|stack}} of ''Triumph'' for each enemy {{tip|champion}} he {{tip|stuns}} or {{tip|airborne|displaces}} with his {{tip|abilities}}, and each time a nearby enemy {{tip|minion}} or non-epic {{tip|monster}} dies",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AlistarPassive.PassiveCooldown",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "AlistarPassive.PassiveAllyNumHeal",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Pulverize",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{dv|{{tt|{{fd|0.25}}|Standard cast time}}|{{tt|{{fd|0.15}}|Reduced cast time when buffered during Headbutt's dash}}}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      100,
+      140,
+      180,
+      220
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|60 to 220}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "Pulverize#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "knockup/stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "stunning}} and {{tip|airborne|knocking them up}} simultaneously for 1 second",
+     "bin": [
+      "Pulverize.KnockupDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pulverize can be buffered during Headbutt's dash to cast with a reduced cast time when the dash ends.",
+     "quote": "''Pulverize'' can be buffered during {{ai|Headbutt|Alistar}} to cast with reduced cast time when the dash ends.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pulverize can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Pulverize.AoERadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Headbutt",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      110,
+      165,
+      220,
+      275
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|55 to 275}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "Headbutt#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|stun|stunning}} them for {{fd|0.75}} seconds",
+     "bin": [
+      "Headbutt.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Headbutt only deals damage and applies effects if the enemy is within 400 units upon arrival of the dash.",
+     "quote": "If they are within 400 units upon arrival, he deals them {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Alistar's attack range is reduced during Headbutt, preventing him from auto-attacking on arrival, which matters for attack-reset/on-hit sequencing.",
+     "quote": "'''Alistar's''' {{as|{{sti|attack range}}}} is reduced{{ft|to -375|by 500}}during ''Headbutt''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Pulverize is buffered during the Headbutt dash, the knockback distance is reduced and Pulverize overrides the knockback with a knockup.",
+     "quote": "When {{ai|Pulverize|Alistar}} is buffered during the dash, the knock back distance is reduced to 200 units.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Headbutt.KnockBackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Headbutt.KnockUpDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Trample",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      8,
+      11,
+      14,
+      17,
+      20
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.07
+      }
+     ],
+     "quote": "{{ap|80/10 to 200/10}} {{as|(+ {{ap|70/10}}% AP)}}",
+     "bin": [
+      "AlistarE.TrampleDamage",
+      "AlistarE.APRatio"
+     ],
+     "binNote": "Bin stores TrampleDamage=[80/110/140/170/200] and APRatio=0.7 as the TOTAL over the duration (used by AlistarE#TotalDamage, tooltip only); the wiki divides both by 10 ticks to get the per-tick values shown here. No bin row directly states the per-tick number."
+    },
+    {
+     "id": "e_2",
+     "meaning": "Total Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      110,
+      140,
+      170,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|80 to 200}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "AlistarE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "bonus magic damage on empowered attack at 5 stacks",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80,
+      95,
+      110,
+      125,
+      140,
+      155,
+      170,
+      185,
+      200,
+      215,
+      230,
+      245,
+      260,
+      275
+     ],
+     "terms": [],
+     "quote": "{{as|{{pplevel|20 to 275}} '''bonus''' magic damage}}",
+     "bin": [
+      "AlistarE#AttackBonusDamage"
+     ],
+     "binNote": "AlistarE#AttackBonusDamage's byLevel array [20/35/50/65/80/95/110/125/140/155/170/185/200/215/230/245/260/275] matches the wiki's pplevel values exactly (consistent with ProcDamageBase=20 + ProcDamageScale=15*(level-1), but those two data values are not named directly since neither alone carries any of the stated numbers)."
+    },
+    {
+     "id": "e_4",
+     "meaning": "duration Trample ticks and stacks last",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "over 5 seconds",
+     "bin": [
+      "AlistarE.Duration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No bin row for the 0.5s tick interval; it is inferred from the 5s duration producing 10 ticks that sum to TrampleDamage."
+    },
+    {
+     "id": "e_6",
+     "meaning": "max stacks of Trample",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "stacking up to 5 times",
+     "bin": [
+      "AlistarE.MaxStacks"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "window to use the empowered on-hit attack after reaching 5 stacks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "within 6 seconds",
+     "bin": [],
+     "binNote": "No matching bin data value found for this 6 second window (FullChargeDuration=5 does not match)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Trample generates a stack only when its persistent tick damages at least one enemy champion.",
+     "quote": "Each time this damages at least one enemy champion, he generates a {{tip|stack}} of ''Trample''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 5 stacks, Alistar's next basic attack on-hit against a champion consumes the stacks to deal bonus magic damage and stun.",
+     "quote": "'''Alistar's''' next {{tip|basic attack}} {{tip|on-hit}} against a {{tip|champion}} within 6 seconds ends ''Trample's'' effects to deal {{as|{{pplevel|20 to 275}} '''bonus''' magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The tick damage is persistent area damage while the empowered attack's bonus damage is proc damage.",
+     "quote": "''Trample'' deals {{tip|persistent area damage}} damage around '''Alistar''', while the bonus damage on the resulting attack is {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The stun and bonus damage are blocked by spell shields but the base attack damage is not.",
+     "quote": "The {{tip|stun}} and '''bonus''' damage are blocked by {{tip|spell shield|spell shields}} but the base attack damage is not.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered on-hit effect is consumed if the triggering attack is blocked, but not if it is dodged or missed while Alistar is blinded.",
+     "quote": "The on-hit effect is consumed if the attack {{tip|blocked}}, but not if it is {{tip|dodged}} or missed while '''Alistar''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage and stun can be applied by Guinsoo's Rageblade's Phantom Hit if the triggering attack did not apply them, but not a second time if it already did.",
+     "quote": "The bonus damage and stun can be applied by {{iis|Guinsoo's Rageblade}} Phantom Hit if the triggering attack did not.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AlistarE.BonusAARange",
+     "reason": "utility"
+    },
+    {
+     "ref": "AlistarE.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AlistarE.StunDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "AlistarE.FullChargeDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "AlistarE.ProcDamageBase",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "AlistarE.ProcDamageScale",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Unbreakable Will",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Damage Reduction",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.55,
+      0.65,
+      0.75
+     ],
+     "terms": [],
+     "quote": "{{ap|55 to 75}}%",
+     "bin": [
+      "FerociousHowl.RDamageReduction"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "duration of damage reduction and cleanse",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "For the next 7 seconds, he reduces incoming damage taken.",
+     "bin": [
+      "FerociousHowl.RDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Unbreakable Will cleanses Alistar of all crowd control on cast.",
+     "quote": "'''Alistar''' {{tip|cleanse|cleanses}} himself of all {{tip|crowd control}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "True damage cannot be reduced by Unbreakable Will's damage reduction.",
+     "quote": "{{tip|True damage}} cannot be reduced by any means and will deal full damage to '''Alistar''' during ''Unbreakable Will''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown begins when the ability is cast, not when its effect ends.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Pulverize deals magic AoE damage on cast, cooldown-gated, blockable by spell shield"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Headbutt deals magic damage on arrival if the target is still within 400 units; in a stationary dummy fight this condition is trivially met"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Trample deals persistent tick damage to nearby enemies every 0.5s over a 5s duration"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Each tick that damages a champion grants Alistar a Trample stack, capped at 5, that lasts for the ability's remaining duration"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "At 5 Trample stacks, Alistar's next basic-attack on-hit (within a stated window) consumes the stacks to deal bonus magic damage and stun"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs of 50-100 per cast against cooldowns of 10-14s (Q/W/E) and 80-120s (R) could matter for a low-mana Alistar early, though usually not binding by late game"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Triumphant Roar's self-heal (5% max HP at 7 stacks) reduces net damage taken; unread by the damage-only fight but relevant to the survival fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "Unbreakable Will's 55-75% incoming damage reduction and CC cleanse only matter to the survival fight; it deals no damage itself"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Alistar's offensive kit reduces cleanly to two plain-cast magic-damage abilities (Q, W) and a ticking DoT (E) that also builds up to 5 self-stacks arming one empowered basic attack. Those map onto plain-cast + dot + stacking-self-buff + empowered-attack without needing custom logic. P's heal and R's damage reduction are pure defensive-only effects that a damage fight never reads and a survival fight reads as heal/damage-reduction, both expressible with existing categories."
+ },
+ "unsettled": [
+  {
+   "question": "Does Trample's 5-stack empowered on-hit bonus damage (magic, described as 'proc damage') behave like normal on-hit magic damage that can be modified by AD-based on-hit riders/crit, or is it a fixed proc that never crits and is excluded from on-hit item interactions beyond Guinsoo's Phantom Hit?",
+   "options": [
+    "Treated as ordinary on-hit damage, benefits from crit/on-hit amps like other magic on-hit procs",
+    "Fixed proc damage instance that never crits and only interacts with on-hit systems as explicitly noted (e.g. Rageblade Phantom Hit)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Trample'' deals {{tip|persistent area damage}} damage around '''Alistar''', while the bonus damage on the resulting attack is {{tip|proc damage}}.",
+    "The bonus damage and stun can be applied by {{iis|Guinsoo's Rageblade}} Phantom Hit if the triggering attack did not."
+   ]
+  },
+  {
+   "question": "Is the window to land the empowered attack after reaching 5 Trample stacks 6 seconds (per wiki) or 5 seconds (per the bin's FullChargeDuration value), and do these two numbers actually describe the same thing?",
+   "options": [
+    "6 seconds is correct and FullChargeDuration is an unrelated/stale bin field",
+    "5 seconds (FullChargeDuration) is the live value and the wiki's '6 seconds' is outdated or describes something else"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Alistar's''' next {{tip|basic attack}} {{tip|on-hit}} against a {{tip|champion}} within 6 seconds ends ''Trample's'' effects",
+    "AlistarE.FullChargeDuration = 5"
+   ]
+  },
+  {
+   "question": "Should the optimal damage rotation buffer Pulverize during Headbutt's dash for the reduced 0.15s cast time, or is casting Pulverize normally (0.25s) simpler and equally fast against a stationary, already-adjacent dummy where the dash covers near-zero distance?",
+   "options": [
+    "Buffer Q during W's dash for the reduced cast time regardless of distance",
+    "Cast Q and W independently since dash distance to an adjacent dummy is negligible, making the buffer's time savings marginal or irrelevant"
+   ],
+   "impact": "low",
+   "quotes": [
+    "''Pulverize'' can be buffered during {{ai|Headbutt|Alistar}} to cast with reduced cast time when the dash ends."
+   ]
+  },
+  {
+   "question": "How many discrete ticks does Trample actually deal (its total damage split how many ways), given the bin provides only a duration and a total-damage value with no explicit tick-count field?",
+   "options": [
+    "10 ticks of TrampleDamage/10 every 0.5s over 5s (as the wiki's derived per-tick figure implies)",
+    "Some other tick count/interval that still sums to the stated total over 5s"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Alistar''' tramples the ground around him every {{fd|0.5}} seconds over 5 seconds",
+    "{{st|Magic Damage Per Tick|{{ap|80/10 to 200/10}} {{as|(+ {{ap|70/10}}% AP)}}|Total Magic Damage|{{ap|80 to 200}} {{as|(+ 70% AP)}}}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Trample (E) to become ghosted and start its persistent ticking magic damage and stack generation, since it has no cast time and should be running for as much of the 15s window as possible.",
+   "Auto-attack the dummy continuously throughout the fight; Trample's ticks will land automatically while Alistar is within range.",
+   "Cast Pulverize (Q) for its upfront AoE magic damage as soon as it is available.",
+   "Cast Headbutt (W) at point-blank range against the dummy for its magic damage; since the dummy is stationary and already close, the dash covers negligible distance and does not meaningfully delay follow-up actions.",
+   "As soon as Trample reaches 5 stacks, land the next basic attack to consume the stacks for the bonus magic damage and stun (stun is irrelevant to damage but the bonus damage is not).",
+   "Recast Q and W on cooldown, interleaved with continued auto-attacking, for the remainder of the 15s window.",
+   "Recast Trample (E) again as soon as its cooldown allows, to keep the DoT and stack-building cycle going for a second (partial) cycle within the 15s fight.",
+   "Do not use Unbreakable Will (R): it provides only damage reduction and CC cleanse, neither of which increases damage against a passive dummy."
+  ],
+  "questions": [
+   "Should Headbutt be modeled as instant (already in range, no travel time) in the damage fight, or should its dash time (even if near-zero) be counted against the 15s window?",
+   "Does the simulator allow Trample's persistent tick damage to occur every 0.5s uninterrupted while Alistar is also auto-attacking and casting other abilities, or do casts interrupt the tick timer?",
+   "Is it correct to exclude Unbreakable Will entirely from the damage-fight rotation, given it deals no damage and its cast time would only cost DPS uptime?",
+   "In the DPS-ranking damage fight, should Alistar recast Trample a second time within the 15s window (its ~10-14s cooldown allows roughly one full recast), or does the first cast's tail (ticks near the 5s mark) overlap awkwardly with a recast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

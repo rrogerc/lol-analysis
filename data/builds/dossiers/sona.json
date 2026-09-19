@@ -1,0 +1,917 @@
+{
+ "champion": "sona",
+ "abilities": {
+  "P": {
+   "name": "Power Chord",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_powerchord_damage",
+     "meaning": "bonus magic damage on the empowered basic attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      105,
+      120,
+      135,
+      150,
+      165,
+      180,
+      195,
+      210,
+      225,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "deal {{as|{{pp|20 to 80 for 7;90 + (240-90)/10*(x-1) for 13|formula=10 + 10 per level until level 8, then + 15 per level}}|magic damage}} {{as|20% AP}} {{as|'''bonus''' magic damage}}",
+     "bin": [
+      "SonaPassive#PowerChordDamage"
+     ]
+    },
+    {
+     "id": "p_staccato_damage",
+     "meaning": "Power Chord bonus damage modified when the last ability cast was Hymn of Valor (Staccato)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      30,
+      45,
+      60,
+      75,
+      90,
+      105,
+      120,
+      135,
+      157.5,
+      180,
+      202.5,
+      225,
+      247.5,
+      270,
+      292.5,
+      315,
+      337.5,
+      360
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "'''Bonus''' damage is modified to {{as|{{pp|20*1.5 to 80*1.5 for 7;90*1.5 + (240*1.5-90*1.5)/10*(x-1) for 13|formula=15 + 15 per level until level 8, then + 22.5 per level}}|magic damage}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "SonaQ#TotalStaccatoDamage"
+     ]
+    },
+    {
+     "id": "p_diminuendo_weaken",
+     "meaning": "reduction to target's damage dealt when the last ability cast was Aria of Perseverance (Diminuendo)",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0004
+      }
+     ],
+     "quote": "damage dealt by 25% {{as|(+ 4% per 100 AP)}}",
+     "bin": [
+      "SonaW#TotalDiminuendoWeakenPercent"
+     ]
+    },
+    {
+     "id": "p_diminuendo_duration",
+     "meaning": "duration of the Diminuendo damage-dealt reduction debuff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "for 3 seconds",
+     "bin": [
+      "SonaW.DiminuendoDuration"
+     ]
+    },
+    {
+     "id": "p_powerchord_stackmax",
+     "meaning": "Power Chord stacks required to empower the next basic attack",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "generate a stack of ''Power Chord'', stacking up to 3 times",
+     "bin": [
+      "SonaPassive.PowerChordPassiveCountMax"
+     ]
+    },
+    {
+     "id": "p_accelerando_ah_per_stack",
+     "meaning": "ability haste gained per Accelerando stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|{{fd|0.5}} basic ability haste}}",
+     "bin": [
+      "SonaPassive.AccelerandoAHPerStack"
+     ]
+    },
+    {
+     "id": "p_accelerando_ah_cap",
+     "meaning": "maximum ability haste from Accelerando stacks",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "{{as|60|ah}}",
+     "bin": [
+      "SonaPassive.AccelerandoCap"
+     ]
+    },
+    {
+     "id": "p_accelerando_ult_cdr",
+     "meaning": "current cooldown reduction to Crescendo per Accelerando proc at maximum stacks",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "reduces the {{sti|'''current''' cooldown}} of ''{{ai|Crescendo|Sona}}'' by {{fd|1.5}} seconds each time",
+     "bin": [
+      "SonaPassive.AccelerandoUltCDR"
+     ]
+    },
+    {
+     "id": "p_melody_globalcd",
+     "meaning": "duration of the brief shared cooldown Melody applies to Sona's other basic abilities on cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "her other basic abilities incur a {{sti|cd|{{fd|0.5}}-second}} global cooldown",
+     "bin": [
+      "SonaQ.BaseGlobalCD"
+     ],
+     "binNote": "Same 0.5s value is duplicated across SonaQ/W/E.BaseGlobalCD; only Q's row cited since this is a shared passive value."
+    },
+    {
+     "id": "p_melody_aura_duration",
+     "meaning": "duration of the Melody aura generated on ability cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "generates a unique {{tip|aura}} for 3 seconds that empowers herself and nearby allied champions",
+     "bin": [
+      "SonaQ.AuraDuration"
+     ],
+     "binNote": "Same 3s value is duplicated across SonaQ/W/E.AuraDuration; only Q's row cited since this is a shared passive value."
+    },
+    {
+     "id": "p_accelerando_stack_cap",
+     "meaning": "maximum number of Accelerando stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 120,
+     "terms": [],
+     "quote": "stacking up to 120 times",
+     "bin": [],
+     "binNote": "No bin row for the 120 stack cap found; AccelerandoCap=60 is the AH cap, not the stack cap. Likely derived as AccelerandoCap/AccelerandoAHPerStack = 60/0.5 = 120, but not stated directly in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting any basic ability puts Sona's other basic abilities on a brief shared cooldown.",
+     "quote": "her other basic abilities incur a {{sti|cd|{{fd|0.5}}-second}} global cooldown",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered Power Chord attack resets Sona's basic attack timer.",
+     "quote": "Gaining Power Chord's empowered attack {{tip|basic attack reset|resets}} '''Sona's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack applies normal on-hit effects and can critically strike.",
+     "quote": "The triggering attack will apply other {{tip|on-hit}} effects and can {{tip|critical strike|critically strike}} as normal.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack has an uncancellable windup.",
+     "quote": "have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not trigger or apply against wards and jungle plants (not relevant against a champion dummy).",
+     "quote": "The empowered attack will trigger but not be consumed nor apply its effects against {{tip|wards}} and [[jungle plants]].",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Accelerando stacks are gained by hitting an enemy champion with Hymn of Valor or sufficiently shielding/healing with Aria of Perseverance, up to 120 stacks.",
+     "quote": "generates a {{tip|stack}} of ''Accelerando'' each time she hits an enemy {{tip|champion}} with ''{{ai|Hymn of Valor|Sona}}'' and each time she mitigates sufficient damage or heals damaged allies with ''{{ai|Aria of Perseverance|Sona}}'', stacking up to 120 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only one Melody aura (self/ally empowerment) can be active at a time.",
+     "quote": "Only one aura can be active at a time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The last basic ability cast determines Power Chord's bonus effect (Staccato, Diminuendo, or Tempo).",
+     "quote": "apply an additional effect based on the last basic ability she cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SonaPassive.TempoDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Hymn of Valor",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "8"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      85,
+      120,
+      155,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|50 to 190}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SonaQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 10% of '''Sona's''' AP)}}",
+     "bin": [
+      "SonaQ#TotalOnHitDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "duration of the Power Chord bonus damage tag/window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "on their next attack {{tip|on-hit}} within 5 seconds",
+     "bin": [
+      "SonaQ.OnHitDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Q hits the two nearest visible enemies, prioritizing champions, each taking magic damage as area damage.",
+     "quote": "sends out bolts of sound to the two nearest {{tip|sight|visible}} enemies, prioritizing champions",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sona gains a Power Chord (Accelerando) stack for each bolt that hits an enemy champion.",
+     "quote": "'''Sona''' gains a stack of ''{{ai|Power Chord|Sona|Accelerando}}'' for each bolt that hits an enemy {{tip|champion}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Power Chord empowered attack deals bonus on-hit magic damage as proc damage rather than area damage.",
+     "quote": "the {{sbc|{{ai|Power Chord|Sona|Melody|image=*none*}}}} empowered attacks deal {{tip|proc damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack triggers against wards but is not consumed by them.",
+     "quote": "The empowered attack will trigger but not be consumed against [[ward]]s.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SonaQ.AuraRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SonaQ.EnemiesToHit",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SonaQ.AuraDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaQ.BaseGlobalCD",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaQ.OnHitProcs",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SonaQ.OnHitRatio",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Aria of Perseverance",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ],
+    "quote": "{{ap|80 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60,
+      75,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|30 to 90}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "SonaW#TotalHeal"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      45,
+      65,
+      85,
+      105
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|25 to 105}} {{as|(+ 25% of '''Sona's''' AP)}}",
+     "bin": [
+      "SonaW#TotalShield"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Minimum Damage Mitigated",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      45,
+      65,
+      85,
+      105
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 105}}",
+     "bin": [
+      "SonaW.AccelerandoShieldBreakpoint"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "SonaW.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The Active heals Sona and sends a tone to heal the most wounded allied champion nearby, based on greatest % missing health.",
+     "quote": "heals herself and sends out a tone to heal the {{tt|most wounded|Based on greatest % missing health}} allied champion nearby",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If no ally is injured, the heal targets the closest allied champion instead.",
+     "quote": "If no one is injured, ''Aria of Perseverance'' will target the closest allied champion.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sona and allies tagged by a Power Chord bonus receive a shield lasting 1.5 seconds.",
+     "quote": "'''Sona''' and tagged allied champions are granted a {{tip|shield}} for {{fd|1.5}} seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sona gains a stack of Accelerando (a self-buff) whenever she heals a wounded ally or shields a minimum amount of damage for an ally with this ability.",
+     "quote": "'''Sona''' gains a stack of ''{{ai|Power Chord|Sona|Accelerando}}'' whenever she {{tip|heals}} a wounded ally or {{tip|shields}} a minimum amount of damage for an ally",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Power Chord Diminuendo bonus reduces the target's damage output for a short time, which reduces damage dealt in the survival fight if Sona is the attacker's target of interest.",
+     "quote": "''Power Chord'' reduces the target's [[size]] and damage output for a short time",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SonaW.AuraDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaW.AuraRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SonaW.BaseGlobalCD",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaW.DiminuendoDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaW.HealRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SonaW.HealRatio",
+     "reason": null
+    },
+    {
+     "ref": "SonaW.ShieldRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Song of Celerity",
+   "cooldown": {
+    "values": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "quote": "14"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.1,
+        0.12,
+        0.14,
+        0.16,
+        0.18
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.02
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|10 to 18}}% {{as|(+ 2% per 100 of '''Sona's''' AP)}}",
+     "bin": [
+      "SonaE#TotalAllyMovementSpeed"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Self bonus movement speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0002
+      }
+     ],
+     "quote": "{{as|20%|ms}} {{as|(+ 2% per 100 AP)}} {{as|'''bonus''' movement speed}}",
+     "bin": [
+      "SonaE#TotalSelfMovementSpeed"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Self movement speed duration (max, cut short to 3s if damage taken)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "for 7 seconds. If she takes damage during this time, the duration ends prematurely once or if 3 seconds have elapsed",
+     "bin": [
+      "SonaE.SelfMovementSpeedDurationMax"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Power Chord ally bonus movement speed duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "Tagged allied champions gain {{as|'''bonus''' movement speed}} for 3 seconds",
+     "bin": [
+      "SonaE.AllyMovementSpeedDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Song of Celerity is not a direct damage ability; it grants movement speed to Sona and, via Power Chord tagging, to allies.",
+     "quote": "'''Sona''' gains {{sti|ms|{{as|'''bonus''' movement speed}}}} for a short time",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Taking damage prematurely ends the extended self-speed duration, cutting it from 7 seconds down to 3.",
+     "quote": "If she takes damage during this time, the duration ends prematurely once or if 3 seconds have elapsed",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Song of Celerity has no cast time.",
+     "quote": "cast time    = none",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SonaE.SelfMovementSpeedDurationMin",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SonaE.AuraRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SonaE.AuraDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaE.BaseGlobalCD",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SonaE.TempoDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Crescendo",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{ap|140|120|100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|150|250|350}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "SonaR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{tip|stuns}} them for {{fd|1.5}} seconds",
+     "bin": [
+      "SonaR.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Crescendo can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every basic ability cast adds a Power Chord stack; at 3 stacks the next basic attack is empowered"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "P"
+   ],
+   "note": "Gaining the empowered Power Chord attack resets Sona's basic attack timer"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Power Chord's empowered attack adds bonus magic on-hit damage; Q's Melody tag separately arms the next attack with its own bonus on-hit magic damage within 5s"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Power Chord's bonus effect/damage changes based on which basic ability (Q/W/E) was cast last (Staccato raises the bonus damage when Q was last)"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Accelerando: permanent stacks (from Q champion hits or W heal/shield thresholds) grant ability haste up to a 60 AH cap"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "At max Accelerando stacks, each further proc cuts Crescendo's current cooldown by 1.5s instead of granting more AH; the AH from Accelerando also lowers cooldowns on all abilities including R"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Hymn of Valor and Crescendo are direct-damage casts on cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (rising per rank on Q/W) can limit how much ability-casting/weaving is sustainable across the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "Heal/shield (W) and movement speed (E) do not change damage dealt or taken by the champion being fought in the damage fight; W's shield/heal values are irrelevant there. E is irrelevant everywhere in this simulator (mobility only)"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's distinctive pieces (Power Chord arming/empowerment, Accelerando's stacking-AH-into-cooldown-reduction feedback loop, and the last-ability-cast conditional bonus) are each expressible with existing primitives (nth-hit-or-cast, attack-reset, onhit-rider, stacking-self-buff, cooldown-manipulation, conditional-damage). No mechanic here requires logic outside that closed list for a single-target damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "Hymn of Valor sends bolts to the two nearest visible enemies. In a one-target dummy fight, does the second bolt also strike the sole dummy target (doubling Q's direct damage per cast), or does it simply have no second target and only one bolt connects?",
+   "options": [
+    "Both bolts converge on the single available target, dealing SonaQ#TotalDamage twice per cast",
+    "Only one bolt finds a target; the second bolt has no valid enemy and deals no damage",
+    "The simulator should treat this as an explicit assumption/positional case rather than infer from the wiki text"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sona''' sends out bolts of sound to the two nearest {{tip|sight|visible}} enemies, prioritizing champions. Each bolt deals {{as|magic damage}}",
+    "SonaQ.EnemiesToHit = 2"
+   ]
+  },
+  {
+   "question": "Does healing herself with Aria of Perseverance's self-heal count as 'healing a wounded ally' for generating an Accelerando stack, or does only the secondary bolt (which targets the most-wounded ally, possibly Sona herself if solo) count?",
+   "options": [
+    "Self-heal always grants an Accelerando stack (Sona counts as her own healed ally)",
+    "Only the bolt portion (which may retarget to Sona if she is the most wounded / only ally present) grants the stack, and it must clear the minimum-heal/shield threshold",
+    "In a no-ally solo dummy fight, W never generates an Accelerando stack at all"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Sona''' gains a stack of ''{{ai|Power Chord|Sona|Accelerando}}'' whenever she {{tip|heals}} a wounded ally or {{tip|shields}} a minimum amount of damage for an ally with ''Aria of Perseverance''"
+   ]
+  },
+  {
+   "question": "When Power Chord reaches 3 stacks from a non-Q cast (e.g. W or E) but Q was cast earlier, is the empowered attack's bonus effect determined by the ability that pushed the stack to 3, or by whichever basic ability was cast most recently at the moment the attack actually lands (which could differ if another ability is cast in between)?",
+   "options": [
+    "The 'last ability cast' is locked in at the moment 3 stacks is reached",
+    "The 'last ability cast' is re-evaluated live, using whichever ability was most recently cast when the empowered attack lands",
+    "Not distinguishable from wiki/bin text; needs a ruling"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "apply an additional effect based on the last basic ability she cast"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Basic-attack the dummy continuously as the baseline DPS source between ability casts.",
+   "Cast Crescendo (R) as soon as it is available for its large flat+AP magic burst, since its cooldown (100-140s) will not come off again within the 15s window at any relevant rank.",
+   "Cast Hymn of Valor (Q) on cooldown (8s, reduced by ability haste) as the primary repeatable direct-damage ability and main source of on-hit Melody bonus damage tags and Accelerando stacks.",
+   "Weave Aria of Perseverance (W) and Song of Celerity (E) off cooldown purely to add Power Chord stacks faster (each basic ability cast, not just Q, adds a stack), so that every third cast arms an empowered basic attack; cast Q immediately beforehand when possible so the empowered attack rolls the higher-damage Staccato bonus rather than the non-damaging Diminuendo/Tempo variants.",
+   "Let each empowered Power Chord attack fire as soon as armed (it resets the attack timer, so it does not lose auto-attack uptime) and stack Accelerando throughout to gain ability haste, which shortens Q/W/E cooldowns and, once capped, chips time off Crescendo's cooldown as well."
+  ],
+  "questions": [
+   "Should W and E actually be cast against a solo dummy (no allies to benefit, and W's self-heal/shield does nothing for damage output), purely to speed up Power Chord stacking, or does the mana/cast-time cost of casting them outweigh the value of extra empowered attacks compared to just spamming Q and auto-attacking?",
+   "Is it correct to assume the player always sequences a non-Q ability's Power Chord proc so that Q was the most recent cast (to get Staccato), or would an expert say the natural weave (Q, W, E, Q, W, E...) sometimes lands the proc off W or E instead?",
+   "Given Crescendo's long cooldown, is opening with R before Q correct for maximizing 15s damage, or should R be delayed to synchronize with a Power Chord Staccato-empowered attack for a bigger opening burst?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

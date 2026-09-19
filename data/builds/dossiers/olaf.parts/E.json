@@ -1,0 +1,156 @@
+{
+ "name": "Reckless Swing",
+ "cooldown": {
+  "values": [
+   11,
+   10,
+   9,
+   8,
+   7
+  ],
+  "quote": "{{ap|11 to 7}}"
+ },
+ "cost": {
+  "values": [
+   28,
+   46,
+   64,
+   82,
+   100
+  ],
+  "quote": "{{as|{{ap|70*0.4 to 250*0.4}} {{as|(+ {{ap|50*0.4}}% AD)}}|health}}",
+  "resource": "health"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{pp|0.25 to 0.175|0 to 125 by 12.5|key1=%|type='''bonus''' attack speed|color=as|round=3}}",
+  "binNote": "Base cast time is 0.25 (Cast_Time_Base), shrinking to a minimum of 0.175 (Cast_Time_Min) as bonus attack speed rises to 125% (Cast_Time_Attack_Speed_Cap); the field records the base value only."
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "True Damage",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    70,
+    115,
+    160,
+    205,
+    250
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|70 to 250}} {{as|(+ 50% AD)}}",
+   "bin": [
+    "OlafRecklessStrike#TotalDamage",
+    "OlafRecklessStrike.ADRatio"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Health cost paid to cast",
+   "role": "resource",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    28,
+    46,
+    64,
+    82,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{as|{{ap|70*0.4 to 250*0.4}} {{as|(+ {{ap|50*0.4}}% AD)}}|health}}",
+   "bin": [
+    "OlafRecklessStrike.BaseHealthCost",
+    "OlafRecklessStrike.HealthCostADRatio",
+    "OlafRecklessStrike.HealthCostPercent"
+   ],
+   "binNote": "The wiki writes the cost as 40% of the true-damage value (base and AD ratio both scaled by 0.4), which matches the bin's separate BaseHealthCost/HealthCostADRatio track (28/46/64/82/100 base, 0.2 AD ratio = 0.5*0.4) computed via HealthCostCalc = TotalDamage * HealthCostPercent."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Cooldown reduction per basic attack on a champion",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "Basic attacks reduce ''Reckless Swing's'' {{sti|cooldown}} by 1 second, increased to 2 against monsters.",
+   "bin": [
+    "OlafRecklessStrike.ChampionRefresh"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Cooldown reduction per basic attack on a monster",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "Basic attacks reduce ''Reckless Swing's'' {{sti|cooldown}} by 1 second, increased to 2 against monsters.",
+   "bin": [
+    "OlafRecklessStrike.MonsterRefresh"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "If Reckless Swing kills the target, Olaf heals himself for the amount of the health cost paid.",
+   "quote": "If ''Reckless Swing'' kills the target, '''Olaf''' {{tip|heals}} himself equal to the {{as|{{sti|health|health cost}}}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Reckless Swing's cast time shortens with bonus attack speed, down to a minimum, so higher attack speed lets it be cast (and thus deal its true damage) more quickly.",
+   "quote": "{{pp|0.25 to 0.175|0 to 125 by 12.5|key1=%|type='''bonus''' attack speed|color=as|round=3}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Reckless Swing can be cast even without enough health to pay the cost, and it will never reduce Olaf's health below 1.",
+   "quote": "''Reckless Swing'' can be cast even if '''Olaf''' doesn't have the sufficient amount of health to pay for the health cost.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The health refund from a kill is a heal, so it is affected by healing modifiers.",
+   "quote": "''Reckless Swing's'' health refund is considered a {{tip|heal}} therefore it is affected by healing modifiers.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Basic attacks reduce Reckless Swing's cooldown by 1 second against champions, increased to 2 seconds against monsters.",
+   "quote": "Basic attacks reduce ''Reckless Swing's'' {{sti|cooldown}} by 1 second, increased to 2 against monsters.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The health cost is not a separate resource pool but computed as 40% of the true damage value.",
+   "quote": "The health cost is equal to 40% of ''Reckless Swing's'' {{as|true damage}} value.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "OlafRecklessStrike.Cast_Time_Base",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "OlafRecklessStrike.Cast_Time_Min",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "OlafRecklessStrike.Cast_Time_Attack_Speed_Cap",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

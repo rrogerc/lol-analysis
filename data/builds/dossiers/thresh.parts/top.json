@@ -1,0 +1,131 @@
+{
+ "champion": "thresh",
+ "primitives": [
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P",
+    "E",
+    "W"
+   ],
+   "note": "Soul stacks (ThreshPassiveSouls buffStacks) are gained only when enemies/large minions/monsters die near Thresh; a solo target-dummy fight never produces this, so an assumed stack count must be picked. It feeds P's flat AP/armor, W's shield strength (+2/soul), and E's per-soul on-hit base damage (1.7/soul)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Each collected Soul is a permanent stack (no expiry, no stated cap) granting +1 AP and +1 bonus armor per stack."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Death Sentence deals its magic damage instance on hitting the first enemy struck by the scythe."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deathly Leap is a recast of Death Sentence that dashes Thresh to the Shackled target and restores his ability to attack; it deals no separate damage but resets his attack availability (interacts with attack-reset/positioning for follow-up autos)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Landing Death Sentence reduces its own current cooldown by 2 seconds (ThreshQ.HitBonusCooldown), always triggering against a dummy that can't spell-shield it."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Dark Passage grants a shield to Thresh (and an ally) with no damage component; only relevant to a survival fight, never read by the damage-dealing dummy fight."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Flay's passive arms Thresh's next basic attack with bonus magic damage (1.7/soul, plus an AD ratio that ramps from 0% to 90-210% AD over 10s without basic-attacking), consumed on hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Flay's active deals a magic damage instance on cast (area damage, separate from the on-hit passive proc)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Box deals its magic damage instance once, on the first wall an enemy champion breaks by contact (only one wall can deal damage per cast in a single-target fight)."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Flay's passive bonus damage does not stack by casting or by landing attacks; instead its AD ratio continuously ramps from 0% up to its rank's max (90-210% AD) over 10 seconds of NOT basic-attacking an enemy, then the charge/ratio is reset back toward minimum whenever the empowered attack lands (or is blocked). This is a time-since-last-attack ramp/decay, which none of the closed-list primitives (empowered-attack, stacking-self-buff, ramping-per-cast) cleanly capture, since those key off casts/attacks rather than elapsed idle time. Modeling it requires bespoke logic that tracks time since Thresh's last basic attack and interpolates the AD ratio accordingly, and decides how quickly it resets after each consumed proc."
+ },
+ "unsettled": [
+  {
+   "question": "How many Souls (buffStacks) should Thresh be assumed to have at the start of (and possibly gaining during) the damage/survival fight, given a stationary dummy that never dies and drops no Souls?",
+   "options": [
+    "0 souls (strict dummy-fight reading: no kills occur)",
+    "A fixed representative number (e.g. 10-20, typical mid/late-game soul count) chosen as a simulator convention",
+    "Scale souls with champion level as a proxy for game-time progression"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Enemy {{tip|champions}}, large {{tip|minions}} and large {{tip|monsters}} that die near '''Thresh''' drop a ''Soul'' for 8 seconds.",
+    "For each {{tip|stack}}, '''Thresh''' gains {{sti|ap|{{as|1 ability power}}}} and {{sti|armor|{{as|1 '''bonus''' armor}}}}."
+   ]
+  },
+  {
+   "question": "In the 15s dummy fight, does Thresh continuously auto-attack (repeatedly consuming/resetting Flay's passive near its 0% AD floor) or hold basic attacks for 10s to let the passive ratio reach its rank max before using the empowered auto, and does landing the empowered attack fully reset the ramp to 0 or to some partial value?",
+   "options": [
+    "Always auto-attack on cooldown, accepting a near-minimum passive ratio most of the time",
+    "Delay/withhold autos for 10s once per window to cash in a max-ratio empowered attack, sacrificing raw attack count",
+    "Ratio resets only to a partial value after landing (not fully to 0), sustaining a higher average ratio"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Thresh's''' {{tip|basic attacks}} are empowered to deal {{as|'''bonus''' magic damage}}, with the {{sti|{{as|AD}}}} ratio increasing over 10 seconds without basic attacking enemies.",
+    "The enhanced attack applies other [[on-hit effect]]s and can {{tip|critical strike|critically strike}} as normal (the bonus damage cannot)."
+   ]
+  },
+  {
+   "question": "Does casting Deathly Leap (Q recast) trigger on-cast item/rune effects (e.g. Spellblade) a third time, and should the simulator treat it as a full extra 'cast' for cooldown-reduction or proc-count purposes, or purely as a repositioning/attack-reset action with no separate proc?",
+   "options": [
+    "Deathly Leap triggers on-cast effects a third time as the wiki notes describe (bug-flagged but real in-client behavior)",
+    "Deathly Leap is treated as a free follow-up with no additional on-cast proc, since it deals no damage of its own"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Death Sentence'' triggers on-cast effects (such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive) once at the start of the cast, and once at the end of the cast. It may trigger on-cast effects a third time when casting ''Deathly Leap''."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume a settled Soul-stack count is applied to Thresh's AP/armor and Flay's on-hit base before the fight begins.",
+   "Open with The Box (R) immediately for its large upfront magic damage burst, since its long cooldown means it will likely only be cast once in the 15s window.",
+   "Cast Death Sentence (Q) on the dummy for its magic damage, stun, and the current-cooldown reduction it grants on hit.",
+   "Recast as Deathly Leap once eligible to dash in and regain basic-attack availability without losing further time.",
+   "Weave basic attacks throughout, prioritizing landing the Flay passive's empowered attack whenever its ramped AD ratio is judged worthwhile per the ramp-timing ruling above.",
+   "Cast Flay (E) active on cooldown for its own magic damage instance, on top of (not instead of) its passive on-hit proc.",
+   "Repeat Q and E on cooldown for the remainder of the 15 seconds, filling gaps with basic attacks."
+  ],
+  "questions": [
+   "Should the fixed Soul-stack count assumption be a single simulator-wide constant, or should it scale with the champion level/item-value axis used elsewhere in the sheet?",
+   "Is it correct to model Flay's passive ramp with a continuous linear interpolation from 0% to its rank's max AD ratio over 10 seconds, resetting to 0% on any landed (or blocked) empowered attack?",
+   "Does the simulator's damage-fight harness allow a pre-combat idle window (to charge Flay's passive) before the 15s clock starts, or must all ramping happen within the timed window?",
+   "Should The Box's single cast be assumed to land its damage on the dummy immediately (ignoring wall-approach geometry), given it is a positional AoE keyed to enemy contact with a specific wall?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

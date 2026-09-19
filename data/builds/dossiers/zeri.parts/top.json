@@ -1,0 +1,188 @@
+{
+ "champion": "zeri",
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Living Battery's 0-100 charge counter governs whether a basic attack is a cheap 10-charge zap or the full 100-charge empowered zap; charge builds from movement and from casting Q."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "P"
+   ],
+   "note": "Uncharged zaps execute the target below a level-scaling %max-health/flat threshold (ZeriQ#PassiveExecuteThreshold)."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every time accumulated charge hits 100 (via ~10 basic attacks and/or Q casts), the next basic attack is the empowered full-charge zap instead of a regular one."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W's pulse and R's nova deal their damage on cast/short delay."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Burst Fire's true cooldown and cast time are 1/attack speed, capped at 1.5 attacks/sec (raised only by R's Overcharged)."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "Q"
+   ],
+   "note": "60% of bonus attack speed percent in excess of the 1.5 AS cap is converted into bonus AD."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Each of Q's 7 rounds rolls crit individually; R's Overcharged chain-lightning bounce can also crit."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q fires 7 separately-timed missile hits over its cast time (3 while Overcharged); R deals a nova hit plus a separately-timed chain-lightning proc."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spark Surge grants Lightning Rounds for 5s, arming Burst Fire with bonus magic damage on the first target hit and pierce on subsequent targets."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's current cooldown is reduced 0.5s (1.5s on a crit) whenever a charged attack or Burst Fire hits."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Casting Spark Surge resets Zeri's basic attack timer and Q's cooldown/cast-time gate."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Overcharged (5s, extendable) grants 30% bonus AS with a raised AS cap, 15% MS, and swaps Q into its 3-round chain-lightning form."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W"
+   ],
+   "note": "The upgraded wall-triggered laser (which crits and hits multiple enemies) requires terrain; per the no-terrain fight rule only the base non-crit pulse to the single target is reachable."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Overcharged Burst Fire's chain lightning needs a second visible enemy within 650 units to bounce to; with a single dummy target this component never triggers."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (W 50-90, E 90-70, R 100) may meaningfully gate how often these are recast inside 15s depending on mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Zeri's basic attack is not a normal physical auto-attack: Living Battery fully replaces it with a charge-gated magic-damage system (cheap 10-charge zaps with an execute clause, cycling into a 100-charge empowered zap with an AP+target-max-health scaling that periodically recurs), and that charge is fed both by movement (largely absent in a stationary dummy fight) and by casting Q. Layered on top, Q (Burst Fire) is itself not a simple cooldown ability but an AS-gated 7-hit basic-attack burst whose true cast rate and bonus AD depend on Zeri's attack speed relative to a cap, and R's Overcharged state swaps Q into a different 3-hit chain-lightning form while raising that cap, and E arms Q with extra first-hit/pierce damage for a duration. None of the closed primitives individually captures the shared identity between P's charge system and Q's AS-gated firing, or R's in-place override of Q's behavior; this interlock needs bespoke state-machine logic (current charge, current Q form, active timed buffs) rather than a single primitive lookup."
+ },
+ "unsettled": [
+  {
+   "question": "What damage type does Ultrashock Laser's pulse/laser actually deal: magic (per the infobox flag) or physical (per the description and blurb text, which repeatedly say 'physical damage')?",
+   "options": [
+    "Magic damage, per the flags block (damagetype: Magic)",
+    "Physical damage, per the repeated 'deals {{as|physical damage}}' wording in the description/blurb",
+    "The infobox is stale and the text is authoritative, or vice versa"
+   ],
+   "impact": "high",
+   "quotes": [
+    "\"damagetype\": \"Magic\"",
+    "fires an electric pulse in the target direction that deals {{as|physical damage}} to the first enemy hit"
+   ]
+  },
+  {
+   "question": "In a stationary 15s dummy fight with no movement, does Living Battery's charge accrue at all beyond the 10-per-Q-cast rate (its other source is '1 charge per 40 units travelled'), and should the simulator assume Zeri starts the fight at 0 or 100 charge?",
+   "options": [
+    "Charge only comes from casting Burst Fire (no movement assumed), starting from 0 charge",
+    "Zeri starts at 100 charge per 'gains maximum charge when the game starts', so the first attack is always the empowered zap",
+    "Assume some baseline kiting distance per second to also generate charge from movement, as in real play"
+   ],
+   "impact": "high",
+   "quotes": [
+    "generates 1 charge for every 40 units she travels by any means and 10 charge every time she casts ''{{ai|Burst Fire|Zeri}}''",
+    "'''Zeri''' gains maximum charge when the game starts and upon [[respawn]]ing."
+   ]
+  },
+  {
+   "question": "During Overcharged, Q's attack-speed cap becomes 1.5+({{ccd|Zeri|as_ratio}}*0.3); Zeri's base per-level 'as_ratio' stat is not present anywhere in the provided numbers sheet or wiki template text, so the exact numeric AS cap while Overcharged is unresolved.",
+   "options": [
+    "Use Zeri's known live-game base attack speed ratio (an external stat not given here) to compute the exact cap",
+    "Treat the Overcharged cap as an unbounded/very high cap for simulation purposes since the multiplier is unknown",
+    "Ignore the cap increase entirely and keep the 1.5 AS cap even while Overcharged"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "an increased attack speed cap of {{as|{{ap|1.5+({{ccd|Zeri|as_ratio}}*0.3)}}|as}}"
+   ]
+  },
+  {
+   "question": "ZeriPassive#PassiveAttackSpeed (a by-level ratio of 0.2 rising to 0.3, filed under the Passive's own bin header) is never referenced anywhere in the wiki's Living Battery template text. Is this simply Zeri's champion base-stats attack-speed-per-level growth curve (already reflected in her base stats and not a separate kit mechanic to model), or an additional passive bonus attack speed the fight sim must add on top of normal base AS?",
+   "options": [
+    "It is just the base-stats AS growth curve, already covered by standard per-level base attack speed and needs no separate handling",
+    "It is an additional passive attack-speed bonus stacking on top of base AS that the sim must add explicitly"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "ZeriPassive#PassiveAttackSpeed = byLevelL[0.2/0.2/0.2/0.2/0.2/0.25/0.25/0.25/0.25/0.25/0.3/0.3/0.3/0.3/0.3/0.3/0.3/0.3]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Zeri starts the fight at max Living Battery charge (100) per 'gains maximum charge when the game starts'.",
+   "Open with R (Lightning Crash) for its nova magic damage and to immediately enter Overcharged (30% bonus AS, raised AS cap, empowered 3-round chain-lightning Burst Fire).",
+   "Immediately follow with E (Spark Surge) to gain Lightning Rounds, adding bonus magic damage to the first target hit by every Burst Fire cast for the next 5s.",
+   "For the remainder of the fight, continuously alternate: basic attacks (Living Battery zaps -- a full-charge empowered zap roughly every 10th attack/cast) and Burst Fire (Q) casts back-to-back at the attack-speed-gated cast rate, since Q has no cost and its true cooldown is just 1/attack speed.",
+   "Cast W (Ultrashock Laser) for its pulse damage every time it comes off cooldown (~8-12s at base), since it costs mana but deals a large chunk of burst damage.",
+   "Re-cast E again as soon as it comes off cooldown (18-24s base, reduced by 0.5-1.5s per qualifying hit) to refresh Lightning Rounds before the 5s buff expires, mana permitting.",
+   "Do not plan a second R cast; its 70-80s cooldown will not come back up within the 15s fight window."
+  ],
+  "questions": [
+   "Do Q (Burst Fire) casts and P (Living Battery) auto-attacks share the same attack timer/action slot (mutually exclusive), or can Zeri weave both independently for more total actions per second?",
+   "Does Spark Surge's basic-attack-timer reset also let a Living Battery zap or Burst Fire cast happen 'for free' immediately after the dash, effectively adding an extra action within the 15s window?",
+   "Should the rotation assume mana is never a binding constraint (typical for a leveled-up ranged carry with mana items), or should E/R/W casts be throttled by a specific assumed mana pool and regen?",
+   "Is it expected that Zeri's opening action is R (for the Overcharged buff window) rather than immediately auto-attacking, given R's 0.25s cast time delays her first hit?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

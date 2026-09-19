@@ -1,0 +1,156 @@
+{
+ "champion": "sivir",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Boomerang Blade deals its physical damage on a short cast-time delay, on cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The blade travels out and, if it reaches max range, returns through the same lane, potentially hitting a single stationary target twice (outgoing + returning pass) each cast."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's damage is partially scaled by crit chance/damage (CritRatio 0.4); W's bounce damage crits for full crit damage if the triggering attack crits."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's cast time shrinks with bonus attack speed, floored at a max 60% reduction, shortening time-to-damage but not cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ricochet arms Sivir's next basic attacks (bin: up to 3) for the buff duration to bounce and deal bonus physical damage."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Each empowered basic attack produces bounce-damage instances as an on-hit rider."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ricochet grants bonus attack speed for 4 seconds."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Casting Ricochet resets Sivir's basic attack timer, but only if the buff was not already active (refreshing it does not reset)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "While On the Hunt is active, each basic attack reduces Sivir's basic ability (Q/W/E) current cooldowns by 0.5s."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs (Q 55-75, W 60, R 100) can meaningfully constrain how often abilities are recast within a 15s window depending on mana pool."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spell Shield only blocks a hostile ability/effect to heal and buff Sivir; irrelevant in the damage fight (dummy never casts), relevant only in the survival fight if the attacking enemy has a blockable ability."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage- and survival-relevant mechanics (returning-blade double hit, partial crit scaling, empowered-attack bounces, attack-speed-reduced cast time, attack reset, cooldown refund on attack, conditional block-heal) map onto existing primitives; no unique logic outside the closed list is required."
+ },
+ "unsettled": [
+  {
+   "question": "Against a single dummy target, does Ricochet's bounce ever land on that same target (an 'additional' bounce hit), or does bounce damage require a second distinct enemy and therefore never trigger in a 1-target dummy fight?",
+   "options": [
+    "Bounces can retarget the same lone enemy up to once per empowered attack, so each empowered auto deals a normal-hit instance plus one bounce-damage instance on the dummy",
+    "Bounce damage requires nearby additional enemies and never procs against a single dummy, so Ricochet's only damage-fight value is its own basic-attack no bonus and the attack-speed buff/attack reset"
+   ],
+   "impact": "high",
+   "quotes": [
+    "causing her basic attacks to bounce to additional surrounding enemies, dealing {{as|physical damage}} to them",
+    "Bounces occur only up to 8 times and can target each enemy up to one additional time per empowered attack."
+   ]
+  },
+  {
+   "question": "How many of Sivir's attacks during Ricochet's 4-second window are actually empowered: the bin field SivirW.BounceAttacks=3 caps it at 3 attacks, but the wiki description only mentions the 4-second duration with no explicit attack-count cap.",
+   "options": [
+    "Only the first 3 basic attacks landed while the buff is up gain the bounce effect (bin value is live)",
+    "Every basic attack landed within the full 4-second duration is empowered, with no 3-attack cap (BounceAttacks is stale/unused)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "SivirW.BounceAttacks = 3",
+    "'''Sivir''' empowers her crossblade for the next 4 seconds"
+   ]
+  },
+  {
+   "question": "For Boomerang Blade's return pass, should the dummy be assumed positioned so the blade travels to max range and returns through it (hitting twice per cast), or positioned such that it only ever takes the single outgoing hit?",
+   "options": [
+    "Assume max-range cast so the target is hit by both the outgoing and returning missile each Q cast (2x damage instances)",
+    "Assume a closer engagement range where the blade does not return through the target, so only 1 damage instance per Q cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon reaching maximum range, the crossblade returns to her, resetting the damage modifier and dealing the same damage to enemies on its way back.",
+    "Enemies can be hit only once per pass."
+   ]
+  },
+  {
+   "question": "The bin's SivirW#BounceDamage calculation shows no crit term, while the wiki explicitly states bounce damage crits (for full crit damage multiplier) when the triggering attack crits. Which is authoritative for whether bounce damage should be crit-scaled in the simulator?",
+   "options": [
+    "Trust the wiki: apply the champion's full crit damage multiplier to bounce damage whenever the triggering attack crits",
+    "Trust the bin's calculation row literally: bounce damage never benefits from crit, regardless of the triggering attack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If the triggering attack {{tip|critical strike|critically strikes}}, the bounces will do so as well for {{as|{{critical damage|{{ccd|Sivir|crit_base}}|100}}|critical damage}} damage.",
+    "SivirW#BounceDamage = (BounceADRatio=[0.4/0.425/0.45/0.475/0.5])xad"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with W (Ricochet) to gain bonus attack speed and empower upcoming basic attacks with bounce damage, and to reset the basic attack timer since the buff was not previously active.",
+   "Weave basic attacks continuously between ability casts, prioritizing landing them while Ricochet's empowered-attack window is active.",
+   "Cast Q (Boomerang Blade) as soon as it is off cooldown, aiming for max range so the blade both travels out and returns through the target for two damage instances per cast.",
+   "Cast R (On the Hunt) once available to start converting subsequent basic attacks into current-cooldown reduction on Q and W, accelerating their recast cadence for the remainder of the fight.",
+   "Recast W every time its (possibly reduced) cooldown is up to refresh the attack-speed buff and re-arm the bounce-damage empowered attacks, continuing to auto-attack in between.",
+   "Repeat Q on cooldown throughout the 15s window, interleaved with autos and W recasts, spending mana on Q/W/R in that priority as it becomes available."
+  ],
+  "questions": [
+   "At the simulated level/build (mana pool, attack speed, crit chance), can Sivir actually sustain casting Q, W and R at their listed cooldowns/costs for the full 15s without running out of mana, or does resource-budget force skipping a cast?",
+   "Should R be cast as early as possible purely for its cooldown-refund utility on Q/W despite dealing no direct damage itself and costing 100 mana, or is it better held/omitted in a pure single-target damage fight?",
+   "Is the dummy engaged at Q's maximum range (to get the returning-blade double hit) the standard assumption for this simulator, or is a fixed melee/short range used that would only ever produce a single Q hit?",
+   "Given the single-target ambiguity around Ricochet's bounce, should the rotation assume bounce damage contributes on every empowered auto-attack, or should it be treated as producing no extra damage against the lone dummy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

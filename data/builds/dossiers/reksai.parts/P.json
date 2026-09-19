@@ -1,0 +1,152 @@
+{
+ "name": "Fury of the Xer'Sai",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "Fury generated per basic attack on-hit",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 25,
+   "terms": [],
+   "quote": "generate {{tip|fury|{{as|25 Fury}}}} {{tip|on-hit}}",
+   "bin": [
+    "RekSaiPassive.FuryFromAttacks"
+   ]
+  },
+  {
+   "id": "p_2",
+   "meaning": "Fury generation multiplier for basic attacks against minions (applied to the 25 Fury base)",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.16,
+   "terms": [],
+   "quote": "reduced to {{as|{{ap|25*0.16}}|Fury}} per hit against {{tip|minions}}",
+   "bin": [
+    "RekSaiPassive.FuryMinionMod"
+   ]
+  },
+  {
+   "id": "p_3",
+   "meaning": "Fury generated per basic attack against a ward or jungle plant",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "{{as|{{ap|25*0.2}}|Fury}} per hit against {{tip|ward|wards}} and [[jungle plants]]",
+   "bin": [],
+   "binNote": "0.2 mod for wards/plants has no corresponding bin row; only FuryMinionMod (0.16) is exposed for minions."
+  },
+  {
+   "id": "p_4",
+   "meaning": "Fury generated per ability that hits at least one unit (except Prey Seeker/Queen's Wrath)",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 25,
+   "terms": [],
+   "quote": "'''Rek'Sai's''' {{tip|abilities}} other than ''{{ai|Queen's Wrath|Rek'Sai}}'' generate {{as|25 Fury}} upon hitting at least one unit",
+   "bin": [
+    "RekSaiPassive.FuryFromAbilities"
+   ]
+  },
+  {
+   "id": "p_5",
+   "meaning": "Fury lost per second after being out of combat for 8 seconds",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 20,
+   "terms": [],
+   "quote": "After 8 seconds of being [[out of combat]], she loses {{as|20 Fury}} per second.",
+   "bin": [],
+   "binNote": "Neither the 8-second delay nor the 20 Fury/second decay rate appears as a data value in the sheet."
+  },
+  {
+   "id": "p_6",
+   "meaning": "Duration over which burrowed Fury consumption heals",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "consumes her current {{as|Fury}} over 3 seconds to {{tip|heal}}",
+   "bin": [
+    "RekSaiPassive.HealDuration"
+   ]
+  },
+  {
+   "id": "p_7a",
+   "meaning": "Minimum heal size as percent of max health, at 0 Fury consumed",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.09,
+   "terms": [],
+   "quote": "{{as|{{pp|9 + (20-9)/17*(x-1) for 20|key=%}} '''maximum''' health}}",
+   "bin": [
+    "RekSaiPassive.HealPercentStartValue"
+   ]
+  },
+  {
+   "id": "p_7b",
+   "meaning": "Maximum heal size as percent of max health, at 100 Fury consumed",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "{{as|{{pp|9 + (20-9)/17*(x-1) for 20|key=%}} '''maximum''' health}}",
+   "bin": [
+    "RekSaiPassive.HealPercentEndValue"
+   ]
+  },
+  {
+   "id": "p_8",
+   "meaning": "Delay before automatic burrowed healing begins if Fury starts generating while already Burrowed",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "If she starts generating {{as|Fury}} while {{sbc|Burrowed}}, the consumption occurs after 5 seconds.",
+   "bin": [
+    "RekSaiPassive.PauseDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks generate Fury on-hit, at a reduced rate against minions and a different reduced rate against wards/jungle plants.",
+   "quote": "'''Rek'Sai''' {{tip|basic attacks}} generate {{tip|fury|{{as|25 Fury}}}} {{tip|on-hit}}, reduced to {{as|{{ap|25*0.16}}|Fury}} per hit against {{tip|minions}}, and to {{as|{{ap|25*0.2}}|Fury}} per hit against {{tip|ward|wards}} and [[jungle plants]].",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Abilities other than Prey Seeker (Queen's Wrath) generate Fury on hitting at least one unit; Prey Seeker generates no Fury against non-champions.",
+   "quote": "''{{ai|Prey Seeker|Rek'Sai}}'' does not generate {{as|Fury}} against non-{{tip|champions}} hit.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Fury decays out of combat, reducing available Fury for empowered abilities.",
+   "quote": "After 8 seconds of being [[out of combat]], she loses {{as|20 Fury}} per second.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Burrowing consumes current Fury over time to heal Rek'Sai, stopping early if she reaches full health or fully consumes her Fury.",
+   "quote": "she consumes her current {{as|Fury}} over 3 seconds to {{tip|heal}} for {{pp|0 to 100|0 to 100 by 5|type=Fury|key=%|color=Fury}} of {{as|{{pp|9 + (20-9)/17*(x-1) for 20|key=%}} '''maximum''' health}}, stopping once fully consumed or she reaches {{sti|health|{{as|full health}}}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "When Fury is automatically consumed while already Burrowed (no transformation), the healing buff refreshes every second while Fury remains above 25, extending the heal to 6 seconds at 100 Fury (noted as a bug).",
+   "quote": "the healing buff will refresh every second while she has/maintains over {{as|25 Fury}}.{{bug|2}} This causes the healing to last 6 seconds at {{as|100 Fury}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

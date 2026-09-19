@@ -1,0 +1,161 @@
+{
+ "champion": "fiora",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Any qualifying Fiora damage that lands on an exposed Vital deals bonus true damage (3% + 4%/100 bonus AD of target max HP) and heals/grants MS to Fiora; the Vital is then consumed and a new one appears after a delay."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "The true-damage proc only fires if the hit direction matches the currently exposed Vital and the Vital is not on its 1.75s become-targetable delay; damage is a function of target max HP, not the hit's own damage."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "R"
+   ],
+   "note": "Grand Challenge reveals all four of the target's Vitals for its 8s duration, letting Fiora consume/trigger up to four separate P procs on that target instead of the normal one-at-a-time cycle."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Bladework arms the next two basic attacks (bonus AS, bonus range) within its buff window; first attack slows and cannot crit, second always crits for a modified crit multiplier."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Casting Bladework resets Fiora's basic attack timer (post-effect cooldown start)."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Bladework's second empowered attack always critically strikes, using a rank-scaling crit damage modifier ({{ap|160 to 200}}%) rather than (or overriding, per Sundered Sky note) the champion's normal crit multiplier."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Landing Lunge's stab refunds 50% of Lunge's remaining/base cooldown, letting it be recast far more than a flat-cooldown ability would allow inside 15s."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (20/50/40/100); with Fiora's typically low base mana pool this can gate how many W/R casts and repeated Q/E cycles fit in a 15s dummy fight."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "P",
+    "R"
+   ],
+   "note": "Riposte's 100% incoming-damage negation (parry) only matters when Fiora is being attacked (survival fight); P's heal and R's Victory Zone heal Fiora's own health and only matter for her own survivability, not for the damage-fight dummy's health."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Vitals are directional arcs on the target and Lunge's stab uses a target-priority search; a single stationary dummy fight must assume some simplification of whether Fiora's hits always face the exposed Vital."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behavior (a consumable directional mark that procs bonus true damage, an ultimate that exposes multiple marks at once, an empowered-attack/attack-reset/crit combo, and a cooldown-refund on hit) is expressible as a combination of onhit-rider + conditional-damage + target-stacks + empowered-attack + attack-reset + crit-interaction + cooldown-manipulation. The only open issue is a simplifying assumption about Vital facing/geometry in a single-target dummy fight, which is a modeling choice, not a missing primitive."
+ },
+ "unsettled": [
+  {
+   "question": "In a stationary single-target dummy fight, is every one of Fiora's attacks/hits assumed to satisfy the Vital's facing requirement (bounded only by the 1.75s become-targetable delay after each trigger), or should the 50/50 directional spawn logic be modeled as reducing the effective proc rate?",
+   "options": [
+    "Assume facing is always satisfied; P procs are limited only by the 1.75s Vital delay and by how often Fiora lands a qualifying hit",
+    "Model a chance (per the spawn algorithm) that a given hit does not face the current Vital, reducing total P procs over 15s"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|Vitals|buzzword}} spawn directions alternate in a Northeast-Southwest pattern. Other than that, they have a 50% chance to spawn North or East, or South or West, respectively."
+   ]
+  },
+  {
+   "question": "Does Lunge's basic-damage-tagged physical damage benefit from critical strike chance/damage the way a normal attack does, or is it treated purely as a non-crit ability despite the 'basic damage' tag?",
+   "options": [
+    "Lunge can critically strike like a basic attack for crit-itemization purposes",
+    "Lunge never critically strikes despite being tagged basic damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Lunge'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "Because Lunge is tagged as both basic (on-hit-eligible) damage and spell damage, does it proc both on-attack/on-hit item effects and spell-triggered item effects (e.g. Spellblade, proc items keyed off 'spell cast') on the same cast, or only one category?",
+   "options": [
+    "Lunge triggers both on-hit and spell-based item procs simultaneously",
+    "Lunge triggers only on-hit effects (per its onhiteffects=True flag) and the 'spell damage' tag is solely for Vital-triggering purposes, not item procs"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Lunge'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+    "''Lunge'' does not apply {{tip|on-attack}} effects but is special cased to stack {{tip|Energized}} upon hitting an enemy."
+   ]
+  },
+  {
+   "question": "Bladework's empowered-attack window is 3 seconds per the bin (BuffDuration) but 'within 4 seconds' per the wiki description; which value should gate whether Fiora's second empowered attack lands before the buff expires?",
+   "options": [
+    "Use the bin value: 3 seconds",
+    "Use the wiki value: 4 seconds"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "empowers her next two [[basic attack]]s {{tip|on-attack}} within 4 seconds"
+   ]
+  },
+  {
+   "question": "Should the maximizing-damage rotation for the dummy fight actually include casting Riposte (W) at all, given its 0.75s full-action lockout produces no benefit (no incoming damage to negate) and only pays off through its one-time magic-damage shock plus a Vital trigger?",
+   "options": [
+    "Always weave W in on cooldown in the damage fight, since it deals guaranteed magic damage and can trigger a Vital",
+    "Omit W from the damage-maximizing rotation (or deprioritize it) since 0.75s of lockout could otherwise be spent on more autos/Q/E casts with a higher DPS return"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Fiora''' enters a defensive stance for {{fd|0.75}} seconds, during which she is {{tip|lockout|unable to act}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Grand Challenge (R) on the target to reveal all four Vitals (after a 0.5s delay) and start the 8-second window in which multiple Vital procs are available on this one target.",
+   "Immediately cast Lunge (Q) to dash in and stab, dealing physical damage, applying on-hit effects, and triggering a Vital proc if one is exposed; a successful stab halves Q's remaining cooldown.",
+   "Cast Bladework (E) to empower the next two basic attacks; auto-attack twice to consume the empowered hits (first slows and cannot crit, second always crits), each a chance to trigger a Vital.",
+   "Cast Riposte (W) once for its guaranteed magic-damage shock and a further chance to trigger a Vital, since the dummy never deals damage back so the parry itself is wasted.",
+   "Auto-attack continuously between casts to fill downtime and to keep landing qualifying Vital-trigger hits.",
+   "Recast Lunge every time it comes off cooldown (further shortened by successful stabs) and recast Bladework every time it comes off cooldown for the attack-reset and guaranteed crit value.",
+   "Because Riposte (24-16s) and Grand Challenge (110-70s) cooldowns exceed the ~15s fight, each is cast only once near the start; the remaining time is spent cycling Q, E and autos on cooldown."
+  ],
+  "questions": [
+   "Should R be cast before or after the opening Q (does the 0.5s Vital-reveal delay make it better to dash in with Q first and cast R immediately after), and does casting order affect how many total Vital procs land inside R's 8s window?",
+   "In the fixed-position dummy fight, is it assumed Fiora can land all four Grand Challenge Vitals within its 8s duration, or does the 1.75s per-Vital become-targetable delay realistically cap it at fewer (e.g., 3) within that window?",
+   "Given Riposte's 0.75s full lockout, is it actually damage-positive to cast W in the pure damage fight, or should the optimal rotation skip it in favor of continuous Q/E/auto-attack cycling?",
+   "Does the simulator model Lunge's dash time (up to ~130-465ms depending on movement speed) as dead time in which no other action/auto can occur, and if so, how should that be weighted against Lunge's cooldown-refund value?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,180 @@
+{
+ "name": "Unstoppable Onslaught / Unstoppable Onslaught 2",
+ "cooldown": {
+  "values": [
+   140,
+   100,
+   60
+  ],
+  "quote": "{{ap|140 to 60}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Minimum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    150,
+    300,
+    450
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|150 to 450}} {{as|(+ 60% '''bonus''' AD)}}",
+   "bin": [
+    "SionR#MinDamageTotal"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Maximum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    400,
+    800,
+    1200
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.2
+    }
+   ],
+   "quote": "{{ap|400 to 1200}} {{as|(+ 120% '''bonus''' AD)}}",
+   "bin": [
+    "SionR#MaxDamageTotal"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    45,
+    50
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 50}}%",
+   "bin": [
+    "SionR.SlowAmount"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "damage ramp-up time to reach maximum damage",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "This is capped at 3 seconds.",
+   "bin": [],
+   "binNote": "The bin does not store the 3-second ramp cap as its own field; it is implied by MinDamage/MaxDamage being reached via the wiki's percent-per-second formula, which has no corresponding data row."
+  },
+  {
+   "id": "r_8",
+   "meaning": "minimum stun duration on the slam pull",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{pp|type=channel time|label1=seconds|changedisplay=true|0.25 to 1.75|0 to 3 by 1}} seconds",
+   "bin": [
+    "SionR.MinStunDuration"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "maximum stun duration on the slam pull",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.75,
+   "terms": [],
+   "quote": "{{pp|type=channel time|label1=seconds|changedisplay=true|0.25 to 1.75|0 to 3 by 1}} seconds",
+   "bin": [
+    "SionR.MaxStunDuration"
+   ]
+  },
+  {
+   "id": "r_10",
+   "meaning": "slow duration on enemies hit by slam",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "are dealt the same damage and are {{tip|slow|slowed}} for 3 seconds",
+   "bin": [],
+   "binNote": "No SionR data row for slam slow duration exists in the sheet; SionR.SlowDuration is not listed, only SlowAmount."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Sion's charge damage and the recast slam damage scale from minimum to maximum over the first 3 seconds of channel time, capped there even though the channel can last up to 8 seconds.",
+   "quote": "The ''base'' damage increases by {{pp|type=channel time|changedisplay=true|key=%|0 to 500/3 for 4|0 to 3|formula=55.55% every 1 second. ''This is capped at 3 seconds.''}} and the ''scaling'' increases by {{pp|type=channel time|changedisplay=true|key=%|0 to 100 for 4|0 to 3|formula=33.33% every 1 second. ''This is capped at 3 seconds.''}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast slam deals the same damage as the charge-collision slam, i.e. one damage instance is dealt on whichever slam ends the ability.",
+   "quote": "Enemies, including {{tip|turret|turrets}}, hit by the slam are dealt the same damage and are {{tip|slow|slowed}} for 3 seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "An enemy can only be hit by Unstoppable Onslaught (charge or slam) once per second, limiting repeated instances against the dummy.",
+   "quote": "An enemy can only be affected by ''Unstoppable Onslaught'' once every 1 second.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown does not begin until the channel/leap effect ends, not on initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Sion is immune to crowd control and ghosted during the charge, which is a defensive effect not relevant to damage dealt.",
+   "quote": "'''Sion''' becomes {{tip|Cc-immune|immune to crowd control}} and {{tip|ghosted}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Only the initial cast, not the recast, counts as an ability activation for on-cast item effects like Spellblade.",
+   "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}.\n**The recast does not.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SionR.MoveSpeedCap",
+   "reason": "utility"
+  },
+  {
+   "ref": "SionR.MinionDamagePercent",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

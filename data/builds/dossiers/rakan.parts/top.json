@@ -1,0 +1,113 @@
+{
+ "champion": "rakan",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Gleaming Quill projectile deals magic damage to the first enemy hit, on cooldown; cooldown starts only once the projectile vanishes (hits or reaches max range), not on cast."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Grand Entrance dashes then deals magic damage to nearby enemies after a short delay upon arrival; cooldown starts on cast."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Quickness has a 0.5s cast time during which Grand Entrance is disabled (though it can be buffered); Q and E remain castable."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Quickness deals magic damage on collision with an enemy; against a single dummy this fires at most once per cast."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's damage requires Rakan to physically touch the target while sprinting rather than being a targeted-cast; the dummy fight must assume he collides with the stationary dummy once."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Battle Dance can be recast within 5s at no extra cost, mimicking the first cast's shield+dash; both casts count as ability activations for on-cast/on-cast-trigger item effects even though the ability itself deals no damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "Q",
+    "E"
+   ],
+   "note": "Passive's periodic self-shield (P), Gleaming Quill's self/ally heal-on-mark-complete (Q), and Battle Dance's shield (E) change damage taken/effective HP only and are never read by the damage-dealt fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant behavior (Q, W, R's on-collision hit, R's brief cast-time lock, E's recast structure, and the purely defensive heals/shields) is expressible with plain-cast, charge-or-channel, positional-assumption, recast-or-multipart, and defensive-only from the closed list; no bespoke mechanic is required."
+ },
+ "unsettled": [
+  {
+   "question": "Can Battle Dance (E) be self-cast by Rakan when no allied champion is present, and does its shield then apply to himself?",
+   "options": [
+    "E can target Rakan himself (self counts as an ally), granting the e_1/e_2 shield and letting him dash-loop around himself; relevant to the survival fight's effective HP and to any on-cast triggers",
+    "E requires a distinct allied champion as target and is simply uncastable/unused when no allies exist, contributing nothing in either fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "grants a {{tip|shield}} to the target allied champion for 3 seconds and then {{tip|dash|dashes}} to and around them",
+    "|affects      = Allies"
+   ]
+  },
+  {
+   "question": "Does The Quickness (R) actually strike the single stationary target dummy exactly once, given its damage is delivered by physical collision during a sprint rather than a targeted cast?",
+   "options": [
+    "The simulator assumes Rakan runs into the dummy once per R cast, dealing r_1 (BaseDamage + 0.5xAP) magic damage (charm/slow ignored per the rules)",
+    "R is treated as dealing no reliable damage in a single-dummy dummy fight because it depends on movement/collision geometry the fight does not model, and is skipped or discounted"
+   ],
+   "impact": "high",
+   "quotes": [
+    "he deals {{as|magic damage}} to enemies he collides with",
+    "collision radius= 150"
+   ]
+  },
+  {
+   "question": "Gleaming Quill's cooldown is stated to start only once the projectile vanishes (post-travel), not on cast — should the simulator add this travel delay (roughly 0.3-0.5s at range) to the effective time between Q casts?",
+   "options": [
+    "Add the projectile's travel time to the effective cooldown, slightly reducing total Q casts over 15s",
+    "Treat Q's cooldown as starting on cast for simplicity, ignoring the small travel-time discrepancy"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{tt|{{ap|11 to 7}}|Starts once the projectile vanishes}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with W (Grand Entrance), dashing onto/near the dummy to land its magic damage and knock-up (knock-up ignored) as early as possible.",
+   "Follow immediately with Q (Gleaming Quill) once its 0.25s cast time completes, since it has the shortest cooldown and should be recast as often as possible.",
+   "Cast R (The Quickness) early in the fight to secure its one guaranteed collision hit on the dummy and its up-front burst, since its cooldown (130-90s) means it will not be available again within the 15s window.",
+   "Weave basic attacks in whenever no ability is on cooldown or in cast time.",
+   "Recast Q and W on cooldown for the remainder of the 15 seconds (accounting for Q's cooldown starting after projectile travel), continuing basic attacks between casts.",
+   "Skip or deprioritize E in the damage fight unless self-targeting is confirmed useful, since it deals no damage to the dummy."
+  ],
+  "questions": [
+   "Should R be cast first (to lock in its one-time collision damage before its long cooldown makes it irrelevant) or last (to avoid its 0.5s cast time delaying other casts), given CC/mobility effects are otherwise ignored?",
+   "Is casting E at all worthwhile in the damage fight, given it deals no damage and its self-targeting behavior is unsettled?",
+   "Should Q be cast at maximum range (longer travel, larger cooldown-start delay) or point-blank (minimizing the vanish-triggered cooldown delay) to maximize total casts in 15 seconds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

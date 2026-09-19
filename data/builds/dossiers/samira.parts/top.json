@@ -1,0 +1,144 @@
+{
+ "champion": "samira",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Flair fires/slashes once on cast (or on cast-time end); Wild Rush deals its magic damage once, on the dash, on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blade Whirl deals two separately-timed slashes: first immediate, second after the 0.75s spin duration"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Inferno Trigger fires up to 10 shots at sporadic ~0.2s intervals over the ability's active window against each nearby enemy"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Daredevil Impulse's blade attacks (melee-range basic attacks and blade-mode ability hits) add bonus magic damage scaled by target's missing health, applied after the primary hit"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Style stacks (0-6, each refreshing a 6s timer) built by unique damaging hits on the target; grants MS (irrelevant to damage) but at 6 stacks unlocks casting R"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (30/60/40) limit Q/W/E casts across the 15s window; R's real cost is 6 Style stacks, consumed on cast, which must be rebuilt via attacks/abilities before it can be recast"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Wild Rush grants bonus attack speed for 5s starting at the beginning of the dash"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Flair and Inferno Trigger's shots are affected by critical strike modifiers (Flair uses a reduced 150%/50% crit multiplier); each Inferno Trigger shot and each Q/W hit against multiple targets rolls crit separately"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Daredevil Impulse's immobilize-triggered 6-bolt empowered basic attack; almost certainly never fires in a dummy fight since the fight framework defines CC as not occurring, so likely excluded from the actual rotation but listed since the kit contains it"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Samira's kit maps onto plain-cast/recast/dot for her active damage, onhit-rider + stacking-self-buff + resource-budget for the Style/ultimate-gating loop, timed-self-buff for the Wild Rush attack-speed window, and crit-interaction for the abilities that explicitly crit. No mechanic requires logic outside this list for a stationary-target damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "The bin contains four distinct Q-family rows (SamiraQ, SamiraQBufferedSword, SamiraQGun, SamiraQSword) with very different cooldowns (6-2 vs 22-10 vs 8-4), costs, and damage values, plus a fifth row SamiraTauntMissile (2.87s cast time) that structurally resembles SamiraQGun. Only SamiraQ's cooldown [6,5,4,3,2], cost 30, and damage [0/5/10/15/20]+1.1xAD exactly match the wiki's single 'Flair' ability. It is unclear whether the other rows are dead/legacy data (e.g. from an earlier prototype kit) or are actually invoked under some condition the wiki doesn't describe.",
+   "options": [
+    "SamiraQ is the only live row; QBufferedSword/QGun/QSword/TauntMissile are unused legacy data",
+    "One or more of the other rows are actually used for some Q sub-case (e.g. melee-slash vs gun-shot) that changes cooldown/cost/damage away from the wiki's stated single value set"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: [6/5/4/3/2]",
+    "cooldown: [22/19/16/13/10]",
+    "cooldown: [8/7/6/5/4]",
+    "{{ap|6 to 2}}"
+   ]
+  },
+  {
+   "question": "The empowered-attack bolt damage formula appears twice in the bin with conflicting terms: SamiraPJuggle gives 0.17xAD per bolt (matching the wiki's '17% AD' quote), while SamiraPSwordJuggle gives 0.1xAP + 0.2xAD per bolt. It is unclear whether PSwordJuggle is a legacy/alternate formula (e.g. for a blade-mode variant of the empowered attack) or whether it is actually used under some condition the wiki text doesn't distinguish.",
+   "options": [
+    "PJuggle (0.17xAD) is the sole live formula, matching the wiki quote; PSwordJuggle is unused legacy data",
+    "PSwordJuggle's AP+AD formula applies in some case (e.g. when the empowered attack is delivered via blade range) not described by the wiki text"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "each dealing {{as|17% AD}} {{as|physical damage}}",
+    "SamiraPSwordJuggle#DamagePerBullet = 0.1xap + 0.2xad"
+   ]
+  },
+  {
+   "question": "Daredevil Impulse's blade-attack bonus magic damage only triggers on basic attacks made within melee range (200 units) of the target. The damage fight does not specify positioning, so it is unsettled whether the simulator should assume Samira stays in melee range for the whole 15s (maximizing this bonus damage every auto-attack) or attacks from outside 200 units (losing the bonus entirely).",
+   "options": [
+    "Assume Samira remains in melee range for all basic attacks, so every auto triggers the blade bonus magic damage",
+    "Assume Samira attacks from outside 200 units (e.g. as an ADC kiting), so the blade bonus never triggers"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Samira's''' basic attacks against targets within {{tip|er|icononly = true}} 200 units of her use her blade, becoming {{tip|projectile|non-projectile}}."
+   ]
+  },
+  {
+   "question": "The empowered attack (Daredevil Impulse's immobilize-triggered 6-bolt barrage) can only occur against an immobilized or airborne target. The dummy/survival-fight framework defines crowd control as not applying. It is unsettled whether the simulator should therefore treat this sub-ability as never firing (excluded from the rotation entirely), or whether some baseline immobilize application should be assumed to let it fire at least once.",
+   "options": [
+    "The empowered attack never triggers in either fight since no immobilize source exists in the simulated encounter",
+    "Some immobilize is assumed to occur (e.g. from an item active) so the empowered attack fires periodically"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Samira''' can attack {{tip|immobilized}} enemies to rapidly fire a barrage of bolts at them."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open at melee range (<=200 units) of the target so all basic attacks trigger the Daredevil Impulse blade bonus magic damage, and begin auto-attacking immediately to start building Style stacks.",
+   "Cast Flair (Q) on cooldown for its physical damage (slash version, since Samira is in melee range).",
+   "Cast Wild Rush (E) toward the target as soon as available for its magic damage and 5s bonus attack speed window; buffer a Flair cast during the dash if it is off cooldown to deploy the explosive for extra damage without losing tempo.",
+   "Continue auto-attacking and casting Q/E to keep refreshing Style stacks; once 6 stacks are reached, cast Inferno Trigger (R) for its multi-shot physical damage burst (crit- and lifesteal-enabled).",
+   "Repeat R every time 6 Style stacks and its 5s cooldown are both available, interleaving Q and E casts and autos between R windows to rebuild stacks.",
+   "Deprioritize or skip Blade Whirl (W) in the offensive rotation, since it locks out basic attacks and Flair for its duration and only clearly helps DPS in the survival fight."
+  ],
+  "questions": [
+   "Should Blade Whirl be included at all in the maximum-damage rotation given it blocks basic attacks, Flair, and Style-stack-generating autos for its duration, or is it purely a defensive/utility tool the damage fight should never cast?",
+   "How quickly (in ability/attack casts) does Samira reach the 6 Style stacks needed for the first Inferno Trigger cast from a standing start, and does the sim assume any pre-existing stacks at the start of the fight?",
+   "Does Flair's cast time (0.25s) and queue-time interactions with Wild Rush change how tightly Q and E can be weaved together within the 15s window?",
+   "Should the empowered attack (bolt barrage) be included in the rotation at all, given the fight framework says CC does not occur?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

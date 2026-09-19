@@ -1,0 +1,126 @@
+{
+ "name": "Eternal Hunger",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_onhit",
+   "meaning": "bonus magic on-hit damage",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    6.0,
+    8.882353,
+    11.764706,
+    14.6470588,
+    17.529412,
+    20.411765,
+    23.2941176,
+    26.17647,
+    29.058823,
+    31.941177,
+    34.82353,
+    37.705882,
+    40.588235,
+    43.47059,
+    46.35294,
+    49.235294,
+    52.117647,
+    55.0
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.15
+    },
+    {
+     "stat": "ap",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{as|{{pp|6 + (55-6)/17*(x-1) for 20}} {{as|(+ 15% '''bonus''' AD)}} {{as|(+ 10% AP)}}|magic damage}}",
+   "bin": [
+    "WarwickP#OnHitDamage"
+   ],
+   "binNote": "wiki template's 'for 20' formula generates 20 entries, but the bin's WarwickP#OnHitDamage flat array has exactly 18 values (levels 1-18) with a linear step of ~2.882353 between 6 and 55, not the ~2.0526 step implied by the wiki's (55-6)/17 formula applied across 20 entries; used the bin's 18 values directly since champion levels are 1-18 and the wiki's own formula denominator (17) matches 18 levels, but the wiki template's literal rendering would produce different intermediate numbers than the bin - this is a case where the wiki's displayed formula and the bin's actual array diverge in interpolation, though both endpoints (6 and 55) agree"
+  },
+  {
+   "id": "p_heal_threshold",
+   "meaning": "health threshold below which Eternal Hunger heals Warwick",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "While {{as|below 50% '''maximum''' health}}",
+   "bin": [
+    "WarwickP.HealingThreshold"
+   ]
+  },
+  {
+   "id": "p_heal_ratio",
+   "meaning": "percent of post-mitigation Eternal Hunger damage healed below 50% health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1.0,
+   "terms": [],
+   "quote": "'''Warwick''' also {{tip|heal|heals}} for 100% of the {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} dealt by ''Eternal Hunger''",
+   "bin": [
+    "WarwickP.HealingRatio"
+   ]
+  },
+  {
+   "id": "p_empowered_heal_threshold",
+   "meaning": "health threshold below which Eternal Hunger's heal is empowered",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "increased to 250% while {{as|below 25% '''maximum''' health}}",
+   "bin": [
+    "WarwickP.EmpoweredHealingThreshold"
+   ]
+  },
+  {
+   "id": "p_empowered_heal_ratio",
+   "meaning": "percent of post-mitigation Eternal Hunger damage healed below 25% health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "increased to 250% while {{as|below 25% '''maximum''' health}}",
+   "bin": [
+    "WarwickP.EmpoweredHealingRatio"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Eternal Hunger's damage is applied before the damage of the effect that triggers it.",
+   "quote": "''Eternal Hunger's'' damage is applied before the damage of the effect that triggers it.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Eternal Hunger does not proc against structures, wards (except effigies), jungle plants, or Gangplank kegs.",
+   "quote": "''Eternal Hunger'' does not affect:",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The heal is based on post-mitigation damage dealt by Eternal Hunger, applying self-healing that changes damage taken outcomes but not damage dealt.",
+   "quote": "heals for 100% of the {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} dealt by ''Eternal Hunger''",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "WarwickP.HealthRestoreSlushTime",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

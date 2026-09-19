@@ -1,0 +1,643 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ZacPassiveChunkDrop",
+    "key": "Characters/Zac/Spells/ZacPassiveChunkDropAbility/ZacPassiveChunkDrop",
+    "cooldown": 300,
+    "dataValues": {
+     "ReviveCooldown": 300
+    },
+    "calcs": {
+     "HealPercent": {
+      "expr": "byLevel(0.04..0.08)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.04,
+        0.04235294,
+        0.04470588135368684,
+        0.04705882,
+        0.04941176360144335,
+        0.0517647047253216,
+        0.054117645849199855,
+        0.05647058697307811,
+        0.05882353,
+        0.06117646922083462,
+        0.06352941,
+        0.06588235146859113,
+        0.06823529,
+        0.07058823,
+        0.07294117484022589,
+        0.07529411596410415,
+        0.07764706,
+        0.08
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "ReviveBlobletDuration": {
+      "expr": "byLevelL[8/8/8/8/8/7/7/7/7/6/6/6/5/5/5/5/4/4]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        7,
+        7,
+        7,
+        7,
+        6,
+        6,
+        6,
+        5,
+        5,
+        5,
+        5,
+        4,
+        4
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TotalHeal": {
+      "expr": "HealPercent * 1xmaxHp",
+      "modifies": "HealPercent",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ZacQ",
+    "key": "Characters/Zac/Spells/ZacQAbility/ZacQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      12.5,
+      11,
+      9.5,
+      8
+     ]
+    },
+    "castTime": 0.33,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "APRatio": 0.3,
+     "HealthRatio": 0.03,
+     "HPCost": 0.08,
+     "MissileRange": 800,
+     "SlowAmount": -0.4,
+     "SlowDuration": 0.5,
+     "TetherDuration": 2.5,
+     "TetherFalloffDistance": 900,
+     "MaxSlamDistance": 700,
+     "YankDistance": 300,
+     "CollisionAoE": 300
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/90/120/150/180] + (APRatio=0.3)xap + (HealthRatio=0.03)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "APRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.03,
+        "dataValue": "HealthRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "HealthRatio"
+      ]
+     },
+     "MaxDamageTooltip": {
+      "expr": "(<{f3cbe7b2}>)*(2)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "HealthCostTooltip": {
+      "expr": "(HPCost=0.08)*((1xmaxHp)*(1xstat14?))",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "HPCost"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "ZacW",
+    "key": "Characters/Zac/Spells/ZacWAbility/ZacW",
+    "cooldown": 5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60,
+       70,
+       80
+      ]
+     },
+     "APRatioToPercentDamage": 0.03,
+     "BaseMaxHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.05,
+       0.06,
+       0.07,
+       0.08
+      ]
+     },
+     "HealthPercentTooltip": {
+      "axis": "rank",
+      "v": [
+       4,
+       5,
+       6,
+       7,
+       8
+      ]
+     },
+     "HPCost": 0.04,
+     "PercentHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.05,
+       0.06,
+       0.07,
+       0.08
+      ]
+     },
+     "RefundOnBlobPickup": 1,
+     "MaxMinionDamage": 200
+    },
+    "calcs": {
+     "DisplayPercentDamage": {
+      "expr": "(HealthPercentTooltip=[4/5/6/7/8] + (APRatioToPercentDamage=0.03)xap) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0003,
+        "dataValue": "APRatioToPercentDamage"
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "APRatioToPercentDamage",
+       "HealthPercentTooltip"
+      ]
+     },
+     "TooltipHealthCost": {
+      "expr": "(HPCost=0.04)*((1xmaxHp)*(1xstat14?))",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "HPCost"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ZacE",
+    "key": "Characters/Zac/Spells/ZacEAbility/ZacE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      19,
+      16,
+      13,
+      10
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       105,
+       150,
+       195,
+       240
+      ]
+     },
+     "HPCost": 0.04,
+     "MaxRange": {
+      "axis": "rank",
+      "v": [
+       1200,
+       1350,
+       1500,
+       1650,
+       1800
+      ]
+     },
+     "ChannelTime": {
+      "axis": "rank",
+      "v": [
+       0.9,
+       1,
+       1.1,
+       1.2,
+       1.3
+      ]
+     },
+     "MinimumStun": 0.5,
+     "MinimumSpeed": 500,
+     "MaximumSpeed": 1350,
+     "DistanceToSpeedRatio": 0.6,
+     "KnockupRadius": 265,
+     "VFXWarningTime": 1
+    },
+    "calcs": {
+     "MaxStun": {
+      "expr": "(MinimumStun=0.5)*(2)",
+      "flat": 1,
+      "terms": [],
+      "refs": [
+       "MinimumStun"
+      ]
+     },
+     "Damage": {
+      "expr": "BaseDamage=[60/105/150/195/240] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        105,
+        150,
+        195,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "HealthCostTooltip": {
+      "expr": "(HPCost=0.04)*((1xmaxHp)*(1xstat14?))",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "HPCost"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ZacR",
+    "key": "Characters/Zac/Spells/ZacRAbility/ZacR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      105,
+      90
+     ]
+    },
+    "castTime": 0.3,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Bounces": 4,
+     "TimeBetweenBounces": 1,
+     "KnockupDuration": 1,
+     "BaseDamageBounce": {
+      "axis": "rank",
+      "v": [
+       120,
+       190,
+       260
+      ]
+     },
+     "DamageReductionBounce": 0.5,
+     "KnockbackDistance": 250,
+     "KnockbackRange": 300,
+     "BeginningMS": 0.2,
+     "EndingMS": 0.5,
+     "SlowAmount": 0.2,
+     "SlowDuration": 1,
+     "BounceAPRatioTooltip": 0.4
+    },
+    "calcs": {
+     "DamagePerBounce": {
+      "expr": "BaseDamageBounce=[120/190/260] + (BounceAPRatioTooltip=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        190,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "BounceAPRatioTooltip"
+       }
+      ],
+      "refs": [
+       "BaseDamageBounce",
+       "BounceAPRatioTooltip"
+      ]
+     },
+     "DamagePerSubsequentBounce": {
+      "expr": "DamagePerBounce * DamageReductionBounce=0.5",
+      "modifies": "DamagePerBounce",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        95,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "BounceAPRatioTooltip"
+       }
+      ],
+      "refs": [
+       "BaseDamageBounce",
+       "BounceAPRatioTooltip",
+       "DamageReductionBounce"
+      ]
+     },
+     "DurationTooltip": {
+      "expr": "(TimeBetweenBounces=1)*(Bounces=4 + -1)",
+      "flat": 3,
+      "terms": [],
+      "refs": [
+       "Bounces",
+       "TimeBetweenBounces"
+      ]
+     },
+     "MaxDamageTooltip": {
+      "expr": "(BounceAPRatioTooltip=0.4)xap + BaseDamageBounce=[120/190/260] + ((BaseDamageBounce=[120/190/260] + (BounceAPRatioTooltip=0.4)xap)*(DamageReductionBounce=0.5))*(Bounces=4 + -1)",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        190,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "BounceAPRatioTooltip"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "BounceAPRatioTooltip"
+       }
+      ],
+      "refs": [
+       "BaseDamageBounce",
+       "BounceAPRatioTooltip",
+       "Bounces",
+       "DamageReductionBounce"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "ZacQ",
+  "W": "ZacW",
+  "E": "ZacE",
+  "R": "ZacR",
+  "P": "ZacPassiveChunkDrop"
+ },
+ "resource": {
+  "arType": null,
+  "values": {
+   "{726ee5cd}": 0,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Zac",
+  "name": "Zac",
+  "partype": "None",
+  "passive": "Cell Division",
+  "spells": [
+   {
+    "id": "ZacQ",
+    "name": "Stretching Strikes",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     12.5,
+     11,
+     9.5,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ZacW",
+    "name": "Unstable Matter",
+    "maxrank": 5,
+    "cooldown": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ZacE",
+    "name": "Elastic Slingshot",
+    "maxrank": 5,
+    "cooldown": [
+     21,
+     18,
+     15,
+     12,
+     9
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ZacR",
+    "name": "Let's Bounce!",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     105,
+     90
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Cell Division": {
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "Cell Division 2": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Stretching Strikes": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "{{as|'''Current''' Health|health}}"
+   }
+  },
+  "W": {
+   "Unstable Matter": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "{{as|'''current''' Health}}"
+   }
+  },
+  "E": {
+   "Elastic Slingshot": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Location-targeted|Location]]",
+    "affects": "Enemies",
+    "costtype": "{{as|'''Current''' Health|health}}"
+   }
+  },
+  "R": {
+   "Let's Bounce!": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "Special",
+    "targeting": "Auto",
+    "affects": "Enemies, Self"
+   }
+  }
+ }
+}

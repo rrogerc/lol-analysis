@@ -1,0 +1,808 @@
+{
+ "champion": "ziggs",
+ "abilities": {
+  "P": {
+   "name": "Short Fuse",
+   "cooldown": {
+    "values": [
+     12
+    ],
+    "quote": "{{tt|12|Cooldown starts on-attack}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage dealt by Ziggs's next empowered basic attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      20,
+      24,
+      28,
+      32,
+      36,
+      40,
+      48,
+      56,
+      64,
+      72,
+      80,
+      88,
+      100,
+      112,
+      124,
+      136,
+      148,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|{{pp|16+4*x for 6; then +8*x for 6; then +12*x for 8|formula = 16 + 4 per level up to 6, then + 8 per level up to 12, then + 12 per level up to 18}}|magic damage}} {{as|(+ 50% AP)}} {{as|'''bonus''' magic damage}}",
+     "bin": [
+      "ZiggsPassiveBuff#TotalDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "cooldown reduction to Short Fuse granted when Ziggs casts an ability",
+     "role": "other",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "terms": [],
+     "quote": "{{sti|cooldown}} is reduced by {{pp|4 to 6 for 3|1 to 13}} seconds whenever '''Ziggs''' casts an {{tip|ability}}",
+     "bin": [
+      "ZiggsPassiveBuff#SpellCdr"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Short Fuse's internal cooldown begins ticking when Ziggs attacks (not when it becomes available again), and it fires whenever the cooldown is up on his next basic attack.",
+     "quote": "Cooldown starts on-attack",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the empowered attack misses due to a blind, Short Fuse still goes on cooldown without dealing its bonus damage.",
+     "quote": "''Short Fuse'' will go on cooldown but not deal any damage if the attack misses due to {{tip|blind}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack's bonus damage is increased by 75% specifically against structures, which does not apply to an enemy-champion dummy target.",
+     "quote": "increased by 75% against {{tip|structures}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown reduction from casting an ability is granted at the moment the ability begins its cast time, not on impact or on cooldown completion.",
+     "quote": "The cooldown reduction is granted at the start of the abilities' cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZiggsPassiveBuff.StructureDamageRatio",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Bouncing Bomb",
+   "cooldown": {
+    "values": [
+     6,
+     5.5,
+     5,
+     4.5,
+     4
+    ],
+    "quote": "{{ap|6 to 4}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      130,
+      180,
+      230,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8
+       ]
+      }
+     ],
+     "quote": "{{ap|80 to 280}} {{as|(+ {{ap|60 to 80}}% AP)}}",
+     "bin": [
+      "ZiggsQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "duration of each bounce",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.495,
+     "terms": [],
+     "quote": "each bounce occurring over {{fd|0.495}} seconds regardless of distance",
+     "bin": [],
+     "binNote": "The bin has no timing field for bounce duration; only geometry values (MaxRange, MaxRangeFirstBounce, MaxRangeSecondBounce, BombTriggerRange) are present, none of which encode a time in seconds."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bomb bounces forward up to two times; the distance traveled by each bounce is based on how far it was originally thrown, and it explodes on hitting an enemy, terrain, or the final bounce.",
+     "quote": "throws a bomb to the target location that bounces forward up to two times, with the distance traveled each time being based on how far it was originally thrown",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion deals AoE damage to nearby enemies where it lands.",
+     "quote": "The bomb explodes upon landing near an enemy, within terrain, or the final bounce, dealing {{as|magic damage}} to nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield will block the explosion's damage to the shielded target, but the explosion can still damage other targets in its radius.",
+     "quote": "{{tip|Spell shield}} will block the damage of the explosion, but the explosion can still damage other targets in the radius.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ziggs throws the bomb at the end of the cast time, not at cast start.",
+     "quote": "'''Ziggs''' will throw the bomb from his location at the end of the cast time",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZiggsQ.MaxRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsQ.MaxRangeFirstBounce",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsQ.MaxRangeSecondBounce",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsQ.BombTriggerRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsQ.ExplosionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsQ.BoundingBoxTrigger",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Satchel Charge",
+   "cooldown": {
+    "values": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "quote": "{{ap|20 to 12}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "ZiggsW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Demolition Threshold",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.25,
+        0.275,
+        0.3,
+        0.325,
+        0.35
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|25 to 35}}% of turret's '''maximum''' health}}",
+     "bin": [
+      "ZiggsW.TurretDestroyPercent"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Charge duration before auto-detonation",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "remaining there for 4 seconds",
+     "bin": [
+      "ZiggsW.BombDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Knockback duration",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "knock them back}} over {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No bin row corresponds to this timing value; ZiggsW.KnockbackSpeed/Distance/Gravity describe the knockback's physics but not an explicit duration in seconds, so this is wiki-only."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability is cast in two parts: an initial location-targeted throw, then a recast (or automatic recast after the duration) that detonates it for damage.",
+     "quote": "'''Ziggs''' hurls a charge to the target location, remaining there for 4 seconds ... ''Satchel Charge'' can be recast within the duration, and does so automatically afterwards.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion deals area damage to champions but raw (non-mitigated?) damage to turrets, relevant only in a turret context not a dummy fight.",
+     "quote": "Deals {{tip|area damage}} to non-turrets and {{tip|raw damage}} to turrets.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The explosion executes enemy turrets below the health threshold, which is not applicable to a champion target dummy.",
+     "quote": "The explosion also {{ccs|{{tip|execute|executes}}|magic}} enemy {{tip|turrets}} within that are below a {{as|'''maximum''' health}} threshold.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the explosion hits Ziggs himself he dashes away; this is mobility, not damage or survival relevant.",
+     "quote": "If this hits '''Ziggs''', he will {{tip|dash}} up to 825 units away from the center.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZiggsW.KnockbackSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsW.KnockbackGravity",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsW.KnockbackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsW.ExplosionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsW.KnockbackDistanceAlly",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsW.PerceptionBubbleRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsW.PerceptionBubbleDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZiggsW.CherryBonusHaste",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Hexplosive Minefield",
+   "cooldown": {
+    "values": [
+     16,
+     16,
+     16,
+     16,
+     16
+    ],
+    "quote": "16"
+   },
+   "cost": {
+    "values": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ],
+    "quote": "{{ap|70 to 110}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage per Mine",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      70,
+      110,
+      150,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.25,
+        0.3,
+        0.35,
+        0.4,
+        0.45
+       ]
+      }
+     ],
+     "quote": "{{ap|30 to 190}} {{as|(+ {{ap|25 to 45}}% AP)}}",
+     "bin": [
+      "ZiggsE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Reduced Damage per Mine (subsequent mine hits)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      12,
+      28,
+      44,
+      60,
+      76
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.1,
+        0.12,
+        0.14,
+        0.16,
+        0.18
+       ]
+      }
+     ],
+     "quote": "{{ap|30*0.4 to 190*0.4}} {{as|(+ {{ap|25*0.4 to 45*0.4}}% AP)}}",
+     "bin": [
+      "ZiggsE.DamagePerMine",
+      "ZiggsE.APRatioPerMine",
+      "ZiggsE.SubsequentMineDamageMod"
+     ],
+     "binNote": "Wiki value is derived: DamagePerMine and APRatioPerMine each multiplied by SubsequentMineDamageMod=0.4; no direct bin calculation named ReducedDamage besides a tooltip-only reference."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 50}}%",
+     "bin": [
+      "ZiggsE.Slow"
+     ],
+     "binNote": "Bin stores the slow as negative values [-0.1 to -0.5] (a movement speed modifier), the wiki states the magnitude as a positive percentage; same numbers, sign convention differs."
+    },
+    {
+     "id": "e_5",
+     "meaning": "Slow duration per mine hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "ZiggsE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Minefield lasts up to this long (arming after 0.5s)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "lasting for up to 10 seconds",
+     "bin": [
+      "ZiggsE.MineDuration"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Mine arming delay before it can detonate",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "arming after {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No bin data value found for the 0.5s arming delay; likely tooltip-only/hardcoded timing not exposed in listed rows."
+    },
+    {
+     "id": "e_8",
+     "meaning": "Number of mines scattered",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 11,
+     "terms": [],
+     "quote": "scatters a cluster of 11 proximity mines",
+     "bin": [],
+     "binNote": "No bin data value for mine count found among listed ZiggsE rows; likely hardcoded in spawn logic, not a DataValue."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Each mine explodes on contact with terrain or an enemy, dealing damage and slowing.",
+     "quote": "Each mine within the area explodes upon contact with terrain or an enemy, dealing {{as|magic damage}} and {{tip|slow|slowing}} them for {{fd|1.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An enemy takes only 40% damage from mines after the first one hits it.",
+     "quote": "An enemy takes 40% damage from subsequent mines.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mines do not explode from player-generated terrain (e.g. Anivia wall).",
+     "quote": "Mines will not explode upon contact with [[Terrain#Player-Generated|player-generated terrain]].",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A spell shield blocks only one mine detonation's effects, not the whole field.",
+     "quote": "{{tip|Spell shield}} will block the effects of a single detonation.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZiggsE.TriggerRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsE.MinePerceptionBubbleSize",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Mega Inferno Bomb",
+   "cooldown": {
+    "values": [
+     120,
+     95,
+     70
+    ],
+    "quote": "{{ap|120 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.375,
+    "quote": "{{fd|0.375}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Epicenter Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      300,
+      500,
+      700
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|300 to 700|round=2}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ZiggsR#EmpoweredDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Reduced Damage (outside epicenter)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      195,
+      325,
+      455
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|300*0.65 to 700*0.65}} {{as|(+ {{ap|100*0.65}}% AP)}}",
+     "bin": [
+      "ZiggsR#BlastDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bomb explodes upon arrival, dealing full damage to enemies at the epicenter and reduced damage (65%) to those outside it.",
+     "quote": "The bomb explodes upon arrival to deal {{as|magic damage}} to enemies hit, reduced to 65% against those outside of the epicenter.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mega Inferno Bomb can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bomb has variable travel time depending on cast distance, fixed within a threshold and scaling with distance beyond it.",
+     "quote": "''Mega Inferno Bomb'' takes {{fd|2.64}} seconds from the start of the cast time to land when cast at maximum range (reduced to {{fd|1.617}} seconds from the start of the cast time when casting within {{tt|2700|Estimated}} units).",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZiggsR.OuterRingModifier",
+     "reason": null
+    },
+    {
+     "ref": "ZiggsR.MaximumRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZiggsR.EmpoweredRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Short Fuse periodically arms Ziggs's next basic attack with bonus magic damage (increased vs structures, not the dummy); cooldown starts on-attack."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Casting Q, W, E, or R reduces Short Fuse's remaining cooldown by a level-scaled flat amount (4-6s), granted at the start of the ability's cast time."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Bouncing Bomb and Mega Inferno Bomb deal a single AoE magic damage instance on landing/explosion, on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Satchel Charge is thrown (initial cast, mana cost, counts as an ability activation) then recast (or auto-detonates after 4s) to deal its magic damage; recast is a separate timed part."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q: whether the bomb's single explosion lands with the dummy in radius; E: how many of the 11 scattered mines make contact with a single stationary point target (drives how much of the 40%-subsequent-mine reduction applies); R: whether the dummy is assumed inside the 250-radius epicenter (full damage) or the outer ring (65% damage)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-70, W 80, E 70-110, R 100) constrain how many casts of each ability fit inside the ~15s fight given champion mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Short Fuse's empowered-attack proc and per-cast cooldown refresh, Q/R's plain AoE landing damage, W's throw-then-recast structure, E's multi-mine field with diminishing subsequent-hit damage, R's epicenter/outer-ring falloff) is expressible as a combination of existing primitives; nothing requires bespoke engine logic beyond standard primitive composition plus the geometry assumptions already flagged as unsettled."
+ },
+ "unsettled": [
+  {
+   "question": "How many of Hexplosive Minefield's 11 mines can realistically detonate on a single stationary point target, given each mine only explodes on contact within its own 135-unit trigger radius and the mines are spread over an inner ring (3 mines) and outer ring (8 mines, ~335 unit total spread)?",
+   "options": [
+    "Only 1 mine ever contacts the target (full damage once, no reduced-damage mines)",
+    "The 3 inner-ring mines all contact the target if centered on it (1 full + 2 reduced-damage hits)",
+    "All 11 mines are assumed to contact the target (1 full + 10 reduced-damage hits, matching the wiki's stated 'Maximum Total Magic Damage' leveling row)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The mine cluster is built of 2 rings, with 3 mines in the inner ring (radius pending for test) and 8 mines on the other ring (200 radius), all equally spaced.",
+    "An enemy takes 40% damage from subsequent mines.",
+    "Maximum Total Magic Damage|{{ap|30*(1+0.4*10) to 190*(1+0.4*10)}}"
+   ]
+  },
+  {
+   "question": "Does Satchel Charge's recast (manual detonation) have its own cast time/animation lock that delays the next action, or is it effectively instantaneous relative to the 0.25s cast time of the initial throw?",
+   "options": [
+    "Recast is instant (no additional delay before Ziggs can act/cast again)",
+    "Recast shares the same 0.25s cast time as the initial throw",
+    "Recast has its own unlisted animation delay not captured by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cast time    = {{fd|0.25}}",
+    "''Satchel Charge'' can be recast within the duration, and does so automatically afterwards."
+   ]
+  },
+  {
+   "question": "Is there a floor on Short Fuse's cooldown reduction from casting abilities (e.g., cannot go below 0 / cannot make the passive proc more than once per some minimum interval), given a rotation that casts Q (4-6s cooldown) rapidly could otherwise stack multiple seconds of CDR per second?",
+   "options": [
+    "No floor beyond 0s remaining cooldown; rapid Q casts can make Short Fuse available almost immediately",
+    "There is an unstated minimum interval between Short Fuse procs not captured by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The cooldown reduction is granted at the start of the abilities' cast time.",
+    "{{sti|cooldown}} is reduced by {{pp|4 to 6 for 3|1 to 13}} seconds whenever '''Ziggs''' casts an {{tip|ability}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Bouncing Bomb) aimed so its explosion lands on the dummy, both for damage and to trigger Short Fuse's cooldown reduction.",
+   "Follow immediately with E (Hexplosive Minefield) centered on the dummy to land as many mines' damage as the positional assumption allows.",
+   "Cast W (Satchel Charge) onto the dummy, then recast it immediately (rather than waiting out the 4s auto-detonate) to deal its damage sooner.",
+   "Cast R (Mega Inferno Bomb) aimed so the dummy sits inside the epicenter for full (non-reduced) damage.",
+   "Weave basic attacks between every cast so that whenever Short Fuse comes off cooldown its empowered bonus damage lands as soon as possible.",
+   "Recast Q on cooldown (lowest cooldown ability, 4-6s) for the remainder of the 15s window, interleaving E and another W cast if their cooldowns (16s / 12-20s) come up in time.",
+   "Cast R a second time only if its cooldown (70-120s) has actually elapsed within the 15s window (unlikely except at very high rank with haste)."
+  ],
+  "questions": [
+   "Should basic attacks be modeled at all in the damage fight, or is only the ability-cast sequence scored (this changes whether Short Fuse's empowered-attack primitive matters)?",
+   "At what champion level and ability ranks is the rotation evaluated, since Short Fuse's per-cast CDR tier (4/5/6s) and all base damages scale with level/rank?",
+   "For Q, is the dummy assumed to be hit on the first bounce (fastest, closest) or should travel time to a farther bounce be modeled, and does that materially change the 15s cast count?",
+   "What positional assumption should be locked in for E's mine-hit-count, since it swings E's total damage contribution the most of any ability?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

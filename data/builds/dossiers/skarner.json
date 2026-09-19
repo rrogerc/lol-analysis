@@ -1,0 +1,1019 @@
+{
+ "champion": "skarner",
+ "abilities": {
+  "P": {
+   "name": "Threads of Vibration",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "magic damage over duration to max health at 3 stacks",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.05,
+        0.0523529412,
+        0.05470588,
+        0.057058824,
+        0.059411765,
+        0.061764706,
+        0.06411765,
+        0.06647059,
+        0.06882353,
+        0.07117647,
+        0.07352941,
+        0.07588235,
+        0.07823529,
+        0.08058824,
+        0.08294118,
+        0.08529412,
+        0.08764706,
+        0.09
+       ]
+      }
+     ],
+     "quote": "{{pp|5 + (9-5)/17*(x-1) for 20|key=%|defaultDisplayMaxLevel=true}} of their '''maximum''' health}} over the duration",
+     "bin": [
+      "SkarnerPassive#PercentHealthDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "damage cap against monsters over the duration",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      100,
+      111.76,
+      123.53,
+      135.29,
+      147.06,
+      158.82,
+      170.59,
+      182.35,
+      194.12,
+      205.88,
+      217.65,
+      229.41,
+      241.18,
+      252.94,
+      264.71,
+      276.47,
+      288.24,
+      300
+     ],
+     "terms": [],
+     "quote": "capped at {{pp|100 + (300-100)/17*(x-1) for 20|defaultDisplayMaxLevel=true}} against {{tip|monsters}}",
+     "bin": [
+      "SkarnerPassive#DamageMonsterCap"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "duration of Quaking stacks and the damage-over-time window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Quaking'' to enemies hit for 4 seconds, refreshing on subsequent applications",
+     "bin": [
+      "SkarnerPassive.Duration"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "tick interval of the damage-over-time",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds over the duration",
+     "bin": [
+      "SkarnerPassive.TickFrequency"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "stacks of Quaking required to trigger the damage",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "Enemies afflicted with 3 stacks take {{as|magic damage}}",
+     "bin": [
+      "SkarnerPassive.StacksToTriggerPassive"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Quaking stacks are applied by basic attacks on-hit and by Q, W, and R — specifically Shattered Earth (Q), Upheaval (W), and Impale (R), refreshing duration on reapplication, capping at 3 stacks.",
+     "quote": "'''Skarner's''' {{tip|basic attacks}} {{tip|on-hit}}, ''{{ai|Shattered Earth|Skarner}}'', ''{{ai|Upheaval|Skarner}}'', and ''{{ai|Impale|Skarner}}'' apply a {{tip|stack}} of ''Quaking'' to enemies hit for 4 seconds, refreshing on subsequent applications and stacking up to 3 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacks that are dodged or missed while blinded do not apply Quaking stacks, but blocked attacks still apply them.",
+     "quote": "Basic attacks that are {{tip|dodge|dodged}} by the target or missed while '''Skarner''' is {{tip|blind|blinded}} do not apply stacks of ''Quake''. {{tip|Block|Blocked}} attacks will still apply stacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks Quaking's application from Upheaval and Impale, not from basic attacks or Shattered Earth.",
+     "quote": "{{tip|Spell shield}} prevents ''Quaking's'' application from {{ai|Upheaval|Skarner}} and {{ai|Impale|Skarner}} only.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Shattered Earth / Upheaval",
+   "cooldown": {
+    "values": [
+     8,
+     6.75,
+     5.5,
+     4.25,
+     3
+    ],
+    "quote": "{{ap|8 to 3}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30,
+      40,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{ap|10 to 50}} {{as|(+ 90% '''bonus''' AD)}} {{as|(+ 3% of his '''bonus''' health)}}",
+     "bin": [
+      "SkarnerQ#AbilityDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "SkarnerQ.AttackSpeed"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Monster Percent Health Damage Cap",
+     "role": "target-debuff",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      200,
+      250,
+      300,
+      350
+     ],
+     "terms": [],
+     "quote": "{{ap|150 to 350}}",
+     "bin": [
+      "SkarnerQ.MonsterDamageCap"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30,
+      40,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.03
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.11
+      }
+     ],
+     "quote": "{{ap|10 to 50}} {{as|(+ 90% '''bonus''' AD)}} {{as|(+ 3% of his '''bonus''' health)}} {{as|(+ 11% of target's '''maximum''' health)}}",
+     "bin": [
+      "SkarnerQ#AbilityDamage",
+      "SkarnerQ.MaxHPPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting Shattered Earth resets Skarner's basic attack timer.",
+     "quote": "Casting Shattered Earth resets Skarner's basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shattered Earth's duration is paused while Ixtal's Impact is active.",
+     "quote": "Shattered Earth's duration is paused during {{ai|Ixtal's Impact|Skarner}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attacks deal proc damage rather than spell damage.",
+     "quote": "The empowered attacks lack spell effects as they deal {{tip|proc damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Attacks are consumed only when they land, not simply on use.",
+     "quote": "consume empowered attacks only when they landed. (This way the attacks are not consumed when the target died beforehand.)",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only the third empowered attack (or Upheaval) triggers the maximum-health damage and slow; the first two hits deal only the flat/AD/bonus-health damage.",
+     "quote": "The final attack slams the boulder, dealing an additional {{as|11% of each target's '''maximum''' health}} {{as|physical damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Upheaval ends Shattered Earth by throwing the boulder, dealing the same damage as the final empowered attack, without needing to land a basic attack.",
+     "quote": "'''Skarner''' ends ''{{ai|Shattered Earth|Skarner}}'' by throwing his boulder in the target direction. It explodes upon colliding with the first enemy hit, applying the same damage and slow to the target and surrounding enemies as ''Shattered Earth's'' final empowered attack would.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional maximum-health damage is capped against monsters and does not apply to structures.",
+     "quote": "The additional damage is capped against {{tip|monster|monsters}} and is not applied against structures.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shattered Earth's cooldown starts on cast but restarts each time an empowered attack lands or Upheaval is cast.",
+     "quote": "Starts on-cast, but restarts each time an empowered attack is used as well as after casting Upheaval",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While Shattered Earth is active it does not benefit from cooldown refund effects.",
+     "quote": "While ''Shattered Earth'' is active, it will not benefit from cooldown refund effects such as {{ri|Transcendence}} or {{iis|Navori Flickerblade}} {{nie|Transcendence}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only the third hit of Shattered Earth triggers Tear of the Goddess and Archangel's Staff mana-related effects.",
+     "quote": "Only the third hit of ''Shattered Earth'' triggers {{ii|Tear of the Goddess}} and {{iis|Archangel's Staff}} {{nie|manaflow}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SkarnerQ.RockHoldDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerQ.AttackRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerQ.SlowDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerQ.SlowPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerQ.AttackRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerQ.TurretDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Seismic Bastion",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.3,
+    "quote": "{{ap|0.3}}",
+    "binNote": "Bin has no explicit W cast time value; wiki states 0.3."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|50 to 130}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "SkarnerW#Damage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "shield amount equal to 8% of his maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.08
+      }
+     ],
+     "quote": "shielding himself equal to {{as|8% of his '''maximum''' health}}",
+     "bin": [
+      "SkarnerW#InitialShield"
+     ],
+     "binNote": "Notes say the effective ratio is 8% of bonus health, not maximum health as the description states; the bin calculation SkarnerW#InitialShield reads maxHp, matching the description's leveling text."
+    },
+    {
+     "id": "w_3",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "SkarnerW.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "slow amount",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "slow them by 20% for 1 second",
+     "bin": [
+      "SkarnerW.SlowEffect"
+     ],
+     "binNote": "Bin stores SlowEffect as -0.2 (a negative modifier); wiki states the magnitude as 20%, the same value with sign convention flipped."
+    },
+    {
+     "id": "w_5",
+     "meaning": "slow duration",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "slow them by 20% for 1 second",
+     "bin": [
+      "SkarnerW.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield is granted at the start of the cast time, before the shockwave damage occurs.",
+     "quote": "The shield is granted at the start of the cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Skarner can move during the cast time of this ability.",
+     "quote": "'''Skarner''' can move during Seismic Bastion's cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shockwave is a fast expanding AoE around Skarner, not a standard projectile.",
+     "quote": "releasing a shockwave that {{tt|quickly|~0.25 seconds}} expands in a radius around him to deal {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SkarnerW.InitialShieldRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Ixtal's Impact",
+   "cooldown": {
+    "values": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "quote": "{{ap|22 to 18}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      60,
+      90,
+      120,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      },
+      {
+       "stat": "maxHp",
+       "coef": 0.06
+      }
+     ],
+     "quote": "{{ap|30 to 150}} {{as|(+ 120% '''bonus''' AD)}} {{as|(+ 6% of his '''maximum''' health)}}",
+     "bin": [
+      "SkarnerE#PinDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "charge duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.75,
+     "terms": [],
+     "quote": "charges forward in the direction of the cursor for up to {{fd|2.75}} seconds",
+     "bin": [
+      "SkarnerE.ChargeDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "recast availability delay",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "can be recast after 1 second",
+     "bin": [],
+     "binNote": "No bin row carries this recast-availability delay; the sheet's ChargeDuration/StunDuration/etc. do not encode this 1-second value, so it is tooltip-only text not represented in the data sheet."
+    },
+    {
+     "id": "e_4",
+     "meaning": "stun duration on wall collision",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.1,
+     "terms": [],
+     "quote": "{{tip|stun|stunning}} them for {{fd|1.1}} seconds",
+     "bin": [
+      "SkarnerE.StunDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "cooldown reduction on landing the wall stun",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "reducing ''Ixtal's Impact's'' {{sti|cooldown}} by 35%",
+     "bin": [
+      "SkarnerE.RefundPercent"
+     ],
+     "binNote": "Wiki states a 35% cooldown reduction on hit; the bin's SkarnerE.RefundPercent is 0.65, not 0.35 - possibly a refund-of-remaining-cooldown value (65% refunded) rather than a flat 35% reduction, or the wiki text is inverted/outdated relative to the bin."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Colliding with an enemy champion or large monster grabs, attaches, and suppresses them, revealing them, for the remainder of the charge.",
+     "quote": "he grabs them with his claws for the time of the remaining charge, {{tip|attach|attaching}} them to himself, {{tip|suppression|suppressing}} them, {{tip|true sight|revealing}} them",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage and stun only occur if the attached target collides with terrain, ending the charge.",
+     "quote": "If '''Skarner's''' attached target collides with terrain, the charge ends, detaching them from him, dealing {{as|physical damage}}, {{tip|stun|stunning}} them for {{fd|1.1}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target resists the suppression (CC immunity, displacement immunity, or spell shield), Skarner does not attach them and the charge ends instantly without damage.",
+     "quote": "If the target resists the suppression through {{tip|cc-immune|total crowd control immunity}}, {{tip|displacement immune|displacement immunity}}, or a {{tip|spell shield}}. '''Skarner''' will not attach them to himself, causing the charge to end instantly.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target removes the suppression by cleanse or dispel, they detach immediately, ending the charge and not applying damage.",
+     "quote": "If the target removes the suppression by any means, including with an applicable {{tip|cleanse}} effect or {{tip|dispel}}, they will detach themselves from '''Skarner''' immediately which forces the charge to end instantly and not apply any damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ixtal's Impact's cooldown begins after the effect ends, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SkarnerE.InitialSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerE.Acceleration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerE.MaximumSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerE.GrabHitboxRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.GrabHitboxOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.WallRevealRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.WallWarningRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.GrabbedMoveSpeedBonus",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerE.MinGrabbedSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SkarnerE.DistancePostGrab",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.VictimOffsetIncrease",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.MinimumQRenew",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SkarnerE.InitialHitboxRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.InitialHitboxOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.SecondHitboxDelay",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.SecondHitboxRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.SecondHitboxOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerE.FinalHitboxDelay",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Impale",
+   "cooldown": {
+    "values": [
+     120,
+     105,
+     90
+    ],
+    "quote": "{{ap|120 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{fd|0.75}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "SkarnerR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "suppression/attachment duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "SkarnerR.Duration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "bonus movement speed on successful impale",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "{{as|40% '''bonus''' movement speed}}",
+     "bin": [
+      "SkarnerR.SpeedBoostAmount"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Skarner winds up over the cast time before the damage/suppression lashes out.",
+     "quote": "winds up his stingers over the cast time, then lashes them forward",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During Impale's enemy disable phase, Skarner cannot basic attack, cast Q or E, but can still cast W.",
+     "quote": "cast={{ai|Q|Skarner}} and {{ai|E|Skarner}} are disabled, but can be buffered. {{ai|W|Skarner}} is usable.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast, not on the effect ending.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If cast during Shattered Earth, Skarner automatically casts Upheaval in the direction of Impale's cast without incurring its own cast time.",
+     "quote": "'''Skarner''' {{tt|automatically casts|Without incurring Upheaval's cast time}} {{ai|Upheaval|Skarner}} in the direction of Impale's cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The movement speed bonus only applies if at least one enemy champion is successfully impaled.",
+     "quote": "If he successfully impales at least one enemy champion, '''Skarner''' gains {{as|40% '''bonus''' movement speed}} for the same duration.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SkarnerR.BackwardOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerR.HitboxStartHalfWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerR.HitboxEndHalfWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerR.HoldDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SkarnerR.SpeedBoostDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SkarnerR.DropDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "basic attacks on-hit, plus Q/W/R landed hits, apply Quaking stacks"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Quaking stacks 1-3 on target, refresh on reapplication, 4s duration"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "at 3 stacks, target takes max-health magic damage over 4s in 0.5s ticks, capped vs monsters"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Shattered Earth arms next 3 basic attacks with bonus physical damage + attack speed + range"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "casting Shattered Earth resets the basic attack timer"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "3rd empowered attack (or Upheaval) deals extra max-health damage and slows"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "bonus attack speed while Shattered Earth is armed"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Upheaval is Shattered Earth's alternate-cast/recast that ends it early, dealing the final-hit damage"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Shattered Earth's cooldown restarts on each empowered-attack landing / on Upheaval cast"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Seismic Bastion and Impale deal damage on a fixed cast-time delay, on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's final-hit and Upheaval damage includes a target-max-health component, capped vs monsters"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Ixtal's Impact is a channelled charge; Impale has a cast-time windup that blocks other actions"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's wall-slam damage only triggers if a grabbed target collides with terrain - a positional condition the dummy fight cannot naturally produce"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all four active abilities may limit casts in a 15s fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "the shield component of Seismic Bastion only matters for the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Ixtal's Impact (E) only deals damage if a grabbed target collides with terrain, which is a positional/geometric condition (dummy is stationary, no walls specified) that none of the closed-list primitives directly resolve into a deterministic damage-fight behavior; also Q's three-part empowered-attack sequence with a distinct final-hit formula and an alternate end-cast (Upheaval) that shares state with Q is more layered than a single primitive captures cleanly (empowered-attack + nth-hit-or-cast + recast-or-multipart + cooldown-manipulation combined)."
+ },
+ "unsettled": [
+  {
+   "question": "In the 15s stationary-dummy fight, can Ixtal's Impact (E) ever land its wall-stun damage, since it requires dragging a grabbed target into terrain?",
+   "options": [
+    "Assume no terrain is available and E's damage never triggers (E is cast only for other effects, or skipped)",
+    "Assume the dummy fight artificially places a wall so E's damage always lands",
+    "Treat E as unusable/omit it from the rotation entirely since the fight has 'no terrain' per the rules"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If '''Skarner's''' attached target collides with terrain, the charge ends, detaching them from him, dealing {{as|physical damage}}, {{tip|stun|stunning}} them for {{fd|1.1}} seconds"
+   ]
+  },
+  {
+   "question": "Do the two non-final empowered attacks of Shattered Earth (hits 1-2) proc on-hit/on-attack item effects and Quaking stacks the same as normal basic attacks, or are they excluded because they are 'proc damage'?",
+   "options": [
+    "They apply Quaking and on-hit effects normally, just with bonus damage added",
+    "Being classified as proc damage, they are excluded from some on-hit interactions (unclear which)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The empowered attacks lack spell effects as they deal {{tip|proc damage}}, which does not match with how empowered attacks supposed to behave in general."
+   ]
+  },
+  {
+   "question": "Does each of the three empowered Shattered Earth attacks (and Upheaval) count as a separate application that refreshes/stacks Quaking (P) independently, or do the first two hits and the final AoE component count as one combined instance for stacking purposes?",
+   "options": [
+    "Each landed empowered attack (including the final AoE splash) is a separate Quaking application",
+    "Only the primary target hit per attack applies a stack; the AoE splash to surrounding enemies does not stack Quaking"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "apply a {{tip|stack}} of ''Quaking'' to enemies hit for 4 seconds"
+   ]
+  },
+  {
+   "question": "Does casting Impale while Shattered Earth is active (auto-casting Upheaval) consume/interact with Shattered Earth's own cooldown-refresh-on-hit mechanic, or does it use Impale's own cooldown timing independently?",
+   "options": [
+    "Upheaval-via-Impale still triggers Shattered Earth's cooldown-refresh rule since it's still 'casting Upheaval'",
+    "It behaves purely as part of Impale's cast, not restarting Q's cooldown the normal way"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Skarner''' {{tt|automatically casts|Without incurring Upheaval's cast time}} {{ai|Upheaval|Skarner}} in the direction of Impale's cast"
+   ]
+  },
+  {
+   "question": "Is E.RefundPercent (0.65 in bin) the actual cooldown reduction on landing the wall-stun, or is the wiki's stated 35% reduction correct (i.e., are these inverted/different values)?",
+   "options": [
+    "Bin value 0.65 means 65% cooldown refunded (contradicts wiki's 35%)",
+    "Wiki's 35% is correct and the bin field represents something else (e.g. 65% of remaining CD refunded reduces total CD by a different %)",
+    "Both are correct under different framings (65% refund vs 35% reduction being two ways of stating overlapping but distinct effects)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "reducing ''Ixtal's Impact's'' {{sti|cooldown}} by 35%",
+    "SkarnerE.RefundPercent = 0.65"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-cast Shattered Earth (Q) to arm the next 3 basic attacks and reset the attack timer.",
+   "Auto-attack the dummy three times to consume the empowered attacks, landing the final (3rd) hit for the bonus max-health damage and applying/refreshing Quaking stacks each hit.",
+   "Cast Seismic Bastion (W) on cooldown for its magic damage burst (its shield is irrelevant in the damage fight).",
+   "Recast Shattered Earth (Q) as soon as it comes off cooldown (further reduced by the empowered-attack cooldown-restart mechanic) and repeat the 3-attack empowered sequence.",
+   "Weave normal basic attacks between Q cycles to keep stacking Quaking to 3 stacks and keep the P damage-over-time ticking continuously.",
+   "Cast Impale (R) once available (after cast-time windup) for its flat+AP magic damage burst; if timed while Shattered Earth is active, this auto-fires Upheaval as well for extra Q-final-hit damage.",
+   "Omit Ixtal's Impact (E) from the core loop, or treat it purely as a plain-cast for its direct pin damage if the human ruling allows an assumed-wall-collision variant; otherwise skip it since the stationary dummy fight has no terrain to trigger its damage."
+  ],
+  "questions": [
+   "Should E be included in the damage-fight rotation at all, given its damage requires a terrain collision that a stationary dummy fight cannot naturally produce?",
+   "Is the optimal loop to always land all 3 Q empowered attacks before recasting Q, or does weaving R/Impale's auto-Upheaval into an active Q sequence (ending it early) yield more DPS?",
+   "At what attack-speed threshold (if any within realistic itemization) does Shattered Earth's attack-reset actually start costing time per the wiki's noted ~271% bonus AS crossover, and should the rotation account for that in high-AS damage builds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

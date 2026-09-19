@@ -1,0 +1,252 @@
+{
+ "name": "Bountiful Harvest",
+ "cooldown": {
+  "values": [
+   10,
+   9.5,
+   9,
+   8.5,
+   8
+  ],
+  "quote": "{{ap|10 to 8}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   65,
+   70,
+   75,
+   80
+  ],
+  "quote": "{{ap|60 to 80}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Damage per second",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    90,
+    120,
+    150,
+    180
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|120/2 to 360/2}} {{as|(+ {{fd|{{#expr:90/2}}}}% AP)}}",
+   "bin": [
+    "FiddleSticksW.DamagePerSecond",
+    "FiddleSticksW#DrainDamageCalc"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Damage per Instance",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    15,
+    22.5,
+    30,
+    37.5,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1125
+    }
+   ],
+   "quote": "{{ap|120/{{#var:total_ticks}} to 360/{{#var:total_ticks}}}} {{as|(+ {{fd|{{#expr:90/{{#var:total_ticks}}}}}}% AP)}}",
+   "bin": [],
+   "binNote": "Wiki's per-instance number is DamagePerSecond/TicksPerSecond (60/4=15, etc.) and the AP coefficient is 0.45/4=0.1125; no bin row states the per-tick number directly, only the DPS (FiddleSticksW.DamagePerSecond) and tick rate (FiddleSticksW.TicksPerSecond) it is derived from."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Last Tick of Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    15,
+    22.5,
+    30,
+    37.5,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1125
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.12,
+      0.145,
+      0.17,
+      0.195,
+      0.22
+     ]
+    }
+   ],
+   "quote": "{{ap|120/{{#var:total_ticks}} to 360/{{#var:total_ticks}}}} {{as|(+ {{fd|{{#expr:90/{{#var:total_ticks}}}}}}% AP)}} {{as|(+ {{ap|12 to 22}}% of target's '''missing''' health)}}",
+   "bin": [
+    "FiddleSticksW.PercentForTooltip"
+   ],
+   "binNote": "The flat/AP part (15/22.5/.../45 base, 0.1125 AP coef) is derived as DamagePerSecond/TicksPerSecond and not directly stated by any bin row (see w_2); only the missing-health percentage (PercentForTooltip) is directly named in the bin."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Total Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    120,
+    180,
+    240,
+    300,
+    360
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.9
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.12,
+      0.145,
+      0.17,
+      0.195,
+      0.22
+     ]
+    }
+   ],
+   "quote": "{{ap|120 to 360}} {{as|(+ 90% AP)}} {{as|(+ {{ap|12 to 22}}% of target's '''missing''' health)}}",
+   "bin": [
+    "FiddleSticksW.PercentForTooltip"
+   ],
+   "binNote": "Total base/AP (120-360, 0.9 AP) equals DamagePerSecond * DrainDuration (e.g. 60*2=120, 0.45*2=0.9), a derived tooltip total not itself a bin row; only the missing-health percentage (PercentForTooltip) is directly named in the bin."
+  },
+  {
+   "id": "w_5",
+   "meaning": "Champion Heal Portion",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    25,
+    32.5,
+    40,
+    47.5,
+    55
+   ],
+   "terms": [],
+   "quote": "{{ap|25 to 55}}%",
+   "bin": [
+    "FiddleSticksW.VampPercentage"
+   ]
+  },
+  {
+   "id": "w_9",
+   "meaning": "Channel duration (drain duration)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "channels for up to {{#var:channel_duration}} seconds",
+   "bin": [
+    "FiddleSticksW.DrainDuration"
+   ]
+  },
+  {
+   "id": "w_10",
+   "meaning": "Tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "dealt {{as|magic damage}} every {{fd|{{#var:channel_tickrate}}}} seconds",
+   "bin": [
+    "FiddleSticksW.TicksPerSecond"
+   ],
+   "binNote": "Bin stores tick rate as TicksPerSecond=4 (i.e. 1/4=0.25s interval) rather than a direct interval value."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Fiddlesticks forms tethers to nearby enemies over the cast time before the damage channel begins.",
+   "quote": "forms a {{tip|tether}} between itself and each nearby enemy over the cast time, then {{tip|channel|channels}} for up to {{#var:channel_duration}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The final tick of the channel deals bonus damage based on the target's missing health, capped at 400 against monsters.",
+   "quote": "The final tick at the end of the channel deals additional {{as|magic damage}}, capped at 400 against {{tip|monsters}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Fiddlesticks heals itself for a portion of the pre-mitigation damage dealt by the channel.",
+   "quote": "'''Fiddlesticks''' {{tip|heals}} itself for a portion of the {{tt|pre-mitigation damage|Damage dealt before modifiers}} dealt",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the channel completes without being interrupted, 60% of the current cooldown is refunded.",
+   "quote": "If the channel was not {{tt|interrupted|e.g. by Fiddlesticks or crowd control effects}}, 60% of the {{sti|'''current''' cooldown}} is refunded.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks the initial tether application but does not stop the damage of a tether already applied.",
+   "quote": "{{tip|Spell shield}} will block the tether's application but not the damage of one already applied.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "FiddleSticksW.DrainLeashRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "FiddleSticksW.PercentMultiplier",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "FiddleSticksW.MonsterDamageMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "FiddleSticksW.MonsterHealingMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "FiddleSticksW.MinionDamageMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "FiddleSticksW.MinionHealingMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "FiddleSticksW.MonsterMaxDamage",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,152 @@
+{
+ "name": "Voracity / Sinister Steel",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_sinistersteel_damage",
+   "meaning": "magic damage dealt in AoE slash when retrieving a dagger",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    68,
+    72,
+    77,
+    82,
+    89,
+    96,
+    103,
+    112,
+    121,
+    131,
+    142,
+    154,
+    166,
+    180,
+    194,
+    208,
+    224,
+    240
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.6
+    },
+    {
+     "stat": "ap",
+     "coef": [
+      0.7,
+      0.7,
+      0.7,
+      0.7,
+      0.7,
+      0.8,
+      0.8,
+      0.8,
+      0.8,
+      0.8,
+      0.9,
+      0.9,
+      0.9,
+      0.9,
+      0.9,
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "quote": "{{pplevel|68;72;77;82;89;96;103;112;121;131;142;154;166;180;194;208;224;240;257;275<!--|formula=???-->|color=magic damage}} {{as|(+ 60% '''bonus''' AD)}} {{as|(+ {{pp|key=%|70 to 100 for 4|1 to 16}} AP)}}",
+   "bin": [
+    "KatarinaPassive#TotalDamage"
+   ],
+   "binNote": "Bin's ByCharLevelFormulaCalculationPart is unresolved so the base can't be directly verified; the AP ratio list (byLevelL[0.7...1]) matches. The wiki's pplevel string lists 20 entries (through 257/275) while champion levels only run 1-18, so only the first 18 are used here; the trailing two entries are unexplained by the sheet."
+  },
+  {
+   "id": "p_sinistersteel_shunpo_cdr",
+   "meaning": "percent of Shunpo's total cooldown refunded as current cooldown on dagger pickup",
+   "role": "other",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.78,
+    0.78,
+    0.78,
+    0.78,
+    0.78,
+    0.84,
+    0.84,
+    0.84,
+    0.84,
+    0.84,
+    0.9,
+    0.9,
+    0.9,
+    0.9,
+    0.9,
+    0.96,
+    0.96,
+    0.96
+   ],
+   "terms": [],
+   "quote": "{{pp|key=%|78 to 96 for 4|1 to 16}} of its '''total''' cooldown",
+   "bin": [
+    "KatarinaPassive#{e1ba6b0f}"
+   ]
+  },
+  {
+   "id": "p_voracity_cdr",
+   "meaning": "flat current cooldown reduction to all Katarina abilities on a takedown within 3s of damaging the target",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "reduce the {{sti|'''current''' cooldowns}} of '''Katarina's''' {{tip|abilities}} by 15 seconds",
+   "bin": [
+    "KatarinaPassive.ResetCDR"
+   ],
+   "binNote": "Not usable in the dummy fight (dummy cannot be taken down) but recorded since it directly reduces spell cooldowns."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Scoring a takedown within 3 seconds of damaging a target refunds current cooldowns on all of Katarina's abilities.",
+   "quote": "Scoring a champion {{tip|takedown}} within 3 seconds of damaging them will reduce the {{sti|'''current''' cooldowns}} of '''Katarina's''' {{tip|abilities}} by 15 seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Retrieving a dagger triggers an AoE slash that deals magic damage and applies on-hit effects to enemy champions hit.",
+   "quote": "she slashes around herself to deal ... magic damage to nearby enemies, apply {{tip|on-hit}} effects to enemy champions hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Daggers still deal their slash damage even if dodged, but do not apply on-hit effects in that case.",
+   "quote": "{{as|Daggers|buzzword}} will still deal damage but not apply on-hit effects if {{tip|dodged}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Single-use on-hit effects (e.g. Spellblade) apply to the closest target to Katarina when a dagger is used, not necessarily the target that triggered the pickup.",
+   "quote": "Single-use on-hit effects, such as {{tip|Spellblade}}, will apply to the closest target to '''Katarina''' when she uses a {{as|Dagger|buzzword}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KatarinaPassive.ResetWindow",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KatarinaPassive.DaggerRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KatarinaPassive.DaggerDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

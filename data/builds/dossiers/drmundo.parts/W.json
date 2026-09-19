@@ -1,0 +1,240 @@
+{
+ "name": "Heart Zapper",
+ "cooldown": {
+  "values": [
+   17,
+   16.5,
+   16,
+   15.5,
+   15
+  ],
+  "quote": "{{ap|17 to 15}}"
+ },
+ "cost": {
+  "values": [
+   0.08
+  ],
+  "quote": "{{as|8%|health}}",
+  "resource": "{{as|'''current''' health}}"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "None"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic Damage per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    5,
+    8.75,
+    12.5,
+    16.25,
+    20
+   ],
+   "terms": [],
+   "quote": "{{ap|5 to 20}}",
+   "bin": [
+    "DrMundoW.DamagePerTick"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "percent of current health paid as cost when the charge-up begins",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.08,
+   "terms": [],
+   "quote": "{{as|8%|health}}",
+   "bin": [
+    "DrMundoW.CurrentHealthCost"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Recast Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    35,
+    50,
+    65,
+    80
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.07
+    }
+   ],
+   "quote": "{{ap|20 to 80}} {{as|(+ 7% '''bonus''' health)}}",
+   "bin": [
+    "DrMundoW.RecastBaseDamage",
+    "DrMundoW#TotalDamage"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "charge-up duration before automatic detonation",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "for up to 3 seconds",
+   "bin": [
+    "DrMundoW.Duration"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "tick interval of the charge-up damage",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{fd|0.25}} seconds",
+   "bin": [],
+   "binNote": "No bin row states the 0.25s tick interval directly; DamagePerTick is a per-tick amount but the sheet has no explicit tick-rate field, so this number is only sourced from the wiki description."
+  },
+  {
+   "id": "w_6",
+   "meaning": "percent of post-mitigation damage taken stored as grey health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.8,
+    0.8028,
+    0.8056,
+    0.8083,
+    0.8111,
+    0.8139,
+    0.8167,
+    0.8194,
+    0.8222,
+    0.825,
+    0.8278,
+    0.8306,
+    0.8333,
+    0.8361,
+    0.8389,
+    0.8417,
+    0.8444,
+    0.95
+   ],
+   "terms": [],
+   "quote": "{{pplevel|80 to 95|key=%}}",
+   "bin": [
+    "DrMundoW#GrayHealthStorageInitial"
+   ],
+   "binNote": "Wiki gives only endpoints (80 to 95) via {{pplevel}}; the exact per-level interpolation curve is defined by the bin's byLevel(0.8..0.95) but its intermediate values are not stated in the wikitext, so intermediate entries above are a linear guess, not sourced."
+  },
+  {
+   "id": "w_7a",
+   "meaning": "time after which grey-health storage rate is reduced",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{fd|0.75}} seconds",
+   "bin": [
+    "DrMundoW.GrayHealthInitialDuration"
+   ]
+  },
+  {
+   "id": "w_7b",
+   "meaning": "grey-health storage rate after the initial period",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "reduced to 25%",
+   "bin": [
+    "DrMundoW.GrayHealthStorage"
+   ]
+  },
+  {
+   "id": "w_8a",
+   "meaning": "base recast heal as percent of stored grey health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "50% of [[Health#Grey health|grey health]], increased to 100%",
+   "bin": [
+    "DrMundoW.GrayHealthSmallMod"
+   ]
+  },
+  {
+   "id": "w_8b",
+   "meaning": "increased recast heal percent if a champion or large monster is hit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "increased to 100% if at least one enemy {{tip|champion}} or large {{tip|monster}} is hit",
+   "bin": [
+    "DrMundoW.GrayHealthBigMod"
+   ]
+  },
+  {
+   "id": "w_9",
+   "meaning": "minimum delay before the recast can be used early",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{fd|0.5}} seconds",
+   "bin": [
+    "DrMundoW.SecondCastLockout"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The charge-up applies persistent area damage every 0.25s to nearby enemies, and the detonation deals a separate instance of area damage.",
+   "quote": "The charge up applies {{tip|persistent area damage}} and the detonation deals {{tip|area damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell Shield only blocks the recast detonation damage, not the charge-up ticks.",
+   "quote": "{{tip|Spell shield}} will only block the detonation.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast automatically triggers at the end of the charge-up duration if not cast manually first.",
+   "quote": "does so automatically after the duration",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting W or its recast while Infected Bonesaw's cast time is active buffers the input to fire at the end of that cast time, delaying it.",
+   "quote": "''Heart Zapper'' and its recast will buffer and cast at the end of {{ais|Infected Bonesaw|Dr. Mundo}} cast time if attempted to cast during it.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown begins after the ability's effect (the recast/detonation) completes, not on initial cast.",
+   "quote": "post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "DrMundoW.SecondCastRange",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,170 @@
+{
+ "champion": "briar",
+ "primitives": [
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Every ability costs 5% of Briar's current health; she has no mana pool, so casts self-damage and are limited by remaining health, not a resource bar"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Crimson Curse bleed deals physical damage over 5s in 0.5s ticks, refreshing duration on reapplication"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Bleed stacks up to 5 times on the target, each stack beyond the first adding 25% more tick damage; stacks are added by any basic attack, on-hit effect or ability hit"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Head Rush, Blood Frenzy's dash, and Snack Attack each reset Briar's basic attack timer"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Head Rush reduces the target's armor and magic resistance for 5 seconds, amplifying all subsequent damage to it"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Blood Frenzy grants bonus attack speed and movement speed for 5s; Hematomania (R) grants all of Blood Frenzy's effects plus bonus armor/MR, lifesteal, and extra movement speed until the mark ends"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Snack Attack arms Briar's next basic attack during Blood Frenzy with bonus physical damage and a heal"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Snack Attack's bonus damage scales with the target's missing health; Certain Death's explosion damages the marked target and nearby enemies on arrival"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blood Frenzy's cleave AoE damage is affected by (and copies) the primary attack's critical strike"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Chilling Scream charges for up to 1s, increasing its own damage/range/knockback threshold and granting Briar 35% damage reduction and a self-heal during the charge"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Chilling Scream auto-recasts (or can be recast) to release the charged scream; Certain Death has a kick cast time, then a mark, then a separate dash-and-explosion phase"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant mechanics (stacking bleed DOT, health-cost-as-resource, attack resets, a timed on-hit-cleave buff with an empowered-attack follow-up, a target debuff, a charge/recast ability, and a multi-part ultimate with a conditional AoE burst) each map onto one closed-list primitive. Because the fight is a single stationary target counted as an enemy champion, Briar's real-game target-priority logic (nearest enemy, marked-target priority, monster/minion tiers) collapses to 'always the dummy' and needs no bespoke targeting engine."
+ },
+ "unsettled": [
+  {
+   "question": "Does Blood Frenzy's cleave AoE damage and/or Snack Attack's bonus damage count as on-hit / trigger on-attack item effects, or only the primary basic-attack instance?",
+   "options": [
+    "Only the primary attack triggers on-hit/on-attack effects; the cleave and Snack Attack's bonus are pure bonus damage with no separate proc",
+    "The cleave and/or Snack Attack also independently trigger on-hit/on-attack item effects as their own attack instances"
+   ],
+   "impact": "high",
+   "quotes": [
+    "This damage is affected by {{tip|critical strike}} modifiers.",
+    "applies {{tip|on-hit}} effects, triggers {{tip|on-attack}} effects"
+   ]
+  },
+  {
+   "question": "Can Head Rush (Q) be freely cast while Blood Frenzy's forced-attack phase is already active without ending the Frenzy, the way it can during the initial W dash?",
+   "options": [
+    "Q can be cast at any point during Blood Frenzy without interrupting it, same as during the dash",
+    "Q cast during the forced-attack phase (outside the dash) cancels/ends Blood Frenzy early"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''{{ai|Head Rush|Briar}}'' and {{ai|Certain Death|Briar}} can be cast during the dash.''"
+   ]
+  },
+  {
+   "question": "Is the bleed's heal-on-target-death (125% of 'remaining bleed damage') computed from pre-mitigation or post-mitigation damage? The wiki source itself flags this as unresolved.",
+   "options": [
+    "Pre-mitigation, consistent with the tick heal's stated pre-mitigation basis",
+    "Post-mitigation, since the target's actual remaining HP/damage taken would be post-mitigation"
+   ],
+   "impact": "low",
+   "quotes": [
+    "she will heal herself equal to 125% <!--pre or post mitigation?--> of the remaining bleed damage"
+   ]
+  },
+  {
+   "question": "Since every ability costs 5% of Briar's current health with no mana gate, can/should repeated casting in the 15s damage fight actually reduce her toward 0 health, and should the simulator cap or stop casts to avoid self-kill?",
+   "options": [
+    "Model the health cost fully; a maximal-cast rotation could meaningfully lower Briar's HP and the simulator should track it (possibly halting casts near a floor)",
+    "Treat the cost as a fixed small percentage that never meaningfully threatens Briar's survival and can be ignored for rotation planning"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|5%|health}}",
+    "{{as|'''current''' Health}}"
+   ]
+  },
+  {
+   "question": "If Head Rush's armor/MR shred is reapplied by a second Q cast before the first 5s shred expires, does it just refresh the same shred duration/magnitude, or can the percentage stack additively from multiple applications?",
+   "options": [
+    "Refresh-only: reapplying just resets the 5s timer at the same shred percentage",
+    "Additive: overlapping applications stack their shred percentages"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "reduces their {{sti|armor penetration|{{as|armor}}}} and {{sti|magic penetration|{{as|magic resistance}}}} for 5 seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Certain Death (R) if it is off cooldown, since its cast immediately grants Hematomania (all of Blood Frenzy's buffs) plus bonus resists/lifesteal/move speed and deals its own magic burst on arrival; if R is unavailable, open with Blood Frenzy (W) instead to enter the frenzy.",
+   "Immediately follow with Head Rush (Q) on the dummy for its own physical damage, stun, armor/MR shred (amplifying all later damage), on-hit/on-attack triggers, and an attack-timer reset.",
+   "Auto-attack continuously while Blood Frenzy/Hematomania is active, benefiting from the attack-speed buff and dealing the cleave AoE bonus physical damage on every attack while building bleed stacks toward the 5-stack cap.",
+   "Cast Snack Attack as soon as it is available during the frenzy window for its missing-health-scaled bonus damage and heal, without delaying the next auto-attack.",
+   "Recast Head Rush every time it comes off cooldown to reapply the shred, add another hit of Q damage, and reset the attack timer again.",
+   "Hold Chilling Scream (E) until between Blood Frenzy windows (or as a fight-ending burst), since casting it interrupts an active frenzy; charge it the full 1 second to maximize its damage and unlock the wall-collision bonus damage if geometry allows.",
+   "Recast Blood Frenzy (W) as soon as its cooldown is available to keep the attack-speed/movement-speed buff and cleave damage uptime as continuous as possible for the remainder of the 15 seconds."
+  ],
+  "questions": [
+   "Does the simulated 15s damage fight start with all cooldowns available (letting R open the fight), or with Certain Death's long cooldown already in progress from a prior state?",
+   "At what level/build does the fight start, and does Briar's health pool make the repeated 5%-current-health ability costs a real constraint on how many total casts fit in 15 seconds?",
+   "Should Chilling Scream always be charged to its full 1 second for maximum damage, or does the ranking favor a faster tap-cast to preserve more total auto-attack/ability uptime?",
+   "Can Head Rush be woven in during Blood Frenzy's forced-attack phase without cancelling the frenzy, and if so does it also shift Briar's attack target priority away from the dummy in a way that matters for a single-target fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

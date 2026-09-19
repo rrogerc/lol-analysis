@@ -1,0 +1,770 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "GangplankPassive",
+    "key": "Characters/Gangplank/Spells/GangplankPassiveAbility/GangplankPassive",
+    "dataValues": {
+     "Cooldown": 15,
+     "MoveSpeedDuration": 2,
+     "DoTDuration": 2.5,
+     "TurretDamageMult": 0.5,
+     "ADRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "byLevel(50..250) + (ADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        50,
+        61.764706,
+        73.52941,
+        85.29412,
+        97.05882,
+        108.82353,
+        120.588235,
+        132.35294,
+        144.11765,
+        155.88235,
+        167.64706,
+        179.41176,
+        191.17647,
+        202.94118,
+        214.70588,
+        226.470588,
+        238.23529,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio"
+      ]
+     },
+     "MoveSpeed": {
+      "expr": "byLevel(0.15..0.3)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.15,
+        0.15882354,
+        0.16764707,
+        0.1764706,
+        0.18529412500998554,
+        0.19411765,
+        0.20294118,
+        0.21176471,
+        0.22058824,
+        0.22941177382188685,
+        0.23823530358426712,
+        0.24705883334664736,
+        0.25588236,
+        0.2647059,
+        0.2735294,
+        0.28235295,
+        0.29117648,
+        0.3
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "GangplankQWrapper",
+    "key": "Characters/Gangplank/Spells/GangplankQWrapperAbility/GangplankQWrapper",
+    "cooldown": 4.5,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      45,
+      40,
+      35,
+      30
+     ]
+    },
+    "dataValues": {
+     "SpellDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       40,
+       70,
+       100,
+       130
+      ]
+     },
+     "ADRatio": 1,
+     "CherryRatio": 0.07,
+     "GameModeInteger": 1,
+     "CritDamageMod": 1,
+     "GoldProc": {
+      "axis": "rank",
+      "v": [
+       3,
+       4,
+       5,
+       6,
+       7
+      ]
+     },
+     "SSProc": {
+      "axis": "rank",
+      "v": [
+       4,
+       5,
+       6,
+       7,
+       8
+      ]
+     },
+     "PlunderThreshold": 500
+    },
+    "calcs": {
+     "ShotDamage": {
+      "expr": "SpellDamage=[10/40/70/100/130] + (ADRatio=1)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        40,
+        70,
+        100,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "SpellDamage"
+      ]
+     },
+     "ShotCrit": {
+      "expr": "ShotDamage * 1 + (CritDamageMod=1)*(1xcritDamage + -1)",
+      "modifies": "ShotDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CritDamageMod"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "GangplankW",
+    "key": "Characters/Gangplank/Spells/GangplankWAbility/GangplankW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      20,
+      18,
+      16,
+      14
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       45,
+       70,
+       95,
+       120,
+       145
+      ]
+     },
+     "PercentHeal": 13,
+     "BuffDuration_unused": 0.25,
+     "HasteAmount": 200,
+     "SteroidAmount_unused": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50,
+       60,
+       70
+      ]
+     }
+    },
+    "calcs": {
+     "BaseHealth": {
+      "expr": "BaseHeal=[45/70/95/120/145] + 0.9xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        45,
+        70,
+        95,
+        120,
+        145
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseHeal"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "GangplankE",
+    "key": "Characters/Gangplank/Spells/GangplankEAbility/GangplankE",
+    "cooldown": 0,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BarrelSlow": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60,
+       70,
+       80
+      ]
+     },
+     "MaxBarrels": {
+      "axis": "rank",
+      "v": [
+       3,
+       3,
+       4,
+       4,
+       5
+      ]
+     },
+     "DebuffDuration": 2,
+     "BonusDamageToChampions": {
+      "axis": "rank",
+      "v": [
+       75,
+       95,
+       115,
+       135,
+       155
+      ]
+     },
+     "BarrelDuration": 25,
+     "BarrelBaseDecay": 2,
+     "BarrelEnemyGoldBounty": 10,
+     "MinionDamagePercentage": 100,
+     "CooldownBetweenBarrels": 0.5,
+     "BarrelArmorPenetration": 40
+    },
+    "calcs": {
+     "FinalSlowAmount": {
+      "expr": "BarrelSlow=[40/50/60/70/80]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        50,
+        60,
+        70,
+        80
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "BarrelSlow"
+      ]
+     },
+     "BarrelDecayTime": {
+      "expr": "byLevelL[2/2/2/2/2/2/1/1/1/1/1/1/0.5/0.5/0.5/0.5/0.5/0.5]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   },
+   {
+    "script": "GangplankESpellPassive",
+    "key": "Characters/Gangplank/Spells/GangplankEAbility/GangplankESpellPassive",
+    "cooldown": 0,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ChampionBonusDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       105,
+       130,
+       155,
+       180
+      ]
+     },
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60,
+       70,
+       80
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "GangplankR",
+    "key": "Characters/Gangplank/Spells/GangplankRAbility/GangplankR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      140,
+      120
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamagePerWave": {
+      "axis": "rank",
+      "v": [
+       40,
+       70,
+       100
+      ]
+     },
+     "DeathsDaughterBaseDamage": {
+      "axis": "rank",
+      "v": [
+       120,
+       210,
+       300
+      ]
+     },
+     "RaiseMoraleHaste": 40,
+     "ZoneDuration": 8,
+     "CannonDelay": 0.5,
+     "CannonInterval": 2,
+     "SlowPercent": 30,
+     "SlowDuration": 0.5,
+     "DeathsDaughterSlow": 75,
+     "DeathsDaughterSlowDuration": 1,
+     "RaiseMoraleHasteDuration": 2,
+     "TotalWavesTooltip": 12
+    },
+    "calcs": {
+     "OneWaveDamage": {
+      "expr": "DamagePerWave=[40/70/100] + 0.1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        70,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "DamagePerWave"
+      ]
+     },
+     "DeathsDaughterDamage": {
+      "expr": "DeathsDaughterBaseDamage=[120/210/300] + 0.3xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        210,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": [
+       "DeathsDaughterBaseDamage"
+      ]
+     },
+     "TotalDamageTooltip": {
+      "expr": "OneWaveDamage * TotalWavesTooltip=12",
+      "modifies": "OneWaveDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        480,
+        840,
+        1200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "DamagePerWave",
+       "TotalWavesTooltip"
+      ]
+     }
+    }
+   },
+   {
+    "script": "GangplankRWithRaiseMorale",
+    "key": "Characters/Gangplank/Spells/GangplankRAbility/GangplankRWithRaiseMorale",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      140,
+      120
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamagePerWave": {
+      "axis": "rank",
+      "v": [
+       40,
+       70,
+       100
+      ]
+     },
+     "DeathsDaughterBaseDamage": {
+      "axis": "rank",
+      "v": [
+       120,
+       210,
+       300
+      ]
+     },
+     "RaiseMoraleHaste": 40,
+     "ZoneDuration": 8,
+     "CannonDelay": 0.5,
+     "CannonInterval": 2,
+     "SlowPercent": 30,
+     "SlowDuration": 0.5,
+     "DeathsDaughterSlow": 75,
+     "DeathsDaughterSlowDuration": 1,
+     "RaiseMoraleHasteDuration": 2,
+     "TotalWavesTooltip": 12
+    },
+    "calcs": {
+     "OneWaveDamage": {
+      "expr": "DamagePerWave=[40/70/100] + 0.1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        70,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "DamagePerWave"
+      ]
+     },
+     "DeathsDaughterDamage": {
+      "expr": "DeathsDaughterBaseDamage=[120/210/300] + 0.3xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        210,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": [
+       "DeathsDaughterBaseDamage"
+      ]
+     },
+     "TotalDamageTooltip": {
+      "expr": "OneWaveDamage * TotalWavesTooltip=12",
+      "modifies": "OneWaveDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        480,
+        840,
+        1200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "DamagePerWave",
+       "TotalWavesTooltip"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "GangplankQWrapper",
+  "W": "GangplankW",
+  "E": "GangplankE",
+  "R": "GangplankR",
+  "P": "GangplankPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 280,
+   "{6216bf7b}": 60,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Gangplank",
+  "name": "Gangplank",
+  "partype": "Mana",
+  "passive": "Trial by Fire",
+  "spells": [
+   {
+    "id": "GangplankQWrapper",
+    "name": "Parrrley",
+    "maxrank": 5,
+    "cooldown": [
+     4.5,
+     4.5,
+     4.5,
+     4.5,
+     4.5
+    ],
+    "cost": [
+     50,
+     45,
+     40,
+     35,
+     30
+    ]
+   },
+   {
+    "id": "GangplankW",
+    "name": "Remove Scurvy",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     20,
+     18,
+     16,
+     14
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "GangplankE",
+    "name": "Powder Keg",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "GangplankR",
+    "name": "Cannon Barrage",
+    "maxrank": 3,
+    "cooldown": [
+     160,
+     140,
+     120
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Trial by Fire": {
+    "damagetype": "True",
+    "spelleffects": "proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   },
+   "Trial by Fire 2": {
+    "damagetype": "True",
+    "spelleffects": "proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Parrrley": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "onhiteffects": "True",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Silver Serpents": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "onhiteffects": "True",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Remove Scurvy": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Powder Keg": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Charge"
+   }
+  },
+  "R": {
+   "Cannon Barrage": {
+    "damagetype": "Magic",
+    "spelleffects": "AOE",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

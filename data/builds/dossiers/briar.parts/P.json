@@ -1,0 +1,205 @@
+{
+ "name": "Crimson Curse",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_bleed_total_damage",
+   "meaning": "total bleed damage from one stack over its full duration",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "level",
+   "base": [
+    10,
+    12.352941,
+    14.7058825,
+    17.058823,
+    19.411765,
+    21.764705,
+    24.117647,
+    26.470588,
+    28.82353,
+    31.17647,
+    33.52941,
+    35.882353,
+    38.235295,
+    40.588235,
+    42.941175,
+    45.29412,
+    47.64706,
+    50
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{as|{{pplevel|{{#var:i_1}} to {{#var:i_18}}}}|physical damage}} {{as|(+ {{#var:i_ad}}% '''bonus''' AD)}} {{as|'''total''' physical damage}}",
+   "bin": [
+    "BriarP#BleedDamageOverDurationTooltip"
+   ]
+  },
+  {
+   "id": "p_bleed_heal",
+   "meaning": "total heal from one bleed stack's damage over its duration",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    2.5,
+    3.0882353,
+    3.6764706,
+    4.2647059,
+    4.8529412,
+    5.4411765,
+    6.0294118,
+    6.6176471,
+    7.2058824,
+    7.7941176,
+    8.3823529,
+    8.9705882,
+    9.5588235,
+    10.147059,
+    10.735294,
+    11.323529,
+    11.911765,
+    12.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.125
+    }
+   ],
+   "quote": "heals '''Briar''' for {{pplevel|({{#var:i_1}} to {{#var:i_18}})*{{#var:i_heal}}|color=heal}} {{as|(+ {{ap|{{#var:i_ad}}*{{#var:i_heal}}}}% '''bonus''' AD)}}",
+   "bin": [
+    "BriarP.HealPercent"
+   ],
+   "binNote": "no bin row states the heal total directly; it is derived from HealPercent (0.25) applied to BleedDamageOverDurationTooltip, matching the wiki's stated heal numbers."
+  },
+  {
+   "id": "p_stack_bonus_damage",
+   "meaning": "extra damage percent added by each bleed stack beyond the first",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "dealing {{ap|{{#var:i_s}}*100}}% damage for stacks beyond the first",
+   "bin": [
+    "BriarP.BleedPercentAdd"
+   ]
+  },
+  {
+   "id": "p_max_stacks",
+   "meaning": "maximum number of bleed stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "stacking up to {{#var:i_maxs}} times",
+   "bin": [
+    "BriarP.MaxBleedStacks"
+   ]
+  },
+  {
+   "id": "p_bleed_duration",
+   "meaning": "duration of the bleed, refreshed on reapplication",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "inflict a bleed against enemies for {{#var:i_dotd}} seconds",
+   "bin": [
+    "BriarP.BleedDuration"
+   ]
+  },
+  {
+   "id": "p_bleed_tick_rate",
+   "meaning": "interval between bleed damage ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{fd|{{#var:i_dotr}}}} seconds",
+   "bin": [
+    "BriarP.BleedTickRate"
+   ]
+  },
+  {
+   "id": "p_kill_heal_percent",
+   "meaning": "percent of remaining bleed damage healed if the bleeding target dies",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "she will heal herself equal to 125% <!--pre or post mitigation?--> of the remaining bleed damage",
+   "bin": [
+    "BriarP.PercentOfBleedHealedOnKill"
+   ]
+  },
+  {
+   "id": "p_heal_amp_missing_hp",
+   "meaning": "increased healing received from all sources based on missing health and bonus health",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": 0.4
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.00025
+    }
+   ],
+   "quote": "increases healing from all sources by {{as|{{pp|key=%|key1=%|type='''missing''' health|0 to 40 for 11|0 to 100|formula=0.4% per 1% missing health}}|health}} {{as|(+ {{as|{{pp|key=%|key1=%|type='''missing''' health|0 to 2.5 for 11|0 to 100|formula=0.025% per 1% missing health}}|health}} per 100 '''bonus''' health)}}",
+   "bin": [
+    "BriarP.HealShieldPerMissingHPPercent",
+    "BriarP#{b38f3487}"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The bleed refreshes its duration on each new application rather than stacking as a separate instance.",
+   "quote": "inflict a bleed against enemies for {{#var:i_dotd}} seconds, refreshing on subsequent applications",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bleed always heals Briar based on pre-mitigation damage, so it does not heal against damage reduction effects, and does not heal at all against invulnerable targets (no damage is dealt).",
+   "quote": "The bleed always heals '''Briar''' for {{ap|{{#var:i_heal}}*100}}% of the {{tt|pre-mitigation damage|Damage calculated before modifiers}} dealt.\n** Because of this, '''Briar''' will not heal on {{tip|invulnerable}} targets.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Blood Frenzy's area-of-effect attack damage around the primary target does not refresh or add bleed stacks.",
+   "quote": "{{ais|Blood Frenzy|Briar}} area of effect damage around the target does not apply bleed stacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Briar has no base health regeneration, offset by the missing-health healing amplification.",
+   "quote": "'''Briar''' has no {{sti|health regeneration|{{as|'''base''' health regeneration}}}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If a bleeding target dies, Briar heals for the remaining (unticked) portion of the bleed's damage.",
+   "quote": "If a target dies while bleeding, she will heal herself equal to 125% <!--pre or post mitigation?--> of the remaining bleed damage.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "BriarP.CurrentHealthPercentCost",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,505 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TristanaPassive",
+    "key": "Characters/Tristana/Spells/TristanaPassiveAbility/TristanaPassive",
+    "cooldown": 0,
+    "calcs": {
+     "BonusPassiveRange": {
+      "expr": "byLevel(0..150)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0,
+        8.823529,
+        17.647059,
+        26.470588,
+        35.294118,
+        44.117647,
+        52.941176,
+        61.764706,
+        70.588235,
+        79.411765,
+        88.23529,
+        97.05882,
+        105.882353,
+        114.70588,
+        123.52941,
+        132.35294,
+        141.17647,
+        150
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "TristanaQ",
+    "key": "Characters/Tristana/Spells/TristanaQAbility/TristanaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      19,
+      18,
+      17,
+      16
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      15,
+      20,
+      25,
+      30,
+      35
+     ]
+    },
+    "costLegacy": {
+     "axis": "rank",
+     "v": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AttackSpeedMod": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.75,
+       0.9,
+       1.05,
+       1.2
+      ]
+     },
+     "BuffDuration": 7
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "TristanaW",
+    "key": "Characters/Tristana/Spells/TristanaWAbility/TristanaW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      20,
+      18,
+      16,
+      14
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       105,
+       140,
+       175,
+       210
+      ]
+     },
+     "SlowDuration": 2,
+     "SlowMod": -0.4,
+     "DamageRadius": 350,
+     "ADRatio": 1,
+     "APRatio": 0.5
+    },
+    "calcs": {
+     "LandingDamage": {
+      "expr": "BaseDamage=[70/105/140/175/210] + (ADRatio=1)xbonus ad + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        105,
+        140,
+        175,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TristanaE",
+    "key": "Characters/Tristana/Spells/TristanaEAbility/TristanaE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15.5,
+      15,
+      14.5,
+      14
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PassiveBaseDamage": {
+      "axis": "rank",
+      "v": [
+       45,
+       60,
+       75,
+       90,
+       105
+      ]
+     },
+     "PassiveRadius": 300,
+     "ActiveBaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     },
+     "ActiveBADRatio": 0.8,
+     "ActiveRadius": 300,
+     "ActiveTowerRadius": 600,
+     "ActiveMaxStacks": 4,
+     "ActiveDuration": 4,
+     "ActivePerStackAmp": 0.25,
+     "CritChanceModifier": 0.4,
+     "APRatio": 0.5
+    },
+    "calcs": {
+     "PassiveDamage": {
+      "expr": "PassiveBaseDamage=[45/60/75/90/105] + 0.25xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        45,
+        60,
+        75,
+        90,
+        105
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25
+       }
+      ],
+      "refs": [
+       "PassiveBaseDamage"
+      ]
+     },
+     "ActiveDamage": {
+      "expr": "(ActiveBaseDamage=[60/85/110/135/160] + (ActiveBADRatio=0.8)xbonus ad + (APRatio=0.5)xap) * 1 + ((CritChanceModifier=0.4)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "APRatio",
+       "ActiveBADRatio",
+       "ActiveBaseDamage",
+       "CritChanceModifier"
+      ]
+     },
+     "ActiveMaxDamage": {
+      "expr": "ActiveDamage * 1 + (ActivePerStackAmp=0.25)*(ActiveMaxStacks=4)",
+      "modifies": "ActiveDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "APRatio",
+       "ActiveBADRatio",
+       "ActiveBaseDamage",
+       "ActiveMaxStacks",
+       "ActivePerStackAmp",
+       "CritChanceModifier"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "TristanaR",
+    "key": "Characters/Tristana/Spells/TristanaRAbility/TristanaR",
+    "cooldown": 100,
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       225,
+       275,
+       325
+      ]
+     },
+     "KnockbackDistance": {
+      "axis": "rank",
+      "v": [
+       600,
+       800,
+       1000
+      ]
+     },
+     "KnockbackArea": 200,
+     "StunDuration": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.55,
+       0.7
+      ]
+     },
+     "APRatio": 1
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=[225/275/325] + 0.7xbonus ad + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        225,
+        275,
+        325
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.7
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "TristanaSkin80Manager",
+    "key": "Characters/Tristana/Spells/TristanaSkin80Manager",
+    "dataValues": {
+     "GoldToNextForm": 6000,
+     "SecondsOutOfCombatTillTransform": 5,
+     "SecondsOutOfCombatTillEmote": 3,
+     "WEmpoweredFormDuration": 5
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "TristanaQ",
+  "W": "TristanaW",
+  "E": "TristanaE",
+  "R": "TristanaR",
+  "P": "TristanaPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 32,
+   "{c4ab3550}": 1.44,
+   "{3a509002}": 0.09
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.152
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Tristana",
+  "name": "Tristana",
+  "partype": "Mana",
+  "passive": "Draw a Bead",
+  "spells": [
+   {
+    "id": "TristanaQ",
+    "name": "Rapid Fire",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     19,
+     18,
+     17,
+     16
+    ],
+    "cost": [
+     15,
+     20,
+     25,
+     30,
+     35
+    ]
+   },
+   {
+    "id": "TristanaW",
+    "name": "Rocket Jump",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     20,
+     18,
+     16,
+     14
+    ],
+    "cost": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ]
+   },
+   {
+    "id": "TristanaE",
+    "name": "Explosive Charge",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15.5,
+     15,
+     14.5,
+     14
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "TristanaR",
+    "name": "Buster Shot",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     100,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Draw a Bead": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Rapid Fire": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Rocket Jump": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies / Self",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Explosive Charge": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Buster Shot": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

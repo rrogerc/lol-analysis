@@ -1,0 +1,151 @@
+{
+ "champion": "renekton",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Fury builds from basic attacks (5/hit), Q/E hits (2-10 per hit, capped 30/cast), and R (5/s up to 75 while active); decays 1 per 0.25s after 12s out of combat. At 50+ Fury, the next eligible basic ability is empowered and consumes 50 Fury."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "50 Fury must be banked to trigger the empowered version of Q or W; this gates how often the stronger damage numbers can be used inside the 15s window."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "W arms the next basic attack to strike twice (thrice if Fury-empowered), each strike dealing separate basic damage and applying on-hit."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Casting W resets Renekton's basic attack timer, effectively giving a free/early attack."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "Only W's first strike can critically strike for bonus AD damage."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Cull the Meek deals cleave damage instantly on cast, flat 7s cooldown, free."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Slice and Dice dashes and deals damage; on hit it can be recast (Dice) within 4s as a second, separately-timed damage instance."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "The empowered ('Reign of Anger Bonus') Dice recast additionally applies an armor shred for 4s on enemies hit."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dominus creates an aura dealing magic damage every 0.5s for its 15s duration to nearby enemies."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dominus grants bonus health, attack range, and continuous Fury generation (5/s, cap 75) for 15s; the health portion is survival-fight relevant."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is a resource (Fury) meter that empowers whichever of Q/W is cast next once it reaches 50, expressed as a combination of stacking-self-buff + resource-budget + empowered-attack/plain-cast primitives. No mechanic here requires logic outside the closed list, though the sim must implement 'shared charge consumed by the next eligible cast, with per-ability different empowered effects' as a resource-budget rule spanning two abilities."
+ },
+ "unsettled": [
+  {
+   "question": "Does 'Reign of Anger Bonus' on E's Dice recast (bonus damage + armor shred) actually consume the shared 50-Fury meter, or is Slice and Dice genuinely excluded from the Fury-empowerment system as P's own text states?",
+   "options": [
+    "E's recast is excluded from the 50-Fury consumption as P literally states, and its 'Reign of Anger Bonus' triggers on some other condition (e.g. low HP) not modeled by the Fury meter",
+    "E's recast (Dice specifically, not the initial dash) is in fact empowered by spending the shared 50 Fury, and P's 'excluding Slice and Dice' only refers to the first cast",
+    "The 'Reign of Anger Bonus' on E is vestigial/legacy wikitext left over from an older kit version and not live in the current implementation"
+   ],
+   "impact": "high",
+   "quotes": [
+    "his next {{tip|ability|basic ability}}, excluding ''{{ai|Slice and Dice|Renekton|Slice}}'', consumes {{as|50 Fury}} to become empowered",
+    "{{sbc|{{ai|Reign of Anger|Renekton}} Bonus:}} ''Dice'', the recast, deals {{as|'''bonus''' physical damage}} and inflicts {{sti|arpen|{{as|armor reduction}}}} to enemies hit for 4 seconds."
+   ]
+  },
+  {
+   "question": "The bin contains a separate, unused ability block 'RenektonDice' with its own cooldown [18/17/16/15/14] and BaseDamage [30/60/90/120/150] that matches neither RenektonSliceAndDice.BasicDamage nor EmpDamage. Is this legacy/dead data, or does it govern the live recast damage instead of RenektonSliceAndDice's values?",
+   "options": [
+    "RenektonDice is stale/unused legacy data; the live recast uses RenektonSliceAndDice#BasicDamage / #EmpDamage as the wiki describes",
+    "RenektonDice.BaseDamage is the actual live recast damage row and the wiki's 'repeats the first cast's effects' description is imprecise"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "W's buff duration to use the empowered attack: bin RenektonPreExecute.BuffDuration = 6s vs wiki text 'within 7 seconds'. Which is live for how long the empowerment can be delayed before it expires (affects whether an attack timer can be safely reset before firing)?",
+   "options": [
+    "6 seconds (bin)",
+    "7 seconds (wiki)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "empowers his next basic attack within 7 seconds"
+   ]
+  },
+  {
+   "question": "R's per-tick magic damage: wiki leveling2 lists 4 values (30/60/90/120) for a 3-rank ultimate, while the bin's AuraDamagePerSecond [60/150/240] halved per 0.5s tick gives 3 values (30/75/120). Which per-rank base values are correct for R's tick damage?",
+   "options": [
+    "Bin-derived: 30 / 75 / 120 per tick (3 ranks)",
+    "Wiki as literally listed: 30 / 60 / 90 / 120 (treating it as 4 steps, possibly a wiki formatting error)"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "In the empowered Ruthless Predator (Reign of Anger) version, a documented bug has the third strike remove any Fury gained since the first strike, including from R's per-second Fury generation and Guinsoo's Phantom Hit but not Dusk and Dawn's Spellblade. Should the simulator model this Fury-clawback bug (which changes how often the 50-Fury empowerment can be re-triggered) or treat it as fixed/out of scope?",
+   "options": [
+    "Model the bug: empowered W's third hit strips Fury gained since the first hit, delaying the next empowerment",
+    "Ignore it: treat Fury generation as accruing normally through the full attack sequence"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting R (Dominus) immediately to maximize the number of 0.5s aura damage ticks over the fight and to start passive Fury generation (5/s, cap 75) as early as possible.",
+   "Basic-attack the dummy continuously between ability casts to build Fury (5 per hit) and deal auto-attack damage.",
+   "Cast E (Slice and Dice) as soon as available; if it hits, recast it (Dice) within the 4s window for the second damage instance, and repeat on cooldown throughout the fight.",
+   "Cast Q (Cull the Meek) on cooldown (7s, free) for cleave damage; when Fury has reached 50, let Q consume it for the Reign-of-Anger empowered version unless the empowerment is being reserved for W.",
+   "Cast W (Ruthless Predator) on cooldown to arm the next basic attack for bonus on-hit damage (and an attack-timer reset); when Fury is at 50, consider spending it on W instead of Q for the 3-hit empowered version if that yields more total damage.",
+   "Continue alternating basic attacks and off-cooldown Q/E/W casts for the remainder of the 15s window, always attacking rather than idling between cooldowns."
+  ],
+  "questions": [
+   "When Fury reaches 50 and both Q and W are off cooldown, which one should consume it for maximum total damage over the fight â€” empowered Q's extra cleave damage or empowered W's third attack strike?",
+   "Does the simulated fight start with Renekton at 0 Fury, or should some pre-fight Fury (e.g. from approaching/auto-attacking before the timer starts) be assumed?",
+   "Should R be delayed slightly to line up its Fury generation with an imminent Q/W empowerment threshold, or is casting it immediately for full tick duration strictly better?",
+   "Does E's recast (Dice) ever legitimately receive the Reign of Anger damage/armor-shred bonus in the current live kit, and if so under what condition, given it changes whether E should be prioritized to consume Fury?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

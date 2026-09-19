@@ -1,0 +1,866 @@
+{
+ "champion": "elise",
+ "abilities": {
+  "P": {
+   "name": "Spider Queen",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_spider_bonus_damage",
+     "meaning": "Spider Form basic attack bonus magic damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      12,
+      22,
+      32,
+      42
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{pp|type = [[File:Spider Form.png|20px|link=]] Spider Form's Rank|12 to 42 for 4|color=magic damage}} {{as|(+ 15% AP)}}",
+     "bin": [
+      "EliseR.PassiveBonusDamage",
+      "EliseR#PassiveTotalDamage"
+     ]
+    },
+    {
+     "id": "p_spider_heal",
+     "meaning": "Spider Form basic attack on-hit heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      6,
+      8,
+      10,
+      12
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.08
+      }
+     ],
+     "quote": "{{tip|heal}} her for {{pp|type=[[File:Spider Form.png|20px|link=]] ''Spider Form's'' Rank|6 to 12 for 4|color=heal}} {{as|(+ 8% AP)}}",
+     "bin": [
+      "EliseR.PassiveHealing",
+      "EliseR#PassiveTotalHealing"
+     ],
+     "binNote": "bin ratio is 0.08 (PassiveTotalHealing = PassiveHealing + 0.08xap), matches wiki's 8% AP"
+    },
+    {
+     "id": "p_spiderling_cap",
+     "meaning": "maximum dormant Spiderlings stored in Human Form",
+     "role": "count",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      2,
+      3,
+      4,
+      5
+     ],
+     "terms": [],
+     "quote": "up to {{pp|type = [[File:Elise OriginalSquare.png|20px|link=]] ''Human Form's'' Rank|2 to 5 for 4}} at a time",
+     "bin": [
+      "EliseR.BaseSpiderlingsStored"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "In Human Form, Elise gains one dormant Spiderling per ability cast that hits an enemy, up to the cap.",
+     "quote": "'''Elise''' gains one dormant ''Spiderling'' whenever she hits an enemy with an {{tip|ability}}, storing once per cast and up to {{pp|type = [[File:Elise OriginalSquare.png|20px|link=]] ''Human Form's'' Rank|2 to 5 for 4}} at a time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Elise starts the game and each respawn with the maximum number of Spiderlings already stored.",
+     "quote": "She stores the maximum number of ''Spiderlings'' when the game starts and upon {{tip|death|respawning}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spider Form's bonus on-hit damage does not affect structures.",
+     "quote": "''Spider Form's'' effects do not apply to {{tip|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Spider Form bonus damage on-hit applies as proc damage (a separate damage instance) alongside the basic attack, which itself can still crit and apply other on-hit effects normally.",
+     "quote": "''Spider Form's'' basic attacks will apply other {{tip|on-hit}} effects and can {{tip|critical strike|critically strike}} as normal (the '''bonus''' damage does not).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage can be blocked or dodged, and does not apply if Elise is blinded.",
+     "quote": "''Spider Form's'' bonus damage and healing can be {{tip|blocked}}, {{tip|dodge}} and are not applied if '''Elise''' is {{tip|blind}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus on-hit damage is applied as proc damage.",
+     "quote": "Applies {{tip|proc damage}} on the bonus magic damage on-hit in ''Spider Form''.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ElisePassive.SpiderlingAPRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ElisePassive.SpiderlingAoEReduction",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Neurotoxin / Venomous Bite",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "6"
+   },
+   "cost": {
+    "values": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ],
+    "quote": "{{ap|80 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage (current health, Neurotoxin)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      70,
+      100,
+      130,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": 0.04,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.03
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|40 to 160}} {{as|(+ 4% {{as|(+ 3% per 100 AP)}} of target's '''current''' health)}}",
+     "bin": [
+      "EliseHumanQ.BaseDamage",
+      "EliseHumanQ#HumanPercentHealth"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Capped Monster Damage (Neurotoxin)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      85,
+      105,
+      125,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|65 to 145}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "EliseHumanQ.MonsterCapDamage",
+      "EliseHumanQ#MonsterDamageCapCalc"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Magic Damage (missing health, Venomous Bite)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      80,
+      110,
+      140,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 0.08,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.03
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 170}} {{as|(+ 8% {{as|(+ 3% per 100 AP)}} of target's '''missing''' health)|health}}",
+     "bin": [
+      "EliseHumanQ.SpiderBaseDamage",
+      "EliseSpiderQCast#MissingHPDamage"
+     ],
+     "binNote": "EliseHumanQ.SpiderBaseDamage matches the wiki's flat base for Venomous Bite; the missing-HP ratio calc (8% + 3%/100AP) is only found under the EliseSpiderQCast spell, not EliseHumanQ, which lacks its own ratio/TargetMissingHPDamage rows."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Capped Monster Damage (Venomous Bite)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      85,
+      105,
+      125,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|65 to 145}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "EliseSpiderQCast.MonsterCapDamage",
+      "EliseSpiderQCast#MonsterDamageCapCalc"
+     ],
+     "binNote": "Only EliseSpiderQCast carries a matching monster-cap calc; EliseHumanQ.MonsterCapDamage is already used for q_2, so this reuses the spider-form spell's identical numbers as the closest bin match."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Elise will not dash if the target is within basic attack range.",
+     "quote": "'''Elise''' will not dash if the target is within basic attack range.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Venomous Bite applies on-hit effects and always deals its damage after the cast time even if the dash is interrupted; it still deals damage without on-hit effects if blocked or dodged.",
+     "quote": "''Venomous Bite'' will always apply its effects after the cast time, even if the dash is interrupted.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Venomous Bite deals damage but not on-hit effects if blocked or dodged.",
+     "quote": "''Venomous Bite'' will still deal its damage but not apply on-hit effects if it is {{tip|blocked}} or {{tip|dodged}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Active Spiderlings/Volatile Spiderlings dash alongside Elise on Venomous Bite's cast and attack the target.",
+     "quote": "they will {{tip|dash}} alongside '''Elise''' to the target upon ''Venomous Bite's'' cast and reprioritize them.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EliseHumanQ.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Volatile Spiderling / Skittering Frenzy",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.125,
+    "quote": "{{fd|0.125}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      100,
+      140,
+      180,
+      220
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|60 to 220}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "EliseHumanW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "ai|Spider Queen|Elise|Spiderling Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25
+     ],
+     "terms": [],
+     "quote": "{{ap|5 to 25}}%",
+     "bin": [],
+     "binNote": "Not present in the EliseHumanW sheet section; this passive value belongs to EliseSpiderW.PassiveAttackSpeed which is not shown for this slot's first spell."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.6,
+      0.75,
+      0.9,
+      1.05,
+      1.2
+     ],
+     "terms": [],
+     "quote": "{{ap|60 to 120}}%",
+     "bin": [],
+     "binNote": "Not present in EliseHumanW sheet; matches EliseSpiderW.ActiveAttackSpeed which is not shown for this slot's first spell."
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration of the Skittering Frenzy active bonus attack speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "gain {{as|'''bonus''' attack speed}} for 3 seconds",
+     "bin": [],
+     "binNote": "Matches EliseSpiderW.BuffDuration, not present in EliseHumanW sheet."
+    },
+    {
+     "id": "w_5",
+     "meaning": "duration the Volatile Spiderling lasts before exploding",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "lasts for 3 seconds",
+     "bin": [
+      "EliseHumanW.TimeToExplode"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "explosion radius of the spiderling",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 275,
+     "terms": [],
+     "quote": "{{tt|275|Explosion radius}}",
+     "bin": [
+      "EliseHumanW.ExplosionSize"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The spiderling explodes on contact with an enemy or upon expiring, dealing AoE magic damage to nearby enemies.",
+     "quote": "it instantly explodes to deal {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Skittering Frenzy resets Elise's basic attack timer on cast.",
+     "quote": "Skittering Frenzy {{tip|basic attack reset|resets}} '''Elise's''' [[basic attack]] timer",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Passive bonus attack speed to Spiderlings can surpass the attack speed cap.",
+     "quote": "This bonus attack speed can surpass the attack speed cap.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Skittering Frenzy ends early if Elise switches to Human Form.",
+     "quote": "'''Elise''' loses Skittering Frenzy immediately when she switches to ... Human Form",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The spiderling delays 0.75 seconds before crawling to a detected target, but moves without delay toward the target location if no target is detected.",
+     "quote": "crawls to them after a delay of {{fd|0.75}} seconds and otherwise crawls to the target location before doing so without incurring a delay",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EliseHumanW.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "EliseHumanW.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "EliseHumanW.TimeToExplode",
+     "reason": null
+    },
+    {
+     "ref": "EliseHumanW.ExplosionSize",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Cocoon / Rappel",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Stun Duration",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.6,
+      1.8,
+      2,
+      2.2,
+      2.4
+     ],
+     "terms": [],
+     "quote": "{{ap|1.6 to 2.4}} seconds",
+     "bin": [
+      "EliseHumanE.BaseStunDuration"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Spider Effects Increase (Rappel recast damage/heal amp)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.55,
+      0.7,
+      0.85,
+      1
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 100}}%",
+     "bin": [
+      "EliseHumanE.RappelDamageAmp"
+     ],
+     "binNote": "Wiki lists only 5 ranks (40 to 100%); EliseHumanE.RappelDamageAmp has a 6th value (115) present in EliseHumanEMissile's variant but not reachable at max rank 5, likely a PC/console or unused rank artifact."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Rappel duration/lift-up and descend timings",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.6,
+      1.95,
+      0.4
+     ],
+     "terms": [],
+     "quote": "lift up into the air over {{fd|0.6}} seconds, immediately becoming {{tip|untargetable}}... and afterwards {{tip|vanish|vanishing}} for up to {{tt|{{fd|1.95}} seconds|Estimated}}",
+     "bin": [],
+     "binNote": "No matching bin data value found for these durations; not present in the sheet's EliseHumanE rows."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Rappel recast/Spider Effects Increase buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "'''Elise''' and her ''{{ai|Spider Queen|Elise|Spiderlings}}'' reappear and descend onto the ground over {{fd|0.4}} seconds, becoming targetable and able to act again afterwards. Additionally, ''{{ais|Spider Queen|Elise}}'' bonuses are increased for 5 seconds.",
+     "bin": [],
+     "binNote": "Bin sheet lists no such duration field for EliseHumanE (relevant EliseSpiderE.BuffDuration = 5 belongs to a different spell slot)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Cocoon deals no damage and does not trigger effects that require dealing damage.",
+     "quote": "''Cocoon'' deals no damage and thus does '''not''' trigger {{tip|turret}} aggro, or effects such as {{ii|Elixir of Sorcery}} and {{ris|Sudden Impact}} activation.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cocoon still activates combat status despite dealing no damage.",
+     "quote": "''Cocoon'' will activate [[combat status]] despite not dealing any damage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Rappel grants untargetability and unable-to-act status, making Elise immune to damage during the ability.",
+     "quote": "immediately becoming {{tip|untargetable}} and {{tip|lockout|unable to act}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Rappel's recast increases Spider Queen (R) bonuses for a duration after descending.",
+     "quote": "''{{ais|Spider Queen|Elise}}'' bonuses are increased for 5 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rappel's recast can be used while affected by cast-inhibiting crowd control.",
+     "quote": "''Rappel's recast can be used while affected by {{tip|cast-inhibiting crowd control}}.''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EliseHumanE.VisionRadius",
+     "reason": "utility"
+    },
+    {
+     "ref": "EliseHumanE.RappelCooldown",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Spider Form / Human Form",
+   "cooldown": {
+    "values": [
+     3,
+     3,
+     3,
+     3
+    ],
+    "quote": "3"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "Spider Form / Human Form is a self-buff toggle with no damage, healing, or cost of its own; the passive bonuses it scales come from Spider Queen (passive), not this R entry.",
+     "quote": "'''Elise''' switches between her {{sbc|Human Form}} and {{sbc|Spider Form}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Switching to Spider Form summons all stored Spiderlings and heals them to full, switching to Human Form stores active Spiderlings; this affects whether the Spiderling swarm is present to deal damage.",
+     "quote": "she summons all stored ''{{ai|Spider Queen|Elise|Spiderlings}}'' and {{tip|heals}} them to full health",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Transformations do not count as ability activations for on-cast effects like Spellblade.",
+     "quote": "Transformations do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Spider Form during a basic attack windup lets that attack benefit from Spider Queen bonus damage/healing while keeping human attack range instead of using a projectile.",
+     "quote": "'''Elise''' will perform a ''Spider Form'' basic attack that benefits from the bonus damage and healing from {{ai|Spider Queen|Elise}}, but remain at ''Human Form'' basic attack range, despite not using a projectile",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spider Form and Human Form toggles have separate cooldowns.",
+     "quote": "''Spider Form'' and ''Human Form'' have separate cooldowns.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EliseR.PassiveBonusDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EliseR.PassiveHealing",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EliseR.PassiveMSOnHit",
+     "reason": "utility"
+    },
+    {
+     "ref": "EliseR.BaseSpiderlingsStored",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EliseR.SpiderlingBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EliseR.SpiderlingAPRatio",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EliseR.SpiderlingBonusResist",
+     "reason": "defensive"
+    },
+    {
+     "ref": "EliseR.SpiderlingArmor",
+     "reason": "defensive"
+    },
+    {
+     "ref": "EliseR.SpiderlingsStoredCap",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EliseR.SpiderlingMagicResist",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R"
+   ],
+   "note": "Toggle between Human Form (ranged Q/W/E: Neurotoxin, Volatile Spiderling, Cocoon) and Spider Form (melee Q/W/E: Venomous Bite, Skittering Frenzy, Rappel), each with separate cooldowns; only Spider Form grants the on-hit passive and active Spiderling swarm."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "In Spider Form, Elise's basic attacks deal bonus magic damage (12-42 +15% AP) and heal her (6-12 +8% AP) on-hit, as proc damage separate from the attack itself."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P",
+    "R",
+    "W"
+   ],
+   "note": "Dormant Spiderlings (stored via P, up to a rank-based cap) are summoned and healed to full when entering Spider Form via R, and fight independently; Volatile Spiderling (W) is also a separate damage-dealing entity that chases and explodes."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Neurotoxin (Human Q) scales off target's current HP%, Venomous Bite (Spider Q) scales off target's missing HP%; both are capped against monsters (irrelevant vs a champion-flagged dummy but present in the data)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Neurotoxin/Venomous Bite deal damage on a 0.25s cast/dash on a 6s cooldown; Volatile Spiderling deals AoE damage on contact/expiry on a 12s cooldown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Skittering Frenzy (Spider Form W) grants Elise and her Spiderlings bonus attack speed for 3s; also has a permanent passive attack-speed bonus to Spiderlings."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Skittering Frenzy resets Elise's basic attack timer on cast."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Mana costs (Q 80-100, W 60-100, E 50) constrain how many casts fit in a 15s window at low levels/mana pools."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Rappel (Spider Form E) is a lift-up/vanish then a recast that descends on a target and grants a 40-100% increase to Spider Queen bonuses for 5s afterward."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Elise gains one dormant Spiderling per landed ability cast in Human Form, capped at a rank-based value (2-5), which determines how many Spiderlings are available when she next enters Spider Form."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Rappel's lift-up grants untargetability/unable-to-act, relevant only to the survival fight (dodging the enemy rotation), never read by the damage-fight dummy."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Elise's damage output is dominated by an independent pet swarm (Spiderlings) whose count, attack speed, AP ratio, and uptime depend on a chain of mechanics not fully specified here: how many Spiderlings are stored at fight start, how many spawn/attack when Spider Form is entered, their own attack cadence and how Skittering Frenzy's attack-speed buff (passive + active) applies to them, and how the unresolved bin calculation {9e9e2e5c} for the Rappel-recast damage bonus resolves. A generic 'pet-or-summon' primitive cannot capture the stacking/summon-on-form-switch lifecycle, the interaction between Human-Form storage and Spider-Form summon-and-heal, and the AS-cap-breaking Skittering Frenzy stacking on top of the swarm without bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "How is the Spider Queen basic-attack bonus damage (EliseR#PassiveTotalDamage) modified after a Rappel recast, given the unresolved calculation part {9e9e2e5c} feeding EliseR#{e5407a95}?",
+   "options": [
+    "PassiveTotalDamage is multiplied by (1 + RappelDamageAmp) as the wiki's 'Spider Effects Increase' 40-100% suggests",
+    "Some other formula involving {9e9e2e5c} not recoverable from the sheet, e.g. an additive or capped version",
+    "The Rappel bonus is ignored entirely for a damage-fight simulation because Rappel is primarily a defensive/escape tool"
+   ],
+   "impact": "high",
+   "quotes": [
+    "EliseR#{e5407a95} = PassiveTotalDamage * <{9e9e2e5c}> + 1",
+    "! unresolved calculation part {9e9e2e5c}",
+    "{{st|Spider Effects Increase|{{ap|40 to 100}}%}}"
+   ]
+  },
+  {
+   "question": "How many Spiderlings does Elise have available to fight in the damage/survival simulation, and what are their individual attack cadence/damage in a 15s window?",
+   "options": [
+    "Assume Elise starts the fight with the maximum stored Spiderlings for her Human Form rank (per the game-start/respawn rule) and they are summoned at full health the instant she enters Spider Form",
+    "Assume zero pre-stored Spiderlings and only count ones generated by casts during the fight",
+    "Ignore Spiderling pet damage entirely and only simulate Elise's own abilities/attacks, treating pets as out of scope"
+   ],
+   "impact": "high",
+   "quotes": [
+    "She stores the maximum number of ''Spiderlings'' when the game starts and upon {{tip|death|respawning}}.",
+    "she summons all stored ''{{ai|Spider Queen|Elise|Spiderlings}}'' and {{tip|heals}} them to full health"
+   ]
+  },
+  {
+   "question": "Does Venomous Bite's missing-health ratio (8% + 3% per 100 AP) actually belong to the EliseHumanQ spell object, or only to EliseSpiderQCast (whose bin section has no direct match for EliseHumanQ.SpiderBaseDamage's ratio)?",
+   "options": [
+    "EliseHumanQ.SpiderBaseDamage uses the same ratio calc shown under EliseSpiderQCast#MissingHPDamage (they are the same ability logic, split by form)",
+    "The ratio is genuinely absent/different for the EliseHumanQ-triggered cast and the wiki's leveling line is imprecise about which bin object it maps to"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "EliseHumanQ.SpiderBaseDamage = [50/80/110/140/170]",
+    "EliseSpiderQCast#MissingHPDamage (percent) = (TargetMissingHPDamage=8 + (APRatio=0.03)xap) * 0.01"
+   ]
+  },
+  {
+   "question": "EliseSpiderQCast (and EliseHumanEMissile, EliseSpiderE) bin arrays list 6 values while ddragon caps Q/E at maxrank 5 — is the 6th entry live (e.g. a rank-6 upgrade item/rune effect) or stale leftover data?",
+   "options": [
+    "Only the first 5 values are ever reachable and the 6th is dead/legacy data to ignore",
+    "The 6th value is reachable through some evolution mechanic not captured in the wiki template shown and should be modeled"
+   ],
+   "impact": "low",
+   "quotes": [
+    "EliseSpiderQCast.BaseDamage = [50/80/110/140/170/200]",
+    "maxrank 5"
+   ]
+  },
+  {
+   "question": "When Venomous Bite is cast, do the dashing Spiderlings/Volatile Spiderlings' attacks on the target count as separate damage instances triggered by the cast, or are they just the pets' normal independent attacks retargeted early?",
+   "options": [
+    "Treat it as pets simply re-prioritizing the target (no extra damage beyond their normal attack cadence)",
+    "Treat the dash-and-attack as a bonus extra attack instance per pet on top of their normal cadence"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If there are active ''{{ai|Spider Queen|Elise|Spiderlings}}'' or ''{{ai|Volatile Spiderling|Elise|Volatile Spiderlings}}'' nearby, they will {{tip|dash}} alongside '''Elise''' to the target upon ''Venomous Bite's'' cast and reprioritize them."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start in Human Form and cast Neurotoxin (Q) on the dummy immediately (its damage is a fraction of the target's current HP, so it is strongest when the target is at full health).",
+   "Cast Volatile Spiderling (W) at the dummy right after, for its AoE burst and to store a Spiderling.",
+   "Toggle to Spider Form (R) as soon as the opener is done, which summons all stored Spiderlings at full health to fight alongside Elise.",
+   "Auto-attack continuously while in Spider Form to trigger Spider Queen's on-hit bonus magic damage and self-heal on every attack.",
+   "Recast the Spider-Form Q (Venomous Bite) on cooldown, biting the target for missing-health-based damage and applying on-hit effects; this also pulls Spiderlings in to attack.",
+   "Cast Skittering Frenzy (Spider-Form W) on cooldown for the attack-speed buff to Elise and her Spiderlings and to reset Elise's attack timer for extra swings.",
+   "Remain in Spider Form for the rest of the 15s window rather than swapping back to Human Form, since re-entering Human Form loses the active Spiderling swarm and Spider Queen on-hit bonus, and each form swap costs its own 3s cooldown.",
+   "Skip Cocoon and Rappel's crowd-control/escape usage entirely, since the fight has a stationary dummy and CC/mobility do not change damage dealt or taken."
+  ],
+  "questions": [
+   "Does the simulator assume Elise enters the fight with the maximum stored Spiderlings (as at game start/respawn), and at what level/rank should the Spiderling cap and AP ratio be evaluated?",
+   "What is the actual attack-speed, attack range, and base AP ratio used for Spiderling auto-attacks in a straight damage simulation, since the wiki template here defers those details to a separate Pets page?",
+   "Is it ever worth swapping back to Human Form mid-fight to re-cast Neurotoxin (current-HP based) for extra burst, given the 3s form cooldown and the DPS lost from disbanding the Spiderling swarm and losing the on-hit passive?",
+   "Should the unresolved Rappel-recast bonus-damage formula ({9e9e2e5c}) be assumed to apply during the fight, and if so, is using Rappel's recast for a 5s Spider Queen damage buff worth its ~1s cast/vanish time that produces zero damage?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

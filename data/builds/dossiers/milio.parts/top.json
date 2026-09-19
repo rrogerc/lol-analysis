@@ -1,0 +1,137 @@
+{
+ "champion": "milio",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Fireball explosion deals its magic damage on a fixed post-cast delay, on a 10s cooldown"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Milio cannot cast other abilities during Q's 0.25s pre-fire delay, blocking action during that window"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q has separately timed parts: initial fireball hit (stun/knockback, no damage), a bounce, then a delayed explosion that deals the actual damage"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Fired Up! enchantment arms the enchanted unit's next basic attack or ability hit to deal bonus burst damage (% of enchanted target's AD)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Fired Up!'s burst is immediately followed by a burn DoT (10-50 by level + 20% AP) ticking every 0.25s over 1.5s"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on all four abilities can meaningfully constrain how often Milio casts within a 15s fight"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Warm Hugs is a 2-charge ammo system (recharge 17s to 13s by rank) rather than a simple cooldown, gating how often Milio can self-cast it to proc Fired Up!"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Heal-over-time (W), shield+move speed (E), and heal+tenacity+cleanse (R) never read in the damage-dealt/damage-taken sense the dummy fight uses, aside from W/E/R's role in triggering the Fired Up! passive"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behavior (Q's delayed multi-part fireball, and Fired Up!'s empowered-attack + burn dot) is expressible with existing primitives. The main complexity is that Fired Up! is granted by Milio's own W/E/R hitting himself rather than by a dedicated proc ability, which is a targeting detail rather than a new mechanic type."
+ },
+ "unsettled": [
+  {
+   "question": "Do Milio's self-targeted casts of W, E, and R actually grant himself the Fired Up! enchantment (as the passive text implies by saying his abilities 'hit' himself), or is self-enchantment limited to a subset of these, or does it require some other condition not stated?",
+   "options": [
+    "Any of W/E/R landing on Milio himself grants him Fired Up!, same as landing on an ally",
+    "Only some of W/E/R count as an 'ability hit' on himself for this purpose (e.g. only the ones described as directly affecting him, unclear which)",
+    "Self-targeting does not count as a 'hit' for Fired Up! purposes at all, and only Q or basic attacks against enemies can proc/consume it in a 1v1 fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Milio's''' {{tip|ability}} hits on himself and allied {{tip|champions}} grant an enchantment for 4 seconds"
+   ]
+  },
+  {
+   "question": "The Fired Up! burn's flat per-level base damage is an unresolved bin constant {ee18a47b}; the wiki's stated 10-to-50-by-level values are assumed to be the resolved values. Is that assumption correct, or does the live bin constant differ from the wiki's displayed numbers?",
+   "options": [
+    "The wiki's 10 to 50 (by level) values are exactly the resolved {ee18a47b} constant",
+    "The bin's real resolved value differs from the wiki's displayed by-level numbers"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pplevel|10 to 50}}|magic damage}}",
+    "MilioPassive#BurnDamage = <{ee18a47b}> + 0.2xap"
+   ]
+  },
+  {
+   "question": "When Fired Up! is consumed by Q, does it trigger on Q's first impact (the stun hit, which deals no direct damage) or only on the delayed explosion hit? This changes whether the burst/burn timing aligns with Q's cast or with its explosion delay.",
+   "options": [
+    "Fired Up! procs on Q's initial impact (the stun), independent of whether the explosion later lands",
+    "Fired Up! procs only on Q's explosion damage instance",
+    "Fired Up! can proc on either hit, whichever lands first"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "which causes the next {{tip|basic attack}}<!--not on-hit--> or ability hit against enemies to deal {{as|{{pp|7;11;15|1;6;9|key=%}} of enchanted target's AD}} {{ccs|{{as|'''bonus''' magic damage}}|magic}} and apply a burn"
+   ]
+  },
+  {
+   "question": "Does W's periodic Fired Up! grant (at most once every 3 seconds while its zone is up) actually retrigger multiple times across a single 6-second cast if Milio stays near it, or does it only grant once per cast regardless of the 3-second wording?",
+   "options": [
+    "W can grant Fired Up! up to twice per single 6s cast (on summon, then again ~3s later)",
+    "W only grants Fired Up! once per cast, and the 3-second text refers to a cooldown against overlapping casts, not a mid-duration retrigger"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Cozy Campfire may grant {{ai|Fired Up!|Milio}} upon being summoned and at most once every 3 seconds thereafter."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by self-casting E (Warm Hugs) on Milio to grant himself the Fired Up! enchantment immediately (no cast time).",
+   "Immediately follow with a basic attack on the dummy to consume the enchantment, dealing the AD-based burst plus the 1.5s burn DoT.",
+   "Cast Q (Ultra Mega Fire Kick) toward the dummy; wait out its 0.25s pre-fire delay (during which no other ability can be cast), then let the explosion land for its magic damage.",
+   "Cast W (Cozy Campfire) targeted on Milio/near himself to place the zone; this may also grant Fired Up!, so follow it with another basic attack or the next available Q to consume it.",
+   "Use E's second charge on Milio as soon as it's available to re-grant Fired Up!, again consuming it via basic attack.",
+   "Repeat: basic attack continuously between cooldowns, weave Q every 10s, and re-cast E/W whenever a charge/cooldown is up to keep re-triggering Fired Up!.",
+   "Do not cast R (Breath of Life) for damage purposes since it only heals/cleanses/grants tenacity and briefly locks out other casts for 0.75s, which would only cost damage uptime in this fight."
+  ],
+  "questions": [
+   "Does self-casting E/W actually enchant Milio himself with Fired Up! in a 1v1 fight with no other allies present, or does the passive require an ally other than Milio to be nearby?",
+   "How many times can Fired Up! realistically be triggered in 15 seconds given E's 2-charge/recharge system and W's cooldown, and should the rotation prioritize E-into-attack over casting Q on cooldown?",
+   "Is Milio expected to auto-attack between Q casts as his primary continuous damage source, or is the simulator only interested in ability damage (in which case autoattack-based Fired Up! consumption may not be modeled)?",
+   "Should R ever be cast in the damage fight (e.g. to avoid wasting mana that could otherwise be spent, or because some interaction grants it Fired Up! relevance), or is it correctly excluded entirely?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

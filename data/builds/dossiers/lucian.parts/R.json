@@ -1,0 +1,193 @@
+{
+ "name": "The Culling",
+ "cooldown": {
+  "values": [
+   110,
+   100,
+   90
+  ],
+  "quote": "{{ap|110 to 90}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage Per Shot",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    15,
+    30,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.25
+    },
+    {
+     "stat": "ap",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|15 to 45}} {{as|(+ 25% AD)}} {{as|(+ 15% AP)}}",
+   "bin": [
+    "LucianR#DamagePerBullet"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Minion Damage Per Shot",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    60,
+    90
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.5
+    },
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|(15 to 45)*2.0}} {{as|(+ {{ap|25*2.0}}% AD)}} {{as|(+ {{ap|15*2.0}}% AP)}}",
+   "bin": [
+    "LucianR.PercentDamageAmpToMinions",
+    "LucianR.BaseDamage",
+    "LucianR.DamageADRatio",
+    "LucianR.DamageAPRatio"
+   ],
+   "binNote": "No bin calculation directly outputs the doubled minion values; the bin's LucianR#DamagePerBullet only computes the per-champion instance from BaseDamage/DamageADRatio/DamageAPRatio. The wiki derives the minion row by multiplying those same base values by PercentDamageAmpToMinions=200 (i.e. x2.0), matching the wiki's stated 30/60/90 base and 0.5/0.3 ratios; the multiplier itself is not applied within any bin calculation row shown."
+  },
+  {
+   "id": "r_3",
+   "meaning": "channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "channels for up to 3 seconds",
+   "bin": [
+    "LucianR.Duration"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "number of shots fired over the duration",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 22,
+   "terms": [],
+   "quote": "rapidly firing up to 22",
+   "bin": [
+    "LucianR.NumShots"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "extra bonus shots per 100% crit chance",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 22.222
+    }
+   ],
+   "quote": "{{as|(+ {{critical damage|0 to 22.222|flat=true|round=floor|critScaling=true}})|crit chance}}",
+   "bin": [
+    "LucianR#TotalNumShots",
+    "LucianR.CritValueMod"
+   ],
+   "binNote": "The bin's LucianR#TotalNumShots formula is (1 + CritValueMod*critChance*(critDamage-1)) * NumShots=22, which depends on critDamage as well as critChance, not a flat 22.222 shots per 100% crit chance. The wiki's 22.222 figure (from the {{critical damage|...|critScaling=true}} template) appears to assume a specific critDamage value not shown as a discrete row in this sheet; CritValueMod=1 and NumShots=22 are the only directly matching rows, and neither alone equals 22.222, so the exact per-crit-chance scaling cannot be reconciled from the sheet as given."
+  },
+  {
+   "id": "r_6",
+   "meaning": "time before recast is available",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{fd|0.75}} seconds during the channel",
+   "bin": [
+    "LucianR.RecastLockout"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "While channeling, Lucian is ghosted and may still move.",
+   "quote": "While channeling, '''Lucian''' is {{tip|ghosted}} and may still move.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The Culling can be recast to end the channel early, and recasts automatically when the channel ends.",
+   "quote": "''The Culling'' can be recast after {{fd|0.75}} seconds during the channel, and does so automatically when the channel ends.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts after the ability ends (post-effect), not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each bullet's damage is calculated on impact, like single missile abilities, meaning each shot is a separate damage instance.",
+   "quote": "The damage dealt by each bullet of ''The Culling'' is calculated when the bullet reaches a target, just like single missile abilities.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield only blocks one instance of damage from the channel, not the whole thing.",
+   "quote": "{{tip|Spell shield}} only blocks one instance of damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Fire rate increases with the number of shots fired.",
+   "quote": "The fire rate increases with the number of shots.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Piercing Light and Ardent Blaze are disabled while channeling.",
+   "quote": "{{ai|Piercing Light|Lucian}} and {{ai|Ardent Blaze|Lucian}} are disabled.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "LucianR.VisionBubbleRadius",
+   "reason": "utility"
+  },
+  {
+   "ref": "LucianR.VisionBubbleDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "LucianR.RangeCheck",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

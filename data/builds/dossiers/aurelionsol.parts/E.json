@@ -1,0 +1,244 @@
+{
+ "name": "Singularity",
+ "cooldown": {
+  "values": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "quote": "12"
+ },
+ "cost": {
+  "values": [
+   90,
+   90,
+   90,
+   90,
+   90
+  ],
+  "quote": "90",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.2,
+  "quote": "{{fd|0.2}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    2.5,
+    3.75,
+    5,
+    6.25,
+    7.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.03
+    }
+   ],
+   "quote": "{{ap|2.5 to 7.5}} {{as|(+ 3% AP)}}",
+   "bin": [
+    "AurelionSolE#DamagePerSecond"
+   ],
+   "binNote": "Bin's BaseDamagePerSecond [10/15/20/25/30] and DamageperSecondAPRatio 0.12 are per-second values; wiki's per-tick numbers (every 0.25s, 4 ticks/sec) are exactly these divided by 4 (10/4=2.5, 0.12/4=0.03), confirming the tick rate."
+  },
+  {
+   "id": "e_2",
+   "meaning": "Total Magic Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    75,
+    100,
+    125,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|2.5*20 to 7.5*20}} {{as|(+ {{ap|3*20}}% AP)}}",
+   "bin": [
+    "AurelionSolE#DamagePerSecond"
+   ],
+   "binNote": "Total = per-tick x20 ticks (5s duration / 0.25s tick = 20 ticks), equal to BaseDamagePerSecond x5s (10x5=50) and DamageperSecondAPRatio x5 (0.12x5=0.6); this is a derived 'total' figure."
+  },
+  {
+   "id": "e_3",
+   "meaning": "black hole duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "lasts for 5 seconds",
+   "bin": [
+    "AurelionSolE.Duration"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "damage tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "dealing {{as|magic damage}} every {{fd|0.25}} seconds to enemies within",
+   "bin": [],
+   "binNote": "No bin row states the 0.25s tick interval explicitly; it is inferred from the wiki's per-tick vs per-second damage values (base/4 = per-tick), but no DataValue names the interval itself."
+  },
+  {
+   "id": "e_5",
+   "meaning": "delay before black hole appears",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "conjures a black hole at the target location after a {{tt|{{fd|0.5}}-second delay|From start of cast time}}",
+   "bin": [],
+   "binNote": "The sheet lists castTime as 0.2 but no separate DataValue for the 0.5s pre-effect delay; this timing is not exposed as its own row."
+  },
+  {
+   "id": "e_6",
+   "meaning": "execute threshold against enemies in center",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [
+    {
+     "stat": "stacks",
+     "coef": 0.026,
+     "coefScaling": [
+      {
+       "stat": "stacks",
+       "per": 100,
+       "coef": 2.6
+      }
+     ]
+    }
+   ],
+   "quote": "executed below {{as|5%|hp}} {{as|(+ {{fd|2.6}}% per 100 Stardust)}} {{as|of their '''maximum''' health}}",
+   "bin": [
+    "AurelionSolE.BaseExecutionThreshold",
+    "AurelionSolE.ExecutionGrowthPerBreakpoint"
+   ],
+   "binNote": "Bin's AurelionSolE#CurrentExecutionThreshold = 5 + 0.026 x buffStacks, matching wiki's 5% + 2.6% per 100 Stardust (0.026 per stack scaled by 100 = 2.6)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Enemies within the center of the black hole are executed below a health threshold, dealing lethal damage.",
+   "quote": "Enemies within the center are {{tip|execute|executed}} below {{as|5%|hp}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Epic monsters are excluded from the execute effect.",
+   "quote": "excluding epic monsters",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell Shield blocks a single instance of the damage-over-time.",
+   "quote": "{{tip|Spell shield}} will block a single instance of damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemies in the black hole are pulled toward the center and minions/monsters have their movement speed reduced to 0, but this does not change damage dealt or taken directly.",
+   "quote": "Enemies in the black hole are {{tip|kinematics|dragged}} inward until they reach the center, and {{tip|minions}} and {{tip|monsters}} also have their {{as|movement speed}} '''reduced''' to a {{as|static 0|ms}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The damage area hits targets by edge range while the pull area hits by center range, creating a fringe where damage can apply without displacement.",
+   "quote": "The damage area hits targets by their {{tip|edge range|edge}}, while the {{tip|kinematics}} area hits targets by their {{tip|centered range|center}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown begins only after the ability's full effect (5-second duration) ends, not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Singularity's execute against an enemy champion aggros nearby enemy minions.",
+   "quote": "''Singularity's'' execute against an enemy champion will aggro nearby enemy minions.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AurelionSolE.ChampionMassPerSecond",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AurelionSolE.MinionMassDeath",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AurelionSolE.LargeMinionCountBonus",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AurelionSolE.LargeMonsterCountBonus",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AurelionSolE.ChampionCountBonus",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AurelionSolE.EpicMonsterCountBonus",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AurelionSolE.StartingRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.StartingInnerRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.GrowthBreakPoint",
+   "reason": "unknown"
+  },
+  {
+   "ref": "AurelionSolE.StartingGravity",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.NonChampGravity",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.OuterRadiusAreaPerStack",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.InnerRadiusAreaPerStack",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.PI",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolE.InversePI",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,228 @@
+{
+ "champion": "nilah",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Formless Blade empowerment causes basic attacks to strike in a cone dealing 100% AD physical damage to enemies hit for 4s"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "hitting Formless Blade arms Nilah's next basic attacks (for 4s) with a bonus cone AoE attack"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Formless Blade active damage is increased by a crit-chance-scaled multiplier of crit damage; Q passive grants armor pen and lifesteal-like heal scaling off crit chance"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "Q"
+   ],
+   "note": "critical strike chance converted into armor penetration (lethality) and into a heal% of post-mitigation damage"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "empowerment grants bonus attack range and bonus attack speed for 4s after Q hits"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "bonus attack speed from empowerment is level-scaled (10% to 60%)"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Formless Blade line damage on cast; Slipstream dash damage on cast, both on cooldown"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Slipstream resets Nilah's basic attack timer"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Formless Blade cast during Slipstream leaves a separately-timed wave dealing the same damage; charge system on E stocks up to 2 dash charges"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Slipstream uses a 2-charge recharge system rather than a simple cooldown"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Apotheosis channels for 1s (ticking damage) then bursts; blocks basic attacks and other ability casts (movement still allowed) during the channel"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Apotheosis channel deals physical damage to nearby enemies every ~0.2-0.25s for about 1s before the burst"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Apotheosis burst deals a fixed-formula physical damage instance and pulls enemies in, on cast"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (30/varies/30-40/100) plausibly limit casts across the 15s window depending on mana pool/regen"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Jubilant Veil's dodge/ghost/magic damage reduction/move speed and W's ally-sharing never read by the damage-only dummy fight (dummy doesn't attack)"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Joy Unending's heal/shield sharing with allies is irrelevant with no allies present and dummy doesn't damage Nilah"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "empowered cone attack deals reduced damage (33%) to non-champion secondary targets and executes minions below 20 health - not relevant vs single dummy target but present in kit"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Nilah's core damage output against a single dummy depends on an unusual crit-chance-to-damage/armor-pen/heal conversion stack (Q passive: crit chance -> armor pen and -> heal%; Q active damage scaled by crit chance x crit damage multiplier; R heal% also scales with crit chance) that the closed primitive list captures piecemeal (crit-interaction, stat-conversion) but which needs bespoke formula wiring to combine correctly: Q's active damage term '(ActiveCritScaling=0.7)xcritChance)*(critDamage-1)' is a nonstandard crit-damage-partial-application formula not expressible as a simple crit-interaction primitive, and needs to be implemented as a literal bespoke calculation alongside the primitive tags."
+ },
+ "unsettled": [
+  {
+   "question": "Slipstream's real cost/cooldown: is it 40 mana per bin with bin cooldown 0.5s as the effective values, or 30 mana + 1 charge per wiki with the wiki-stated recharge of 26->12s per charge (0.5s being only a cast-queue gate)?",
+   "options": [
+    "Use bin cost 40 and bin cooldown 0.5s as the effective values",
+    "Use wiki cost 30 mana + charge system with recharge 26->12s per charge, and treat 0.5s as just a cast-queue gate, not the real cooldown"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cost             = 30",
+    "recharge         = {{ap|26 to 12}}",
+    "cost: 40",
+    "cooldown: 0.5"
+   ]
+  },
+  {
+   "question": "Apotheosis tick interval: is it 0.2s (bin NilahR.TickDelay) or 0.25s (wiki description), and how many ticks occur in the ~1s channel (bin NumTicks=6 vs wiki 'over 1 second every 0.25s' implying 4 ticks)?",
+   "options": [
+    "6 ticks at 0.2s intervals per bin (NumTicks=6, TickDelay=0.2, totaling 1.2s)",
+    "4 ticks at 0.25s intervals per wiki description/leveling table (Total Physical Damage = per-tick x4)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "NilahR.NumTicks = 6",
+    "NilahR.TickDelay = 0.2",
+    "whirls her whip-blade over 1 second, dealing {{as|physical damage}} to nearby enemies every {{fd|0.25}} seconds",
+    "Total Physical Damage|{{ap|15*4 to 35*4 3}}"
+   ]
+  },
+  {
+   "question": "R's champion healing percent formula/coefficient: is it 0.2 + 0.1xcritChance (bin, max 30% at 100% crit) or 20% + 0.3% per 1% crit chance (wiki text, max 50% at 100% crit)?",
+   "options": [
+    "Use bin formula: 20% base + 10% at 100% crit = 30% max",
+    "Use wiki formula: 20% base + 30% at 100% crit = 50% max"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "NilahR#ChampHealingPercent (percent) = 0.2 + 0.1xcritChance",
+    "formula=20% + 0.3% per 1% critical strike chance, capped at 100% critical strike chance"
+   ]
+  },
+  {
+   "question": "Does the Formless Blade overheal-to-shield conversion last 4s (bin NilahQ.ShieldDuration/NilahPassive.ShieldMaxDuration) or 6s (wiki text)?",
+   "options": [
+    "4 seconds per bin",
+    "6 seconds per wiki"
+   ],
+   "impact": "low",
+   "quotes": [
+    "NilahQ.ShieldDuration = 4",
+    "lasts 6 seconds"
+   ]
+  },
+  {
+   "question": "Does Formless Blade's empowered cone attack (after Q hits) count as a fully separate on-hit/basic-attack damage instance that can crit and proc on-hit effects like a normal attack, or is it a bonus 'on-hit-only-to-primary' rider that is a separate non-crit-eligible instance?",
+   "options": [
+    "Empowered cone attack is a normal basic attack for damage/crit/on-hit purposes (just with added AoE) on the primary target",
+    "Empowered cone attack is a bespoke bonus damage instance separate from the normal attack, with on-hit effects/crit applying only to primary target"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "causing her basic attacks to strike in a cone that deals {{as|100% AD}} {{as|physical damage}} to enemies hit",
+    "On-hit effects are applied only to the primary target."
+   ]
+  },
+  {
+   "question": "Does casting Formless Blade during Slipstream's dash trigger the Q cooldown/cost normally and produce a second damage instance (the wave) in addition to the dash's own E damage, effectively doubling Q's damage output per use during a dash?",
+   "options": [
+    "The Slipstream-cast Q produces both the E dash damage and a separately-timed Q wave damage instance, stacking",
+    "The wave replaces the normal Formless Blade line damage rather than adding an additional instance"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If ''Formless Blade'' is cast during ''{{ai|Slipstream|Nilah}}'', '''Nilah''' leaves behind a wave that is sent towards her location at the end of the dash, dealing the same damage to enemies hit."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Slipstream (E) toward the dummy to close distance, resetting the basic attack timer and dealing E dash damage.",
+   "Immediately basic attack, then cast Formless Blade (Q) as soon as it hits (either on cooldown or during a subsequent Slipstream dash) to trigger the Q line damage and arm the empowerment buff.",
+   "While empowered, basic attack repeatedly to benefit from the empowered cone attack (100% AD bonus physical damage) and increased attack speed/range for the 4s window.",
+   "Recast Formless Blade every time its 4s cooldown is up, re-triggering empowerment continuously.",
+   "Recast Slipstream whenever a charge is available (roughly every 0.5-several seconds depending on the resolved cooldown/charge system) to reset the attack timer and add extra E damage, ideally paired with re-casting Q during the dash for the wave damage.",
+   "Cast Apotheosis (R) once available (~80-110s cooldown, so likely only usable at the very start if pre-fight or not at all within a single 15s window unless already up) for its channel DoT plus burst damage, accepting that it locks out basic attacks and other abilities during its ~1s channel.",
+   "Ignore Jubilant Veil (W) entirely in the damage fight since it provides no damage and is purely defensive/utility (movement speed, magic reduction, dodge) which the dummy fight does not need or benefit from offensively."
+  ],
+  "questions": [
+   "Is Apotheosis assumed to be available (off cooldown) at the start of the 15s fight, or does its long cooldown mean it's effectively excluded from a single simulated window?",
+   "How does the simulator want charge-based cooldowns like Slipstream modeled: as continuous single-charge cooldown or true 2-charge stock with independent recharge timers?",
+   "Should the rotation prioritize maximizing empowered-attack windows (frequent Q recasts) over raw Slipstream charge usage, given Q's very short 4s cooldown makes near-permanent empowerment achievable?",
+   "Does casting Q during every available Slipstream double Q's effective damage output (dash + wave) enough to make chaining E->Q the optimal loop over just spacing Q on cooldown normally?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

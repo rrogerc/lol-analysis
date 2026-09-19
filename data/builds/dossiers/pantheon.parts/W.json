@@ -1,0 +1,207 @@
+{
+ "name": "Shield Vault",
+ "cooldown": {
+  "values": [
+   13,
+   12,
+   11,
+   10,
+   9
+  ],
+  "quote": "{{ap|13 to 9}}"
+ },
+ "cost": {
+  "values": [
+   55,
+   55,
+   55,
+   55,
+   55
+  ],
+  "quote": "55",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Physical Damage (percent of target's maximum health)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.06,
+      0.065,
+      0.07,
+      0.075,
+      0.08
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.015
+      },
+      {
+       "stat": "bonusHp",
+       "per": 100,
+       "coef": 0.004
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|6 to 8}}% of target's '''maximum''' health}} {{as|(+ {{fd|1.5}}% per 100 AP)}} {{as|(+ {{fd|0.4}}% per 100 '''Pantheon's''' '''bonus''' health)}}",
+   "bin": [
+    "PantheonW.MaxHealthDamage",
+    "PantheonW#MaxHealthDamageCalc"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "physical damage per hit of the Mortal Will-empowered basic attack",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "level",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.4,
+      0.408824,
+      0.417647,
+      0.426471,
+      0.435294,
+      0.444118,
+      0.452941,
+      0.461765,
+      0.470588,
+      0.479412,
+      0.488235,
+      0.497059,
+      0.505882,
+      0.514706,
+      0.523529,
+      0.532353,
+      0.541176,
+      0.55
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|120/3 to 165/3|key=%}} AD}} {{as|physical damage}} per hit",
+   "bin": [
+    "PantheonW#{1b016817}"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "number of strikes from the Mortal Will-empowered attack",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "strike the target 3 times",
+   "bin": [
+    "PantheonW.EmpoweredNumHits"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "duration of the Mortal Will empowerment window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "within 4 seconds",
+   "bin": [
+    "PantheonW.BuffDuration"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "cast time of the empowered basic attack",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.375,
+   "terms": [],
+   "quote": "have a {{fd|0.375}}-second cast time",
+   "bin": [],
+   "binNote": "no dedicated cast-time data value found for the empowered attack in the sheet"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Applies spell damage on the initial vault; the empowered attack's 3 hits deal basic (on-hit-eligible) damage instead.",
+   "quote": "Applies {{tip|spell damage}} on the initial vault. Deals {{tip|basic damage}} on all the attacks from the empowered ability.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each of the 3 empowered strikes is affected by critical strike modifiers and applies on-hit effects.",
+   "quote": "Each hit is affected by {{tip|critical strike}} modifiers and applies {{tip|on-hit}} effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack rolls a single critical strike check that applies to all 3 strikes together.",
+   "quote": "The empowered attack rolls a {{tip|critical strike}} once for all strikes; either all will critically strike, or none will.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered Shield Vault attack resets Pantheon's basic attack timer.",
+   "quote": "Empowered Shield Vault {{tip|basic attack reset|resets}} '''Pantheon's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack does not count as three separate basic attacks for on-attack/windup-interacting effects (e.g. Lethal Tempo, Hail of Blades), which only trigger once.",
+   "quote": "The empowered attack does not cause '''Pantheon''' to attack thrice. Effects that trigger {{tip|on-attack}} or interact with the attack windup will only trigger once and thus do not interact with ''Shield Vault''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The 3 empowered strikes each count as a separate cast instance for effects like Electrocute and Eclipse.",
+   "quote": "The 3 strikes that occur after ''Empowered Shield Vault'' each count as a separate {{tip|cast instance}} for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Pantheon is unable to act until the last of the 3 empowered strikes lands, and total attack time scales with his attack speed.",
+   "quote": "Despite the multi-hit attack only having a hidden cast time, '''Pantheon''' will remain {{tip|lockout|unable to act}} until the last strike has been dealt.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The vault deals a stun for 1 second on landing (crowd control, does not affect damage in either fight type).",
+   "quote": "deals {{as|physical damage}} and {{tip|stun|stuns}} them for 1 second",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "PantheonW.BaseDamage",
+   "reason": "unknown"
+  },
+  {
+   "ref": "PantheonW.StunDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "PantheonW.EmpoweredDamageMult",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "PantheonW.MonsterDamageCap",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "PantheonW.MonsterDamageMin",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

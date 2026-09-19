@@ -1,0 +1,268 @@
+{
+ "name": "Hounds' Pursuit",
+ "cooldown": {
+  "values": [
+   110,
+   95,
+   80
+  ],
+  "quote": "{{ap|110 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    125,
+    200,
+    275
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|125 to 275}} {{as|(+ 100% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriW#TotalDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Physical Damage per Packmate",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    12.5,
+    20,
+    27.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{ap|{{#var:rp_b1}} to {{#var:rp_b3}}}} {{as|(+ {{ap|{{#var:rp_ad}}}}% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriW#PackmateDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Shield",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    100,
+    150,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{ap|100 to 200}} {{as|(+ 150% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriW#ShieldTotal"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "channel time before the dash",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{tip|channel}} for {{fd|0.75}} seconds",
+   "bin": [],
+   "binNote": "castTime is 'none' on wiki/live spell, this is the ability's channel duration (NaafiriW has no matching data value listed, channel time is defined elsewhere in bin/AbilityBehaviors, not in this data value list)"
+  },
+  {
+   "id": "r_5",
+   "meaning": "slow duration on hit",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{tip|slows}} the target by 99% for {{fd|0.25}} seconds",
+   "bin": [
+    "NaafiriW.SlowDuration"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "slow percent on hit",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": -0.99,
+   "terms": [],
+   "quote": "{{tip|slows}} the target by 99%",
+   "bin": [
+    "NaafiriW.SlowPercent"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "takedown window to enable free recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 7,
+   "terms": [],
+   "quote": "champion {{tip|takedown}} within 7 seconds of cast",
+   "bin": [
+    "NaafiriW.TakedownWindow"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "window to use free recast after takedown",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 12,
+   "terms": [],
+   "quote": "recast ''Hounds' Pursuit'' once more within a duration at no cost",
+   "bin": [
+    "NaafiriW.RecastWindow"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "recast shield duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "grants herself a {{tip|shield}} for 3 seconds",
+   "bin": [
+    "NaafiriW.ShieldDuration"
+   ]
+  },
+  {
+   "id": "r_10",
+   "meaning": "extra reveal duration after channel completes",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "revealed for another {{fd|1.5}} seconds after the channel completes",
+   "bin": [],
+   "binNote": "wiki states 1.5s extra reveal; no matching NaafiriW data value found for this specific number (VisionDuration=4 is the takedown pulse reveal, not this)"
+  },
+  {
+   "id": "r_11",
+   "meaning": "armor shred duration on the target after hit",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "cdstart      = on-cast",
+   "bin": [
+    "NaafiriW.ShredDuration"
+   ],
+   "binNote": "wiki text does not describe an armor shred on this ability; sheet's ArmorShred (byLevel) and ShredDuration data values appear to belong to a cut/unused/legacy effect not present in the current wiki description, kept here only to account for the data value"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Naafiri and Packmates channel before dashing, revealing the target in true sight during the channel.",
+   "quote": "channel for {{fd|0.75}} seconds to single out the target enemy champion, {{tip|true sight|revealing}} them in the duration",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Packmates deal a separate, smaller damage instance on the same target as Naafiri's collision damage.",
+   "quote": "whereas each ''Packmate'' deals {{ap|{{#var:rp}}*100}}% of that damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage is dealt upon Naafiri's arrival/collision with the target after the dash, not at cast.",
+   "quote": "they {{tip|dash}} to the target; upon arrival '''Naafiri''' deals {{as|physical damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A champion takedown within 7 seconds of cast grants a free recast within 12 seconds.",
+   "quote": "If '''Naafiri''' scores a champion {{tip|takedown}} within 7 seconds of cast... she can also recast ''Hounds' Pursuit'' once from triggering this effect within 12 seconds at no cost",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast grants Naafiri a shield before repeating the first cast's damage effects.",
+   "quote": "'''Naafiri''' immediately grants herself a {{tip|shield}} for 3 seconds before mimicking the {{tt|first cast's effects|Excluding the takedown effects, which can trigger only once}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Cooldown begins on cast, not on effect completion.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield blocks only Naafiri's own collision damage, not the Packmates' damage.",
+   "quote": "{{tip|Spell shield}} will block '''Naafiri's''' collision damage but cannot prevent collision damage from ''Packmates''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Naafiri's channel is interrupted, the Packmates' channels are cancelled as well.",
+   "quote": "If '''Naafiri's''' channel is interrupted, the ''Packmates' '' channels will be canceled as well",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NaafiriW.DashSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NaafiriW.FailCastCDRefund",
+   "reason": "unknown"
+  },
+  {
+   "ref": "NaafiriW.VisionDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "NaafiriW.VisionPulseDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "NaafiriW.VisionRadius",
+   "reason": "utility"
+  },
+  {
+   "ref": "NaafiriW.WRefreshOnCast",
+   "reason": "unknown"
+  },
+  {
+   "ref": "NaafiriW#ArmorShred",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

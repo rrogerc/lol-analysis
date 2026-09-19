@@ -1,0 +1,123 @@
+{
+ "champion": "janna",
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Tailwind converts Janna's bonus movement speed into bonus magic damage on basic attacks (on-hit) and on Zephyr's damage instance (30% of bonus MS)."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Tailwind adds bonus magic damage to every basic attack against the dummy."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Howling Gale is cast to charge, then manually or automatically recast to launch the whirlwind and deal its magic damage/knockup; cooldown starts on the initial cast."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Zephyr deals its magic damage directly on hit after a 0.245s cast time and travel."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Eye of the Storm grants bonus AD to the shielded target (Janna herself in the damage fight) for as long as the 4s shield holds."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Eye of the Storm's own cooldown is refunded 20% when a Janna ability slows or knocks up an enemy champion (once per cast), increasing E uptime and thus AD-buff uptime."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (90-110 Q, 50-70 W, 70-90 E, 100 R) can meaningfully limit how many casts fit in the 15s window depending on mana pool/regen assumed."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Eye of the Storm's shield (damage absorb) and Monsoon's channelled heal are defensive effects read only in the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Howling Gale's damage scales continuously with elapsed charge time (0 to 3s, both min-damage base and a per-second bonus-damage term keyed to seconds charged) before the player chooses to recast it. None of the closed-list primitives cleanly express a continuous, player-controlled charge-duration-to-damage ramp that also doesn't block other actions while charging (it isn't a channel that locks out attacking/casting, and it isn't a fixed-step recast/multipart or a per-cast stack); the simulator needs bespoke logic to pick a charge time and compute the resulting minimum+bonus damage before the launch."
+ },
+ "unsettled": [
+  {
+   "question": "Is Howling Gale's charge-scaling damage continuous with exact elapsed seconds, or does it step up only at whole-second increments (0/1/2/3s) as the description implies ('increasing... every second')?",
+   "options": [
+    "Continuous: damage = MinDamage + BonusDamage x (exact seconds charged, e.g. 1.5) + AP terms",
+    "Discrete: damage only increases at the 1s, 2s, 3s marks, so charging 1.5s yields the same bonus as charging 1.0s"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "increasing its range, speed, damage, and knock up duration every second over the duration."
+   ]
+  },
+  {
+   "question": "Does Tailwind's 'bonus movement speed' input (which converts to bonus magic damage on attacks and Zephyr) include movement speed granted by Zephyr's own passive buff, creating a self-referential MS-to-damage stack, or only MS from items/base kit outside Zephyr?",
+   "options": [
+    "Includes all current bonus MS, including Zephyr's own passive bonus MS",
+    "Excludes Zephyr's own passive MS (only counts MS from other sources such as boots/runes)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "deal {{as|'''bonus''' magic damage}} equal to {{as|30% of her '''bonus''' movement speed}}",
+    "'''Janna''' is {{tip|ghosting|ghosted}} and gains {{sti|ms|{{as|'''bonus''' movement speed}}}}"
+   ]
+  },
+  {
+   "question": "In the survival fight, does taking damage from the attacking champion interrupt Monsoon's healing channel, or does only Janna's own actions (attack/cast/move/most items) interrupt it as the interaction table states?",
+   "options": [
+    "Only Janna's own listed actions interrupt the channel; incoming damage does not stop the heal",
+    "Being attacked/damaged also interrupts the channel like a standard channelled ability"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ct|channel|attack=interrupts|cast=interrupts|move=interrupts|items=interrupts,true,,false|spells=true, interrupts, interrupts, interrupts, interrupts}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Eye of the Storm on herself to gain the bonus AD buff before attacking.",
+   "Cast Howling Gale, then recast it promptly (minimizing charge time) so its magic damage instance lands early and its 14s cooldown starts as soon as possible, leaving room for a second cast later in the fight if time allows.",
+   "Cast Zephyr on the dummy for its direct magic damage plus Tailwind's bonus-MS-derived magic damage, on cooldown throughout the fight.",
+   "Auto-attack the dummy continuously between ability casts and during Howling Gale's charge window to benefit from Tailwind's on-hit magic damage bonus and Eye of the Storm's AD buff.",
+   "Recast Eye of the Storm on herself whenever it is off cooldown to maintain the AD buff uptime.",
+   "Do not cast Monsoon; it deals no damage to the dummy and its heal is irrelevant in the damage-only fight."
+  ],
+  "questions": [
+   "Should Howling Gale be charged partway (e.g. to 1-3s) for higher per-cast damage at the cost of delaying its single hit within the 15s window, or is an instant recast always better for total damage/kill time?",
+   "Does Eye of the Storm's cooldown-refund-on-CC ever trigger in the damage fight (i.e., does Howling Gale's knockup or Zephyr's slow count as landing on the target dummy), increasing E's uptime beyond its base cooldown?",
+   "Is there a minimum charge time before Howling Gale can be manually recast, or can it be recast at effectively 0s charge immediately after the initial cast?",
+   "For the survival fight, should Monsoon be held until low health to maximize survival, and does the heal's value in the closed-list model rely on the channel-interruption ruling above?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

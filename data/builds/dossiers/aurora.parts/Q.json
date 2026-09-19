@@ -1,0 +1,211 @@
+{
+ "name": "Twofold Hex / Twofold Hex 2",
+ "cooldown": {
+  "values": [
+   9,
+   8.5,
+   8,
+   7.5,
+   7
+  ],
+  "quote": "{{ap|9 to 7}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   60,
+   60,
+   60,
+   60
+  ],
+  "quote": "60",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|{{fd|0.25}}|Active}}|{{tt|None|Recast}}}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Outbound bolt magic damage to enemies hit",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    45,
+    70,
+    95,
+    120,
+    145
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|45 to 145}} {{as|(+ 40% AP)}}",
+   "bin": [
+    "AuroraQ#Damage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Recast bolt minimum magic damage (0% target missing health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    45,
+    70,
+    95,
+    120,
+    145
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{st|Minimum Magic Damage|{{ap|{{#var:b1}} to {{#var:b5}}}} {{as|(+ {{#var:ap}}% AP)}}",
+   "bin": [
+    "AuroraQ#{f7c018c7}"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Recast bolt maximum magic damage (100% target missing health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    67.5,
+    105,
+    142.5,
+    180,
+    217.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "Maximum Magic Damage|{{ap|{{#var:b1}}*{{#var:hpmod}} to {{#var:b5}}*{{#var:hpmod}}}} {{as|(+ {{ap|{{#var:ap}}*{{#var:hpmod}}}}% AP)}}",
+   "bin": [
+    "AuroraQ#Q2DamageMax"
+   ]
+  },
+  {
+   "id": "q_missing_hp_scale",
+   "meaning": "Recast bolt damage increased per 1% of target's missing health, from minimum (0%) to maximum (100% missing health)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "formula={{#expr:{{#var:hpmod}}-1}}% per 1% of target's '''missing''' health",
+   "bin": [
+    "AuroraQ.MissingHealthPercentMod"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Subsequent recast bolt minimum magic damage (against an already-hit enemy, 0% missing health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    9,
+    14,
+    19,
+    24,
+    29
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.08
+    }
+   ],
+   "quote": "Subsequent Bolt Minimum Magic Damage|{{ap|{{#var:b1}}*{{#var:boltmod}} to {{#var:b5}}*{{#var:boltmod}}}} {{as|(+ {{ap|{{#var:ap}}*{{#var:boltmod}}}}% AP)}}",
+   "bin": [],
+   "binNote": "The 20% subsequent-bolt multiplier (boltmod) named in the wiki template variable has no matching AuroraQ data value; only Q2MinionMod (0.4, vs minions) and MissingHealthPercentMod (0.5, missing-health coefficient) are present in the bin, neither of which is 0.2."
+  },
+  {
+   "id": "q_5",
+   "meaning": "Subsequent recast bolt maximum magic damage (against an already-hit enemy, 100% missing health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    13.5,
+    21,
+    28.5,
+    36,
+    43.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.12
+    }
+   ],
+   "quote": "Subsequent Bolt Maximum Magic Damage|{{ap|{{#var:b1}}*{{#var:hpmod}}*{{#var:boltmod}} to {{#var:b5}}*{{#var:hpmod}}*{{#var:boltmod}}}} {{as|(+ {{ap|{{#var:ap}}*{{#var:hpmod}}*{{#var:boltmod}}}}% AP)}}",
+   "bin": [],
+   "binNote": "Same missing boltmod (0.2) data value as q_4; the 1.5x max-health component is covered by MissingHealthPercentMod but the 0.2 subsequent-bolt reduction is not represented in the bin's AuroraQ data values."
+  },
+  {
+   "id": "q_mark_duration",
+   "meaning": "Duration of the curse mark before it is automatically expunged (recast)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3.5,
+   "terms": [],
+   "quote": "marks them with a curse for {{fd|3.5}} seconds",
+   "bin": [
+    "AuroraQ.MarkDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Twofold Hex can be recast after 0.1 seconds while at least one target is marked, and automatically recasts at the end of the mark's duration if not recast manually.",
+   "quote": "''Twofold Hex'' can be recast after {{fd|0.1}} seconds while at least one target is marked, and does so automatically at the end of the mark's duration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast fires bolts that deal magic damage to every enemy they pass through, scaled up by each target's missing health, and hitting the same target again on the same recast deals only 20% damage.",
+   "quote": "Subsequent bolts against an enemy deal {{ap|{{#var:boltmod}}*100}}% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Once Aurora has successfully recast Twofold Hex, she cannot recast it again for the remainder of that mark's duration regardless of remaining marked enemies.",
+   "quote": "Once '''Aurora''' has successfully recast ''Twofold Hex'', she will not be able to recast it again for the duration regardless of any number of marked enemies still remaining.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield can block the effects of both the outbound cast and the recast.",
+   "quote": "{{tip|Spell shield}} can block the effects of the active and the recast.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AuroraQ.DamageReduction",
+   "reason": "unknown"
+  },
+  {
+   "ref": "AuroraQ.MinionDamageReduction",
+   "reason": "unknown"
+  },
+  {
+   "ref": "AuroraQ.Q2MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

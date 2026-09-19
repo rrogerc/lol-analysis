@@ -1,0 +1,197 @@
+{
+ "name": "Super Mega Death Rocket!",
+ "cooldown": {
+  "values": [
+   85,
+   65,
+   45
+  ],
+  "quote": "{{ap|85 to 45}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.6,
+  "quote": "{{fd|0.6}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Maximum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    200,
+    350,
+    500
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.2
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.25,
+      0.3,
+      0.35
+     ]
+    }
+   ],
+   "quote": "{{ap|200 to 500}} {{as|(+ 120% '''bonus''' AD)}} {{as|(+ {{ap|25 to 35}}% of target's '''missing''' health)}}",
+   "bin": [
+    "JinxR#DamageMax",
+    "JinxR.PercentDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Minimum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    20,
+    35,
+    50
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.12
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.25,
+      0.3,
+      0.35
+     ]
+    }
+   ],
+   "quote": "{{ap|(200 to 500)*0.1}} {{as|(+ {{ap|120*0.1}}% '''bonus''' AD)}} {{as|(+ {{ap|25 to 35}}% of target's '''missing''' health)}}",
+   "bin": [
+    "JinxR#DamageFloor",
+    "JinxR.PercentDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Maximum Secondary Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    160,
+    280,
+    400
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.96
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.2,
+      0.24,
+      0.28
+     ]
+    }
+   ],
+   "quote": "{{ap|(200 to 500)*0.8}} {{as|(+ {{ap|120*0.8}}% '''bonus''' AD)}} {{as|(+ {{ap|(25 to 35)*0.8}}% of target's '''missing''' health)}}",
+   "bin": [
+    "JinxR#DamageMax",
+    "JinxR.AoEDamageMult",
+    "JinxR.PercentDamage"
+   ],
+   "binNote": "The wiki's secondary (AoE) damage is not a separate bin data value; it is the primary Maximum Physical Damage (JinxR#DamageMax flat 200/350/500, ad ratio 1.2, missing-hp coef 25/30/35%) multiplied by JinxR.AoEDamageMult=0.8, giving flat 160/280/400, ad ratio 0.96, and missing-hp coef 20/24/28%. No single bin row states these multiplied numbers directly."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Minimum Secondary Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    16,
+    28,
+    40
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.096
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.2,
+      0.24,
+      0.28
+     ]
+    }
+   ],
+   "quote": "{{ap|(200 to 500)*0.8*0.1}} {{as|(+ {{ap|120*0.8*0.1}}% '''bonus''' AD)}} {{as|(+ {{ap|(25 to 35)*0.8}}% of target's '''missing''' health)}}",
+   "bin": [
+    "JinxR#DamageFloor",
+    "JinxR.AoEDamageMult",
+    "JinxR.PercentDamage"
+   ],
+   "binNote": "The wiki's minimum secondary damage is derived by taking the Minimum Physical Damage (JinxR#DamageFloor flat 20/35/50, ad ratio 0.12, missing-hp coef 25/30/35%) and multiplying by JinxR.AoEDamageMult=0.8, giving flat 16/28/40, ad ratio 0.096, and missing-hp coef 20/24/28%. No bin row states these multiplied numbers directly."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The rocket only detonates and deals damage upon colliding with an enemy champion, so the damage instance occurs on impact, not on cast.",
+   "quote": "fires a massive rocket in the target direction, ... and exploding upon colliding with an enemy champion",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shields do not block the explosion's damage.",
+   "quote": "{{tip|Spell shield}} will not prevent the explosion.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Once the missile is in flight, the flat base damage stays fixed at the rank it was cast at even if the ability is leveled up before it hits; only the bonus AD ratio still updates with AD changes between cast and hit.",
+   "quote": "Super Mega Death Rocket'' will not increase it's damage when ranked up while the missile is in flight.{{bug|2}}\n** This is because the base damage is fixed at a multiple of the damage the rocket initially started with.\n** The {{as|'''bonus''' AD}} ratio will still update when {{as|AD}} is gained or lost between the cast and hit of the missile.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemies other than the primary target caught in the explosion radius take only 80% of the calculated damage.",
+   "quote": "Enemies surrounding the primary target take 80% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The missing-health bonus damage is calculated from each individual hit unit's own missing health, not the primary target's missing health.",
+   "quote": "The bonus damage based on missing health is based on each unit's own missing health and not the primary target's.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Total damage scales up the longer the rocket travels, reaching maximum only after 1500 units of travel (about 0.85s); this does not affect the missing-health bonus damage.",
+   "quote": "''Super Mega Death Rocket!'' deals {{pp|type=distance traveled|key=%|10 to 100 for 16|0 to 1500}} damage. This does not affect the '''bonus''' damage based on the {{as|target's '''missing''' health}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "JinxR.MonsterExecuteMax",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "JinxR.AoERadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

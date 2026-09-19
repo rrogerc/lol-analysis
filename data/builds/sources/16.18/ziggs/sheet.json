@@ -1,0 +1,652 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ZiggsPassiveBuff",
+    "key": "Characters/Ziggs/Spells/ZiggsPassiveBuffAbility/ZiggsPassiveBuff",
+    "cooldown": 12,
+    "dataValues": {
+     "APRatio": 0.5,
+     "StructureDamageRatio": 1.75
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "byLevelL[20/24/28/32/36/40/48/56/64/72/80/88/100/112/124/136/148/160] + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        24,
+        28,
+        32,
+        36,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        100,
+        112,
+        124,
+        136,
+        148,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "SpellCdr": {
+      "expr": "byLevelL[4/4/4/4/4/4/5/5/5/5/5/5/6/6/6/6/6/6]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "StructureDamage": {
+      "expr": "TotalDamage * StructureDamageRatio=1.75",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "level",
+       "v": [
+        35,
+        42,
+        49,
+        56,
+        63,
+        70,
+        84,
+        98,
+        112,
+        126,
+        140,
+        154,
+        175,
+        196,
+        217,
+        238,
+        259,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.875,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "StructureDamageRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ZiggsQ",
+    "key": "Characters/Ziggs/Spells/ZiggsQAbility/ZiggsQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      6,
+      5.5,
+      5,
+      4.5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       130,
+       180,
+       230,
+       280
+      ]
+     },
+     "APRatio": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.65,
+       0.7,
+       0.75,
+       0.8
+      ]
+     },
+     "MaxRange": 850,
+     "MaxRangeFirstBounce": 325,
+     "MaxRangeSecondBounce": 225,
+     "BombTriggerRange": 180,
+     "ExplosionRadius": 240,
+     "BoundingBoxTrigger": 70
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/130/180/230/280] + (APRatio=[0.6/0.65/0.7/0.75/0.8])xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        130,
+        180,
+        230,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8
+         ]
+        },
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ZiggsW",
+    "key": "Characters/Ziggs/Spells/ZiggsWAbility/ZiggsW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "cost": 80,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       105,
+       140,
+       175,
+       210
+      ]
+     },
+     "BombDuration": 4,
+     "TurretDestroyPercent": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.275,
+       0.3,
+       0.325,
+       0.35
+      ]
+     },
+     "KnockbackSpeed": 600,
+     "KnockbackGravity": 50,
+     "KnockbackDistance": 500,
+     "ExplosionRadius": 325,
+     "KnockbackDistanceAlly": 775,
+     "PerceptionBubbleRadius": 400,
+     "PerceptionBubbleDuration": 6,
+     "CherryBonusHaste": 30
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/105/140/175/210] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        105,
+        140,
+        175,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ZiggsE",
+    "key": "Characters/Ziggs/Spells/ZiggsEAbility/ZiggsE",
+    "cooldown": 16,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      80,
+      90,
+      100,
+      110
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "APRatioPerMine": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.3,
+       0.35,
+       0.4,
+       0.45
+      ]
+     },
+     "Slow": {
+      "axis": "rank",
+      "v": [
+       -0.1,
+       -0.2,
+       -0.3,
+       -0.4,
+       -0.5
+      ]
+     },
+     "DamagePerMine": {
+      "axis": "rank",
+      "v": [
+       30,
+       70,
+       110,
+       150,
+       190
+      ]
+     },
+     "MineDuration": 10,
+     "SlowDuration": 1.5,
+     "SubsequentMineDamageMod": 0.4,
+     "TriggerRange": 135,
+     "MinePerceptionBubbleSize": 150
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "DamagePerMine=[30/70/110/150/190] + (APRatioPerMine=[0.25/0.3/0.35/0.4/0.45])xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        70,
+        110,
+        150,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.25,
+          0.3,
+          0.35,
+          0.4,
+          0.45
+         ]
+        },
+        "dataValue": "APRatioPerMine"
+       }
+      ],
+      "refs": [
+       "APRatioPerMine",
+       "DamagePerMine"
+      ]
+     },
+     "ReducedDamage": {
+      "expr": "TotalDamage * SubsequentMineDamageMod=0.4",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        12,
+        28,
+        44,
+        60,
+        76
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.1,
+          0.12,
+          0.14,
+          0.16,
+          0.18
+         ]
+        },
+        "dataValue": "APRatioPerMine"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "APRatioPerMine",
+       "DamagePerMine",
+       "SubsequentMineDamageMod"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ZiggsR",
+    "key": "Characters/Ziggs/Spells/ZiggsRAbility/ZiggsR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      95,
+      70
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       300,
+       500,
+       700
+      ]
+     },
+     "APRatio": 1,
+     "OuterRingModifier": 0.65,
+     "MaximumRadius": 525,
+     "EmpoweredRadius": 250
+    },
+    "calcs": {
+     "EmpoweredDamage": {
+      "expr": "BaseDamage=[300/500/700] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        500,
+        700
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "BlastDamage": {
+      "expr": "EmpoweredDamage * OuterRingModifier=0.65",
+      "modifies": "EmpoweredDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        195,
+        325,
+        455
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.65,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "OuterRingModifier"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "ZiggsQ",
+  "W": "ZiggsW",
+  "E": "ZiggsE",
+  "R": "ZiggsR",
+  "P": "ZiggsPassiveBuff"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 480,
+   "{6216bf7b}": 23.5,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Ziggs",
+  "name": "Ziggs",
+  "partype": "Mana",
+  "passive": "Short Fuse",
+  "spells": [
+   {
+    "id": "ZiggsQ",
+    "name": "Bouncing Bomb",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     5.5,
+     5,
+     4.5,
+     4
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "ZiggsW",
+    "name": "Satchel Charge",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "cost": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   {
+    "id": "ZiggsE",
+    "name": "Hexplosive Minefield",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     16,
+     16,
+     16,
+     16
+    ],
+    "cost": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ]
+   },
+   {
+    "id": "ZiggsR",
+    "name": "Mega Inferno Bomb",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     95,
+     70
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Short Fuse": {
+    "damagetype": "magic",
+    "spelleffects": "Proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Bouncing Bomb": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Satchel Charge": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "[[Location-targeted|Location]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies / Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Hexplosive Minefield": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Mega Inferno Bomb": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

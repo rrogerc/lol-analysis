@@ -1,0 +1,925 @@
+{
+ "champion": "maokai",
+ "abilities": {
+  "P": {
+   "name": "Sap Magic / Sap Magic 2",
+   "cooldown": {
+    "values": [
+     30,
+     29.412,
+     28.824,
+     28.235,
+     27.647,
+     27.059,
+     26.471,
+     25.882,
+     25.294,
+     24.706,
+     24.118,
+     23.529,
+     22.941,
+     22.353,
+     21.765,
+     21.176,
+     20.588,
+     20
+    ],
+    "quote": "{{pplevel|30 to 20}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_heal",
+     "meaning": "heal amount from empowered basic attack, as % of max health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.04,
+        0.042,
+        0.044,
+        0.046,
+        0.048,
+        0.05,
+        0.0565,
+        0.063,
+        0.0695,
+        0.076,
+        0.0825,
+        0.089,
+        0.0955,
+        0.102,
+        0.1085,
+        0.115,
+        0.1215,
+        0.128
+       ]
+      }
+     ],
+     "quote": "{{pplevel|4; then +0.2*x for 5;then +0.65*x|formula=3.8 + 0.2 per level until level 6, then +0.65 per level|key=%}} '''maximum''' health",
+     "bin": [
+      "MaokaiPassive#PassiveHealingTotal"
+     ]
+    },
+    {
+     "id": "p_delay",
+     "meaning": "delay before the empowered attack lands and heals, after being reduced by attack speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "after a {{tt|{{fd|0.25}}|Reduced by attack speed.}}-second delay",
+     "bin": [],
+     "binNote": "The wiki's 0.25s attack windup delay is not represented as its own data value in the sheet; it likely comes from base attack windup mechanics rather than a MaokaiPassive field."
+    },
+    {
+     "id": "p_cdr",
+     "meaning": "cooldown reduction applied per triggering event (ability cast, sapling hit, or being struck by an enemy ability)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "{{sti|cooldown}} is reduced by 4 seconds",
+     "bin": [
+      "MaokaiPassive.PassiveCooldownReduction"
+     ]
+    },
+    {
+     "id": "p_cdr_monster",
+     "meaning": "cooldown reduction instead applied when struck by a large monster's basic attack or ability",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "modified to {{fd|1.5}} if he is hit by a large {{tip|monster|monster's}} basic attack or ability",
+     "bin": [
+      "MaokaiPassive.JungPassCooldownReduction"
+     ]
+    },
+    {
+     "id": "p_threshold",
+     "meaning": "passive will not trigger while Maokai is above this fraction of maximum health",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.95,
+     "terms": [],
+     "quote": "will not trigger if he is above {{sti|{{as|95% '''maximum''' health}}}}",
+     "bin": [
+      "MaokaiPassive.PassiveHealthThreshold"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The empowered attack resets Maokai's basic attack timer.",
+     "quote": "Sap Magic {{tip|basic attack reset|resets}} '''Maokai's''' basic attack timer",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack has an uncancellable windup.",
+     "quote": "empowers his next {{tip|basic attack}} to have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sap Magic does not proc if Maokai starts his attack windup before its cooldown has elapsed.",
+     "quote": "''Sap Magic'' does not occur if '''Maokai''' begins his {{tip|attack windup}} before its cooldown has elapsed.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sap Magic does not occur if the empowered attack is dodged or missed while blinded, but does occur if it is blocked.",
+     "quote": "''Sap Magic'' does not occur if the attack is {{tip|dodge|dodged}} and/or missed if '''Maokai''' is {{tip|blind|blinded}}. It will occur if it is {{tip|block|blocked}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sap Magic's cooldown is reduced by casting an ability, hitting an enemy champion or epic monster with Sapling Toss, or being struck by an enemy ability.",
+     "quote": "Each time '''Maokai''' casts an {{tip|ability}}, hits at least one enemy champion or epic monster with ''{{ai|Sapling Toss|Maokai}}'', or is struck by an enemy's ability, ''Sap Magic's'' {{sti|cooldown}} is reduced by 4 seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Maokai has a spell shield that consumes an enemy ability, he still receives the cooldown reduction.",
+     "quote": "If '''Maokai''' possesses a {{tip|spell shield}} and it consumes an enemy ability, he will still receive the cooldown reduction.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The empowered attack will not trigger against structures or wards.",
+     "quote": "The empowered attack will not trigger against {{tip|structures}} nor {{tip|wards}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Bramble Smash",
+   "cooldown": {
+    "values": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "quote": "{{ap|7 to 5}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.3,
+    "quote": "{{fd|0.3}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      120,
+      165,
+      210,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.02,
+        0.025,
+        0.03,
+        0.035,
+        0.04
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|75 to 255}} {{as|(+ {{ap|2 to 4}}% of the target's '''maximum''' health)}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "MaokaiQ#TotalDamage",
+      "MaokaiQ#TotalPercentHealth"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Monster Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      160,
+      170,
+      180,
+      190
+     ],
+     "terms": [],
+     "quote": "{{ap|150 to 190}}",
+     "bin": [
+      "MaokaiQ.BonusMonsterDamage"
+     ],
+     "binNote": "Only relevant against monsters, not applicable in a champion-only dummy/enemy-champion fight, but kept since bin exposes it directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability deals magic damage to enemies hit and slows them by 99% for 0.25 seconds.",
+     "quote": "deals {{as|magic damage}} to enemies hit and {{tip|slow|slows}} them by 99% for {{fd|0.25}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Bramble Smash's damage against monsters is increased by the Bonus Monster Damage amount, capped at 9999 total health-ratio damage against non-champions.",
+     "quote": "''Bramble Smash's'' damage based on the target's health ratio is capped at 9999 against non-champions.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Enemies near Maokai are additionally stunned and knocked back, separate from the main slow effect.",
+     "quote": "Enemies near '''Maokai''' are also {{tip|stun|stunned}} for {{fd|0.5}} seconds and {{tip|airborne|knocked back}} up to 300 units based on their proximity to him.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Maokai is locked out of actions for an additional 0.075 seconds after the cast time ends.",
+     "quote": "'''Maokai''' remains locked out from the cast time for another {{fd|0.075}} seconds after it.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MaokaiQ.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiQ.LolipopRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MaokaiQ.KnockbackSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiQ.KnockbackDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiQ.NonChampMax",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MaokaiQ.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "MaokaiQ.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "MaokaiQ.BasePercentHealth",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Twisted Advance",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "MaokaiW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.1,
+      1.2,
+      1.3,
+      1.4
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 1.4}} seconds",
+     "bin": [
+      "MaokaiW.RootDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Maokai dashes to the target enemy while being untargetable, dealing damage and rooting them upon arrival.",
+     "quote": "'''Maokai''' {{tip|dashes}} to the target enemy while being {{tip|untargetable}}. Upon arrival, he deals {{as|magic damage}} and {{tip|root|roots}} them for a duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability fails to deal damage and apply the root if the target is untargetable upon arrival.",
+     "quote": "''Twisted Advance'' will fail to deal damage and apply the {{tip|root}} if the target is {{tip|untargetable}} upon arrival.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MaokaiW.DashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Sapling Toss",
+   "cooldown": {
+    "values": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "quote": "{{ap|18 to 14}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage (normal Sapling explosion)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.05
+      },
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 5% '''bonus''' health)}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "MaokaiE#TotalDamage",
+      "MaokaiE.BaseAPRatio"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage per Instance (empowered Sapling, per burst)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      33.33,
+      50,
+      66.67,
+      83.33,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.0333
+      },
+      {
+       "stat": "ap",
+       "coef": 0.1667
+      }
+     ],
+     "quote": "{{ap|50*2/3 to 150*2/3|round=2}} {{as|(+ {{ap|5*2/3|round=2}}% '''bonus''' health)}} {{as|(+ {{ap|25*2/3|round=2}}% AP)}}",
+     "bin": [
+      "MaokaiE#TotalEmpoweredDamage"
+     ],
+     "binNote": "This is one-third of MaokaiE#TotalEmpoweredDamage (EmpoweredBaseDamage/3, EmpoweredAPRatio/3=0.1667, bonus-hp term/3=0.0333), equivalently BaseDamage*2/3 since EmpoweredBaseDamage=2*BaseDamage; no separate per-burst bin row exists."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Total Attached Sapling Damage (two attached bursts)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      66.67,
+      100,
+      133.33,
+      166.67,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.0667
+      },
+      {
+       "stat": "ap",
+       "coef": 0.3333
+      }
+     ],
+     "quote": "{{ap|(50*2/3 to 150*2/3)*2|round=2}} {{as|(+ {{ap|(5*2/3)*2|round=2}}% '''bonus''' health)}} {{as|(+ {{ap|(25*2/3)*2|round=2}}% AP)}}",
+     "bin": [
+      "MaokaiE#TotalEmpoweredDamage"
+     ],
+     "binNote": "Equal to two instances of e_2 (2/3 of MaokaiE#TotalEmpoweredDamage); no dedicated bin row for the attached-total."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Total Magic Damage (initial empowered explosion, full formula)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200,
+      250,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.1
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|50*2 to 150*2}} {{as|(+ {{ap|5*2}}% '''bonus''' health)}} {{as|(+ {{ap|25*2}}% AP)}}",
+     "bin": [
+      "MaokaiE#TotalEmpoweredDamage"
+     ]
+    },
+    {
+     "id": "e_saplingDuration",
+     "meaning": "Normal Sapling lifespan before it expires/explodes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "remains stationary for 30 seconds or until it reacts to the first nearby visible enemy",
+     "bin": [
+      "MaokaiE.SaplingDuration"
+     ]
+    },
+    {
+     "id": "e_chaseDuration",
+     "meaning": "Duration a Sapling chases a detected enemy before exploding",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "chasing them for up to {{fd|2.5}} seconds",
+     "bin": [],
+     "binNote": "No bin row equals 2.5 directly; MaokaiE.GrowthDuration=0.5 and SaplingDuration=30 do not match this chase-duration figure."
+    },
+    {
+     "id": "e_empoweredDuration",
+     "meaning": "Empowered (brush) Sapling lifespan",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.015
+      }
+     ],
+     "quote": "lasting 30 {{as|(+ {{fd|1.5}}% '''bonus''' health)}} seconds",
+     "bin": [
+      "MaokaiE#EmpoweredSaplingDuration"
+     ]
+    },
+    {
+     "id": "e_attachedDuration",
+     "meaning": "Duration attached Saplings remain on a struck target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "attach two ''Saplings'' to them for {{fd|1.5}} seconds",
+     "bin": [],
+     "binNote": "MaokaiE.EmpoweredDoTDuration=2 in the bin disagrees with the wiki's stated 1.5-second attach duration."
+    },
+    {
+     "id": "e_attachedInterval",
+     "meaning": "Tick interval at which attached Saplings explode",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "explode on the afflicted target every {{fd|0.75}} seconds over the duration",
+     "bin": [],
+     "binNote": "No bin row equals 0.75 (a quarter of EmpoweredDoTDuration=2 or half of the wiki's 1.5s attach duration); not directly present in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The base non-empowered explosion damage is capped at 300 against non-champions.",
+     "quote": "dealing {{as|magic damage}} to nearby enemies, capped at 300 against non-champions",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The total damage from an empowered Sapling and its two attachments is capped at 600 against non-champions.",
+     "quote": "The '''total''' damage is capped at 600 against non-champions.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against minions, an empowered explosion deals full (100%) damage instead of the reduced 66.7% dealt to non-minion targets.",
+     "quote": "Against minions, the explosion deals 100% damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A target can only have two Saplings attached at once; further empowered explosions on an already-attached target refresh duration and only add a new Sapling if one has already exploded on them.",
+     "quote": "Targets can only be attached to two ''Saplings'' at a time; subsequent empowered ''Sapling'' explosions on a target will refresh the duration and only attach a ''Sapling'' if one has exploded on them already.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A normal Sapling's explosion is area damage (single instance to all nearby enemies), while an empowered Sapling's attached damage is persistent damage (separate ticking instances).",
+     "quote": "Applies {{tip|area damage}} from a normal ''Sapling'' and deals {{tip|persistent damage}} to enemies hit by an empowered ''Sapling''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cast itself only launches a destructible projectile; the actual Sapling unit and its effects occur only once it lands.",
+     "quote": "''Sapling Toss's'' cast does not initially fling the actual ''Sapling'' unit but instead a ''Sapling''-like {{tip|projectile}} that can be destroyed by projectile-interception effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting a Sapling onto the same spot as an existing Sapling causes the new one to land offset rather than stacking.",
+     "quote": "''Saplings'' cannot be stacked on top of each other; if ''Sapling Toss'' is cast to the same point as a ''Sapling'' currently on the ground, the new ''Sapling'' will move a short distance away from the existing one upon landing.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MaokaiE.GrowthDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "MaokaiE.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiE.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiE.EmpoweredDoTDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "MaokaiE.SaplingDetectionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MaokaiE.BaseEmpoweredSlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "MaokaiE.MaxTraps",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Nature's Grasp",
+   "cooldown": {
+    "values": [
+     130,
+     110,
+     90
+    ],
+    "quote": "{{ap|130 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.5,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "MaokaiR.MoveHaste"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      225,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|150 to 300}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "MaokaiR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Bonus movement speed decay duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "decaying over 2 seconds",
+     "bin": [
+      "MaokaiR.HasteDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Root duration based on distance traveled (min to max)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.75,
+      2.25
+     ],
+     "terms": [],
+     "quote": "{{pp|type=distance traveled|0.75 to 2.25|0 to 1000 by 100|formula=Starts at 0.75 seconds and increases up to 2.25 seconds over 1000 units traveled}}",
+     "bin": [
+      "MaokaiR.MinRootDuration",
+      "MaokaiR.MaxRootDuration"
+     ],
+     "binNote": "MinRootDuration=0.75 and MaxRootDuration=2.25 are separate scalar rows for the two ends of the wiki's distance-scaled range; each row carries one of the two numbers stated here, not both."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The wall of brambles accelerates over time as it advances.",
+     "quote": "slowly advances in the target direction, accelerating over time",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Each of the five brambles is a separate hit that deals damage and roots independently, stopping when it hits an enemy champion.",
+     "quote": "each stopping when they collide with an enemy {{tip|champion}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting at least one enemy champion grants Maokai bonus movement speed that decays over 2 seconds.",
+     "quote": "Hitting at least one enemy champion grants '''Maokai''' {{sti|{{as|'''bonus''' movement speed}}}} decaying over 2 seconds.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MaokaiR.RootDuration",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Bramble Smash (on a 0.3s cast + 0.075s lockout), Twisted Advance (on dash arrival) and Nature's Grasp (initial bramble contact) each deal a fixed base+AP damage instance on cast/arrival, on cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 40, W 60, E 60-80, R 100) against Maokai's mana pool can cap how many casts fit into the 15s window alongside cooldowns."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Nature's Grasp fires 5 separate bramble instances (each made of 4 trailing missiles) that independently halt and deal their own damage+root when they collide with an enemy champion; against one stationary target this could mean several damage instances from a single R cast."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "E"
+   ],
+   "note": "Sapling Toss's cast only launches a destructible projectile; the actual Sapling entity lands, sits/chases, and only deals E's damage when it detonates on contact or expiry, so the damage lands on a delay separate from the cast."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "An empowered (brush-placed) Sapling attaches up to two ticking instances to the struck target that re-explode every 0.75s; note this variant requires brush, which does not exist in the terrain-less simulated fight, so it is likely inert here."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Casting any ability, landing E on a champion/epic monster, or being struck by an enemy ability reduces Sap Magic's own cooldown by 4s (1.5s vs large monsters); this only affects P's internal cooldown, not other abilities, and does not itself deal damage."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Periodically arms Maokai's next basic attack with an uncancellable windup that heals him; the heal only fires while he is below 95% max HP."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "P"
+   ],
+   "note": "When the empowered attack from Sap Magic does trigger, it resets Maokai's basic attack timer."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Sap Magic's payoff is a self-heal (scaling % of max HP) gated behind being under 95% max HP; in the single-target damage fight Maokai's HP never drops (the dummy never attacks back), so the passive should never actually proc there, and its only real relevance is to the survival fight."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Whether a Sapling thrown directly at the stationary dummy detonates essentially immediately (landing inside its collision/detection radius) or incurs its full detection/chase window before dealing damage is a geometry assumption the dummy fight must make."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (fixed on-cast/on-arrival hits for Q/W/R, R's multi-instance brambles, E's delayed pet-style detonation and optional DoT, P's inert-in-damage-fight heal/reset/self-CDR, and mana/cooldown gating) maps onto existing primitives. The remaining doubts are about which reading of ambiguous wiki/bin text to simulate, not about missing mechanics the primitive list can't express."
+ },
+ "unsettled": [
+  {
+   "question": "Does each of Nature's Grasp's 5 separate brambles independently hit and damage the single target, or does the wall effectively stop after the first bramble reaches it (limiting R to one damage instance against a lone target)?",
+   "options": [
+    "Each of the 5 brambles deals its own MaokaiR#TotalDamage + root instance to the target, so R can hit one target up to 5 times",
+    "Only the first bramble to reach the champion actually connects and the subsequent trailing brambles are blocked/stopped by the already-rooted target or terrain interaction, so R deals only one damage instance"
+   ],
+   "impact": "high",
+   "quotes": [
+    "summons a colossal wall of five thorny brambles that slowly advances in the target direction, accelerating over time, each stopping when they collide with an enemy {{tip|champion}}",
+    "The brambles are made up of 4 {{tip|projectile|missiles}} each which trail 100 units behind one another. The front missile carries the visual effect. When colliding with a champion, all missiles of one bramble are destroyed simultaneously."
+   ]
+  },
+  {
+   "question": "How much delay elapses between casting Sapling Toss at the stationary dummy and the Sapling's damage actually landing: does it detonate essentially on arrival (treating the dummy as always within its detection/collision radius), or does it always run through its stated growth/detection/chase timing before exploding?",
+   "options": [
+    "The Sapling lands directly on/adjacent to the stationary dummy and detonates almost immediately (well under 1s after the 0.25s cast time)",
+    "The Sapling always incurs its full detection and/or chase sequence (up to a further ~2.5s) before it collides and explodes, meaningfully delaying E's damage within the 15s window"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Once landed, the ''Sapling'' grants {{tip|sight}} of its surroundings and remains stationary for 30 seconds or until it reacts to the first nearby visible enemy, chasing them for up to {{fd|2.5}} seconds. The ''Sapling'' explodes upon colliding with an enemy or when it expires"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Maokai starts the fight already within melee/cast range of the stationary dummy at his simulated level and build.",
+   "Cast Nature's Grasp (R) as early as possible, since its cooldown (90-130s) means it can realistically only be cast once in the 15s window and its damage should be captured immediately.",
+   "Cast Twisted Advance (W) next for its damage instance (its dash/untargetable/root have no effect on a stationary dummy fight).",
+   "Cast Sapling Toss (E) directly onto the dummy's position so its Sapling detonates with minimal delay.",
+   "Cast Bramble Smash (Q) on cooldown; because it has by far the lowest cooldown (5-7s) and its cost is flat 40 mana, loop it as many times as the 15s window and mana allow (roughly 2-3 casts).",
+   "Fill all remaining time between ability casts with basic attacks on the dummy.",
+   "Recast W and/or E a second time near the end of the window if their cooldowns (10-14s for W, 14-18s for E at higher ranks) have come back up in time.",
+   "Do not deliberately try to proc Sap Magic (P): since the dummy never damages Maokai, his HP stays at/above 95% max HP for the whole fight, so the passive's heal/attack-reset should not fire in the damage-only fight."
+  ],
+  "questions": [
+   "At what champion level and ability ranks (in particular, is R available at rank 1-3) should the damage-fight rotation be simulated, since this changes cooldowns, cast counts, and whether R is usable at all?",
+   "Is Maokai assumed to start the 15s window already in melee range of the dummy, or does travel time to close distance (via W's dash or on foot) eat into the simulated window?",
+   "Should basic attacks between ability casts be modeled explicitly as part of the rotation, or does the simulator handle auto-attack weaving as a separate baseline outside the 'rotation' proposal?",
+   "Given Sap Magic should stay inert while Maokai is at full/near-full HP, is it safe to exclude it entirely from the damage-fight rotation, or could some other assumed pre-fight state (e.g., starting below 95% HP) make it relevant?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,1068 @@
+{
+ "champion": "viego",
+ "abilities": {
+  "P": {
+   "name": "Sovereign's Domination",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "heal on consuming a Mist Wraith, as a percent of the target's maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.025,
+       "coefScaling": null
+      },
+      {
+       "stat": "ap",
+       "coef": 0.02,
+       "coefScaling": null
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.004,
+       "coefScaling": null
+      },
+      {
+       "stat": "bonusAttackSpeed",
+       "coef": 0.05,
+       "coefScaling": null
+      }
+     ],
+     "quote": "heals himself for {{as|2%|health}} {{as|(+ {{fd|2.5}}% per 100 '''bonus''' AD)}} {{as|(+ 2% per 100 AP)}} {{as|(+ {{fd|0.4}}% per 100 '''bonus''' health)}} {{as|(+ 5% per 100% '''bonus''' attack speed)}} {{as|of the target's '''maximum''' health}}",
+     "bin": [
+      "ViegoPassive#PercentHealthHeal"
+     ],
+     "binNote": "The whole computed percentage (base 2% plus the four ratio terms) applies to the target's maximum health; this 'of target's maximum health' scope is not itself a separate multiplicative term in the bin formula, so it is not listed as a term here."
+    },
+    {
+     "id": "p_2",
+     "meaning": "Possession duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "For 10 seconds, '''Viego''' assumes the enemy champion's form",
+     "bin": [
+      "ViegoPassive.TransformDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "free Heartbreaker cast's initial cooldown during Possession",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}-second}} cooldown",
+     "bin": [],
+     "binNote": "wiki-only tooltip value not present in the sheet's Passive data rows"
+    },
+    {
+     "id": "p_4",
+     "meaning": "consuming windup duration (untargetable, lockout) before blink",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "causing him to {{tip|blink}} to its location after winding up for 1 second, during which he is {{tip|untargetable}}",
+     "bin": [
+      "ViegoPassive.InvulnTimeWhileAttackingSoul"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "Mist Wraith lifespan",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "a ''Mist Wraith'' spawns from that champion's corpse for 8 seconds",
+     "bin": [
+      "ViegoPassive.SoulDuration"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "window after damaging a champion within which a takedown still spawns a Mist Wraith",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "while alive and within 3 seconds of damaging them",
+     "bin": [
+      "ViegoPassive.TakedownWindow"
+     ]
+    },
+    {
+     "id": "p_7",
+     "meaning": "bonus movement speed during Possession while facing enemy champions",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "{{sti|{{as|10% '''bonus''' movement speed}}}} while facing enemy champions within 2500 units",
+     "bin": [
+      "ViegoPassive.MoveSpeedPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "During Possession, Viego gains the possessed champion's items, basic attacks, basic abilities and base stats, replacing his own kit for the duration.",
+     "quote": "'''Viego''' assumes the enemy champion's form and gains their {{tip|basic attacks}}, {{tip|abilities|basic abilities}}, [[item]]s (excluding [[trinket item]]s), and base [[champion statistic|stats]]",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The possessed champion's abilities cost no mana or energy, though alternative resources like Fury, Flow, or Health are still used.",
+     "quote": "The possessed champion's abilities do not cost any {{tip|mana}} or {{tip|energy}} even if that specific champion normally uses either as a [[casting resource]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Viego cannot use the possessed champion's item actives or consumables during Possession.",
+     "quote": "'''Viego''' cannot use the possessed champion's [[Active ability items|item actives]] or [[consumable item]]s",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Consuming a Mist Wraith or casting Heartbreaker ends Possession immediately.",
+     "quote": "Casting ''{{ai|Heartbreaker|Viego}}'' or attacking a ''Mist Wraith'' ends ''Possession'' immediately.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Viego's own ability cooldowns are not reset between transformations, but the possessed champion's ability cooldowns are reset when Possession begins.",
+     "quote": "The current cooldowns of '''Viego's''' abilities will '''not''' be reset between transformations. ** Those of the possessed champion's abilities will be reset between transformations.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Viego preserves his current health percentage when transforming between his own form and a possessed form.",
+     "quote": "'''Viego''' will preserve his {{as|'''current''' health percentage}} between transformations.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViegoPassive.TransformDuration",
+     "reason": null
+    },
+    {
+     "ref": "ViegoPassive.TakedownWindow",
+     "reason": null
+    },
+    {
+     "ref": "ViegoPassive.InvulnTimeWhileAttackingSoul",
+     "reason": null
+    },
+    {
+     "ref": "ViegoPassive.SoulDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Blade of the Ruined King",
+   "cooldown": {
+    "values": [
+     5,
+     4.5,
+     4,
+     3.5,
+     3
+    ],
+    "quote": "{{ap|5 to 3}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{as|{{ap|1.4*100}}% of '''Viego's''' windup time|as}} ({{ap|1.4*(1/{{ccd|Viego|as_base}})*{{ccd|Viego|windup}}|round=3}} at {{as|'''base''' attack speed}})"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage (passive on-hit)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": [
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|2 to 6}}% of target's '''current''' health}}",
+     "bin": [
+      "ViegoQ#TotalPercentHealthOnHit"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Critical Bonus Physical Damage (passive on-hit, crit)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": [
+        0.034,
+        0.051,
+        0.068,
+        0.085,
+        0.102
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|2*1.7 to 6*1.7}}% of target's '''current''' health}}",
+     "bin": [
+      "ViegoQ#HealthCritDamage"
+     ],
+     "binNote": "Wiki's 1.7x crit multiplier (170% listed in description) matches HealthCritMod=0.7 formula: 1 + 0.7*(critDamage-1) = 1.7 at 100% bonus crit damage (200% total); consistent."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Minimum Bonus Damage (passive on-hit floor)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 30}}",
+     "bin": [
+      "ViegoQ.MinDamageOnHit"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      40,
+      55,
+      70,
+      85
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|25 to 85}} {{as|(+ 70% AD)}}",
+     "bin": [
+      "ViegoQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Active damage increase from critical strike chance",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critChance",
+       "coef": 0.6,
+       "coefScaling": [
+        {
+         "stat": "critDamage",
+         "per": 1,
+         "coef": 0.6
+        }
+       ]
+      }
+     ],
+     "quote": "increased by {{critical damage|0 to 60|critScaling=true}}",
+     "bin": [
+      "ViegoQ.ActiveCritMod",
+      "ViegoQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Mark duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "his damaging {{tip|abilities}} apply a mark to enemies hit for {{#var:q_mark_t}} seconds",
+     "bin": [
+      "ViegoQ.MarkDuration"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "Second strike (mark consumption) damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.2
+      },
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "dealing {{tt|{{as|{{#var:q_mark_ad}}% AD}} {{as|(+ {{#var:q_mark_ap}}% AP)}}|Scales on current AD and AP}} {{as|physical damage}}",
+     "bin": [
+      "ViegoQ#SecondAttackDamage",
+      "ViegoQ.SecondAttackAPRatio"
+     ],
+     "binNote": "Wiki lists 20% AD but bin ViegoQ#SecondAttackDamage shows 0.2xad with no named ViegoQ.SecondAttackADRatio data value; treated as matching."
+    },
+    {
+     "id": "q_8",
+     "meaning": "Heal from second strike post-mitigation damage vs minions",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1.0,
+     "terms": [],
+     "quote": "{{#var:q_mark_miheal}}% against {{tip|minions}}",
+     "bin": [
+      "ViegoQ.HealModVsMinions"
+     ]
+    },
+    {
+     "id": "q_9",
+     "meaning": "Heal from second strike post-mitigation damage vs monsters",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{#var:q_mark_moheal}}% against monsters",
+     "bin": [
+      "ViegoQ.HealModVsMonsters"
+     ]
+    },
+    {
+     "id": "q_10",
+     "meaning": "Heal from second strike post-mitigation damage vs other targets (champions)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{#var:q_mark_cheal}}% against other targets",
+     "bin": [
+      "ViegoQ.HealModVsChamps"
+     ]
+    },
+    {
+     "id": "q_11",
+     "meaning": "Monster damage cap on passive on-hit",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 80,
+     "terms": [],
+     "quote": "capped at {{#var:q_p_mcap}} against {{tip|monsters}}",
+     "bin": [
+      "ViegoQ.MonsterCapOnHit"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Passive on-hit damage can critically strike.",
+     "quote": "This damage can {{tip|critically strike}} for {{as|{{critical damage|170|50}}|critical damage}} damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second strike applies on-hit effects and can crit independently of the primary attack.",
+     "quote": "The second strike rolls {{tip|critical strikes}} independently from the primary attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damaging abilities apply the mark but can't be consumed for the second strike unless it's a basic attack (or on-hit-applying ability damage).",
+     "quote": "Ability damage that applies {{tip|on-hit}} effects (''e.g.'', {{ais|R|Viego}} damage against the primary target) cannot apply the mark but can consume it, as a basic attack would.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "No second strike occurs if the first attack was dodged, blocked, or missed.",
+     "quote": "'''Viego''' will not perform the second strike if the first attack was {{tip|dodge|dodged}}, {{tip|blocked|blocked}}, and {{tip|blind|missed}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the second strike hits a dead unit, Viego still heals based on the post-mitigation damage it would have dealt.",
+     "quote": "If the second strike hits a dead unit, '''Viego''' will still {{tip|heal}} based on the post-mitigation damage that he would deal with it.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Neither the passive bonus damage nor the second strike bonus damage apply against structures.",
+     "quote": "The attacks do not deal the '''bonus''' damage against {{tip|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The mark does not cause a second attack windup; on-attack triggers only fire once.",
+     "quote": "The mark does not cause '''Viego''' to attack twice. Effects that trigger {{tip|on-attack}} or interact with the attack windup will only trigger once and thus do not interact with ''Blade of the Ruined King''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active thrust deals area damage, the second strike deals basic damage, and the passive on-hit deals proc damage (separate damage instances).",
+     "quote": "{{Tip|Area damage}} for the thrust.\n** {{Tip|Basic damage}} for the second strike.\n** {{Tip|Proc damage}} for the on-hit bonus damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage from the active applies at cast time end.",
+     "quote": "{{Effect at cast time end}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViegoQ.RectangleRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViegoQ.RectangleWidth",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Spectral Maw",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "{{tt|8|Starts when the channel ends}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      135,
+      190,
+      245,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|80 to 300}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ViegoW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "stun duration based on charge time",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.25,
+      1.25
+     ],
+     "terms": [],
+     "quote": "{{pp|type=channel time|0.25 to 1.25 for 5|0 to 1|formula=0.25 + (0.25 per 0.25 seconds channeled).|changedisplay = true}} seconds",
+     "bin": [
+      "ViegoW.StunDuration",
+      "ViegoW.MaxStunTT"
+     ],
+     "binNote": "StunDuration=0.25 is the per-tick increment and MaxStunTT=1.25 is the cap, matching the wiki's 0.25 to 1.25 progression"
+    },
+    {
+     "id": "w_3",
+     "meaning": "maximum charge time to reach max range/stun",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "channel|charges}} while being {{tip|slow|slowed}} by 10% for up to 3 seconds",
+     "bin": [
+      "ViegoW.MaxChargeTime"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "cooldown when the charge is interrupted",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "If the charge is {{tip|interrupt|interrupted}}, it will be placed on a 3-second cooldown.",
+     "bin": [
+      "ViegoW.CDWheninterrupted"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spectral Maw resets Viego's basic attack timer on the recast blast.",
+     "quote": "Spectral Maw {{tip|Basic attack reset|resets}} '''Viego's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast dashes and hurls a mist blast that deals damage and stuns only the first enemy hit.",
+     "quote": "hurls a blast of mist in the target direction and {{tip|dash|dashes}} a fixed distance in the same direction, though not through terrain. The mist deals {{as|magic damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Viego can cast any of his other abilities during the dash.",
+     "quote": "'''Viego''' can cast any of his abilities during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During the charge Viego is slowed by 10%, which is a defensive/mobility penalty not affecting outgoing damage directly.",
+     "quote": "charges while being {{tip|slow|slowed}} by 10%",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the charge completes without a recast, the ability is cancelled and placed on full cooldown instead of firing.",
+     "quote": "If the charge completes without reactivation, ''Spectral Maw'' is cancelled and placed on {{sti|full cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown starts when the channel ends (i.e., after the recast or cancellation), not on initial cast.",
+     "quote": "Starts when the channel ends",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While charging, Blade of the Ruined King and Heartbreaker are disabled, but basic attacks and Harrowed Path can still be used.",
+     "quote": "{{ai|Harrowed Path|Viego}} is usable. {{ai|Blade of the Ruined King|Viego}} and {{ai|Heartbreaker|Viego}} are disabled.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViegoW.StunMultPercent",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ViegoW.DashDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViegoW.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViegoW.MinMissileRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViegoW.MaxBonusMissileRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViegoW.SelfSlowPercent",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Harrowed Path",
+   "cooldown": {
+    "values": [
+     14,
+     12,
+     10,
+     8,
+     6
+    ],
+    "quote": "{{ap|14 to 6}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "ViegoE.AttackSpeed"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.25,
+      0.275,
+      0.3,
+      0.325,
+      0.35
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0004
+      }
+     ],
+     "quote": "{{ap|25 to 35}}% {{as|(+ 4% per 100 AP)}}",
+     "bin": [
+      "ViegoE#TotalMovespeed"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Mist duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "creates a trail of mist in its wake which lasts 8 seconds",
+     "bin": [
+      "ViegoE.MistDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Stealth/bonus-speed regain lockout after attacking or casting",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "preventing Viego from gaining them again for 1 second, increased to 2 seconds if he attacked a large monster",
+     "bin": [],
+     "binNote": "Wiki states 1s / 2s vs large monster; bin RestealthTime is 0.6 and RestealthTimeAfterHittingLargeMonster is 1.5, both disagreeing with the wiki's quoted values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting a basic attack or an ability breaks camouflage and removes the bonus movement speed, and prevents Viego from regaining them for a duration (extended if a large monster was attacked); the duration refreshes on subsequent attacks/casts.",
+     "quote": "Declaring a basic attack or casting an ability will break the camouflage and remove the bonus movement speed, preventing Viego from gaining them again for 1 second, increased to 2 seconds if he attacked a large monster. This duration refreshes on subsequent attacks and ability casts.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Attacking does not remove the bonus attack speed granted while inside the mist, only the movement speed and camouflage.",
+     "quote": "While inside the mist, Viego gains bonus attack speed. If he does not attack or cast abilities, he also gains bonus movement speed and camouflage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Harrowed Path can be cast during the cast time of any ability or spell.",
+     "quote": "'''Viego''' can cast ''Harrowed Path'' during the cast time of any ability or spell.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown begins only after the mist effect ends, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViegoE.CamoRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViegoE.RestealthTime",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ViegoE.RestealthTimeAfterHittingLargeMonster",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Heartbreaker",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "bonus physical damage to most wounded enemy champion based on missing health",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": [
+        0.12,
+        0.16,
+        0.2
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.05
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|12 to 20}}% {{as|(+ 5% per 100 '''bonus''' AD)}} of target's '''missing''' health}}",
+     "bin": [
+      "ViegoR#TotalPercentHealth"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "physical damage dealt to all targets hit on arrival",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{as|120% AD}} {{as|physical damage}}, increased by {{critical damage|0 to 70|critScaling=true}}",
+     "bin": [
+      "ViegoR#TotalDamage"
+     ],
+     "binNote": "Formula also includes a multiplicative crit-chance/crit-damage term ((CritMod=0.7 x critChance)*(critDamage-1)) not expressible as a simple additive term; recorded as the base 120% AD ratio, crit scaling noted in mechanics."
+    },
+    {
+     "id": "r_3",
+     "meaning": "slow applied to the primary struck target",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.99,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 99% for {{fd|0.25}} seconds",
+     "bin": [
+      "ViegoR.SlowPercent"
+     ]
+    },
+    {
+     "id": "r_3b",
+     "meaning": "duration of the slow applied to the primary struck target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 99% for {{fd|0.25}} seconds",
+     "bin": [
+      "ViegoR.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "cast time triggered upon striking an enemy champion, before the automatic attack command",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "'''Viego''' will enter a {{fd|0.25}}-second [[cast time]] if he strikes an enemy champion.",
+     "bin": [],
+     "binNote": "No bin row carries this post-strike cast-time value; the sheet's ViegoR.LockoutTime (1.5) does not match this 0.25 number, so this appears to be wiki-only tooltip text not represented in the bin data available."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Upon arrival, Viego applies on-hit effects to the most wounded enemy champion hit.",
+     "quote": "applying {{tip|on-hit}} effects",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After the post-strike cast time, Viego automatically basic-attacks the struck champion, ignoring the player's prior movement input.",
+     "quote": "After this cast time, he will automatically receive an attack command against that enemy. Previous movement inputs from the player are ignored.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The strike to the primary champion is tagged as both basic damage and spell damage, so it triggers spell effects as well as on-hit/on-attack-relevant interactions; the damage to other enemies is area damage.",
+     "quote": "To the struck champion deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}; to all other enemies, deals {{tip|area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The strike to the champion can be dodged and blocked, but not missed (from blind effects).",
+     "quote": "''Heartbreaker's'' strike to the champion can be {{tip|dodge|dodged}} and {{tip|block|blocked}}, but not {{tip|blind|missed}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Viego gains displacement immunity during the blink and cannot be deterred by crowd control while casting.",
+     "quote": "'''Viego''' gains {{tip|displacement immunity}} over the cast time, then {{tip|blink|blinks}} to the target location.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Other enemies hit besides the primary target are knocked back rather than taking the missing-health bonus damage or slow.",
+     "quote": "Other nearby enemies are {{tip|airborne|knocked back}} up to 400-units away based on proximity, though not through terrain.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViegoR.LockoutTime",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ViegoR.KnockbackBonusRange",
+     "reason": "utility"
+    },
+    {
+     "ref": "ViegoR.KnockbackSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "ViegoR.KnockbackGravity",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Blade of the Ruined King passive: bonus physical on-hit damage based on target's current health, capped vs monsters, with min threshold, can crit"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q"
+   ],
+   "note": "damaging abilities apply a mark (4s duration) to enemies hit; next basic attack consumes the mark for the second strike"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "next basic attack against a marked target is empowered to strike a second time with bonus AD/AP physical damage that heals Viego"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "active thrust: flat + AD ratio physical damage in a line, crit-chance-scaled bonus, on cooldown"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q active/passive/second-strike and R damage all scale up with crit chance/crit damage even without guaranteed crits (partial-crit formula)"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "W is charged up to 3s (blocking Q/R casts), then recast fires the actual damage/stun; cancels to full CD if not recast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's damage/stun only happens on the recast half of the ability, timed separately from the initial charge"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "the W recast blast resets Viego's basic attack timer"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals AD-ratio physical damage (with crit scaling) to all enemies hit on arrival, on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "primary (most wounded) target takes additional bonus physical damage scaled to their missing health % and bonus AD"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Harrowed Path grants bonus attack speed (and movement speed/camo, not relevant to damage fight) for its mist duration"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [],
+   "note": "not applicable to Viego; no ability costs Viego health"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Sovereign's Domination heal/blink/untargetability on Mist Wraith consumption; W's self-slow during charge; none of this affects the damage fight directly except possibly the heal in a survival fight (Mist Wraiths won't exist vs a stationary dummy though)"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Sovereign's Domination (Possession) replaces Viego's entire kit with a slain enemy champion's abilities, items and base stats for 10 seconds. The closed primitive list has no entry for 'temporarily become an arbitrary other champion with their own kit and item effects' (form-or-stance only covers a champion's own predefined alternate forms with known abilities, not an open-ended possessed kit). This cannot be simulated generically against a dummy without picking a specific champion to possess, which is out of scope for a single champion's kit fight; it also cannot occur in the specified fights at all since it requires a champion takedown, which never happens against a stationary dummy or in a single enemy rotation. We treat Possession as unreachable/inapplicable in both fight types and exclude it from the rotation and primitives beyond noting its dependency structure."
+ },
+ "unsettled": [
+  {
+   "question": "Does the passive on-hit damage of Blade of the Ruined King (percent current health) count as a separate damage instance from the second-strike mark consumption when both trigger on the same basic attack (i.e., does a marked attack deal passive on-hit + second-strike simultaneously, and do both independently roll crit)?",
+   "options": [
+    "Both effects apply simultaneously on the same attack as separate instances, each rolling crit independently",
+    "The second strike replaces or otherwise interacts with the passive on-hit so they are not simply additive"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The second strike rolls {{tip|critical strikes}} independently from the primary attack.",
+    "his damaging abilities apply a mark to enemies hit for {{#var:q_mark_t}} seconds. '''Viego's''' next basic attack against a marked target is empowered to consume the mark {{tip|on-hit}} to strike a second time"
+   ]
+  },
+  {
+   "question": "In Q's active-damage crit formula (ViegoQ#TotalDamage / ViegoR#TotalDamage), does 'critChance' mean the champion's actual crit chance stat is multiplied in (partial credit even without guaranteed crit), or does this only apply when an actual crit roll occurs (i.e., the ability either fully crits or doesn't, and the formula is just how big that crit is)?",
+   "options": [
+    "Damage scales continuously with crit chance stat every cast (expected-value smoothing, no randomness)",
+    "The ability rolls to crit like a normal attack and only applies the bonus multiplier on a successful crit roll"
+   ],
+   "impact": "high",
+   "quotes": [
+    "ViegoQ#TotalDamage = (Damage=[25/40/55/70/85] + (ActiveADRatio=0.7)xad) * 1 + ((ActiveCritMod=0.6)xcritChance)*(1xcritDamage + -1)",
+    "increased by {{critical damage|0 to 60|critScaling=true}}"
+   ]
+  },
+  {
+   "question": "Does W's charge time matter in an optimal damage rotation, i.e. should Viego always charge W to max (3s) for max stun/range, or fire it immediately at minimum charge, given that damage magnitude (Damage=[80/135/190/245/300]+100%AP) is fixed regardless of charge time and only stun/range scale with charge?",
+   "options": [
+    "W damage is fixed regardless of charge duration, so casting it with minimal charge is always damage-optimal in a dummy fight since CC does not matter here",
+    "Charging W longer meaningfully delays the attack-reset/damage window and interacts with rotation timing, making minimum charge not obviously optimal"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Viego''' {{tip|channel|charges}} up to a short time to increase the {{sti|range}} and stun of his blast.",
+    "leveling3    = {{st|Magic Damage|{{ap|80 to 300}} {{as|(+ 100% AP)}}}}"
+   ]
+  },
+  {
+   "question": "Does the E (Harrowed Path) bonus attack speed apply throughout the full 15s dummy fight if Viego stands in the mist zone continuously, or does casting other abilities/attacking break the buff (only the movement-speed/camo portion is stated to break on attack/cast, not explicitly the attack speed)?",
+   "options": [
+    "Bonus attack speed persists as long as Viego is standing in the mist regardless of attacking/casting",
+    "Attacking/casting also interrupts or prevents refreshing the attack-speed buff, not just movement speed/camo"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "While inside the mist, '''Viego''' gains {{sti|{{as|'''bonus''' attack speed}}}}. If he does not attack or cast abilities, he also gains {{sti|{{as|'''bonus''' movement speed}}}} and {{tip|camouflage}}."
+   ]
+  },
+  {
+   "question": "For R's primary-target bonus missing-health damage, does 'missing health' refresh mid-fight as the dummy's health drops from prior hits within the same 15s window, making R's damage contribution dependent on cast order (i.e. cast late for a bigger numerical hit as % of a larger missing-health pool early, vs smaller current health later)?",
+   "options": [
+    "Missing-health % is computed fresh at time of R's cast based on current dummy HP, so cast order changes the absolute damage number",
+    "The simulator should treat missing-health damage as fixed/ignorable for build-ranking purposes since it's a minor rotation-order effect"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{as|{{ap|12 to 20}}% {{as|(+ 5% per 100 '''bonus''' AD)}} of target's '''missing''' health}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight with a basic attack to begin building auto-attack damage and Blade of the Ruined King on-hit rider.",
+   "Cast Q (Blade of the Ruined King active) to apply its line damage and mark the target, then continue basic attacking to consume the mark for the second strike and passive on-hit percent-health damage.",
+   "Weave R (Heartbreaker) on cooldown against the dummy: it deals AD-ratio physical damage plus a large missing-health-based bonus to the primary (only) target, and triggers an automatic follow-up basic attack.",
+   "Use W (Spectral Maw) on cooldown: charge briefly (since damage is fixed regardless of charge time) then recast immediately to fire the magic damage blast, which also resets the basic attack timer, then resume auto-attacking.",
+   "Maintain uptime in Harrowed Path's (E) mist zone once cast, for the bonus attack speed buff, without unnecessary movement away from it.",
+   "Repeat: weave Q (active + auto-attack mark consumption) and R and W on cooldown, prioritizing whichever comes off cooldown first, while auto-attacking between casts to maximize on-hit procs.",
+   "Do not cast Harrowed Path or Sovereign's Domination for their non-damage components (movement/camo/heal), since the dummy fight has no takedowns to spawn Mist Wraiths and stealth/movement do not affect damage."
+  ],
+  "questions": [
+   "Should E (Harrowed Path) be cast at all in the damage fight, given its only useful effect there (attack speed) requires standing in a mist zone that must be actively positioned, and does the increased attack speed outweigh the lost auto-attack-timer windows from casting it?",
+   "Is there a canonical optimal charge time for W in a no-CC-matters dummy fight, or is minimum charge (near-instant recast) always correct since the value list only shows damage as flat+AP with no charge-time term?",
+   "Does the simulator model the mark-consumption second strike and passive on-hit as simultaneously applying on every basic attack landed on a freshly-marked target, or does the mark only get set up once per fight and rarely get reapplied given Q's cooldown, meaningfully limiting how many second strikes occur in 15s?",
+   "How should the auto-attack windup/interaction with Q's active cast time (which scales with attack speed) be sequenced against R's automatic post-strike attack command, to avoid clipping or wasting attack timer resets?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

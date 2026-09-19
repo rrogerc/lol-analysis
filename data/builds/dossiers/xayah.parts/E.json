@@ -1,0 +1,197 @@
+{
+ "name": "Bladecaller",
+ "cooldown": {
+  "values": [
+   12,
+   11,
+   10,
+   9,
+   8
+  ],
+  "quote": "{{ap|12 to 8}}"
+ },
+ "cost": {
+  "values": [
+   20,
+   20,
+   20,
+   20,
+   20
+  ],
+  "quote": "20",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Physical Damage Per Feather",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    50,
+    65,
+    80,
+    95,
+    110
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.4
+    },
+    {
+     "stat": "critChance",
+     "coef": 0.5,
+     "coefScaling": [
+      {
+       "stat": "critDamage",
+       "per": 1,
+       "coef": 1
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|50 to 110}} {{as|(+ 40% '''bonus''' AD)}}",
+   "bin": [
+    "XayahE.BaseDamage",
+    "XayahE.bADRatio",
+    "XayahE.CritRatio",
+    "XayahE#FeatherDamage"
+   ],
+   "binNote": "XayahE#FeatherDamage = (BaseDamage + bADRatioxbonus ad) * (1 + (CritRatio=0.5)xcritChance*(1xcritDamage + -1)). The 1x coefficient on critDamage in this formula is not a separate named data value in the sheet (no row equals 1 for this purpose); it is an inline constant inside the calculation expression itself, so the coefScaling's '1' is only attested by that formula text, not a standalone DataValue row."
+  },
+  {
+   "id": "e_2",
+   "meaning": "Minion Damage Per Feather",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    25,
+    32.5,
+    40,
+    47.5,
+    55
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.2
+    },
+    {
+     "stat": "critChance",
+     "coef": 0.25,
+     "coefScaling": [
+      {
+       "stat": "critDamage",
+       "per": 1,
+       "coef": 1
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|50/2 to 110/2}} {{as|(+ {{ap|40/2}}% '''bonus''' AD)}}",
+   "bin": [
+    "XayahE.BaseDamage",
+    "XayahE.bADRatio",
+    "XayahE.CritRatio",
+    "XayahE.MinionMultiplier",
+    "XayahE#MinionDamage"
+   ],
+   "binNote": "XayahE#MinionDamage = FeatherDamage * MinionMultiplier(0.5), so the base, AD ratio, and crit term are all half of FeatherDamage's; this matches the wiki's halved values. As with e_1, the '1' coefficient on critDamage is an inline formula constant, not a standalone DataValue row."
+  },
+  {
+   "id": "e_3",
+   "meaning": "diminishing returns per successive feather hit beyond the first",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [],
+   "quote": "This formula is:\n*** For feathers <=19: Damage of one feather{{times}}(n{{minus}}{{fd|0.05}}{{times}}(n{{minus}}1){{divided by}}2{{times}}n)",
+   "bin": [
+    "XayahE.FeatherFalloff"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "root duration for enemies hit by at least three feathers",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "{{tip|root|rooted}} for {{fd|1.25}} seconds",
+   "bin": [
+    "XayahE.RootDuration"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "minimum feather hits to trigger root",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "A target hit by at least three {{as|Feathers|buzzword}}",
+   "bin": [
+    "XayahE.FeatherThreshold"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Bladecaller recalls all planted Feathers to shoot back to Xayah, each dealing damage on hit.",
+   "quote": "'''Xayah''' recalls all planted {{as|Feathers|buzzword}} to shoot back to her, each dealing {{as|physical damage}} to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage per feather is increased by critical strike chance scaled by critical damage bonus.",
+   "quote": "increased by {{critical damage|0 to 50|critScaling=true}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bladecaller deals only half damage to minions.",
+   "quote": "''Bladecaller'' deals 50% damage to {{tip|minions}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each successive feather that hits the same cast deals reduced damage per a diminishing-returns formula not stated in the tooltip.",
+   "quote": "The damage dealt by ''Bladecaller'' follows a diminishing returns formula not mentioned in the ability's description, successively reducing extra damage from feathers beyond the first.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "An enemy hit by a given individual feather can only be hit by that same feather once per pass.",
+   "quote": "Enemies can be hit by an individual {{as|Feather|buzzword}} only once per pass.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Feathers still in flight are recalled too, but only after landing normally first.",
+   "quote": "{{as|Feathers|buzzword}} that are 'in flight' will be called to '''Xayah''' too, but only once they've landed normally first.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks only a single instance of the ability's damage (one feather), not all of them.",
+   "quote": "{{tip|Spell shield}} will only block a single instance of damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bladecaller cannot be cast without a planted Feather on the ground, and cannot be ranked at level 1.",
+   "quote": "''Bladecaller'' cannot be cast without a {{as|Feather|buzzword}} on the ground.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "XayahE.FeatherReturnDelay",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

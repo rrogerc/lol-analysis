@@ -1,0 +1,563 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ThreshPassiveSouls",
+    "key": "Characters/Thresh/Spells/ThreshPassiveSoulsAbility/ThreshPassiveSouls",
+    "dataValues": {
+     "StatValuePerSoul": 1,
+     "SoulsToGainOnPickUp": 1
+    },
+    "calcs": {
+     "CurrentSoulBonus": {
+      "expr": "(StatValuePerSoul=1)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({5fbfbf13})",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "StatValuePerSoul"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "StatValuePerSoul"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ThreshQ",
+    "key": "Characters/Thresh/Spells/ThreshQAbility/ThreshQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      19,
+      16.5,
+      14,
+      11.5,
+      9
+     ]
+    },
+    "cost": 70,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       100,
+       150,
+       200,
+       250,
+       300
+      ]
+     },
+     "APRatio": 0.9,
+     "TauntLength": 1.5,
+     "SlowPercent": 75,
+     "HitBonusCooldown": 2
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[100/150/200/250/300] + (APRatio=0.9)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        150,
+        200,
+        250,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ThreshW",
+    "key": "Characters/Thresh/Spells/ThreshWAbility/ThreshW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      21,
+      20,
+      19,
+      18,
+      17
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ShieldPerSoul": 2,
+     "LanternDuration": 6,
+     "BaseShieldValue": {
+      "axis": "rank",
+      "v": [
+       50,
+       70,
+       90,
+       110,
+       130
+      ]
+     },
+     "ShieldDuration": 4
+    },
+    "calcs": {
+     "TotalShield": {
+      "expr": "BaseShieldValue=[50/70/90/110/130] + (ShieldPerSoul=2)xbuffStacks",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        70,
+        90,
+        110,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "buffStacks({5fbfbf13})",
+        "scope": "total",
+        "coef": 2,
+        "dataValue": "ShieldPerSoul"
+       }
+      ],
+      "refs": [
+       "BaseShieldValue",
+       "ShieldPerSoul"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ThreshE",
+    "key": "Characters/Thresh/Spells/ThreshEAbility/ThreshE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12.25,
+      11.5,
+      10.75,
+      10
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PassiveADRatioTT": {
+      "axis": "rank",
+      "v": [
+       0.9,
+       1.2,
+       1.5,
+       1.8,
+       2.1
+      ]
+     },
+     "PassiveADRatio": {
+      "axis": "rank",
+      "v": [
+       90,
+       120,
+       150,
+       180,
+       210
+      ]
+     },
+     "APRatio": 0.6,
+     "ActiveBaseDamage": {
+      "axis": "rank",
+      "v": [
+       65,
+       110,
+       155,
+       200,
+       245
+      ]
+     },
+     "ActiveSlowPercentage": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "SlowDuration": 1,
+     "PassiveDmgPerSoul": 1.5,
+     "DmgPerSoul": 1.7,
+     "FullChargeDuration": 10,
+     "Icon1ThresholdPercentage": 0.3,
+     "Icon2ThresholdPercentage": 0.6,
+     "Icon3ThresholdPercentage": 0.975
+    },
+    "calcs": {
+     "PAttackDamageMin": {
+      "expr": "1.7xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({5fbfbf13})",
+        "scope": "total",
+        "coef": 1.7
+       }
+      ],
+      "refs": []
+     },
+     "PAttackDamageMax": {
+      "expr": "1.7xbuffStacks + (PassiveADRatioTT=[0.9/1.2/1.5/1.8/2.1])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({5fbfbf13})",
+        "scope": "total",
+        "coef": 1.7
+       },
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.9,
+          1.2,
+          1.5,
+          1.8,
+          2.1
+         ]
+        },
+        "dataValue": "PassiveADRatioTT"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "PassiveADRatioTT"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "ActiveBaseDamage=[65/110/155/200/245] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        110,
+        155,
+        200,
+        245
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "ActiveBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ThreshRPenta",
+    "key": "Characters/Thresh/Spells/ThreshRPentaAbility/ThreshRPenta",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.45,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ThreshRCageRadius": 400,
+     "ThreshRWallThickness": 30,
+     "ThreshRWallLength": 470.228,
+     "APRatio": 1,
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       250,
+       400,
+       550
+      ]
+     },
+     "SlowDuration": 2,
+     "SlowAmount": 99,
+     "WallDuration": 4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[250/400/550] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        250,
+        400,
+        550
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "APRatio",
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "ThreshQ",
+  "W": "ThreshW",
+  "E": "ThreshE",
+  "R": "ThreshRPenta",
+  "P": "ThreshPassiveSouls"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 274,
+   "{6216bf7b}": 44,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.06041667
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Thresh",
+  "name": "Thresh",
+  "partype": "Mana",
+  "passive": "Damnation",
+  "spells": [
+   {
+    "id": "ThreshQ",
+    "name": "Death Sentence",
+    "maxrank": 5,
+    "cooldown": [
+     19,
+     16.5,
+     14,
+     11.5,
+     9
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "ThreshW",
+    "name": "Dark Passage",
+    "maxrank": 5,
+    "cooldown": [
+     21,
+     20,
+     19,
+     18,
+     17
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "ThreshE",
+    "name": "Flay",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12.25,
+     11.5,
+     10.75,
+     10
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "ThreshRPenta",
+    "name": "The Box",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Damnation": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Death Sentence": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies / Self",
+    "costtype": "Mana"
+   },
+   "Deathly Leap": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies / Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Dark Passage": {
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Allies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Flay": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Flay 2": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Flay 3": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Flay 4": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Flay 5": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "The Box": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

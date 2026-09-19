@@ -1,0 +1,563 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "HecarimPassive",
+    "key": "Characters/Hecarim/Spells/HecarimPassiveAbility/HecarimPassive",
+    "calcs": {
+     "BonusAD": {
+      "expr": "(byLevelL[0.12/0.12/0.14/0.14/0.14/0.16/0.16/0.16/0.18/0.18/0.18/0.2/0.2/0.2/0.22/0.22/0.22/0.24])xbonus stat7?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "bonus",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.12,
+          0.12,
+          0.14,
+          0.14,
+          0.14,
+          0.16,
+          0.16,
+          0.16,
+          0.17999999597668648,
+          0.17999999597668648,
+          0.17999999597668648,
+          0.19999999552965164,
+          0.19999999552965164,
+          0.19999999552965164,
+          0.22,
+          0.22,
+          0.22,
+          0.24
+         ]
+        }
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "HecarimRapidSlash",
+    "key": "Characters/Hecarim/Spells/HecarimRapidSlashAbility/HecarimRapidSlash",
+    "cooldown": 4,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      28,
+      26,
+      24,
+      22,
+      20
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "MinionDamageRatio": 0.6,
+     "RampageBonusRatio": 3,
+     "RampageDuration": 6,
+     "RampageCooldownReduction": 0.75,
+     "BaseDamageBonusAD": 0.9,
+     "MaxStacks": 3,
+     "BuffDuration": 8
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[60/90/120/150/180] + (BaseDamageBonusAD=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "BaseDamageBonusAD"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BaseDamageBonusAD"
+      ]
+     },
+     "MinionDamage": {
+      "expr": "Damage * MinionDamageRatio=0.6",
+      "modifies": "Damage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        36,
+        54,
+        72,
+        90,
+        108
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.54,
+        "dataValue": "BaseDamageBonusAD"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage",
+       "BaseDamageBonusAD",
+       "MinionDamageRatio"
+      ]
+     },
+     "RampageBonusDamagePerc": {
+      "expr": "RampageBonusRatio=3 + 0.03xbonus ad",
+      "flat": 3,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.03
+       }
+      ],
+      "refs": [
+       "RampageBonusRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "HecarimW",
+    "key": "Characters/Hecarim/Spells/HecarimWAbility/HecarimW",
+    "cooldown": 14,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "NonSelfLeechRatio": 0.5,
+     "DamageLeechPerc": 25,
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "BuffDuration": 4,
+     "TickTime": 0.5,
+     "MinionHealCap": {
+      "axis": "rank",
+      "v": [
+       120,
+       150,
+       180,
+       210,
+       240
+      ]
+     },
+     "ResistAmount": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25
+      ]
+     },
+     "HealBonusADRatio": 0.02,
+     "APRatio": 0.8
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[80/120/160/200/240] + (APRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "Damage"
+      ]
+     },
+     "LeechAmount": {
+      "expr": "DamageLeechPerc=25",
+      "flat": 25,
+      "terms": [],
+      "refs": [
+       "DamageLeechPerc"
+      ]
+     },
+     "AllyTooltipLeachValue": {
+      "expr": "LeechAmount * NonSelfLeechRatio=0.5",
+      "modifies": "LeechAmount",
+      "flat": 12.5,
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "DamageLeechPerc",
+       "NonSelfLeechRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "HecarimRamp",
+    "key": "Characters/Hecarim/Spells/HecarimRampAbility/HecarimRamp",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      19,
+      18,
+      17,
+      16
+     ]
+    },
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinMoveSpeed": 0.25,
+     "MaxMoveSpeed": 0.65,
+     "MinBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60,
+       75,
+       90
+      ]
+     },
+     "BonusADRatio": 0.5,
+     "MaxBaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "MinKnockback": 150,
+     "MaxKnockback": 350,
+     "Duration": 4,
+     "DistanceToMaxDamage": 1200,
+     "TimeToMaxMoveSpeed": 2.5
+    },
+    "calcs": {
+     "MinDamage": {
+      "expr": "MinBaseDamage=[30/45/60/75/90] + (BonusADRatio=0.5)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        45,
+        60,
+        75,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BonusADRatio",
+       "MinBaseDamage"
+      ]
+     },
+     "MaxDamage": {
+      "expr": "MinDamage * 2",
+      "modifies": "MinDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BonusADRatio",
+       "MinBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "HecarimUlt",
+    "key": "Characters/Hecarim/Spells/HecarimUltAbility/HecarimUlt",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      120,
+      100
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "FearDurationMin": 0.75,
+     "FearDurationMax": 1.5,
+     "APRatio": 1,
+     "DashSpeed": 1100,
+     "MaxDashRange": 1000,
+     "RangeForMaxFearDuration": 950
+    },
+    "calcs": {
+     "DamageDone": {
+      "expr": "BaseDamage=[150/250/350] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "HecarimRapidSlash",
+  "W": "HecarimW",
+  "E": "HecarimRamp",
+  "R": "HecarimUlt",
+  "P": "HecarimPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 280,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.05
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Hecarim",
+  "name": "Hecarim",
+  "partype": "Mana",
+  "passive": "Warpath",
+  "spells": [
+   {
+    "id": "HecarimRapidSlash",
+    "name": "Rampage",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     28,
+     26,
+     24,
+     22,
+     20
+    ]
+   },
+   {
+    "id": "HecarimW",
+    "name": "Spirit of Dread",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "HecarimRamp",
+    "name": "Devastating Charge",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     19,
+     18,
+     17,
+     16
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "HecarimUlt",
+    "name": "Onslaught of Shadows",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     120,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Warpath": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Rampage": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Spirit of Dread": {
+    "damagetype": "Magic",
+    "spelleffects": "AoeDoT",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Devastating Charge": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Onslaught of Shadows": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Location",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

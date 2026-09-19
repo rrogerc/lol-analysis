@@ -1,0 +1,212 @@
+{
+ "name": "Skaarl the Cowardly Lizard",
+ "cooldown": null,
+ "cost": null,
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "dismounted attack damage to champions",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "level",
+   "base": [
+    85,
+    85,
+    85,
+    85,
+    85,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "terms": [],
+   "quote": "{{pp|85 to 100 for 4|1;6;11;16|key=%}} damage to champions",
+   "bin": [
+    "KledPassive#DismountedAttackPenalty"
+   ],
+   "binNote": "Wiki gives resulting damage percent (85%/100%) while bin stores it as a reduction penalty (15%/10%/5%/~0%); values are complementary (100%-penalty)."
+  },
+  {
+   "id": "p_2",
+   "meaning": "dismounted invulnerability/lockout/cc-immune window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{fd|0.5}} seconds",
+   "bin": [
+    "KledPassive.DismountInvulnWindow"
+   ]
+  },
+  {
+   "id": "p_3",
+   "meaning": "Skaarl's remount health percentage restored",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.7,
+    0.7,
+    0.7
+   ],
+   "terms": [],
+   "quote": "becomes {{sbc|Mounted}} with a portion of '''{{uis|Skaarl|nolink=true}}''' health",
+   "bin": [
+    "KledPassive#SkaarlRemountHealth"
+   ],
+   "binNote": "Wiki does not state the numeric remount percentage in the leveling table or description; value taken solely from bin."
+  },
+  {
+   "id": "p_4",
+   "meaning": "dismounted bonus resistances (armor and MR)",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.01
+    }
+   ],
+   "quote": "{{as|'''bonus''' movement speed}} while moving toward enemy champions",
+   "bin": [
+    "KledPassive#DismountedResistBonus"
+   ],
+   "binNote": "Wiki description text does not state a numeric resistance formula for Dismounted state; value taken solely from bin (KledPassive#DismountedResistBonus = 4 + 0.01x bonus maxHp)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "While Mounted, all damage dealt to Kled and Skaarl is suffered by Skaarl first, and additional health sources apply to Skaarl's maximum health.",
+   "quote": "While {{sbc|Mounted}}, all damage dealt to the duo is suffered by '''{{ui|Skaarl|nolink=true}}''', who has {{pplevel|...}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Percentage-health effects use Kled and Skaarl's combined maximum health.",
+   "quote": "Effects based on percentage health consider '''Kled''' and '''{{uis|Skaarl|nolink=true}}''' combined {{as|'''maximum''' health}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "When Skaarl's health is reduced below 0, Kled dismounts and excess damage beyond Skaarl's health is ignored.",
+   "quote": "Being reduced below {{as|{{sti|health|0 health}}}} causes '''{{ui|Skaarl|nolink=true}}''' to flee, forcing '''Kled''' to be {{sbc|Dismounted}}, with all damage in excess of '''{{uis|Skaarl|nolink=true}}''' health being ignored.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Dismounting cleanses crowd control and makes Kled unable to act, untargetable, and immune to crowd control for 0.5 seconds.",
+   "quote": "cleansing himself of all {{tip|crowd control}} and becoming {{tip|lockout|unable to act}}, {{tip|untargetable}}, and {{tip|cc-immune|immune to crowd control}} for {{fd|0.5}} seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Dismounting resets the cooldown and charges of Pocket Pistol.",
+   "quote": "{{ai|Dismounted Skaarl the Cowardly Lizard|Kled|''Dismounting''}} resets the {{sti|cooldown}} and charges of ''{{ai|Pocket Pistol|Kled}}''.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "While Dismounted, Kled's basic attacks deal reduced damage to champions.",
+   "quote": "his attacks deal {{pp|85 to 100 for 4|1;6;11;16|key=%}} damage to champions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While Dismounted, Kled cannot cast Bear Trap on a Rope, Jousting, or Chaaaaaaaarge!!!, and Bear Trap on a Rope is replaced with Pocket Pistol.",
+   "quote": "''{{ai|Jousting|Kled}}'' and ''{{ai|Chaaaaaaaarge!!!|Kled}}'' become unusable.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While Mounted, healing and health regeneration first replenish Skaarl's health and only apply to Kled's health once Skaarl is at full health.",
+   "quote": "healing and {{as|{{sti|health regeneration}}}} will first replenish '''{{uis|Skaarl|nolink=true}}''' health and will only apply to '''Kled's''' health while '''{{ui|Skaarl|nolink=true}}''' is at ''full'' health",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If Skaarl's health is reduced below 0 by an attack or ability with multiple damage instances, subsequent instances from the same cast are reduced to 0 damage.",
+   "quote": "If '''{{uis|Skaarl|nolink=true}}''' health is reduced below 0 by an attack or ability with multiple damage instances, subsequent damage instances from the same {{tip|cast instance}} are reduced to 0 damage.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If Kled would be executed while Mounted, he is instead only Dismounted.",
+   "quote": "If '''Kled''' would be {{tip|execute|executed}} while {{sbc|Mounted}}, he is instead only {{sbc|Dismounted}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KledPassive.CourageVsChamps",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledPassive.CourageVsOther",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledPassive.CourageLastHit",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledPassive.DismountedResistRatio",
+   "reason": null
+  },
+  {
+   "ref": "KledPassive.DismountedMSPenalty",
+   "reason": "utility"
+  },
+  {
+   "ref": "KledPassive.RemountDashDuration",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KledPassive.MountReturnTime",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KledPassive.DismountDistanceBase",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KledPassive.DismountSpeedRadius",
+   "reason": "utility"
+  },
+  {
+   "ref": "KledPassive.ResistBonusPerEnemy",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledPassive.ResistBonusRange",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledPassive.MountCD",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,849 @@
+{
+ "champion": "seraphine",
+ "abilities": {
+  "P": {
+   "name": "Stage Presence",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_echo_delay",
+     "meaning": "delay before the Echo-triggered additional cast",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.01,
+     "terms": [],
+     "quote": "{{rutngt|0.01}}",
+     "bin": [
+      "SeraphinePassive.EchoCastDelay"
+     ]
+    },
+    {
+     "id": "p_note_stack_cap",
+     "meaning": "Notes stack cap per unit",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "stacks up to 4 times on each unit",
+     "bin": [
+      "SeraphinePassive.MaxNotes"
+     ]
+    },
+    {
+     "id": "p_note_duration",
+     "meaning": "duration of a Note before it expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "lasts 6 seconds, refreshes on subsequent ''Notes''",
+     "bin": [
+      "SeraphinePassive.NoteDuration"
+     ]
+    },
+    {
+     "id": "p_note_damage",
+     "meaning": "magic damage per Note fired by the empowered attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      4,
+      5.2353,
+      6.4706,
+      7.7059,
+      8.9412,
+      10.1765,
+      11.4118,
+      12.6471,
+      13.8824,
+      15.1176,
+      16.3529,
+      17.5882,
+      18.8235,
+      20.0588,
+      21.2941,
+      22.5294,
+      23.7647,
+      25
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.04
+      }
+     ],
+     "quote": "{{pp|4 + (25-4)/17*(x-1) for 20}} {{as|(+ 4% AP)}} magic damage",
+     "bin": [
+      "SeraphinePassive#AutoDamage",
+      "SeraphinePassive.NoteAPRatio"
+     ]
+    },
+    {
+     "id": "p_ally_note_reduction",
+     "meaning": "damage reduction for Notes originally granted by an ally (fired from Seraphine's own stack)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "reduced by 75% for ''Notes'' from allies",
+     "bin": [
+      "SeraphinePassive.AllyNoteDamagePercent"
+     ],
+     "binNote": "wiki states a 75% reduction; bin field AllyNoteDamagePercent=0.25, i.e. ally notes deal 25% of the value (a 75% reduction), consistent but stored as the retained fraction rather than the reduction."
+    },
+    {
+     "id": "p_note_fire_delay",
+     "meaning": "delay between successive Note damage instances firing at the target",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.075,
+     "terms": [],
+     "quote": "''Notes'' are fired one after another with a short delay",
+     "bin": [
+      "SeraphinePassive.DelayBetweenNoteCasts"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "At 2 Echo stacks, the next basic ability cast consumes them to cast an additional time at no cost.",
+     "quote": "At 2 stacks, the next basic ability cast consumes them all to cast an additional time at no cost after a {{rutngt|0.01}} delay.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional Echo cast counts as a separate cast instance (e.g. for Electrocute/Conqueror), and does not affect the mimicked ability's cooldown.",
+     "quote": "The additional cast does not affect the {{sti|cooldown}} of the mimicked ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional cast must complete or Echo stacks are retained (not consumed).",
+     "quote": "if the cast time does not finish, does not begin at all, or if the ability fails to cast, '''Seraphine''' will keep her stacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While any Notes are active, Seraphine's next basic attack is empowered with an uncancellable windup and fires all Notes at the target as separate magic damage instances.",
+     "quote": "'''Seraphine's''' next {{tip|basic attack}} is empowered to have an {{tip|uncancellable windup}}, gain {{sti|25 '''bonus''' attack range}} per ''Note'', and fire all ''Notes'' at the target",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack can critically strike.",
+     "quote": "The empowered attack can {{tip|critically strike}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ability casts grant Notes to Seraphine and nearby allied champions.",
+     "quote": "'''Seraphine's''' ability casts grant a ''Note'' to herself and nearby allied {{tip|champions}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SeraphinePassive.AutoAPRatio",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SeraphinePassive.BonusAARange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SeraphinePassive.NoteRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SeraphinePassive.DelayBetweenNoteCastsDecayRate",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SeraphinePassive.MinionDamageMultiplier",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "High Note",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SeraphineQ#ExplosionDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Maximum Enhanced Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      105,
+      148.75,
+      192.5,
+      236.25,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|60*1.75 to 160*1.75}} {{as|(+ {{ap|40*1.75}}% AP)}}",
+     "bin": [
+      "SeraphineQ#TotalEmpoweredDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Damage amplification vs champions/monsters based on target's missing health, capped at 75% missing health",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ccs|increased|magic}} by {{pp|key=%|key1=%|type=target's '''missing''' health|0 to 75 for 11|0 to 75|formula=7.5% per 7.5% of target's '''missing''' health, capped at 75% '''missing''' health|color=health}}",
+     "bin": [
+      "SeraphineQ.DamageAmp"
+     ],
+     "binNote": "SeraphineQ.DamageAmp = 75 matches the wiki's 75% cap; the 7.5% per 7.5% missing health scaling formula is tooltip text, not separately visible in the sheet's listed rows."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Expansion duration of the soundwave's area of effect",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "upon arrival expands in a radius over {{fd|0.4}} seconds",
+     "bin": [],
+     "binNote": "No SeraphineQ row lists this timing; it appears only as wikitext description text, likely governed by a VFX/animation resource not present in the data sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The soundwave's area of effect covers the zone via expansion in seven distinct rings and each target can only be hit once.",
+     "quote": "The area of effect is covered via expansion in seven distinct rings and targets can only be hit once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "High Note fires from wherever Seraphine is at the end of the cast time, and its impact delay depends on missile travel speed after that.",
+     "quote": "''High Note'' will fire from wherever ''Seraphine'' is at the end of the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The maximum damage of High Note (against low-health targets) is treated as a cosmetic critical strike.",
+     "quote": "The maximum damage of ''High Note'' uses a {{ccs|cosmetic critical strike|magic|tip=false|link=true}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SeraphineQ.ExecuteThreshold",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Surround Sound",
+   "cooldown": {
+    "values": [
+     22,
+     22,
+     22,
+     22,
+     22
+    ],
+    "quote": "22"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      80,
+      100,
+      120,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|60 to 140}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "SeraphineW#TotalShieldStrength"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Heal (pulse, % missing health)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "missingHp",
+       "coef": [
+        0.08,
+        0.1,
+        0.12,
+        0.14,
+        0.16
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|8 to 16}}% of target's '''missing''' health}}",
+     "bin": [
+      "SeraphineW#WMissingHPHeal"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Shield/heal duration before pulse",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}}",
+     "bin": [
+      "SeraphineW.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield's effects are gained at the start of the cast time, and Seraphine can move during the cast time.",
+     "quote": "''Surround Sound's'' effects are gained at the start of the cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal pulse only occurs if Seraphine already had a shield active when she cast the ability, and it happens after the shield duration ends.",
+     "quote": "If '''Seraphine''' already had a {{tip|shield}} at the time of cast, ''Surround Sound'' will pulse after the duration, {{tip|heal|healing}} herself and nearby allied champions.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Recasting during the pulse's delay refreshes the delay instead of stacking a new pulse immediately.",
+     "quote": "Casting ''Surround Sound'' again during the pulse's delay refreshes the delay.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal is canceled if Seraphine dies before it resolves.",
+     "quote": "The heal will be canceled and the indicator will disappear upon '''Seraphine''' dying.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield and bonus movement speed can stack up to 2 times.",
+     "quote": "''Surround Sound's shield and {{as|'''bonus''' movement speed}} can stack up to 2 times.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SeraphineW.WMSBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "SeraphineW.WMSBonusAPRatio",
+     "reason": "utility"
+    },
+    {
+     "ref": "SeraphineW.HasteValueForAllies",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SeraphineW.WHealSplitDelay",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SeraphineW.ShieldAmpForSeraphine",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Beat Drop",
+   "cooldown": {
+    "values": [
+     11,
+     10.5,
+     10,
+     9.5,
+     9
+    ],
+    "quote": "11",
+    "binNote": "Bin sheet lists cooldown [11/10.5/10/9.5/9] by rank while ddragon/wiki template shows flat 11; using bin's per-rank values since wiki template only states base 11."
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 190}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "SeraphineE#FinalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Minion Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      49,
+      63,
+      91,
+      112,
+      133
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|70*0.7 to 190*0.7}} {{as|(+ {{ap|50*0.7}}% AP)}}",
+     "bin": [
+      "SeraphineE#FinalDamage",
+      "SeraphineE.MinionDamageMod"
+     ],
+     "binNote": "Minion damage is FinalDamage x MinionDamageMod=0.7; no dedicated bin row for the reduced base values, derived as 70%."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Disable Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{ap|1.1 to 1.5}} seconds",
+     "bin": [
+      "SeraphineE.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Deals magic damage reduced to 70% against minions.",
+     "quote": "deals {{as|magic damage}} to enemies hit, reduced to 70% against {{tip|minions}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Slows enemies hit by 99% for the disable duration.",
+     "quote": "slows them by 99% for a few seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Beat Drop is only empowered (root/stun) from slows, immobilizes, or grounds applied by Seraphine or her allies.",
+     "quote": "''Beat Drop'' will only be empowered from {{tip|slow|slows}}, {{tip|immobilize|immobilizes}}, and {{tip|ground|grounding}} effects applied by herself or her allies.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Already-slowed enemies are also rooted for the same duration as the disable.",
+     "quote": "Enemies that are already {{tip|slow|slowed}} are also {{tip|root|rooted}} for the same duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Immobilized or grounded enemies are stunned instead, for the same duration.",
+     "quote": "Enemies that are {{tip|immobilize|immobilized}} or {{tip|ground|grounded}} are also {{tip|stun|stunned}} for the same duration.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SeraphineE.SlowValue",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Encore",
+   "cooldown": {
+    "values": [
+     160,
+     140,
+     120
+    ],
+    "quote": "{{ap|160 to 120}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{dv|{{tt|{{fd|0.5}}|See notes}}|{{tt|{{fd|0.5}}|See notes}}}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      200,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|150 to 250}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SeraphineR#R1TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Disable Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.25,
+      1.5,
+      1.75
+     ],
+     "terms": [],
+     "quote": "{{ap|1.25 to 1.75}} seconds",
+     "bin": [
+      "SeraphineR.RChannelDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Encore fires from Seraphine's location at the end of the initial cast time, so damage lands after the 0.5s cast.",
+     "quote": "''Encore'' fires from '''Seraphine's''' location at the end of the initial cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The slow starts at 40% and increases by 15% every 0.25 seconds up to 99%, but this does not affect the dummy or survival damage.",
+     "quote": "slows them by 40% for a duration, increasing by 15% every {{fd|0.25}} seconds over the duration up to 99%",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Encore has a second cast time acting only as a lockout on Seraphine after the wave is fired, not affecting when the damage lands.",
+     "quote": "''Encore'' has two cast times. Both last {{fd|0.5}} seconds. The wave will always project after the first cast time, and the second cast time only serves as a {{tip|lockout|lock out}} for '''Seraphine'''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The projectile's travel distance resets on hitting a champion, letting it hit additional targets without a separate damage roll being specified beyond the single hit tooltip.",
+     "quote": "''Encore's'' projectile resets its remaining travel distance whenever it hits an allied or enemy {{tip|champion}}, excluding '''Seraphine'''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If negated by a spell shield, the projectile is blocked and does not reset its travel distance (relevant for damage-fight negation).",
+     "quote": "If ''Encore's'' projectile is negated via {{tip|spell shield}}, this will also prevent it from resetting its travel distance.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SeraphineR.RRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SeraphineR.RMinSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SeraphineR.RMaxSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SeraphineR.R1APRatio",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "empowered attack fires all stacked Notes as separate on-hit magic damage instances"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "next basic attack is empowered while any Notes are active"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Notes stack up to 4 per unit (Seraphine included), each contributing one damage instance to the empowered attack; refresh on new casts"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Echo stacks up to 2 from ability casts, capped, consumed on next basic ability cast to trigger a free additional cast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "P"
+   ],
+   "note": "Echo-triggered additional cast is a separately timed second cast of the same ability at no cost after a short delay"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "High Note damage amplified up to 75% based on target's missing health"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "the max (missing-health-amplified) portion of High Note damage is treated as a cosmetic critical strike"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "AoE expands in rings over 0.4s and can only hit each target once; dummy fight must assume full/immediate hit"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Encore has a 0.5s cast before the wave fires, then a second 0.5s lockout period"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Encore's projectile resets travel distance on hitting a champion; in a single-target dummy fight this reset is moot but is a real mechanic against multiple targets"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs across all abilities constrain casts in the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Surround Sound (shield/heal/MS) is purely defensive/utility, read only in the survival fight if Seraphine is the tank"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Echo (stacking-self-buff + recast-or-multipart) and Note-stacking (target-stacks + onhit-rider/empowered-attack) combine two primitives each but both combinations are individually expressible; no unique mechanic falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "Does Echo's free additional cast of Q/E/R re-trigger the missing-health damage amp (Q) or re-fire as a full independent instance including all associated riders (e.g., does an Echoed Q get its own missing-health calc against the now-damaged dummy)?",
+   "options": [
+    "Echoed cast recalculates all conditional terms independently at its own resolution time",
+    "Echoed cast copies the same conditional state as the original cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The additional cast counts as a separate {{tip|cast instance}} for the purpose of e.g. {{ri|Electrocute}} or {{ri|Conqueror}}."
+   ]
+  },
+  {
+   "question": "Does the Echo-empowered second cast also grant a new Echo stack (i.e., can Echo stacks regenerate mid-fight from the Echoed cast itself), or does the Echoed cast not count toward Echo generation?",
+   "options": [
+    "Echoed cast also grants a stack of Echo, allowing faster re-accumulation",
+    "Only manually initiated casts grant Echo stacks; the Echoed cast does not generate a new stack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Seraphine's''' {{tip|ability|basic ability}} casts each generate a {{tip|stack}} of ''Echo'', stacking up to 2 times."
+   ]
+  },
+  {
+   "question": "In the single-target dummy fight, does the empowered auto-attack fire all stacked Notes (up to 4) as separate near-simultaneous magic damage instances every time Notes are active, or is it capped by how often Seraphine can refresh Notes via casts (since Notes require an ability cast to generate, not just attacking)?",
+   "options": [
+    "Notes are only present after an ability cast and decay after 6s, so the rotation must interleave casts with attacks to keep Notes active for onhit damage",
+    "Notes can be assumed always at max stacks for simplicity, maximizing onhit damage every attack"
+   ],
+   "impact": "high",
+   "quotes": [
+    "While any amount of ''Notes'' are active, '''Seraphine's''' next {{tip|basic attack}} is empowered..."
+   ]
+  },
+  {
+   "question": "Does the missing-health damage amp on High Note (Q) get evaluated against the dummy's health at the moment of impact (after Q's own base damage would apply) or before, and does it stack multiplicatively with the max-enhanced-damage cosmetic crit threshold cleanly for simulation purposes?",
+   "options": [
+    "Amp is evaluated on pre-hit current missing health, single damage instance with amp baked in",
+    "Amp and base are computed as two separate sequential effects (unclear ordering)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the damage is {{ccs|increased|magic}} by {{pp|...}}...capped at 75% '''missing''' health"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start with W (Surround Sound) or another ability cast to seed an Echo stack and grant Seraphine a Note (also useful if survival fight; for damage fight, prioritize damage abilities first).",
+   "Open with E (Beat Drop) to build Echo stack #1 and grant a Note, dealing magic damage on cast.",
+   "Follow with Q (High Note) to build Echo stack #2 (now at cap) and grant a second Note.",
+   "Cast R (Encore) if available: this consumes the 2 Echo stacks, causing Encore to cast twice in quick succession (0.01s delay) after its 0.5s cast time, doubling R's burst damage instance and granting more Notes.",
+   "Weave in basic attacks whenever Notes are active (from E/Q/R casts) so the empowered auto-attack fires all stacked Note damage instances at the dummy.",
+   "Recast E and Q on cooldown throughout the 15s window (E every ~11s, Q every ~6-8s depending on rank), each refreshing Notes and re-arming Echo.",
+   "Manage mana: total costs (Q 60-100, W 70-90, E 60, R 100) versus available mana pool likely limit how many full-cost casts fit in 15s; prioritize E and Q over W since W is defensive-only in the damage fight.",
+   "If R is on cooldown for most of the 15s window (base 160s at rank 1), the rotation is effectively Q/E on cooldown plus autos with Notes, with R used once at the start if available."
+  ],
+  "questions": [
+   "Should W ever be cast in the pure damage fight, given it produces no direct damage (only a self-shield) but does generate a Note and an Echo stack that empower the next ability/attack?",
+   "What champion level and mana pool is assumed for the 15s fight, and does mana realistically allow all of Q/W/E on cooldown plus attacks, or does resource-budget force skipping W?",
+   "Is R assumed off cooldown at the start of the 15s fight (i.e., is this a burst-opener scenario) or is R excluded as unavailable within a typical simulated window given its 120-160s cooldown?",
+   "How should the simulator treat the Echo double-cast for cooldown/cost purposes — does the second cast start its own instance of any on-cast riders (Notes, Echo generation) or is it purely a damage duplicate?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

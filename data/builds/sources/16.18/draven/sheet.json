@@ -1,0 +1,509 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "DravenPassive",
+    "key": "Characters/Draven/Spells/DravenPassiveAbility/DravenPassive",
+    "dataValues": {
+     "PassiveGoldBase": 25,
+     "PassiveGoldPerStack": 2,
+     "PercentOfStacksLost": 50,
+     "StackGain": 1,
+     "StackGainEnemy": 10,
+     "CherryStacksPerRoundBeforeMultiplier": 10,
+     "CherryStackMultiplier": 5
+    },
+    "calcs": {
+     "DravenPassiveGoldEarned": {
+      "expr": "1xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks(DravenPassiveGoldEarned)",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "DravenPassiveHighestBounty": {
+      "expr": "1xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks(DravenPassiveHighestBounty)",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "DravenSpinning",
+    "key": "Characters/Draven/Spells/DravenSpinningAbility/DravenSpinning",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": 45,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       45,
+       50,
+       55,
+       60
+      ]
+     },
+     "ADScaling": {
+      "axis": "rank",
+      "v": [
+       0.75,
+       0.85,
+       0.95,
+       1.05,
+       1.15
+      ]
+     },
+     "DurationTOOLTIP": 6,
+     "AxeDuration": 5.75
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[40/45/50/55/60] + (ADScaling=[0.75/0.85/0.95/1.05/1.15])xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        45,
+        50,
+        55,
+        60
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.75,
+          0.85,
+          0.95,
+          1.05,
+          1.15
+         ]
+        },
+        "dataValue": "ADScaling"
+       }
+      ],
+      "refs": [
+       "ADScaling",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "DravenFury",
+    "key": "Characters/Draven/Spells/DravenFuryAbility/DravenFury",
+    "cooldown": 12,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      35,
+      30,
+      25,
+      20
+     ]
+    },
+    "castTime": 0.2419,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "AttackSpeedDuration": 3,
+     "MoveSpeed": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       0.55,
+       0.6,
+       0.65,
+       0.7
+      ]
+     },
+     "MoveSpeedDuration": 1.5,
+     "Temp_MSMod": {
+      "axis": "rank",
+      "v": [
+       50,
+       55,
+       60,
+       65,
+       70
+      ]
+     },
+     "Temp_MSDuration": 1.5,
+     "Temp_AS": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "Temp_ASDuration": 3,
+     "Temp_MSDecay": {
+      "axis": "rank",
+      "v": [
+       -0.062,
+       -0.069,
+       -0.075,
+       -0.081,
+       -0.087
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "DravenDoubleShot",
+    "key": "Characters/Draven/Spells/DravenDoubleShotAbility/DravenDoubleShot",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      17,
+      16,
+      15,
+      14
+     ]
+    },
+    "cost": 70,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       110,
+       145,
+       180,
+       215
+      ]
+     },
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "SlowDuration": 2,
+     "KnockbackDuration": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[75/110/145/180/215] + 0.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        110,
+        145,
+        180,
+        215
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "DravenRCast",
+    "key": "Characters/Draven/Spells/DravenRCastAbility/DravenRCast",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      90,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "RMinDamagePercent": 50,
+     "RDamageReductionPerHit": 0.05,
+     "RCoefficient": {
+      "axis": "rank",
+      "v": [
+       1.1,
+       1.3,
+       1.5
+      ]
+     },
+     "RPassiveStacksCoefficient": 1
+    },
+    "calcs": {
+     "RCalculatedDamage": {
+      "expr": "RBaseDamage=[200/300/400] + (RCoefficient=[1.1/1.3/1.5])xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          1.1,
+          1.3,
+          1.5
+         ]
+        },
+        "dataValue": "RCoefficient"
+       }
+      ],
+      "refs": [
+       "RBaseDamage",
+       "RCoefficient"
+      ]
+     },
+     "RPassiveTrueDamage": {
+      "expr": "(RPassiveStacksCoefficient=1)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({577427b5})",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "RPassiveStacksCoefficient"
+       }
+      ],
+      "refs": [
+       "RPassiveStacksCoefficient"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "DravenSpinning",
+  "W": "DravenFury",
+  "E": "DravenDoubleShot",
+  "R": "DravenRCast",
+  "P": "DravenPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 361,
+   "{6216bf7b}": 39,
+   "{c4ab3550}": 1.61,
+   "{3a509002}": 0.13
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1188406
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Draven",
+  "name": "Draven",
+  "partype": "Mana",
+  "passive": "League of Draven",
+  "spells": [
+   {
+    "id": "DravenSpinning",
+    "name": "Spinning Axe",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ]
+   },
+   {
+    "id": "DravenFury",
+    "name": "Blood Rush",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     40,
+     35,
+     30,
+     25,
+     20
+    ]
+   },
+   {
+    "id": "DravenDoubleShot",
+    "name": "Stand Aside",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "DravenRCast",
+    "name": "Whirling Death",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     90,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "League of Draven": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Spinning Axe": {
+    "damagetype": "Physical",
+    "spelleffects": "basic",
+    "onhiteffects": "Special",
+    "projectile": "Special",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Blood Rush": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Stand Aside": {
+    "damagetype": "Physical",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Whirling Death": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies",
+    "costtype": "mana"
+   },
+   "Whirling Death 2": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

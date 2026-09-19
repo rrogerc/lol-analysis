@@ -1,0 +1,195 @@
+{
+ "name": "Repudiation",
+ "cooldown": {
+  "values": [
+   18,
+   17,
+   16,
+   15,
+   14
+  ],
+  "quote": "{{ap|18 to 14}}"
+ },
+ "cost": {
+  "values": [
+   70,
+   70,
+   70,
+   70,
+   70
+  ],
+  "quote": "70",
+  "resource": "energy"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    50,
+    75,
+    100,
+    125,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|50 to 150}} {{as|(+ 50% '''bonus''' AD)}}",
+   "bin": [
+    "AmbessaW.BaseDamage",
+    "AmbessaW.DamageADRatio",
+    "AmbessaW#Calc_Damage_Low"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Increased Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    75,
+    112.5,
+    150,
+    187.5,
+    225
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.75
+    }
+   ],
+   "quote": "{{ap|50*1.5 to 150*1.5}} {{as|(+ {{ap|50*1.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "AmbessaW.BaseDamage",
+    "AmbessaW.DamageADRatio",
+    "AmbessaW.HighDamageMultiplier",
+    "AmbessaW#Calc_Damage_High"
+   ],
+   "binNote": "50, 0.5 and 1.5 are multiplied together (75=50*1.5, 0.75=0.5*1.5) to reach the wiki's stated numbers, which are not stored as their own data value in the sheet."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Shield amount",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    50,
+    66,
+    82,
+    98,
+    114,
+    129,
+    145,
+    161,
+    177,
+    193,
+    209,
+    225,
+    241,
+    256,
+    272,
+    288,
+    304,
+    320
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{pplevel|50 to 320}} {{as|(+ 150% '''bonus''' AD)}}",
+   "bin": [
+    "AmbessaW#Calc_Shield"
+   ],
+   "binNote": "Sheet only states byLevel(50..320) endpoints, not the per-level breakpoints; intermediate values above are a linear interpolation and may not match the true (possibly non-linear) per-level curve."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Total bracing duration before the smash lands",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "for up to {{fd|0.5}} seconds",
+   "bin": [
+    "AmbessaW.Buff_Duration"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Lockout portion of the brace during which Ambessa cannot act",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.225,
+   "terms": [],
+   "quote": "the first {{fd|0.225}} seconds she is {{tip|lockout|unable to act}}",
+   "bin": [
+    "AmbessaW.Dash_Delay"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Shield duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "for {{fd|1.5}} seconds",
+   "bin": [
+    "AmbessaW.Shield_Duration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The smash's damage is increased by 50% only if the on-cast shield mitigates damage from a champion, large monster, or turret before the smash lands.",
+   "quote": "If the shield mitigates any amount of damage taken from {{tip|champions}}, large {{tip|monsters}}, or {{tip|turret|turrets}} before '''Ambessa''' smashes the ground, ''Repudiation's'' damage is increased by 50%.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The shield is granted at the moment of cast (before the smash resolves), so it can absorb damage during the brace window.",
+   "quote": "'''Ambessa''' {{tip|shield|shields}} herself at the time of cast",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The shield buff and shield health are not actually displayed/applied until a short, inconsistent delay after cast, which is a bug.",
+   "quote": "''Repudiation's'' shield buff and shield health on the health bar UI are not granted to and displayed on the caster on-cast, but rather only after a very short, inconsistent delay from the time of cast.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Ambessa is unable to act during the first 0.225 seconds of the brace, and only certain casts are allowed in the remaining 0.275 seconds.",
+   "quote": "Other abilities may be cast in the last {{fd|0.275}} seconds of the brace after the lockout and are otherwise disabled in the first {{fd|0.225}} seconds.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability deals area damage to nearby enemies when the ground smash occurs, after the full brace completes (or at the end of a buffered dash).",
+   "quote": "she smashes the ground beneath her, dealing {{as|physical damage}} to nearby enemies",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AmbessaW.Dash_Delay",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

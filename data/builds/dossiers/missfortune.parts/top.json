@@ -1,0 +1,165 @@
+{
+ "champion": "missfortune",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Love Tap adds bonus physical damage to the first attack (basic attack or Double Up) against an unmarked target; against a single dummy it can only trigger once, on the opening hit."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Love Tap's bonus damage is conditional on the target being unmarked; since the dummy is the only target, the mark never resets after the first proc."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Double Up's primary hit and Make It Rain's cast are fixed-formula damage delivered on cast/cast-delay."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Double Up's bounce requires a second enemy positioned behind the target; a 1-target dummy fight has no secondary target, so the bounce (and its reduced-crit damage) never occurs."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Double Up's bounce crits at a reduced (50% bonus crit damage) rate and always crits if it kills the primary target; each Bullet Time wave independently crits at a reduced (30% bonus crit damage) rate."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Make It Rain deals magic damage in 8 ticks (every 0.25s) over its 2s duration."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Strut's active grants a flat 4s bonus attack speed buff, useful for both autos and Double Up casts."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Landing Love Tap's mark on a new target cuts Strut's current cooldown by ~2s (ability-haste-affected, exact multiplier unresolved in the bin)."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Bullet Time is an up-to-3s channel that blocks other actions (attacking, casting, moving) and can be cancelled in its final ~0.1s at no loss of effect."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Bullet Time fires 14-18 separately-timed waves over the channel, each a distinct damage instance able to crit on its own."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Double Up's cast time is defined as the Basic Attack Timer, so it occupies an auto-attack's timing slot and is sped up by attack speed."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (40/45/80/100) constrain how many casts of each ability fit inside the 15s window."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant behavior (once-only marked-target bonus, positional bounce that a dummy fight nullifies, a ticking DoT, a channelled multi-wave crit-capable ultimate, a cast tied to the attack timer, and a cooldown refund) maps onto existing primitives; no unique state machine beyond them is required."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting Double Up (Q) apply Love Tap's mark/bonus damage the same way a basic attack does, since the wiki says Q 'applies on-attack effects to the primary target' and Love Tap is an on-attack passive?",
+   "options": [
+    "Q counts as an attack for Love Tap purposes: whichever of Q or a basic attack lands first against the (unmarked) dummy procs the bonus damage",
+    "Only true basic attacks apply Love Tap's mark; Double Up deals only its own listed damage regardless of mark state"
+   ],
+   "impact": "high",
+   "quotes": [
+    "applying {{tip|on-attack}} effects to the primary target and {{tip|on-hit}} effects to both enemies hit",
+    "apply a mark that expires upon attacking a new enemy. If the enemy was unmarked, this also deals"
+   ]
+  },
+  {
+   "question": "Does Double Up's primary-target hit crit at the normal full rate, or does the bin's single TotalDamageCrit formula (built from BounceCriticalMod) apply the reduced 50%-bonus crit multiplier to the primary hit as well as the bounce?",
+   "options": [
+    "Primary hit crits at the standard full crit multiplier; only the bounce uses the reduced (50% bonus) crit multiplier, per the wiki's description2 wording",
+    "The single bin formula (TotalDamageCrit = base * (1 + BounceCriticalMod*(critDamage-1))) is the ability's only crit formula and applies uniformly to whichever target(s) it hits, including the primary"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "MissFortuneRicochetShot#TotalDamageCrit = TotalDamageTooltip * 1 + (BounceCriticalMod=0.5)*(1xcritDamage + -1)",
+    "''Double Up's'' bounce can {{tip|critically strike}} for {{as|{{critical damage|150|50}}|critical damage}} damage."
+   ]
+  },
+  {
+   "question": "The bin's LoveTapRefund formula multiplies the flat 2s base refund by an unresolved 'CooldownMultiplierCalculationPart' (presumably an ability-haste term); what value should the simulator use for Strut's cooldown reduction when Love Tap procs?",
+   "options": [
+    "Treat it as exactly 2 seconds flat (ignore ability-haste scaling for the sim, per the wiki's plain 2-second statement)",
+    "Scale the 2s base by the champion's ability haste multiplier as the unresolved bin term implies"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "MissFortuneViciousStrikes#LoveTapRefund = (LoveTapBaseRefund=2) * <CooldownMultiplierCalculationPart>",
+    "reduces ''Strut's'' {{sti|'''current''' cooldown}} by {{tt|2 seconds|Affected by ability haste}}"
+   ]
+  },
+  {
+   "question": "Since Double Up's cast time is defined as 'Basic Attack Timer' rather than a fixed cast time, does casting Q replace/consume a normal auto-attack in the rotation (i.e., you cannot both auto-attack and cast Q at the same moment), and does attack speed shorten Q's effective cast time the same way it shortens an auto's windup?",
+   "options": [
+    "Q occupies the same timing slot as a basic attack: casting Q instead of attacking, and attack speed buffs speed up how often Q can be fired",
+    "Q's 'Basic Attack Timer' cast time is just a tooltip label for a fixed short cast and does not actually interact with or consume the auto-attack cycle"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cast time    = Basic Attack Timer"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume max ranks (R at rank 3) and a full item build; the dummy starts unmarked.",
+   "Land the first hit (basic attack or Double Up) to trigger Love Tap's one-time bonus damage against the dummy.",
+   "Cast Strut (W) early for its attack-speed active, speeding up subsequent autos and Double Up casts.",
+   "Cast Bullet Time (R) as soon as it is available, since the dummy cannot interrupt the up-to-3s channel and it deals the largest chunk of physical damage.",
+   "Between R's availability, cast Double Up (Q) on cooldown, weaving in normal basic attacks, and cast Make It Rain (E) on cooldown for its magic DoT.",
+   "Recast Strut (W) whenever its cooldown comes back up (aided by any Love Tap cooldown refunds) to keep the attack-speed buff active as much as possible.",
+   "Continue alternating Q casts/autos and E casts on cooldown, respecting mana costs, for the remainder of the 15s fight."
+  ],
+  "questions": [
+   "Should the opener lead with Bullet Time immediately (locking MF into an uninterruptible channel for up to 3s) or build up attack speed/Love Tap value first before committing to R?",
+   "Is there an assumed mana pool/regen sufficient to sustain a full Q/W/E rotation for 15s, or does mana genuinely gate how often each ability is cast?",
+   "Does Double Up's attack-timer-based cast time mean it should be modeled as replacing an auto-attack slot in the rotation rather than as an independent cast on its own cooldown?",
+   "At what level/item state (crit chance, attack speed, AD/AP mix) should this rotation be evaluated, since it changes how much value Strut's active and Q/R crits contribute?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

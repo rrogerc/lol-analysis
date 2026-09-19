@@ -1,0 +1,651 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MonkeyKingPassive",
+    "key": "Characters/MonkeyKing/Spells/MonkeyKingPassiveAbility/MonkeyKingPassive",
+    "cooldown": 20,
+    "dataValues": {
+     "CombatDuration": 3,
+     "StackDuration": 5,
+     "MaxStacks": 5,
+     "StackMultiplier": 1,
+     "HealthPercentPer5": 0.0035,
+     "TooltipMult": 6,
+     "TooltipMaxHealthPercentPer5": 2.1,
+     "FallOffRate": 1
+    },
+    "calcs": {
+     "BonusArmor": {
+      "expr": "byLevel(6..10)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        6,
+        6.23529412,
+        6.470588,
+        6.7058824,
+        6.9411765,
+        7.1764706,
+        7.4117647,
+        7.647059,
+        7.882353,
+        8.117647,
+        8.3529412,
+        8.588235,
+        8.823529,
+        9.058824,
+        9.294118,
+        9.52941176,
+        9.764706,
+        10
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TooltipMaxArmor": {
+      "expr": "BonusArmor * TooltipMult=6",
+      "modifies": "BonusArmor",
+      "flat": {
+       "axis": "level",
+       "v": [
+        36,
+        37.411765,
+        38.82353,
+        40.235294,
+        41.64706,
+        43.058824,
+        44.47059,
+        45.882354,
+        47.294118,
+        48.705882,
+        50.11765,
+        51.52941,
+        52.941174,
+        54.352944,
+        55.76471,
+        57.17647,
+        58.588236,
+        60
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "TooltipMult"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "MonkeyKingDoubleAttack",
+    "key": "Characters/MonkeyKing/Spells/MonkeyKingDoubleAttackAbility/MonkeyKingDoubleAttack",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": 20,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       45,
+       70,
+       95,
+       120
+      ]
+     },
+     "ADRatio": 0.5,
+     "ArmorShredPercent": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.15,
+       0.2,
+       0.25,
+       0.3
+      ]
+     },
+     "ShredDuration": 3,
+     "BuffDuration": 6,
+     "AttackRangeBonus": {
+      "axis": "rank",
+      "v": [
+       135,
+       145,
+       155,
+       165,
+       175
+      ]
+     },
+     "CooldownDecrease": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/45/70/95/120] + (ADRatio=0.5)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        45,
+        70,
+        95,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "BonusDamageTT": {
+      "expr": "BaseDamage=[20/45/70/95/120] + (ADRatio=0.5)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        45,
+        70,
+        95,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "MonkeyKingDecoy",
+    "key": "Characters/MonkeyKing/Spells/MonkeyKingDecoyAbility/MonkeyKingDecoy",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      21,
+      20,
+      19,
+      18
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      55,
+      50,
+      45,
+      40
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CloneDamageMod": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "StealthDuration": 1,
+     "CloneDuration": 4,
+     "DashSpeed": 900,
+     "RangeClamp": 300,
+     "MinRange": 100
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "MonkeyKingNimbus",
+    "key": "Characters/MonkeyKing/Spells/MonkeyKingNimbusAbility/MonkeyKingNimbus",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9.25,
+      8.5,
+      7.75,
+      7
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "AttackSpeedDuration": 5,
+     "DashSpeed": 1050,
+     "EndPointOffsetDistance": 75,
+     "ExtraTargets": 2,
+     "ExtraTargetRange": 700,
+     "MonsterDamageRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TotalDamageMonsters": {
+      "expr": "TotalDamage * MonsterDamageRatio=1",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "MonsterDamageRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "MonkeyKingSpinToWin",
+    "key": "Characters/MonkeyKing/Spells/MonkeyKingSpinToWinAbility/MonkeyKingSpinToWin",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      130,
+      110,
+      90
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "KnockupDuration": 0.6,
+     "SpinDuration": 2,
+     "MoveSpeed": 0.2,
+     "BasePercentMaxHPDmgPerSec": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.06,
+       0.08
+      ]
+     },
+     "SecondsPerTick": 0.25,
+     "RecastWindow": 8,
+     "LockoutTimeBetweenCasts": 1,
+     "ADRatioPerSecond": 1.375
+    },
+    "calcs": {
+     "DamagePerSecondTotal": {
+      "expr": "(ADRatioPerSecond=1.375)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.375,
+        "dataValue": "ADRatioPerSecond"
+       }
+      ],
+      "refs": [
+       "ADRatioPerSecond"
+      ]
+     },
+     "{26c20668}": {
+      "expr": "BasePercentMaxHPDmgPerSec=[0.04/0.06/0.08]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.04,
+        0.06,
+        0.08
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "BasePercentMaxHPDmgPerSec"
+      ]
+     },
+     "MonsterCap": {
+      "expr": "byLevelL[200/200/200/200/200/200/200/200/200/200/400/400/400/400/400/600/600/600]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        400,
+        400,
+        400,
+        400,
+        400,
+        600,
+        600,
+        600
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TotalDamageTT": {
+      "expr": "DamagePerSecondTotal * SpinDuration=2",
+      "modifies": "DamagePerSecondTotal",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 2.75,
+        "dataValue": "ADRatioPerSecond"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "ADRatioPerSecond",
+       "SpinDuration"
+      ]
+     },
+     "PercentHPDamageTT": {
+      "expr": "{26c20668} * SpinDuration=2",
+      "modifies": "{26c20668}",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.08,
+        0.12,
+        0.16
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "BasePercentMaxHPDmgPerSec",
+       "SpinDuration"
+      ]
+     },
+     "MonsterCapTT": {
+      "expr": "MonsterCap * SpinDuration=2",
+      "modifies": "MonsterCap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        800,
+        800,
+        800,
+        800,
+        800,
+        1200,
+        1200,
+        1200
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "SpinDuration"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "MonkeyKingDoubleAttack",
+  "W": "MonkeyKingDecoy",
+  "E": "MonkeyKingNimbus",
+  "R": "MonkeyKingSpinToWin",
+  "P": "MonkeyKingPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 330,
+   "{6216bf7b}": 65,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.09166667
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "MonkeyKing",
+  "name": "Wukong",
+  "partype": "Mana",
+  "passive": "Stone Skin",
+  "spells": [
+   {
+    "id": "MonkeyKingDoubleAttack",
+    "name": "Crushing Blow",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ]
+   },
+   {
+    "id": "MonkeyKingDecoy",
+    "name": "Warrior Trickster",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "cost": [
+     60,
+     55,
+     50,
+     45,
+     40
+    ]
+   },
+   {
+    "id": "MonkeyKingNimbus",
+    "name": "Nimbus Strike",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9.25,
+     8.5,
+     7.75,
+     7
+    ],
+    "cost": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ]
+   },
+   {
+    "id": "MonkeyKingSpinToWin",
+    "name": "Cyclone",
+    "maxrank": 3,
+    "cooldown": [
+     130,
+     110,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Stone Skin": {
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Crushing Blow": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Warrior Trickster": {
+    "damagetype": "physical",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Nimbus Strike": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Cyclone": {
+    "damagetype": "physical",
+    "spelleffects": "aoedot",
+    "spellshield": "Special",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

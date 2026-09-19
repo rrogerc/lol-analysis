@@ -1,0 +1,186 @@
+{
+ "name": "Keeper's Verdict",
+ "cooldown": {
+  "values": [
+   140,
+   120,
+   100
+  ],
+  "quote": "{{ap|140 to 100}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|{{fd|0.25}}|Uncharged release}}|{{tt|{{fd|0.35}}|Charged release}}}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    100,
+    150,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|100 to 200}} {{as|(+ 45% '''bonus''' AD)}}",
+   "bin": [
+    "PoppyR#Damage"
+   ],
+   "binNote": "Wiki leveling2 shows base 100/150/200; bin PoppyR.BaseDamage is 200/300/400 with 0.9 bonus AD ratio. This wiki row (uncharged) is exactly half the bin's BaseDamage and 0.45 is exactly half of the bin's 0.9 ratio, matching PoppyR.SnapCastDamageRatio=0.5 applied to PoppyR#Damage."
+  },
+  {
+   "id": "r_2",
+   "meaning": "Increased Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    200,
+    300,
+    400
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.9
+    }
+   ],
+   "quote": "{{ap|200 to 400}} {{as|(+ 90% '''bonus''' AD)}}",
+   "bin": [
+    "PoppyR#Damage",
+    "PoppyR.BaseDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "channel is slowed for up to this long",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for up to 4 seconds to increase ''Keeper's Verdict's'' {{sti|range}}",
+   "bin": [
+    "PoppyR.ChannelMaxDuration"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "self-slow amount during channel",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "'''Poppy''' {{tip|channels|charges}} while being {{tip|slow|slowed}} by 15%",
+   "bin": [
+    "PoppyR.SelfSlow"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "knockup duration on uncharged recast",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "and {{tip|airborne|knocking them up}} for 1 second",
+   "bin": [
+    "PoppyR.KnockupDurationSnap"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "minimum charge time to gain charged effects",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "If ''Keeper's Verdict'' was charged for at least {{fd|0.5}} seconds, it deals 100% increased damage",
+   "bin": [],
+   "binNote": "No bin data value corresponds to this 0.5s charge threshold; PoppyR.DurationUntilFullyCharged (1s) governs the range/knockback ramp, not this damage-tier threshold. Left unmatched, hence bin: []."
+  },
+  {
+   "id": "r_7",
+   "meaning": "cooldown applied if channel is interrupted or cancelled",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 30,
+   "terms": [],
+   "quote": "''Keeper's Verdict'' is cancelled and the ability is put on a {{sti|cd|30-second}} cooldown",
+   "bin": [
+    "PoppyR.CancelCDRefund"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The charged recast deals 100% increased damage compared to the uncharged recast.",
+   "quote": "it deals 100% increased damage and enemies hit are {{tip|airborne|knocked back}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown does not start until after the recast/effect resolves, not on initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If no enemies are hit in front of Poppy on the charged recast, she instead fires a shockwave that erupts on hitting a champion, dealing the charged effects to that target and nearby enemies.",
+   "quote": "she sends a shockwave that travels in the target direction until it collides with an enemy champion, which causes a hammer to erupt. Targets hit by the shockwave or the eruption receive the charged effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Certain item passives (Experimental Hexplate, Fiendhunter Bolts, Zeke's Convergence) activate 0.2 seconds into the recast's cast time, and do not trigger if the channel is interrupted or times out.",
+   "quote": "activate after {{fd|0.2}} seconds into the cast time of ''Keeper's Verdict's'' recast. They do not activate if the first cast's channel is interrupted or times out.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Keeper's Verdict can be blocked by spell shields.",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "PoppyR.ChannelDistanceUpdateTick",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "PoppyR.MaxKnockbackDistance",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "PoppyR.KnockupDurationCharged",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "PoppyR.DurationUntilFullyCharged",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "PoppyR.SnapCastDamageRatio",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

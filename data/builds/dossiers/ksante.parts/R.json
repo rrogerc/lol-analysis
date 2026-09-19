@@ -1,0 +1,407 @@
+{
+ "name": "All Out",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.4,
+  "quote": "{{fd|0.4}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    80,
+    115,
+    150
+   ],
+   "terms": [],
+   "quote": "{{ap|80 to 150}}",
+   "bin": [
+    "KSanteR.BaseDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Strike Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    80,
+    115,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|80 to 150}} {{as|(+ 5% of his '''bonus''' health)}}",
+   "bin": [
+    "KSanteR#TotalDamageSlamDown",
+    "KSanteR.SlamDownStrikeDamage"
+   ],
+   "binNote": "Wiki's 5% bonus health ratio does not match the bin's KSanteR#TotalDamageSlamDown ratio of 0.05xbonus maxHp, which agrees; SlamDownStrikeDamage base values match the wiki's leveling exactly."
+  },
+  {
+   "id": "r_3",
+   "meaning": "Total Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    160,
+    230,
+    300
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|80*2 to 150*2}} {{as|(+ 5% of his '''bonus''' health)}}",
+   "bin": [],
+   "binNote": "This is a restated sum of r_1 and r_2 (base damage + strike damage), not a separate bin row; the checker rule for restated totals would normally delete this, but it is kept here because the two hits are separate damage instances rather than a pure max value. No independent bin row exists for the summed total."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Bonus Attack Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.4,
+    0.6,
+    0.8
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 80}}%",
+   "bin": [
+    "KSanteR.AttackSpeed"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "All Out duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "he enters ''All Out'' for 15 seconds",
+   "bin": [
+    "KSanteR.AllOutDuration"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "All Out health threshold percentage",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.65,
+   "terms": [],
+   "quote": "a [[Health#Health_threshold|health threshold]] equal to {{sti|{{as|65% '''maximum''' health}}}}",
+   "bin": [
+    "KSanteR.HealthLost"
+   ],
+   "binNote": "Wiki states the surviving health threshold as 65% max health; bin's HealthLost=0.35 is the complementary percentage lost (1-0.65=0.35), same underlying number."
+  },
+  {
+   "id": "r_7",
+   "meaning": "base armor and MR reduction while All Out",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.85,
+   "terms": [],
+   "quote": "his {{sti|armor|{{as|'''base''' armor}}}} and {{sti|mr|{{as|'''base''' magic resistance}}}} are reduced by {{as|85% '''bonus''' armor}} and {{as|85% '''bonus''' magic resistance}}",
+   "bin": [
+    "KSanteR.DefensesLost"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "bonus armor penetration (lethality) while All Out",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{sti|lethality|{{as|50% {{tt|'''bonus'''-armor penetration|Affects bonus armor only}}}}}}",
+   "bin": [
+    "KSanteR.ArmorPenPercent"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "omnivamp while All Out",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "{{as|20% omnivamp}}",
+   "bin": [
+    "KSanteR.Omnivamp"
+   ]
+  },
+  {
+   "id": "r_10",
+   "meaning": "stun duration on target",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "stunned}} for {{fd|0.3}} seconds once it ends",
+   "bin": [],
+   "binNote": "Wiki says 0.3s stun (no-wall case); bin's KSanteR.NoWallStunDuration=0.25 disagrees with the wiki's stated 0.3."
+  },
+  {
+   "id": "r_11",
+   "meaning": "root duration on cast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "roots}} the target enemy {{tip|champion}} for {{tt|{{fd|0.5}} seconds|Duration unaffected by tenacity}}",
+   "bin": [
+    "KSanteR.WallStunDuration"
+   ],
+   "binNote": "Bin field name WallStunDuration=0.5 matches the wiki's initial root duration of 0.5s despite the naming suggesting a stun; the wiki calls this a root."
+  },
+  {
+   "id": "r_12",
+   "meaning": "post-terrain airborne then stun duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "they remain {{tip|airborne}} for {{rutngt|0.25}}, after which they are {{tip|stun|stunned}} for {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "No matching bin row found for the terrain-case 0.5s stun or 0.25s airborne; closest named fields (WallStunDuration=0.5, NoWallStunDuration=0.25) may be mismatched/swapped versus wiki's usage."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The strike near the end of the displacement is a separate damage instance from the terrain-emergence strike, and if pulled through terrain a third strike occurs partway through the airborne duration.",
+   "quote": "'''K'Sante''' strikes them after {{rutngt|0.125}} into the airborne duration to deal {{as|physical damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the target is pulled through terrain, K'Sante deals the strike damage a second time (base damage doubled as 'Total Physical Damage').",
+   "quote": "{{st|Total Physical Damage|{{ap|80*2 to 150*2}} {{as|(+ 5% of his '''bonus''' health)}}}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "K'Sante's strike at the end of the terrain displacement does not apply his passive mark.",
+   "quote": "K'Sante's''' strike at the end of the displacement when the target is pulled over terrain does not apply {{ais|Dauntless Instinct|K'Sante}} mark.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During All Out, K'Sante's basic abilities (Q/W/E) can be cast at no mana cost.",
+   "quote": "modifies his {{tip|ability|basic abilities}} which can be cast at no cost",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The health threshold reduces current health to the threshold upon entering All Out if above it, and this lost health is not restored when All Out ends.",
+   "quote": "Health lost from gaining the health threshold is '''not''' restored after the effect ends.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "K'Sante's maximum health and bonus resistances are unaffected by All Out; only current health and base resistances change.",
+   "quote": "'''K'Sante''' retains his {{as|'''maximum''' health}} and '''bonus''' resistances during All Out.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The percentage bonus armor penetration from All Out stacks additively with other percentage armor penetration sources.",
+   "quote": "The percentage bonus armor penetration {{tip|stacks additively}} with other sources of percentage armor penetration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown for All Out starts only after its full effect (the displacement/blink sequence) completes.",
+   "quote": "cdstart          = post-effect",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "K'Sante is restored to 100% max mana upon entering All Out, then it decays to 0 over the buff's duration before the pre-All-Out mana amount is restored.",
+   "quote": "Upon entering ''All Out'', '''K'Sante''' is restored to {{as|100% '''maximum''' mana}}. His {{as|mana}} then decays to {{as|0|mana}} over the duration of the buff",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KSanteR.NoWallStunDuration",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "KSanteR.MaxSuppressTime",
+   "reason": "unknown"
+  },
+  {
+   "ref": "KSanteR.TackleRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.TackleSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.CarrySpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.MaxWallCarry",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.MaxWallCarrySR",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.WallCheckDist",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.KSanteLandingOffset",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.WallBuffer",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.KsanteArrivesFirstBySec",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.AfterImageArrivesFirstBySec",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.ManaRegenPercent",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KSanteR.KnockGrav",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.TimeToLast",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.TackleRangeOverstatedNoWall",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.CarrySpeedUnderstatedNoWall",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.CarrySpeedNoWall",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.KsanteAnimLockWall",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.DistanceTriggerFasterCarrySpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.FasterCarrySpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.AuraOffset",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.LingeringPerceptionPostStun",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.WallLookAhead",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.VfxInWallPerDistance",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.AnimationDashTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.DistanceRatioMin",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.DistanceRatioMax",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.CarrySpeedRatioMin",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.CarrySpeedRatioMax",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.CameraHoldRatioMin",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.CameraHoldRatioMax",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.InitialAnimHoldMax",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.CastTime",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "KSanteR.WallBufferFailCase",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteR.VictimCameraZoomMin",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteR.VictimCameraZoomMax",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,309 @@
+{
+ "name": "Blaze / Blaze 2",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_ablaze_dot",
+   "meaning": "Ablaze damage over time per stack, percent of target max health over 4 seconds",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "const",
+   "base": 0.02,
+   "terms": [],
+   "quote": "{{as|2% of their '''maximum''' health}} over 4 seconds",
+   "bin": [
+    "BrandPassive.PercentHealthDamage"
+   ],
+   "binNote": "wiki gives 2% (0.02) matching bin's PercentHealthDamage=2 (as a percent)."
+  },
+  {
+   "id": "p_ablaze_duration",
+   "meaning": "Ablaze stack duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "apply a {{tip|stack}} of ''Ablaze'' to enemies hit for 4 seconds",
+   "bin": [],
+   "binNote": "no bin row found for the 4s duration; not present in listed data values."
+  },
+  {
+   "id": "p_ablaze_tick_interval",
+   "meaning": "Ablaze damage tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "every {{fd|0.25}} seconds over 4 seconds",
+   "bin": [],
+   "binNote": "no matching data value listed for tick interval."
+  },
+  {
+   "id": "p_ablaze_max_stacks",
+   "meaning": "maximum Ablaze stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times",
+   "bin": [],
+   "binNote": "no matching data value listed for max stacks."
+  },
+  {
+   "id": "p_ablaze_monster_mod",
+   "meaning": "Ablaze damage per tick multiplier vs monsters",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": 2.7,
+   "terms": [],
+   "quote": "''Ablaze'' deals 270% damage per tick to {{tip|monsters}}",
+   "bin": [
+    "BrandPassive.MonsterMod"
+   ],
+   "binNote": "bin MonsterMod=270 matches wiki's 270% multiplier."
+  },
+  {
+   "id": "p_ablaze_monster_cap",
+   "meaning": "Ablaze damage cap per tick against non-epic monsters, by stack count (1/2/3)",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": [
+    12.5,
+    25,
+    37.5
+   ],
+   "terms": [],
+   "quote": "{{pp|50/4 to (50/4)*3|1;2;3|type=''Ablaze'' stacks}} per tick against non-epic monsters",
+   "bin": [
+    "BrandPassive.JungleMonsterDPSCap"
+   ],
+   "binNote": "JungleMonsterDPSCap=50 divided by 4 ticks/sec = 12.5 per tick per stack, matching wiki."
+  },
+  {
+   "id": "p_ablaze_epic_cap",
+   "meaning": "Ablaze damage cap per tick against epic monsters, by stack count (1/2/3)",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": [
+    20,
+    40,
+    60
+   ],
+   "terms": [],
+   "quote": "{{pp|80/4 to (80/4)*3|1;2;3|type=''Ablaze'' stacks}} per tick against epic monsters",
+   "bin": [
+    "BrandPassive.EpicMonsterDPSCap"
+   ],
+   "binNote": "EpicMonsterDPSCap=80 divided by 4 ticks/sec = 20 per tick per stack, matching wiki."
+  },
+  {
+   "id": "p_mana_restore",
+   "meaning": "mana restored on killing an Ablaze/ability-killed enemy, by champion level",
+   "role": "resource",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    20,
+    20,
+    23.33,
+    23.33,
+    23.33,
+    26.66,
+    26.66,
+    26.66,
+    29.99,
+    29.99,
+    29.99,
+    33.32,
+    33.32,
+    33.32,
+    36.653,
+    36.653,
+    36.653,
+    39.983
+   ],
+   "terms": [],
+   "quote": "restores {{as|{{pp|20 to 40 for 5|1;6 to 15|...}} {{sti|mana}}}}",
+   "bin": [
+    "BrandPassive#ManaRestore",
+    "BrandPassive.ManaRestoration"
+   ],
+   "binNote": "not-a-fight-value (mana restore doesn't affect damage dealt/taken in dummy or survival fight, but kept as resource role since it affects sustained cost); bin ManaRestore is a per-level interpolation of the rank array."
+  },
+  {
+   "id": "p_explosion_damage",
+   "meaning": "explosion damage percent of target max health at 3 stacks, by champion level (6/8/10/... to 12%) plus AP ratio",
+   "role": "target-debuff",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0002,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.02
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{pplevel|6 to 12|key=%}} {{as|(+ 2% per 100 AP)}} of their '''maximum''' health}}",
+   "bin": [
+    "BrandPassive#ExplosionDamage"
+   ],
+   "binNote": "bin formula (byLevel(6..12) + 0.02xap)*0.01 matches wiki's level-scaling 6-12% base plus 2% per 100 AP; exact per-level breakpoints not enumerated in sheet, assumed linear as in Q/W/E style level scaling used elsewhere on this champ (levels 1,6,11,16 given as breakpoints)."
+  },
+  {
+   "id": "p_explosion_monster_cap",
+   "meaning": "explosion damage cap against monsters, by champion level breakpoints (1/6/11/16)",
+   "role": "target-debuff",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    270,
+    270,
+    270,
+    270,
+    270,
+    355,
+    355,
+    355,
+    355,
+    355,
+    440,
+    440,
+    440,
+    440,
+    440,
+    525,
+    525,
+    525
+   ],
+   "terms": [],
+   "quote": "capped at {{pp|270 to 525|1;6;11;16}} against {{tip|monsters}}",
+   "bin": [
+    "BrandPassive#JungleMonsterExplosionFlatCap"
+   ],
+   "binNote": "matches bin's JungleMonsterExplosionFlatCap byLevelL array exactly."
+  },
+  {
+   "id": "p_explosion_delay",
+   "meaning": "delay before explosion detonates after 3rd stack",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "after 2 seconds, consumes their stacks to explode",
+   "bin": [],
+   "binNote": "no matching data value listed for the 2s delay."
+  },
+  {
+   "id": "p_explosion_immunity",
+   "meaning": "duration Ablaze cannot restack after a ring explosion",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "have had a ring explode from them in the last 4 seconds",
+   "bin": [],
+   "binNote": "no matching data value listed for this cooldown-like immunity window."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Brand's abilities apply a stack of Ablaze to enemies hit, and each new application refreshes the duration of all existing stacks.",
+   "quote": "apply a {{tip|stack}} of ''Ablaze'' to enemies hit for 4 seconds, stacking up to 3 times and refreshing the duration of all stacks with each application",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Abilities used against a target already afflicted with Ablaze are empowered (e.g. W's empowered damage).",
+   "quote": "Subsequent abilities used against a target with ''Ablaze'' are empowered.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each stack of Ablaze deals its own individual damage ticks based on when it was applied, even if all stacks' durations are refreshed together.",
+   "quote": "Each stack of ''Ablaze'' deals damage to the target individually and applies their damage ticks dependent on the time they were applied, even if the duration of all the stacks are refreshed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ablaze's damage cap against a monster is applied after the monster damage multiplier is applied.",
+   "quote": "''Ablaze's'' damage cap against a {{tip|monster}} is applied after the increased monster damage.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Reaching 3 stacks on an enemy champion or large monster triggers a ring that detonates after a 2 second delay, applying a stack of Ablaze and dealing AoE magic damage to nearby enemies; the target cannot be reapplied Ablaze for 4 seconds after a ring explodes from them.",
+   "quote": "causing it to form a fiery ring around the target that grants {{tip|sight}} within its radius and, after 2 seconds, consumes their stacks to explode. All enemies within the detonation are applied a stack of ''Ablaze''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Killing an enemy afflicted with Ablaze, or any enemy with an ability, restores mana.",
+   "quote": "Killing an enemy afflicted with ''Ablaze'' or any enemy with an ability restores {{as|{{pp|20 to 40 for 5|1;6 to 15|...}} {{sti|mana}}}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The Ablaze burn is persistent/indirect damage and the ring explosion is area/indirect damage.",
+   "quote": "The burn deals {{tip|persistent damage}}, and the explosion deals {{tip|area damage}}; both are additionally tagged as {{tip|indirect damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ablaze is a debuff that persists through the target's death.",
+   "quote": "''Ablaze'' is a {{tip|debuff}} that persists through {{tip|death}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "BrandPassive.MonsterMod",
+   "reason": null
+  },
+  {
+   "ref": "BrandPassive.PercentHealthDamage",
+   "reason": null
+  },
+  {
+   "ref": "BrandPassive.EpicMonsterDPSCap",
+   "reason": null
+  },
+  {
+   "ref": "BrandPassive.JungleMonsterDPSCap",
+   "reason": null
+  },
+  {
+   "ref": "BrandPassive.ManaRestoration",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

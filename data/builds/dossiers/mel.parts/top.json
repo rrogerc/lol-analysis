@@ -1,0 +1,129 @@
+{
+ "champion": "mel",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Overwhelm stacks store magic damage on the target (P); Golden Eclipse's damage scales with the number of Overwhelm stacks currently on the target (R)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Searing Brilliance stacks (gained 3 per ability cast, refresh, cap at 9, expire after 5s) arm Mel's next basic attack."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mel's next basic attack after gaining Searing Brilliance stacks consumes all of them to fire that many extra magic-damage projectiles at the target."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Overwhelm's stored damage only detonates (bursts as a lump sum) once the accumulated post-mitigation stored damage would exceed the target's current health and shields."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q's initial explosion, E's orb impact, and R's blast each deal a base + AP-scaled damage instance on cast/impact."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q fires several bolts that each explode separately over a 0.5s channel; E's field ticks damage every 0.125s (reported per-tick at ~8 ticks/sec) after the orb lands."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on Q/W/E/R (W's cost falls to 0 at rank 5) can matter for how many casts fit in the 15s window."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Rebuttal's shield and bonus move speed only affect damage taken/survival; its projectile-reflection damage cannot trigger in the damage fight since a stationary target dummy never fires projectiles at Mel."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Overwhelm (Searing Brilliance passive) does not deal damage when a stack is applied; instead it adds to a stored-damage pool on the target that only bursts when a later stack's application would push the total post-mitigation stored damage above the target's *current* health and shields, at which point all stored damage releases at once (and the wiki flags a bug where 5 extra stacks are applied just before that consumption). Simulating this needs a running stored-damage ledger compared each hit against a shrinking health value and a delayed, conditional burst-release rule -- this is richer bookkeeping than target-stacks, execute-or-threshold, or conditional-damage alone can express, and their combination doesn't capture the 'burst happens on a *later* stack, not the one that crosses the line' timing."
+ },
+ "unsettled": [
+  {
+   "question": "Which of the two mismatched value sets for R's Overwhelm scaling bonus is live: the wiki's stated increase (10/20/30 flat, 1/2/3 per stack) or the bin's MelR.BasePassiveFlatDamage/BasePassiveStackDamage rows (60/70/80 flat, 3/4/5 per stack)?",
+   "options": [
+    "Wiki values (10/20/30 and 1/2/3) are the actual increase added on top of the base passive's own numbers",
+    "Bin values (60/70/80 and 3/4/5) are the live total passive stored-damage numbers once R is ranked",
+    "The two describe different things (total vs increase) and both are simultaneously correct once combined correctly"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|10 to 30}}",
+    "MelR.BasePassiveFlatDamage = [60/70/80]"
+   ]
+  },
+  {
+   "question": "When Overwhelm's stored damage would exceed the target's current health/shields, does the detonation happen on the very stack-application that crosses the threshold, or only on the next subsequent stack after that (per the literal wording 'the next stack applied ... will consume them all')?",
+   "options": [
+    "Detonates immediately on the hit that pushes stored damage over the threshold",
+    "Detonates one damage-instance later than the threshold-crossing hit, per the literal wiki wording",
+    "The 'bug' note (5 extra stacks applied just before consumption) means detonation timing/amount is unreliable and should be modeled as instant with a flat +5-stack bonus"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the total {{tt|post-mitigation damage|Damage calculated after modifiers}} stored exceeds the target's {{as|'''current''' health}} and {{tip|shields}}, the next stack applied against them will consume them all to deal the stored damage.",
+    "Just before ''Overwhelm'' stacks are consumed, targets have 5 additional stacks applied to them.{{bug}}"
+   ]
+  },
+  {
+   "question": "Do the bonus blazing projectiles fired by a Searing Brilliance-empowered basic attack each apply a separate Overwhelm stack (multiplying stack generation on that single attack), or does the whole empowered attack (base hit + all bonus projectiles) count as generating stacks only for the original attack's damage instance?",
+   "options": [
+    "Every bonus projectile is its own damage instance and applies its own Overwhelm stack, in addition to the base attack's stack",
+    "Only the base attack applies an Overwhelm stack; the bonus projectiles are a bundled on-hit-like effect that doesn't independently stack Overwhelm"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "apply a {{tip|stack}} of ''Overwhelm'' for each instance of damage they deal to enemies",
+    "Effects that apply {{tip|on-hit|on-hits}} (e.g {{ii|Guinsoo's Rageblade}}) will not apply stacks."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Auto-attack the dummy to open, applying the first Overwhelm stack immediately.",
+   "Cast Q (Radiant Volley) on the dummy: its several explosions land as separate damage instances (each stacking Overwhelm) and the cast grants 3 Searing Brilliance stacks.",
+   "Cast E (Solar Snare) on the dummy next: the orb impact plus the ticking field add more damage instances and refresh Searing Brilliance to its cap of 9 (3+3, since it was already at 3).",
+   "Weave a basic attack in as soon as Searing Brilliance stacks are up, consuming them to fire bonus magic-damage projectiles at the dummy.",
+   "Cast R (Golden Eclipse) as soon as it is off cooldown and the dummy is Overwhelm-affected (true from the opening auto-attack onward); its damage scales with the dummy's current Overwhelm stack count, so ideally fire it right after a big stack-building sequence (Q+E+auto).",
+   "Repeat Q on cooldown (10s down to 6s by rank), E on cooldown (11s down to 9s), and basic attacks between casts for the remaining ~15s window, keeping Overwhelm and Searing Brilliance topped up.",
+   "Do not cast W (Rebuttal) for damage purposes: its only offensive component requires reflecting an enemy champion's projectile, and the stationary target dummy never casts anything at Mel, so W would only cost mana for a shield/move-speed effect that a pure damage-race dummy fight never needs."
+  ],
+  "questions": [
+   "At what level and item/AP amount should the fight be run, given P's bonus-missile damage scales by champion level (not ability rank) while R's Overwhelm bonus scales by R's own rank -- do these need to be evaluated together at a fixed level/rank pairing (e.g. level 16, R rank 3)?",
+   "Should R be held back to maximize the Overwhelm stack count on the dummy for its per-stack bonus damage, or always cast on cooldown to also start its own long cooldown sooner, given the fight is only ~15s and R may only be castable once?",
+   "In a single-target dummy fight, do all of Radiant Volley's explosions reliably land on/near the dummy (given the 200-radius explosion vs 25-unit spread, distributed over a 250-unit combined area), or should the simulator assume some bolts might not connect against a single stationary hitbox?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

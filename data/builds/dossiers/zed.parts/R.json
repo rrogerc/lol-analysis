@@ -1,0 +1,197 @@
+{
+ "name": "Death Mark / Death Mark 2",
+ "cooldown": {
+  "values": [
+   120,
+   110,
+   100
+  ],
+  "quote": "{{ap|120 to 100}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1
+    }
+   ],
+   "quote": "{{as|100% AD}} (+ {{ap|25|40|55}}% of damage stored)",
+   "bin": [
+    "ZedR#RCalculatedDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "share of stored damage detonated",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "other",
+     "coef": [
+      0.25,
+      0.4,
+      0.55
+     ]
+    }
+   ],
+   "quote": "(+ {{ap|25|40|55}}% of damage stored)",
+   "bin": [
+    "ZedR.RDamageAmp"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Marked for Death duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "renders the target ''Marked for Death'' for 3 seconds",
+   "bin": [
+    "ZedR.RDeathMarkDuration"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "delay before dash begins",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.6,
+   "terms": [],
+   "quote": "after a {{fd|0.6}}-second delay",
+   "bin": [],
+   "binNote": "No bin row for this value; the sheet only exposes RShadowDurationDisplayed, RDeathMarkDuration, RCanSwapBuffDuration, RGhostedDuration, RVisionDuration and RReactivateCD for timing, none of which match 0.6. Likely a hardcoded/tooltip-only cast-sequence timing not exposed as a named DataValue."
+  },
+  {
+   "id": "r_5",
+   "meaning": "dash travel time",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.35,
+   "terms": [],
+   "quote": "over {{fd|0.35}} seconds",
+   "bin": [],
+   "binNote": "No matching DataValue in the sheet; dash travel time appears not to be exposed as a named bin field."
+  },
+  {
+   "id": "r_6",
+   "meaning": "Shadow spawn duration (recastable window)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 9,
+   "terms": [],
+   "quote": "spawns a ... ''Shadow'' at his casting position for 9 seconds",
+   "bin": [],
+   "binNote": "Sheet has RShadowDurationDisplayed=7.5 and ZedR#{43a019eb}=7.5+0.5=8, neither equal to the wiki's stated 9 seconds; this is a disagreement between wiki text (9s) and the bin's displayed/calculated shadow duration (7.5/8s) that I cannot resolve, so no bin row is named."
+  },
+  {
+   "id": "r_7",
+   "meaning": "delay after reappearance before recast is allowed",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "can be recast after {{fd|0.5}} seconds of his reappearance",
+   "bin": [
+    "ZedR.RReactivateCD"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "window before Shadow expiry when recast is disallowed",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "not in the last {{fd|1.25}} seconds of its duration",
+   "bin": [],
+   "binNote": "No matching DataValue found in the sheet for this recast cutoff window."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Zed becomes untargetable during the cast delay and dash, and cannot cast Death Mark's detonation damage until the mark duration ends.",
+   "quote": "'''Zed''' becomes {{tip|untargetable}} and, after a {{fd|0.6}}-second delay, he {{tip|dashes}} to 125 units beyond the target enemy champion",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "During Marked for Death, Zed stores a portion of all pre-mitigation physical and magic damage he and his Shadows deal to the target, which detonates at the end of the duration as physical damage.",
+   "quote": "'''Zed''' stores a portion of all {{tt|pre-mitigation|Damage calculated before modifiers}} {{as|physical damage}} and {{as|magic damage}} he and his [[File:Zed's Shadow.png|20px|border|link=]] ''Shadows'' deal to the target, detonating at the end of the duration to deal {{as|physical damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Death Mark does not store true damage despite storing physical and magic damage.",
+   "quote": "''Death Mark's'' stored damage derives from all [[basic attack]]s, [[Champion ability|abilities]], [[item]]s, [[Runes Reforged|runes]] and [[buff]]s.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Shadow spawned by Death Mark can mimic Razor Shuriken and Shadow Slash regardless of range, adding extra damage instances against the target while marked.",
+   "quote": "which is able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Zed is ordered to basic attack his target immediately after reappearing from the dash.",
+   "quote": "'''Zed''' will be ordered to basic attack his target after reappearing.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Zed gains ghosting for the duration of the mark, a mobility effect not a damage/defense effect.",
+   "quote": "gains {{tip|ghost|ghosting}} for the same duration",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Spell shield only blocks the mark's application, not the cast or the detonation of an already-applied mark.",
+   "quote": "{{tip|Spell shield}} will only block the {{as|mark's|buzzword}} application. They will not prevent '''Zed''' from initiating ''Death Mark'' against the target nor block the detonation from a {{as|mark|buzzword}} that is already applied.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Death Mark's cooldown starts on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZedR.RShadowDurationDisplayed",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "ZedR.RCanSwapBuffDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "ZedR.RGhostedDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "ZedR.RVisionDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "ZedR#{43a019eb}",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

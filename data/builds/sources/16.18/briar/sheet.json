@@ -1,0 +1,816 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "BriarP",
+    "key": "{cf6ed5a6}",
+    "dataValues": {
+     "BleedDuration": 5,
+     "BleedTickRate": 0.5,
+     "HealPercent": 0.25,
+     "HealShieldPerMissingHPPercent": 0.4,
+     "CurrentHealthPercentCost": 0.05,
+     "BleedPercentAdd": 0.25,
+     "MaxBleedStacks": 5,
+     "PercentOfBleedHealedOnKill": 1.25
+    },
+    "calcs": {
+     "{15da76ad}": {
+      "expr": "byLevel(2..10) + 0.1xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        2,
+        2.4705882,
+        2.9411765,
+        3.4117647,
+        3.8823529,
+        4.352941,
+        4.8235294,
+        5.2941176,
+        5.76470588,
+        6.23529412,
+        6.7058824,
+        7.1764706,
+        7.647059,
+        8.117647,
+        8.588235,
+        9.058824,
+        9.52941176,
+        10
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1
+       }
+      ],
+      "refs": []
+     },
+     "{f06e5a79}": {
+      "expr": "{15da76ad} * 3",
+      "modifies": "{15da76ad}",
+      "flat": {
+       "axis": "level",
+       "v": [
+        6,
+        7.4117646,
+        8.823529,
+        10.235294,
+        11.6470587,
+        13.058823,
+        14.470588,
+        15.882353,
+        17.2941176,
+        18.7058824,
+        20.117647,
+        21.529412,
+        22.941177,
+        24.352941,
+        25.764705,
+        27.176472,
+        28.588235,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.3
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": []
+     },
+     "BleedDamageOverDurationTooltip": {
+      "expr": "{15da76ad} * BleedDuration=5",
+      "modifies": "{15da76ad}",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        12.352941,
+        14.7058825,
+        17.058823,
+        19.411765,
+        21.764705,
+        24.117647,
+        26.470588,
+        28.82353,
+        31.17647,
+        33.52941,
+        35.882353,
+        38.235295,
+        40.588235,
+        42.941175,
+        45.29412,
+        47.64706,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BleedDuration"
+      ]
+     },
+     "BleedMaxDamageOverDurationTooltip": {
+      "expr": "{15da76ad} * (BleedDuration=5)*(2)",
+      "modifies": "{15da76ad}",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        24.705882,
+        29.411765,
+        34.117647,
+        38.82353,
+        43.52941,
+        48.235294,
+        52.941176,
+        57.64706,
+        62.35294,
+        67.05882,
+        71.76471,
+        76.47059,
+        81.17647,
+        85.88235,
+        90.58824,
+        95.29412,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BleedDuration"
+      ]
+     },
+     "{b38f3487}": {
+      "expr": "HealShieldPerMissingHPPercent=0.4 + 0.00025xbonus maxHp",
+      "flat": 0.4,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.00025
+       }
+      ],
+      "refs": [
+       "HealShieldPerMissingHPPercent"
+      ]
+     },
+     "TotalHealPerMissingHPPercentTooltip": {
+      "expr": "{b38f3487} * 100",
+      "modifies": "{b38f3487}",
+      "flat": 40,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.025
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "HealShieldPerMissingHPPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "BriarQ",
+    "key": "Characters/Briar/Spells/BriarQAbility/BriarQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     },
+     "DashSpeedBase": 600,
+     "ExtraDashSpeedBasedOnDistance": 300,
+     "StunDuration": 0.85,
+     "ShredPercent": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.125,
+       0.15,
+       0.175,
+       0.2
+      ]
+     },
+     "ShredDuration": 5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/85/110/135/160] + 0.6xap + 0.8xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        85,
+        110,
+        135,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "BriarW",
+    "key": "Characters/Briar/Spells/BriarWAbility/BriarW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TauntRange": 1000,
+     "MinDashDistance": 75,
+     "MaxDashDistance": 300,
+     "MaxRangeOverWalls": 650,
+     "DashSpeed": 1200,
+     "BerserkDuration": 5,
+     "BerserkAS": {
+      "axis": "rank",
+      "v": [
+       0.55,
+       0.65,
+       0.75,
+       0.85,
+       0.95
+      ]
+     },
+     "BerserkMS": {
+      "axis": "rank",
+      "v": [
+       0.24,
+       0.33,
+       0.42,
+       0.51,
+       0.6
+      ]
+     },
+     "AttackBonusDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       20,
+       35,
+       50,
+       65
+      ]
+     },
+     "AttackPercentMissingHealth": 9,
+     "AttackHealPercent": {
+      "axis": "rank",
+      "v": [
+       0.24000001,
+       0.28,
+       0.32,
+       0.36,
+       0.4
+      ]
+     },
+     "MaxMonsterDamage": 400,
+     "AoEAttackRadius": 275,
+     "AoEAttackDamagePercent": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.7,
+       0.8,
+       0.9,
+       1
+      ]
+     },
+     "MonsterAndMinionPercentMod": 0.1
+    },
+    "calcs": {
+     "TotalAttackBonusDamage": {
+      "expr": "AttackBonusDamage=[5/20/35/50/65] + 1.05xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        20,
+        35,
+        50,
+        65
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.05
+       }
+      ],
+      "refs": [
+       "AttackBonusDamage"
+      ]
+     },
+     "TotalAoEDamage": {
+      "expr": "(AoEAttackDamagePercent=[0.6/0.7/0.8/0.9/1])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1
+         ]
+        },
+        "dataValue": "AoEAttackDamagePercent"
+       }
+      ],
+      "refs": [
+       "AoEAttackDamagePercent"
+      ]
+     },
+     "TotalAttackPercentMissingHealth": {
+      "expr": "AttackPercentMissingHealth=9 + 0.025xbonus ad",
+      "flat": 9,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.025
+       }
+      ],
+      "refs": [
+       "AttackPercentMissingHealth"
+      ]
+     },
+     "AttackMaxHPHeal": {
+      "expr": "0.05xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "BriarE",
+    "key": "Characters/Briar/Spells/BriarEAbility/BriarE",
+    "cooldown": 16,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MaxBaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       115,
+       150,
+       185,
+       220
+      ]
+     },
+     "WallHitBaseDamage": {
+      "axis": "rank",
+      "v": [
+       140,
+       215,
+       290,
+       365,
+       440
+      ]
+     },
+     "MinMissileRange": 400,
+     "MaxMissileRange": 600,
+     "Width": 380,
+     "RectangleDistanceBehindCaster": 100,
+     "RectangleDistanceInFrontOfCaster": 10,
+     "RKnockupHeight": 2,
+     "RKnockupDuration": 0.5,
+     "RKnockTowardsSpeed": 1800,
+     "WallStunDuration": 1.5,
+     "KnockbackDistance": 575,
+     "SlowPercent": 0.8,
+     "SlowDuration": 0.5,
+     "DRPercent": 35,
+     "HealHPPercent": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.115,
+       0.13,
+       0.145,
+       0.16
+      ]
+     }
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "MaxBaseDamage=[80/115/150/185/220] + 1xbonus ad + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        115,
+        150,
+        185,
+        220
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "MaxBaseDamage"
+      ]
+     },
+     "WallHitDamage": {
+      "expr": "WallHitBaseDamage=[140/215/290/365/440] + 2.4xbonus ad + 2.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        140,
+        215,
+        290,
+        365,
+        440
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.4
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 2.4
+       }
+      ],
+      "refs": [
+       "WallHitBaseDamage"
+      ]
+     },
+     "PercentMaxHPHeal": {
+      "expr": "(HealHPPercent=[0.1/0.115/0.13/0.145/0.16])xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.1,
+          0.115,
+          0.13,
+          0.145,
+          0.16
+         ]
+        },
+        "dataValue": "HealHPPercent"
+       }
+      ],
+      "refs": [
+       "HealHPPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "BriarR",
+    "key": "Characters/Briar/Spells/BriarRAbility/BriarR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "castTime": 1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "HuntDuration": 25000,
+     "FearDuration": 1.5,
+     "FleeSlowPercent": 0.35,
+     "AoERadius": 575,
+     "MinDashSpeed": 2500,
+     "MaxDashSpeed": 5000,
+     "IdealDashTime": 0.5,
+     "LifestealPercent": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.15,
+       0.2
+      ]
+     },
+     "ResistADRatio": 0.2,
+     "ExtraMoveSpeedPercent": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.2,
+       0.3
+      ]
+     }
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[150/250/350] + 1.3xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.3
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TotalResists": {
+      "expr": "(ResistADRatio=0.2)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "ResistADRatio"
+       }
+      ],
+      "refs": [
+       "ResistADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "BriarQ",
+  "W": "BriarW",
+  "E": "BriarE",
+  "R": "BriarR",
+  "P": "{cf6ed5a6}"
+ },
+ "resource": {
+  "arType": 5,
+  "values": {
+   "{726ee5cd}": 0,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Briar",
+  "name": "Briar",
+  "partype": "Fury",
+  "passive": "Crimson Curse",
+  "spells": [
+   {
+    "id": "BriarQ",
+    "name": "Head Rush",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "BriarW",
+    "name": "Blood Frenzy / Snack Attack",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "BriarE",
+    "name": "Chilling Scream",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     16,
+     16,
+     16,
+     16
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "BriarR",
+    "name": "Certain Death",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Crimson Curse": {
+    "damagetype": "Physical",
+    "spelleffects": "proc",
+    "spellshield": "true",
+    "targeting": "Passive",
+    "affects": "Enemies, Self"
+   }
+  },
+  "Q": {
+   "Head Rush": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "{{as|'''current''' Health}}"
+   }
+  },
+  "W": {
+   "Blood Frenzy": {
+    "damagetype": "Physical",
+    "spelleffects": "proc",
+    "targeting": "Location",
+    "affects": "Enemies, Self",
+    "costtype": "{{as|'''current''' Health}}"
+   },
+   "Snack Attack": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Enemies, Self"
+   }
+  },
+  "E": {
+   "Chilling Scream": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Enemies, Self",
+    "costtype": "{{as|'''current''' Health}}"
+   }
+  },
+  "R": {
+   "Certain Death": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies, Self",
+    "costtype": "{{as|'''current''' Health}}"
+   },
+   "Certain Death 2": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies, Self",
+    "costtype": "{{as|'''current''' Health}}"
+   }
+  }
+ }
+}

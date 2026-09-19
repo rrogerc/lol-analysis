@@ -1,0 +1,897 @@
+{
+ "champion": "sion",
+ "abilities": {
+  "P": {
+   "name": "Glory in Death / Death Surge",
+   "cooldown": {
+    "values": [
+     100
+    ],
+    "quote": "{{tt|100|Resets upon death}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_stasis_duration",
+     "meaning": "duration of stasis before reanimating into zombie form",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [],
+     "binNote": "not present in the shown bin rows"
+    },
+    {
+     "id": "p_zombie_duration",
+     "meaning": "maximum duration of Glory in Death (zombie state)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "capped 60 seconds duration",
+     "bin": [],
+     "binNote": "not present in the shown bin rows"
+    },
+    {
+     "id": "p_lifesteal",
+     "meaning": "life steal during zombie state",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.0,
+     "terms": [],
+     "quote": "{{as|{{sti|life steal|100% life steal}}}}",
+     "bin": [
+      "SionPassive.Lifesteal"
+     ]
+    },
+    {
+     "id": "p_attackspeed",
+     "meaning": "fixed attack speed (min and max) during zombie state",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}} attack speed",
+     "bin": [],
+     "binNote": "not present in the shown bin rows"
+    },
+    {
+     "id": "p_onhit_pct_maxhp",
+     "meaning": "bonus on-hit physical damage as percent of target's max health",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "10% of the target's '''maximum''' health",
+     "bin": [
+      "SionPassive.PercentMaxHP"
+     ]
+    },
+    {
+     "id": "p_onhit_noncamp_cap",
+     "meaning": "cap on the on-hit max-health damage against non-champions",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 75,
+     "terms": [],
+     "quote": "capped at 75 against non-champions",
+     "bin": [
+      "SionPassive.NonChampCap"
+     ]
+    },
+    {
+     "id": "p_structure_mod",
+     "meaning": "Sion's damage to structures is reduced to this fraction while in zombie state",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "damage to {{tip|structures}} is reduced to 40% under the effects of ''Glory in Death''",
+     "bin": [
+      "SionPassive.StructureMod"
+     ]
+    },
+    {
+     "id": "p_deathsurge_ms",
+     "meaning": "bonus movement speed granted by Death Surge",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.67,
+     "terms": [],
+     "quote": "{{as|{{tt|67%|See notes, this value is currently bugged}}|ms}} {{as|'''bonus''' movement speed}}",
+     "bin": [],
+     "binNote": "not present in the shown bin rows; a mobility stat, not relevant to damage/survival fight"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "On fatal damage Sion enters stasis then reanimates to full health rather than instantly.",
+     "quote": "'''Sion''' enters {{tip|stasis}} for {{fd|1.5}} seconds to {{tip|Zombie state|reanimate}} into a frenzy, restoring {{as|100% of his '''maximum''' health}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "During zombie state, health regeneration and incoming healing (except life steal and omnivamp) are 0% effective.",
+     "quote": "any {{tip|heal|healing}} (except {{as|{{sti|life steal}}}} and {{tip|omnivamp}}) he receives during this time is {{tt|0% effective|See notes}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sion's health decays in ticks every 0.25s during zombie state, with tick loss increasing each subsequent tick.",
+     "quote": "{{tip|health resource|losing}} {{as|{{pp|2 + (19-2)/17*(x-1) for 20}} health}} every {{rutngt|0.25}}, increasing by{{ft|70% of the '''base''' value",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "During zombie state Sion can only move, basic attack, and use item actives, plus one cast of Death Surge which replaces all his abilities.",
+     "quote": "'''Sion''' can only move and use his {{tip|basic attacks}} and [[active ability items|item actives]]... One cast of ''{{ai|Death Surge|Sion}}'', which replaces all of his {{tip|abilities}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The on-hit bonus physical damage from Glory in Death is not amplified by life steal.",
+     "quote": "The bonus on-hit damage granted by ''Glory in Death'' is unaffected by {{as|{{sti|life steal}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The fixed 1.75 attack speed is not affected by other attack speed modifiers such as bonus attack speed.",
+     "quote": "This also means that it's unaffected by other attack speed modifiers for the duration, such as bonus attack speed or {{tip|cripple|cripples}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The full-health heal on entering zombie state cannot be reduced by Grievous Wounds and doesn't count as healing done.",
+     "quote": "The effect that heals '''Sion''' back to full health at the start of ''Glory in Death'' cannot be modified by {{tip|Grievous Wounds|healing reduction}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Death Surge cooldown resets upon death.",
+     "quote": "''Death Surge's'' cooldown resets upon death.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Decimating Smash",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ],
+    "quote": "45",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_2",
+     "meaning": "Minimum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60,
+      75,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8
+       ]
+      }
+     ],
+     "quote": "{{ap|30 to 90}} {{as|(+ {{ap|40 to 80}}% AD)}}",
+     "bin": [
+      "SionQ#MinDamageTotal"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Maximum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      90,
+      155,
+      220,
+      285,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        1.2,
+        1.5,
+        1.8,
+        2.1,
+        2.4
+       ]
+      }
+     ],
+     "quote": "{{ap|90 to 350}} {{as|(+ {{ap|40*3 to 80*3}}% AD)}}",
+     "bin": [
+      "SionQ#MaxDamageTotal"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The damage of Decimating Smash is calculated when it is released; gaining AD or upgrading the ability during its channel will update the damage of the coming hit.",
+     "quote": "The damage of ''Decimating Smash'' is calculated when it is released. Gaining {{as|AD}} or upgrading the ability during its channel will update the damage of the coming hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sion is locked out of all actions for 0.25 seconds when releasing the recast, delaying his next action (e.g. an auto-attack).",
+     "quote": "'''Sion''' himself remains {{tip|lockout|locked out}} of all actions for {{fd|0.25}} seconds when releasing ''Decimating Smash''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Decimating Smash can be recast within the channel duration, and automatically does so afterwards; the recast deals the hit's damage.",
+     "quote": "''Decimating Smash'' can be recast within the duration, and automatically does so afterwards.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on release of the recast (post-effect), not when the channel begins.",
+     "quote": "cdstart = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SionQ.MinionRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SionQ.MonsterRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SionQ.BaseStunTime",
+     "reason": "utility"
+    },
+    {
+     "ref": "SionQ.SlowAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Soul Furnace / Soul Furnace 2",
+   "cooldown": {
+    "values": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "quote": "{{ap|15 to 11}}"
+   },
+   "cost": {
+    "values": [
+     75,
+     80,
+     85,
+     90,
+     95
+    ],
+    "quote": "{{ap|75 to 95}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      75,
+      90,
+      105,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      },
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.08,
+        0.1,
+        0.12,
+        0.14,
+        0.16
+       ]
+      }
+     ],
+     "quote": "{{ap|60 to 120}} {{as|(+ 40% AP)}} {{as|(+ {{ap|8 to 16}}% '''maximum''' health)}}",
+     "bin": [
+      "SionW#TotalShield"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      65,
+      90,
+      115,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.14
+      }
+     ],
+     "quote": "{{ap|40 to 140}} {{as|(+ 40% AP)}} {{as|(+ 14% of target's '''maximum''' health)}}",
+     "bin": [
+      "SionW#TotalDamage",
+      "SionW.MaxHPDamageRatio"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Soul Furnace grants a shield lasting up to 6 seconds and can be recast after 3 seconds while it holds, detonating automatically at the end of the duration.",
+     "quote": "'''Sion''' grants himself a {{tip|shield}} that lasts for up to 6 seconds. ''Soul Furnace'' can be recast after 3 seconds while the shield holds, and does so automatically at the end of the duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The recast damage is capped at 400 against minions and monsters.",
+     "quote": "capped at 400 against {{tip|minions}} and {{tip|monsters}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Gaining or losing AP or health, or ranking up the skill while the shield is active does not change the shield's value but does change the detonation damage.",
+     "quote": "Gaining or losing AP or health, or ranking up the skill while the shield is active will not change its shield value but it will change the damage of the shield's detonation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown of Soul Furnace begins only once the shield is removed.",
+     "quote": "The [[cooldown]] of ''Soul Furnace'' begins once the shield is removed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sion gains bonus health from any of his damage sources killing an enemy: 4 bonus health for normal kills, 15 for large enemies and champion takedowns.",
+     "quote": "'''Sion''' gains {{sti|health|{{as|4 '''bonus''' health}}}} whenever he kills an {{tt|enemy|see notes for details}}, increased to {{as|15|health}} for large enemies and {{tip|takedown|takedowns}} against enemy {{tip|champions}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Both of Soul Furnace's casts can be activated during Sion's other abilities.",
+     "quote": "Both of Soul Furnace's casts can be activated during '''Sion's''' other abilities.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SionW.ShieldPercentHealthTooltip",
+     "reason": null
+    },
+    {
+     "ref": "SionW.DamagePercentHealthTooltip",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "SionW.HPPerChampKill",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SionW.HPPerKill",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SionW.HPPerLargeKill",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SionW.ShieldAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "SionW.DamageAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "SionW.BaseShield",
+     "reason": null
+    },
+    {
+     "ref": "SionW.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "SionW.MaxHPDamageRatio",
+     "reason": null
+    },
+    {
+     "ref": "SionW.DetonateRecastCooldown",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SionW.ShieldDuration",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Roar of the Slayer",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     40,
+     45,
+     50,
+     55
+    ],
+    "quote": "{{ap|35 to 55}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      100,
+      135,
+      170,
+      205
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|65 to 205}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "SionE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "SionE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "SionE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Armor reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{sti|armor penetration|{{as|25% armor reduction}}}} for 4 seconds",
+     "bin": [
+      "SionE.ArmorShred"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Armor reduction duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "SionE.ArmorShredDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Stun duration on minions/monsters",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|stun|stunned}} for {{fd|0.75}} seconds",
+     "bin": [],
+     "binNote": "Not-in-a-dummy-fight utility (minion/monster-only stun) with no corresponding data value in the sheet's SionE rows; the sheet has no minion-stun-duration field to name."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Deals magic damage to only the first enemy champion hit by the shockwave.",
+     "quote": "deals {{as|magic damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target is a minion or non-epic monster it is knocked back and can apply the ability's effects again to enemies it passes through, creating additional damage instances.",
+     "quote": "applying ''Roar of the Slayer's'' effects to enemies they pass through as well as briefly granting {{tip|sight}} of the area around their trajectory",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Displaced minions/monsters take their damage only once stopped, if it would kill them.",
+     "quote": "take their damage once they are stopped if they would die to ''Roar of the Slayer's'' damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Changing AP or the ability's rank while its projectile is traveling changes the damage of every future hit from that cast, including the minion-projectile.",
+     "quote": "Gaining or losing {{as|AP}}, or upgrading the ability while its projectile is traveling will change its damage for every future hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Unstoppable Onslaught / Unstoppable Onslaught 2",
+   "cooldown": {
+    "values": [
+     140,
+     100,
+     60
+    ],
+    "quote": "{{ap|140 to 60}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Minimum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      300,
+      450
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|150 to 450}} {{as|(+ 60% '''bonus''' AD)}}",
+     "bin": [
+      "SionR#MinDamageTotal"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Maximum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      400,
+      800,
+      1200
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|400 to 1200}} {{as|(+ 120% '''bonus''' AD)}}",
+     "bin": [
+      "SionR#MaxDamageTotal"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 50}}%",
+     "bin": [
+      "SionR.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "damage ramp-up time to reach maximum damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "This is capped at 3 seconds.",
+     "bin": [],
+     "binNote": "The bin does not store the 3-second ramp cap as its own field; it is implied by MinDamage/MaxDamage being reached via the wiki's percent-per-second formula, which has no corresponding data row."
+    },
+    {
+     "id": "r_8",
+     "meaning": "minimum stun duration on the slam pull",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{pp|type=channel time|label1=seconds|changedisplay=true|0.25 to 1.75|0 to 3 by 1}} seconds",
+     "bin": [
+      "SionR.MinStunDuration"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "maximum stun duration on the slam pull",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{pp|type=channel time|label1=seconds|changedisplay=true|0.25 to 1.75|0 to 3 by 1}} seconds",
+     "bin": [
+      "SionR.MaxStunDuration"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "slow duration on enemies hit by slam",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "are dealt the same damage and are {{tip|slow|slowed}} for 3 seconds",
+     "bin": [],
+     "binNote": "No SionR data row for slam slow duration exists in the sheet; SionR.SlowDuration is not listed, only SlowAmount."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sion's charge damage and the recast slam damage scale from minimum to maximum over the first 3 seconds of channel time, capped there even though the channel can last up to 8 seconds.",
+     "quote": "The ''base'' damage increases by {{pp|type=channel time|changedisplay=true|key=%|0 to 500/3 for 4|0 to 3|formula=55.55% every 1 second. ''This is capped at 3 seconds.''}} and the ''scaling'' increases by {{pp|type=channel time|changedisplay=true|key=%|0 to 100 for 4|0 to 3|formula=33.33% every 1 second. ''This is capped at 3 seconds.''}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast slam deals the same damage as the charge-collision slam, i.e. one damage instance is dealt on whichever slam ends the ability.",
+     "quote": "Enemies, including {{tip|turret|turrets}}, hit by the slam are dealt the same damage and are {{tip|slow|slowed}} for 3 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An enemy can only be hit by Unstoppable Onslaught (charge or slam) once per second, limiting repeated instances against the dummy.",
+     "quote": "An enemy can only be affected by ''Unstoppable Onslaught'' once every 1 second.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown does not begin until the channel/leap effect ends, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sion is immune to crowd control and ghosted during the charge, which is a defensive effect not relevant to damage dealt.",
+     "quote": "'''Sion''' becomes {{tip|Cc-immune|immune to crowd control}} and {{tip|ghosted}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Only the initial cast, not the recast, counts as an ability activation for on-cast item effects like Spellblade.",
+     "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}.\n**The recast does not.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SionR.MoveSpeedCap",
+     "reason": "utility"
+    },
+    {
+     "ref": "SionR.MinionDamagePercent",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Roar of the Slayer has a fixed 0.25s cast time then deals its magic damage on a short travel delay, usable on cooldown."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q charges up to 2s and R channels up to 8s; both explicitly disable basic attacks while charging/channeling ({{ct|...|attack=false}}), so weaving autoattacks during the hold is impossible."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q: charge then recast (manual or automatic) deals the damage instance. W: shield cast then a separate recast (or 6s auto-detonate) deals the magic damage. R: charge then either a collision-slam or a timed recast-leap-slam deals the damage instance; only one damage-dealing slam occurs per full ability use."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "25% armor reduction applied to the target for 4s on hit, increasing subsequent physical damage taken (Q, R, autoattacks) for the rest of the fight window."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (W's cost even ramps 75->95 by rank) with no in-kit mana restore; at low levels/low mana this can cap how many casts fit in the 15s window."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Q and R deal damage that scales continuously with a player-chosen hold duration during the charge/channel (Q's low/high damage bracket the 0s-to-cap charge time; R's min/max damage bracket 0s-to-3s of channel time), and the ability's own cooldown only starts once the hold ends. The closed primitive list's 'charge-or-channel' only flags that basic attacks are blocked during the hold; it has no parameter for 'damage is a continuous function of how long the player held the charge before releasing,' which materially changes both damage-per-cast and effective cast cycle time. This needs bespoke ramp logic (and a chosen optimal hold duration) rather than a primitive lookup."
+ },
+ "unsettled": [
+  {
+   "question": "Does Decimating Smash's (Q) damage ramp finish increasing at 1 second of charge, or does it keep increasing up to the full 2-second charge window described in the blurb?",
+   "options": [
+    "Damage ramp caps at 1s of charge (matching the wiki's range/knockup/stun table, which only lists values for channel time 0 to 1 by 0.25, and the 'charged for at least 1 second' threshold for the empowered knockup/stun form)",
+    "Damage ramp continues linearly for the full 2 seconds described in 'Sion prepares a strike... charging for up to 2 seconds to increase... damage every 0.25 seconds'"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sion''' prepares a strike in the target direction, {{tip|channel|charging}} for up to 2 seconds to increase ''Decimating Smash's'' {{sti|range}} over an area, {{tip|airborne|knock up}} duration, {{tip|stun}} duration, and damage every {{fd|0.25}} seconds",
+    "|range        = {{tip|cr|icononly = true}} {{pp|type=channel time|500;500;675;762.5;850|0 to 1 by 0.25|changedisplay=true}}"
+   ]
+  },
+  {
+   "question": "In a melee-range damage fight against a stationary target, does Sion's R (Unstoppable Onslaught) collide with the target almost immediately after cast (yielding near-minimum charge-time damage), or is the fight assumed to start at enough range for Sion to hold the full 3-second damage ramp before contact?",
+   "options": [
+    "Sion is adjacent to the dummy at cast, so the charge collides on contact almost immediately and only deals near-minimum R damage",
+    "The simulated positioning assumes enough starting distance/kiting for Sion to hold the charge for the full 3s ramp before it ends (by collision or recast)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sion''' will stop upon {{tt|colliding|150 units in front of Sion for the charge and point blank for the leap}} with an enemy champion or {{tt|terrain|...}} during the charge, ending ''Unstoppable Onslaught'' with a slam.",
+    "This is capped at 3 seconds."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Roar of the Slayer (E) to apply the 25% armor shred before other physical-damage sources land, since it has only a 0.25s cast time and no channel lockout.",
+   "Cast Decimating Smash (Q), holding the charge for its full damage-ramp window (duration per the unsettled ramp-cap question) before releasing/recasting to land the empowered physical hit.",
+   "Weave a basic attack whenever no ability is charging/channeling (Q and R block autoattacks while held, so attacks fit between casts and during ability cooldowns).",
+   "Cast Soul Furnace (W) for the shield, then recast it as soon as it is available (3s later) to detonate immediately for magic damage rather than waiting the full 6s, since holding it longer grants no extra damage in a fight with no incoming attacks to shield against.",
+   "Cast Unstoppable Onslaught (R) once available, holding the charge for the full 3-second damage-ramp cap (subject to the collision/positioning question) before ending the channel via collision-slam or timed recast-leap-slam for the maximum physical hit.",
+   "Repeat Q, E, W, and basic attacks on cooldown for the remainder of the 15s window; R will likely only be available once given its 140/100/60s cooldown."
+  ],
+  "questions": [
+   "Should Q be held for 1s or the full 2s to maximize damage, given the unresolved damage-ramp-cap question above?",
+   "Should R be held for the full 3s ramp given the target's proximity, or does the dummy's fixed position force an early, low-ramp collision?",
+   "Is there any in-kit reason to delay Soul Furnace's detonation past the 3s minimum recast window (e.g. does holding it longer change anything), or is immediate detonation strictly optimal for damage-fight DPS?",
+   "What order of E (armor shred) versus Q/R (physical hits) is being assumed for how much of the fight benefits from the shred, given E's own cooldown (12-8s) versus Q's (10-6s)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,673 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "KaynPassive",
+    "key": "Characters/Kayn/Spells/KaynPassiveAbility/KaynPassive",
+    "dataValues": {
+     "TransformationVariable": 0.6,
+     "PAmpCooldownAss": 8,
+     "PAmpDurationAss": 3,
+     "PAmpPercentBaseAss": 18.823,
+     "PAmpPercentPerLvlAss": 1.1777,
+     "BonusHealRatio": 5e-05,
+     "SlayerHealing": 0.25,
+     "PassiveSecondFormDelayTooltip": 4,
+     "KaynAssMinValue": 0.2,
+     "KaynAssMaxValue": 0.4
+    },
+    "calcs": {
+     "KaynSlayerHealing": {
+      "expr": "SlayerHealing=0.25 + (BonusHealRatio=5e-05)xbonus maxHp",
+      "flat": 0.25,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 5e-05,
+        "dataValue": "BonusHealRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BonusHealRatio",
+       "SlayerHealing"
+      ]
+     },
+     "KaynAssBonusDamage": {
+      "expr": "<{ee18a47b}>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {ee18a47b}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "KaynQ",
+    "key": "Characters/Kayn/Spells/KaynQAbility/KaynQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6.5,
+      6,
+      5.5,
+      5
+     ]
+    },
+    "cost": 40,
+    "castTime": 0.15,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlayerBaseMaxHPDamage": 6,
+     "SlayerMaxHPPer100BAD": 3.5,
+     "SlayerMaxHPPer100BADTOOLTIPONLY": 0.035,
+     "BonusADRatio": 0.85,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       105,
+       135,
+       165,
+       195
+      ]
+     },
+     "SlayTADRatio": 0.65,
+     "MaxDmgToMonsters": {
+      "axis": "rank",
+      "v": [
+       200,
+       250,
+       300,
+       350,
+       400
+      ]
+     },
+     "FlatBonusDmgToMonsters": 40,
+     "AoERadius": 300
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[75/105/135/165/195] + (BonusADRatio=0.85)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        105,
+        135,
+        165,
+        195
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.85,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     },
+     "DarkinPercentDamage": {
+      "expr": "(SlayerBaseMaxHPDamage=6 + (SlayerMaxHPPer100BADTOOLTIPONLY=0.035)xbonus ad) * 0.01",
+      "flat": 0.06,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.00035,
+        "dataValue": "SlayerMaxHPPer100BADTOOLTIPONLY"
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "SlayerBaseMaxHPDamage",
+       "SlayerMaxHPPer100BADTOOLTIPONLY"
+      ]
+     },
+     "DarkinFlatDamage": {
+      "expr": "0.65xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.65
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "KaynW",
+    "key": "Characters/Kayn/Spells/KaynWAbility/KaynW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.55,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       85,
+       130,
+       175,
+       220,
+       265
+      ]
+     },
+     "KnockupDuration": 1,
+     "SlowIntensity": -0.9,
+     "BoxWidth": 160,
+     "SlowDuration": 1.5,
+     "AssRange": 900
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[85/130/175/220/265] + 1.1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        85,
+        130,
+        175,
+        220,
+        265
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.1
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "KaynAssW",
+    "key": "Characters/Kayn/Spells/KaynWAbility/KaynAssW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.6,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       135,
+       180,
+       225,
+       270
+      ]
+     },
+     "KnockupDuration": 1,
+     "SlowAmount": -0.6
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "KaynE",
+    "key": "Characters/Kayn/Spells/KaynEAbility/KaynE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      21,
+      19,
+      17,
+      15,
+      13
+     ]
+    },
+    "cost": 90,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AssassinCDReduction": 10,
+     "AssMS": 70,
+     "MS": 40,
+     "WallWalkDuration": {
+      "axis": "rank",
+      "v": [
+       7,
+       7.5,
+       8,
+       8.5,
+       9
+      ]
+     },
+     "LingerTime": 1.5,
+     "WarningParticleRange": 1250,
+     "MaxInCombatTime": 1.5,
+     "HealAmount": {
+      "axis": "rank",
+      "v": [
+       90,
+       100,
+       110,
+       120,
+       130
+      ]
+     },
+     "HealBADRatio": 0.45
+    },
+    "calcs": {
+     "TotalHealing": {
+      "expr": "HealAmount=[90/100/110/120/130] + 0.45xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        100,
+        110,
+        120,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.45
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "HealAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "KaynR",
+    "key": "Characters/Kayn/Spells/KaynRAbility/KaynR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "MinimumInfestTime": 0.5,
+     "InfestDuration": 2.5,
+     "JumpOutDistance": 300,
+     "SlayerMaxHPBaseDamage": 0.15,
+     "SlayerMaxHPDamagerPer100AD": 0.001,
+     "SlayerHealPercent": 0.75,
+     "AssassinCastRange": 750,
+     "BaseCastRange": 550,
+     "AssassinJumpOutDistance": 500,
+     "AssCastRange": 750
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[150/250/350] + 1.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "SlayerDamage": {
+      "expr": "SlayerMaxHPBaseDamage=0.15 + (SlayerMaxHPDamagerPer100AD=0.001)xbonus ad",
+      "flat": 0.15,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.001,
+        "dataValue": "SlayerMaxHPDamagerPer100AD"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "SlayerMaxHPBaseDamage",
+       "SlayerMaxHPDamagerPer100AD"
+      ]
+     },
+     "HealValue": {
+      "expr": "SlayerDamage * SlayerHealPercent=0.75",
+      "modifies": "SlayerDamage",
+      "flat": 0.1125,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.00075,
+        "dataValue": "SlayerMaxHPDamagerPer100AD"
+       }
+      ],
+      "refs": [
+       "SlayerHealPercent",
+       "SlayerMaxHPBaseDamage",
+       "SlayerMaxHPDamagerPer100AD"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "KaynPassiveAss",
+    "key": "Characters/Kayn/Spells/KaynPassiveAss",
+    "dataValues": {
+     "PAmpCooldown": 8,
+     "PAmpDuration": 3,
+     "PAmpPercentBase": 13.2353,
+     "PAmpPercentPerLvl": 1.76471
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "KaynQ",
+  "W": "KaynW",
+  "E": "KaynE",
+  "R": "KaynR",
+  "P": "KaynPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 410,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 2.3,
+   "{3a509002}": 0.19
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Kayn",
+  "name": "Kayn",
+  "partype": "Mana",
+  "passive": "The Darkin Scythe",
+  "spells": [
+   {
+    "id": "KaynQ",
+    "name": "Reaping Slash",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "KaynW",
+    "name": "Blade's Reach",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "KaynE",
+    "name": "Shadow Step",
+    "maxrank": 5,
+    "cooldown": [
+     21,
+     19,
+     17,
+     15,
+     13
+    ],
+    "cost": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ]
+   },
+   {
+    "id": "KaynR",
+    "name": "Umbral Trespass",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "The Darkin Scythe": {
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "The Darkin Scythe A": {
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "The Darkin Scythe R": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Reaping Slash": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Reaping Slash A": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Reaping Slash R": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Blade's Reach": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Blade's Reach A": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Blade's Reach R": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Shadow Step": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   },
+   "Shadow Step A": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   },
+   "Shadow Step R": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Umbral Trespass": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "targeting": "[[Unit-targeted|Unit]] / [[Direction-targeted|Direction]]",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Umbral Trespass R": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "targeting": "[[Unit-targeted|Unit]] / [[Direction-targeted|Direction]]",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Umbral Trespass 2": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "targeting": "[[Unit-targeted|Unit]] / [[Direction-targeted|Direction]]",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Umbral Trespass 2 R": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "targeting": "[[Unit-targeted|Unit]] / [[Direction-targeted|Direction]]",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

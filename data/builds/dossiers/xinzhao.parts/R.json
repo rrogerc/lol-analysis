@@ -1,0 +1,128 @@
+{
+ "name": "Crescent Guard",
+ "cooldown": {
+  "values": [
+   120,
+   110,
+   100
+  ],
+  "quote": "{{ap|120 to 100}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.35,
+  "quote": "{{fd|0.35}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    75,
+    175,
+    275
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.0
+    },
+    {
+     "stat": "ap",
+     "coef": 1.1
+    },
+    {
+     "stat": "targetCurrentHp",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|75 to 275}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 110% AP)}} {{as|(+ 15% of target's '''current''' health)}}",
+   "bin": [
+    "XinZhaoR#TotalDamage",
+    "XinZhaoR.PercentCurrentHealthDamage"
+   ],
+   "binNote": "XinZhaoR#TotalDamage's listed calculation only shows flat+bonusAd+ap terms; the current-health term matches the separate data value XinZhaoR.PercentCurrentHealthDamage=0.15, which the calculation apparently omits from the sheet's printed formula but the wiki confirms is part of the total damage."
+  },
+  {
+   "id": "r_2",
+   "meaning": "damage cap against minions and monsters",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": 600,
+   "terms": [],
+   "quote": "capped at 600 against {{tip|minions}} and {{tip|monsters}}",
+   "bin": [],
+   "binNote": "wiki-only cap on non-champion targets, not present as a separate bin row; not-in-a-dummy-fight since it caps damage to minions/monsters, and the dummy fight target counts as a champion"
+  },
+  {
+   "id": "r_3",
+   "meaning": "knockback/stun duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "up-to 700 units over {{fd|0.75}} seconds",
+   "bin": [],
+   "binNote": "no matching data value found in the sheet for this knockback/stun duration; likely a hardcoded animation/timing value not exposed in the listed bin rows"
+  },
+  {
+   "id": "r_4",
+   "meaning": "invulnerability duration against distant enemy champions",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "For the next 4 seconds, '''Xin Zhao''' is {{tip|invulnerable}} against enemy {{tip|champions}} far away from him.",
+   "bin": [
+    "XinZhaoR.MissileDefenseBaseDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks and Audacious Charge apply the Challenged mark; targets already marked Challenged are not knocked back/stunned by the R active.",
+   "quote": "knocking back}} all targets hit that are not ''{{ai|Challenged|Xin Zhao|border=false}}''",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Cooldown starts on cast, not on effect resolution.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The invulnerability only applies against enemy champions far away from Xin Zhao (outside a minimum radius), not all sources.",
+   "quote": "'''Xin Zhao''' is {{tip|invulnerable}} against enemy {{tip|champions}} far away from him.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Damage-over-time and delayed-damage abilities from a source outside the immunity circle at resolution time will not damage Xin Zhao.",
+   "quote": "delayed-damage abilities (e.g. {{ai|Death Mark|Zed}}, {{ai|Explosive Charge|Tristana}}, {{ai|Hemoplague|Vladimir}}) will not damage '''Xin Zhao''' if the enemy champion source is outside the circle when the damage applies.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "XinZhaoR.MissileDefenseRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "XinZhaoR.MarkDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

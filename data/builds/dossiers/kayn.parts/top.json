@@ -1,0 +1,152 @@
+{
+ "champion": "kayn",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q dash and W sweep deal damage on cast (Q has two instances, W has a 0.55s cast/no cast as SA); R's initial hit deals no damage itself but arms the recast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q is dash+swing as two separately-shieldable damage instances; R is a channel-then-manual/auto recast that deals its real damage on the recast"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Umbral Trespass attaches and channels up to 2s (bin says 2.5s InfestDuration) before dealing damage on recast, during which Kayn is untargetable/can't otherwise act"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "As Shadow Assassin, emerging from R's recast resets Q's cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Shadow Assassin Bonus adds bonus magic damage equal to a level-scaled % of post-mitigation damage dealt to champions, gated by an out-of-combat/in-combat state transition"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Shadow Assassin Bonus is a 3s window during which the % damage-amp effect applies, on an 8s internal cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs (40/40-60/100) meaningfully cap casts over a 15s fight at low mana pools/levels"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Rhaast and Shadow Assassin forms permanently and mutually-exclusively rewrite Q's damage formula (AD-based vs target-max-HP-based), W's cast time/range, and R's damage/heal formula plus grant the passive form bonus"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "P"
+   ],
+   "note": "Shadow Step deals no damage and only heals/buffs movement (irrelevant to the dummy fight); Rhaast's passive heal and Shadow Step's heal only matter for the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Kayn's form system (Rhaast vs Shadow Assassin) is not a simple buff/stack but permanently overwrites the damage formulas of Q, W and R with entirely different scalings (e.g. Q switches from 195+85%bonusAD physical damage to 65%AD + 6%(+3.5%/100 bonusAD) of target max HP per hit as Rhaast; W loses its cast time and gains 200 range as Shadow Assassin), so a correct simulation needs to pick one form and apply a coherent set of overridden ability values rather than compose the closed-list primitives on top of a single base kit. Additionally the passive Shadow Assassin Bonus is a self-referential %-of-post-mitigation-damage-dealt amplifier that reads the very damage instance that triggers it (including the triggering hit itself) and needs custom sequencing logic beyond a generic conditional-damage or timed-self-buff primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Which of Kayn's three states (untransformed base kit, Rhaast/Darkin Slayer, Shadow Assassin) should the damage fight simulate?",
+   "options": [
+    "Untransformed base Kayn (Q/W/R use the plain AD-scaling values, no passive bonus)",
+    "Rhaast form (Q and R switched to target-max-HP damage, healing passive active)",
+    "Shadow Assassin form (W loses cast time/gains range, passive bonus magic damage active, R resets Q cooldown)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The transformation will grant a passive bonus and permanently empower some of '''Kayn's''' abilities based on the form chosen.",
+    "''Reaping Slash's'' damage is modified to deal {{as|65% AD}} {{as|(+ 6% {{as|(+ {{fd|3.5}}% per 100 '''bonus''' AD)}} of the target's '''maximum''' health)}} {{as|physical damage}} with each hit",
+    "''Blade's Reach's'' radius is extended by 200 units. '''Kayn''' conjures an {{tip|untargetable}} ''shadow'' at the casting position to perform ''Blade's Reach's'' sweep over {{fd|0.55}} seconds in his stead, removing the ability's cast time."
+   ]
+  },
+  {
+   "question": "Does the Shadow Assassin passive's bonus magic damage apply to all damage Kayn deals during the 3s window (abilities and attacks), or only to basic attacks as the blurb states?",
+   "options": [
+    "Applies to all physical and magic damage instances (abilities + attacks) per the description text",
+    "Applies only to basic attacks per the blurb text ('his attacks deal bonus magic damage')"
+   ],
+   "impact": "high",
+   "quotes": [
+    "his attacks deal {{as|'''bonus''' magic damage}} for a short time upon entering combat",
+    "becomes empowered for 3 seconds to deal {{pplevel|key=%|20 to 40}} of {{tt|post-mitigation|Damage calculated after modifiers}} {{as|physical|physical damage}} and {{as|magic|magic damage}} damage dealt against enemy champions as {{tip|magic damage|{{as|'''bonus''' magic damage}}}}"
+   ]
+  },
+  {
+   "question": "How long after Umbral Trespass's channel begins can/does the recast fire — bin's KaynR.MinimumInfestTime=0.5s or the wiki's stated 0.1s minimum (with channel capped at up to 2s per wiki vs bin's InfestDuration=2.5)?",
+   "options": [
+    "Use wiki values: recast allowed after 0.1s, auto-recast at 2s",
+    "Use bin values: recast allowed after 0.5s (MinimumInfestTime), auto-recast at 2.5s (InfestDuration)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Umbral Trespass'' can be recast during the channel after {{fd|0.1}} seconds have elapsed, and does so automatically after the duration",
+    "KaynR.MinimumInfestTime = 0.5",
+    "KaynR.InfestDuration = 2.5"
+   ]
+  },
+  {
+   "question": "What is the true level-by-level curve of the Shadow Assassin passive bonus percent — the wiki's stated 20% to 40% bounds (pplevel) or the bin's PAmpPercentBaseAss/PAmpPercentPerLvlAss linear formula (18.823 + 1.1777×(lvl-1), giving 18.8% at 1 and 38.8% at 18)?",
+   "options": [
+    "Use wiki-stated bounds of exactly 20% at level 1 and 40% at level 18, interpolated",
+    "Use the bin formula PAmpPercentBaseAss + PAmpPercentPerLvlAss×(level-1) directly, giving ~18.8%-38.8%"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pplevel|key=%|20 to 40}}",
+    "KaynPassive.PAmpPercentBaseAss = 18.823",
+    "KaynPassive.PAmpPercentPerLvlAss = 1.1777"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Reaping Slash (Q): dash through the dummy then swing, landing two separate physical damage instances.",
+   "Follow immediately with Blade's Reach (W) on cooldown for another physical damage instance (no cast time if Shadow Assassin form is assumed).",
+   "Once Q or W has damaged the target (marking it for R), cast Umbral Trespass (R): channel briefly then recast as soon as legally possible to land its physical (or Rhaast max-HP) damage and, if Shadow Assassin, reset Q's cooldown on emerge.",
+   "Fill all remaining time with basic attacks between ability casts.",
+   "Recast Q and W again as soon as their cooldowns and mana allow; recast R again once its long cooldown (80-120s) comes up (likely only once in a 15s fight).",
+   "Do not cast Shadow Step (E): it deals no damage to the dummy and only serves defensive/mobility purposes."
+  ],
+  "questions": [
+   "Which form (base, Rhaast, or Shadow Assassin) should the simulator assume Kayn has already unlocked and be using for the fight, given the 15s window can't include the 6s transformation cast?",
+   "Since the dummy never fights back, does it ever put Kayn 'in combat' with an enemy champion in a way that triggers the Shadow Assassin passive bonus, and if so, does the very first ability/attack that establishes combat status get the bonus retroactively?",
+   "Is Umbral Trespass (R) even usable against a stationary, non-champion-tagged-differently dummy target in the same way as a live champion (i.e., does the dummy count fully as an enemy champion for R's targeting/mark requirement, per the brief's framing)?",
+   "Should the recast of R be timed at the earliest legal moment (0.1s or 0.5s per the unsettled question) to maximize DPS, or held for the full channel to maximize the Shadow Assassin bonus's window overlap?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

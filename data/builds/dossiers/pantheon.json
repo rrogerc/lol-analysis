@@ -1,0 +1,1340 @@
+{
+ "champion": "pantheon",
+ "abilities": {
+  "P": {
+   "name": "Mortal Will",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "maximum Mortal Will stacks needed to empower next ability",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "stacking up to 5 times",
+     "bin": [
+      "PantheonPassive.ActionsToEmpower"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pantheon generates a stack of Mortal Will whenever he lands a basic attack on-hit or casts an ability, up to 5 stacks.",
+     "quote": "generates a {{tip|stack}} of ''Mortal Will'' whenever he lands a {{tip|basic attack}} {{tip|on-hit}} or casts an {{tip|ability}}, stacking up to 5 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 5 stacks, Pantheon's next basic ability consumes the stacks to become empowered with an additional effect.",
+     "quote": "At 5 stacks, '''Pantheon's''' next basic ability consumes the stacks to become empowered with an additional effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pantheon gains maximum stacks upon starting the game, completing a Recall channel, and respawning.",
+     "quote": "'''Pantheon''' gains maximum stacks of ''Mortal Will'' upon starting the game, completing a {{si|Recall}} channel, and [[death|respawning]].",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PantheonPassive.PhalanxDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "PantheonPassive.QDamageAmp",
+     "reason": "unknown"
+    },
+    {
+     "ref": "PantheonPassive.QDamageAmpMelee",
+     "reason": "unknown"
+    },
+    {
+     "ref": "PantheonPassive.OutOfCombatTimer",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PantheonPassive.QExtraAttacks",
+     "reason": "unknown"
+    },
+    {
+     "ref": "PantheonPassive.CritThreshold",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Comet Spear",
+   "cooldown": {
+    "values": [
+     11,
+     10.25,
+     9.5,
+     8.75,
+     8
+    ],
+    "quote": "{{ap|11 to 8}}"
+   },
+   "cost": {
+    "values": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ],
+    "quote": "25",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.2,
+    "quote": "{{tt|{{fd|0.2}}|Release}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Hurl Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.15
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 190}} {{as|(+ 115% '''bonus''' AD)}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "PantheonQ#TapDamageCalc"
+     ],
+     "binNote": "TapDamageCalc bin row omits the 0.5x AP ratio the wiki states; AP term matches CritHealthThreshold-scaled HoldDamageCalc instead, which uses the same base numbers."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Increased Hurl Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      155,
+      230,
+      305,
+      380,
+      455
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.3
+      },
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|155 to 455}} {{as|(+ 230% '''bonus''' AD)}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "PantheonQ.ExecuteBaseDamage"
+     ],
+     "binNote": "ExecuteBaseDamage matches the flat base; no bin calculation names an AP term for the empowered hurl (EmpoweredDamageCalc is a separate byLevel value), so the 100% AP ratio is unconfirmed against bin math."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Hurl Secondary Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      35,
+      50,
+      65,
+      80,
+      95
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.575
+      },
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|70*0.5 to 190*0.5}} {{as|(+ {{ap|115*0.5}}% '''bonus''' AD)}} {{as|(+ {{ap|50*0.5}}% AP)}}",
+     "bin": [
+      "PantheonQ.DamageFalloff",
+      "PantheonQ#TapDamageCalc"
+     ],
+     "binNote": "DamageFalloff=0.5 applied to TapDamageCalc's base/ratios reproduces the halved secondary numbers; no dedicated bin row for the secondary hit."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Increased Hurl Secondary Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      77.5,
+      115,
+      152.5,
+      190,
+      227.5
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.15
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|155*0.5 to 455*0.5}} {{as|(+ {{ap|230*0.5}}% '''bonus''' AD)}} {{as|(+ {{ap|100*0.5}}% AP)}}",
+     "bin": [
+      "PantheonQ.DamageFalloff",
+      "PantheonQ.ExecuteBaseDamage"
+     ],
+     "binNote": "Half of ExecuteBaseDamage via DamageFalloff=0.5; no bin calculation confirms the empowered secondary's AP ratio."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Thrust Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.15
+      }
+     ],
+     "quote": "{{ap|70 to 190}} {{as|(+ 115% '''bonus''' AD)}}",
+     "bin": [
+      "PantheonQ#TapDamageCalc"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Increased Thrust Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      155,
+      230,
+      305,
+      380,
+      455
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.3
+      }
+     ],
+     "quote": "{{ap|155 to 455}} {{as|(+ 230% '''bonus''' AD)}}",
+     "bin": [
+      "PantheonQ#ExecuteDamageCalcModified"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "channel time before empowerment",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "{{fd|0.35}} seconds of channeling",
+     "bin": [
+      "PantheonQ.MinTimeHoldCast"
+     ]
+    },
+    {
+     "id": "q_8",
+     "meaning": "max channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "charges while being {{tip|slow|slowed}} by 10% for up to 4 seconds",
+     "bin": [],
+     "binNote": "No bin field found for the 4-second max channel duration; nearest slow value PantheonQ.SelfSlow=0.1 confirms only the slow amount."
+    },
+    {
+     "id": "q_9",
+     "meaning": "damage reduced against target beyond the first",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduced by 50% against enemies beyond the first",
+     "bin": [
+      "PantheonQ.DamageFalloff"
+     ]
+    },
+    {
+     "id": "q_10",
+     "meaning": "cooldown refund on thrust (tap)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.6,
+     "terms": [],
+     "quote": "refunding 60% of ''Comet Spear's'' {{sti|cooldown}}",
+     "bin": [
+      "PantheonQ.TapCooldownRefund"
+     ]
+    },
+    {
+     "id": "q_11",
+     "meaning": "mana refund if cancelled",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "refunds {{sti|mana|{{as|half the mana cost}}}}",
+     "bin": [],
+     "binNote": "No explicit bin data value found equal to 0.5 for this refund; PantheonQ.TapCooldownRefund=0.6 is a different number and not the same effect."
+    },
+    {
+     "id": "q_12",
+     "meaning": "damage reduced against monsters",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "reduced to 80% against {{tip|monsters}}",
+     "bin": [
+      "PantheonQ.MonsterDamageMod"
+     ]
+    },
+    {
+     "id": "q_13",
+     "meaning": "damage reduced against minions",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.7,
+     "terms": [],
+     "quote": "to 70% against {{tip|minions}}",
+     "bin": [
+      "PantheonQ.MinionDamageMod"
+     ]
+    },
+    {
+     "id": "q_14",
+     "meaning": "Mortal Will bonus damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      20,
+      32.941176,
+      45.882353,
+      58.82353,
+      71.76471,
+      84.70588,
+      97.64706,
+      110.588235,
+      123.52941,
+      136.470588,
+      149.41176,
+      162.35294,
+      175.29412,
+      188.23529,
+      201.17647,
+      214.11765,
+      227.05882,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.15
+      }
+     ],
+     "quote": "{{as|{{pp|20 + (240-20)/17*(x-1) for 20}}|physical damage}} {{as|(+ 115% '''bonus''' AD)}}",
+     "bin": [
+      "PantheonQ#EmpoweredDamageCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Releasing within 0.35 seconds triggers the thrust (non-empowered) version instead of the empowered hurl.",
+     "quote": "Releasing the ability within {{fd|0.35}} seconds causes '''Pantheon''' to instead thrust his spear",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The thrust's damage is not reduced against additional enemies hit, unlike the hurl.",
+     "quote": "The thrust's damage is not reduced against enemies beyond the first.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage is increased against enemies below 20% of their maximum health.",
+     "quote": "increased against enemies {{as|below 20% of their '''maximum''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If interrupted or the channel completes without a recast, the ability cancels, goes on full cooldown, and refunds half the mana cost.",
+     "quote": "''Comet Spear'' is cancelled and the ability is put on full cooldown but refunds {{sti|mana|{{as|half the mana cost}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts only after the recast/effect resolves, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mortal Will stacks are consumed upon recasting Comet Spear, adding bonus physical damage affected by the prior damage reductions.",
+     "quote": "Consumes the stacks upon recasting.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PantheonQ.CritHealthThreshold",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "PantheonQ.HoldRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PantheonQ.HoldExecuteDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "PantheonQ.SelfSlow",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Shield Vault",
+   "cooldown": {
+    "values": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "quote": "{{ap|13 to 9}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     55,
+     55,
+     55,
+     55
+    ],
+    "quote": "55",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage (percent of target's maximum health)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.06,
+        0.065,
+        0.07,
+        0.075,
+        0.08
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.015
+        },
+        {
+         "stat": "bonusHp",
+         "per": 100,
+         "coef": 0.004
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|6 to 8}}% of target's '''maximum''' health}} {{as|(+ {{fd|1.5}}% per 100 AP)}} {{as|(+ {{fd|0.4}}% per 100 '''Pantheon's''' '''bonus''' health)}}",
+     "bin": [
+      "PantheonW.MaxHealthDamage",
+      "PantheonW#MaxHealthDamageCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "physical damage per hit of the Mortal Will-empowered basic attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.4,
+        0.408824,
+        0.417647,
+        0.426471,
+        0.435294,
+        0.444118,
+        0.452941,
+        0.461765,
+        0.470588,
+        0.479412,
+        0.488235,
+        0.497059,
+        0.505882,
+        0.514706,
+        0.523529,
+        0.532353,
+        0.541176,
+        0.55
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|120/3 to 165/3|key=%}} AD}} {{as|physical damage}} per hit",
+     "bin": [
+      "PantheonW#{1b016817}"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "number of strikes from the Mortal Will-empowered attack",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "strike the target 3 times",
+     "bin": [
+      "PantheonW.EmpoweredNumHits"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration of the Mortal Will empowerment window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "within 4 seconds",
+     "bin": [
+      "PantheonW.BuffDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "cast time of the empowered basic attack",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.375,
+     "terms": [],
+     "quote": "have a {{fd|0.375}}-second cast time",
+     "bin": [],
+     "binNote": "no dedicated cast-time data value found for the empowered attack in the sheet"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Applies spell damage on the initial vault; the empowered attack's 3 hits deal basic (on-hit-eligible) damage instead.",
+     "quote": "Applies {{tip|spell damage}} on the initial vault. Deals {{tip|basic damage}} on all the attacks from the empowered ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each of the 3 empowered strikes is affected by critical strike modifiers and applies on-hit effects.",
+     "quote": "Each hit is affected by {{tip|critical strike}} modifiers and applies {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack rolls a single critical strike check that applies to all 3 strikes together.",
+     "quote": "The empowered attack rolls a {{tip|critical strike}} once for all strikes; either all will critically strike, or none will.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered Shield Vault attack resets Pantheon's basic attack timer.",
+     "quote": "Empowered Shield Vault {{tip|basic attack reset|resets}} '''Pantheon's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not count as three separate basic attacks for on-attack/windup-interacting effects (e.g. Lethal Tempo, Hail of Blades), which only trigger once.",
+     "quote": "The empowered attack does not cause '''Pantheon''' to attack thrice. Effects that trigger {{tip|on-attack}} or interact with the attack windup will only trigger once and thus do not interact with ''Shield Vault''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The 3 empowered strikes each count as a separate cast instance for effects like Electrocute and Eclipse.",
+     "quote": "The 3 strikes that occur after ''Empowered Shield Vault'' each count as a separate {{tip|cast instance}} for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pantheon is unable to act until the last of the 3 empowered strikes lands, and total attack time scales with his attack speed.",
+     "quote": "Despite the multi-hit attack only having a hidden cast time, '''Pantheon''' will remain {{tip|lockout|unable to act}} until the last strike has been dealt.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The vault deals a stun for 1 second on landing (crowd control, does not affect damage in either fight type).",
+     "quote": "deals {{as|physical damage}} and {{tip|stun|stuns}} them for 1 second",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PantheonW.BaseDamage",
+     "reason": "unknown"
+    },
+    {
+     "ref": "PantheonW.StunDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "PantheonW.EmpoweredDamageMult",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "PantheonW.MonsterDamageCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PantheonW.MonsterDamageMin",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Aegis Assault",
+   "cooldown": {
+    "values": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "quote": "{{ap|22 to 18}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{dv|{{tt|None|Initial cast}}|{{tt|{{fd|0.25}}|Recast}}}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Recast slam physical damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      55,
+      105,
+      155,
+      205,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|55 to 255}} {{as|(+ 150% '''bonus''' AD)}}",
+     "bin": [
+      "PantheonE#ShieldDamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Channel strike physical damage per tick",
+     "role": "dot",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.0833
+      }
+     ],
+     "quote": "{{as|{{fd|8.{{recurring|3}}}}% AD}} {{as|physical damage}} every {{fd|0.125}} seconds",
+     "bin": [
+      "PantheonE#DamageCalc"
+     ],
+     "binNote": "Wiki states 8.33% AD every 0.125s (12 ticks over the 1.5s channel = 100% AD total, matching the stated cap). The bin's PantheonE#{e62bc5e9} calc = DamageCalc*0.167 (16.7% AD) would instead match a 6-tick channel at PantheonE.AttacksPerSecond=4 (0.25s interval). This is a disagreement between the wiki's stated tick rate/damage and the bin's AttacksPerSecond-derived rate; recording the wiki's numbers per instructions."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Channel strikes total physical damage cap",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      }
+     ],
+     "quote": "up to {{as|100% AD}} {{as|'''total''' physical damage}}",
+     "bin": [
+      "PantheonE#DamageCalc"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "PantheonE.ShieldDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Time before recast becomes available",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "can be recast after {{fd|0.3}} seconds",
+     "bin": [
+      "PantheonE.RecastLockout"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Interval between channel damage ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.125,
+     "terms": [],
+     "quote": "every {{fd|0.125}} seconds",
+     "bin": [
+      "PantheonE.AttacksPerSecond"
+     ],
+     "binNote": "PantheonE.AttacksPerSecond=4 implies a 0.25s tick interval, not the 0.125s the wiki states; recording the wiki's stated value as it directly describes the visible tick rate."
+    },
+    {
+     "id": "e_7",
+     "meaning": "Bonus armor and magic resistance gained after recasting (Mortal Will)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      5,
+      6.47,
+      7.94,
+      9.41,
+      10.88,
+      12.35,
+      13.82,
+      15.29,
+      16.76,
+      18.24,
+      19.71,
+      21.18,
+      22.65,
+      24.12,
+      25.59,
+      27.06,
+      28.53,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.025
+      }
+     ],
+     "quote": "{{pp|5 + (30-5)/17*(x-1) for 20}} {{as|(+ {{fd|2.5}}% '''bonus''' health)}} {{sti|{{as|'''bonus''' armor}}}} and {{sti|{{as|'''bonus''' magic resistance}}}}",
+     "bin": [
+      "PantheonE#ResistsCalc"
+     ],
+     "binNote": "Bin's PantheonE#ResistsCalc flat term is byLevel(5..30) with exact values 5, 6.470588, 7.9411765, ... 30 (step (30-5)/17), matching the wiki's {{pp|5 + (30-5)/17*(x-1) for 20}} formula; the values listed here are rounded to 2 decimals from that same progression, not an independent disagreement."
+    },
+    {
+     "id": "e_8",
+     "meaning": "Duration of the Mortal Will resist buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "PantheonE.ResistsDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pantheon is invulnerable to non-turret damage from enemies in the target direction while channeling.",
+     "quote": "he becomes {{tip|invulnerability|invulnerable}} to non-{{tip|turret}} damage dealt by enemies from the target direction",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The channel cannot be interrupted by crowd control.",
+     "quote": "''Aegis Assault's'' channel cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability automatically recasts (delivering the slam damage) after the channel duration ends.",
+     "quote": "and does so automatically after the duration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial cast counts as an ability activation for on-cast effects like Spellblade, but a manual recast does not.",
+     "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}... Recasting the ability manually does not.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Continuous channel strikes and the recast slam are separate damage instances (persistent area damage vs area damage).",
+     "quote": "Deals {{tip|persistent area damage}} for the continuous strikes and {{tip|area damage}} with the slam.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Channel damage against minions is reduced by 50% and the total is capped at 100% AD, which does not apply to a champion-type target.",
+     "quote": "reduced by 50% against {{tip|minions}} and up to {{as|100% AD}} {{as|'''total''' physical damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks the recast slam's damage, not the continuous channel strikes.",
+     "quote": "{{tip|Spell shield}} will only block the slam's damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PantheonE.SpearStrikesRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PantheonE.ShieldSwipeRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PantheonE.MinionDamageReduction",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PantheonE.SpeedDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "PantheonE.SpeedAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Grand Starfall",
+   "cooldown": {
+    "values": [
+     180,
+     165,
+     150
+    ],
+    "quote": "{{ap|180 to 150}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.1,
+    "quote": "{{fd|0.1}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Armor Penetration",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.2,
+      0.3
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 30}}%",
+     "bin": [
+      "PantheonR.ArmorPenetration"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      300,
+      500,
+      700
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|300 to 700}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "PantheonR#DamageCalc"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|300/2 to 700/2}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "PantheonR#MinDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "spear physical damage to enemies near impact",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.15
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|{{pp|type=[[File:Comet Spear.png|20px|border]] ''Comet Spear's'' rank|40 to 190 for 6|0 to 5|formula=40 + 30 per rank of ''Comet Spear''}} {{as|(+ 115% '''bonus''' AD)}} {{as|(+ 50% AP)}} physical damage",
+     "bin": [],
+     "binNote": "Spear damage scales with Comet Spear's rank (0-5), not R's own rank; not represented as a PantheonR data value in the sheet."
+    },
+    {
+     "id": "r_5",
+     "meaning": "spear slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{tip|slows}} them by 50% for 2 seconds",
+     "bin": [
+      "PantheonR.SpearSlow"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "spear slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slows them by 50% for {{tt|2}} seconds",
+     "bin": [
+      "PantheonR.SpearSlowDuration"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "first channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "channels for 2 seconds before leaping into the sky",
+     "bin": [],
+     "binNote": "No PantheonR data value carries this timing; it is only stated in the wiki description text."
+    },
+    {
+     "id": "r_8",
+     "meaning": "second channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.25,
+     "terms": [],
+     "quote": "continues channeling for {{fd|2.25}} seconds",
+     "bin": [],
+     "binNote": "No PantheonR data value carries this timing; it is only stated in the wiki description text."
+    },
+    {
+     "id": "r_9",
+     "meaning": "spear throw timing into second channel",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "After {{tt|{{fd|0.8}}|Estimated}} seconds into the channel, Pantheon hurls his spear",
+     "bin": [],
+     "binNote": "Marked 'Estimated' by the wiki itself; no corresponding PantheonR data value in the sheet."
+    },
+    {
+     "id": "r_10",
+     "meaning": "spear travel time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "to the target location over {{tt|{{fd|0.2}}|Estimated}} seconds",
+     "bin": [],
+     "binNote": "Marked 'Estimated' by the wiki itself; no corresponding PantheonR data value in the sheet."
+    },
+    {
+     "id": "r_11",
+     "meaning": "time to crash down after spear",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.55,
+     "terms": [],
+     "quote": "Pantheon crashes down after {{tt|{{fd|0.55}}|Estimated}} seconds",
+     "bin": [],
+     "binNote": "Marked 'Estimated' by the wiki itself; no corresponding PantheonR data value in the sheet."
+    },
+    {
+     "id": "r_12",
+     "meaning": "shockwave travel time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.7,
+     "terms": [],
+     "quote": "creates a shockwave alongside himself that travels toward the target location over {{tt|{{fd|0.7}}|Estimated}} seconds",
+     "bin": [],
+     "binNote": "Marked 'Estimated' by the wiki itself; no corresponding PantheonR data value in the sheet."
+    },
+    {
+     "id": "r_13",
+     "meaning": "cooldown if first channel canceled",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "placed on a {{sti|cd|30-second}} cooldown if the first channel is canceled",
+     "bin": [
+      "PantheonR.CancelCooldown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spear damage is not increased against enemies below 20% of their maximum health.",
+     "quote": "nor increased against enemies below {{as|20% of their '''maximum''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shockwave damage is reduced by up to 50% for those hit at the edge of the area.",
+     "quote": "reduced by up to 50% for those hit at the edge of the area",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pantheon gains crowd control immunity during the second channel and takes a minimum health threshold of 1, dying instantly upon reappearing if reached.",
+     "quote": "During the second channel, Pantheon gains a {{tip|minimum health threshold}} of 1.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The first channel can be interrupted; the second channel and cast time cannot except by death.",
+     "quote": "The cast time and second channel have the same interactions except they can only be interrupted by {{tip|death}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PantheonR.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PantheonR.SweetSpotRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PantheonR.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mortal Will: stacks 0-5 gained per landed basic attack on-hit or ability cast; at 5 stacks the next basic ability (Q/W/E) consumes them to become empowered."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q charges up to 4s (auto-releasing at max, or on recast), gaining range; releasing within 0.35s instead casts an immediate thrust."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's charge resolves via a recast (thrust if quick-released, hurl if held past 0.35s); cooldown starts post-effect, not on initial cast."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Quick-release (tap) thrust refunds 60% of Comet Spear's cooldown."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Comet Spear's damage is substantially increased against targets below 20% of their maximum health."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (25/55/80/100) and Pantheon's base mana pool can limit how many casts fit in a 15s window."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shield Vault's damage is a percent of the target's maximum health (plus flat AP/bonus-HP scaling)."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Mortal Will empowers Pantheon's next basic attack (within 4s) to strike the target 3 times for AD-scaling damage instead of a normal attack."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "The empowered 3-hit attack resets Pantheon's basic attack timer upon completion."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "The empowered attack rolls a single crit check that applies uniformly to all 3 strikes (all crit or none do)."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Aegis Assault channels for 1.5s (uninterruptible by CC), dealing continual tick damage, and cannot be interrupted mid-channel."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's channel deals repeated cone strikes, capped at a total of 100% AD physical damage over the channel."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's channel ticks and its recast slam are separately-timed damage instances (recast available after 0.3s, or automatic at 1.5s)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Mortal Will bonus on E recast grants bonus armor and magic resist (scaling with bonus HP) for 4s, plus movement speed for 1.5s."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Grand Starfall runs a 2s channel then a further 2.25s channel (CC-immune, vanished) before dealing its damage and landing."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals a physical spear hit partway through the channel and a separate magic shockwave hit later, at different (estimated) timings within the same cast."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Mortal Will stacking/consumption, Q's charge-tap-vs-hold split with execute scaling and CDR refund, W's percent-health vault plus empowered 3-hit attack with attack-reset and single crit roll, E's channel DoT plus separate recast slam and post-recast resist buff, R's two-stage channel with a spear hit then a shockwave hit) maps onto existing primitives (stacking-self-buff, charge-or-channel, recast-or-multipart, cooldown-manipulation, execute-or-threshold, conditional-damage, empowered-attack, attack-reset, crit-interaction, dot, timed-self-buff, resource-budget)."
+ },
+ "unsettled": [
+  {
+   "question": "What is the correct tick count/rate and per-tick damage for Aegis Assault's channel: the wiki's 8.33% AD every 0.125s (12 ticks) or the bin's AttacksPerSecond=4 (0.25s interval) with a 16.7% AD-per-tick calc?",
+   "options": [
+    "Wiki is live: 12 ticks of 8.33% AD every 0.125s, totalling 100% AD",
+    "Bin is live: 6 ticks of 16.7% AD every 0.25s via AttacksPerSecond=4, totalling ~100% AD"
+   ],
+   "impact": "low",
+   "quotes": [
+    "dealing {{as|{{fd|8.{{recurring|3}}}}% AD}} {{as|physical damage}} every {{fd|0.125}} seconds to enemies hit",
+    "PantheonE.AttacksPerSecond = 4",
+    "PantheonE#{e62bc5e9} = DamageCalc * 0.167"
+   ]
+  },
+  {
+   "question": "Does Comet Spear's low-health 'Increased Hurl Damage' actually carry a 100% AP ratio, since no bin calculation confirms an AP term for that execute-scaled hurl?",
+   "options": [
+    "Wiki is right: execute hurl scales with 100% AP as stated in leveling2",
+    "Bin is authoritative and the execute hurl has no AP scaling beyond the flat ExecuteBaseDamage + bonus AD term shown in ExecuteDamageCalcModified"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ap|155 to 455}} {{as|(+ 230% '''bonus''' AD)}} {{as|(+ 100% AP)}}",
+    "PantheonQ#ExecuteDamageCalcModified = HoldDamage=[70/100/130/160/190] + HoldExecuteDamage=[85/130/175/220/265] + 2.3xbonus ad"
+   ]
+  },
+  {
+   "question": "How long does Pantheon remain locked out during the Mortal-Will-empowered 3-hit basic attack, and how exactly does attack speed scale that total duration (the wiki itself flags this as untested)?",
+   "options": [
+    "Total time = the 0.375s cast time plus Pantheon's normal attack windup, scaled by attack speed as the wiki guesses",
+    "Total time is a fixed animation independent of (or scaled differently by) attack speed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{pending for test}} The attack's total time is the cast time plus '''Pantheon's''' attack windup time.",
+    "'''Pantheon''' will remain {{tip|lockout|unable to act}} until the last strike has been dealt."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Pantheon starts the fight with 5 Mortal Will stacks (guaranteed at game start/after recall/respawn).",
+   "Open by casting Q with a quick release (under 0.35s) so it both consumes the Mortal Will empowerment for bonus physical damage and refunds 60% of its cooldown.",
+   "Cast W (Shield Vault) to land its percent-max-health damage on the dummy.",
+   "Cast E (Aegis Assault), holding the full 1.5s channel to maximize the capped 100% AD tick damage, then let it auto-recast (or recast immediately after 0.3s) for the slam damage.",
+   "Weave in basic attacks whenever no ability is off cooldown, both for direct damage and to regenerate Mortal Will stacks for the next Q/E cast.",
+   "Recast Q on cooldown, always with a quick tap release to keep chaining the CDR refund and maximize cast frequency over the 15s window.",
+   "Fire R (Grand Starfall) once, if it is assumed available (its ~150-180s cooldown normally rules it out of a single 15s window unless the simulator seeds it as ready), targeting the dummy for the spear hit and the shockwave.",
+   "Continue alternating Q (tap) and basic attacks/E-channel for the remainder of the 15s, prioritizing whichever ability is off cooldown, since Q's low cooldown and CDR refund make it the primary DPS loop."
+  ],
+  "questions": [
+   "Should Mortal Will stacks always be spent into Q for maximum single-target damage, or does spending them into W's 3-hit empowered attack ever out-DPS that at the levels/items being simulated?",
+   "Is Grand Starfall (R) assumed available at the start of the 15s damage fight, or excluded entirely given its long cooldown relative to the fight length?",
+   "Should E's channel always be held the full 1.5s to maximize DoT total, or is it better to recast at the 0.3s minimum to fit more E casts (and more Mortal Will generation) into 15s?",
+   "During Q's charge, is holding for the full 4s (bigger single hit, but longer downtime and a self-slow) ever preferable to the quick tap-and-refund loop for maximizing 15s damage?",
+   "Does the empowered W 3-hit attack pause Pantheon's other actions (Q/E casts) for its full locked-out duration, and should the rotation avoid triggering it mid-loop if it stalls higher-DPS abilities?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,66 @@
+{
+ "champion": "aphelios",
+ "primitives": [
+  {"id": "weapon-or-ammo-system", "abilities": ["P", "Q", "W", "E"], "note": "The core of the kit: 5 weapons, 2 equipped at once (main/off-hand), each with its own Moonlight ammo (50/weapon, 1 per attack, 10 per Q cast), auto-swapping on empty; Phase (W) manually swaps, E only displays the queue."},
+  {"id": "form-or-stance", "abilities": ["P", "Q"], "note": "Each weapon is effectively a separate form: a distinct basic-attack effect (P) and a distinct Q active, swapped in and out as main/off-hand change."},
+  {"id": "plain-cast", "abilities": ["Q", "R"], "note": "Moonshot, Binding Eclipse, Duskwave's initial cone hit and Moonlight Vigil's initial smite all deal damage on a fixed cast time (or short travel delay), on cooldown."},
+  {"id": "recast-or-multipart", "abilities": ["Q", "R"], "note": "Duskwave (cone, then a 0.25s-delayed off-hand volley) and Moonlight Vigil (smite, then 0.3s-delayed sky-attacks) each resolve as two separately timed damage instances from one cast."},
+  {"id": "empowered-attack", "abilities": ["P", "R"], "note": "Calibrum's mark arms the next basic attack for bonus damage; Moonlight Vigil's sky-attacks are a similar armed/delayed attack against each locked-on target."},
+  {"id": "onhit-rider", "abilities": ["P"], "note": "Infernum's total-attack multiplier (110% AD) and Crescendum's per-Chakram bonus both ride on ordinary basic attacks."},
+  {"id": "attack-reset", "abilities": ["P"], "note": "Crescendum's own attack timer is reset once the thrown blade is caught (locks out attacking until then)."},
+  {"id": "stacking-self-buff", "abilities": ["P"], "note": "Crescendum's held Chakrams: cap 20, 5s expiry refreshed by catching/attacking, diminishing bonus AD per stack (15% down to a 5% floor)."},
+  {"id": "target-stacks", "abilities": ["P", "Q", "R"], "note": "Calibrum's mark is a target-side flag (applied by Calibrum abilities/R) later consumed by the empowered snipe."},
+  {"id": "resource-budget", "abilities": ["P", "Q"], "note": "Moonlight ammo and mana genuinely bound how many attacks/casts happen in a 15s fight."},
+  {"id": "crit-interaction", "abilities": ["P", "Q", "R"], "note": "Infernum's crit sprays 6 missiles instead of 4; Onslaught/Duskwave's volley/Sentry/R's sky-attacks all crit (Sentry at 100% AS/crit-chance effectiveness); R adds its own extra crit-damage modifier."},
+  {"id": "attack-speed-interaction", "abilities": ["P", "Q"], "note": "Onslaught's attack count scales with bonus attack speed; Crescendum's attack windup is reduced (further on crit); Sentry benefits from Aphelios's attack speed."},
+  {"id": "pet-or-summon", "abilities": ["Q"], "note": "Sentry deploys a lunar sentry that autonomously attacks with a copy of the off-hand weapon."},
+  {"id": "positional-assumption", "abilities": ["P", "Q"], "note": "Crescendum's throw-and-return travel time depends on distance to the target; Infernum's secondary/cone bolts require other enemies behind the target, which a single dummy fight does not have; Sentry's activation depends on placement."},
+  {"id": "level-gated-passive", "abilities": ["P"], "note": "Weapon Master: Q unlocks at champion level 2, R at 6 and auto-upgrades at 11 and 16."}
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "A generic rank/level-scaled ability model cannot express: (1) the weapon state machine itself -- which of 5 weapons is main vs off-hand vs reserve, gating which P attack-effect and which Q are active, and changing over the fight as ammo depletes or Phase is toggled; (2) several abilities' damage depends on whichever OTHER weapon is currently off-hand/main at the moment they resolve (Calibrum's empowered snipe always fires with the off-hand weapon; Onslaught/Duskwave/Sentry's follow-ups use the off-hand weapon; R's bonus effect depends on the main weapon at cast time), i.e. cross-weapon dependencies, not a single ability's own rank; (3) Crescendum's per-Chakram bonus is a diminishing, capped, expiring stack curve (15% down to a 5% floor per stack, 20-stack cap, 5s refreshed expiry), not a linear coefficient; (4) Crescendum's attack cadence depends on projectile travel time to and from the target (geometry), not a fixed attack windup; (5) Binding Eclipse is only castable once a precondition (a live Gravitum slow or in-flight projectile) is met, not simply off cooldown."
+ },
+ "unsettled": [
+  {"question": "Does Duskwave's off-hand volley apply on-hit effects?",
+   "options": ["Yes: the ability description says the volley deals damage 'and applying on-hit effects'.", "No: the ability's own notes say 'The automatic attacks do not trigger any on-attack effects.'"],
+   "impact": "high",
+   "quotes": ["dealing {{as|100% AD}} {{as|physical damage}} and applying {{tip|on-hit}} effects", "The automatic attacks do not trigger '''any''' [[on-attack effects]]."]},
+  {"question": "What does Moonlight Vigil's Infernum bonus actually do -- the wiki gives two versions inside one {{ft|current|former}}-style template and it is not clear which is live at this patch.",
+   "options": ["A flat 110% AD physical attack against the locked-on target only.", "Infernum's normal attack plus its bolts exploding in a 400-radius circle, secondary targets at 90% of Infernum's regular bolt damage (this reading has direct bin support: ApheliosR#InfernumRPenalty = 0.9)."],
+   "impact": "medium",
+   "quotes": ["The attack instead deals {{as|110% AD}} {{as|physical damage}} against locked-on targets, and causes an explosion of bolts in a 400-radius circle", "Performs ''Infernum's'' attacks and ''Infernum's'' bolts in a 400-radius circle: primary targets are dealt ''Infernum's'' primary damage; secondary targets are dealt 90% of ''Infernum's'' regular bolt damage"]},
+  {"question": "Is Moonlight Vigil's extra crit-damage modifier really a clean 0/15/30-percentage-point progression across its 3 ranks, and is it the source of the wiki's documented (unexplained) bug where Severum's and Crescendum's locked-on R attacks crit for slightly more than 120%?",
+   "options": ["The 0/15/30 progression (matching the wiki's '100 to 130' text) is correct and the >120% crit bug is unrelated/uninvestigated.", "ApheliosR#CritDamageModCalc, whose formula references two stat hooks the sheet tool could not name (critDamage?, cooldownReduction?), is the actual (buggy) mechanism, and the true per-rank values differ from 0/15/30."],
+   "impact": "medium",
+   "quotes": ["These attacks can {{tip|critically strike}} for {{critical damage|100 to 130|0 to 30|critScaling=true}} damage.", "the attacks on locked-on targets when using {{ai|Severum|Aphelios}} and {{ai|Crescendum|Aphelios}} deal slightly more than 120% damage.{{bug}} '''It is currently unknown where this damage originates from.'''"]},
+  {"question": "Can a single target ever carry more than one consumable Calibrum mark (e.g. from being marked again before the empowered snipe fires), or is 'marked' strictly a binary per-target flag so a single-dummy fight can only ever consume one mark per snipe?",
+   "options": ["Marked is a duration debuff (binary per target); a single target contributes at most one consumable mark no matter how many times it is (re)marked before the snipe.", "Marks can somehow accumulate more than once on the same target."],
+   "impact": "low",
+   "quotes": ["Enemies damaged by '''Calibrum''' through an ability are marked for {{fd|4.5}} seconds", "The empowered attack will consume the marks from all targets, dealing {{as|15|physical damage}} {{as|(+ 15% '''bonus''' AD)}} {{as|'''bonus''' physical damage}} to the main target for each mark consumed."]},
+  {"question": "What engage distance should Crescendum's throw-and-return attack (outbound ~5000u/s decelerating to a 1700u/s minimum, inbound 600u/s + 75 per 10% bonus AS) assume against the stationary dummy, since that travel time directly extends its effective attack interval and neither source states a fight distance?",
+   "options": ["Assume point-blank range, minimizing added travel time.", "Assume a fixed representative engage distance (e.g. Aphelios's own attack range, ~550), adding real, non-trivial travel time to every Crescendum attack."],
+   "impact": "high",
+   "quotes": ["which lingers for {{fd|0.2}} seconds before homing back to '''Aphelios'''", "He is unable to declare basic attacks until he retrieves '''Crescendum'''"]}
+ ],
+ "rotation": {
+  "proposal": [
+   "Start with the fixed initial loadout: Calibrum main / Severum off-hand, Gravitum/Infernum/Crescendum queued in reserve.",
+   "Cast Moonshot immediately to mark the target; the very next basic attack (fired with the off-hand weapon) is then automatically empowered for the mark's bonus damage. Recast Moonshot every time it comes off cooldown while Calibrum remains available.",
+   "Auto-attack continuously between casts. Infernum's basic attack (flat +10% AD, no cast needed) and Crescendum's basic attack (growing, if diminishing, bonus AD from held Chakrams) are the highest-value auto-attack states, so once ammo depletion or Phase brings either to main, prioritize sustained auto-attacking over holding them off-hand.",
+   "As soon as a Gravitum basic attack has landed or a Gravitum bolt is in flight, cast Binding Eclipse for its magic-damage burst -- it cannot be cast at all before that precondition is met, so do not simply wait for it to come off an ordinary cooldown.",
+   "Cast Duskwave as soon as Infernum is main and it is off cooldown: it hits the target directly and then guarantees a further 100% AD off-hand attack 0.25s later.",
+   "Cast Sentry as soon as Crescendum is main and it is off cooldown, placed so it can reach the target immediately (minimizing its up-to-20s idle window before it activates); let it attack autonomously for its full active window while continuing to manage other weapons.",
+   "Cast Onslaught whenever Severum is main and it is off cooldown, for its 6 (+bonus attack speed) guaranteed attacks; because it locks out Phase and Moonlight Vigil for its 1.75s duration and its own cooldown only starts once it ends, avoid opening it immediately before R would otherwise come off cooldown.",
+   "Cast Moonlight Vigil as soon as it is off cooldown regardless of which weapon is currently main, since its own smite and sky-attack damage are large flat contributions either way; if timing is flexible, prefer casting it while Calibrum or Infernum is main, since Severum's and Gravitum's R bonuses (heal, slow/root) add no damage in this fight.",
+   "Never hold Moonlight ammo or mana in reserve: with no allies, minions, healing, or crowd control to manage, attacking and casting on cooldown throughout the 15s maximizes damage."
+  ],
+  "questions": [
+   "Is it worth manually toggling Phase (0.8s cooldown, 0.25s swap) to force a specific weapon order, versus simply letting the 50-ammo natural depletion cycle weapons on its own?",
+   "Right before casting Onslaught, Duskwave, Sentry or Moonlight Vigil, is it worth forcing a specific weapon into the off-hand/main slot given how much their guaranteed follow-up attack's value differs by weapon?",
+   "Crescendum's Chakram stacks build fastest from other weapons' off-hand attacks during Onslaught/Duskwave; is it worth deliberately delaying Crescendum's own turn as main to bank stacks first, and how many can realistically accumulate in 15s of casting?",
+   "How much of the 15s fight does weapon-reassembly downtime (1s reassembly plus up to a 1.5s Q lockout each time a weapon's ammo hits zero) actually cost at realistic attack speeds, and does that change which weapon order is optimal?",
+   "At what champion level and item state is this fight assumed to run? Q/R availability, ammo drain rate relative to attack speed, and how many full weapon cycles fit in 15s all depend on it."
+  ]
+ }
+}

@@ -1,0 +1,250 @@
+{
+ "name": "Spirit Abjuration",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "bonus magic damage on third stack, based on target's max health",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "const",
+   "base": 0.01,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.01,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.027
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|1% {{as|(+ {{fd|2.7}}% per 100 AP)}} of the target's '''maximum''' health}}",
+   "bin": [
+    "AuroraPassive#ProcDamage"
+   ]
+  },
+  {
+   "id": "p_2",
+   "meaning": "damage cap against monsters",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180
+   ],
+   "terms": [],
+   "quote": "capped at {{pplevel|90+10*x}} against {{tip|monsters}}",
+   "bin": [
+    "AuroraPassive#{394d1781}"
+   ],
+   "binNote": "wiki text 90+10*x with level x=0..17 yields 90..260, but bin byLevel values are 10..180; discrepancy between wiki formula and bin table not resolved"
+  },
+  {
+   "id": "p_3",
+   "meaning": "duration of a stack before it expires",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for 4 seconds, refreshing on subsequent applications",
+   "bin": [
+    "AuroraPassive.DebuffDuration"
+   ]
+  },
+  {
+   "id": "p_4",
+   "meaning": "stack cap before consumption",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times",
+   "bin": [],
+   "binNote": "no bin data value for the stack cap; it is implicit in code, not exposed as a named row"
+  },
+  {
+   "id": "p_5",
+   "meaning": "spirit follow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "follows her for the same duration",
+   "bin": [
+    "AuroraPassive.SpiritModeDuration"
+   ]
+  },
+  {
+   "id": "p_6",
+   "meaning": "heal per tick per active spirit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.02
+    }
+   ],
+   "quote": "{{pplevel|2 + x|color=heal}} {{as|(+ 2% AP)}} every second",
+   "bin": [
+    "AuroraPassive#HealCalc"
+   ],
+   "binNote": "wiki pplevel formula '2 + x' with level x=1..18 gives 3..20, matching the bin's byLevel(3..20) values exactly; corrected from a prior mis-transcription that shifted values by +2"
+  },
+  {
+   "id": "p_7",
+   "meaning": "maximum simultaneous spirits",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "up to 4 {{as|Spirits|buzzword}} at a time",
+   "bin": [],
+   "binNote": "no bin data value found for the spirit cap; not exposed as a named row"
+  },
+  {
+   "id": "p_8",
+   "meaning": "maximum heal per tick at 4 spirits",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    44,
+    48,
+    52,
+    56,
+    60,
+    64,
+    68,
+    72,
+    76,
+    80
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.08
+    }
+   ],
+   "quote": "maximum heal per tick of {{pplevel|(2 + x)*4|color=heal}} {{as|(+ {{ap|2*4}}% AP)}}",
+   "bin": [
+    "AuroraPassive#HealCalc"
+   ],
+   "binNote": "this is a derived total (per-tick value x4 spirits), restating p_6 and p_7; no separate bin row exists, only HealCalc's per-spirit numbers multiplied by the spirit cap"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Only damaging basic attacks and abilities apply stacks of Spirit Abjuration.",
+   "quote": "'''Aurora's''' damaging {{tip|basic attacks}} and {{tip|abilities}} apply a {{tip|stack}} of ''Spirit Abjuration'' to enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The third stack consumes all stacks and deals the bonus damage as a separate instance.",
+   "quote": "The third stack against a target consumes them all to deal {{as|'''bonus''' magic damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Runaan's Hurricane bolts apply stacks but other on-hit effects like Guinsoo's Rageblade do not.",
+   "quote": "{{ii|Runaan's Hurricane}} bolts are also empowered to apply stacks (while other effects that apply {{tip|on-hit|on-hits}}, like {{ii|Guinsoo's Rageblade}}, are not).",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Exorcism (heal-over-time from spirits) only occurs when the consumed target was a champion, not against a dummy/monster in general.",
+   "quote": "Upon consuming the stacks from a {{tip|champion}}, '''Aurora''' additionally exorcises them",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Each active spirit heals Aurora every second; subsequent exorcisms refresh all active spirits.",
+   "quote": "For each active {{as|Spirit|buzzword}}, '''Aurora''' is {{tip|heal|healed}} for {{pplevel|2 + x|color=heal}} {{as|(+ 2% AP)}} every second.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AuroraPassive.MonsterMaxDamage",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AuroraPassive.MSIncrease",
+   "reason": "utility"
+  },
+  {
+   "ref": "AuroraPassive.BonusMsIncrease",
+   "reason": "utility"
+  },
+  {
+   "ref": "AuroraPassive#BonusMSCalc",
+   "reason": "utility"
+  },
+  {
+   "ref": "AuroraPassive#MoveSpeedCalc",
+   "reason": "utility"
+  },
+  {
+   "ref": "AuroraPassive#CooldownDuration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "AuroraPassive#{406b6e3e}",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

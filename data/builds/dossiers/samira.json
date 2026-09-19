@@ -1,0 +1,889 @@
+{
+ "champion": "samira",
+ "abilities": {
+  "P": {
+   "name": "Daredevil Impulse / splash coin",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "blade attack bonus magic damage based on target's missing health (base + AD ratio, scales by level)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.035,
+        0.039117647006231195,
+        0.04323529386345078,
+        0.04735294,
+        0.05147059,
+        0.05558823443510953,
+        0.05970588,
+        0.06382353,
+        0.06794117500676827,
+        0.07205882,
+        0.07617647,
+        0.08029412,
+        0.08441176,
+        0.08852941,
+        0.09264705615008578,
+        0.09676470300730537,
+        0.10088235,
+        0.105
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|2 + (19-2)/17*(x-1) for 20}} {{as|(+ {{pp|3.5 + (10.5-3.5)/17*(x-1) for 20|key=%}} AD)}} '''bonus''' magic damage|magic damage}}",
+     "bin": [
+      "SamiraPassive#BonusMeleeDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "duration of a Style stack before it expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "generate a {{tip|stack}} of ''Style'' for 6 seconds",
+     "bin": [
+      "SamiraPassive.DurationTOOLTIP"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "maximum Style stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "stacking up to 6 times",
+     "bin": [],
+     "binNote": "No SamiraPassive data value carries the stack cap; not present in the given bin rows."
+    },
+    {
+     "id": "p_4",
+     "meaning": "damage per bolt of the empowered attack against immobilized targets",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.17
+      }
+     ],
+     "quote": "each dealing {{as|17% AD}} {{as|physical damage}}",
+     "bin": [
+      "SamiraPJuggle#DamagePerBullet"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "number of bolts fired by the empowered attack",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "fire {{tt|6 bolts over {{fd|0.5}} seconds",
+     "bin": [
+      "SamiraPJuggle.NumShots"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "total duration over which the empowered attack's bolts are fired",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "6 bolts over {{fd|0.5}} seconds",
+     "bin": [
+      "SamiraPJuggle.Duration"
+     ]
+    },
+    {
+     "id": "p_7",
+     "meaning": "interval between bolts of the empowered attack",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "First bolt at the time of cast then once every 0.1 seconds thereafter.",
+     "bin": [],
+     "binNote": "No SamiraPassive/SamiraPJuggle data value states the 0.1s tick interval directly; it is only given in the wiki's tooltip note."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The blade attack's bonus magic damage applies after the basic attack's primary damage and is not itself an on-hit effect (so it is not multiplied/blocked by on-hit interactions).",
+     "quote": "The blade attack bonus applies after the primary damage of the attack and is '''not''' an {{tip|on-hit}} effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The blade attack's bonus magic damage is increased the lower the target's current health is, up to double at 0 health, capping the scaling at 100% missing health.",
+     "quote": "increased by {{as|{{pp|0 to 100 by 5|0 to 100 by 5|formula=1% for every 1% missing health|key=%|key1=%|label1=target's '''missing''' health}}|health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack against an immobilized target resets Samira's basic attack timer and is affected by critical strike modifiers, with each bolt rolling for crit separately.",
+     "quote": "resets '''Samira's''' basic attack timer, is affected by {{tip|critical strike}} modifiers, applies {{tip|on-hit}} effects only once, and cannot occur on the same target more than once every few seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each bolt from the empowered attack rolls for a critical strike separately.",
+     "quote": "Each bolt from the empowered attack rolls for a {{tip|critical strike}} separately.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack's bolts deal basic damage for the first bolt (as a normal basic attack) and default damage for all subsequent bolts, which matters for damage amplification effects that check attack vs. spell damage.",
+     "quote": "{{tip|Basic damage}} for the first bolt, as a basic attack would.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack applies lifesteal (a sustain source affecting the damage fight only insofar as it heals Samira, not relevant to damage dealt).",
+     "quote": "{{tip|applies lifesteal|applying}} {{as|{{sti|life steal}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The empowered attack's bolt missile speed is unaffected by attack speed modifiers.",
+     "quote": "The empowered attack's speed is unaffected by {{as|{{sti|attack speed}}}} modifiers.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SamiraPassive.SwordRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SamiraPassive.VisualBonusRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SamiraPassive#QueenMaxDashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SamiraPassive#EmpoweredMeleeDamageTooltip",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "SamiraPassive#MSBonusNew",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Flair",
+   "cooldown": {
+    "values": [
+     6,
+     5,
+     4,
+     3,
+     2
+    ],
+    "quote": "{{ap|6 to 2}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      0,
+      5,
+      10,
+      15,
+      20
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|0 to 20}} {{as|(+ {{ap|110}}% AD)}}",
+     "bin": [
+      "SamiraQ#DamageCalc"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "critical strike damage modifier applied to Flair's damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critDamage",
+       "coef": 0.5
+      }
+     ],
+     "quote": "can {{tip|critically strike}} for {{as|{{critical damage|150|50}}|critical damage}} damage",
+     "bin": [
+      "SamiraQ#CriticalDamageCalc"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "lifesteal effectiveness on Flair damage",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "will {{tip|applies lifesteal|apply}} {{as|{{sti|life steal}}}} at 100% effectiveness",
+     "bin": [
+      "SamiraQ.LifestealMod"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Flair fires a shot at the first enemy hit, or slashes in melee range, dealing the same damage either way.",
+     "quote": "fires a shot in the target direction that deals {{as|physical damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "In melee range Samira slashes in a cone instead, applying area damage rather than the shot's spell damage.",
+     "quote": "Applies {{tip|spell damage}} on the shot and {{tip|area damage}} on the slash and explosives.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The slash and explosives roll critical strikes separately against each target hit.",
+     "quote": "The slash and explosives roll their {{tip|critical strike}} against each target individually.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shot and slash count as the same ability cast for the purposes of Style stacking.",
+     "quote": "The shot and the slash do not count as different abilities for stacking {{ai|Daredevil Impulse|Samira|Style}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cast during Wild Rush, Flair instead deploys explosives that detonate at the end of the dash, dealing the same damage.",
+     "quote": "deploys explosives in her wake that detonate upon the end of the dash, dealing the same damage to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins on cast, not on effect landing.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability fires/slashes from Samira's position at the end of the cast time, not where she was at cast start.",
+     "quote": "''Flair'' will fire or slash from wherever '''Samira''' is at the end of the cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SamiraQ.CheatingThreshold",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Blade Whirl",
+   "cooldown": {
+    "values": [
+     30,
+     28,
+     26,
+     24,
+     22
+    ],
+    "quote": "{{ap|30 to 22}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.1,
+    "quote": "{{fd|0.1}}",
+    "binNote": "Bin lists castTime 0.01 for SamiraW, but wiki states 0.1 and notes the cast time has no effect on usability; reporting the wiki's stated number."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|20 to 80}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "SamiraW#DamageCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "duration of the spin, between the two slashes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "'''Samira''' spins her blade over {{fd|0.75}} seconds",
+     "bin": [
+      "SamiraW.SlashDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Samira spins her blade over 0.75 seconds, dealing damage twice: the first slash occurs immediately and the second after the duration.",
+     "quote": "'''Samira''' slashes twice during ''Blade Whirl'', each one dealing {{as|physical damage}} to all nearby enemies. The first slash occurs immediately and the second one occurs after the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Blade Whirl destroys all hostile non-turret projectiles for its duration, and a spell shield blocks the damage from only one slash.",
+     "quote": "{{tip|Spell shield}} will block the damage from one slash.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Samira cannot basic attack or cast Flair during Blade Whirl, and casting Inferno Trigger ends it early (skipping the second slash if not yet resolved).",
+     "quote": "'''Samira''' cannot basic attack nor cast {{ai|Flair|Samira}} during Blade Whirl. Casting {{ai|Inferno Trigger|Samira}} will end Blade Whirl early.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Wild Rush",
+   "cooldown": {
+    "values": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "quote": "{{ap|20 to 12}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|50 to 90}} {{as|(+ 20% '''bonus''' AD)}}",
+     "bin": [
+      "SamiraE#DashDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "SamiraE.BonusAttackSpeed"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration of the bonus attack speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "gains {{sti|{{as|'''bonus''' attack speed}}}} for 5 seconds",
+     "bin": [
+      "SamiraE.AttackSpeedDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "window after damaging an enemy champion within which a takedown resets cooldown",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "Scoring a {{tip|takedown}} against an enemy {{tip|champion}} within 3 seconds of damaging them resets ''Wild Rush's'' {{sti|cooldown}}.",
+     "bin": [],
+     "binNote": "cooldown-reset window not present in the sheet's numeric fields for SamiraE."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Samira gains the attack speed buff at the start of the dash, not at the end.",
+     "quote": "'''Samira''' gains the attack speed buff at the start of the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wild Rush deals its magic damage to all enemies passed through during the dash, as a single cast, not turrets.",
+     "quote": "dealing {{as|magic damage}} to enemies she passes through",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wild Rush does not deal damage to turrets.",
+     "quote": "''Wild Rush'' does not deal its damage to turrets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Scoring a champion takedown within 3 seconds of damaging them with Wild Rush resets its cooldown.",
+     "quote": "Scoring a {{tip|takedown}} against an enemy {{tip|champion}} within 3 seconds of damaging them resets ''Wild Rush's'' {{sti|cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Flair and Inferno Trigger can be cast during the dash.",
+     "quote": "{{ai|Flair|Samira}} and {{ai|Inferno Trigger|Samira}} can be cast during the dash.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SamiraE.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SamiraE.DashTotalDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Inferno Trigger",
+   "cooldown": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "quote": "5"
+   },
+   "cost": {
+    "values": [
+     6,
+     6,
+     6
+    ],
+    "quote": "6 Style",
+    "resource": "other"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage Per Shot",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      40,
+      60
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|20 to 60}} {{as|(+ 30% AD)}}",
+     "bin": [
+      "SamiraR#DamageCalc"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Minion Damage Per Shot",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      10,
+      15
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.075
+      }
+     ],
+     "quote": "{{ap|20*0.25 to 60*0.25}} {{as|(+ {{ap|30*0.25}}% AD)}}",
+     "bin": [
+      "SamiraR.MinionDamageMod",
+      "SamiraR#DamageCalc"
+     ],
+     "binNote": "No bin row states 5/10/15 or 0.075 directly; these are the wiki-computed products of SamiraR#DamageCalc's base [20,40,60] and ad-ratio 0.3 with SamiraR.MinionDamageMod=0.25 (20*0.25=5, 40*0.25=10, 60*0.25=15; 0.3*0.25=0.075), matching the wiki's own displayed derivation."
+    },
+    {
+     "id": "r_5",
+     "meaning": "number of shots fired",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "up to 10 times per enemy",
+     "bin": [],
+     "binNote": "No bin row for a per-target shot cap of 10; this is stated only in the wiki description text, not any DataValue or calculation in the sheet."
+    },
+    {
+     "id": "r_6",
+     "meaning": "duration of the shooting effect",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "rapidly shooting at nearby enemies over {{rutngt|2}}",
+     "bin": [],
+     "binNote": "No matching DataValue in the sheet for this 2-second shooting sub-duration; not present as a named row."
+    },
+    {
+     "id": "r_7",
+     "meaning": "total active duration (movement speed reduction)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.25,
+     "terms": [],
+     "quote": "'''Samira''' unleashes a torrent of shots for {{rutngt|2.25}}",
+     "bin": [],
+     "binNote": "No matching DataValue in the sheet for this 2.25-second total duration; not present as a named row."
+    },
+    {
+     "id": "r_8",
+     "meaning": "average shot interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "{{tt|{{fd|0.2}}-second intervals|on average; total of 5 intervals of 0.231 and 5 of 0.198 seconds}}",
+     "bin": [],
+     "binNote": "No DataValue in the sheet gives the shot timing intervals; this is only documented in the wiki's tooltip note."
+    },
+    {
+     "id": "r_9",
+     "meaning": "life steal effectiveness",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "applies {{as|{{sti|life steal}}}} at 100% effectiveness",
+     "bin": [
+      "SamiraR.LifestealMod"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Each shot can critically strike and applies lifesteal.",
+     "quote": "Each shot can {{tip|critically strike}} and {{tip|applies lifesteal|apply}} {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage against minions is reduced by 75%.",
+     "quote": "reduced by 75% against {{tip|minions}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Samira cannot basic attack or cast Flair/Blade Whirl during Inferno Trigger, but can still move.",
+     "quote": "'''''Samira''' cannot basic attack nor cast {{ai|Flair|Samira}} and {{ai|Blade Whirl|Samira}} during Inferno Trigger, but she can still move.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Movement speed is reduced by 30% during the effect.",
+     "quote": "'''reducing''' her {{as|movement speed}} by {{as|30%|ms}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A spell shield blocks the damage of one shot only.",
+     "quote": "{{tip|Spell shield}} will block the damage of one shot.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Inferno Trigger ends prematurely if Samira is affected by cast-inhibiting crowd control or disarm.",
+     "quote": "Inferno Trigger will end prematurely if '''Samira''' is affected by any form of {{tip|cast-inhibiting crowd control}} as well as {{tip|disarm}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SamiraR.BaseMSBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "SamiraR.ADRatio",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Flair fires/slashes once on cast (or on cast-time end); Wild Rush deals its magic damage once, on the dash, on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blade Whirl deals two separately-timed slashes: first immediate, second after the 0.75s spin duration"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Inferno Trigger fires up to 10 shots at sporadic ~0.2s intervals over the ability's active window against each nearby enemy"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Daredevil Impulse's blade attacks (melee-range basic attacks and blade-mode ability hits) add bonus magic damage scaled by target's missing health, applied after the primary hit"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Style stacks (0-6, each refreshing a 6s timer) built by unique damaging hits on the target; grants MS (irrelevant to damage) but at 6 stacks unlocks casting R"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (30/60/40) limit Q/W/E casts across the 15s window; R's real cost is 6 Style stacks, consumed on cast, which must be rebuilt via attacks/abilities before it can be recast"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Wild Rush grants bonus attack speed for 5s starting at the beginning of the dash"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Flair and Inferno Trigger's shots are affected by critical strike modifiers (Flair uses a reduced 150%/50% crit multiplier); each Inferno Trigger shot and each Q/W hit against multiple targets rolls crit separately"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Daredevil Impulse's immobilize-triggered 6-bolt empowered basic attack; almost certainly never fires in a dummy fight since the fight framework defines CC as not occurring, so likely excluded from the actual rotation but listed since the kit contains it"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Samira's kit maps onto plain-cast/recast/dot for her active damage, onhit-rider + stacking-self-buff + resource-budget for the Style/ultimate-gating loop, timed-self-buff for the Wild Rush attack-speed window, and crit-interaction for the abilities that explicitly crit. No mechanic requires logic outside this list for a stationary-target damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "The bin contains four distinct Q-family rows (SamiraQ, SamiraQBufferedSword, SamiraQGun, SamiraQSword) with very different cooldowns (6-2 vs 22-10 vs 8-4), costs, and damage values, plus a fifth row SamiraTauntMissile (2.87s cast time) that structurally resembles SamiraQGun. Only SamiraQ's cooldown [6,5,4,3,2], cost 30, and damage [0/5/10/15/20]+1.1xAD exactly match the wiki's single 'Flair' ability. It is unclear whether the other rows are dead/legacy data (e.g. from an earlier prototype kit) or are actually invoked under some condition the wiki doesn't describe.",
+   "options": [
+    "SamiraQ is the only live row; QBufferedSword/QGun/QSword/TauntMissile are unused legacy data",
+    "One or more of the other rows are actually used for some Q sub-case (e.g. melee-slash vs gun-shot) that changes cooldown/cost/damage away from the wiki's stated single value set"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: [6/5/4/3/2]",
+    "cooldown: [22/19/16/13/10]",
+    "cooldown: [8/7/6/5/4]",
+    "{{ap|6 to 2}}"
+   ]
+  },
+  {
+   "question": "The empowered-attack bolt damage formula appears twice in the bin with conflicting terms: SamiraPJuggle gives 0.17xAD per bolt (matching the wiki's '17% AD' quote), while SamiraPSwordJuggle gives 0.1xAP + 0.2xAD per bolt. It is unclear whether PSwordJuggle is a legacy/alternate formula (e.g. for a blade-mode variant of the empowered attack) or whether it is actually used under some condition the wiki text doesn't distinguish.",
+   "options": [
+    "PJuggle (0.17xAD) is the sole live formula, matching the wiki quote; PSwordJuggle is unused legacy data",
+    "PSwordJuggle's AP+AD formula applies in some case (e.g. when the empowered attack is delivered via blade range) not described by the wiki text"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "each dealing {{as|17% AD}} {{as|physical damage}}",
+    "SamiraPSwordJuggle#DamagePerBullet = 0.1xap + 0.2xad"
+   ]
+  },
+  {
+   "question": "Daredevil Impulse's blade-attack bonus magic damage only triggers on basic attacks made within melee range (200 units) of the target. The damage fight does not specify positioning, so it is unsettled whether the simulator should assume Samira stays in melee range for the whole 15s (maximizing this bonus damage every auto-attack) or attacks from outside 200 units (losing the bonus entirely).",
+   "options": [
+    "Assume Samira remains in melee range for all basic attacks, so every auto triggers the blade bonus magic damage",
+    "Assume Samira attacks from outside 200 units (e.g. as an ADC kiting), so the blade bonus never triggers"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Samira's''' basic attacks against targets within {{tip|er|icononly = true}} 200 units of her use her blade, becoming {{tip|projectile|non-projectile}}."
+   ]
+  },
+  {
+   "question": "The empowered attack (Daredevil Impulse's immobilize-triggered 6-bolt barrage) can only occur against an immobilized or airborne target. The dummy/survival-fight framework defines crowd control as not applying. It is unsettled whether the simulator should therefore treat this sub-ability as never firing (excluded from the rotation entirely), or whether some baseline immobilize application should be assumed to let it fire at least once.",
+   "options": [
+    "The empowered attack never triggers in either fight since no immobilize source exists in the simulated encounter",
+    "Some immobilize is assumed to occur (e.g. from an item active) so the empowered attack fires periodically"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Samira''' can attack {{tip|immobilized}} enemies to rapidly fire a barrage of bolts at them."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open at melee range (<=200 units) of the target so all basic attacks trigger the Daredevil Impulse blade bonus magic damage, and begin auto-attacking immediately to start building Style stacks.",
+   "Cast Flair (Q) on cooldown for its physical damage (slash version, since Samira is in melee range).",
+   "Cast Wild Rush (E) toward the target as soon as available for its magic damage and 5s bonus attack speed window; buffer a Flair cast during the dash if it is off cooldown to deploy the explosive for extra damage without losing tempo.",
+   "Continue auto-attacking and casting Q/E to keep refreshing Style stacks; once 6 stacks are reached, cast Inferno Trigger (R) for its multi-shot physical damage burst (crit- and lifesteal-enabled).",
+   "Repeat R every time 6 Style stacks and its 5s cooldown are both available, interleaving Q and E casts and autos between R windows to rebuild stacks.",
+   "Deprioritize or skip Blade Whirl (W) in the offensive rotation, since it locks out basic attacks and Flair for its duration and only clearly helps DPS in the survival fight."
+  ],
+  "questions": [
+   "Should Blade Whirl be included at all in the maximum-damage rotation given it blocks basic attacks, Flair, and Style-stack-generating autos for its duration, or is it purely a defensive/utility tool the damage fight should never cast?",
+   "How quickly (in ability/attack casts) does Samira reach the 6 Style stacks needed for the first Inferno Trigger cast from a standing start, and does the sim assume any pre-existing stacks at the start of the fight?",
+   "Does Flair's cast time (0.25s) and queue-time interactions with Wild Rush change how tightly Q and E can be weaved together within the 15s window?",
+   "Should the empowered attack (bolt barrage) be included in the rotation at all, given the fight framework says CC does not occur?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

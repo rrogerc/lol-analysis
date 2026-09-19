@@ -1,0 +1,223 @@
+{
+ "name": "Alpha Strike",
+ "cooldown": {
+  "values": [
+   20,
+   19.5,
+   19,
+   18.5,
+   18
+  ],
+  "quote": "{{ap|20 to 18}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Primary Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    20,
+    40,
+    60,
+    80,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.7
+    }
+   ],
+   "quote": "{{ap|20 to 100}} {{as|(+ {{fd|70}}% AD)}}",
+   "bin": [
+    "AlphaStrike#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Reduced Damage per hit",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    10,
+    15,
+    20,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.175
+    }
+   ],
+   "quote": "{{ap|20*0.25 to 100*0.25}} {{as|(+ {{ap|70*0.25}}% AD)}}",
+   "bin": [
+    "AlphaStrike#SubesquentDamage"
+   ]
+  },
+  {
+   "id": "q_onhit_primary",
+   "meaning": "On-hit damage effectiveness on the primary detonation",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "with on-hit damage reduced to {{#var:ohmod}}% effectiveness",
+   "bin": [
+    "AlphaStrike.BaseOnHitMultiplier"
+   ]
+  },
+  {
+   "id": "q_onhit_subsequent",
+   "meaning": "On-hit damage effectiveness on subsequent marks",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1875,
+   "terms": [],
+   "quote": "with on-hit damage reduced to {{ap|{{#var:ohmod}}*{{#var:l}}}}% effectiveness",
+   "bin": [
+    "AlphaStrike.BaseOnHitMultiplier",
+    "AlphaStrike.SubsequentHitMultiplier"
+   ],
+   "binNote": "This value is the product of BaseOnHitMultiplier=0.75 and SubsequentHitMultiplier=0.25 (0.75*0.25=0.1875); no single bin row states the combined 18.75% figure directly, it is computed from the two named rows as the wiki's formula {{#var:ohmod}}*{{#var:l}} shows."
+  },
+  {
+   "id": "q_crit_mod",
+   "meaning": "Bonus critical damage modifier applied to primary and lesser damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "100% + {{sti|critical damage|{{as|{{ap|{{#var:cmod}}*100}}% of {{as|'''bonus''' critical damage}}}}.}}",
+   "bin": [
+    "AlphaStrike.BonusCritDamageRatio"
+   ]
+  },
+  {
+   "id": "q_cdr_onhit",
+   "meaning": "Alpha Strike current cooldown reduction per on-hit basic attack",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "reduce ''Alpha Strike's'' {{sti|'''current''' cooldown}} by 1 second",
+   "bin": [
+    "AlphaStrike.BaseBasicAttackCDR"
+   ]
+  },
+  {
+   "id": "q_bounces",
+   "meaning": "Number of marks placed (initial target plus additional bounces)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for a total of 4 marks",
+   "bin": [
+    "AlphaStrike.AlphaStrikeBounces"
+   ]
+  },
+  {
+   "id": "q_mark_interval",
+   "meaning": "Delay between marking each successive target",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "he marks the target enemy and then proceeds to mark the nearest {{tip|sight|visible}} un-marked enemy within 600 units, recurring every {{rutngt|0.2}}",
+   "bin": [],
+   "binNote": "The 0.2s mark interval is not exposed as a named DataValue in the visible sheet rows; only the bounce count (AlphaStrikeBounces) and multipliers appear."
+  },
+  {
+   "id": "q_total_cast_duration",
+   "meaning": "Total effective time from cast start to reappearance/final detonation with 4 bounces",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.087,
+   "terms": [],
+   "quote": "{{tt|{{fd|1.087}} seconds total|Effective time due to game ticks}} after the start of the cast with 4 bounces",
+   "bin": [],
+   "binNote": "Total lockout/cast duration is a derived tooltip value from game tick timing, not a single DataValue in the sheet."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Master Yi vanishes and is unable to act during Alpha Strike, becoming targetable/interactable again only after reappearing.",
+   "quote": "'''Master Yi''' {{tip|vanish|vanishes}} and becomes {{tip|lockout|unable to act}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Alpha Strike's primary damage instance applies only after Master Yi reappears from the vanish, not on cast.",
+   "quote": "''Alpha Strike's'' primary damage applies after '''Master Yi''' reappears.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Marks after the first on the same target detonate instantly upon application rather than waiting for the final reappearance.",
+   "quote": "Marks after the first on the same target instead detonate instantly upon application to deal {{fd|{{#expr:{{#var:l}}*100}}}}% damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Alpha Strike's damage is calculated at the moment each mark is placed, so damage can vary if AD changes between marks.",
+   "quote": "''Alpha Strike's'' damage is calculated at the moment that each mark is placed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only the first instance of Alpha Strike's damage counts as a hit for on-hit-triggered effects like Electrocute and Eclipse.",
+   "quote": "Only the first instance of damage counts as a hit for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Alpha Strike does not grant its own on-hit cooldown reduction nor a stack of Double Strike when it applies on-hit effects.",
+   "quote": "Alpha Strike does not trigger its cooldown reduction nor grant a stack of {{ai|Double Strike|Master Yi}} when applying on-hit effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A single spell shield only blocks one instance of Alpha Strike's damage, not all of its hits.",
+   "quote": "{{tip|Spell shield}} will only block a single instance of damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Wuju Style and Highlander can be cast during Alpha Strike, and each Alpha Strike hit refreshes their current durations.",
+   "quote": "Each time Alpha Strike hits a target, the '''current''' durations of {{ai|Wuju Style|Master Yi}} and {{ai|Highlander|Master Yi}} are refreshed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Alpha Strike's cooldown starts counting down on cast, not on completion.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AlphaStrike.BonusMonsterDamage",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

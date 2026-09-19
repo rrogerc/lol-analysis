@@ -1,0 +1,129 @@
+{
+ "champion": "leesin",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Flurry: after any ability cast, Lee Sin's next 2 basic attacks gain 40% bonus attack speed and restore energy (20/10 by level tier), arming a fresh window every time he casts Q, W, E or R."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Sonic Wave: fixed physical damage (base + 0.9 bonus AD) to the first (only) enemy hit on cast, and marks it."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Resonating Strike is a separately-costed recast of Q, castable within 3s of Sonic Wave landing, dealing its own base+0.9 bonus AD damage scaled by missing health."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Resonating Strike's damage is increased up to +100% based on the dummy's missing health % at the moment it lands."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tempest: fixed magic damage (base + 0.9 AD) to nearby enemies (the single dummy) on cast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Cripple is the recastable second half of E, castable within 3s of Tempest hitting; it deals no damage (slow only), so it does not add to the damage fight beyond arming the recast window/Flurry."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Safeguard grants a self-shield and Iron Will grants self-omnivamp; neither deals damage to the target dummy, though the omnivamp affects Lee Sin's effective healing/survival."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Cripple's slow is crowd control with no damage component; it does not change damage dealt or taken."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dragon's Rage: fixed physical damage (base + 2x bonus AD) to the single targeted enemy on cast; the extra collision damage requires a second enemy to knock the target into, which cannot occur in a 1v1 dummy fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q, W and E (and their recasts) are energy-gated (50 per main cast, plausibly 25 more per recast); Lee Sin's total energy pool and regen limit how often he can chain Q/E casts across the 15s window."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every scoring effect (Q's two-part damage with missing-health scaling, E's damage-only first half, R's flat physical burst, Flurry's recurring empowered-attack window, and W's purely defensive shield/omnivamp) maps onto existing primitives; R's collision bonus is simply inapplicable in a single-target dummy fight rather than needing new logic."
+ },
+ "unsettled": [
+  {
+   "question": "Do the recast halves of Q, W and E (Resonating Strike, Iron Will, Cripple) cost their own energy on top of the initial cast's 50, or is the bin's single 'cost' array (50 per rank) for the whole ability slot the total cost, with the recast free?",
+   "options": [
+    "Each recast costs its own energy as the wiki states (Resonating Strike 25, Iron Will 25, Cripple 25), for a total of 75 energy per full Q/W/E combo",
+    "The bin's single per-slot cost (50) is definitive and the recast is free, so a full Q, W or E combo costs only 50 energy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cost         = 25\n|costtype     = Energy",
+    "LeeSinQOne cooldown: [10/9/8/7/6] cost: 50"
+   ]
+  },
+  {
+   "question": "Does every individual cast in a two-part ability (e.g. both Sonic Wave and the Resonating Strike recast, or both Tempest and the Cripple recast) independently re-trigger Flurry's empowered-attack window and energy return, or does only the initial half-cast (Sonic Wave, Tempest, Safeguard, R) trigger it while the recast does not?",
+   "options": [
+    "Every cast, including recasts like Resonating Strike and Cripple, is itself an 'ability cast' and independently arms/refreshes Flurry",
+    "Only the primary ability activation triggers Flurry; recasts (Resonating Strike, Iron Will, Cripple) are considered part of the same activation and do not retrigger it"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After casting an {{tip|ability}}, '''Lee Sin's''' next 2 {{tip|basic attacks}} ... gain ... attack speed and restore ... energy"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Sonic Wave (Q) on the dummy to deal its physical damage and mark it, arming Flurry.",
+   "Weave in the two Flurry-empowered basic attacks immediately after the cast to benefit from bonus attack speed and energy return.",
+   "Recast Resonating Strike (Q2) as soon as it lands (within its 3s window) to dash in and deal missing-health-scaled physical damage, maximized by the damage already dealt from Q1 and prior attacks.",
+   "Cast Tempest (E) for its magic damage and to arm another Flurry window; skip casting Cripple since it deals no damage and only costs energy/time.",
+   "Cast Dragon's Rage (R) the moment it comes off cooldown for a large flat physical burst (no cost, and its collision bonus cannot trigger against a single dummy anyway).",
+   "Do not cast Safeguard or Iron Will (W): neither damages the dummy, so casting it only burns energy and a global cooldown window that could otherwise fuel Q/E.",
+   "For the remainder of the 15s window, recast Sonic Wave -> Resonating Strike and Tempest on cooldown, weaving basic attacks (especially the two post-cast empowered ones) between casts, throttled by available energy.",
+   "Recast Dragon's Rage again if its (60-110s) cooldown somehow allows within the 15s window (it generally will not after the opener)."
+  ],
+  "questions": [
+   "Is Lee Sin's energy pool and regen (with the passive's partial refunds) actually sufficient to sustain permanent Q+E(+recast) spam for the full 15s, or will he run energy-dry and need attack-only phases?",
+   "Should Resonating Strike be delayed until the dummy has taken more damage (to maximize its missing-health scaling), or is casting it immediately after Sonic Wave optimal given the 3s window and cooldown-starts-on-first-cast rule?",
+   "Is it ever worth spending energy on Cripple purely to preserve the Flurry/recast cadence, or is it strictly energy-negative in a pure damage race?",
+   "How much of the 15s does the Sonic Wave dash/cast-time and Resonating Strike travel time actually consume, and does that materially cut into the number of auto-attack windows available?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

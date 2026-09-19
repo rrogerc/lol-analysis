@@ -1,0 +1,627 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MissFortunePassive",
+    "key": "Characters/MissFortune/Spells/MissFortunePassiveAbility/MissFortunePassive",
+    "cooldown": 0,
+    "calcs": {
+     "TotalDamage": {
+      "expr": "(byLevelL[0.5/0.5/0.5/0.6/0.6/0.6/0.7/0.7/0.8/0.8/0.9/0.9/1/1/1/1/1/1])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.5,
+          0.5,
+          0.5,
+          0.6,
+          0.6,
+          0.6,
+          0.7,
+          0.7,
+          0.8,
+          0.8,
+          0.9,
+          0.9,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "MinionDamage": {
+      "expr": "TotalDamage * 0.5",
+      "modifies": "TotalDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.25,
+          0.25,
+          0.25,
+          0.3,
+          0.3,
+          0.3,
+          0.35,
+          0.35,
+          0.4,
+          0.4,
+          0.45,
+          0.45,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+         ]
+        }
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "MissFortuneRicochetShot",
+    "key": "Characters/MissFortune/Spells/MissFortuneRicochetShotAbility/MissFortuneRicochetShot",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6,
+      5,
+      4,
+      3
+     ]
+    },
+    "cost": 40,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       45,
+       70,
+       95,
+       120
+      ]
+     },
+     "ADRatio": 1,
+     "APRatio": 0.35,
+     "BounceCriticalMod": 0.5
+    },
+    "calcs": {
+     "TotalDamageTooltip": {
+      "expr": "BaseDamage=[20/45/70/95/120] + (ADRatio=1)xad + (APRatio=0.35)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        45,
+        70,
+        95,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalDamageCrit": {
+      "expr": "TotalDamageTooltip * 1 + (BounceCriticalMod=0.5)*(1xcritDamage + -1)",
+      "modifies": "TotalDamageTooltip",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BounceCriticalMod"
+      ]
+     },
+     "{5a1fd353}": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "MissFortuneViciousStrikes",
+    "key": "Characters/MissFortune/Spells/MissFortuneViciousStrikesAbility/MissFortuneViciousStrikes",
+    "cooldown": 12,
+    "cost": 45,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PassiveBaseMS": {
+      "axis": "rank",
+      "v": [
+       30,
+       35,
+       40,
+       45,
+       50
+      ]
+     },
+     "PassiveMaxMS": {
+      "axis": "rank",
+      "v": [
+       60,
+       70,
+       80,
+       90,
+       100
+      ]
+     },
+     "LoveTapBaseRefund": 2,
+     "ActiveAS": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.55,
+       0.7,
+       0.85,
+       1
+      ]
+     },
+     "ActiveDuration": 4,
+     "PassiveBaseMSOOC": 4,
+     "PassiveMaxMSExtraOOC": 3
+    },
+    "calcs": {
+     "LoveTapRefund": {
+      "expr": "(LoveTapBaseRefund=2) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "LoveTapBaseRefund"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ],
+  "E": [
+   {
+    "script": "MissFortuneScattershot",
+    "key": "Characters/MissFortune/Spells/MissFortuneScattershotAbility/MissFortuneScattershot",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      17,
+      16,
+      15,
+      14
+     ]
+    },
+    "cost": 80,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamagePerSecond": {
+      "axis": "rank",
+      "v": [
+       35,
+       50,
+       65,
+       80,
+       95
+      ]
+     },
+     "BaseDuration": 2,
+     "BaseSlowAmount": 0.4,
+     "APRatioPerSecond": 0.6,
+     "TicksPerSecond": 4,
+     "CastDelay": 0.25,
+     "SlowPer100AP": 0.0006
+    },
+    "calcs": {
+     "TotalDamagePerSecond": {
+      "expr": "BaseDamagePerSecond=[35/50/65/80/95] + (APRatioPerSecond=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        50,
+        65,
+        80,
+        95
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatioPerSecond"
+       }
+      ],
+      "refs": [
+       "APRatioPerSecond",
+       "BaseDamagePerSecond"
+      ]
+     },
+     "TotalSlowAmount": {
+      "expr": "BaseSlowAmount=0.4 + (SlowPer100AP=0.0006)xap",
+      "flat": 0.4,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0006,
+        "dataValue": "SlowPer100AP"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseSlowAmount",
+       "SlowPer100AP"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "TotalDamagePerSecond * BaseDuration=2",
+      "modifies": "TotalDamagePerSecond",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        100,
+        130,
+        160,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.2,
+        "dataValue": "APRatioPerSecond"
+       }
+      ],
+      "refs": [
+       "APRatioPerSecond",
+       "BaseDamagePerSecond",
+       "BaseDuration"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "MissFortuneBulletTime",
+    "key": "Characters/MissFortune/Spells/MissFortuneBulletTimeAbility/MissFortuneBulletTime",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      110,
+      100
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.001,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseWaves": {
+      "axis": "rank",
+      "v": [
+       14,
+       16,
+       18
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40
+      ]
+     },
+     "tADRatio": 0.6,
+     "APRatio": 0.25,
+     "CritDamageMultiplier": 0.3,
+     "BaseChannelDuration": 3
+    },
+    "calcs": {
+     "PhysicalDamagePerWave": {
+      "expr": "BaseDamage=[20/30/40] + (tADRatio=0.6)xad + (APRatio=0.25)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        30,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "tADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "tADRatio"
+      ]
+     },
+     "CritDamagePerWave": {
+      "expr": "PhysicalDamagePerWave * 1 + (CritDamageMultiplier=0.3)*(1xcritDamage + -1)",
+      "modifies": "PhysicalDamagePerWave",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CritDamageMultiplier"
+      ]
+     },
+     "TotalPhysicalDamage": {
+      "expr": "PhysicalDamagePerWave * BaseWaves=[14/16/18]",
+      "modifies": "PhysicalDamagePerWave",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        280,
+        480,
+        720
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          8.4,
+          9.6,
+          10.8
+         ]
+        },
+        "dataValue": "tADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          3.5,
+          4,
+          4.5
+         ]
+        },
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "BaseWaves",
+       "tADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "MissFortuneRicochetShot",
+  "W": "MissFortuneViciousStrikes",
+  "E": "MissFortuneScattershot",
+  "R": "MissFortuneBulletTime",
+  "P": "MissFortunePassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.15199336
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "MissFortune",
+  "name": "Miss Fortune",
+  "partype": "Mana",
+  "passive": "Love Tap",
+  "spells": [
+   {
+    "id": "MissFortuneRicochetShot",
+    "name": "Double Up",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "MissFortuneViciousStrikes",
+    "name": "Strut",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ]
+   },
+   {
+    "id": "MissFortuneScattershot",
+    "name": "Make It Rain",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "cost": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   {
+    "id": "MissFortuneBulletTime",
+    "name": "Bullet Time",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     110,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Love Tap": {
+    "damagetype": "Physical",
+    "spelleffects": "Proc",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Double Up": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "onhiteffects": "True",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Strut": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   },
+   "Guns Blazing": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   },
+   "Impure Shots": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Make It Rain": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Bullet Time": {
+    "damagetype": "Physical",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

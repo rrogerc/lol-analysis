@@ -1,0 +1,107 @@
+{
+ "champion": "gragas",
+ "primitives": [
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Barrel Roll is thrown, sits for up to 4s fermenting for up to 2s (ramping damage/slow to 150%), then is either manually recast or auto-detonates; initial cast and detonation are separately timed events with different on-cast trigger rules."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "After the 0.75s channel, Gragas' next basic attack within 5s is empowered with bonus magic damage based on target's max HP and AP, plus range/uncancellable windup."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Body Slam deals damage on dash-collision (fixed short delay); Explosive Cask deals damage on impact after a 0.25s cast + 0.5s travel; both simply go on cooldown afterward."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Body Slam's current cooldown is reduced by 40% if it hits an enemy, which it will against the stationary dummy."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (80/30/50/100) on cooldowns as low as 5-12s can meaningfully cap cast frequency over a 15s fight depending on assumed mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Barrel Roll's damage and slow scale continuously with how long the cask has sat (0% to 150% of base over the first 2 of its 4s duration) before the player chooses to recast/detonate it. None of the closed primitives capture a continuous, player-timed value ramp inside a recast window (recast-or-multipart only says a recast exists, not that its payload is a tunable function of elapsed time); the simulator needs bespoke logic to pick and apply a fermentation time before computing detonation damage."
+ },
+ "unsettled": [
+  {
+   "question": "How long should Gragas wait after Barrel Roll lands before recasting/detonating it, in the 15s damage fight?",
+   "options": [
+    "Detonate immediately on landing (minimum travel+cast delay, lowest per-cast damage but highest cast frequency)",
+    "Always wait the full 2s to fermentation cap for 150% damage/slow before detonating",
+    "Some intermediate hold time optimized for total 15s DPS"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon arrival, the cask starts to ferment over the first 2 seconds of its duration to increase its {{ccs|damage|magic}} and the effectiveness of its {{tip|slow}}, up to a maximum of 150% of their initial values.",
+    "''Barrel Roll'' can be recast at any time within its duration after the cask has fully travelled, and does so automatically after its duration ends."
+   ]
+  },
+  {
+   "question": "Which bin calculation row is the live formula for the detonation's damage: GragasQ#MinDamage or the separate GragasQToggle#MinDamage block (both are numerically identical BaseDamage arrays)?",
+   "options": [
+    "GragasQ#MinDamage is used for both the throw's data and the detonation's realized damage; GragasQToggle is a leftover/duplicate toggle-state entry not used for damage calc",
+    "GragasQToggle#MinDamage is what actually fires on detonation/toggle-off, distinct from GragasQ's throw-state row",
+    "Both fire under different conditions (e.g., manual recast vs auto-expiry) with the same numbers, so it doesn't matter which is picked"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "What is Happy Hour's actual heal cooldown schedule, since the bin's HealCooldown calculation is unresolved and only a flat 12s static value plus a Level1Value/AdditionalBonusAtThisLevel pair are given, while the wiki shows level-gated values 12/10/8/6 at levels 1/6/11/16?",
+   "options": [
+    "Use the wiki's level-gated cooldown (12s until 6, 10s until 11, 8s until 16, 6s at 16+)",
+    "Use the bin's flat 12s static cooldown at all levels",
+    "Treat the true schedule as unresolved and flag any survival-fight heal-cadence result as uncertain"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{pp|12 to 6|1;6;11;16}}",
+    "GragasPassive#HealCooldown = <{4ce08984}>",
+    "! unresolved calculation part {4ce08984}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Explosive Cask (R) on the dummy immediately, since it has by far the longest cooldown and should be used as early and as often as its cooldown allows.",
+   "Immediately follow with Barrel Roll (Q), throwing the cask onto the dummy so its fermentation timer starts running while other cooldowns are used.",
+   "Cast Drunken Rage (W) next to start its 0.75s channel; once it completes, land the empowered next basic attack on the dummy for its bonus max-HP/AP magic damage.",
+   "Cast Body Slam (E) into the dummy for its damage and the 40% cooldown refund it grants on hit, then continue auto-attacking between ability casts.",
+   "Recast/detonate Barrel Roll once it has fermented for the chosen hold time (see unsettled fermentation-timing question) rather than letting it auto-detonate late, so its cooldown (which started on the initial cast) is used efficiently.",
+   "Recast Drunken Rage every time its 5s post-effect cooldown is up, always following up with a basic attack to consume the empowerment.",
+   "Recast Body Slam every time it is off cooldown (12-14s base, refunded 40% on every hit against the dummy).",
+   "Recast Barrel Roll on cooldown (10-6s depending on rank) using the same hold-then-detonate pattern each time.",
+   "Recast Explosive Cask again only if its long cooldown (100-70s) comes up within the 15s window at very high CDR; otherwise it is a once-per-fight opener.",
+   "Fill all remaining time with basic attacks."
+  ],
+  "questions": [
+   "Is Gragas assumed to start the fight already in melee/ability range of the dummy at t=0, or does travel time to close distance need to be modeled (it changes when the empowered W attack and Q's travel/ferment clock actually land)?",
+   "Should Barrel Roll always be held to full 150% fermentation before recasting, or does an expert consider faster low-value recasts better DPS over a 15s window?",
+   "At the assumed level/items for the damage fight, is mana sufficient to sustain the full Q/W/E/R rotation for 15s, or must some casts (likely W spam, given its 5s cooldown vs 30 mana cost) be skipped?",
+   "Does Explosive Cask's 0.25s cast time block Body Slam or Barrel Roll from being queued during it (since Body Slam explicitly says Q and R can be cast during the E dash, but nothing is said about casting other spells during R's own cast time)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,732 @@
+{
+ "champion": "lissandra",
+ "abilities": {
+  "P": {
+   "name": "Iceborn Subjugation",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "thrall explosion magic damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      120,
+      140,
+      160,
+      180,
+      200,
+      220,
+      240,
+      260,
+      280,
+      300,
+      320,
+      340,
+      370,
+      400,
+      430,
+      460,
+      490,
+      520
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{pplevel|120; then +20*x for 11; then +30*x|formula=100 + 20 per level until level 12, then +30 per level}}}}|magic damage}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "LissandraPassive#TotalDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "thrall lifespan before it explodes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "chase nearby {{tip|sight|visible}} enemies for 4 seconds",
+     "bin": [
+      "LissandraPassive.ExplosionDelay"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "thrall aura slow to nearby enemies",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": -0.25,
+     "terms": [],
+     "quote": "{{tip|slow}} nearby enemies by 25%",
+     "bin": [
+      "LissandraPassive.MoveSpeedMod"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "A Frozen Thrall spawns only when an enemy champion dies while Lissandra is nearby, from that champion's corpse.",
+     "quote": "Whenever a nearby enemy champion dies, '''Lissandra''' spawns a ''Frozen Thrall'' from their corpse.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Thralls are invulnerable and untargetable, so they cannot be damaged or targeted in either fight.",
+     "quote": "''Thralls'' are {{tip|untargetable}} and {{tip|invulnerable}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The thrall chases visible enemies for 4 seconds then shatters to deal magic damage to nearby enemies, a separate damage instance from other abilities.",
+     "quote": "They will chase nearby {{tip|sight|visible}} enemies for 4 seconds, prioritizing {{tip|champion|champions}}, after which they shatter to deal",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Thralls gain increasing movement speed over their lifespan before exploding.",
+     "quote": "gain increasing {{sti|ms|{{as|movement speed}}}} over their lifespan",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LissandraPassive.Range",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LissandraPassive.Radius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Ice Shard",
+   "cooldown": {
+    "values": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "quote": "{{ap|7 to 3}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ],
+    "quote": "{{ap|55 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      115,
+      150,
+      185,
+      220
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|80 to 220}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "LissandraQ.damage",
+      "LissandraQ#TotalDamage"
+     ],
+     "binNote": "LissandraQ#TotalDamage = Damage + 0.75xap carries the 0.75 AP ratio, but the sheet flags that this calculation names a missing data value 'Damage' rather than resolving to LissandraQ.damage; the flat base is taken from LissandraQ.damage directly since it matches the wiki's 80/115/150/185/220."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      24,
+      28,
+      32,
+      36
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 36}}%",
+     "bin": [
+      "LissandraQ.slowPercentage"
+     ],
+     "binNote": "LissandraQ.slowPercentage stores the slow as a negative multiplier (-0.2 to -0.36); the wiki states the magnitude as a positive percentage (20 to 36%), same numbers with opposite sign convention."
+    },
+    {
+     "id": "q_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "LissandraQ.slowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ice Shard deals damage to all enemies its missile passes through, not just the first target.",
+     "quote": "deals {{as|magic damage}} to all enemies it passes through",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting an enemy causes the missile to shatter, becoming wider and extending its maximum range, allowing it to hit additional targets further along the path.",
+     "quote": "If ''Ice Shard'' hits an enemy, it will shatter, increasing its width and maximum range.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks the damage and slow, but does not prevent the missile from shattering (so it can still hit others).",
+     "quote": "{{tip|Spell shield}} will block the damage and the slow but will not stop the projectile from shattering.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LissandraQ.SlowDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "LissandraQ.SlowPercentage",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ring of Frost",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "LissandraW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.25,
+      1.35,
+      1.45,
+      1.55,
+      1.65
+     ],
+     "terms": [],
+     "quote": "{{ap|1.25 to 1.65}} seconds",
+     "bin": [
+      "LissandraW.SnareDuration"
+     ]
+    }
+   ],
+   "mechanics": [],
+   "binUnused": [
+    {
+     "ref": "LissandraW.TargetsToHit",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LissandraW.FreeCastCD",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Glacial Path",
+   "cooldown": {
+    "values": [
+     24,
+     21,
+     18,
+     15,
+     12
+    ],
+    "quote": "{{ap|24 to 12}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ],
+    "quote": "{{ap|80 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "LissandraE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "deceleration duration of the claw",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "decelerating over {{fd|1.25}} seconds",
+     "bin": [],
+     "binNote": "not present in the datamined slot; wiki-only timing value"
+    },
+    {
+     "id": "e_3",
+     "meaning": "delay before recast is available",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "can be recast after {{fd|0.5}} seconds while the claw is active",
+     "bin": [],
+     "binNote": "not present in the datamined slot; wiki-only timing value"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The claw deals magic damage to enemies it passes through, potentially hitting multiple targets as it travels.",
+     "quote": "deals {{as|magic damage}} to enemies it passes through",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the initial cast and the recast (blink) count as ability activations, triggering on-cast effects like Spellblade.",
+     "quote": "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The claw missile decelerates over time from 1200 to 640 speed, which can affect how quickly and how many times it hits targets over the fight window.",
+     "quote": "{{tt|1200 - 640|Claw missile speed, decelerates over time}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown begins when the ability is cast, not after the recast/blink resolves.",
+     "quote": "Starts on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast cannot occur while Lissandra is grounded or rooted.",
+     "quote": "''Glacial Path'' cannot be recast while {{tip|ground|grounded}} or {{tip|root|rooted}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LissandraE.BaseDamage",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Frozen Tomb",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.375,
+    "quote": "{{dv|{{tt|{{fd|0.375}}|Enemy cast}}|{{tt|None|Self cast}}}}",
+    "binNote": "0.375s cast time applies only to the enemy-targeted cast; the self-cast has no cast time (bin has no separate data value for either)."
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Minimum Heal per Tick",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.055
+      }
+     ],
+     "quote": "{{ap|100/10 to 200/10}} {{as|(+ {{ap|55/10}}% AP)}}",
+     "bin": [
+      "LissandraR#HealAmount"
+     ],
+     "binNote": "The bin's HealAmount formula (SelfCastFlatHeal + 0.55xap) is the total heal at 0% missing health; the wiki's per-tick minimum is that total divided by 10 ticks (0.25s interval over the 2.5s stasis)."
+    },
+    {
+     "id": "r_3",
+     "meaning": "Minimum Total Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|100 to 200}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "LissandraR#HealAmount"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "LissandraR#CalculatedDamage"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Self-cast stasis duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "entering {{tip|stasis (buff)|stasis}} for {{fd|2.5}} seconds",
+     "bin": [
+      "LissandraR.SelfCastDuration"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "herself every {{fd|0.25}} seconds over the duration",
+     "bin": [],
+     "binNote": "The bin models the heal as a single total (LissandraR#HealAmount) with no explicit tick-interval data value; the 0.25s interval is only stated in the wiki description text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The self-cast heal is increased based on missing health at the moment of casting, up to double at 100% missing health.",
+     "quote": "The healing is increased by {{as|{{pp|type='''missing''' health at the time of cast|key=%|0 to 100 for 11|key1=%|0 to 100|formula=1% per 1% of '''missing''' health}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Enemies hit by the ice field can only be damaged once every 4 seconds, so under normal use it hits an enemy only once per cast.",
+     "quote": "Enemies can only be damaged by the field of ice once every 4 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the enemy target becomes untargetable, dies, or is too far away during the cast time, the enemy-cast ability cancels without going on cooldown or paying its cost.",
+     "quote": "If the target becomes {{tip|untargetable}}, {{tip|death|dies}}, or is too far away during the cast time, this ability will cancel but does not go on {{sti|cooldown}} nor pay its cost.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the single-target enemy-cast portion and the radiating ice damage, but does not stop the ice field from spreading.",
+     "quote": "{{tip|Spell shield}} will block the single-targeted portion and the radiating ice damage, but will not stop it from spreading.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The self-cast puts Lissandra into stasis, making her untargetable/invulnerable for its duration.",
+     "quote": "entering {{tip|stasis (buff)|stasis}} for {{fd|2.5}} seconds",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LissandraR.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "LissandraR.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "LissandraR.EnemyCastDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "LissandraR.SelfCastMissingHPRatio",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "LissandraR.SelfCastMissingHPPerAbove",
+     "reason": "unknown"
+    },
+    {
+     "ref": "LissandraR.StartingAoESize",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Q/W/E deal on-cast (or short-delay) magic damage on cooldown; R enemy-cast deals damage/CC but is irrelevant to a stationary-dummy damage fight, R self-cast is defensive-only"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's missile passes through and can hit multiple targets, and shatters on hit to extend range/width; E's claw also hits enemies it passes through; against a single stationary dummy this collapses to a single hit unless the sim assumes multi-hit geometry"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Glacial Path is cast then optionally recast (blink) 0.5s later; both casts count as separate ability activations for on-cast effects (e.g. Spellblade)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs scale with rank and could matter for a low-mana build across a 15s fight, though base mana pool/regen aren't in this dossier"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's ice field can damage an enemy once every 4s while active (spreads/lingers for ~3s), functionally a single delayed tick rather than a true DOT in a 15s dummy fight"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "slows on Q/W/R do not affect damage or damage taken by a stationary dummy; included only for completeness, not needed for damage fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "R self-cast (stasis + missing-health heal) is purely defensive/survival-fight relevant, not used in the damage fight"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive spawns an invulnerable/untargetable Frozen Thrall from an enemy champion death that deals a separate magic-damage explosion after 4s; cannot trigger in a dummy fight since the dummy target never dies, but is directly relevant to survival-fight setup if the attacking champion's kill triggers it"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (plain casts, a multi-hit/pass-through projectile, a recast-blink ability, and a delayed-explosion pet triggered on enemy death) are expressible with existing primitives; the passive's death-trigger condition means it will almost never fire in a single-target damage fight (the dummy doesn't die) and can be treated as inapplicable there."
+ },
+ "unsettled": [
+  {
+   "question": "In the single-dummy damage fight, does Ice Shard's pass-through/shatter mechanic ever produce more than one damage instance on the same target, or does the dummy's stationary single-body geometry mean it always hits exactly once per cast?",
+   "options": [
+    "Always exactly one hit per cast against a single dummy",
+    "The shatter mechanic could hit the same dummy twice if the dummy occupies both the pre-shatter and post-shatter path (unlikely but sheet-ambiguous geometry)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "deals {{as|magic damage}} to all enemies it passes through",
+    "If ''Ice Shard'' hits an enemy, it will shatter, increasing its width and maximum range."
+   ]
+  },
+  {
+   "question": "Should Glacial Path's recast (blink to the claw) be used at all in the max-damage rotation, given it deals no additional damage itself and its main function (repositioning) is explicitly out of scope (mobility ignored), but the recast does count as a second 'cast' for on-cast/on-cooldown-start interactions?",
+   "options": [
+    "Skip the recast entirely since it has no direct damage and mobility is ignored, treat E as a single plain-cast",
+    "Always recast immediately since 'Starts on-cast' means cooldown timing is unaffected either way and recast could matter for item/rune on-cast triggers not modeled here"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+    "cdstart = Starts on-cast"
+   ]
+  },
+  {
+   "question": "Is the P passive's Frozen Thrall explosion damage ever reachable in the damage fight (single stationary dummy that never dies), or should it be excluded entirely from the damage-fight simulation?",
+   "options": [
+    "Exclude P entirely from the damage fight since the sole trigger (enemy champion death) cannot occur against a dummy that has health and never dies",
+    "Include P if the simulator's dummy is scripted to 'die' at some point (e.g. at the end of the 15s window) triggering a thrall spawn irrelevant to the timed kill/damage measurement"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Whenever a nearby enemy champion dies, '''Lissandra''' spawns a ''Frozen Thrall'' from their corpse."
+   ]
+  },
+  {
+   "question": "For R's enemy-cast in the damage fight, does the ~4-second cooldown on the ice field's damage tick combined with the ability's 80-120s cooldown mean R is realistically cast at most once in a 15s fight, and should the field's chip damage plus initial CalculatedDamage both be counted as one combined instance per cast?",
+   "options": [
+    "Count R as a single combined damage instance (CalculatedDamage + one ice-field tick) once per fight",
+    "Treat CalculatedDamage and the ice-field tick as two separate damage instances with distinct timings (spread delay of 1.5s)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies can only be damaged by the field of ice once every 4 seconds.",
+    "spreads out from the target over {{fd|1.5}} seconds and covers the surrounding area for 3 seconds, dealing {{as|magic damage}} to enemies"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (Frozen Tomb) enemy-cast on the dummy for its upfront magic damage plus the delayed ice-field tick, since its long cooldown means it should be used exactly once, as early as possible.",
+   "Follow immediately with Q (Ice Shard) on cooldown for its magic damage plus AP ratio; recast every time it comes off cooldown for the full 15s.",
+   "Weave in W (Ring of Frost) on cooldown between Q casts for its magic damage tick, since it has no cast time and low mana cost.",
+   "Cast E (Glacial Path) on cooldown for its damage; treat the ability as effectively resolved on the initial cast for damage purposes and either skip the recast or fire it immediately afterward if it interacts with on-cast item effects (see unsettled question), since the blink itself deals no damage and repositioning is irrelevant against a stationary dummy.",
+   "Repeat Q > W > E on cooldown for the remainder of the 15s window, prioritizing whichever ability is off cooldown to maximize total instances landed; basic attacks fill any remaining time between casts."
+  ],
+  "questions": [
+   "Does the simulator model Lissandra's passive Frozen Thrall spawn at all, given the dummy never dies during the timed fight — should P be omitted from expected damage entirely?",
+   "Should R's enemy-cast be assumed castable on a stationary target-dummy without needing to path around cast-cancel conditions (untargetable/too-far/dies), i.e., does the dummy meet R's targeting requirements the whole fight?",
+   "In the 15s window, is there a fixed order expectation (e.g., always open with hardest-hitting ability R, or always lead with Q for cooldown-efficiency) that the simulator's ranking cares about, or does it evaluate all valid orderings and take the best kill time?",
+   "Does E's recast (blink) get executed in the simulated rotation at all, given the survival/damage fights have no walls or repositioning need, and does skipping it forgo any measurable damage or on-hit trigger opportunity?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

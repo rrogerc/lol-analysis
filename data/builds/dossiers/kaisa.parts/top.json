@@ -1,0 +1,204 @@
+{
+ "champion": "kaisa",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks apply 1 Plasma stack on-hit; Void Seeker applies 2/3 stacks, each application deals Caustic Wounds magic damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Plasma stacks (0-4) on the target, refreshed on reapplication, consumed at 5th stack"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "P"
+   ],
+   "note": "5th Plasma stack detonates for missing-health magic damage, capped vs monsters"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "detonation damage scales off target's missing health"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Icathian Rain and Void Seeker deal on-cast/on-delay damage on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Icathian Rain fires 6 (or 12 evolved) separately-timed missiles as distinct damage instances against a single target"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Supercharge grants bonus attack speed for 4s after the charge, plus reduced windup/increased missile speed"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Supercharge has a charge-up cast time (attack commands become movement) before the buff activates"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E",
+    "W"
+   ],
+   "note": "each attack reduces Supercharge's current cooldown by 0.5s; evolved Void Seeker refunds 75% cooldown on champion hit"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Supercharge's cast time itself shrinks with bonus attack speed (down to a 0.6s floor)"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "R"
+   ],
+   "note": "Killer Instinct resets Kai'Sa's basic attack timer"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all basic abilities plus ultimate could matter over 15s, though Kai'Sa has no mana regen mechanic listed here"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "P"
+   ],
+   "note": "Living Weapon permanently evolves Q/W/E once stat thresholds are met from items; evolution changes their damage/behavior for the rest of the fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "Killer Instinct's shield and dash are pure survivability/mobility, irrelevant to the damage-dealt half of the fight but relevant if Kai'Sa is the survival-fight tank"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Plasma's interaction across abilities needs bespoke ordering logic: Void Seeker applies 2-3 stacks 'as if applied successively' (each one dealing its own Caustic Wounds damage based on the stack count at that moment), and if it crosses the 5-stack detonation threshold mid-application, remaining stacks are reapplied afterward, with a specific damage-ordering rule (initial Caustic Wounds, then detonation, then Void Seeker's own bolt damage, then attack on-hit last if it's the trigger). No single closed-list primitive captures this multi-step successive-stack-application-with-interleaved-detonation behavior; it must be scripted as a small state machine around the target-stacks/execute-or-threshold primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Which Void Seeker cooldown array is live: the numbers-sheet ddragon field [22, 20, 18, 16, 14] or the wiki template's {{ap|20 to 14}} ([20, 18.5, 17, 15.5, 14])?",
+   "options": [
+    "ddragon [22, 20, 18, 16, 14] is correct and the wiki is stale",
+    "wiki [20, 18.5, 17, 15.5, 14] is correct and ddragon is stale",
+    "average or verify against a third source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "ddragon W Void Seeker: maxrank 5, cooldown [20, 18.5, 17, 15.5, 14], cost [55, 60, 65, 70, 75]",
+    "cooldown     = {{ap|20 to 14}}"
+   ]
+  },
+  {
+   "question": "What is Supercharge's actual cast time formula/base — the bin's flat 1.5s castTime field, or the wiki's dynamic 1.2/(1+bonusAS/100) capped at 0.6s?",
+   "options": [
+    "Use the bin's flat 1.5s",
+    "Use the wiki's dynamic formula scaling with bonus attack speed, floor 0.6s",
+    "Bin's KaisaE#TotalCastTime formula (unresolved ClampSubPartsCalculationPart) is actually the same as the wiki's and should be treated as authoritative once resolved"
+   ],
+   "impact": "high",
+   "quotes": [
+    "castTime: 1.5",
+    "1.2 /(1 + '''bonus''' attack speed/100) . ''This is capped at 0.6 seconds.''"
+   ]
+  },
+  {
+   "question": "Does Void Seeker's Plasma application (2 or 3 stacks, 'as if applied successively') deal one combined Caustic Wounds damage instance or multiple separate instances (one per stack applied), and does a detonation mid-application interrupt the sequence for damage-ordering purposes?",
+   "options": [
+    "Single combined instance computed from cumulative stack math",
+    "Multiple separate instances, one per stack, each read at that moment's stack count",
+    "Only test data/PBE notes can resolve exact instance count"
+   ],
+   "impact": "high",
+   "quotes": [
+    "With {{ai|Void Seeker|Kai'Sa}}, if the stacks detonate {{as|Plasma|buzzword}}, any remaining stacks are reapplied afterwards. {{ai|Void Seeker|Kai'Sa}} also deals ''Caustic Wounds' ''damage based on {{as|Plasma|buzzword}} stacks on the target. This damage is calculated as if each stack was applied successively."
+   ]
+  },
+  {
+   "question": "Does the missing-health detonation damage apply against the dummy target used in the damage fight (a champion, not a monster), and if so is the 400 cap (stated as monster-only) simply irrelevant here, or does an unstated champion-context cap/interaction exist?",
+   "options": [
+    "No cap applies since target is a champion-type dummy",
+    "A cap or different balance factor applies that isn't documented for champions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "capped at 400 against {{tip|monster|monsters}}"
+   ]
+  },
+  {
+   "question": "Is KaisaPassive.PTotalDamageMultiplier_ForModesBalance=1 always 1 in the simulated fight context (standard 1v1), or could it be a mode-specific scalar the sheet leaves ambiguous?",
+   "options": [
+    "Always 1, safe to ignore",
+    "Could vary by game mode and should be flagged even though it's 1 in this data snapshot"
+   ],
+   "impact": "low",
+   "quotes": [
+    "KaisaPassive.PTotalDamageMultiplier_ForModesBalance = 1"
+   ]
+  },
+  {
+   "question": "Does the 1s missile travel time on Q (all missiles hitting a single target over 1 second) matter for a stationary-dummy DPS calc, or should all 6/12 missile hits be treated as landing at fixed 0.4s+ intervals regardless of stacking order with other abilities?",
+   "options": [
+    "Treat as instantaneous burst at cast+0.4s for simplicity",
+    "Model the full 1-second landing window with discrete missile timings"
+   ],
+   "impact": "low",
+   "quotes": [
+    "It takes 1 second for all missiles to fire at a single target."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Living Weapon evolutions are already active on all three basic abilities (sufficient items to meet AD/AP/AS thresholds), since evolutions strictly increase damage/utility and the fight is a fixed-loadout item build test.",
+   "Open with Void Seeker (W) to apply 2-3 Plasma stacks and deal its magic damage instance, using its low cast time before entering attack range.",
+   "Auto-attack continuously to build/refresh Plasma stacks (1 per hit) and trigger Caustic Wounds damage on each application, working toward and through the 5th-stack detonation repeatedly.",
+   "Cast Icathian Rain (Q) on cooldown for its 6 (or 12 evolved) missile hits of physical damage.",
+   "Cast Supercharge (E) as soon as available and off-cooldown-permitting, timing it so its post-charge attack-speed buff overlaps with the following auto-attack window, since each attack during that window also shaves 0.5s off Supercharge's own cooldown to bring it back sooner.",
+   "Recast Void Seeker (W) on cooldown for repeated magic damage plus Plasma reapplication/detonation.",
+   "Ignore Killer Instinct (R) in the damage fight except to leverage its attack-reset if it usefully realigns the next auto-attack, since its shield/dash are pure survivability with no target requirement satisfied on a stationary dummy that lacks Plasma persistence issues (dummy is 'affected by Plasma' via attacks, so R could be cast for the attack reset alone).",
+   "In the survival fight (Kai'Sa as the tank), only R's shield (and passively its cooldown-based reapplication) contributes to survivability; ignore Q/W/E for damage-taken purposes and use R defensively on cooldown to soak the enemy's rotation."
+  ],
+  "questions": [
+   "Should the simulator assume Kai'Sa's abilities are already Living Weapon-evolved, or should it model the 2-second evolution cast time occurring mid-fight (and if so, at what point given a specific item build)?",
+   "In the 15s damage fight, is attack speed high enough that repeated Plasma stacking/detonation cycles happen multiple times, or should the rotation assume roughly one full stack-to-detonation cycle?",
+   "Does Killer Instinct's Plasma-recency requirement (target must have been Plasma-affected within 4s) count a stationary training dummy as satisfying that condition via her own attacks, making R castable at all in the damage fight?",
+   "Should Supercharge's cast time be modeled with its attack-speed-dependent formula, and if so what AS value from the tested item build should be used to compute it before the fight begins?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

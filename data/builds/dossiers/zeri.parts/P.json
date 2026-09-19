@@ -1,0 +1,229 @@
+{
+ "name": "Living Battery",
+ "cooldown": null,
+ "cost": {
+  "values": [
+   10,
+   100
+  ],
+  "quote": "{{dv|{{tt|10|Regular zaps}}|{{tt|100|Full charge zap}}}}",
+  "resource": "charge"
+ },
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_zap_damage",
+   "meaning": "magic damage from a regular (uncharged) zap basic attack",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    10,
+    10.635,
+    11.302,
+    11.999,
+    12.726,
+    13.485,
+    14.276,
+    15.096,
+    15.946,
+    16.829,
+    17.743,
+    18.687,
+    19.662,
+    20.668,
+    21.704,
+    22.772,
+    23.871,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.03
+    }
+   ],
+   "quote": "{{as|{{pp|10+(15/17)*(x-1)*(0.7025+0.0175*(x-1)) for 20}}|magic damage}} {{as|(+ 3% AP)}}",
+   "bin": [
+    "ZeriQ#MinDamage"
+   ],
+   "binNote": "The wiki's per-level formula 10+(15/17)*(x-1)*(0.7025+0.0175*(x-1)) is quadratic and matches the bin's endpoints (10 at level 1, 25 at level 18) but not its intermediate values: the bin's ZeriQ#MinDamage flat array is a plain linear interpolation (10, 10.882353, 11.764706, ...) between the same endpoints. This is a genuine disagreement between the wiki's stated formula and the bin's linear array; the wiki's numbers are recorded here."
+  },
+  {
+   "id": "p_execute_threshold",
+   "meaning": "health threshold below which a regular zap executes the target",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    70,
+    75.29,
+    80.59,
+    85.88,
+    91.18,
+    96.47,
+    101.76,
+    107.06,
+    112.35,
+    117.65,
+    122.94,
+    128.24,
+    133.53,
+    138.82,
+    144.12,
+    149.41,
+    154.71,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "the target if they are below {{pp|70 + (160-70)/17*(x-1) for 20|color=hp}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "ZeriQ#PassiveExecuteThreshold"
+   ]
+  },
+  {
+   "id": "p_fullcharge_base",
+   "meaning": "magic damage from the full-charge empowered attack",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    75,
+    80,
+    85,
+    90,
+    95,
+    100,
+    105,
+    110,
+    115,
+    120,
+    125,
+    130,
+    135,
+    140,
+    145,
+    150,
+    155,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.1
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.01,
+      0.0158824,
+      0.0217647,
+      0.0276471,
+      0.0335294,
+      0.0394118,
+      0.0452941,
+      0.0511765,
+      0.0570588,
+      0.0629412,
+      0.0688235,
+      0.0747059,
+      0.0805882,
+      0.0864706,
+      0.0923529,
+      0.0982353,
+      0.1041176,
+      0.11
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|75 + (160-75)/17*(x-1) for 20}}|magic damage}} {{as|(+ 110% AP)}} {{as|(+ {{pp|1 + (11-1)/17*(x-1) for 20|key=%}} of target's '''maximum''' health)}}",
+   "bin": [
+    "ZeriQ#PassiveMaxDamage",
+    "ZeriQ#PassiveMaxChargePercentHealth"
+   ]
+  },
+  {
+   "id": "p_fullcharge_monster_cap",
+   "meaning": "cap on the target-max-health portion of the full-charge attack against monsters",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 300,
+   "terms": [],
+   "quote": "The damage based on the target's health ratio is capped at 300 against {{tip|monsters}}.",
+   "bin": [
+    "ZeriQ.MaxPercentHealthToMonsters"
+   ],
+   "binNote": "Not usable in a dummy fight (dummy counts as an enemy champion, not a monster); listed here for completeness only."
+  },
+  {
+   "id": "p_max_charge",
+   "meaning": "maximum charge Zeri can hold before her next attack becomes the empowered full-charge attack",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 100,
+   "terms": [],
+   "quote": "up to a maximum of 100 charge",
+   "bin": [
+    "ZeriQ.MaxPercentHealthToMonsters"
+   ],
+   "binNote": "No numbers sheet row directly under P's own header stores the 100-charge cap or the 10-charge-per-40-units/10-per-Q-cast rates; these are only stated in the wikitext description, so bin is []."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Zeri generates 1 charge for every 40 units she travels by any means and 10 charge every time she casts Burst Fire, up to a maximum of 100 charge.",
+   "quote": "generates 1 charge for every 40 units she travels by any means and 10 charge every time she casts ''{{ai|Burst Fire|Zeri}}'', up to a maximum of 100 charge",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Basic attacks consume charge (10 for a regular zap, all 100 for the empowered full-charge attack) to deal modified damage instead of normal auto-attack damage.",
+   "quote": "consume charge to deal '''modified''' damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Zeri's charged/uncharged basic attacks apply spell effects as spell damage and trigger on-cast effects, but do not deal physical damage and cannot critically strike nor trigger on-hit or on-attack effects.",
+   "quote": "'''Zeri's''' {{tip|basic attacks}} apply {{tip|spell effects}} as {{tip|spell damage}} and trigger on-cast effects, but they do not deal {{as|physical damage}} and '''cannot''' {{tip|critically strike}} nor trigger {{tip|on-hit}} and {{tip|on-attack}} effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Uncharged attacks do not execute enemies that are shielded or invulnerable while below the health threshold.",
+   "quote": "Uncharged attacks do not execute enemies that are {{tip|shield|shielded}} or {{tip|invulnerable}} while below the health threshold.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Charged (full-charge) attacks only deal the base flat damage component to structures, ignoring the AP and max-health ratios.",
+   "quote": "Charged attacks only deal the '''base''' damage to {{tip|structures}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZeriPassive.ShieldDuration",
+   "reason": "defensive"
+  },
+  {
+   "ref": "ZeriPassive.HastePercent",
+   "reason": "unknown"
+  },
+  {
+   "ref": "ZeriPassive.EnergizedDuration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "ZeriPassive.PercentShieldSteal",
+   "reason": "defensive"
+  },
+  {
+   "ref": "ZeriPassive.ChampHitHasteDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

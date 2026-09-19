@@ -1,0 +1,1000 @@
+{
+ "champion": "evelynn",
+ "abilities": {
+  "P": {
+   "name": "Demon Shade",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "health threshold below which Evelynn heals",
+     "role": "utility",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      250,
+      270,
+      290,
+      310,
+      330,
+      350,
+      370,
+      390,
+      410,
+      430,
+      450,
+      470,
+      490,
+      510,
+      530,
+      550,
+      570,
+      590
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 2.5
+      }
+     ],
+     "quote": "{{pplevel|250 to 590}} {{as|(+ 250% AP)}} health",
+     "bin": [
+      "EvelynnPassive#HealingThresholdTOOLTIP"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "heal per second while active",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      15,
+      23,
+      31,
+      39,
+      47,
+      55,
+      63,
+      71,
+      79,
+      87,
+      95,
+      103,
+      111,
+      119,
+      127,
+      134,
+      142,
+      150
+     ],
+     "terms": [],
+     "quote": "'''Evelynn''' {{tip|heal|heals}} herself for {{pplevel|15 to 150|color=heal}} every second",
+     "bin": [
+      "EvelynnPassive#HealPerSecondTOOLTIP"
+     ],
+     "binNote": "sheet gives HealPerSecondTOOLTIP as byLevel(15..150) without intermediate steps; interpolated linearly to 18 values, matching wiki's pplevel range."
+    },
+    {
+     "id": "p_3",
+     "meaning": "time without stealth-breaking actions before Demon Shade activates",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Evelynn''' shrouds herself in ''Demon Shade'' after not performing actions that {{tip|break stealth}} for 4 seconds",
+     "bin": [
+      "EvelynnPassive.DemonShadeTimer"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "static cooldown after attacking or casting an ability",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "places it on a 4-second {{tt|static cooldown|Unaffected by ability haste}}",
+     "bin": [
+      "EvelynnPassive.DemonShadeTimer"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "reduced static cooldown after casting Last Caress",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "reduced to {{fd|1.25}} seconds from casting ''{{ai|Last Caress|Evelynn}}''",
+     "bin": [
+      "EvelynnR.PassiveReset"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "static cooldown after taking champion/turret damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "interrupts ''Demon Shade'' and places it on a {{fd|1.5}}-second {{tt|static cooldown|Unaffected by ability haste}}",
+     "bin": [
+      "EvelynnPassive.StealthDropTimer"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Demon Shade heals only while active (out of combat, below threshold), affecting survivability but not applicable to a target dummy that fights back.",
+     "quote": "While [[Combat status|out of combat]], {{ci|Evelynn}} gains ''Demon Shade''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Attacking or casting abilities ends Demon Shade immediately.",
+     "quote": "Attacking or casting abilities ends ''Demon Shade'' immediately and places it on a 4-second {{tt|static cooldown|Unaffected by ability haste}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "From level 6 onward, Demon Shade grants camouflage (not a damage/survival stat).",
+     "quote": "From [[Experience (champion)|level]] 6 onward, ''Demon Shade'' also grants {{tip|camouflage}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EvelynnPassive.DemonShadeTimer",
+     "reason": null
+    },
+    {
+     "ref": "EvelynnPassive.StealthDropTimer",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Hate Spike",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "4"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.3,
+    "quote": "{{dv|{{tt|{{fd|0.3}}|Initial cast}}|{{tt|None|Recast}}}}",
+    "binNote": "Bin's EvelynnQ.castTime is 0.25 but the wiki states the initial cast time as {{fd|0.3}} with recast being None; recording the wiki's value per instructions and noting the disagreement."
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      30,
+      35,
+      40,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|25 to 45}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "EvelynnQ#MissileDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      15,
+      25,
+      35,
+      45,
+      55
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|15 to 55}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "EvelynnQ#TotalBonusDamage"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Magic Damage (recast)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      30,
+      35,
+      40,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|25 to 45}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "EvelynnQ#MissileDamage"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "marked target duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "marking them for 4 seconds",
+     "bin": [],
+     "binNote": "No bin row stores the mark duration; the sheet has no such value, only stack count and per-hit damage."
+    },
+    {
+     "id": "q_8",
+     "meaning": "number of bonus-damage attacks/abilities against marked target",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "next 3 {{tip|basic attacks}} {{tip|on-hit}} or {{tip|abilities}}",
+     "bin": [
+      "EvelynnQ.QStackCount"
+     ]
+    },
+    {
+     "id": "q_9",
+     "meaning": "recast count / uses",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "may be recast up to 3 times at no cost until the ability comes off cooldown",
+     "bin": [],
+     "binNote": "No dedicated data value for the number of recasts exists in the sheet; it is implied by the 4x total damage tooltip but not stated as its own row."
+    },
+    {
+     "id": "q_10",
+     "meaning": "barrage cooldown between recasts",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}}",
+     "bin": [],
+     "binNote": "Wiki's custominfo gives 0.5s between recasts; the bin's EvelynnQ.FakeCD=4 is a different value (matches the wiki-listed base cooldown of 4, not the barrage interval), so it is not used here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The dart marks the first enemy hit; Evelynn's next 3 basic attacks (on-hit) or abilities against the marked target deal bonus magic damage.",
+     "quote": "'''Evelynn's''' next 3 {{tip|basic attacks}} {{tip|on-hit}} or {{tip|abilities}} against the marked target deal {{as|'''bonus''' magic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast is a separate line-shaped AoE hitting all enemies hit, not just the marked target.",
+     "quote": "'''Evelynn''' unleashes a line of deadly spikes in the direction of the nearest {{tip|sight|visible}} enemy that deals {{as|magic damage}} to all enemies struck.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Recasts are free (no additional mana cost) and are limited to 3 uses until the ability's cooldown resets.",
+     "quote": "''Hate Spike'' may be recast up to 3 times at no cost until the ability comes off cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial dart applies spell damage (not on-hit) while the recast spikes deal area damage as separate instances.",
+     "quote": "The dart applies {{tip|spell damage}} and the spikes deal {{tip|area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each cast (including recasts) counts as a separate ability activation for on-cast effects.",
+     "quote": "Each cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A nearby visible enemy is required in order to recast the ability.",
+     "quote": "''A nearby {{tip|sight|visible}} enemy is required to recast this ability.''",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EvelynnQ.CooldownRefund",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EvelynnQ.HateSpikeBaseDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "EvelynnQ.HateSpikeAPRatio",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "EvelynnQ.MissileBaseDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "EvelynnQ.BonusDamageAPRatio",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "EvelynnQ.FakeCD",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Allure",
+   "cooldown": {
+    "values": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "quote": "{{ap|15 to 11}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}",
+    "binNote": "wiki cast time template gives 0.25 but bin castTime for EvelynnW is 0.15; keeping the wiki's stated value per instructions."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Charm Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25
+     ],
+     "terms": [],
+     "quote": "{{ap|1.25 to 2.25}} seconds",
+     "bin": [
+      "EvelynnW.CharmDuration"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Magic Resistance Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.35,
+      0.375,
+      0.4,
+      0.425,
+      0.45
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|35 to 45}}%|magic resistance}}",
+     "bin": [
+      "EvelynnW.MRShred"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Bonus Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      250,
+      300,
+      350,
+      400,
+      450
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|250 to 450}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "EvelynnW#MonsterDamageTotalTOOLTIP"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Monster Charm Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.25,
+     "terms": [],
+     "quote": "the duration of the {{tip|charm}} is increased by {{fd|2.25}} seconds",
+     "bin": [
+      "EvelynnW.MonsterExtraCharm"
+     ],
+     "binNote": "MonsterExtraCharm=2 in the bin but the wiki's leveling table and description both state 2.25 seconds; wiki number kept, bin disagrees."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Marks the target enemy champion or medium/large monster with a curse for 5 seconds; the next basic attack or ability hit against the target consumes the mark.",
+     "quote": "marks the target enemy {{tip|champion}} or medium or large {{tip|monster}} with a curse for 5 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Consuming the mark slows the target by 45% for 0.75 seconds and refunds Allure's mana cost.",
+     "quote": "slowing them by 45% for {{fd|0.75}} seconds and refunding ''Allure's'' {{as|{{sti|mana|mana cost}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the mark was applied for at least 2.5 seconds before being consumed, the consumption is empowered, applying magic resist reduction to champions (for 4 seconds) or bonus damage and extra charm duration to monsters.",
+     "quote": "If the target was marked for at least {{fd|2.5}} seconds, the consumption is empowered.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The magic resistance reduction debuff is applied to the attack or ability that triggers the empowered consumption.",
+     "quote": "The {{sti|magic penetration|{{as|magic resistance reduction}}}} will be applied to the attack or ability that triggers it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against monsters, the empowered trigger deals bonus magic damage and increases charm duration by 2.25 seconds.",
+     "quote": "the triggering effect deals {{as|'''bonus''' magic damage}} and the duration of the {{tip|charm}} is increased by {{fd|2.25}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Allure's mark application cannot be blocked by spell shield, but the mark's consumption will not occur if the triggering ability is blocked by a spell shield, leaving the mark on the target.",
+     "quote": "''Allure's'' mark application on a target cannot be blocked by {{tip|spell shield}}.\n** The mark's consumption will not occur if the ability is blocked by a spell shield, causing the mark to remain on the target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target becomes untargetable, dies, or is too far away or out of sight during the cast time, the ability cancels but still goes on cooldown and pays its cost.",
+     "quote": "If the target becomes {{tip|untargetable}}, {{tip|death|dies}}, or is too far away or no longer in {{tip|sight}} during the cast time, this ability will cancel but still go on {{sti|cooldown}} and pay its cost.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Allure will restart its cooldown whenever the mark debuff is removed.",
+     "quote": "''Allure'' will restart its cooldown whenever the mark debuff is removed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Allure does not break Demon Shade nor its fade into it.",
+     "quote": "''Casting Allure does not break {{ai|Demon Shade|Evelynn}} nor its fade into it.''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EvelynnW.MonsterCharm",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EvelynnW.ShredDuration",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EvelynnW.MonsterDamage",
+     "reason": null
+    },
+    {
+     "ref": "EvelynnW.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnW.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnW.SlowDuringCharm",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnW.ActualCD",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "EvelynnW.BuffDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EvelynnW.NonCharmSlowDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Whiplash / Empowered Whiplash",
+   "cooldown": {
+    "values": [
+     8
+    ],
+    "quote": "8"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.03,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.015
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 3% {{as|(+ {{fd|1.5}}% per 100 AP)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "EvelynnE.BaseDamage",
+      "EvelynnE#PercentHealthBaseTOOLTIP"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Empowered Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.04,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.025
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 4% {{as|(+ {{fd|2.5}}% per 100 AP)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "EvelynnE.EmpoweredDamage",
+      "EvelynnE#PercentHealthEmpoweredTOOLTIP"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Whiplash applies on-hit effects on cast.",
+     "quote": "dealing {{as|magic damage}} based on the {{as|target's '''maximum''' health}} and applying {{tip|on-hit}} effects",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered Whiplash only applies on-hit effects to the primary target, not to enemies passed through.",
+     "quote": "''Empowered Whiplash'' only applies {{tip|on-hit}} effects to the primary target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Entering Demon Shade resets Whiplash's cooldown and empowers its next cast, so a fresh Whiplash cast can follow immediately after a Demon Shade trigger.",
+     "quote": "Gaining ''{{ai|Demon Shade|Evelynn}}'' resets ''Whiplash's'' {{sti|cooldown}} and ''{{ai|Empowered Whiplash|Evelynn|empowers}}'' its next cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered Whiplash is a dash that deals increased damage to the target and to all enemies passed through along the path.",
+     "quote": "'''Evelynn''' {{tip|dash|dashes}} toward the target enemy with her lashers, dealing {{ccs|increased damage|magic}} to them upon completion as well as to all enemies within her path.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The health-percent portion of both Whiplash and Empowered Whiplash has a minimum damage of 25 and is capped at 450 only against monsters.",
+     "quote": "The damage based on the target's health ratio for both ''Whiplash'' and its ''{{ai|Empowered Whiplash|Evelynn|empowered}}'' cast deals a minimum of 25 and is capped at 450 against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EvelynnE.MonsterCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EvelynnE.SpeedAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnE.SpeedDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnE.MoveSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnE.MSDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "EvelynnE.MonsterDamageCamp",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Last Caress",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      125,
+      250,
+      375
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|125 to 375}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "EvelynnR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Empowered Damage against enemies below 30% max health",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      300,
+      600,
+      900
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.8
+      }
+     ],
+     "quote": "{{ap|125*2.4 to 375*2.4}} {{as|(+ {{ap|75*2.4}}% AP)}}",
+     "bin": [
+      "EvelynnR#CritDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "health threshold below which Empowered Damage applies",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "below {{as|{{sti|health|30% of their '''maximum''' health}}}}",
+     "bin": [
+      "EvelynnR.CritTreshold"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "delay from end of cast time until blink and targetability return",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{tt|{{fd|0.5}} seconds|From end of cast time}}",
+     "bin": [],
+     "binNote": "The bin has no field for this post-cast blink delay; it is not present anywhere in the sheet's Evelynn R rows."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Evelynn becomes untargetable at the start of the cast time and unleashes her lashers in a cone dealing magic damage to enemies struck within.",
+     "quote": "becoming {{tip|untargetable}} at the start of the cast time and then unleashing her lashers in a cone in the target direction, dealing {{as|magic damage}} to enemies struck within",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After 0.5 seconds from end of cast, she blinks 700 units backwards and becomes targetable again.",
+     "quote": "she {{tip|blink|blinks}} 700 units in the opposite direction and becomes targetable again",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Last Caress deals 240% damage against enemies below 30% of their maximum health.",
+     "quote": "''Last Caress'' is empowered to deal {{ccs|240% damage|magic}} against enemies below {{as|{{sti|health|30% of their '''maximum''' health}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Last Caress can be buffered during Empowered Whiplash.",
+     "quote": "''Last Caress'' can be buffered during {{ai|Empowered Whiplash|Evelynn}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Last Caress can be blocked by spell shields.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EvelynnR.CritMultiplier",
+     "reason": null
+    },
+    {
+     "ref": "EvelynnR.PassiveReset",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EvelynnR.BaseDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "EvelynnR.CritBonus",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Hate Spike's dart marks the target for 4s; Evelynn's next 3 basic attacks (on-hit) or abilities against the marked target deal bonus magic damage (15-55 +25% AP per instance, up to 3 instances)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Hate Spike can be recast up to 3 times at no mana cost (barrage interval ~0.5s) while the original cast is on cooldown; each recast is a separate line-AoE magic damage instance hitting the dummy."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "When Allure's mark is consumed after maturing 2.5s+, the target (champion) suffers 35-45% magic resistance reduction for 4s, amplifying all subsequent magic damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Allure's on-hit expunge is only empowered (MR shred applied) if the mark was held on the target for at least 2.5 seconds before being consumed by an attack/ability."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Whiplash and Empowered Whiplash deal magic damage scaling off the target's current maximum health (base 60-180/80-240 + 3%/4% max HP, +0.015%/0.025% per AP)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Gaining Demon Shade resets Whiplash's cooldown to 0 and empowers the next cast into Empowered Whiplash."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "E"
+   ],
+   "note": "Evelynn is out of combat (Demon Shade active) before the fight begins per the 4s no-stealth-break timer, so her opening Whiplash cast is the Empowered version; subsequent casts during continuous engagement are not."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "Last Caress deals 240% of its base+AP damage against enemies below 30% of their maximum health, otherwise base damage."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 40-60, W 60-100, E 40-60, R 100 flat) meaningfully cap how many W/R casts and sustained Q/E usage fit inside the 15s window given Evelynn's mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Q's mark-empowered attacks and free recasts, W's maturity-gated MR shred, E's %max-health scaling with a Demon-Shade-triggered empowered opener, R's sub-30%-health damage multiplier, and mana costs) maps cleanly onto existing primitives; no unique logic outside the closed list is required."
+ },
+ "unsettled": [
+  {
+   "question": "Is Last Caress's 240% bonus damage against low-health targets implemented as a true critical strike (affected by crit-damage-amplifying items/runes like Infinity Edge) or as a flat conditional multiplier unaffected by crit modifiers?",
+   "options": [
+    "It is a genuine crit (interacts with bonus crit damage sources)",
+    "It is a flat 240% multiplier unrelated to the crit system despite the internal naming"
+   ],
+   "impact": "high",
+   "quotes": [
+    "EvelynnR.CritMultiplier = 2.4",
+    "EvelynnR.CritBonus = 1.4",
+    "EvelynnR.CritTreshold = 0.3",
+    "EvelynnR#CritDamage = Damage * CritMultiplier=2.4",
+    "''Last Caress'' is empowered to deal {{ccs|240% damage|magic}} against enemies below {{as|{{sti|health|30% of their '''maximum''' health}}}}."
+   ]
+  },
+  {
+   "question": "What is Hate Spike's actual cast/recast cadence: initial cast time 0.25s (bin) or 0.3s (wiki), and is the 0.5s recast interval (wiki custominfo) or 4s (bin EvelynnQ.FakeCD) the real value governing recast timing?",
+   "options": [
+    "Use bin's 0.25s cast / recast governed by some other bin value",
+    "Use wiki's 0.3s initial cast and 0.5s barrage interval between recasts"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.25",
+    "{{dv|{{tt|{{fd|0.3}}|Initial cast}}|{{tt|None|Recast}}}}",
+    "customlabel  = {{tt|Barrage Cooldown|Cooldown between each spike cast, affected by ability haste}}|custominfo   = {{fd|0.5}}",
+    "EvelynnQ.FakeCD = 4"
+   ]
+  },
+  {
+   "question": "Is Allure's cast time 0.15s (bin EvelynnW.castTime) or 0.25s (wiki cast time field)?",
+   "options": [
+    "0.15s per bin",
+    "0.25s per wiki"
+   ],
+   "impact": "low",
+   "quotes": [
+    "castTime: 0.15",
+    "|cast time    = {{fd|0.25}}"
+   ]
+  },
+  {
+   "question": "Does the simulated damage fight begin with Evelynn out of combat (Demon Shade active), so her first Whiplash cast is automatically the Empowered version, or does the fight start already 'in combat' with no free empowered opener?",
+   "options": [
+    "Fight opens with Demon Shade up, granting one free Empowered Whiplash at the start",
+    "Fight starts in-combat / no assumed pre-fight stealth bonus, first E is the plain version"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{sbc|Innate:}} While [[Combat status|out of combat]], {{ci|Evelynn}} gains ''Demon Shade''.",
+    "Gaining ''{{ai|Demon Shade|Evelynn}}'' resets ''Whiplash's'' {{sti|cooldown}} and ''{{ai|Empowered Whiplash|Evelynn|empowers}}'' its next cast."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Evelynn enters the fight out of combat with Demon Shade active (pre-fight stealth), so her opening ability is treated as coming off an empowered state.",
+   "Cast W (Allure) on the target first to start its 5s mark timer, since the empowered consume requires holding the mark for 2.5s.",
+   "Cast E (Whiplash), which is the free Empowered Whiplash granted by Demon Shade, for a large opening burst of %-max-health magic damage plus on-hit effects.",
+   "Cast Q (Hate Spike) to mark the target, then immediately chain its up to 3 free recasts (each a separate magic-damage instance) before the barrage window closes.",
+   "Basic-attack the target between ability cooldowns so the 3 Q-empowered attacks (bonus magic damage per hit) and W's empowered trigger land as soon as available.",
+   "As soon as roughly 2.5s have passed since casting W, land a basic attack or ability on the target to consume the matured mark, applying the magic resistance shred for the rest of the fight.",
+   "Recast E again once its normal 8s cooldown is up (now un-empowered, since Demon Shade will not re-trigger while continuously engaged) for more %-health magic damage.",
+   "Recast Q on its 4s cooldown (plus recasts) repeatedly through the fight window to keep stacking magic damage and empowered on-hit procs.",
+   "Hold R (Last Caress) until the target's health is below 30% max health if that will occur within the 15s window, to get the 240% damage multiplier; otherwise cast it as soon as available given its long cooldown likely allows only one use in the fight.",
+   "Recast W again if it comes off cooldown before the fight ends, to refresh the magic resistance shred window."
+  ],
+  "questions": [
+   "Does the simulator model Evelynn as starting the damage fight out of combat (Demon Shade active), granting the free opening Empowered Whiplash, or does she start already engaged with no such bonus?",
+   "Within the ~15s fight against a single target, does the target's health realistically drop below 30% (triggering R's empowered damage) before R would be cast anyway, or should R simply be fired on cooldown regardless of the threshold?",
+   "Should Hate Spike's 3 free recasts be fired back-to-back immediately after the initial cast, or is it better DPS to space them to keep a mark active on the target for on-hit bonus damage timing?",
+   "Does landing a basic attack to consume Allure's mark need to occur at or after the exact 2.5s maturity mark to count as empowered, or does the simulator treat any post-cast hit as empowered once 2.5s have elapsed in real time regardless of attack-timing granularity?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

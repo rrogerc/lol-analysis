@@ -1,0 +1,479 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "GarenPassive",
+    "key": "Characters/Garen/Spells/GarenPassiveAbility/GarenPassive",
+    "dataValues": {
+     "DamageTimer": 8
+    },
+    "calcs": {
+     "RegenCalc": {
+      "expr": "(byLevelL[1.5/1.7/1.9/2.1/2.3/2.5/3.3/4.1/4.9/5.7/6.5/7.3/8.1/8.5/8.9/9.3/9.7/10.1]) * 0.01",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.015,
+        0.017,
+        0.019,
+        0.021,
+        0.023,
+        0.025,
+        0.033,
+        0.041,
+        0.049,
+        0.057,
+        0.065,
+        0.073,
+        0.081,
+        0.085,
+        0.089,
+        0.093,
+        0.097,
+        0.101
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "GarenQ",
+    "key": "Characters/Garen/Spells/GarenQAbility/GarenQ",
+    "cooldown": 8,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       60,
+       90,
+       120,
+       150
+      ]
+     },
+     "SilenceDuration": 1.5,
+     "MovementSpeedDuration": {
+      "axis": "rank",
+      "v": [
+       1.4,
+       1.95,
+       2.5,
+       3.05,
+       3.6
+      ]
+     },
+     "MovementSpeedAmount": 0.35,
+     "AttackWindow": 4.5,
+     "tADRatio": 1.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[30/60/90/120/150] + (tADRatio=1.5)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        60,
+        90,
+        120,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.5,
+        "dataValue": "tADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "tADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "GarenW",
+    "key": "Characters/Garen/Spells/GarenWAbility/GarenW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      19.5,
+      17,
+      14.5,
+      12
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BuffCounterPerKill": 1,
+     "ResistGainOnKill": 0.2,
+     "ResistGainOnKillTooltip": 0.2,
+     "ResistMax": 30,
+     "DRPercent": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.29,
+       0.33,
+       0.37,
+       0.41
+      ]
+     },
+     "DRDuration": 4,
+     "UpfrontTenacity": 0.6,
+     "UpfrontDuration": 0.75,
+     "LargeMonsterStacks": 1,
+     "EpicMonsterStacks": 1,
+     "ShieldHealthRatio": 0.18,
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       65,
+       85,
+       105,
+       125,
+       145
+      ]
+     }
+    },
+    "calcs": {
+     "TotalShield": {
+      "expr": "BaseShield=[65/85/105/125/145] + (ShieldHealthRatio=0.18)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        85,
+        105,
+        125,
+        145
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.18,
+        "dataValue": "ShieldHealthRatio"
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldHealthRatio"
+      ]
+     },
+     "ResistsForTooltip": {
+      "expr": "(ResistGainOnKill=0.2)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({9e10ce18})",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "ResistGainOnKill"
+       }
+      ],
+      "refs": [
+       "ResistGainOnKill"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "GarenE",
+    "key": "Characters/Garen/Spells/GarenEAbility/GarenE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8.25,
+      7.5,
+      6.75,
+      6
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "NumTicks": 7,
+     "ASPerTick": 0.25,
+     "BaseDamagePerTick": {
+      "axis": "rank",
+      "v": [
+       4,
+       7,
+       10,
+       13,
+       16
+      ]
+     },
+     "ADRatioPerTick": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.43,
+       0.46,
+       0.49,
+       0.52
+      ]
+     },
+     "ShredDuration": 6,
+     "StacksToShred": 6,
+     "Duration": 3,
+     "ShredAmount": 0.25,
+     "NearestEnemyBonus": 0.25,
+     "CritMod": 0.3
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamagePerTick=[4/7/10/13/16] + (ADRatioPerTick=[0.4/0.43/0.46/0.49/0.52])xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        4,
+        7,
+        10,
+        13,
+        16
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.4,
+          0.43,
+          0.46,
+          0.49,
+          0.52
+         ]
+        },
+        "dataValue": "ADRatioPerTick"
+       }
+      ],
+      "refs": [
+       "ADRatioPerTick",
+       "BaseDamagePerTick"
+      ]
+     },
+     "CriticalDamage": {
+      "expr": "TotalDamage * 1 + (CritMod=0.3)*(1xcritDamage + -1)",
+      "modifies": "TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CritMod"
+      ]
+     },
+     "NumberOfStrikes": {
+      "expr": "NumTicks=7",
+      "flat": 7,
+      "terms": [],
+      "refs": [
+       "NumTicks"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "GarenR",
+    "key": "Characters/Garen/Spells/GarenRAbility/GarenR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       200,
+       275
+      ]
+     },
+     "ExecuteDamage": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.3,
+       0.35
+      ]
+     },
+     "RevealDuration": 1
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "GarenQ",
+  "W": "GarenW",
+  "E": "GarenE",
+  "R": "GarenR",
+  "P": "GarenPassive"
+ },
+ "resource": {
+  "arType": null,
+  "values": {
+   "{726ee5cd}": 0,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.12
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Garen",
+  "name": "Garen",
+  "partype": "None",
+  "passive": "Perseverance",
+  "spells": [
+   {
+    "id": "GarenQ",
+    "name": "Decisive Strike",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "GarenW",
+    "name": "Courage",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     19.5,
+     17,
+     14.5,
+     12
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "GarenE",
+    "name": "Judgment",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8.25,
+     7.5,
+     6.75,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "GarenR",
+    "name": "Demacian Justice",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Perseverance": {
+    "spelleffects": "Heal",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Decisive Strike": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   }
+  },
+  "W": {
+   "Courage": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  },
+  "E": {
+   "Judgment": {
+    "damagetype": "Physical",
+    "spelleffects": "aoedot",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   },
+   "Judgment 2": {
+    "damagetype": "Physical",
+    "spelleffects": "aoedot",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   }
+  },
+  "R": {
+   "Demacian Justice": {
+    "damagetype": "True",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

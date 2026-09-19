@@ -1,0 +1,116 @@
+{
+ "champion": "nunu",
+ "primitives": [
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Biggest Snowball Ever! channels up to 10s (explosion damage capping at 5s) and Absolute Zero channels up to 3s; both block other actions while running except for one exempted spell slot per the wiki's channel-interaction table."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "W has a manual/automatic recast that releases the snowball; E can be recast up to twice within 3s for extra volleys plus a delayed Snowbound root-damage tick; R has a manual/automatic recast that detonates the blizzard."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Call of the Freljord grants Nunu 20% bonus attack speed and 10% bonus movement speed for 4s (extendable) on landing damage against the dummy; per-target retrigger is limited to once per 10s (ontargetcdstatic), so uptime in a solo-dummy fight is intermittent, not constant."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Consume is a short-cast (0.3s), low-cooldown single-target bite dealing champion-branch magic damage (since the dummy counts as an enemy champion) plus a self-heal."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 60, W/E 50-70 by rank, R 100 flat) stack up fast in a 15s window; R alone is a third of a typical early-mid-game mana pool, so mana may cap how much of the kit can be cast rather than cooldowns alone."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics (channel-and-recast W/R, multi-recast E, an intermittent on-damage self-buff, a plain single-target bite, and mana as a real constraint) map onto existing primitives. Optimal play always fully charges W/R for maximum damage, so the continuous charge-time ramp only needs to be evaluated at its capped/maximum value, not modeled as a separate scaling primitive. The passive's cleave to secondary targets never triggers in a one-target dummy fight (no secondary target exists), so it is omitted rather than bespoke-modeled."
+ },
+ "unsettled": [
+  {
+   "question": "Which per-rank Biggest Snowball Ever! explosion damage values are correct: the bin's literal NunuW.BaseDamage array, or the wiki's linear-interpolation-derived leveling values (which only anchor the rank-1 and rank-5 endpoints via a formula and diverge on intermediate ranks)?",
+   "options": [
+    "Use bin NunuW.BaseDamage = [180, 225, 270, 315, 360]",
+    "Use wiki-derived linear values [180, 216, 252, 288, 324]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "NunuW.BaseDamage = [180/225/270/315/360]",
+    "{{st|Minimum Magic Damage|{{ap|36 to 72}} {{as|(+ 30% AP)}}|Maximum Magic Damage|{{ap|36*5 to 72*5}} {{as|(+ {{ap|30*5}}% AP)}}}}"
+   ]
+  },
+  {
+   "question": "Does Absolute Zero have a damage floor of 50% of maximum (per the bin's tooltip-only NunuR#MinDamage = MaximumDamage*0.5) when detonated almost instantly, or can it deal near-zero damage as the wiki's notes claim?",
+   "options": [
+    "Damage scales continuously from 0% to 100% of max over the 3s channel (per wiki formula and 'possible to deal zero damage' note)",
+    "Damage never drops below 50% of max regardless of channel time (per bin NunuR#MinDamage)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "it is possible to deal zero damage with ''Absolute Zero'' if canceled as soon as it's started",
+    "NunuR#MinDamage (tooltip only) = MaximumDamage * 0.5"
+   ]
+  },
+  {
+   "question": "What is the actual cooldown between Snowball Barrage recasts: the bin's NunuESnowballBurstFire cooldown of 0.9s, or the wiki's stated 1-second cooldown?",
+   "options": [
+    "0.9s between recasts (bin)",
+    "1s between recasts (wiki)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown: 0.9",
+    "a {{tt|1-second cooldown|Affected by ability haste}} between casts"
+   ]
+  },
+  {
+   "question": "During W's and R's channel, the wiki's channel-interaction table exempts one spell slot from interrupting the channel ('spells=true,false,false,false,false' for W; 'spells=true,interrupts,interrupts,interrupts,interrupts' for R), but neither source identifies which ability that slot is. Can Consume (Q) be cast while channeling W or R without cancelling it?",
+   "options": [
+    "Q can be freely woven in during W/R channels without interrupting them",
+    "Any other ability cast during the channel interrupts it, and the exempted slot is something else (e.g. the ability's own recast)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ct|channel|attack=false|move=Allowed, but cannot input movement commands.|cast=false|items=false|consume=false|spells=true,false,false,false,false|interrupts=death, ground, root, silence}}",
+    "{{ct|channel|cast=interrupts|items=interrupts,true,,false|spells=true,interrupts,interrupts,interrupts,interrupts}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting R (Absolute Zero) immediately and channel it the full 3 seconds to maximize both its damage and shield before it auto-detonates, since it can realistically only be cast once in a 15 s fight and its damage scales up with channel time.",
+   "Weave Q (Consume) in whenever it is off cooldown and does not interrupt an active channel, taking the free magic damage plus self-heal.",
+   "Cast E (Snowball Barrage) and immediately recast it twice more within its 3-second window to land three volleys of snowball hits, then let the delayed Snowbound root-damage tick fire about 3 seconds after the first cast.",
+   "Channel W (Biggest Snowball Ever!) when it is off cooldown, holding it to the 5-second mark where its damage caps (per MaxDamageTime/MaxDamageScalar) before recasting to release and detonate it on the dummy, rather than holding the full 10 s channel for no extra damage.",
+   "Recast Q and E again on cooldown for the remainder of the 15 s window to fill in additional damage between R and W's long cooldowns."
+  ],
+  "questions": [
+   "Which ability corresponds to the exempted ('true') spell slot in the channel-interaction tables for W and R — i.e., can Q be cast during those channels without cancelling them?",
+   "Should W be released as soon as its damage caps at 5 seconds into the charge, or is there a reason (e.g. steering for the multi-hit circle trick) to hold it longer that still applies in a straight-line dummy fight?",
+   "Given Call of the Freljord can only retrigger off the same dummy once per 10 seconds, is it worth Nunu weaving in basic attacks at all in the 15 s fight, or is the optimal rotation purely ability-based?",
+   "Is R best cast first (to front-load its 3 s channel and guarantee it lands within the 15 s window) or held until mana/cooldowns from Q/E/W are already spent?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

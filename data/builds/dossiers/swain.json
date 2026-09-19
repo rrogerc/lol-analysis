@@ -1,0 +1,863 @@
+{
+ "champion": "swain",
+ "abilities": {
+  "P": {
+   "name": "Ravenous Flock",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_bonushealth",
+     "meaning": "bonus health per Soul Fragment stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 15,
+     "terms": [],
+     "quote": "gains {{as|15 '''bonus''' health}} permanently",
+     "bin": [
+      "SwainPassive.HealthIncrement",
+      "SwainPassive#MaxHealthGained"
+     ]
+    },
+    {
+     "id": "p_healpercent",
+     "meaning": "heal on claiming a fragment as percent of max health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.06,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.06
+      }
+     ],
+     "quote": "heal for {{as|6% of his '''maximum''' health}}",
+     "bin": [
+      "SwainPassive#PassiveHealPercent",
+      "SwainPassive#PassiveHealCalculated"
+     ]
+    },
+    {
+     "id": "p_fragmentduration",
+     "meaning": "duration a Soul Fragment persists before disappearing",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 16,
+     "terms": [],
+     "quote": "leave behind a {{as|Soul Fragment|buzzword3}} for 16 seconds",
+     "bin": [],
+     "binNote": "Fragment lifetime is not present as a data value in the sheet."
+    },
+    {
+     "id": "p_pickupdelay",
+     "meaning": "delay before a dropped Soul Fragment can be collected",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "Dropped {{as|Soul Fragments|buzzword3}} can be collected after a 1-second delay.",
+     "bin": [],
+     "binNote": "Pickup delay is not present as a data value in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Swain heals a fixed percent of max health each time he collects a Soul Fragment, so repeated kills near him grant repeated heals during a fight.",
+     "quote": "Upon claiming a fragment, he will {{tip|heal}} for {{as|6% of his '''maximum''' health}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Vision of Empire and Nevermove's recast can rip Soul Fragments directly out of champions, granting the stack/heal without needing a kill.",
+     "quote": "rip the {{as|Soul Fragments|buzzword3}} out of champions hit by ''{{ai|Vision of Empire|Swain}}'' or ''{{ai|Nevermove 2|Swain|Nevermove's}}'' recast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SwainPassive.SoulCollectionRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Death's Hand",
+   "cooldown": {
+    "values": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "quote": "{{ap|7 to 3}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 45% AP)}}",
+     "bin": [
+      "SwainQ#InitialDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Damage Per Bolt",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      15,
+      22.5,
+      30,
+      37.5,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1125
+      }
+     ],
+     "quote": "{{ap|60*0.25 to 180*0.25}} {{as|(+ {{ap|45*0.25}}% AP)}}",
+     "bin": [
+      "SwainQ#ExtraBoltDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Total Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      120,
+      180,
+      240,
+      300,
+      360
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|60*2 to 180*2}} {{as|(+ {{ap|45*2}}% AP)}}",
+     "bin": [
+      "SwainQ#MaxDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Death's Hand fires five bolts in a cone over 0.25s; subsequent bolts against an enemy deal 25% bonus damage, meaning a target hit by all bolts takes up to double the initial bolt's damage.",
+     "quote": "unleashes five bolts of eldritch power over {{rutngt|0.25}} in a cone in the target direction that deal {{as|magic damage}} to enemies hit. Subsequent bolts against an enemy deal 25% '''bonus''' damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The total damage to a single target is split evenly among each bolt that hits it, so hitting with more bolts deals less damage per bolt but more damage overall.",
+     "quote": "The total damage to a single target will be split evenly among each bolt that hits, meaning that hitting with more bolts will deal less damage per hit (but more overall damage).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability still casts and deals damage even if Swain dies during the cast time.",
+     "quote": "''Death's Hand'' will still cast and deal damage if '''Swain''' dies during the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks all bolts of Death's Hand.",
+     "quote": "{{tip|Spell shield}} will block all bolts.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SwainQ.BoundaryCheckRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SwainQ.MaxDamageMultiTOOLTIP",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Vision of Empire",
+   "cooldown": {
+    "values": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "quote": "{{ap|22 to 18}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "SwainW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Minion Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      52.5,
+      70,
+      87.5,
+      105
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|70/2 to 210/2}} {{as|(+ {{ap|60/2}}% AP)}}",
+     "bin": [
+      "SwainW#MinionDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "delay before the eye explodes",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds, dealing",
+     "bin": [],
+     "binNote": "No SwainW data value carries the explosion delay; the bin's SlowDuration (1.5) coincidentally matches but is a distinct field for the slow's duration, not the explosion delay."
+    },
+    {
+     "id": "w_4",
+     "meaning": "slow amount",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "slowing}} them by 50% for {{fd|1.5}} seconds",
+     "bin": [
+      "SwainW.Slow"
+     ],
+     "binNote": "SwainW.Slow is stored as -0.5 (a negative modifier); the wiki states the magnitude as 50%, the same number with sign convention differing."
+    },
+    {
+     "id": "w_5",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "them by 50% for {{fd|1.5}} seconds",
+     "bin": [
+      "SwainW.SlowDuration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "reveal duration on champions hit",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "revealed}} for 6 seconds",
+     "bin": [
+      "SwainW.RevealDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The eye grants sight then explodes after a delay, dealing damage to enemies in the area at that point rather than on cast.",
+     "quote": "explodes after {{fd|1.5}} seconds, dealing {{as|magic damage}} to enemies within",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage against minions is halved.",
+     "quote": "dealing {{as|magic damage}} to enemies within, halved against {{tip|minions}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemy champions hit have a Soul Fragment collected from them, but a spell shield blocks the Soul Fragment collection while still allowing the reveal.",
+     "quote": "Enemy {{tip|champions}} protected by a {{tip|spell shield}} do not have a {{as|Soul Fragment|buzzword3}} collected from them but are {{tip|standard sight|revealed}} anyway.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SwainW.EffectRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SwainW.VisionRadius",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Nevermove",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      90,
+      130,
+      170,
+      210,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|90 to 250}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "SwainE#SecondaryDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "root duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "SwainE.RootDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The wave only deals damage and roots on detonation at maximum range, not on contact before then.",
+     "quote": "At maximum range, the wave homes back to '''Swain''' and detonates upon the first enemy hit, dealing {{as|magic damage}} to nearby enemies and {{tip|root|rooting}} them for {{fd|1.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Nevermove can be recast while champions hit are rooted, pulling them; if the root ends or targets escape it before recast, the recast is unavailable.",
+     "quote": "If the root is not applied to, removed or its targets {{tip|blink}} or {{tip|dash}}, the recast becomes unavailable.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The recast itself deals no additional damage; it only pulls rooted champions and collects a Soul Fragment from each.",
+     "quote": "'''Swain''' {{tip|airborne|pulls}} the rooted champions over 290 units and collects a {{as|Soul Fragment|buzzword3}} from each of them",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield will block either the initial detonation or the recast pull, and if it blocks the recast no Soul Fragment is collected.",
+     "quote": "{{tip|Spell shield}} will block either the detonation on the first cast or the pull from the recast.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The pull interrupts channels only at the very beginning, without keeping the target stunned for the rest of the movement.",
+     "quote": "The pull will interrupt {{tip|channel|channels}} at the very beginning, but does not keep the target stunned for the rest of the movement.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Nevermove's cooldown starts on cast, not when the missile lands or detonates.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SwainE.PullDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SwainE.CooldownRefund",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SwainE.ExplosionRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Demonic Ascension / Demonflare",
+   "cooldown": {
+    "values": [
+     120,
+     120,
+     120
+    ],
+    "quote": "{{tt|120|Starts on cast}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      7.5,
+      12.5,
+      17.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{ap|15/2 to 35/2}} {{as|(+ {{ap|4/2}}% AP)}}",
+     "bin": [
+      "SwainR#DamageCalc"
+     ],
+     "binNote": "DamageCalc gives per-second values (15/25/35 + 0.04xAP); the wiki tick value is half of that since ticks occur every 0.5s (TimeBetweenTicks)."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Heal per Tick",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      7.5,
+      15,
+      22.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.025
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.0075
+      }
+     ],
+     "quote": "{{ap|15/2 to 45/2}} {{as|(+ {{ap|5/2}}% AP)}} {{as|(+ {{ap|1.5/2}}% of his '''bonus''' health)}}",
+     "bin": [
+      "SwainR#HealingCalc"
+     ],
+     "binNote": "HealingCalc gives per-second values (15/30/45 + 0.05xAP + 0.015xbonus maxHp); the wiki tick value is half of that per 0.5s tick."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Demonflare Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SwainR#DemonflareDamageTotal"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Demonic Energy generated on cast (max maintainable)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 50,
+     "terms": [],
+     "quote": "generating {{as|50 Demonic Energy|azakana}}",
+     "bin": [
+      "SwainR.DemonPowerMax"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Demonic Energy decay per tick (base)",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "decays by {{as|5|azakana}} every {{fd|0.5}} seconds",
+     "bin": [
+      "SwainR.DemonPowerDegen",
+      "SwainR.TimeBetweenTicks"
+     ],
+     "binNote": "DemonPowerDegen=10 is the per-second rate; the wiki's 5-per-tick figure is that value halved for the 0.5s tick interval (TimeBetweenTicks)."
+    },
+    {
+     "id": "r_7",
+     "meaning": "Demonic Energy decay per tick after 5 seconds (amped)",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 7.5,
+     "terms": [],
+     "quote": "increased to {{as|{{fd|7.5}}|azakana}} after 5 seconds have elapsed",
+     "bin": [
+      "SwainR.DegenAmpAmount",
+      "SwainR.AmpTime",
+      "SwainR.TimeBetweenTicks"
+     ],
+     "binNote": "DegenAmpAmount=15 is the per-second amped decay rate; the wiki's 7.5-per-tick figure is that halved for the 0.5s tick interval, occurring after AmpTime=5s."
+    },
+    {
+     "id": "r_8",
+     "meaning": "Demonic Energy generated per tick while draining a champion",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "generates {{as|10 Demonic Energy|azakana}} every {{fd|0.5}} seconds while draining from at least one enemy {{tip|champion}}",
+     "bin": [
+      "SwainR.DemonPowerRegen",
+      "SwainR.TimeBetweenTicks"
+     ],
+     "binNote": "DemonPowerRegen=20 is the per-second rate; the wiki's 10-per-tick figure is that halved for the 0.5s tick interval."
+    },
+    {
+     "id": "r_9",
+     "meaning": "Maximum number of Demonflare casts allowed",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 100,
+     "terms": [],
+     "quote": "up to 100 times",
+     "bin": [
+      "SwainR.MaxDemonflareCast"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "Delay before Demonflare can first be cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "After 2 seconds, '''Swain''' gains the ability to cast",
+     "bin": [
+      "SwainR.DemonflareCastDelay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Demonic Ascension's cooldown begins on cast, not on the buff ending.",
+     "quote": "{{tt|120|Starts on cast}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During Demonic Ascension, Swain deals damage and heals himself every 0.5 seconds per enemy target affected.",
+     "quote": "drains the lifeforce of nearby enemies, both dealing {{as|magic damage}} and {{tip|healing}} himself every {{fd|0.5}} seconds per target affected",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Demonic Ascension is lost (ends) once Demonic Energy is depleted to 0.",
+     "quote": "''Demonic Ascension'' is lost once all {{as|Demonic Energy|azakana}} is depleted to {{as|0|azakana}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Scoring a champion takedown fully restores Demonic Energy to 50, extending the buff's duration.",
+     "quote": "fully restores it to the maximum of {{as|50|azakana}} upon scoring a {{tip|champion}} {{tip|takedown}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Demonflare is automatically cast when Demonic Ascension expires, unless Demonflare is itself on cooldown at that moment.",
+     "quote": "does so automatically when ''Demonic Ascension'' expires if ''{{ai|Demonflare|Swain}}'' is not on cooldown at the time of expiration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Demonflare will not auto-cast at the end of Demonic Ascension if the ability ends due to Swain's death.",
+     "quote": "will not automatically cast at the end of ''Demonic Ascension'' if it occurs due to '''Swain's''' {{tip|death}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Demonflare counts as an ability activation for on-cast effects such as Spellblade.",
+     "quote": "''Demonflare'' counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The heal from Demonic Ascension's drain is reduced by 90% against minions and monsters.",
+     "quote": "The heal is reduced by 90% against {{tip|minions}} and {{tip|monsters}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SwainR.MinionMonsterHealReduction",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SwainR.DemonflareSlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "SwainR.DemonflareSlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SwainR.DemonflareCooldownTooltip",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Five bolts fired over 0.25s are separately timed damage instances against the same target, with a per-subsequent-bolt bonus and (per wiki notes) the total split evenly among however many bolts connect."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Vision of Empire deals its damage in one instance on a fixed 1.5s delay after cast, on cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nevermove only deals damage/roots if the wave reaches max range and homes back to detonate on the first enemy hit; against a stationary dummy this requires assuming Swain casts it at max range so the return-and-detonate condition is met."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nevermove has a recast (the pull) available while the target is rooted; the recast itself deals no damage but collects a Soul Fragment (heal/stat), so it is a separately timed follow-up part of the ability."
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demonic Ascension is a stance with its own drain damage/heal that ends and reverts, distinct from the base kit, and unlocks the separate Demonflare active while active."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "While in Demonic Ascension, Swain deals magic damage and heals every 0.5s per enemy target drained."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demonic Ascension is maintained by a Demonic Energy meter (starts at 50, decays 5/tick then 7.5/tick after 5s, regenerates 10/tick while draining a champion) that gates how long the stance and its DoT/heal persist."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (40-60 Q, 60-80 W, 50-70 E, 100 R) may meaningfully limit how many casts fit in a 15s fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two mechanics resist the closed primitive list's flat modeling. (1) Q's five bolts: the bin computes each bolt's damage from an escalating 25%-bonus-per-subsequent-hit formula (InitialDamage, ExtraBoltDamage, MaxDamage), while the wiki notes instead describe the ability's total damage as being split evenly across however many bolts land on a single target -- these are two different damage models for the same ability and a script needs a explicit chosen formula, not just a per-hit damage value. (2) R's Demonic Ascension is a resource-driven stance: its duration is governed by a Demonic Energy meter that decays at a rate which itself changes after 5s, but regenerates while draining any enemy champion (a dummy counts as one) and fully refills on a takedown; whether this makes the stance self-sustaining for the whole fight, when/how often Demonflare can be recast during it (a cooldown value exists in the bin but is flagged as tooltip-only by the wiki), and the automatic cast on expiry all require bespoke state-machine logic beyond a fixed cooldown/duration/DoT primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Death's Hand's total damage get split evenly among the bolts that connect with a single target, or does each bolt deal its own bin-calculated amount (base+AP for the first, +25% bonus per subsequent hit, uncapped by an even split)?",
+   "options": [
+    "Use the bin's per-bolt formulas directly: bolt 1 = InitialDamage, bolts 2-5 each = InitialDamage*1.25 (or similarly escalating), summing above the tooltip's 'total damage' figure",
+    "Follow the wiki note: compute the tooltip 'total damage' for however many bolts hit, then divide evenly across those bolts, so 5/5 bolts hitting yields 5 equal instances summing to MaxDamage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The total damage to a single target will be split evenly among each bolt that hits, meaning that hitting with more bolts will deal less damage per hit (but more overall damage).",
+    "SwainQ#ExtraBoltDamage = InitialDamage * ExtraBoltRatio=0.25"
+   ]
+  },
+  {
+   "question": "Against a single stationary target that counts as an enemy champion, does draining it during Demonic Ascension generate enough Demonic Energy (10/tick) to outpace or match the decay (5/tick, then 7.5/tick after 5s), letting the stance (and its DoT/heal) persist for the whole 15s fight rather than expiring quickly?",
+   "options": [
+    "Energy regen from draining the dummy keeps net energy flat or rising (capped at 50), so Ascension is effectively permanent once cast on a single target dummy fight",
+    "Decay and regen are not simultaneous/additive as assumed, or some other rule caps effective drain time, so Ascension still expires within a few seconds despite continuous draining"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Swain''' generates {{as|10 Demonic Energy|azakana}} every {{fd|0.5}} seconds while draining from at least one enemy {{tip|champion}}",
+    "decays by {{as|5|azakana}} every {{fd|0.5}} seconds, increased to {{as|{{fd|7.5}}|azakana}} after 5 seconds have elapsed"
+   ]
+  },
+  {
+   "question": "Can Demonflare be manually recast repeatedly during Demonic Ascension on some cooldown (the bin lists DemonflareCooldownTooltip=8 but the R part's authors flagged it as tooltip-only/unused), or does it only fire once automatically when Ascension expires (up to the 100-cast lifetime cap)?",
+   "options": [
+    "Demonflare has a real ~8s per-cast cooldown and can be cast manually multiple times per Ascension activation, in addition to the automatic cast on expiry",
+    "Demonflare is only cast automatically once, when Demonic Ascension ends (if it isn't on cooldown at that moment), and cannot otherwise be freely recast mid-stance"
+   ],
+   "impact": "high",
+   "quotes": [
+    "does so automatically when ''Demonic Ascension'' expires if ''{{ai|Demonflare|Swain}}'' is not on cooldown at the time of expiration",
+    "SwainR.DemonflareCooldownTooltip = 8"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Nevermove (E) cast at maximum range so the wave homes back and detonates on the dummy immediately, dealing its magic damage.",
+   "Follow with Death's Hand (Q) cast at point-blank range/facing the dummy so all five bolts connect for maximum total damage.",
+   "Cast Vision of Empire (W) targeted on the dummy; it explodes 1.5s after cast for magic damage.",
+   "Cast Demonic Ascension (R) to enter the drain stance, dealing repeating tick damage (and self-healing, irrelevant to damage dealt) every 0.5s while channeling on the dummy.",
+   "While in Demonic Ascension, cast Demonflare whenever it becomes available (assumed ~8s cadence) for its burst nova damage, layered on top of the drain ticks.",
+   "Recast Q and E on cooldown throughout the remaining fight duration, weaving them between R's drain ticks and Demonflare casts.",
+   "Recast W again if its cooldown (18-22s) comes up before the 15s fight ends (unlikely at rank 1-2, more likely at higher ranks/haste).",
+   "If mana becomes limiting, prioritize Q (cheapest, shortest cooldown) and R/Demonflare (largest single hits) over W."
+  ],
+  "questions": [
+   "Is it correct to assume Swain can always position at Nevermove's exact max range against a stationary dummy, or should a shorter-range cast (no return/detonate, no damage) be modeled as the default/likely case?",
+   "Does entering Demonic Ascension on a single-target dummy fight effectively become a permanent stance for the whole 15s (per the energy-regen question above), meaning R is only cast once, or does it need to be recast on cooldown after expiring partway through the fight?",
+   "How often can Demonflare actually be cast per Ascension activation, and should the rotation model it as a fixed-cadence DoT/burst hybrid or as a single guaranteed cast at stance end?",
+   "Should Nevermove's recast (pull) be included in the rotation for its heal-adjacent Soul Fragment collection even though it deals no damage itself, or omitted entirely since the damage fight only cares about damage output?",
+   "Given Q/W/E/R costs, is mana actually a binding constraint in a 15s fight at the levels/items being simulated, or is it safe to assume unlimited-effective mana for the rotation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

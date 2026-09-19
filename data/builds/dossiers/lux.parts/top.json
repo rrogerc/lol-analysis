@@ -1,0 +1,154 @@
+{
+ "champion": "lux",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Light Binding, Lucent Singularity's cast/detonation, and Final Spark each deal on-cast (or fixed-delay) magic damage on cooldown"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Illumination mark, once applied by Q/E/R, is consumed by the next basic attack for bonus on-hit magic damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "the Illumination mark is a binary stack on the dummy applied by any ability hit, refreshed on subsequent hits, and consumed by an attack or Final Spark"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lucent Singularity's slow is a target debuff; irrelevant to damage output itself but listed since it is a defined debuff on the target (no damage amp component, so effectively unused in damage calc)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lucent Singularity is cast then separately recast/auto-detonates for its damage instance, a second timed part"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (50/60-80/70-110/100) can meaningfully cap casts across a 15s fight depending on mana pool/regen"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "cooldown starts on cast rather than on detonation (cdstart = on-cast), affecting how soon E can be recast/reused in the window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Prismatic Barrier only shields allies/self; no damage relevance in a solo target-dummy fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Illumination's mark-and-consume behavior maps to target-stacks (apply/refresh/consume) plus onhit-rider (bonus on-hit damage when consumed by an attack); Final Spark's mark consumption is just an additional consumer of the same target-stacks primitive rather than new logic. Everything else is plain-cast damage or a defensive/irrelevant primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Illumination's per-level base damage (30 to 200) actually match the champion's level in the dummy fight, given the bin's base term is an unresolved ByCharLevelFormulaCalculationPart that cannot be independently verified?",
+   "options": [
+    "Trust the wiki's {{pplevel|30 to 200}} progression as accurate for the fight's chosen level",
+    "Treat the base value as unresolved/unverifiable and flag it separately from the AP ratio"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart",
+    "{{as|{{pplevel|30 to 200}}|magic damage}} {{as|(+ 35% AP)}}"
+   ]
+  },
+  {
+   "question": "In the dummy fight, does Final Spark consuming the Illumination mark happen every time R is cast on a marked target, or only if the mark was freshly reapplied within the window (i.e., does R's own damage count as re-marking for a subsequent R cast to consume again)?",
+   "options": [
+    "R re-applies its own mark on hit, so a second R cast later can consume a mark from the first R's hit (if within 6s / refreshed)",
+    "R's damage does not itself apply an Illumination mark, so R can only consume marks left by Q/E, not chain off itself",
+    "Ambiguous from provided text; the P dossier doesn't state whether R's own hit applies a mark"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Lux's''' {{tip|abilities}} apply a mark to enemies hit for 6 seconds, refreshing on subsequent hits.",
+    "and ''{{ai|Final Spark|Lux}}'' consume the mark to deal"
+   ]
+  },
+  {
+   "question": "Does Q's extra 'Dummy' missile mechanic cause the single dummy target to register a second, independently-timed damage/mark application, or is it purely a visual-only duplicate with no gameplay effect on a single target?",
+   "options": [
+    "The dummy is hit only once per Q cast (single target), dealing one instance of Q damage and one mark application; the extra missile is VFX-only",
+    "The extra missile mechanic causes an additional hit-detection event even though only one damage instance is dealt, which could matter for on-cast-per-hit effects"
+   ],
+   "impact": "low",
+   "quotes": [
+    "''Light Binding'' spawns an additional missile at the same location and vector as the main missile."
+   ]
+  },
+  {
+   "question": "Does Lucent Singularity's automatic detonation after its 5s duration happen exactly at the 5s mark (allowing a fixed damage-timing assumption), or does the player always manually recast earlier for a faster damage instance, and does the cooldown starting on-cast (not on-detonation) let E's next cast begin before the current zone detonates?",
+   "options": [
+    "Always manually recast E as soon as possible after the projectile lands to minimize time-to-damage, since cooldown already started on cast",
+    "Let E auto-detonate after 5s if no earlier recast serves other rotation goals",
+    "Recast timing doesn't matter for total damage over 15s, only cast count matters"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = on-cast",
+    "does so automatically after the duration"
+   ]
+  },
+  {
+   "question": "Is Illumination's bonus on-hit damage available to be triggered by every basic attack against the dummy (once a mark exists), meaning the optimal rotation should attack immediately after each ability lands to consume the mark before the 6s duration or the 0.25s windup-refresh nuance matters, or is there a cap on how often this can proc relative to ability cooldowns?",
+   "options": [
+    "Illumination can be consumed once per ability-application interval (i.e., attack right after each Q/E/R hit for one proc per cast)",
+    "Because the mark refreshes and lasts 6s, several attacks in a row after one ability cast could each need a fresh mark, but only the first attack after landing consumes it, so subsequent attacks deal no bonus until marked again"
+   ],
+   "impact": "high",
+   "quotes": [
+    "apply a mark to enemies hit for 6 seconds, refreshing on subsequent hits",
+    "consume the mark to deal"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: max Q first (or per standard AP mage leveling), start with full mana.",
+   "Open with Q (Light Binding) on the dummy to deal magic damage and apply the Illumination mark.",
+   "Immediately auto-attack the marked dummy to consume Illumination for bonus on-hit magic damage.",
+   "Cast E (Lucent Singularity) on the dummy to deal its impact/zone damage and refresh the Illumination mark.",
+   "Auto-attack again to consume the refreshed mark from E.",
+   "Recast E as soon as available (respecting its cast-on cooldown) to detonate for its second damage instance and refresh the mark again.",
+   "Auto-attack to consume that mark.",
+   "Cast R (Final Spark) when available, both for its own large damage and to consume the current Illumination mark if present (spell shield issues aside).",
+   "Continue looping Q on cooldown into an auto-attack to consume the mark, alternating with E's cast/recast cycle and R whenever it comes off cooldown, always inserting an auto-attack after each ability lands to consume Illumination before it can be wasted.",
+   "Prioritize spending mana on Q/E on cooldown over auto-attacking without a fresh mark, since auto-attacks without Illumination active contribute only base AD damage."
+  ],
+  "questions": [
+   "Should E be recast as fast as possible after landing (near-instant detonation) to front-load damage, or does the fixed 5s duration+recast structure make manual immediate recast always correct regardless of resource cost?",
+   "Does R's own damage instance apply a new Illumination mark that a later attack (or R again) could consume, or is R purely a consumer and never an applier?",
+   "How many total casts of each ability fit in 15s given cast times (Q/E 0.25s, R 1s) plus attack windups, and does the simulator want attacks interleaved between every ability cast or should abilities be chained back-to-back with fewer attacks in between?",
+   "Is base attack speed/AD relevant enough to prioritize weaving multiple attacks, or since Illumination only grants one bonus per mark, is a single attack after each ability sufficient and additional attacks are just base damage?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

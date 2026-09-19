@@ -1,0 +1,203 @@
+{
+ "name": "Blighted Quiver",
+ "cooldown": {
+  "values": [
+   40,
+   40,
+   40,
+   40,
+   40
+  ],
+  "quote": "{{tt|40|Starts after the effect is used with Piercing Arrow}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Bonus Magic Damage",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    4,
+    13,
+    22,
+    31,
+    40
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    },
+    {
+     "stat": "bonusAd",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|4 to 40}} {{as|(+ 15% '''bonus''' AD)}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "VarusW#OnHitDamage"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Bonus Magic Damage per Stack",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.03,
+      0.035,
+      0.04,
+      0.045,
+      0.05
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.013
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|3 to 5}}% {{as|(+ {{fd|1.3}}% per 100 AP)}} of the target's '''maximum''' health|health)}}",
+   "bin": [
+    "VarusW#PercentHPPerStack"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Active Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.06,
+      0.08,
+      0.1,
+      0.12,
+      0.14
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|6 to 14}}% of target's '''missing''' health}}",
+   "bin": [
+    "VarusW#QEmpowerPercentHP",
+    "VarusW.WQHealthDamage"
+   ]
+  },
+  {
+   "id": "w_8",
+   "meaning": "Cooldown reduction per stack consumed (basic abilities), against champions/epic monsters",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.13,
+   "terms": [],
+   "quote": "reduces the {{sti|'''remaining''' cooldowns}} of '''Varus' ''' basic abilities by {{#var:cdr}}% of each of their '''total''' cooldowns, up to a {{ap|{{#var:cdr}}*3}}% cooldown reduction per target",
+   "bin": [
+    "VarusW.CDRPerBlightStack"
+   ]
+  },
+  {
+   "id": "w_9",
+   "meaning": "Blight stack duration (refreshed on each application)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "apply a {{tip|stack}} of ''Blight'' for 6 seconds, refreshing on subsequent applications and stacking up to 3 times",
+   "bin": [
+    "VarusW.DebuffDuration"
+   ]
+  },
+  {
+   "id": "w_10",
+   "meaning": "Maximum Blight stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times",
+   "bin": [
+    "VarusW.MaxStacks"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks that apply on-hit deal the bonus magic damage and apply a stack of Blight, refreshing duration on reapplication, up to 3 stacks.",
+   "quote": "'''Varus'''' {{tip|basic attacks}} {{tip|on-hit}} deal {{as|'''bonus''' magic damage}} and apply a {{tip|stack}} of ''Blight'' for 6 seconds, refreshing on subsequent applications and stacking up to 3 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Varus' abilities detonate all Blight stacks on enemies they hit, dealing the per-stack magic damage and (against champions/epic monsters) refunding cooldown.",
+   "quote": "'''Varus' ''' {{tip|abilities}} detonate all ''Blight'' stacks on affected enemies hit.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Blighted Quiver's active/consumption damage is dealt after Piercing Arrow's own damage, as a separate instance.",
+   "quote": "''Blighted Quiver's'' active damage is dealt after the damage of {{ai|Piercing Arrow|Varus}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield does not block the on-hit Blight damage, but will block the stack-consumption (detonation) damage if the shielded target is hit by an ability.",
+   "quote": "{{tip|Spell shield}} will not block the {{tip|on-hit}} damage but will block the consumption damage if the target is hit by his abilities.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the on-hit damage/attack is blinded, blocked, or dodged, Blighted Quiver does not apply a stack or deal on-hit damage, but the separate detonation (consumption) damage on ability hits is unaffected.",
+   "quote": "''Blighted Quiver'' will not apply stacks nor deal {{tip|on-hit}} damage if blocked by {{tip|blind}}, {{tip|block}} or {{tip|dodge}} effects.** The consumption damage will not be blocked.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Blighted Quiver's cooldown does not start until it is used together with Piercing Arrow (or auto-recast).",
+   "quote": "Starts after the effect is used with Piercing Arrow",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Blighted Quiver does not count as an ability activation for on-cast effects like Spellblade.",
+   "quote": "''Blighted Quiver'' does not count as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "VarusW.VarusWDebuffDuration",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "VarusW.VarusWMaxStacks",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "VarusW.MaxMonsterDamage",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "VarusW.QEmpowerMonsterCap",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "VarusW.VarusWMaxChargeHPDamage",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

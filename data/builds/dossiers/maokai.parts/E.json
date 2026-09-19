@@ -1,0 +1,280 @@
+{
+ "name": "Sapling Toss",
+ "cooldown": {
+  "values": [
+   18,
+   17,
+   16,
+   15,
+   14
+  ],
+  "quote": "{{ap|18 to 14}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   65,
+   70,
+   75,
+   80
+  ],
+  "quote": "{{ap|60 to 80}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage (normal Sapling explosion)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    75,
+    100,
+    125,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.05
+    },
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|50 to 150}} {{as|(+ 5% '''bonus''' health)}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "MaokaiE#TotalDamage",
+    "MaokaiE.BaseAPRatio"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Magic Damage per Instance (empowered Sapling, per burst)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    33.33,
+    50,
+    66.67,
+    83.33,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.0333
+    },
+    {
+     "stat": "ap",
+     "coef": 0.1667
+    }
+   ],
+   "quote": "{{ap|50*2/3 to 150*2/3|round=2}} {{as|(+ {{ap|5*2/3|round=2}}% '''bonus''' health)}} {{as|(+ {{ap|25*2/3|round=2}}% AP)}}",
+   "bin": [
+    "MaokaiE#TotalEmpoweredDamage"
+   ],
+   "binNote": "This is one-third of MaokaiE#TotalEmpoweredDamage (EmpoweredBaseDamage/3, EmpoweredAPRatio/3=0.1667, bonus-hp term/3=0.0333), equivalently BaseDamage*2/3 since EmpoweredBaseDamage=2*BaseDamage; no separate per-burst bin row exists."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Total Attached Sapling Damage (two attached bursts)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    66.67,
+    100,
+    133.33,
+    166.67,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.0667
+    },
+    {
+     "stat": "ap",
+     "coef": 0.3333
+    }
+   ],
+   "quote": "{{ap|(50*2/3 to 150*2/3)*2|round=2}} {{as|(+ {{ap|(5*2/3)*2|round=2}}% '''bonus''' health)}} {{as|(+ {{ap|(25*2/3)*2|round=2}}% AP)}}",
+   "bin": [
+    "MaokaiE#TotalEmpoweredDamage"
+   ],
+   "binNote": "Equal to two instances of e_2 (2/3 of MaokaiE#TotalEmpoweredDamage); no dedicated bin row for the attached-total."
+  },
+  {
+   "id": "e_4",
+   "meaning": "Total Magic Damage (initial empowered explosion, full formula)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    100,
+    150,
+    200,
+    250,
+    300
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.1
+    },
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|50*2 to 150*2}} {{as|(+ {{ap|5*2}}% '''bonus''' health)}} {{as|(+ {{ap|25*2}}% AP)}}",
+   "bin": [
+    "MaokaiE#TotalEmpoweredDamage"
+   ]
+  },
+  {
+   "id": "e_saplingDuration",
+   "meaning": "Normal Sapling lifespan before it expires/explodes",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 30,
+   "terms": [],
+   "quote": "remains stationary for 30 seconds or until it reacts to the first nearby visible enemy",
+   "bin": [
+    "MaokaiE.SaplingDuration"
+   ]
+  },
+  {
+   "id": "e_chaseDuration",
+   "meaning": "Duration a Sapling chases a detected enemy before exploding",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "chasing them for up to {{fd|2.5}} seconds",
+   "bin": [],
+   "binNote": "No bin row equals 2.5 directly; MaokaiE.GrowthDuration=0.5 and SaplingDuration=30 do not match this chase-duration figure."
+  },
+  {
+   "id": "e_empoweredDuration",
+   "meaning": "Empowered (brush) Sapling lifespan",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 30,
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.015
+    }
+   ],
+   "quote": "lasting 30 {{as|(+ {{fd|1.5}}% '''bonus''' health)}} seconds",
+   "bin": [
+    "MaokaiE#EmpoweredSaplingDuration"
+   ]
+  },
+  {
+   "id": "e_attachedDuration",
+   "meaning": "Duration attached Saplings remain on a struck target",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "attach two ''Saplings'' to them for {{fd|1.5}} seconds",
+   "bin": [],
+   "binNote": "MaokaiE.EmpoweredDoTDuration=2 in the bin disagrees with the wiki's stated 1.5-second attach duration."
+  },
+  {
+   "id": "e_attachedInterval",
+   "meaning": "Tick interval at which attached Saplings explode",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "explode on the afflicted target every {{fd|0.75}} seconds over the duration",
+   "bin": [],
+   "binNote": "No bin row equals 0.75 (a quarter of EmpoweredDoTDuration=2 or half of the wiki's 1.5s attach duration); not directly present in the sheet."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The base non-empowered explosion damage is capped at 300 against non-champions.",
+   "quote": "dealing {{as|magic damage}} to nearby enemies, capped at 300 against non-champions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The total damage from an empowered Sapling and its two attachments is capped at 600 against non-champions.",
+   "quote": "The '''total''' damage is capped at 600 against non-champions.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Against minions, an empowered explosion deals full (100%) damage instead of the reduced 66.7% dealt to non-minion targets.",
+   "quote": "Against minions, the explosion deals 100% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A target can only have two Saplings attached at once; further empowered explosions on an already-attached target refresh duration and only add a new Sapling if one has already exploded on them.",
+   "quote": "Targets can only be attached to two ''Saplings'' at a time; subsequent empowered ''Sapling'' explosions on a target will refresh the duration and only attach a ''Sapling'' if one has exploded on them already.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A normal Sapling's explosion is area damage (single instance to all nearby enemies), while an empowered Sapling's attached damage is persistent damage (separate ticking instances).",
+   "quote": "Applies {{tip|area damage}} from a normal ''Sapling'' and deals {{tip|persistent damage}} to enemies hit by an empowered ''Sapling''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cast itself only launches a destructible projectile; the actual Sapling unit and its effects occur only once it lands.",
+   "quote": "''Sapling Toss's'' cast does not initially fling the actual ''Sapling'' unit but instead a ''Sapling''-like {{tip|projectile}} that can be destroyed by projectile-interception effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting a Sapling onto the same spot as an existing Sapling causes the new one to land offset rather than stacking.",
+   "quote": "''Saplings'' cannot be stacked on top of each other; if ''Sapling Toss'' is cast to the same point as a ''Sapling'' currently on the ground, the new ''Sapling'' will move a short distance away from the existing one upon landing.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MaokaiE.GrowthDuration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "MaokaiE.SlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "MaokaiE.SlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "MaokaiE.EmpoweredDoTDuration",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "MaokaiE.SaplingDetectionRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "MaokaiE.BaseEmpoweredSlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "MaokaiE.MaxTraps",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

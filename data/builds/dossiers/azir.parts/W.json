@@ -1,0 +1,203 @@
+{
+ "name": "Arise!",
+ "cooldown": {
+  "values": [
+   1.5,
+   1.5,
+   1.5,
+   1.5,
+   1.5
+  ],
+  "quote": "{{fd|1.5}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   35,
+   30,
+   25,
+   20
+  ],
+  "quote": "{{ap|40 to 20}}",
+  "resource": "mana + 1 sand soldier"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "base magic damage of a Sand Soldier's attack against the primary target",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    65,
+    80,
+    95,
+    110
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.35,
+      0.425,
+      0.5,
+      0.575,
+      0.65
+     ]
+    }
+   ],
+   "quote": "(+ {{ap|50 to 110}}) {{as|(+ {{ap|35 to 65}}% AP)}}",
+   "bin": [
+    "AzirW#TotalDamage",
+    "AzirW.BaseDamage",
+    "AzirW.APRatio"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "level-based bonus magic damage added to the Sand Soldier's attack",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    8,
+    16,
+    24,
+    32,
+    40,
+    48,
+    56,
+    64,
+    72
+   ],
+   "terms": [],
+   "quote": "{{pplevel|0; then +8*x|1;10+(x-1)|formula=0 at level 1, then +8 per level starting at level 10}}",
+   "bin": [],
+   "binNote": "The wiki's leveling2 row lists this level-based bonus as part of the total damage formula, but the sheet's AzirW#TotalDamage calculation only reads BaseDamage and APRatio - it has no byLevelL term for this additive component. No data value in the AzirW slot carries these numbers; the bin appears to be missing this term (or it is computed elsewhere not shown in this sheet)."
+  },
+  {
+   "id": "w_3",
+   "meaning": "percentage of the attack's damage dealt to targets hit beyond the closest one in the line",
+   "role": "other",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.28,
+    0.36,
+    0.44,
+    0.52,
+    0.6,
+    0.68,
+    0.76,
+    0.84,
+    0.92
+   ],
+   "terms": [],
+   "quote": "{{pp|20; then +8*x for 10|1;9 to 18|formula=20% at level 1, then +8% per level starting at level 9 and capped at level 18|key=%}}",
+   "bin": [
+    "AzirW#SecondaryTargetDamageMod"
+   ],
+   "binNote": "Bin's byLevelL array reaches 1.0 (100%) at level 18 (index 17), one level later than the wiki's listed values which cap growth at level 18 too; values through level 17 match, level 18 also matches (0.92 wiki vs 0.92... actually bin shows 1 at index 17/level18) - minor discrepancy at level 18 (bin 1.0 vs wiki implies continued +0.08 series would be 1.0 as well, so they agree)."
+  },
+  {
+   "id": "w_4",
+   "meaning": "damage percentage of subsequent Sand Soldier attacks against the same target (without on-hit/on-attack effects)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "Subsequent {{as|Sand Soldier|buzzword2}} attacks against the same target deal 25% damage without applying {{tip|on-hit}} and {{tip|on-attack}} effects.",
+   "bin": [
+    "AzirW.SubsequentDamageMod"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "on-hit and on-attack effect effectiveness applied by a Sand Soldier's attack on the primary target",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "the {{as|Sand Soldier's|buzzword2}} attack applies both {{tip|on-hit}} and {{tip|on-attack}} effects, the damage of which is reduced to 50% effectiveness",
+   "bin": [
+    "AzirW.OnHitMultiplier"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "duration a Sand Soldier persists after being summoned",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "lasts 10 seconds",
+   "bin": [
+    "AzirW.SoldierDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Azir's basic attacks against enemies within a soldier's range are replaced by the soldier's spear-thrust attack instead of Azir's own attack.",
+   "quote": "summons a {{as|Sand Soldier|buzzword2}} to attack nearby targets for him, replacing his {{tip|basic attack|basic attacks}} against enemies within their range",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The soldier's attack is a line attack that can hit multiple enemies, dealing area damage; only the primary target's instance is tagged as basic damage and receives on-hit/on-attack effects.",
+   "quote": "thrusting their spear in the target's direction to deal {{as|magic damage}} to enemies struck in a line. Against the primary target, the {{as|Sand Soldier's|buzzword2}} attack applies both {{tip|on-hit}} and {{tip|on-attack}} effects",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Commanding a soldier to attack triggers on-attack effects (e.g. proc cooldowns/stacks) but does not apply those effects' outcomes to the target hit.",
+   "quote": "Commanding a soldier to attack will trigger {{tip|on-attack}} effects, but will not apply any of these effects to the target hit.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The soldier's attacks do not apply life steal.",
+   "quote": "The attacks do not apply {{sti|life steal}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Azir periodically stocks a Sand Soldier charge, up to a maximum of 2, independent of casting the spell directly.",
+   "quote": "'''Azir''' periodically [[stock]]s a {{as|Sand Soldier|buzzword2}}, up to a maximum of 2.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AzirW.InputBufferProtection",
+   "reason": "unknown"
+  },
+  {
+   "ref": "AzirW.SoldierDuration",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

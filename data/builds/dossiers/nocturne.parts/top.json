@@ -1,0 +1,152 @@
+{
+ "champion": "nocturne",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Umbra Blades empowers next basic attack every 12s (reduced by attacks) for 120% AD physical damage to primary target plus proc damage to nearby enemies, with a self-heal"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "basic attacks reduce Umbra Blades' cooldown by 1s (3s vs champions/monsters)"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Umbra Blades' primary-target hit can crit, changing its coefficient to 110% AD x total crit damage"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Duskbringer deals base+85% bonus AD physical damage on a short delay/travel, on cooldown"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's Dusk Trail grants bonus AD and move speed for 5s while standing on it; W passively grants bonus AS, doubled for 5s after blocking with the active shield"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shroud of Darkness spell shield block itself is a defensive proc irrelevant to the damage-only dummy fight, though its AS payoff is not"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Unspeakable Horror ticks magic damage every 0.5s over a 2s tether"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Paranoia is cast then recast as a dash that deals physical damage on arrival; cooldown starts only after recast/timeout"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all four abilities may gate casts across the 15s fight depending on mana pool/regen"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (empowered on-hit passive with crit and cooldown refund, plain-cast projectile with a separate self-buff, DoT tether, recast dash) map onto existing primitives."
+ },
+ "unsettled": [
+  {
+   "question": "What is Umbra Blades' passive base cooldown-trigger interval within the 15s fight (i.e., does it fire purely off the 12s internal cooldown reduced by on-hit CDR, or is there a minimum attack-count gate)?",
+   "options": [
+    "Fires every 12s minus AA-CDR reductions (effectively can fire much faster than 12s given repeated attacks)",
+    "Fires on a fixed 12s timer regardless of attacks, with CDR only mattering between activations"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Basic attacks reduce ''Umbra Blades' '' {{sti|cooldown}} by 1 second, increased to 3 against enemy {{tip|champions}} and {{tip|monsters}}."
+   ]
+  },
+  {
+   "question": "Does Umbra Blades' primary-target damage replace the normal basic attack damage on that swing, or is it added on top of the normal basic attack?",
+   "options": [
+    "Umbra Blades replaces/enhances that single basic attack (attack damage becomes 120% AD instead of 100% AD)",
+    "Umbra Blades damage is separate bonus damage added alongside the normal basic attack damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|120% AD}} {{as|physical damage}} to the target and nearby enemies"
+   ]
+  },
+  {
+   "question": "Does casting Duskbringer while already standing on a Dusk Trail (from a prior Q) still gain the movement/AD buff refresh, and can Nocturne chain-cast Q for repeated buff uptime within the 8s cooldown, given the sources only clarify the damage does not scale?",
+   "options": [
+    "Trail buff refreshes/reapplies on each Q cast regardless of prior trail state, giving near-permanent bonus AD/MS at max rank (8s cooldown vs 5s trail)",
+    "Only the initial cast that creates a trail (e.g., off self-move or after champion hit) grants the buff; re-casting doesn't meaningfully change uptime"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "It is observed from seasons ago that this is intentionally hard-coded into the ability to avoid the projectile increasing its own damage. This feature is somewhat deprecated as it also limits chain-casting ''Duskbringer''."
+   ]
+  },
+  {
+   "question": "Is the bin's Paranoia (NocturneParanoia) or Paranoia2 (NocturneParanoia2, cooldown 150/125/100) the live row used in-game, since both share identical damage but differ in cooldown from each other and from the wiki's stated cooldown (140/115/90)?",
+   "options": [
+    "NocturneParanoia is live (cooldown matches wiki 140/115/90)",
+    "NocturneParanoia2 is live (cooldown 150/125/100, differs from wiki)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown: [140/115/90]",
+    "cooldown: [150/125/100]",
+    "cooldown     = {{tt|{{ap|140 to 90}}|Starts after recast times out or is used}}"
+   ]
+  },
+  {
+   "question": "During Paranoia's recast dash, can Nocturne's other abilities (Q/E/W) and basic attacks land normally without interruption, and does the dash itself introduce any delay that eats into the 15s fight window before the R damage lands?",
+   "options": [
+    "Dash is near-instant (1800 dash speed) so R recast damage effectively lands almost immediately when target is in range, other actions can be freely interleaved",
+    "Dash travel time is meaningfully long at typical engagement ranges, delaying R's damage and briefly blocking attack windows"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Nocturne''' can cast any of his [[champion ability|abilities]], [[summoner spell|summoner spells]]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Duskbringer) on the dummy to deal upfront physical damage and, if it counts as hitting an enemy champion equivalent, establish the Dusk Trail bonus AD/MS buff.",
+   "Immediately follow with E (Unspeakable Horror) to attach the tether and start its DoT ticking every 0.5s over 2s.",
+   "Weave in basic attacks throughout, since they reduce Umbra Blades' (P) cooldown (3s per hit vs a champion-tagged target) and each empowered attack deals bonus physical damage that can crit.",
+   "Use W (Shroud of Darkness) primarily for the passive bonus attack speed uptime; its active spell shield has no target to block in a dummy fight, so cast it early only if the sim credits the passive AS regardless, or refrain if it consumes a GCD-equivalent without benefit.",
+   "Cast R (Paranoia) as early as possible against the dummy (treated as an enemy champion) and recast promptly to trigger the dash-arrival physical damage, weaving in other abilities/attacks during the dash.",
+   "Re-cast Q on cooldown (every 8s) and E on cooldown (~11-15s depending on rank) for their damage, continuing to auto-attack between casts to maximize Umbra Blades procs and uptime of Q's bonus AD trail."
+  ],
+  "questions": [
+   "Does the dummy fight simulator apply Umbra Blades' passive purely on its internal cooldown timer, or does it require a minimum number of qualifying basic attacks to fire, and how should its cooldown reduction from attacks be modeled turn-by-turn?",
+   "In a single-target dummy fight, does Paranoia's recast (R) require the target to be within TrackDistance/target range from the moment of initial cast, and is the dash-arrival damage delayed by travel time or effectively instant given the short engagement range assumed?",
+   "Should W be cast for its passive attack speed value even though its active spell-shield component is never useful against a passive dummy, or does the simulator only grant W's passive bonus once the ability is leveled without needing to actively recast it?",
+   "Does chain-casting Duskbringer (Q) every 8s meaningfully refresh/extend the Dusk Trail bonus AD/MS buff uptime, or is uptime capped at roughly 5s per cast with a 3s gap where the buff lapses?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

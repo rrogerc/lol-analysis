@@ -1,0 +1,743 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AshePassive",
+    "key": "Characters/Ashe/Spells/AshePassiveAbility/AshePassive",
+    "dataValues": {
+     "SlowDuration": 2
+    },
+    "calcs": {
+     "SlowAmount": {
+      "expr": "byLevel(0.2..0.3)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.2,
+        0.20588236,
+        0.21176471,
+        0.21764706,
+        0.22352942,
+        0.22941177,
+        0.23529412,
+        0.24117647724993088,
+        0.24705883,
+        0.2529412,
+        0.25882354,
+        0.2647059,
+        0.27058824,
+        0.2764706,
+        0.28235295,
+        0.2882353,
+        0.29411766,
+        0.3
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "EmpoweredSlowAmount": {
+      "expr": "byLevel(0.4..0.6)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.4,
+        0.4117647,
+        0.42352942,
+        0.43529413,
+        0.44705883,
+        0.45882354,
+        0.47058825,
+        0.48235295,
+        0.49411766,
+        0.5058824,
+        0.5176471,
+        0.5294118,
+        0.5411765,
+        0.5529412,
+        0.5647059,
+        0.5764706,
+        0.5882353,
+        0.6
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "DamageBonus": {
+      "expr": "1 + (1 + 1xbonus critDamage)xcritChance",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "{da9201cc}": {
+      "expr": "DamageBonus * 1xad",
+      "modifies": "DamageBonus",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AsheQ",
+    "key": "Characters/Ashe/Spells/AsheQAbility/AsheQ",
+    "cooldown": 0,
+    "cost": 30,
+    "dataValues": {
+     "DamagePerStrike": {
+      "axis": "rank",
+      "v": [
+       1.1,
+       1.15,
+       1.2,
+       1.25,
+       1.3
+      ]
+     },
+     "ShotsPerStrike": 5,
+     "StackDuration": 4,
+     "MaxStacks": 4,
+     "BuffDuration": 6,
+     "BonusAS": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     },
+     "TimerDuration": 1,
+     "StackFalloffDuration": 1
+    },
+    "calcs": {
+     "EmpoweredDamage": {
+      "expr": "(DamagePerStrike=[1.1/1.15/1.2/1.25/1.3])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          1.1,
+          1.15,
+          1.2,
+          1.25,
+          1.3
+         ]
+        },
+        "dataValue": "DamagePerStrike"
+       }
+      ],
+      "refs": [
+       "DamagePerStrike"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "Volley",
+    "key": "Characters/Ashe/Spells/VolleyAbility/Volley",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      14.5,
+      11,
+      7.5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      70,
+      65,
+      60,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       95,
+       130,
+       165,
+       200
+      ]
+     },
+     "NumberOfArrowsTooltip": {
+      "axis": "rank",
+      "v": [
+       7,
+       8,
+       9,
+       10,
+       11
+      ]
+     },
+     "ADRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/95/130/165/200] + (ADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        95,
+        130,
+        165,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "VolleyRank2",
+    "key": "Characters/Ashe/Spells/VolleyAbility/VolleyRank2",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      14.5,
+      11,
+      6.5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      70,
+      65,
+      60,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/35/50/65/80] + 1xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "VolleyRank3",
+    "key": "Characters/Ashe/Spells/VolleyAbility/VolleyRank3",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      14.5,
+      11,
+      7.5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      70,
+      65,
+      60,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/35/50/65/80] + 1xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "VolleyRank4",
+    "key": "Characters/Ashe/Spells/VolleyAbility/VolleyRank4",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      14.5,
+      11,
+      7.5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      70,
+      65,
+      60,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/35/50/65/80] + 1xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "VolleyRank5",
+    "key": "Characters/Ashe/Spells/VolleyAbility/VolleyRank5",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      14.5,
+      11,
+      7.5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      70,
+      65,
+      60,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/35/50/65/80] + 1xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "AsheSpiritOfTheHawk",
+    "key": "Characters/Ashe/Spells/AsheSpiritOfTheHawkAbility/AsheSpiritOfTheHawk",
+    "cooldown": 5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseCooldown": {
+      "axis": "rank",
+      "v": [
+       90,
+       80,
+       70,
+       60,
+       50
+      ]
+     },
+     "VisionDuration": 5
+    },
+    "calcs": {
+     "ChargeCooldown": {
+      "expr": "(<CooldownMultiplierCalculationPart>)*(BaseCooldown=[90/80/70/60/50])",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "BaseCooldown"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ],
+  "R": [
+   {
+    "script": "EnchantedCrystalArrow",
+    "key": "Characters/Ashe/Spells/EnchantedCrystalArrowAbility/EnchantedCrystalArrow",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      80,
+      60
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       400,
+       600
+      ]
+     },
+     "MinStunDuration": 1,
+     "MaxStunDuration": 3.5,
+     "SlowRadius": 400,
+     "AoECoefficient": 1,
+     "APRatio": 1.2
+    },
+    "calcs": {
+     "RMainDamage": {
+      "expr": "RBaseDamage=[200/400/600] + (APRatio=1.2)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        400,
+        600
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.2,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "RBaseDamage"
+      ]
+     },
+     "{6b932875}": {
+      "expr": "RMainDamage * AoeCoefficient",
+      "modifies": "RMainDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "AoeCoefficient"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value AoeCoefficient"
+    ]
+   }
+  ],
+  "other": [
+   {
+    "script": "AsheSkin76Manager",
+    "key": "{c267946f}",
+    "dataValues": {
+     "SecondsOutOfCombatTillTransform": 5
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "AsheQ",
+  "W": "Volley",
+  "E": "AsheSpiritOfTheHawk",
+  "R": "EnchantedCrystalArrow",
+  "P": "AshePassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 280,
+   "{6216bf7b}": 35,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.13
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.08070175
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Ashe",
+  "name": "Ashe",
+  "partype": "Mana",
+  "passive": "Frost Shot",
+  "spells": [
+   {
+    "id": "AsheQ",
+    "name": "Ranger's Focus",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "Volley",
+    "name": "Volley",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     14.5,
+     11,
+     7.5,
+     4
+    ],
+    "cost": [
+     75,
+     70,
+     65,
+     60,
+     55
+    ]
+   },
+   {
+    "id": "AsheSpiritOfTheHawk",
+    "name": "Hawkshot",
+    "maxrank": 5,
+    "cooldown": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "EnchantedCrystalArrow",
+    "name": "Enchanted Crystal Arrow",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     80,
+     60
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Frost Shot": {
+    "damagetype": "Physical",
+    "spelleffects": "Basic",
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   },
+   "Frost Shot 2": {
+    "damagetype": "Physical",
+    "spelleffects": "Basic",
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Ranger's Focus": {},
+   "Ranger's Focus 2": {}
+  },
+  "W": {
+   "Volley": {
+    "damagetype": "Physical",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Hawkshot": {
+    "spellshield": "false",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Charge"
+   }
+  },
+  "R": {
+   "Enchanted Crystal Arrow": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

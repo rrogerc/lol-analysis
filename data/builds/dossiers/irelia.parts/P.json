@@ -1,0 +1,191 @@
+{
+ "name": "Ionian Fervor",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_duration",
+   "meaning": "stack duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "lasting for 6 seconds",
+   "bin": [
+    "IreliaPassive.BuffDuration"
+   ]
+  },
+  {
+   "id": "p_maxstacks",
+   "meaning": "maximum stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "stacking up to 4 times",
+   "bin": [
+    "IreliaPassive.MaxStacks"
+   ]
+  },
+  {
+   "id": "p_as",
+   "meaning": "bonus attack speed per stack, by level",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    10.0,
+    10.882353,
+    11.764706,
+    12.6470588,
+    13.52941176,
+    14.411765,
+    15.294118,
+    16.17647,
+    17.058823,
+    17.941177,
+    18.82353,
+    19.7058824,
+    20.588235,
+    21.470588,
+    22.352941,
+    23.235294,
+    24.117647,
+    25.0
+   ],
+   "terms": [],
+   "quote": "{{pplevel|10 to 25|key=%}} '''bonus''' attack speed",
+   "bin": [
+    "IreliaPassive#SingleStackAS"
+   ],
+   "binNote": "Wiki rounds the pplevel curve to two decimals (10 to 25); bin's byLevel(10..25) interpolation carries more decimal precision (e.g. 10.882353 vs 10.88). Same underlying curve, precision differs."
+  },
+  {
+   "id": "p_onhit",
+   "meaning": "bonus magic on-hit damage at max stacks",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    10,
+    13,
+    16,
+    19,
+    22,
+    25,
+    28,
+    31,
+    34,
+    37,
+    40,
+    43,
+    46,
+    49,
+    52,
+    55,
+    58,
+    61
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{as|{{pplevel|10 to 61}}|magic damage}} {{as|(+ 20% '''bonus''' AD)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+   "bin": [
+    "IreliaPassive.OnHitBaseDamage",
+    "IreliaPassive.OnHitPerLevel",
+    "IreliaPassive#OnHitBonus"
+   ],
+   "binNote": "Flat base by level = OnHitBaseDamage(10) + OnHitPerLevel(3) x (level-1), giving 10..61, matching the wiki's pplevel|10 to 61. The 0.2 bonus AD coefficient is stated directly in IreliaPassive#OnHitBonus (+0.2xbonus ad); its flat term {b22609db} is an unresolved bin reference presumed to be the by-level base above."
+  },
+  {
+   "id": "p_onhit_structure",
+   "meaning": "bonus on-hit damage vs structures (reduced)",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    5,
+    6.5,
+    8,
+    9.5,
+    11,
+    12.5,
+    14,
+    15.5,
+    17,
+    18.5,
+    20,
+    21.5,
+    23,
+    24.5,
+    26,
+    27.5,
+    29,
+    30.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.1
+    }
+   ],
+   "quote": "reduced to{{ft|50%|{{as|{{pplevel|10*0.5 to 61*0.5}}|magic damage}} {{as|(+ {{ap|20*0.5}}% '''bonus''' AD)}}}}against structures",
+   "bin": [
+    "IreliaPassive.OnHitStructureMod"
+   ],
+   "binNote": "OnHitStructureMod=0.5 is the multiplier applied to the p_onhit base and coefficient (10..61 x0.5 = 5..30.5, 0.2 x0.5 = 0.1), matching the wiki's stated 50% reduction against structures."
+  },
+  {
+   "id": "p_mark_duration",
+   "meaning": "Unsteady mark duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "as ''Unsteady'' for 5 seconds",
+   "bin": [],
+   "binNote": "No MarkDuration row exists under the P (IreliaPassive) slot in the sheet; IreliaE.MarkDuration and IreliaR.MarkDuration (both 5) belong to the E/R slots that apply the mark, not to this passive's own data block."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Irelia's abilities generate a stack for each enemy champion hit, or one stack if she hits at least one non-champion.",
+   "quote": "abilities generate a {{tip|stack}} of ''Ionian Fervor'' for each enemy champion hit, as well as one stack if she hits at least one non-champion.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Basic attacks and ability hits against enemy champions, large monsters, and structures refresh the stack duration.",
+   "quote": "refreshing on {{tip|basic attacks}} and ability hits against enemy {{tip|champions}}, large {{tip|monster|monsters}}, and {{tip|structures}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At maximum stacks, basic attacks deal bonus on-hit magic damage.",
+   "quote": "At maximum stacks, '''Irelia's''' basic attacks are empowered to deal {{as|{{pplevel|10 to 61}}|magic damage}} {{as|(+ 20% '''bonus''' AD)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bonus on-hit damage is reduced to 50% against structures.",
+   "quote": "reduced to{{ft|50%|{{as|{{pplevel|10*0.5 to 61*0.5}}|magic damage}} {{as|(+ {{ap|20*0.5}}% '''bonus''' AD)}}}}against structures",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Ionian Fervor will not deal damage if the attack misses due to blind, but its duration will still refresh.",
+   "quote": "''Ionian Fervor'' will not deal damage if the attack misses due to {{tip|blind}}, but its duration will be refreshed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemy champions and large monsters hit by Flawless Duet's or Vanguard's Edge's initial barrage are marked as Unsteady, consumable by Bladesurge.",
+   "quote": "Enemy {{tip|champions}} and large {{tip|monster|monsters}} hit by ''{{ai|Flawless Duet|Irelia}}'' or ''{{ais|Vanguard's Edge|Irelia}}'' initial barrage are {{as|marked|buzzword}} as ''Unsteady'' for 5 seconds. The mark can be consumed by ''{{ai|Bladesurge|Irelia}}''.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

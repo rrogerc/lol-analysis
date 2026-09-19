@@ -1,0 +1,1036 @@
+{
+ "champion": "smolder",
+ "abilities": {
+  "P": {
+   "name": "Dragon Practice",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_q_bonus",
+     "meaning": "bonus magic damage on Q per stack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.25,
+       "coefScaling": [
+        {
+         "stat": "critChance",
+         "per": 1,
+         "coef": 1.2
+        }
+       ]
+      }
+     ],
+     "quote": "Deals {{as|'''bonus''' magic damage}} equal to {{critical damage|25 to 55|0 to 30|critScaling=true}} {{as|of ''Dragon Practice'' stacks|buzzword3}}.",
+     "bin": [
+      "SmolderP#Passive_QDamageIncrease"
+     ]
+    },
+    {
+     "id": "p_w_bonus",
+     "meaning": "bonus magic damage on W explosion per stack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.55
+      }
+     ],
+     "quote": "Explosions deal {{as|'''bonus''' magic damage}} equal to {{as|55% of ''Dragon Practice'' stacks|buzzword3}}.",
+     "bin": [
+      "SmolderP#Passive_WDamageIncrease"
+     ]
+    },
+    {
+     "id": "p_e_bonus",
+     "meaning": "bonus magic damage per E attack per stack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.08,
+       "coefScaling": [
+        {
+         "stat": "critChance",
+         "per": 1,
+         "coef": 0.6
+        }
+       ]
+      }
+     ],
+     "quote": "Attacks each deal {{as|'''bonus''' magic damage}} equal to {{critical damage|8 to 12.8|0 to 4.8|critScaling=true}} {{as|of ''Dragon Practice'' stacks|buzzword3}}.",
+     "bin": [
+      "SmolderP#EBonusDamage"
+     ],
+     "binNote": "The 0.6 crit-scaling coefficient (0.6 x critChance x (critDamage-1)) is a hardcoded literal inside the SmolderP#EBonusDamage calculation, not exposed as its own named SmolderP data value (unlike QCritRatio for Q); the wiki's 8 to 12.8 / 0 to 4.8 crit range confirms this constant matches."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Smolder gains a stack of Dragon Practice each time he hits an enemy champion with an ability.",
+     "quote": "generates a {{tip|stack}} of {{as|''Dragon Practice''|buzzword3}} each time he hits an enemy champion with an {{tip|ability}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Super Scorcher Breath (Q) also grants a stack whenever it kills a minion or monster.",
+     "quote": "whenever ''{{ai|Super Scorcher Breath|Smolder}}'' kills a {{tip|minion}} or {{tip|monster}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Super Scorcher Breath grants a stack if the target dies while the initial missile is in flight, and can grant an additional stack if the target then dies to the burn, for up to 2 stacks from one cast.",
+     "quote": "{{ai|Super Scorcher Breath|Smolder}} grants a stack if the target dies while the initial missile is in flight.\n** This happens even if the target dies to {{ais|Super Scorcher Breath 3|Smolder|Super Scorcher Breath}} burn, giving him a total of 2 stacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Achooo! (W) can only grant one stack of Dragon Practice per enemy champion, from its first hit against that target.",
+     "quote": "{{ai|Achooo!|Smolder}} can only grant a stack of {{as|Dragon Practice|buzzword3}} with the first hit against each enemy champion.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Flap, Flap, Flap (E) can only grant one stack of Dragon Practice per cast, regardless of how many attacks land.",
+     "quote": "{{ai|Flap, Flap, Flap|Smolder}} can only grant one stack of {{as|Dragon Practice|buzzword3}} per cast.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SmolderP.EStacksPerAttackTooltip",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Super Scorcher Breath",
+   "cooldown": {
+    "values": [
+     5.5,
+     5,
+     4.5,
+     4,
+     3.5
+    ],
+    "quote": "{{ap|5.5 to 3.5}}"
+   },
+   "cost": {
+    "values": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ],
+    "quote": "25",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{as|100% of '''Smolder's''' windup time|as}} ({{ap|(1/{{ccd|Smolder|as_base}})*{{ccd|Smolder|windup}}|round=3}} at {{as|'''base''' attack speed}})"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.3
+      },
+      {
+       "stat": "critChance",
+       "coef": 0.75,
+       "coefScaling": []
+      }
+     ],
+     "quote": "{{ap|60 to 100}} {{as|(+ 130% '''bonus''' AD)}}",
+     "bin": [
+      "SmolderQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|60*0.5 to 100*0.5}} {{as|(+ {{ap|130*0.5}}% '''bonus''' AD)}}",
+     "bin": [
+      "SmolderQ.BaseDamage",
+      "SmolderQ.ADRatio",
+      "SmolderQ.Tier2_BlowbackPercentageDamage"
+     ],
+     "binNote": "Wiki's t2_mod (0.5) matches Tier2_BlowbackPercentageDamage=50%; scales base damage and AD ratio by 50%."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Tier 3 burn true damage per second, from bonus AD and stacks",
+     "role": "dot",
+     "damageType": "true",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.025,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.025
+        }
+       ]
+      },
+      {
+       "stat": "stacks",
+       "coef": 0.005,
+       "coefScaling": [
+        {
+         "stat": "stacks",
+         "per": 100,
+         "coef": 0.005
+        }
+       ]
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 1
+      }
+     ],
+     "quote": "{{as|{{fd|{{#var:t3_ad}}}}% per 100 '''bonus''' AD}} {{as|(+ {{fd|{{#var:t3_i}}}}% per 100 ''{{ai|Dragon Practice|Smolder}}'' stacks)|buzzword3}} {{as|of their '''maximum''' health}} over the duration",
+     "bin": [
+      "SmolderQ#Tier3_Burn"
+     ],
+     "binNote": "Bin: 0.00025xbonus ad + 5e-05xbuffStacks per instant unit of health (i.e. per point, matching 2.5%/100AD and 0.5%/100stacks over the 3s duration); wiki gives total-over-duration numbers, consistent."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Tier 3 burn duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "set on fire for 3 seconds",
+     "bin": [
+      "SmolderQ.Tier3_DotLength"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Tier 3 execute threshold (% max health)",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 6.5,
+     "terms": [],
+     "quote": "{{as|{{fd|6.5}}% of their '''maximum''' health}}",
+     "bin": [
+      "SmolderQ.Tier3_ExecuteThresholdStart"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Life steal effectiveness on Q damage",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "applies {{as|{{sti|life steal}}}} at 50% effectiveness",
+     "bin": [
+      "SmolderQ.LifestealMod"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "Mana restored on kill",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 15,
+     "terms": [],
+     "quote": "'''Smolder''' restores {{sti|{{as|15 mana}}}}",
+     "bin": [
+      "SmolderQ.ManaRestore"
+     ]
+    },
+    {
+     "id": "q_8a",
+     "meaning": "Dragon Practice stack threshold for Q Tier 1 (explosion)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "{{sbc|Tier 1 - 25 stacks:}}",
+     "bin": [
+      "SmolderQ.StackTier1"
+     ]
+    },
+    {
+     "id": "q_8b",
+     "meaning": "Dragon Practice stack threshold for Q Tier 2 (bolts)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 125,
+     "terms": [],
+     "quote": "{{sbc|Tier 2 - 125 stacks:}}",
+     "bin": [
+      "SmolderQ.StackTier2"
+     ]
+    },
+    {
+     "id": "q_8c",
+     "meaning": "Dragon Practice stack threshold for Q Tier 3 (burn/execute)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 225,
+     "terms": [],
+     "quote": "{{sbc|Tier 3 - 225 stacks:}}",
+     "bin": [
+      "SmolderQ.StackTier3"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The fireball applies on-hit effects and triggers on-attack effects.",
+     "quote": "applies {{tip|on-hit}} effects; applies {{as|{{sti|life steal}}}} at 50% effectiveness; and triggers {{tip|on-attack}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Any applied Dragon Practice (stack-based bonus) damage uses the same modifiers as Q but does not get life steal.",
+     "quote": "Any applied ''{{ai|Dragon Practice|Smolder}}'' damage is affected by the same damage modifiers as ''Super Scorcher Breath'' and does not benefit from the ability's {{sti|life steal}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tier 1 explosion also applies on-hit and life steal at 50% effectiveness.",
+     "quote": "The explosion benefits from {{as|{{sti|life steal}}}} at 50% effectiveness and applies {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tier 2 bolts also apply on-hit and life steal at 50% effectiveness.",
+     "quote": "The bolts benefit from {{as|{{sti|life steal}}}} at 50% effectiveness and apply {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Subsequent burn applications stack damage but do not refresh duration.",
+     "quote": "Subsequent applications of the burn stack, though not refreshing the duration of the previous burn.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only Smolder's own damage counts toward triggering the tier 3 execute, and a killing blow that would drop below threshold executes on that same instance.",
+     "quote": "Only '''Smolder's''' damage counts for triggering the execute. ... If ''Super Scorcher Breath'' would damage the target to below the execution threshold, they are executed on the same damage instance.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Q can only hit each enemy once per cast.",
+     "quote": "''Super Scorcher Breath'' can only hit enemies once per cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Minion/monster damage modifier only applies to the physical damage component (not the true damage burn).",
+     "quote": "The minion and monster damage modifier applies only to the physical damage.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SmolderQ.Tier1_ExplosionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderQ.Tier2_BlowbackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderQ.Tier2_BlowbackAmountBase",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SmolderQ.Tier2_BlowbackExplosionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderQ.Tier2_BlowbackSpreadAngle",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderQ.Tier3_TrueDamagePercent",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SmolderQ.Tier3_MonsterCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SmolderQ.CritRatio",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderQ.minionmod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SmolderQ.Tier3_Burn_Stack_Mult",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Achooo!",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Glob Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|60 to 100}} {{as|(+ 60% '''bonus''' AD)}}",
+     "bin": [
+      "SmolderW#InitialDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Explosion Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      35,
+      60,
+      85,
+      110
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      },
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|10 to 110}} {{as|(+ 50% '''bonus''' AD)}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "SmolderW#ExplosionDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Hitting an enemy champion creates an explosion dealing additional physical damage to nearby enemies.",
+     "quote": "Hitting an enemy {{tip|champion}} creates an explosion that deals {{as|physical damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Subsequent explosions against the same target deal 75% of the previous explosion's damage, so repeated hits on the dummy decay.",
+     "quote": "subsequent explosions against the same target dealing 75% damage of the previous explosion's damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The glob slows down in missile speed after traveling a distance, changing time to hit.",
+     "quote": "slowing down in missile speed after travelling {{tt|1200|estimated}} units",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Smolder cannot basic attack for a brief moment after the cast, delaying on-hit follow-up.",
+     "quote": "Smolder can't declare basic attacks for a brief moment after the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield can block either the glob or the explosion, but not both, so it cannot negate all of the ability's damage.",
+     "quote": "Spell shield can block either the glob or the explosion, but not both.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SmolderW.ExplosionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderW.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "SmolderW.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SmolderW.ExplosionDamageMult",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderW.ExplosionDamageMultihitPenalty",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SmolderW.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Flap, Flap, Flap",
+   "cooldown": {
+    "values": [
+     24,
+     22,
+     20,
+     18,
+     16
+    ],
+    "quote": "{{ap|24 to 16}}"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 30% AD)}}",
+     "bin": [
+      "SmolderE#DamagePerHit"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration of flight / auto-fire window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "takes flight for {{fd|1.25}} seconds",
+     "bin": [
+      "SmolderE.Duration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "base number of bolts fired",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "automatically fires up to 5",
+     "bin": [
+      "SmolderE.NumOfAttacksBase",
+      "SmolderE#TotalNumberOfAttacks"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "additional bolts per 100 Dragon Practice stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.01
+      }
+     ],
+     "quote": "(+ 1 per 100 ''{{ai|Dragon Practice|Smolder}}'' stacks)",
+     "bin": [
+      "SmolderE.NumAttackStackRatio",
+      "SmolderE#TotalNumberOfAttacks"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While in flight, Smolder automatically fires bolts at the nearest and most wounded visible enemy, prioritizing enemy champions.",
+     "quote": "he automatically fires up to 5 {{as|(+ 1 per 100 ''{{ai|Dragon Practice|Smolder}}'' stacks)|buzzword3}} bolts at the nearest and {{tt|most wounded|Lowest health percent}} {{tip|sight|visible}} enemy, dealing {{as|physical damage}} with each hit and prioritizing enemy champions.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Flap, Flap, Flap ends immediately if Smolder casts another ability or becomes immobilized.",
+     "quote": "''Flap, Flap, Flap'' ends immediately if '''Smolder''' casts another ability or becomes {{tip|immobilize|immobilized}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks only one bolt from the sequence, not the whole ability.",
+     "quote": "{{tip|Spell shield}} will block only one bolt.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SmolderE.MoveSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "SmolderE.Range",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderE.ADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "MMOOOMMMM!",
+   "cooldown": {
+    "values": [
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|120 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{fd|0.75}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Self Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      135,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      },
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|100 to 170}} {{as|(+ 50% '''bonus''' AD)}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "SmolderR#MomHealCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      },
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "SmolderR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Increased Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      225,
+      375,
+      525
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      },
+      {
+       "stat": "ap",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|150*1.5 to 350*1.5}} {{as|(+ {{ap|100*1.5}}% '''bonus''' AD)}} {{as|(+ {{ap|100*1.5}}% AP)}}",
+     "bin": [
+      "SmolderR#TooltipOnly_TotalSweetspotDamage",
+      "SmolderR.SweetspotPercentageIncrease"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The wave heals Smolder and deals physical damage to enemies hit, with those in the center taking 50% increased damage and being slowed.",
+     "quote": "The wave {{tip|heal|heals}} '''Smolder''' and deals {{as|physical damage}} to enemies hit, with those in the center taking {{ccs|50% increased damage|physical}} and becoming {{tip|slow|slowed}} by 40% for 2 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "MMOOOMMMM! deals 50% damage against minions and monsters.",
+     "quote": "''MMOOOMMMM!'' deals 50% damage against {{tip|minions}} and {{tip|monsters}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Smolder cannot move for the first 0.4 seconds of the cast time.",
+     "quote": "Disabled in the first {{fd|0.4}} seconds of the cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal applies to Smolder regardless of whether the wave hits an enemy.",
+     "quote": "The wave {{tip|heal|heals}} '''Smolder'''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SmolderR.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "SmolderR.ADRatio",
+     "reason": null
+    },
+    {
+     "ref": "SmolderR.MomDistBehindOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderR.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SmolderR.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "SmolderR.MomSpawnDelay",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SmolderR.SweetspotPercentageIncrease",
+     "reason": null
+    },
+    {
+     "ref": "SmolderR.MomHeal",
+     "reason": null
+    },
+    {
+     "ref": "SmolderR.SoundDistanceBehindSmolder",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.SoundDistanceBehindSmolderSelfOnly",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.LingeringSimmerSoundAmount",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.LingeringSimmerSoundOffset",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.MissileLandingSound",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.VFXNorthAngleReplacement",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.LingeringSimmerSoundDelay",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SmolderR.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Dragon Practice stacks accumulate permanently (from champion-ability hits and Q kills), have no stated cap or expiry, and directly scale P's onhit-rider damage on Q/W/E plus gate Q's tier1/2/3 unlocks at 25/125/225 stacks and E's extra-bolt count. A 15s damage fight needs an assumed stack trajectory/starting value."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "P adds bonus magic damage scaled by current Dragon Practice stacks to every Q hit, every W explosion, and every E bolt, on top of each ability's own damage."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's physical damage and P's Q/E bonus damage both scale with critChance x (critDamage-1) even though Q/E are not basic attacks."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q"
+   ],
+   "note": "At 225+ stacks Q applies a 3s true-damage burn based on target max HP; repeat applications stack damage without refreshing the timer."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The tier-3 burn executes enemy champions once Smolder's own damage (including the burn tick) would drop them below 6.5% max HP."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Each subsequent W explosion against the same target deals 75% of the prior explosion's damage, so repeated hits on one dummy decay."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "E is a 1.25s channel that auto-fires up to 5(+stacks) bolts at the nearest/lowest-HP visible enemy and ends immediately if another ability is cast or Smolder is immobilized."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q tier-2 fires 2(+stacks/125) bolts in a 15deg arc that explode at max range - unclear how many converge on a single dummy. R's 125-unit-wide center sweetspot gives 50% more damage - unclear whether a single stationary dummy is assumed to stand in the center line."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (25 flat / 50-70 by rank / 65 flat / 100 flat) against a low base mana pool could cap the achievable cast count inside 15s, especially with W ranking up in cost."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's 50%-effectiveness lifesteal and R's self-heal change Smolder's own sustain, not damage dealt to a stationary non-retaliating dummy; in the survival fight they only matter if Smolder himself is attacking (not defending), so a damage-only dummy fight never reads them."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is expressible with infinite-scaling (Dragon Practice) feeding onhit-rider, conditional-damage, dot/execute-or-threshold, and charge-or-channel primitives, provided the simulator can assume a stack trajectory and resolve the tier-1/2/3 stack-gated unlocks as threshold checks on that scaling stack value."
+ },
+ "unsettled": [
+  {
+   "question": "How many of Q's tier-2 arc bolts (2 + 0.008xstacks, rounded up) can land on a single stationary dummy in a no-geometry damage fight?",
+   "options": [
+    "All bolts are assumed to hit the single target (treat as pure multi-hit damage)",
+    "Only one bolt is assumed to reach a single target given the 15deg spread angle",
+    "Simulator should just use the base fireball+explosion damage and ignore tier-2 bolts entirely for a single-target dummy"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "What Dragon Practice stack count should the 15s damage fight assume Smolder starts with / ramps to, given stacks are uncapped and gate Q's entire tier system (25/125/225) plus scale P's onhit-rider damage on every ability?",
+   "options": [
+    "Start at 0 stacks and only count stacks actually generated by hits during the simulated 15s",
+    "Pre-load to a 'typical mid-game' stack count (e.g. enough to be tier 2 or tier 3) to represent a realistic fight state",
+    "Pre-load to exactly one threshold (e.g. 225) to showcase the full kit"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does a single Q cast that lands its fireball, tier-1 explosion, and tier-2 bolts on the same target grant more than one Dragon Practice stack, given W and E explicitly cap themselves to one stack per cast but the sources never state an equivalent cap for Q?",
+   "options": [
+    "Q is capped to one stack per cast per target like W/E (unstated but implied by symmetry)",
+    "Q grants one stack per distinct sub-effect (fireball, explosion, each bolt) that connects with the target",
+    "Q only grants a stack via its explicit kill-related bin note (in-flight kill / burn kill) and never from merely hitting a living target"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "When a Q cast itself grants a Dragon Practice stack (by hitting the target), does that cast's own P onhit-rider bonus damage use the pre-hit stack count or the post-hit (incremented) stack count?",
+   "options": [
+    "Uses stack count before this cast's stack gain (rider computed first, stack added after)",
+    "Uses stack count after this cast's stack gain (stack added, then rider computed)"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "Does W's 75%-of-previous explosion damage decay against a given target persist across separate W casts for the whole 15s fight, or reset with each new cast (i.e. does 'previous explosion' only refer to earlier explosions within the same cast, which is moot since W only produces one explosion per hit)?",
+   "options": [
+    "Decay is per-target and persists for the whole fight (each W cast's single explosion is 75% of the prior cast's explosion on that same target)",
+    "Decay only applies within-cast and effectively never triggers for a single-target dummy since each W cast produces only one explosion on it"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume all cooldowns are available at fight start; open with R immediately since it has by far the longest cooldown (100-120s) and will not come off cooldown again within the 15s window.",
+   "Follow with W for its glob damage plus the on-champion-hit explosion, then weave in a basic attack.",
+   "Cast Q as soon as it is off cooldown and keep recasting it every time it comes off cooldown for the rest of the fight (lowest cooldown and cost, primary contributor to sustained DPS and Dragon Practice stacks).",
+   "Basic-attack the dummy in every window between Q/W casts to keep attack speed and on-hit effects contributing.",
+   "Cast E only when no other ability needs to be cast during its 1.25s channel, since casting Q, W, or R while E is active ends the channel immediately; let E's automatic bolts finish before weaving the next Q.",
+   "Recast W again when it comes off cooldown (~10-14s CD) if the 15s window allows a second cast.",
+   "Do not recast R (cooldown far exceeds 15s); treat it as a single opening or mid-fight burst."
+  ],
+  "questions": [
+   "Should R be front-loaded at the very start of the fight for maximum total casts across the simulation, or is it more representative to delay it slightly so its cast time doesn't overlap with the opening auto-attack/Q weave?",
+   "Given E ends the instant another ability is cast, should the rotation ever interleave E between Q casts, or should E always be scheduled into a gap where no other ability is due for its full 1.25s duration?",
+   "Should the rotation assume Smolder opens at 0 Dragon Practice stacks (worst case for a burst-focused sim) or at some pre-built stack count reflecting a realistic mid-fight state, since this changes whether Q ever reaches tier-1/2/3 within the simulated 15s?",
+   "Is it correct to assume the dummy is always in range and within Q's unusual target-range mechanic (equal to Smolder's attack range, +100% bonus attack range) for every Q cast, or does itemized attack range change how often Q can be used at range vs. melee-adjacent?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,164 @@
+{
+ "champion": "drmundo",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Infected Bonesaw fires an instant magic-damage bolt after a 0.25s cast time, hitting the first enemy in a line, on a flat 4s cooldown."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's damage is a percent of the target's current health with a flat minimum and a separate (lower) monster cap; E's active bonus damage scales up with Dr. Mundo's own missing health, capped at +40% (1.4x)."
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q, W, and E all cost current/max health rather than mana; these costs reduce Mundo's own effective health during the fight and (for Q) are partially or fully refunded by hitting an enemy."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Heart Zapper's charge-up ticks magic damage to nearby enemies roughly every 0.25s for up to 3s before it must be detonated."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Heart Zapper has a distinct charge-up damage-over-time phase and a separate recast/detonation nuke that also heals Dr. Mundo; the recast fires automatically if not triggered manually."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Blunt Force Trauma's active arms Dr. Mundo's next basic attack (within 4s) with bonus physical damage and an uncancellable windup."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "The empowered basic attack from Blunt Force Trauma resets Dr. Mundo's basic attack timer on use."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "E"
+   ],
+   "note": "Blunt Force Trauma's passive converts a percent of Dr. Mundo's maximum health into bonus attack damage."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Maximum Dosage grants a temporary increase to base/max health (which feeds E's and W's health-ratio damage) plus movement speed and regen for its 10s duration."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Goes Where He Pleases' regen/immunity/canister loop, Heart Zapper's grey-health storage-based recast heal (depends on damage Mundo takes, which is zero against a passive dummy), and Maximum Dosage's regen/movement-speed portions matter only for the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All of Dr. Mundo's damage-relevant mechanics (health-cost resource, current/missing-health-scaled damage, an empowered-attack with reset, a passive health-to-AD conversion, and a charge-then-recast ability) map onto existing primitives; nothing requires unique engine logic beyond reading current/max/bonus/missing health as stats."
+ },
+ "unsettled": [
+  {
+   "question": "How many damage ticks does Heart Zapper's charge-up actually deal over its up-to-3s duration?",
+   "options": [
+    "12 ticks (3s duration / 0.25s interval, as stated in the description text)",
+    "16 ticks, matching the wiki's own leveling line 'Total Magic Damage {{ap|5*16 to 20*16}}'",
+    "Some other tick count/interval not stated anywhere, since the bin has no explicit tick-rate field"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|magic damage}} every {{fd|0.25}} seconds to nearby enemies",
+    "{{st|Magic Damage per Tick|{{ap|5 to 20}}|Total Magic Damage|{{ap|5*16 to 20*16}}}}"
+   ]
+  },
+  {
+   "question": "Which bin block defines the live Heart Zapper recast damage/heal: DrMundoW (RecastBaseDamage [20/35/50/65/80] + 0.07x bonus HP, matching the wiki's leveling3 exactly) or DrMundoWRecast (BaseDamage [15/20/25/30/35] + 1x AD + 0.05x max HP, with an unrelated FlatHeal/HealOverTime/MaxStacks=5 stacking-heal system not mentioned anywhere on the wiki)?",
+   "options": [
+    "DrMundoW.RecastBaseDamage/#TotalDamage is live (matches wiki description word-for-word); DrMundoWRecast is a stale/unused alternate kit definition",
+    "DrMundoWRecast is actually live and adds 100% AD plus a stacking heal-over-time on top of the wiki-documented numbers",
+    "Both are partially live in some blended way"
+   ],
+   "impact": "high",
+   "quotes": [
+    "DrMundoW#TotalDamage = RecastBaseDamage=[20/35/50/65/80] + 0.07xbonus maxHp",
+    "DrMundoWRecast#TotalDamage = 1xad + BaseDamage=[15/20/25/30/35] + 0.05xmaxHp",
+    "{{st|Magic Damage|{{ap|20 to 80}} {{as|(+ 7% '''bonus''' health)}}}}"
+   ]
+  },
+  {
+   "question": "Does Heart Zapper's charge-up block Dr. Mundo's basic attacks and other ability casts while it is running (a true channel), or can he freely attack/cast Q and E during the up-to-3s charge?",
+   "options": [
+    "It is a channel that prevents other actions until recast/auto-detonation",
+    "Mundo can attack and cast freely during the charge, only losing access to those actions if he chooses to hold and detonate later",
+    "Only movement is unaffected; attacks/casts are queued but delayed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Dr. Mundo''' charges up a defibrillator for up to 3 seconds, dealing {{as|magic damage}} every {{fd|0.25}} seconds to nearby enemies"
+   ]
+  },
+  {
+   "question": "Is Blunt Force Trauma's missing-health damage bonus (up to +40%/70% scaling) snapshotted at the moment the active is cast, or recalculated at the moment the empowered attack actually lands (up to 4s later, during which Mundo's health cost/regen could change his missing-health%)?",
+   "options": [
+    "Snapshotted at cast",
+    "Recalculated at the moment the attack lands"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Dr. Mundo''' empowers his next {{tip|basic attack}} within 4 seconds ... to have ... {{as|'''bonus''' physical damage}}, increased by {{pp|...|type='''Dr. Mundo's missing''' health|...}}"
+   ]
+  },
+  {
+   "question": "Does the health cost that Q/W/E themselves inflict on Dr. Mundo count as 'post-mitigation damage he takes' for Heart Zapper's grey-health storage (i.e., does self-inflicted ability cost feed W's storage/heal even against a target that deals no damage)?",
+   "options": [
+    "No — grey-health storage only triggers from damage received from an external source, so it is zero in the pure damage fight",
+    "Yes — self-inflicted health costs from Mundo's own kit also count toward the stored grey health"
+   ],
+   "impact": "low",
+   "quotes": [
+    "storing {{pplevel|80 to 95|key=%}} of {{tt|post-mitigation damage|Damage calculated after modifiers}} he takes as [[Health#Grey health|grey health]]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Level Q first (or per whatever skill order the simulator's level target implies), keeping R at 6/11/16, to have the lowest-cooldown, highest-uptime damage tool available early.",
+   "At the start of the 15s window, cast Maximum Dosage (R) if it is off cooldown and available at the tested level, since its base-health increase raises the health-scaling terms in both E's passive AD and E/W's bonus-health damage for the rest of the fight.",
+   "Immediately cast Blunt Force Trauma (E) to arm the empowered auto attack, then auto-attack the dummy to land it (bonus physical damage plus the attack-reset).",
+   "Cast Infected Bonesaw (Q) on cooldown every 4 seconds throughout the fight (0.25s cast time each), since it is Mundo's cheapest, fastest-cycling nuke.",
+   "As soon as Heart Zapper (W) comes off cooldown, activate it and hold the charge for its full up-to-3s duration to maximize tick count, then trigger (or let auto-trigger) the recast detonation for its magic-damage burst.",
+   "Repeat: re-cast E the instant it comes off cooldown (roughly every 6-9s depending on rank) to keep re-arming the empowered attack and resetting the auto-attack timer, continue auto-attacking between casts, and keep Q on cooldown and W cycling for the remainder of the 15s."
+  ],
+  "questions": [
+   "Does the simulator want Heart Zapper's recast fired as early as the 0.5s minimum lockout allows (more detonation cycles, fewer DoT ticks per cycle) or held to the full 3s (fewer cycles, more DoT ticks per cycle) for maximum total damage in 15s?",
+   "What skill-leveling order (Q-max vs W-max vs E-max first) does the simulator's target level/rank profile assume, since Dr. Mundo's live play maxes W first for sustain but that may not be optimal for a pure damage-race against a dummy?",
+   "Can Q, E, and basic attacks be freely weaved during Heart Zapper's charge-up, or does starting W lock out those actions until it ends (this changes whether W should be opened first or last in the loop)?",
+   "Should Maximum Dosage (R) be assumed available/used within every 15s trial given its 120s cooldown, or should the rotation exclude it as unavailable in a short repeated damage-fight context?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,494 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "JinxPassiveMarker",
+    "key": "Characters/Jinx/Spells/JinxPassiveMarkerAbility/JinxPassiveMarker",
+    "dataValues": {
+     "BuffDuration": 6,
+     "ASBuff": 25,
+     "MSBuff": 175,
+     "MSDecayRate": 0.875,
+     "AssistMarkerDuration": 3
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "JinxQ",
+    "key": "Characters/Jinx/Spells/JinxQAbility/JinxQ",
+    "cooldown": 0.9,
+    "cost": 20,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RocketAoERadius": 250,
+     "RocketBonusRange": {
+      "axis": "rank",
+      "v": [
+       100,
+       125,
+       150,
+       175,
+       200
+      ]
+     },
+     "MinigunAttackSpeedMax": {
+      "axis": "rank",
+      "v": [
+       30,
+       55,
+       80,
+       105,
+       130
+      ]
+     },
+     "MinigunAttackSpeedDuration": 2.5,
+     "MinigunAttackSpeedStacks": 3,
+     "RocketTAD": 1.1,
+     "RocketASPDPenalty": 0.1
+    },
+    "calcs": {
+     "RocketDamage": {
+      "expr": "(RocketTAD=1.1)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.1,
+        "dataValue": "RocketTAD"
+       }
+      ],
+      "refs": [
+       "RocketTAD"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "JinxW",
+    "key": "Characters/Jinx/Spells/JinxWAbility/JinxW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7,
+      6,
+      5,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "JinxLowEndWCastTime": 0.4,
+     "JinxWASpeedCastTimeScalarPerHundrethSecond": 0.08,
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       10,
+       60,
+       110,
+       160,
+       210
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60,
+       70,
+       80
+      ]
+     },
+     "SlowDuration": 2,
+     "ADRatio": 1.4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[10/60/110/160/210] + (ADRatio=1.4)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        60,
+        110,
+        160,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.4,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "JinxE",
+    "key": "Characters/Jinx/Spells/JinxEAbility/JinxE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      24,
+      20.5,
+      17,
+      13.5,
+      10
+     ]
+    },
+    "cost": 90,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       90,
+       140,
+       190,
+       240,
+       290
+      ]
+     },
+     "RootDuration": 1.5,
+     "GrenadeDuration": 5,
+     "GrenadeArmTime": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[90/140/190/240/290] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        140,
+        190,
+        240,
+        290
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "JinxR",
+    "key": "Characters/Jinx/Spells/JinxRAbility/JinxR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      85,
+      65,
+      45
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.6,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50
+      ]
+     },
+     "MaxDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       350,
+       500
+      ]
+     },
+     "PercentDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       30,
+       35
+      ]
+     },
+     "AoEDamageMult": 0.8,
+     "MonsterExecuteMax": 1200,
+     "AoERadius": 400
+    },
+    "calcs": {
+     "DamageFloor": {
+      "expr": "BaseDamage=[20/35/50] + 0.12xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.12
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "DamageMax": {
+      "expr": "MaxDamage=[200/350/500] + 1.2xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        350,
+        500
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "MaxDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "Crepe_JinxVsEkko_JinxReward",
+    "key": "{9b5aa500}",
+    "dataValues": {
+     "AH": 10
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "JinxQ",
+  "W": "JinxW",
+  "E": "JinxE",
+  "R": "JinxR",
+  "P": "JinxPassiveMarker"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 260,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.34,
+   "{3a509002}": 0.2
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Jinx",
+  "name": "Jinx",
+  "partype": "Mana",
+  "passive": "Get Excited!",
+  "spells": [
+   {
+    "id": "JinxQ",
+    "name": "Switcheroo!",
+    "maxrank": 5,
+    "cooldown": [
+     0.9,
+     0.9,
+     0.9,
+     0.9,
+     0.9
+    ],
+    "cost": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ]
+   },
+   {
+    "id": "JinxW",
+    "name": "Zap!",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7,
+     6,
+     5,
+     4
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "JinxE",
+    "name": "Flame Chompers!",
+    "maxrank": 5,
+    "cooldown": [
+     24,
+     20.5,
+     17,
+     13.5,
+     10
+    ],
+    "cost": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ]
+   },
+   {
+    "id": "JinxR",
+    "name": "Super Mega Death Rocket!",
+    "maxrank": 3,
+    "cooldown": [
+     85,
+     65,
+     45
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Get Excited!": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Switcheroo!": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana per attack with {{ai|Switcheroo!|Jinx|Fishbones}}"
+   },
+   "Pow-Pow": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana per attack with {{ai|Switcheroo!|Jinx|Fishbones}}"
+   },
+   "Rev'd up": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana per attack with {{ai|Switcheroo!|Jinx|Fishbones}}"
+   },
+   "Fishbones": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana per attack with {{ai|Switcheroo!|Jinx|Fishbones}}"
+   }
+  },
+  "W": {
+   "Zap!": {
+    "damagetype": "Physical",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Flame Chompers!": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "Special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Flame Chompers! 2": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "Special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Super Mega Death Rocket!": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

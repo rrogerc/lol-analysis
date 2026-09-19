@@ -1,0 +1,185 @@
+{
+ "name": "Apotheosis",
+ "cooldown": {
+  "values": [
+   110,
+   95,
+   80
+  ],
+  "quote": "{{ap|110 to 80 3}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "None"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage per Tick",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    15,
+    25,
+    35
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{ap|15 to 35 3}} {{as|(+ 10% '''bonus''' AD)}}",
+   "bin": [
+    "NilahR.DamagePerTick",
+    "NilahR#DamagePerTickCalc"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Burst Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    125,
+    225,
+    325
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|125 to 325 3}} {{as|(+ 100% '''bonus''' AD)}}",
+   "bin": [
+    "NilahR.DamageBase",
+    "NilahR#DamageCalc"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "tick interval during channel",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{fd|0.25}}",
+   "bin": [
+    "NilahR.TickDelay"
+   ],
+   "binNote": "Wiki states ticks occur every 0.25s; bin's NilahR.TickDelay is 0.2. Numbers disagree."
+  },
+  {
+   "id": "r_6",
+   "meaning": "channel duration before burst",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "whirls her whip-blade over 1 second",
+   "bin": [],
+   "binNote": "No bin field named 1 second directly; NilahR.Duration=6 appears to be a different (longer) total duration than the 1s channel described in the text."
+  },
+  {
+   "id": "r_7",
+   "meaning": "duration of shield from converted overhealing",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "converting each heal instance beyond {{as|'''maximum''' health}} into a {{tip|shield}} that last 6 seconds",
+   "bin": [
+    "NilahR.Duration"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "percent of post-mitigation damage to champions converted to healing, scaling with crit chance",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.3
+    }
+   ],
+   "quote": "formula=20% + 0.3% per 1% critical strike chance, capped at 100% critical strike chance",
+   "bin": [
+    "NilahR#ChampHealingPercent"
+   ],
+   "binNote": "Bin formula NilahR#ChampHealingPercent is 0.2 + 0.1xcritChance (giving 30% at 100% crit), while the wiki's stated formula and cap (20% to 50% at 100% crit) implies a coefficient of 0.3, not 0.1. Numbers disagree."
+  },
+  {
+   "id": "r_9",
+   "meaning": "healing percent against non-champions",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "reduced to 10% against non-champions",
+   "bin": [
+    "NilahR.OtherHealingPercent"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Nilah cannot basic attack or cast her other abilities while channeling Apotheosis, but can move.",
+   "quote": "'''Nilah''' is unable to basic attack and cast her other [[champion ability|abilities]] during Apotheosis, but she is able to move.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield will only block the burst damage instance, not the channel ticks.",
+   "quote": "{{tip|Spell shield}} will only block the burst damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The channel deals physical damage to nearby enemies every 0.25 seconds for about 1 second before the burst fires.",
+   "quote": "'''Nilah''' whirls her whip-blade over 1 second, dealing {{as|physical damage}} to nearby enemies every {{fd|0.25}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Nilah heals herself and nearby allied champions for a portion of post-mitigation damage dealt to champions during Apotheosis, converting overhealing beyond max health into a shield.",
+   "quote": "'''Nilah''' {{tip|heals}} herself and nearby allied champions for {{pp|key=%|key1=%|type=critical strike chance|20 to 50 for 11|0 to 100|formula=20% + 0.3% per 1% critical strike chance, capped at 100% critical strike chance|color=critical chance}} of the {{tt|post-mitigation damage|Damage calculated after modifiers}} dealt to {{tip|champions}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Apotheosis's cooldown starts on cast.",
+   "quote": "cdstart          = on-cast",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NilahR.NumTicks",
+   "reason": "unknown"
+  },
+  {
+   "ref": "NilahR.Microslow",
+   "reason": "utility"
+  },
+  {
+   "ref": "NilahR.ShieldBase",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

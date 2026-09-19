@@ -1,0 +1,165 @@
+{
+ "name": "Death Lotus",
+ "cooldown": {
+  "values": [
+   75,
+   60,
+   45
+  ],
+  "quote": "{{ap|75 to 45}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage Per Dagger",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.16,
+     "coefScaling": [
+      {
+       "stat": "bonusAttackSpeed",
+       "per": 1,
+       "coef": 0.5
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|16% {{as|(+ 50% per 100% '''bonus''' attack speed)}} '''bonus''' AD}}",
+   "bin": [],
+   "binNote": "Bin's KatarinaR#ADDamageCalc writes the same relationship as ((0.16)*(1 + 3.125x bonus attackWindup))x bonus ad, i.e. base coefficient 0.16 on bonus AD and a scaling term of 3.125 applied directly to the fractional bonus attack speed value (not per-100%). The wiki reformulates this identically as 16% base + 50% per 100% bonus AS (since 0.16*3.125 = 0.5), so the numbers agree once the bin's fractional-vs-percent convention is accounted for; listing bin:[] because the checker cannot directly match 0.16/0.5 against the bin's 0.16/3.125 without this derivation."
+  },
+  {
+   "id": "r_3",
+   "meaning": "Magic Damage Per Dagger",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    37.5,
+    50
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.19
+    }
+   ],
+   "quote": "{{ap|25 to 50}} {{as|(+ 19% AP)}}",
+   "bin": [
+    "KatarinaR#DamageCalc"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "On-Hit/On-Attack Damage Effectiveness",
+   "role": "onhit",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.25,
+    0.3,
+    0.35
+   ],
+   "terms": [],
+   "quote": "{{ap|25 to 35}}%",
+   "bin": [
+    "KatarinaR.OnHitRatio"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "Channel duration (up to)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "channels for up to {{fd|2.5}} seconds",
+   "bin": [
+    "KatarinaR.Duration"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Interval between daggers",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.166,
+   "terms": [],
+   "quote": "throwing a dagger every {{fd|0.166}} seconds",
+   "bin": [
+    "KatarinaR.TicksPerSecond"
+   ],
+   "binNote": "Wiki states 0.166s per dagger; bin's TicksPerSecond=6 implies an interval of 0.1667s, a slight rounding difference."
+  },
+  {
+   "id": "r_8",
+   "meaning": "Grievous Wounds duration inflicted on target",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "inflicts {{tip|Grievous Wounds}} on the target for 3 seconds",
+   "bin": [
+    "KatarinaR.GrievousDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Katarina channels, throwing a dagger every 0.166 seconds to up to 3 of the closest nearby enemy champions; against a single dummy target, all daggers land on it.",
+   "quote": "rapidly throwing a dagger every {{fd|0.166}} seconds to up to 3 of the closest nearby enemy champions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each dagger deals both physical and magic damage and applies on-hit and on-attack effects, with those on-hit/on-attack effects reduced in effectiveness.",
+   "quote": "Each dagger deals {{as|physical damage}} and {{as|magic damage}}, applies {{tip|on-hit}} and {{tip|on-attack}} effects, with on-hit and on-attack damage reduced in effectiveness",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each dagger counts as a separate hit for on-hit-triggered effects like Conqueror, Electrocute, and Eclipse.",
+   "quote": "Each dagger counts as a separate hit for effects such as {{ri|Conqueror}}, {{ri|Electrocute}}, and {{iis|Eclipse}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The on-attack damage-effectiveness reduction incorrectly (bug) also applies to various other damaging effects triggered by the same damage instance, such as Hail of Blades, Scorch, and several items.",
+   "quote": "The on-attack modifier also incorrectly applies to various other damaging effects triggered by the same damage instance, including {{ri|Hail of Blades}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield will block and be consumed by only one dagger, not the whole channel.",
+   "quote": "{{tip|Spell shield}} will block and be consumed by only one dagger.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Death Lotus does not end early if no enemies remain in range.",
+   "quote": "''Death Lotus'' will not end if no enemies remain in range.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown begins on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KatarinaR.GrievousAmount",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

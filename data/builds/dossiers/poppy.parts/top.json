@@ -1,0 +1,132 @@
+{
+ "champion": "poppy",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Iron Ambassador periodically arms Poppy's next basic attack with bonus range and bonus magic damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P's retrieval shield (% max HP shield) and W's passive armor/MR increase (16%, doubled below 40% HP) never change damage dealt to a stationary dummy."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q: initial impact + a field that ruptures 1s later for the same damage (same cast, no player recast). E: initial hit + a second identical hit and stun if the target reaches terrain (same cast instance). R: charge phase followed by a required recast that deals the actual damage, with an uncharged vs charged (>=0.5s) damage tier and a possible shockwave/eruption sub-path."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Keeper's Verdict channels up to 4s (blocking other actions) before/while its recast is available; longer charge (>=0.5s) increases damage and knockback."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E's wall-hit second damage instance requires the target to be pushed into terrain, which the fight has none of. R's charged recast only fires its 'in front' AoE if the target is within melee range of Poppy; otherwise it fires a shockwave that erupts on the target, and it's unclear if the target then takes damage from both the shockwave and the eruption."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's damage includes a flat term plus a percent of the target's maximum health (capped only against non-champions, irrelevant for a champion dummy)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 35-55, W 50, E 70, R 100) meaningfully constrain how many casts fit in a 15s fight without a mana pool assumption."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (empowered auto-attack proc, Q's automatic two-hit rupture, E's optional wall-conditioned second hit, R's charge/recast tiers and shockwave sub-path, mana costs) is expressible with the existing primitive list; nothing requires novel bespoke logic beyond choosing which primitive parameters/assumptions apply."
+ },
+ "unsettled": [
+  {
+   "question": "Steadfast Presence's magic damage only triggers when an enemy dashes into/within its aura and is interrupted. A stationary target dummy never dashes. Should W ever contribute damage in the damage fight?",
+   "options": [
+    "W never deals damage in the damage fight since the dummy target never dashes; the ability is cast (if at all) purely for its defensive passive/movement speed and contributes zero to damage output",
+    "The simulator should force or assume a triggered interrupt so W's magic damage value can be credited once per cast for build comparison purposes"
+   ],
+   "impact": "high",
+   "quotes": [
+    "causing all enemies who attempt to {{tip|dash}} into or within it to be dealt {{as|magic damage}} and {{tip|airborne|knocked up}} for {{fd|0.5}} seconds."
+   ]
+  },
+  {
+   "question": "Heroic Charge deals its physical damage a second time (plus a stun) only if the carried target collides with terrain. The stated fight environment has no terrain. Should E's wall-hit second instance ever be modeled?",
+   "options": [
+    "No terrain exists in the fight, so Heroic Charge only ever lands its single base 'tackle' hit and never the wall-bonus hit, halving its total damage relative to guides that assume a wall",
+    "Since walling is core to Poppy's intended damage rotation, the dummy should be assumed adjacent to terrain so E always lands both hits"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target hits terrain, she stops to deal the same {{as|physical damage}} again and {{tip|stun|stuns}} them for a duration.",
+    "Both instances of damage and crowd control are all the same {{tip|cast instance}}."
+   ]
+  },
+  {
+   "question": "When Keeper's Verdict is released charged (>=0.5s), does the target take damage from the direct 'in front' AoE swing, or from the shockwave+eruption path, and if via the shockwave path, does the same target take both the shockwave hit and the eruption hit as two separate damage instances?",
+   "options": [
+    "The dummy is assumed within melee range/'in front' of Poppy, so only the single direct charged AoE swing applies (no shockwave, no double count)",
+    "The shockwave and the eruption it triggers on the struck champion are two separate damage instances, both applying the full charged damage value to the same target",
+    "The shockwave collision and eruption are the same logical hit and only one instance of charged damage applies even if a shockwave is used"
+   ],
+   "impact": "high",
+   "quotes": [
+    "if no enemies are hit {{tt|in front|Same as uncharged radius}} of '''Poppy''', she sends a shockwave that travels in the target direction until it collides with an enemy champion, which causes a hammer to erupt. Targets hit by the shockwave or the eruption receive the charged effects."
+   ]
+  },
+  {
+   "question": "Does Poppy gain any benefit from charging Keeper's Verdict beyond the 0.5s damage-doubling threshold within a fixed 15s fight, or is charging exactly 0.5s (minimum for full damage) always optimal since extra range/knockback do not matter against a stationary dummy?",
+   "options": [
+    "Charge exactly to the 0.5s threshold and release immediately, since range/knockback (which continue scaling to 1s) do not affect a dummy fight's damage or kill time",
+    "Charge could be held longer for reasons not evident in the sources (e.g. cooldown timing or a ramping damage component not captured by the stated hard threshold), so the optimal channel length is not fully certain"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If ''Keeper's Verdict'' was charged for at least {{fd|0.5}} seconds, it deals 100% increased damage",
+    "increase ''Keeper's Verdict's'' {{sti|range}} and {{tip|airborne|knock back}} distance over {{fd|0.5}} seconds after the first {{fd|0.5}} seconds of the channel"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight by casting Q (Hammer Shock) on the dummy for its two automatic damage instances (impact + 1s-later rupture).",
+   "Weave in basic attacks continuously between ability casts, letting Iron Ambassador's periodic empowered attack proc naturally add bonus magic damage on top of an auto-attack when available.",
+   "Cast E (Heroic Charge) on the dummy on cooldown for its dash-in physical damage (treated as landing only its single base hit unless the wall-hit assumption is resolved otherwise).",
+   "Cast R (Keeper's Verdict) as soon as it is available: begin the channel, hold for at least 0.5s to guarantee the charged (doubled) damage tier, then recast to release the hammer swing onto the dummy.",
+   "Do not cast W (Steadfast Presence) offensively, since its only damage source requires an enemy dash that a stationary dummy never performs; only consider it if the simulator credits its passive resistances for survivability scoring, which is irrelevant to the damage fight.",
+   "Continue looping auto-attacks plus Q and E on cooldown (respecting mana costs) for the remainder of the 15s window, re-using R again only if its long cooldown allows within the window (unlikely at rank 1-2)."
+  ],
+  "questions": [
+   "Should the simulator ever credit Steadfast Presence's damage in a fight where the sole enemy is a stationary, non-dashing dummy, or should W be excluded from the damage rotation entirely?",
+   "Should the dummy be positioned so Heroic Charge can reach terrain for its bonus hit, given the stated fight has no terrain at all?",
+   "For Keeper's Verdict, should the target be assumed within Poppy's melee 'in front' hit area (direct AoE swing) or at range (forcing the shockwave/eruption path), and does that path ever produce two damage instances on one target?",
+   "Does casting Q, E, or R interrupt or delay the timing of Iron Ambassador's empowered attack windup, potentially changing how often the passive procs during the rotation?",
+   "Given R's very long cooldown (140/120/100s) relative to a 15s fight, should the rotation assume R is available at the start of every simulated fight regardless of champion level/build, or only cast if already off cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

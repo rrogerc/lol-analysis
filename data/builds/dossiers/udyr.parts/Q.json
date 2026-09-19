@@ -1,0 +1,338 @@
+{
+ "name": "Wilding Claw",
+ "cooldown": {
+  "values": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "quote": "{{tt|6|Starts on-cast, but recasting refreshes the cooldown}}"
+ },
+ "cost": {
+  "values": [
+   20,
+   20,
+   20,
+   20,
+   20,
+   20
+  ],
+  "quote": "20",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Bonus Physical Damage per empowered attack (% of target's max health)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08
+     ],
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.035
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|3 to 8 6}}% {{as|(+ {{fd|3.5}}% per 100 '''bonus''' AD)}} of target's '''maximum''' health}}",
+   "bin": [
+    "UdyrQ#MaxHPOnHit1"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Bonus Attack Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.2,
+    0.32,
+    0.44,
+    0.56,
+    0.68,
+    0.8
+   ],
+   "terms": [],
+   "quote": "{{ap|20 to 80 6}}%",
+   "bin": [
+    "UdyrQ.AttackSpeedBase"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Bonus Physical Damage On-Hit",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.2
+    },
+    {
+     "stat": "bonusHp",
+     "coef": [
+      0.01,
+      0.012,
+      0.014,
+      0.016,
+      0.018,
+      0.02
+     ]
+    }
+   ],
+   "quote": "{{ap|6 to 36 6}} {{as|(+ 20% '''bonus''' AD)}} {{as|(+ {{ap|1 to 2 6}}% '''bonus''' health)}}",
+   "bin": [
+    "UdyrQ#OnHitDamage"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Awaken bonus attack speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.2,
+    0.2294,
+    0.2588,
+    0.2882,
+    0.3176,
+    0.3471,
+    0.3765,
+    0.4059,
+    0.4353,
+    0.4647,
+    0.4941,
+    0.5235,
+    0.5529,
+    0.5824,
+    0.6118,
+    0.6412,
+    0.6706,
+    0.7
+   ],
+   "terms": [],
+   "quote": "{{pp|20 + (70-20)/17*(x-1) for 20|key=%}} '''bonus''' attack speed",
+   "bin": [
+    "UdyrQ.EmpoweredBonusASLevel1",
+    "UdyrQ.EmpoweredBonusASLevel18"
+   ],
+   "binNote": "The bin only stores the level 1 and level 18 endpoints (0.2 and 0.7) as separate DataValues; the wiki's linear-interpolation formula (20 + (70-20)/17*(x-1))% reproduces exactly those two endpoints at level 1 and level 18 and interpolates the 16 intermediate levels the bin does not enumerate. No disagreement, just a by-level array vs two named endpoints."
+  },
+  {
+   "id": "q_6",
+   "meaning": "Awaken additional physical damage (% of target's max health)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "level",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.02,
+      0.02118,
+      0.02235,
+      0.02353,
+      0.02471,
+      0.02588,
+      0.02706,
+      0.02824,
+      0.02941,
+      0.03059,
+      0.03176,
+      0.03294,
+      0.03412,
+      0.03529,
+      0.03647,
+      0.03765,
+      0.03882,
+      0.04
+     ],
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.015
+      },
+      {
+       "stat": "bonusHp",
+       "per": 100,
+       "coef": 0.001
+      }
+     ]
+    }
+   ],
+   "quote": "an additional {{as|{{pp|2 + (4-2)/17*(x-1) for 20|key=%}} {{as|(+ {{fd|1.5}}% per 100 '''bonus''' AD)}} {{as|(+ {{fd|0.1}}% per 100 '''bonus''' health)}} of the target's '''maximum''' health}}",
+   "bin": [
+    "UdyrQ.Q2MaxHPADRatio"
+   ],
+   "binNote": "Wiki states +1.5% per 100 bonus AD for this by-level percent; the closest bin field Q2MaxHPADRatio=0.0005 implies +5% per 100 bonus AD (0.0005*100), a disagreement. The bin has no by-level array matching byLevel(0.02..0.04) either; reported as the nearest candidate."
+  },
+  {
+   "id": "q_7",
+   "meaning": "Awaken lightning damage per hit (% of target's max health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.015,
+      0.01588,
+      0.01676,
+      0.01765,
+      0.01853,
+      0.01941,
+      0.02029,
+      0.02118,
+      0.02206,
+      0.02294,
+      0.02382,
+      0.02471,
+      0.02559,
+      0.02647,
+      0.02735,
+      0.02824,
+      0.02912,
+      0.03
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.006
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|1.5 + (3-1.5)/17*(x-1) for 20|key=%}}|health}} {{as|(+ {{fd|0.6}}% per 100 AP)}} {{as|of the target's '''maximum''' health}} per hit",
+   "bin": [
+    "UdyrQ.LightningDamageLevel1",
+    "UdyrQ.LightningDamageLevel18",
+    "UdyrQ.LightningAPRatio"
+   ],
+   "binNote": "The bin only stores the level 1 and level 18 endpoints (0.015 and 0.03) as separate DataValues; the wiki's linear-interpolation formula (1.5 + (3-1.5)/17*(x-1))% reproduces exactly those two endpoints at level 1 and level 18 and interpolates the 16 intermediate levels the bin does not enumerate. LightningAPRatio=6e-05 matches the stated +0.6% per 100 AP (6e-05*100=0.006). No disagreement."
+  },
+  {
+   "id": "q_11",
+   "meaning": "Bonus Attack Speed buff duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for 4 seconds",
+   "bin": [
+    "UdyrQ.AttackSpeedDurationBase"
+   ]
+  },
+  {
+   "id": "q_13",
+   "meaning": "Number of lightning bounces per empowered attack",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "strike with lightning{{ft|6 times over 1 second,",
+   "bin": [
+    "UdyrQ.Bounces"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Udyr enters Claw Stance, empowering his next two basic attacks to deal bonus on-hit physical damage.",
+   "quote": "'''Udyr''' enters ''Claw Stance'', empowering his next two basic attacks to gain {{sti|range|50}} '''bonus''' range and deal {{as|'''bonus''' physical damage}} {{tip|on-hit}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts on cast, but using the recast (Awaken) refreshes it.",
+   "quote": "Starts on-cast, but recasting refreshes the cooldown",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Deals spell damage on the primary target and applies area damage on the lightning strikes.",
+   "quote": "Deals {{tip|spell damage}} to the primary target and applies {{tip|area damage}} on the lightning strikes.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The lightning strikes can bounce to and hit the same single target multiple times when no other enemies are nearby, stacking their damage.",
+   "quote": "chaining to up to 3 nearby {{tip|sight|visible}} enemies and being able to hit the same target multiple times",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If both empowered attacks are used on the same isolated target, the lightning damage from both can stack on it.",
+   "quote": "If both empowered attacks are used on the same isolated target, the lightning strikes can deal up to {{as|{{pp|3*6 + (6*6-3*6)/17*(x-1) for 20|key=%}}|health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield only blocks the lightning-strike portion of an empowered attack, not necessarily the base on-hit damage.",
+   "quote": "{{tip|Spell shield}} will only block an empowered attack's application of the lightning strikes.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attacks are not triggered or consumed if they hit a structure/ward or are parried.",
+   "quote": "The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Awaken recast's empowered attacks and lightning strikes must be used within 4 seconds of the recast.",
+   "quote": "if used within 4 seconds",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "UdyrQ.AttackSpeedDurationEmpowered",
+   "reason": "unknown"
+  },
+  {
+   "ref": "UdyrQ.RepeatBouncePenalty",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "UdyrQ.BounceRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "UdyrQ.AttackRange",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

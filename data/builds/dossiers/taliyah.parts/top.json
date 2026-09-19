@@ -1,0 +1,101 @@
+{
+ "champion": "taliyah",
+ "primitives": [
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q fires 5 Stone Shards over 1.5s (each a separately timed hit), and can be recast while standing in the Worked Ground it creates to fire an empowered Boulder instead"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Subsequent Stone Shard hits on the same target within one cast deal only 40% damage; the Boulder deals 180% damage to its primary target"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Casting Q while standing in self-created Worked Ground consumes it, reducing that cast's cooldown by 50% (floor 0.75s) and its cost to 10 mana"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Mana costs (Q 55-75 or 10 empowered, E 90 flat) meaningfully cap casts inside a 15s fight"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Stones scatter and deal magic damage on eruption, then remain 4s as a slowing zone that can be detonated for further damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "A target can detonate up to 4 stones per cast, with the detonation damage falling off per additional stone detonated"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "E's detonation damage only triggers if the target dashes or is knocked airborne into a stone; against a stationary dummy this requires Taliyah to actively use W to knock it into the field"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Taliyah's Q creates a self-positioned 400-radius 'Worked Ground' zone at her own cast location. If she is still standing in it when she casts Q again, that cast is consumed and empowered (higher damage, 10 mana, cooldown halved to a 0.75s floor). This is a location-gated recast trigger tied to her own position rather than to a target or a simple timer/stack, and the closed primitive list has no entry for 'own self-created zone gates the next cast's power level.' The closest primitives (recast-or-multipart, cooldown-manipulation) capture the mechanical effect once triggered but not the positional precondition or whether the empowered cast itself refreshes the zone for a subsequent empowered cast."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting the empowered Boulder (Q consumed on Worked Ground) also drop a new Worked Ground patch under Taliyah, allowing her to chain empowered Q casts indefinitely, or does empowerment only consume terrain without creating new terrain (forcing alternation between a normal cast that plants ground and an empowered cast that consumes it)?",
+   "options": [
+    "Every Q cast (normal or empowered) creates a fresh Worked Ground patch at her location, so a stationary Taliyah can spam empowered Q on cooldown indefinitely",
+    "Only the normal (non-empowered) cast creates Worked Ground; the empowered cast consumes it without replacing it, so casts must alternate normal/empowered"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Casting ''Threaded Volley'' creates an area of {{as|Worked Ground|terrain}} at '''Taliyah's''' cast location that has a radius of 400 units and lasts 30 seconds. While '''Taliyah''' is within an area of {{as|Worked Ground|terrain}}, ''Threaded Volley's'' cast consumes the area to become empowered"
+   ]
+  },
+  {
+   "question": "In the single-target dummy fight, does E's detonation damage ever trigger, given the dummy never dashes and is never airborne unless Taliyah deliberately knocks it up with W first? If so, should the rotation spend a W cast (with its ~0.79s eruption delay and mana cost) purely to set up E's detonation bonus damage?",
+   "options": [
+    "Detonation damage is unreachable against a passive dummy and should be excluded from the damage fight entirely (only E's scatter damage counts)",
+    "Taliyah should cast W to knock the dummy through the stone field, triggering detonation damage as part of the optimal rotation"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies that {{tip|dash}} or are {{tip|airborne|knocked}} over a stone will detonate it, taking {{as|magic damage}} and becoming {{tip|stun|stunned}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting E (Unraveled Earth) into the target for the scatter magic damage and to lay down a 4-second stone field.",
+   "Cast Q (Threaded Volley), which barrages 5 Stone Shards over 1.5s at the target and drops Worked Ground under Taliyah's feet; weave in a basic attack once the third Stone Shard has launched if attack speed allows.",
+   "Immediately recast Q while still standing in her own Worked Ground to fire the empowered Boulder for bonus primary-target damage at reduced cost and cooldown.",
+   "Continue recasting Q every time it comes off cooldown for the rest of the fight, taking the empowered version whenever standing in unused Worked Ground.",
+   "Recast E again once its 14s cooldown is up (roughly once more before the ~15s fight ends).",
+   "Do not cast R (Weaver's Wall): it deals no damage, only knocks back and builds terrain, which is irrelevant against a stationary dummy with CC ignored.",
+   "Cast W only if it is established that doing so is needed to knock the dummy through E's stone field to trigger detonation damage; otherwise skip it to save mana and tempo for Q casts."
+  ],
+  "questions": [
+   "Does the simulator assume Taliyah stays planted at her cast location for the whole fight (never repositioning), so she is always standing inside her own Worked Ground when Q comes off cooldown?",
+   "Should W be included in the optimal rotation purely to enable E's detonation damage against an otherwise-immobile dummy, or is that damage source meant to be unreachable in this fight format?",
+   "If Worked Ground does not regenerate on an empowered cast, what is the correct alternating pattern (normal, empowered, normal, empowered...) versus casting Q on cooldown with the standard (non-reduced) cooldown between empowered casts?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

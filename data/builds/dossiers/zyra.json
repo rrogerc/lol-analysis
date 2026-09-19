@@ -1,0 +1,776 @@
+{
+ "champion": "zyra",
+ "abilities": {
+  "P": {
+   "name": "Garden of Thorns",
+   "cooldown": {
+    "values": [
+     13.6,
+     13.33,
+     13.06,
+     12.79,
+     12.52,
+     12.25,
+     11.98,
+     11.71,
+     11.44,
+     11.18,
+     10.91,
+     10.64,
+     10.37,
+     10.1,
+     9.83,
+     9.56,
+     9.29,
+     9.05
+    ],
+    "quote": "{{pp|13.6 - (13.6-9.05)/17*(x-1) for 20}}",
+    "binNote": "Bin's ZyraP top-level cooldown field is 8, but the by-level formula in ZyraP#SeedCooldown (13.6..9.05) matches the wiki's stated pattern/probability cooldown; the flat 8 appears to be a stale/default placeholder rather than the actual per-level Seed spawn cooldown."
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "duration Seeds remain before disappearing",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "nearby that last for 30 seconds",
+     "bin": [],
+     "binNote": "Wiki states Seed duration as 30 seconds, but ZyraP.PlantDuration in the bin is 8; no bin row for 30 is present (this slot's SeedDuration=60 belongs to the W spell, not P)."
+    },
+    {
+     "id": "p_2",
+     "meaning": "maximum number of Seeds Zyra can have planted at once",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "'''Zyra''' can only have a total of 8 ''Seeds'' planted at a time",
+     "bin": [],
+     "binNote": "No bin row in this slot corresponds to a Seed cap; it is presumably enforced elsewhere."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Seeds can be turned into plants by hitting them with Zyra's basic abilities.",
+     "quote": "{{cis|Zyra}} {{as|Seeds|buzzword2}} can be turned into plants by hitting them with her basic abilities.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemy champions can destroy a Seed by walking over it, but only after it has existed for 1 second.",
+     "quote": "After 1 second, enemy {{tip|champions}} can destroy ''Seeds'' by moving on top of them.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "When the 8-Seed cap is reached, Seeds spawned by Rampant Growth (W) are kept in preference over Seeds spawned by this passive.",
+     "quote": "preserving {{as|Seeds|buzzword}} spawned by ''{{ai|Rampant Growth|Zyra}}'' over {{as|Seeds|buzzword2}} spawned by ''Garden of Thorns''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Newly spawned Seeds grant vision of the surrounding area for 1 second.",
+     "quote": "granting {{tip|sight}} over the surrounding area for 1 second",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZyraP.PlantDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ZyraP.PlantBaseDmg",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ZyraP.PlantLvlScaling",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ZyraP.APRatio",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Deadly Spines",
+   "cooldown": {
+    "values": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "quote": "{{ap|7 to 5}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     55,
+     55,
+     55,
+     55
+    ],
+    "quote": "55",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      100,
+      140,
+      180,
+      220
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|60 to 220}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "ZyraQ.BaseDamage"
+     ],
+     "binNote": "Wiki lists 0.65 AP ratio; bin's tooltip-only ZyraQ#InitialDamage calculation shows 0.65xap matching the same base values, so no disagreement."
+    },
+    {
+     "id": "q_2",
+     "meaning": "delay before the spines appear",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.625,
+     "terms": [],
+     "quote": "{{fd|0.625}}-seconds delay",
+     "bin": [],
+     "binNote": "Not found as a discrete data value in the Q slot's bin rows; only present in wiki description text."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Thorn Spitter plant duration after Deadly Spines hits a Seed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "sprouts into a ... ''[[Zyra#Pets|Thorn Spitter]]'' that lasts for 8 seconds",
+     "bin": [
+      "ZyraP.PlantDuration"
+     ],
+     "binNote": "This value matches the Passive slot's PlantDuration; the Q slot itself has no matching data value, so it is cross-referenced from P."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Deadly Spines deals magic damage to enemies hit in an area at the target location.",
+     "quote": "sprouts thorny spines at the target location ... dealing {{as|magic damage}} to enemies hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The spines appear (and deal damage) 0.625 seconds after cast, not instantly.",
+     "quote": "appear after a {{fd|0.625}}-seconds delay",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Deadly Spines hits a Seed, it grows into a Thorn Spitter plant that attacks with ranged attacks, adding additional damage over its lifetime beyond the initial cast.",
+     "quote": "If ''Deadly Spine'' hits a ''Seed'', it sprouts into a ... ''Thorn Spitter'' that lasts for 8 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Deadly Spines can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZyraQ#InitialDamage (tooltip only)",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Rampant Growth",
+   "cooldown": null,
+   "cost": {
+    "values": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "quote": "1",
+    "resource": "seed"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_recharge",
+     "meaning": "seed charge recharge time",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      18,
+      16,
+      14,
+      12,
+      10
+     ],
+     "terms": [],
+     "quote": "{{ap|18 to 10}}",
+     "bin": [
+      "ZyraP#SeedCooldown"
+     ],
+     "binNote": "Wiki gives W's recharge as 18-10 by rank, but the only recharge-timer calc in the bin is ZyraP#SeedCooldown, a by-level curve (13.6..9.05) under the Passive slot; the bin appears to not model W's recharge as a per-rank value at all."
+    },
+    {
+     "id": "w_seed_duration",
+     "meaning": "duration the seed remains before disappearing",
+     "role": "duration",
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "remains for 60 seconds",
+     "bin": [
+      "ZyraW.SeedDuration"
+     ]
+    },
+    {
+     "id": "w_destroy_delay",
+     "meaning": "delay before enemy champions can destroy the seed",
+     "role": "duration",
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds, enemy champions can destroy the {{as|Seed|buzzword}}",
+     "bin": [],
+     "binNote": "No matching data value found in the bin for this 1.5s delay."
+    },
+    {
+     "id": "w_reveal_duration",
+     "meaning": "duration enemy is revealed after destroying the seed",
+     "role": "duration",
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "reveals them for 2 seconds",
+     "bin": [
+      "ZyraW.VisionGranted"
+     ],
+     "binNote": "Bin's VisionGranted=2 matches the wiki's reveal duration number."
+    },
+    {
+     "id": "w_charge_max",
+     "meaning": "maximum stocked Seed charges",
+     "role": "count",
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "up to a maximum of 2",
+     "bin": [],
+     "binNote": "No data value in the bin's W slot encodes the max charge count of 2; this appears to be a hardcoded/tooltip-only ammo cap not present as a named row."
+    },
+    {
+     "id": "w_kill_charge_minion",
+     "meaning": "charge % gained toward a Seed from a normal kill",
+     "role": "resource",
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "Killing an enemy generates 35% charge toward a ''Seed''",
+     "bin": [
+      "ZyraW.KillAmmoRefundMinion"
+     ]
+    },
+    {
+     "id": "w_kill_charge_large",
+     "meaning": "charge % gained toward a Seed from large enemy/champion kills",
+     "role": "resource",
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "increased to 100% for large enemies and whenever scoring an enemy {{tip|champion}} {{tip|takedown}}",
+     "bin": [
+      "ZyraW.KillAmmoRefundChamp"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rampant Growth cannot be learnt at level 1.",
+     "quote": "''Rampant Growth'' cannot be learnt at level 1.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Upon first rank up, Rampant Growth gains 2 charges immediately.",
+     "quote": "Upon first rank up, ''Rampant Growth'' gains 2 charges.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "This ability is not on a normal per-cast cooldown; it uses a stocked-charge/recharge (ammo) system instead.",
+     "quote": "'''Zyra''' periodically [[stock]]s a ''Seed'' charge, up to a maximum of 2.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Placed seeds cannot be targeted by enemy abilities.",
+     "quote": "{{as|Seeds|placed}} are {{tip|untargetable}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZyraW.KillAmmoRefundMinion",
+     "reason": null
+    },
+    {
+     "ref": "ZyraW.KillAmmoRefundChamp",
+     "reason": null
+    },
+    {
+     "ref": "ZyraW.VisionGranted",
+     "reason": null
+    },
+    {
+     "ref": "ZyraW.SeedDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Grasping Roots",
+   "cooldown": {
+    "values": [
+     11,
+     11,
+     11,
+     11,
+     11
+    ],
+    "quote": "11"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      95,
+      130,
+      165,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|60 to 200}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "ZyraE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 2}} seconds",
+     "bin": [
+      "ZyraE.RootDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Vine Lasher duration when a Seed sprouts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "sprouts into a ... ''Vine Lasher'' that lasts for 8 seconds.",
+     "bin": [],
+     "binNote": "No matching data value in ZyraE; the 8s Vine Lasher lifespan is likely governed by a plant-entity field (e.g. ZyraP.PlantDuration=8) outside this slot's sheet excerpt, so left unbound."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Locked out of actions after casting",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "'''Zyra''' will be locked out of actions for {{fd|0.15}} seconds after casting ''Grasping Roots''.",
+     "bin": [],
+     "binNote": "Not present among the listed ZyraE data values; likely a generic post-cast lockout field not included in this excerpt."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Grasping Roots deals magic damage to enemies hit and roots them for a duration.",
+     "quote": "shoots a surge of vines in the target direction that deals {{as|magic damage}} to enemies hit and {{tip|root|roots}} them for a duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the missile hits a Seed, it sprouts into a Vine Lasher pet.",
+     "quote": "If ''Grasping Roots'' hits a ''Seed'', it sprouts into a [[File:Zyra Grasping Roots Render.png|20px|link=Zyra#Pets]] ''[[Zyra#Pets|Vine Lasher]]'' that lasts for 8 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each Vine Lasher generates Conqueror and Electrocute stacks, which affects damage output.",
+     "quote": "Each [[File:Zyra Grasping Roots Render.png|20px|link=Zyra#Pets]] ''[[Zyra#Pets|Vine Lasher]]'' will generate 2 stacks of {{ri|Conqueror}} and 1 stack of {{ri|Electrocute}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZyraE.MaxSlowStacks",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ZyraE.PheromoneDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZyraE.SlowAmountPlantAttack",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZyraE.SlowDurationPlantAttack",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Stranglethorns",
+   "cooldown": {
+    "values": [
+     110,
+     100,
+     90
+    ],
+    "quote": "{{ap|110 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "ZyraR.BaseDamage",
+      "ZyraR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "delay before thicket snaps upward and knocks up enemies",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "After 2 seconds, the thicket snaps upward",
+     "bin": [],
+     "binNote": "No bin data value stores this 2-second expansion delay; it's not exposed as a separate DataValue in the sheet (only KnockupDuration=1 for the knock-up itself is present)."
+    },
+    {
+     "id": "r_3",
+     "meaning": "knock up duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|airborne|knock up}} enemies within for 1 second",
+     "bin": [
+      "ZyraR.KnockupDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "enraged plant current health restore",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": 0.5
+      }
+     ],
+     "quote": "restoring {{as|{{sti|health|50% of their '''current''' health}}}}",
+     "bin": [
+      "ZyraR.EnragedBonusHealthPercent"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "enraged plant maximum health increase",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.5
+      }
+     ],
+     "quote": "increasing their {{as|'''maximum''' health by 50%}}",
+     "bin": [
+      "ZyraR.EnragedBonusHealthPercent"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "enraged plant flurry attack bonus damage per attack",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "dealing {{ft|150% damage per flurry.|75% damage per shot.}}",
+     "bin": [
+      "ZyraR.EnragePlantsBonusDamage"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "enraged plant buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "''Stranglethorns' ''buff on {{ai|Garden of Thorns|Zyra|Plants}} lasts 10 seconds",
+     "bin": [],
+     "binNote": "No matching DataValue in the sheet; the 10-second enrage buff duration is not exposed as a separate data field (only PheromoneDuration=4 and PlantDuration=8 exist under other abilities, neither of which is this buff's own duration)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Plants hit by the thicket become enraged, gain increased size and refresh their duration while the thicket expands.",
+     "quote": "become enraged, restoring {{as|{{sti|health|50% of their '''current''' health}}}}, increasing their {{as|'''maximum''' health by 50%}}, gaining 25% increased [[size]] and refreshing their duration while the thicket expands.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Plants grown during the 2 seconds prior to the knock-up will also be enraged.",
+     "quote": "Plants grown during the 2 seconds prior to the displacement will also be enraged.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Plants already grown before cast have their duration refreshed if inside the area of effect.",
+     "quote": "Plants already grown before ''Stranglethorns'' is cast will have their duration refreshed if they are inside the area of effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enraged plants attack in a flurry, launching two shots per attack instead of one.",
+     "quote": "attack in a flurry, launching two shots per attack, dealing {{ft|150% damage per flurry.|75% damage per shot.}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The spell can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZyraR.PlantDamageBonus",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q, E, R each deal a single (or fixed-delay) burst of magic damage on cast, on cooldown, gated by mana cost and cast time"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q (55), E (70-90), R (100) mana costs can meaningfully limit how many casts fit in a 15s window at low mana pools/levels"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "If Q or E hits a Seed, it sprouts into a Thorn Spitter (ranged, Q) or Vine Lasher (melee, E) that lives 8s and attacks independently, adding separate damage instances not tied to Zyra's own attack/cast timers"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "W"
+   ],
+   "note": "W plants Seeds from a 2-charge stock with a per-rank recharge timer (18s to 10s); Seeds are the resource that Q/E consume to spawn plants, and P also passively stocks Seeds on its own (level-scaled) timer up to an 8-Seed cap"
+  },
+  {
+   "id": "level-gated-passive",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive Seed spawn cadence scales by champion level (13.6s at low level down to 9.05s at 18), changing how many Seeds/plants are available to convert during the fight"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's enrage effect on plants caught in its radius grants them +50% current HP heal, +50% max HP, and a flurry (extra shots) for 10s -- a temporary buff that raises the damage/survivability of the pet entities, not of Zyra herself"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Zyra's real damage output over 15s depends on a Seed economy that the primitive list does not directly model: Seeds are produced by two separate sources (P's level-scaled passive timer, W's 2-charge active with its own recharge), capped at 8 total, and only become damage-dealing entities (Thorn Spitter/Vine Lasher pets) if Q or E happens to hit one. Those pets then attack autonomously for 8s with their own damage, and R can retroactively buff any pets inside its radius (heal, +50% max HP, double-strike flurry) for 10s. Modeling this faithfully requires bespoke seed-inventory/pet-lifecycle logic layered on top of pet-or-summon and weapon-or-ammo-system, plus a rule for whether/how R's flurry buff is applied to already-spawned pets in the dummy fight."
+ },
+ "unsettled": [
+  {
+   "question": "Does the damage-fight simulator track and score Thorn Spitter/Vine Lasher pet damage at all, or does the single-target dummy fight ignore summoned pets entirely (treating Q/E as pure direct-damage abilities)?",
+   "options": [
+    "Pets are simulated and contribute damage for their 8s lifetime whenever Q/E hits an available Seed",
+    "Pets are out of scope for the dummy fight and only Q/E's direct impact damage is counted"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does Zyra start the 15s damage fight with any Seeds already planted (e.g. from pre-fight W casts / accumulated Rampant Growth charges), or does she start at 0 Seeds and have to wait on P's passive timer / W's charges to generate the first Seed?",
+   "options": [
+    "Assume Zyra opens with W's 2 starting charges usable immediately, so 2 Seeds exist at t=0",
+    "Assume 0 Seeds at t=0 and all Seed generation must happen during the 15s window via P and W",
+    "Assume some pre-fight setup window is allowed (seeds placed before the timer starts) since Seeds last 60s"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Which of the two conflicting Garden of Thorns (P) cooldown values is live -- the flat ZyraP top-level cooldown of 8s, or the by-level ZyraP#SeedCooldown curve (13.6s to 9.05s) that the wiki's pattern matches?",
+   "options": [
+    "The by-level curve (13.6-9.05s) is correct and the flat 8 is a stale/default field",
+    "The flat 8s cooldown is correct and the by-level curve is unused/legacy"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "When Stranglethorns (R) enrages a plant, is the resulting 'flurry' (two shots per attack, 150% damage total / 75% per shot) modeled as one on-hit instance scaled to 150%, or as two separate 75% on-hit instances (relevant for on-hit item procs on the pet, if pets are scored at all)?",
+   "options": [
+    "Single damage instance at 150% of normal",
+    "Two separate 75% damage instances per attack"
+   ],
+   "impact": "low"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Before/at the start of the fight, use both Rampant Growth (W) charges to place two Seeds near the dummy (instant cast, no cooldown beyond charge recharge).",
+   "Open with Stranglethorns (R) on the dummy/Seed cluster for the large upfront burst and to enrage any plant that later stands in its radius.",
+   "Cast Grasping Roots (E) into a placed Seed to pop it into a Vine Lasher, and Deadly Spines (Q) into the other placed Seed to pop it into a Thorn Spitter, landing E and Q's own impact damage on the dummy at the same time.",
+   "Auto-attack the dummy between ability cooldowns.",
+   "Recast Q and E on cooldown for the rest of the 15s, prioritizing whichever has come off cooldown first; continue auto-attacking in the gaps.",
+   "Recast R again if it comes off cooldown within the window (unlikely at rank 1 given 110-90s cooldown, but relevant at higher levels/CDR)."
+  ],
+  "questions": [
+   "Is a Seed actually available for Q/E to hit at the moment they're cast, given P's slow passive spawn and W's limited charges -- or does the optimal rotation just ignore the Seed/plant subsystem entirely and treat Q/E as pure point-and-click nukes?",
+   "If pet damage is scored, what is the assumed attack speed/damage-per-hit of a Thorn Spitter and Vine Lasher (not given in these bin excerpts), and does it scale with Zyra's AP the same way her direct abilities do?",
+   "Does W's 0.2432s cast time (despite being flagged 'cast time = none' on the wiki) actually block/delay the rest of the rotation, or is it negligible/instant in practice?",
+   "Should the rotation spend early casts securing Seed-to-plant conversions at all, or is raw direct-damage cycling of Q/E/R without ever engaging the Seed system strictly higher damage in a single 15s dummy fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

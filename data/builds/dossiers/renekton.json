@@ -1,0 +1,1034 @@
+{
+ "champion": "renekton",
+ "abilities": {
+  "P": {
+   "name": "Reign of Anger",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "Fury generated per basic attack on-hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "'''Renekton's''' {{tip|basic attacks}} generate {{tip|fury|{{as|5 Fury}}}} {{tip|on-hit}}",
+     "bin": [
+      "RenektonPredator.FuryPerAttack"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus percent Fury generated while below 50% max health",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "'''Renekton''' generates {{as|50% '''bonus''' Fury}} from all sources while {{as|below 50% of his '''maximum''' health}}",
+     "bin": [
+      "RenektonPredator.FuryIncreasePercent"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "max health threshold for bonus Fury generation",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "while {{as|below 50% of his '''maximum''' health}}",
+     "bin": [
+      "RenektonPredator.LowHealthPercentThreshold"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "seconds out of combat before Fury begins decaying",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 12,
+     "terms": [],
+     "quote": "After 12 seconds of being out of combat and not basic attacking, he loses {{as|1 Fury}} every {{fd|0.25}} seconds",
+     "bin": [
+      "RenektonPredator.InCombatDuration"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "Fury consumed to empower next basic ability",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 50,
+     "terms": [],
+     "quote": "consumes {{as|50 Fury}} to become empowered with an additional effect",
+     "bin": [
+      "RenektonPredator.FuryCost"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Fury decays 1 per 0.25s after 12s out of combat and not attacking; entering combat or attacking resets the timer.",
+     "quote": "Entering combat or using an attack will stop the {{as|Fury}} loss and refresh the timer.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "While Dominus (ultimate) is active, the out-of-combat Fury decay timer is continuously refreshed.",
+     "quote": "while ''{{ai|Dominus|Renekton}}'' is active, the timer is continuously refreshed",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 50+ Fury, the next basic ability (except Slice and Dice) consumes 50 Fury to become empowered with an additional effect, dealing more damage.",
+     "quote": "his next {{tip|ability|basic ability}}, excluding ''{{ai|Slice and Dice|Renekton|Slice}}'', consumes {{as|50 Fury}} to become empowered with an additional effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered abilities do not generate Fury.",
+     "quote": "Empowered abilities do not generate {{as|Fury}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacks against structures do not generate Fury.",
+     "quote": "Basic attacks against any enemy that is not a structure will generate the Fury.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Cull the Meek",
+   "cooldown": {
+    "values": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "quote": "7"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonCleave#BasicDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Enhanced Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      90,
+      135,
+      180,
+      225,
+      270
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.4
+      }
+     ],
+     "quote": "{{ap|90 to 270}} {{as|(+ 140% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonCleave#EmpDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Healing Cap",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [],
+     "quote": "{{ap|50 to 150}}",
+     "bin": [
+      "RenektonCleave.BasicHealCap"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Enhanced Healing Cap",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400,
+      500,
+      600
+     ],
+     "terms": [],
+     "quote": "{{ap|200 to 600}}",
+     "bin": [
+      "RenektonCleave.EmpoweredHealCap"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Non-Champion Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{ap|2 to 6}} {{as|(+ 2% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonCleave#NonChampHealing"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Enhanced Non-Champion Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      6,
+      9,
+      12,
+      15,
+      18
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.06
+      }
+     ],
+     "quote": "{{ap|6 to 18}} {{as|(+ 6% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonCleave#EmpNonChampHealing"
+     ],
+     "binNote": "EmpNonChampHealing = NonChampHealing * 3, matching the tripled wiki values."
+    },
+    {
+     "id": "q_7",
+     "meaning": "Champion Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      12,
+      20,
+      28,
+      36,
+      44
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.17
+      }
+     ],
+     "quote": "{{ap|12 to 44}} {{as|(+ 17% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonCleave#ChampHealing"
+     ]
+    },
+    {
+     "id": "q_8",
+     "meaning": "Enhanced Champion Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      36,
+      60,
+      84,
+      108,
+      132
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.51
+      }
+     ],
+     "quote": "{{ap|36 to 132}} {{as|(+ 51% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonCleave#EmpChampHealing"
+     ],
+     "binNote": "EmpChampHealing = ChampHealing * 3, matching the tripled wiki values."
+    },
+    {
+     "id": "q_9",
+     "meaning": "Fury generated per non-champion hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{as|{{fd|2.5}} Fury}} for each non-champion hit",
+     "bin": [
+      "RenektonCleave.MinionFuryGain"
+     ]
+    },
+    {
+     "id": "q_10",
+     "meaning": "Fury generated per champion hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "{{as|10 Fury}} for each champion hit",
+     "bin": [
+      "RenektonCleave.ChampionFuryGain"
+     ]
+    },
+    {
+     "id": "q_11",
+     "meaning": "Fury gain cap per cast",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "up to {{as|30|Fury}} total per cast",
+     "bin": [
+      "RenektonCleave.FuryGainCap"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Healing modifiers apply after the healing cap.",
+     "quote": "Healing modifiers such as {{ii|Spirit Visage}} and {{tip|Grievous Wounds}} take effect after ''Cull the Meek's'' healing cap.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Renekton cannot basic attack or cast Slice and Dice/Dominus for a short window after activating Cull the Meek.",
+     "quote": "'''Renekton''' cannot basic attack nor cast {{ai|Slice and Dice|Renekton}} or {{ai|Dominus|Renekton}} for {{fd|0.25}} seconds after Cull the Meek's activation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While empowered (Reign of Anger/Dominus), Cull the Meek has increased damage and healing.",
+     "quote": "''Cull the Meek'' has increased damage and healing.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RenektonCleave.EmpoweredHealMultiplier",
+     "reason": null
+    },
+    {
+     "ref": "RenektonCleave.Range",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RenektonCleave.UltimateRangeMod",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ruthless Predator",
+   "cooldown": {
+    "values": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "quote": "{{ap|16 to 8}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Total Physical Damage (standard, 2 hits)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      40,
+      70,
+      100,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|5*2 to 65*2}} {{as|(+ 150% AD)}}",
+     "bin": [
+      "RenektonPreExecute#BasicTotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Physical Damage Per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      20,
+      35,
+      50,
+      65
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|5 to 65}} {{as|(+ 75% AD)}}",
+     "bin": [
+      "RenektonPreExecute#HitDamage",
+      "RenektonPreExecute.BaseDamagePerHit",
+      "RenektonPreExecute.TotalADPerHit"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Total Physical Damage (Reign of Anger, 3 hits)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      15,
+      60,
+      105,
+      150,
+      195
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 2.25
+      }
+     ],
+     "quote": "{{ap|5*3 to 65*3}} {{as|(+ 225% AD)}}",
+     "bin": [
+      "RenektonPreExecute#EmpTotalDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "empowered attack window before the buff expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "empowers his next basic attack within 7 seconds",
+     "bin": [
+      "RenektonPreExecute.BuffDuration"
+     ],
+     "binNote": "wiki description says the empowerment lasts 7 seconds to use, while the bin's BuffDuration value is 6; a disagreement between sources."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Bonus Fury generated for hitting an enemy champion",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "Hitting an enemy {{tip|champion}} generates {{as|10 '''bonus''' Fury}}",
+     "bin": [
+      "RenektonPreExecute.BonusFuryVsChamps"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ruthless Predator resets Renekton's basic attack timer.",
+     "quote": "''Ruthless Predator {{tip|basic attack reset|resets}} '''Renekton's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each strike applies on-hit effects and each is a separate cast/damage instance.",
+     "quote": "Each strike applies {{tip|on-hit}} effects and generates {{tip|fury|{{as|Fury}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each strike of Ruthless Predator counts as a separate cast instance for effects like Electrocute and Eclipse.",
+     "quote": "Each strike of ''Ruthless Predator'' counts as a separate {{tip|cast instance}} for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only the first strike is tagged as spell damage and triggers spell-effect items; all strikes deal basic damage.",
+     "quote": "Each strike of ''Ruthless Predator'' deals {{tip|basic damage}}, but the first strike also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first strike can critically strike for bonus physical damage.",
+     "quote": "''Ruthless Predator's'' first strike can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Renekton|crit_base}}|100|base=100}}|critical damage}} {{as|AD}} {{as|'''bonus''' physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not trigger against structures.",
+     "quote": "The empowered attack will not trigger against {{tip|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ruthless Predator does not cause two/three separate basic attacks; on-attack/windup-triggered effects (e.g. Lethal Tempo, Hail of Blades) only trigger once.",
+     "quote": "''Ruthless Predator'' does not cause '''Renekton''' to attack twice/thrice. Effects that trigger {{tip|on-attack}} or interact with the attack windup will only trigger once",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reign of Anger version destroys damage shields on the target on the first strike (unless the target is a monster).",
+     "quote": "'''Renekton''' instead strikes 3 times, completely destroying damage-mitigating {{tip|shield|shields}} on the target upon the first strike if they are not a {{tip|monster}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Even if the empowered attack is blocked by a spell shield, it still destroys existing damage shields on the target.",
+     "quote": "Even if empowered ''Ruthless Predator'' is blocked by a {{tip|spell shield}}, it will still destroy any existing damage {{tip|shield|shields}} on the target.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The empowered attack's cast time is estimated at 0.2 seconds.",
+     "quote": "have a {{tt|{{fd|0.2}}-second cast time|(Estimated)}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins after the ability's effect completes.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "In the Reign of Anger version, the first two attacks generate fury but the third attack removes any fury gained since the first attack (bug).",
+     "quote": "The first two attacks of the {{ai|Reign of Anger|Renekton|empowered}} version will generate fury.{{bug}}\n** The third attack will remove any fury gained since the first attack.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RenektonPreExecute.StunDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RenektonPreExecute.EnragedStunDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Slice and Dice",
+   "cooldown": {
+    "values": [
+     16,
+     14.5,
+     13,
+     11.5,
+     10
+    ],
+    "quote": "{{ap|16 to 10}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      70,
+      100,
+      130,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|40 to 160}} {{as|(+ 90% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonSliceAndDice#BasicDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Enhanced Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      115,
+      160,
+      205,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.35
+      }
+     ],
+     "quote": "{{ap|70 to 250}} {{as|(+ 135% '''bonus''' AD)}}",
+     "bin": [
+      "RenektonSliceAndDice#EmpDamage"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Armor Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      27.5,
+      30,
+      32.5,
+      35
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|25 to 35}}%|armor}}",
+     "bin": [
+      "RenektonSliceAndDice.EnragedArmorShred"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Armor reduction duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "inflicts {{sti|arpen|{{as|armor reduction}}}} to enemies hit for 4 seconds",
+     "bin": [
+      "RenektonSliceAndDice.ShredTimer"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Recast window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "he can recast ''Slice and Dice'' within the next 4 seconds",
+     "bin": [
+      "RenektonSliceAndDice.DiceTimer"
+     ]
+    },
+    {
+     "id": "e_8",
+     "meaning": "Fury gained per champion hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "{{as|10 Fury}} for each champion hit, up to {{as|30|fury}} total per cast",
+     "bin": [
+      "RenektonSliceAndDice.ChampionRageGeneration"
+     ]
+    },
+    {
+     "id": "e_9",
+     "meaning": "Fury gain cap per cast",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "up to {{as|30|fury}} total per cast",
+     "bin": [
+      "RenektonSliceAndDice.FuryMax"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Recast (Dice) repeats the first cast's damage as a separate instance, and gains bonus damage + armor shred only while Reign of Anger (low-health empowered state) is active.",
+     "quote": "{{sbc|Recast - Dice:}} '''Renekton''' repeats the first cast's effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered/enhanced damage and armor reduction on Dice only apply during the Reign of Anger bonus state.",
+     "quote": "{{sbc|{{ai|Reign of Anger|Renekton}} Bonus:}} ''Dice'', the recast, deals {{as|'''bonus''' physical damage}} and inflicts {{sti|arpen|{{as|armor reduction}}}} to enemies hit for 4 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast, not on recast/dash end.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both casts generate Fury per enemy hit, capped per cast.",
+     "quote": "Both casts generate {{tip|fury|{{as|2 Fury}}}} for each non-champion hit and {{as|10 Fury}} for each champion hit, up to {{as|30|fury}} total per cast.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RenektonSliceAndDice.BaseADRatio",
+     "reason": null
+    },
+    {
+     "ref": "RenektonSliceAndDice.EnragedADRatio",
+     "reason": null
+    },
+    {
+     "ref": "RenektonSliceAndDice.MinionRageGeneration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RenektonSliceAndDice.BaseDashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Dominus",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Health",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      300,
+      500,
+      700
+     ],
+     "terms": [],
+     "quote": "{{ap|300 to 700}}",
+     "bin": [
+      "RenektonReignOfTheTyrant.HealthGain"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      60,
+      90,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.05
+      },
+      {
+       "stat": "ap",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|30 to 120}} {{as|(+ 5% '''bonus''' AD)}} {{as|(+ 5% AP)}}",
+     "bin": [
+      "RenektonReignOfTheTyrant#TotalDamagePerSecond"
+     ],
+     "binNote": "Per-tick values are per-0.5s tick, computed as half of AuraDamagePerSecond's per-second rate: bin's AuraDamagePerSecond is [60/150/240] with +0.1x ap and +0.1x bonus ad per second, halved per 0.5s tick gives base [30/75/120] with 0.05 ratios; wiki lists per-rank base as 30/60/90/120 (4 values, not 3), which does not match the 3-rank ultimate structure in the bin (HealthGain and AuraDamagePerSecond both have 3 entries) - likely a wiki formatting artifact treating this as a 5-step ap range rather than 3 ranks."
+    },
+    {
+     "id": "r_3",
+     "meaning": "Total Magic Damage over duration",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      900,
+      1800,
+      2700,
+      3600
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      },
+      {
+       "stat": "ap",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|30*30 to 120*30}} {{as|(+ 150% '''bonus''' AD)}} {{as|(+ 150% AP)}}",
+     "bin": [],
+     "binNote": "This is a derived total (per-tick times 30 ticks over the 15s duration) and restates r_2; kept per instructions only because it aggregates useful total-damage info, but no bin row directly states it."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Dominus' cooldown is not refunded if Renekton dies during the cast animation.",
+     "quote": "''Dominus' ''{{sti|cooldown}} is not refunded if '''Renekton''' {{tip|death|dies}} during the cast animation.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Renekton continually generates Fury while Dominus is active, up to a cap of 75.",
+     "quote": "generates {{as|5 Fury}} per second, up to a maximum of {{as|75 Fury}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dominus deals magic damage to nearby enemies every 0.5 seconds for its duration.",
+     "quote": "he deals {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dominus' bonus health gain does not interact with Spirit Visage or Grievous Wounds, and is retained (if not over normal max) after the buff ends.",
+     "quote": "''Dominus' ''bonus health gain does not interact with {{ii|Spirit Visage}} or {{tip|Grievous Wounds}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RenektonReignOfTheTyrant.FuryPerSecond",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RenektonReignOfTheTyrant.FuryOnCast",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RenektonReignOfTheTyrant.BuffDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "RenektonReignOfTheTyrant.TickRate",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Fury builds from basic attacks (5/hit), Q/E hits (2-10 per hit, capped 30/cast), and R (5/s up to 75 while active); decays 1 per 0.25s after 12s out of combat. At 50+ Fury, the next eligible basic ability is empowered and consumes 50 Fury."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "50 Fury must be banked to trigger the empowered version of Q or W; this gates how often the stronger damage numbers can be used inside the 15s window."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "W arms the next basic attack to strike twice (thrice if Fury-empowered), each strike dealing separate basic damage and applying on-hit."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Casting W resets Renekton's basic attack timer, effectively giving a free/early attack."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "Only W's first strike can critically strike for bonus AD damage."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Cull the Meek deals cleave damage instantly on cast, flat 7s cooldown, free."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Slice and Dice dashes and deals damage; on hit it can be recast (Dice) within 4s as a second, separately-timed damage instance."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "The empowered ('Reign of Anger Bonus') Dice recast additionally applies an armor shred for 4s on enemies hit."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dominus creates an aura dealing magic damage every 0.5s for its 15s duration to nearby enemies."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dominus grants bonus health, attack range, and continuous Fury generation (5/s, cap 75) for 15s; the health portion is survival-fight relevant."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is a resource (Fury) meter that empowers whichever of Q/W is cast next once it reaches 50, expressed as a combination of stacking-self-buff + resource-budget + empowered-attack/plain-cast primitives. No mechanic here requires logic outside the closed list, though the sim must implement 'shared charge consumed by the next eligible cast, with per-ability different empowered effects' as a resource-budget rule spanning two abilities."
+ },
+ "unsettled": [
+  {
+   "question": "Does 'Reign of Anger Bonus' on E's Dice recast (bonus damage + armor shred) actually consume the shared 50-Fury meter, or is Slice and Dice genuinely excluded from the Fury-empowerment system as P's own text states?",
+   "options": [
+    "E's recast is excluded from the 50-Fury consumption as P literally states, and its 'Reign of Anger Bonus' triggers on some other condition (e.g. low HP) not modeled by the Fury meter",
+    "E's recast (Dice specifically, not the initial dash) is in fact empowered by spending the shared 50 Fury, and P's 'excluding Slice and Dice' only refers to the first cast",
+    "The 'Reign of Anger Bonus' on E is vestigial/legacy wikitext left over from an older kit version and not live in the current implementation"
+   ],
+   "impact": "high",
+   "quotes": [
+    "his next {{tip|ability|basic ability}}, excluding ''{{ai|Slice and Dice|Renekton|Slice}}'', consumes {{as|50 Fury}} to become empowered",
+    "{{sbc|{{ai|Reign of Anger|Renekton}} Bonus:}} ''Dice'', the recast, deals {{as|'''bonus''' physical damage}} and inflicts {{sti|arpen|{{as|armor reduction}}}} to enemies hit for 4 seconds."
+   ]
+  },
+  {
+   "question": "The bin contains a separate, unused ability block 'RenektonDice' with its own cooldown [18/17/16/15/14] and BaseDamage [30/60/90/120/150] that matches neither RenektonSliceAndDice.BasicDamage nor EmpDamage. Is this legacy/dead data, or does it govern the live recast damage instead of RenektonSliceAndDice's values?",
+   "options": [
+    "RenektonDice is stale/unused legacy data; the live recast uses RenektonSliceAndDice#BasicDamage / #EmpDamage as the wiki describes",
+    "RenektonDice.BaseDamage is the actual live recast damage row and the wiki's 'repeats the first cast's effects' description is imprecise"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "W's buff duration to use the empowered attack: bin RenektonPreExecute.BuffDuration = 6s vs wiki text 'within 7 seconds'. Which is live for how long the empowerment can be delayed before it expires (affects whether an attack timer can be safely reset before firing)?",
+   "options": [
+    "6 seconds (bin)",
+    "7 seconds (wiki)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "empowers his next basic attack within 7 seconds"
+   ]
+  },
+  {
+   "question": "R's per-tick magic damage: wiki leveling2 lists 4 values (30/60/90/120) for a 3-rank ultimate, while the bin's AuraDamagePerSecond [60/150/240] halved per 0.5s tick gives 3 values (30/75/120). Which per-rank base values are correct for R's tick damage?",
+   "options": [
+    "Bin-derived: 30 / 75 / 120 per tick (3 ranks)",
+    "Wiki as literally listed: 30 / 60 / 90 / 120 (treating it as 4 steps, possibly a wiki formatting error)"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "In the empowered Ruthless Predator (Reign of Anger) version, a documented bug has the third strike remove any Fury gained since the first strike, including from R's per-second Fury generation and Guinsoo's Phantom Hit but not Dusk and Dawn's Spellblade. Should the simulator model this Fury-clawback bug (which changes how often the 50-Fury empowerment can be re-triggered) or treat it as fixed/out of scope?",
+   "options": [
+    "Model the bug: empowered W's third hit strips Fury gained since the first hit, delaying the next empowerment",
+    "Ignore it: treat Fury generation as accruing normally through the full attack sequence"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting R (Dominus) immediately to maximize the number of 0.5s aura damage ticks over the fight and to start passive Fury generation (5/s, cap 75) as early as possible.",
+   "Basic-attack the dummy continuously between ability casts to build Fury (5 per hit) and deal auto-attack damage.",
+   "Cast E (Slice and Dice) as soon as available; if it hits, recast it (Dice) within the 4s window for the second damage instance, and repeat on cooldown throughout the fight.",
+   "Cast Q (Cull the Meek) on cooldown (7s, free) for cleave damage; when Fury has reached 50, let Q consume it for the Reign-of-Anger empowered version unless the empowerment is being reserved for W.",
+   "Cast W (Ruthless Predator) on cooldown to arm the next basic attack for bonus on-hit damage (and an attack-timer reset); when Fury is at 50, consider spending it on W instead of Q for the 3-hit empowered version if that yields more total damage.",
+   "Continue alternating basic attacks and off-cooldown Q/E/W casts for the remainder of the 15s window, always attacking rather than idling between cooldowns."
+  ],
+  "questions": [
+   "When Fury reaches 50 and both Q and W are off cooldown, which one should consume it for maximum total damage over the fight â€” empowered Q's extra cleave damage or empowered W's third attack strike?",
+   "Does the simulated fight start with Renekton at 0 Fury, or should some pre-fight Fury (e.g. from approaching/auto-attacking before the timer starts) be assumed?",
+   "Should R be delayed slightly to line up its Fury generation with an imminent Q/W empowerment threshold, or is casting it immediately for full tick duration strictly better?",
+   "Does E's recast (Dice) ever legitimately receive the Reign of Anger damage/armor-shred bonus in the current live kit, and if so under what condition, given it changes whether E should be prioritized to consume Fury?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

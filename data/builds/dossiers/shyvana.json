@@ -1,0 +1,1226 @@
+{
+ "champion": "shyvana",
+ "abilities": {
+  "P": {
+   "name": "Scalemail",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus armor per stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "{{as|{{sti|{{fd|{{#var:i_ar}}}} '''bonus''' armor}}}}",
+     "bin": [
+      "ShyvanaPassive.BonusArmor"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus magic resistance per stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "{{as|{{sti|{{fd|{{#var:i_mr}}}} '''bonus''' magic resistance}}}}",
+     "bin": [
+      "ShyvanaPassive.BonusMagicResist"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Scalemail stacks are gained from takedowns on large monsters/minions (1 stack) or champions/epic monsters (3 stacks), not from a dummy fight.",
+     "quote": "Large {{tip|monster|monsters}} and large {{tip|minions}} grant 1 stack, while enemy {{tip|champions}} and epic {{tip|monsters}} grant 3.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShyvanaPassive.PassiveScale",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ShyvanaPassive.Stacks_Per_Epic_Monster",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShyvanaPassive.Stacks_Per_Champion",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShyvanaPassive.Stacks_Per_Buff_Monster",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShyvanaPassive.Stacks_Per_Large_Monster",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Emberstrike / Emberstrike 2 / Emberstrike 3",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Area Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      },
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|10 to 30}} {{as|(+ 110% AD)}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "ShyvanaQ.Base_Damage",
+      "ShyvanaQ.Damage_AD_Ratio"
+     ],
+     "binNote": "ShyvanaQ#Calc_Damage's own formula text reads 'BASE_DAMAGE + (Damage_AD_Ratio=1.1)xad + 0.3xap', which literally matches the wiki's base/AD/AP numbers, but the sheet flags this calculation as broken ('calculation names a missing data value BASE_DAMAGE'), so the 0.3 AP coefficient cannot be resolved from a clean data value row - it only appears as literal text inside the malformed calculation."
+    },
+    {
+     "id": "q_2",
+     "meaning": "True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      15,
+      22.5,
+      30,
+      37.5,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.65
+      },
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|10*1.5 to 30*1.5}} {{as|(+ {{ap|110*1.5}}% AD)}} {{as|(+ {{ap|30*1.5}}% AP)}}",
+     "bin": [],
+     "binNote": "ShyvanaQ#Calc_Dragon_Form_Damage = Calc_Damage * 1.5, and Calc_Damage itself is broken in the sheet (references missing data value BASE_DAMAGE), so no bin row resolves to the base [15,22.5,30,37.5,45] or the 1.65/0.45 ratios; these numbers are only derivable by manually multiplying the (also unresolved) q_1 numbers by 1.5, per the wiki text and the Calc_Dragon_Form_Damage formula's stated multiplier."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Passive on-hit bonus magic damage based on target's maximum health",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 0.01,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.01,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.011
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|1% {{as|(+ {{fd|1.1}}% per 100 '''bonus''' AD)}} of the target's '''maximum''' health}}",
+     "bin": [
+      "ShyvanaQ#Calc_Max_Health_Damage",
+      "ShyvanaQ.Max_Health_Damage",
+      "ShyvanaQ.Max_Health_AD_Ratio"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Current cooldown reduction per on-hit basic attack",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduce ''Emberstrike's'' {{sti|'''current''' cooldown}} by {{fd|0.5}} seconds",
+     "bin": [
+      "ShyvanaQ.Cooldown_Reduction"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Window during which the empowered attack must be used after casting",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "empowers '''Shyvana's''' next {{tip|basic attack}} within 6 seconds",
+     "bin": [
+      "ShyvanaQ.EnhanceDuration"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Recast window after the empowered attack lands",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "the ability can be recast within and {{tt|up to|...}} the next 4 seconds each time",
+     "bin": [
+      "ShyvanaQ.RecastDuration"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "Delay before recast becomes available after using an Emberstrike attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "After {{fd|1.5}} seconds of using an ''Emberstrike'' attack, or immediately following a basic attack, the ability can be recast",
+     "bin": [
+      "ShyvanaQ.LockoutDuration"
+     ]
+    },
+    {
+     "id": "q_8",
+     "meaning": "Bonus physical damage of empowered attacks against monsters",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "{{as|10 '''bonus''' physical damage}} against monsters",
+     "bin": [
+      "ShyvanaQ.Damage_Monster_Bonus",
+      "ShyvanaQ#Calc_Monster_Bonus"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Only the last empowered cast (Q2 in Human Form, Q3 in Dragon Form) puts the basic attack on cooldown, making the earlier casts function as free attack resets.",
+     "quote": "Only the last cast of ''Emberstrike'' puts '''Shyvana's''' basic attack on cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "All Emberstrike-empowered attacks reset Shyvana's basic attack timer, allowing extra attacks in the fight window.",
+     "quote": "All casts {{tip|basic attack reset|reset}} '''Shyvana's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The true damage cast (dragon form third cast) is always 150% of the pre-mitigation physical damage value, and cannot critically strike.",
+     "quote": "The true damage is always equal to 150% of the {{tt|pre-mitigation|Damage calculated before modifiers}} physical damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The area physical damage to the primary target (first/second cast) can critically strike.",
+     "quote": "The damage to the primary target is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive on-hit magic damage deals a minimum of 10 and is capped at 200 against non-champions (monsters).",
+     "quote": "Against non-champions, this effect deals a minimum of 10 and is capped at 200.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attacks have an uncancellable windup.",
+     "quote": "empowers '''Shyvana's''' next {{tip|basic attack}} within 6 seconds to have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Shield does not block or get consumed by the empowered strikes.",
+     "quote": "{{tip|Spell shield}} will '''not''' block any damage nor be consumed by the strikes.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The passive on-hit magic damage applies as proc damage rather than area damage.",
+     "quote": "The passive on-hit damage applies {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShyvanaQ.Q1Length",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaQ.Q2Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaQ.Bonus_Attack_Range",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Inferno Aegis / Inferno Aegis 2",
+   "cooldown": {
+    "values": [
+     13,
+     12.25,
+     11.5,
+     10.75,
+     10
+    ],
+    "quote": "{{ap|13 to 10}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      80,
+      100,
+      120,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.12
+      }
+     ],
+     "quote": "{{ap|60 to 140}} {{as|(+ 12% '''bonus''' health)}}",
+     "bin": [
+      "ShyvanaW#Calc_Shield"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Increased shield per champion",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      18,
+      24,
+      30,
+      36,
+      42
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.036
+      }
+     ],
+     "quote": "{{ap|60*0.3 to 140*0.3}} {{as|(+ {{ap|12*0.3}}% '''bonus''' health)}}",
+     "bin": [
+      "ShyvanaW#Calc_Shield_Per_Nearby_Champion"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      100,
+      120,
+      140,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|80 to 160}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "ShyvanaW#Damage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Duration of shield/move speed buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "ShyvanaW.Duration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Base bonus move speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{as|{{sti|25% '''bonus''' movement speed}}}}",
+     "bin": [
+      "ShyvanaW#MoveSpeed",
+      "ShyvanaW.BaseMoveSpeed"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Increased move speed while facing enemy champions",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4375,
+     "terms": [],
+     "quote": "increased to {{tt|{{as|{{fd|43.75}}%|ms}}|1.75x modifier}}",
+     "bin": [
+      "ShyvanaW#MoveSpeedTowardsEnemies",
+      "ShyvanaW.MoveSpeedAmpTowardsEnemies",
+      "ShyvanaW.BaseMoveSpeed"
+     ],
+     "binNote": "MoveSpeedAmpTowardsEnemies (1.75) is a multiplier, not the final percentage; the wiki's 43.75% equals BaseMoveSpeed (0.25) x MoveSpeedAmpTowardsEnemies (1.75), matching the ShyvanaW#MoveSpeedTowardsEnemies calculation exactly."
+    },
+    {
+     "id": "w_7",
+     "meaning": "Dragon Form recast heal, missing health scaling",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      60,
+      62.35,
+      64.71,
+      67.06,
+      69.41,
+      71.76,
+      74.12,
+      76.47,
+      78.82,
+      81.18,
+      83.53,
+      85.88,
+      88.24,
+      90.59,
+      92.94,
+      95.29,
+      97.65,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": [
+        0.04,
+        0.0424,
+        0.0447,
+        0.0471,
+        0.0494,
+        0.0518,
+        0.0541,
+        0.0565,
+        0.0588,
+        0.0612,
+        0.0635,
+        0.0659,
+        0.0682,
+        0.0706,
+        0.0729,
+        0.0753,
+        0.0776,
+        0.08
+       ]
+      }
+     ],
+     "quote": "{{pp|60 + (100-60)/17*(x-1) for 20|color=heal}} {{as|(+ {{pp|4 + (8-4)/17*(x-1) for 20|key=%}} '''missing''' health)}}",
+     "bin": [
+      "ShyvanaW#Calc_Base_Heal",
+      "ShyvanaW#Calc_Missing_Health_Heal"
+     ],
+     "binNote": "Bin's Calc_Heal_Min/Calc_Heal_Max formulas (byLevel 75..200, with bonus AD and AP terms) do not match the wiki's stated recast heal values (byLevel 60..100, missing health only, no AD/AP ratio); the wiki quote instead matches ShyvanaW#Calc_Base_Heal and Calc_Missing_Health_Heal, a separate pair of calculations with no AD/AP scaling terms. Treating the wiki's own quoted values as authoritative here. MissingHealthHealMultiplier (2) and Calc_Heal_Max/Calc_Heal_Min appear to belong to that alternate, unused formula pair."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Inferno Aegis can be recast after 1 second while the shield holds, and does so automatically after it expires or is broken.",
+     "quote": "After 1 second, ''Inferno Aegis'' can be recast while the shield holds and does so automatically after it expires or is broken.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast explosion deals magic damage to nearby enemies, a separate damage instance from the shield application.",
+     "quote": "'''Shyvana''' consumes the shield to explode, dealing {{as|magic damage}} to nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shield strength is increased by 30% for every nearby enemy champion.",
+     "quote": "with the shield strength increased by 30% for every nearby enemy champion",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "In Dragon Form, if the explosion hits an enemy champion, Shyvana heals based on missing health.",
+     "quote": "If the explosion hits an enemy champion, '''Shyvana''' {{tip|heal|heals}} herself for {{pp|60 + (100-60)/17*(x-1) for 20|color=heal}} {{as|(+ {{pp|4 + (8-4)/17*(x-1) for 20|key=%}} '''missing''' health)}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This ability has no cast time.",
+     "quote": "cast time    = none",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Inferno Aegis has spell shield interaction (can be blocked by spell shields).",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShyvanaW.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaW.Shield_Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaW.MissingHealthHealMultiplier",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ShyvanaW#Calc_Heal_Min",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ShyvanaW#Calc_Heal_Max",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Molten Burst",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{dv|{{tt|{{fd|0.25}}|Cast time in Human Form}}|{{tt|{{fd|0.3333}}|Cast time in Dragon Form}}}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      65,
+      80,
+      95,
+      110
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8
+       ]
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|50 to 110}} {{as|(+ {{ap|60 to 80}}% AP)}} {{as|(+ 5% of target's '''maximum''' health)}}",
+     "bin": [
+      "ShyvanaE#Damage",
+      "ShyvanaE#Calc_Max_Health_Damage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Increased/Explosion Magic Damage (Dragon Form)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      62.5,
+      81.25,
+      100,
+      118.75,
+      137.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.75,
+        0.8125,
+        0.875,
+        0.9375,
+        1.0
+       ]
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.0625
+      }
+     ],
+     "quote": "{{ap|50*1.25 to 110*1.25}} {{as|(+ {{ap|60*1.25 to 80*1.25}}% AP)}} {{as|(+ {{ap|5*1.25}}% of target's '''maximum''' health)}}",
+     "bin": [
+      "ShyvanaE#Calc_Dragon_Damage",
+      "ShyvanaE#Calc_Max_Health_Dragon_Damage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Subsequent Explosion Damage (Dragon Form, same target)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      25,
+      32.5,
+      40,
+      47.5,
+      55
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.3,
+        0.325,
+        0.35,
+        0.375,
+        0.4
+       ]
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.025
+      }
+     ],
+     "quote": "{{ap|50*1.25*0.4 to 110*1.25*0.4}} {{as|(+ {{ap|60*1.25*0.4 to 80*1.25*0.4}}% AP)}} {{as|(+ {{ap|5*1.25*0.4}}% of target's '''maximum''' health)}}",
+     "bin": [],
+     "binNote": "ShyvanaE#Calc_Multihit_Efficacy only stores the 0.4 multiplier applied to the Dragon Form explosion damage (e_2); it does not carry the resulting absolute damage/ratio numbers computed here, so no bin row states this value's actual numbers directly."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Dragon Form scorched field damage per second",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      20,
+      20,
+      20,
+      20,
+      20,
+      25,
+      25,
+      25
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{#vardefine:dot6|15}}<!-- Level 6 Dragon Form damage over time damage PER SECOND\n-->{{#vardefine:dot11|20}}<!-- Level 11 Dragon Form damage over time damage PER SECOND\n-->{{#vardefine:dot16|25}}<!-- Level 16 Dragon Form damage over time damage PER SECOND\n-->{{#vardefine:dot_ap|5}}<!-- Damage over time AP ratio as a PERCENTAGE",
+     "bin": [
+      "ShyvanaE#DamagePerSecond"
+     ],
+     "binNote": "ShyvanaE.BaseDamagePerSecond is a stale flat-rank array [10/20/30/40/50] that neither the wiki's byLevel(15..25) values nor the DamagePerSecond calculation's byLevelL[...] array match; ShyvanaE#DamagePerSecond's byLevelL array does match the wiki's level 1-18 progression, so that calculation is cited instead and the DataValue is left unused."
+    },
+    {
+     "id": "e_5",
+     "meaning": "Scorched field tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "every {{ap|1/{{#var:dot_tick}}}} seconds",
+     "bin": [
+      "ShyvanaE.RepeatExplosionDelay"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Scorched field duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "beneath for {{#var:dot_time}} seconds",
+     "bin": [
+      "ShyvanaE.GroundLingerDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The fireball explodes upon colliding with the first enemy or reaching maximum range.",
+     "quote": "explodes upon colliding with the first enemy or reaching maximum range, dealing {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies can only be damaged by one scorched field at a time; a repeat explosion on the same target deals reduced (40%) damage.",
+     "quote": "Enemies may be damaged by only one scorched field at a time. Subsequent explosions against the same target deal {{ap|{{#var:xpl}}*100}}% damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The fireball applies area damage; in Dragon Form the explosion also applies area damage and the scorched field deals persistent area damage over time.",
+     "quote": "The fireball applies {{tip|area damage}}. In {{ai|Dragon's Descent|Shyvana|Dragon Form}}, the explosion applies {{tip|area damage}} and the scorched field deals {{tip|persistent area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "In Dragon Form, both the explosion and scorched field are centered on the first champion struck, not the missile's collision point.",
+     "quote": "In ''Dragon Form'', both areas of effect will be centered on the first champion struck, not at the location the missile collided with them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can fail to go on cooldown due to a bug if cast starts in Dragon Form and ends in Human Form.",
+     "quote": "''Molten Burst'' will fail to go on cooldown if its cast time starts in {{ai|Dragon's Descent|Shyvana|Dragon Form}} and ends in {{sbc|Human Form}}.{{bug}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShyvanaE.BaseDamagePerSecond",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShyvanaE.GroundRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaE.TrailRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaE.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShyvanaE.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShyvanaE.DragonGroundRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaE.DragonTrailRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaE.DragonCastRangeScale",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Dragon's Descent",
+   "cooldown": null,
+   "cost": {
+    "values": [
+     3.333333
+    ],
+    "quote": "{{as|{{fd|3.{{recurring|3}}}}|Fury}}",
+    "resource": "{{as|dragon fury}} every {{fd|0.5}} seconds",
+    "binNote": "Matches ShyvanaR.FuryDrainPerSecond=6.66666 halved (drain per 0.5s tick); constant across ranks, not itself an array in the bin."
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Dragon Fury Generation per 0.5 Seconds",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.25,
+      0.375,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|0.5/2 to 1/2}}|Fury}}",
+     "bin": [
+      "ShyvanaR.FuryGain"
+     ],
+     "binNote": "Bin's FuryGain=[0.5/0.75/1] is the per-second rate (matches r_2); this per-0.5s value is half that, not stated directly in the bin."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Dragon Fury Generation per Second",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.5,
+      0.75,
+      1
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|0.5 to 1}}|Fury}}",
+     "bin": [
+      "ShyvanaR.FuryGain"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ShyvanaR#Damage",
+      "ShyvanaR.BaseDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Bonus Health",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [],
+     "quote": "{{ap|150 to 350}}",
+     "bin": [
+      "ShyvanaR#Calc_Bonus_Health",
+      "ShyvanaR.BonusHealth"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Dragon Fury gained per enemy damaged by basic attacks and abilities",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "abilities}} also generate {{as|{{fd|{{#var:faba}}}} Dragon Fury}} for each enemy damaged",
+     "bin": [
+      "ShyvanaR.Fury_Generation"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Dragon Form Fury generation multiplier",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "increased{{ft|by {{ap|({{#var:dragf}}-1)*100}}%|to {{as|{{ap|{{#var:faba}}*{{#var:dragf}}}}|Fury}}}}during {{sbc|Dragon Form}}",
+     "bin": [
+      "ShyvanaR.FuryDragonFormMult"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Fury generation modifier vs non-champions",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "the generated amount is reduced to{{ft|25%.",
+     "bin": [
+      "ShyvanaR.Fury_AoE_Efficacy"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Dragon's Descent has no cooldown; it is gated purely by a Fury resource that must reach 100 to cast, and is spent at a recurring rate of ~3.33 per 0.5s while in Dragon Form.",
+     "quote": "{{as|Dragon Fury}} every {{fd|0.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shyvana gains 100 Fury immediately upon learning the ability, so it can be cast right away on level-up.",
+     "quote": "'''Shyvana''' gains {{as|100 Dragon Fury}} upon learning ''Dragon's Descent''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacks and abilities generate Fury per enemy damaged, once per enemy per cast instance, and this generation is tripled while already in Dragon Form; against non-champions this generation from abilities is reduced to 25%.",
+     "quote": "increased{{ft|by {{ap|({{#var:dragf}}-1)*100}}%|to {{as|{{ap|{{#var:faba}}*{{#var:dragf}}}}|Fury}}}}during {{sbc|Dragon Form}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shyvana's Q (Emberstrike) basic attack against the primary target generates the full Fury amount even against non-champions, unlike other abilities/attacks against non-champions.",
+     "quote": "''{{ais|Emberstrike|Shyvana}}'' attack against the primary target will generate the full {{as|Dragon Fury}} amount even if they're a non-champion.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shyvana gains 1% bonus Fury generation from all sources per 1 ultimate haste, increasing her effective uptime and cast frequency of this ability.",
+     "quote": "'''Shyvana''' gains 1% '''bonus''' {{as|Dragon Fury}} generation from all sources per 1 [[ultimate haste]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Displacement immunity during the dash begins at the start of the cast time, not when the dash itself begins.",
+     "quote": "''Dragon's Descent's'' {{tip|displacement immunity}} begins from the start of the cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Entering Dragon Form empowers Shyvana's basic abilities (Q/W/E) to apply an additional effect, which changes their damage output in Dragon Form (see Q/W/E dossier parts).",
+     "quote": "Her basic abilities are empowered to apply an additional effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shyvana reverts to Human Form once all Dragon Fury has been depleted while in Dragon Form.",
+     "quote": "returning to {{sbc|Human Form}} once all {{as|Dragon Fury}} has been depleted.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShyvanaR.MinCastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaR.JumpDelay",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaR.JumpDampening",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaR.JumpGravity",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaR.JumpForwardMultiplier",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaR.Width",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShyvanaR.FuryDrainPerSecond",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShyvanaR.FearDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShyvanaR.SizeScaling",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShyvanaR.BonusAttackRange",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShyvanaR.FuryGainPerUltHaste",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q passive: on-hit bonus magic damage based on target max health, plus cooldown reduction"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Q cast arms the next basic attack with bonus effect (cone/tail slam/bite)"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "All Emberstrike-empowered attacks reset the basic attack timer"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q: chained recasts (2 in human, 3 in dragon form); W: shield then recast explosion"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "On-hit attacks reduce Q's current cooldown by 0.5s"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q passive and E damage scale off target's max health"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Dragon Form scorched ground field deals damage over time"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R",
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "R transforms Shyvana into Dragon Form, empowering Q/W/E with additional effects and higher damage"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dragon Fury resource gates R cast and Dragon Form duration; generated by passive regen, attacks, and ability hits"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Scalemail stacks grant armor/MR, but not obtainable in a 1v1 dummy fight (no takedowns) - likely irrelevant to damage fight"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "W grants bonus move speed for a duration (does not affect damage fight; movement ignored)"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q1/Q2 primary target damage can crit; Q3 true damage cannot crit"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q cone/AoE secondary hits, W explosion radius, E fireball/explosion/scorched field all assume single-target dummy positioning"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "P"
+   ],
+   "note": "W shield and Dragon Form heal, and Scalemail resists, only matter for damage taken, not the damage-dealing fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Shyvana's Q is a chained recast system where only the FINAL cast in a chain puts the basic attack on cooldown (others are free resets), and the chain length itself changes depending on form (2 casts human, 3 casts dragon, with the 3rd being true damage that can't crit) - this multi-stage conditional attack-reset/recast interaction is more complex than a single generic primitive captures. Additionally Dragon Fury as a resource is generated by a passive regen tick, by attacks, and by ability hits (with different multipliers in/out of Dragon Form and vs champions/monsters), which is a bespoke resource-generation model beyond a simple resource-budget primitive, and determines how many times R (and thus Dragon Form empowerment of Q/W/E) can be triggered inside the 15s fight."
+ },
+ "unsettled": [
+  {
+   "question": "How long can Shyvana sustain Dragon Form in the fight, given Fury generation from attacks/ability hits on a single target plus passive regen, and how many times can R itself be recast (it requires 100 Fury to cast again)?",
+   "options": [
+    "Only casts R once (starts with 100 Fury from learning it, insufficient regen to recast within 15s)",
+    "Can recast R once or more within 15s depending on attack speed/haste, since attacks and ability hits during Dragon Form generate Fury at 3x rate",
+    "Sim should assume a fixed number of Dragon Form entries as a rotation parameter"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Shyvana''' gains {{as|100 Dragon Fury}} upon learning ''Dragon's Descent''.",
+    "She maintains {{sbc|Dragon Form}} at a recurring cost of {{as|Dragon Fury}}, returning to {{sbc|Human Form}} once all {{as|Dragon Fury}} has been depleted."
+   ]
+  },
+  {
+   "question": "Does Q1's base damage formula actually use 0.3 AP ratio and the stated base array, given the sheet explicitly flags ShyvanaQ#Calc_Damage as broken (references a missing BASE_DAMAGE data value)?",
+   "options": [
+    "Trust the wiki's literal formula text embedded in the calculation string (base=[10/15/20/25/30], +110% AD, +30% AP) since it matches exactly",
+    "Treat the bin as unresolved/unreliable for this value and flag base damage as unconfirmed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "! calculation names a missing data value BASE_DAMAGE",
+    "{{ap|10 to 30}} {{as|(+ 110% AD)}} {{as|(+ 30% AP)}}"
+   ]
+  },
+  {
+   "question": "In the 15s damage fight, does Shyvana's Q chain (cast Q repeatedly to get empowered attacks) actually only consume ONE real cooldown per chain (since only the last cast in the chain goes on cooldown), meaning she can throw out 2 (human) or 3 (dragon) empowered attacks per ~6-10s cooldown window?",
+   "options": [
+    "Yes - simulate exactly as wiki states: intermediate casts are free, only the final cast per chain starts the real cooldown",
+    "No - some hidden internal cooldown between individual Q casts within a chain limits how fast the chain can be executed, effectively capping DPS gain"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Only the last cast of ''Emberstrike'' puts '''Shyvana's''' basic attack on cooldown.",
+    "This results in the same functionality as {{cai|Shield of Daybreak|Leona}} and {{cai|Thundering Smash|Volibear}}, effectively being a triple/quintuple attack reset."
+   ]
+  },
+  {
+   "question": "Does the passive Q on-hit magic damage (max-health-based) apply on EVERY basic attack including empowered Emberstrike attacks, or is it suppressed/replaced when the attack is already empowered?",
+   "options": [
+    "Passive on-hit damage always applies alongside the empowered attack's own damage (stacking)",
+    "Empowered attacks replace the normal on-hit passive proc entirely"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The passive on-hit damage applies {{tip|proc damage}}.",
+    "the ability can be recast within and {{tt|up to|If the recast is gained by a followed-up basic attack, the window to use the recast is increased (minimum window of 2.5s)}} the next 4 seconds each time"
+   ]
+  },
+  {
+   "question": "Does W's damage-only recast explosion trigger automatically and reliably within the 15s window (auto-triggers after 1s+ or when shield breaks/expires), or does optimal play require manually delaying/holding it, affecting how many W damage instances land in 15s?",
+   "options": [
+    "Always recast/explode as soon as possible (1s after cast) to maximize W casts per 15s",
+    "Hold the shield full duration (2.5s) before it auto-explodes, reducing total W casts per 15s"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After 1 second, ''Inferno Aegis'' can be recast while the shield holds and does so automatically after it expires or is broken."
+   ]
+  },
+  {
+   "question": "In Dragon Form, does E's subsequent-explosion 40% damage penalty apply to the dummy on every recast of E against the same stationary target (since it never leaves the scorched field), effectively reducing all but the first E cast's damage in the fight?",
+   "options": [
+    "Yes - all but the first E hit on the dummy within the field's lifetime take 40% damage",
+    "No - if the scorched field expires (2s duration) before the next E cast, full damage applies each time since cooldown (8-12s) exceeds field duration"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies may be damaged by only one scorched field at a time. Subsequent explosions against the same target deal {{ap|{{#var:xpl}}*100}}% damage.",
+    "beneath for {{#var:dot_time}} seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start in Human Form, apply Scalemail is irrelevant (no takedowns available); begin auto-attacking the dummy immediately.",
+   "Cast R (Dragon's Descent) as soon as available (100 Fury from learning it) to enter Dragon Form and get the R cast magic damage plus empower Q/W/E.",
+   "While in Dragon Form, weave Q (Emberstrike) on cooldown: cast Q, let the empowered attack land (resets attack timer), recast Q for the 2nd empowered attack, recast again for the 3rd (true damage bite) before the chain's real cooldown starts.",
+   "Cast E (Molten Burst) on cooldown, positioning so the fireball explosion and the resulting scorched field both hit the dummy for the DoT.",
+   "Cast W (Inferno Aegis) on cooldown, holding it as briefly as possible before recasting for the explosion damage (and Dragon Form heal, though the heal doesn't matter in the damage-only fight).",
+   "Continue auto-attacking between ability casts (basic attacks add on-hit Q passive magic damage and generate Fury to sustain Dragon Form).",
+   "Attempt to keep recasting R when Fury permits, to maximize Dragon Form uptime and its accompanying empowered Q/W/E effects and the flat R damage per cast.",
+   "Maintain this Q/W/E/attack loop on cooldown for the full 15 seconds, prioritizing whichever ability is off cooldown, with Q taking priority due to its added on-hit passive and attack resets."
+  ],
+  "questions": [
+   "Should the simulator model Dragon Form Fury explicitly (regen + attack/ability generation), or assume a simplified fixed number of R casts and permanent Dragon Form for the fight duration?",
+   "Is there a real minimum gap between chained Q casts (human-perceptible input delay) that would cap how many empowered Q attacks land in 15s, beyond the stated 4-6s windows?",
+   "Given Q1/Q2 crit but Q3 (true damage) does not, should the optimal build prioritize crit itemization, and how should the sim value the mixed crit/non-crit Q chain?",
+   "Should W's recast be assumed instant (to maximize its own cast frequency) or delayed to let the shield value show up in survival-fight-style bonus health interactions (not relevant here since this is the damage fight)?",
+   "Does the E scorched field's persistent damage stack with (or get overwritten by) a fresh E cast's explosion damage on the same target within the field's 2s lifetime, given E's own cooldown (8-12s) usually exceeds the field duration?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,244 @@
+{
+ "name": "Spirit Cleave",
+ "cooldown": {
+  "values": [
+   14,
+   14,
+   14,
+   14,
+   14
+  ],
+  "quote": "{{as|{{pp|type='''bonus''' attack speed|14 to 6 for 11|key1=%|0 to 94.553|formula=14*(1-(0.01 per 1.51% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 94.6% '''bonus''' attack speed.''}}|attack speed}}",
+  "binNote": "Base cooldown is a flat 14 at every rank per the bin (WAttackSpeedCDMax=0.57142 matches the 62.5%->? no, matches ~57% max reduction not 62.5%; wiki's quoted 'static' formula reduces effective cooldown from 14 down to as low as 6 with bonus attack speed, capped at 62.5% reduction per WAttackSpeedCDPercent=0.6/WAttackSpeedCDMax=0.57142). This is a dynamic, attack-speed-driven reduction, not a per-rank value; recorded as a mechanic as well."
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{as|{{pp|type='''bonus''' attack speed|0.5 to 0.1875 for 11|key1=%|0 to 105|formula=0.5*(1-(0.01 per 1.68% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 105% '''bonus''' attack speed.''}}|attack speed}}",
+  "binNote": "Base cast time is 0.5 (YoneW.WBaseCastTime=0.5). It is reduced by bonus attack speed per YoneW.WAttackSpeedCastReductionPercent=0.41667 / WAttackSpeedCastReductionMax=0.5, down to a floor around 0.1875-0.25; this is a continuous attack-speed-driven reduction rather than a per-rank number, also recorded as a mechanic."
+ },
+ "values": [
+  {
+   "id": "w_2",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    10,
+    15,
+    20,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.04,
+      0.045,
+      0.05,
+      0.055,
+      0.06
+     ]
+    }
+   ],
+   "quote": "{{ap|5 to 25}} {{as|(+ {{ap|8/2 to 12/2}}% of target's '''maximum''' health)}}",
+   "bin": [
+    "YoneW.BaseDamage",
+    "YoneW.MaxHealthDamage"
+   ],
+   "binNote": "Base and %maxHP values are half of YoneW.BaseDamage/YoneW.MaxHealthDamage (split evenly per YonePassive.MagicDamageSplit=0.5), matching the wiki's physical-damage row. YoneW#WDamage = BaseDamage + 1xad is NOT reflected anywhere in the wiki's leveling table or description (no flat AD ratio is listed for W's damage); this AD term appears to be unused/stale relative to the current tooltip."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    5,
+    10,
+    15,
+    20,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.04,
+      0.045,
+      0.05,
+      0.055,
+      0.06
+     ]
+    }
+   ],
+   "quote": "{{ap|5 to 25}} {{as|(+ {{ap|8/2 to 12/2}}% of target's '''maximum''' health)}}",
+   "bin": [
+    "YoneW.BaseDamage",
+    "YoneW.MaxHealthDamage"
+   ],
+   "binNote": "Same split as the physical half; see w_2's binNote regarding the unused AD term in YoneW#WDamage."
+  },
+  {
+   "id": "w_4",
+   "meaning": "shield amount granted on hit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    40,
+    42.941,
+    45.882,
+    48.824,
+    51.765,
+    54.706,
+    57.647,
+    60.588,
+    63.529,
+    66.471,
+    69.412,
+    72.353,
+    75.294,
+    78.235,
+    81.176,
+    84.118,
+    87.059,
+    90
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.65
+    }
+   ],
+   "quote": "{{pp|40 + (90-40)/17*(x-1) for 20}} {{as|(+ 65% '''bonus''' AD)}} for {{fd|1.5}} seconds",
+   "bin": [
+    "YoneW#WShield",
+    "YoneW.ShieldbADRatio"
+   ],
+   "binNote": "YoneW#WShield reads a by-level base of 40..90, matching the wiki's per-level formula exactly (40 at level 1, 90 at level 18). YoneW.BaseShield=[10/20/30/40/50] (by rank) is not what WShield actually uses and disagrees with the wiki, which describes the shield as scaling by champion level, not by ability rank; BaseShield looks stale."
+  },
+  {
+   "id": "w_5",
+   "meaning": "shield duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "for {{fd|1.5}} seconds",
+   "bin": [
+    "YoneW.ShieldDuration"
+   ]
+  },
+  {
+   "id": "w_6a",
+   "meaning": "shield increase when the first champion is hit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "increased by 100% if it hits a {{tip|champion}}",
+   "bin": [
+    "YoneW.FirstChampShieldMultiplier"
+   ]
+  },
+  {
+   "id": "w_6b",
+   "meaning": "shield increase for each subsequent champion hit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "and by 50% for each subsequent champion hit",
+   "bin": [
+    "YoneW.SecondChampShieldMultiplier"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The mixed damage is applied in two separate instances, with physical damage dealt first within the same game tick.",
+   "quote": "The mixed damage is applied in two instances, and the {{as|physical damage}} will be dealt first within the same game tick.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the physical damage instance kills the target, the magic damage instance will not be dealt.",
+   "quote": "If the {{as|physical damage}} finishes off the unit, the {{as|magic damage}} will not be dealt against it.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Yone gains a self-shield if the ability hits any enemy, base amount scaling by champion level plus 65% bonus AD, lasting 1.5 seconds.",
+   "quote": "If this hits an enemy, '''Yone''' grants himself a {{tip|shield}} for {{pp|40 + (90-40)/17*(x-1) for 20}} {{as|(+ 65% '''bonus''' AD)}} for {{fd|1.5}} seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Spell shield does not prevent Yone from receiving or increasing his own shield from this ability.",
+   "quote": "{{tip|Spell shield}} does not prevent '''Yone''' from receiving and/or increasing the {{tip|shield}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability's cast time is reduced by bonus attack speed, down to a capped minimum.",
+   "quote": "0.5*(1-(0.01 per 1.68% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 105% '''bonus''' attack speed.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's effective cooldown is reduced by bonus attack speed, down to a capped minimum.",
+   "quote": "14*(1-(0.01 per 1.51% '''bonus''' attack speed)). ''This is capped at 62.5% reduction at 94.6% '''bonus''' attack speed.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability is always quickcast.",
+   "quote": "{{always quickcast}}",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YoneW.MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "YoneW.HealthStealMultiplier",
+   "reason": "unknown"
+  },
+  {
+   "ref": "YoneW.ConeWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YoneW.WAttackSpeedCDPercent",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneW.WAttackSpeedCDMax",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneW.WAttackSpeedCastReductionPercent",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneW.WAttackSpeedCastReductionMax",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneW.WBaseCastTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "YoneW.WCritMultiplier",
+   "reason": "unknown"
+  },
+  {
+   "ref": "YoneW.BaseShield",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

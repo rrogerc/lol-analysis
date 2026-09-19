@@ -1,0 +1,582 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "BraumPassive",
+    "key": "Characters/Braum/Spells/BraumPassiveAbility/BraumPassive",
+    "dataValues": {
+     "StackDuration": 4,
+     "StackCap": 4,
+     "AlreadyStunnedDamageAmp": 0.4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "<ByCharLevelFormulaCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "OnHitDamage": {
+      "expr": "TotalDamage * AlreadyStunnedDamageAmp=0.4",
+      "modifies": "TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "AlreadyStunnedDamageAmp"
+      ]
+     },
+     "StunCD": {
+      "expr": "byLevelL[8/8/8/8/8/6/6/6/6/6/4/4/4/4/4/4/4/4]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        6,
+        6,
+        6,
+        6,
+        6,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "StunDuration": {
+      "expr": "byLevelL[1.25/1.25/1.25/1.25/1.25/1.25/1.5/1.5/1.5/1.5/1.5/1.5/1.75/1.75/1.75/1.75/1.75/1.75]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1.25,
+        1.25,
+        1.25,
+        1.25,
+        1.25,
+        1.25,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.75,
+        1.75,
+        1.75,
+        1.75,
+        1.75,
+        1.75
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ByCharLevelFormulaCalculationPart"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "BraumQ",
+    "key": "Characters/Braum/Spells/BraumQAbility/BraumQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      45,
+      50,
+      55,
+      60,
+      65
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       120,
+       165,
+       210,
+       255
+      ]
+     },
+     "MaxHPDamageValue": 0.025,
+     "InitialSlow": 70,
+     "MinSlow": 30,
+     "SlowDuration": 2,
+     "MissileRange": 1050,
+     "DebuffDuration": 4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[75/120/165/210/255] + (MaxHPDamageValue=0.025)xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        120,
+        165,
+        210,
+        255
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.025,
+        "dataValue": "MaxHPDamageValue"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "MaxHPDamageValue"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "BraumW",
+    "key": "Characters/Braum/Spells/BraumWAbility/BraumW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RangedDamageThreshold": 400,
+     "AllyArmorPercent": 0.12,
+     "BraumArmorPercent": 0.36,
+     "BaseResists": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "Duration": 3,
+     "BonusDashSpeed": 750
+    },
+    "calcs": {
+     "GrantedAllyArmor": {
+      "expr": "BaseResists=[20/25/30/35/40] + (AllyArmorPercent=0.12)xbonus armor?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "bonus",
+        "coef": 0.12,
+        "dataValue": "AllyArmorPercent"
+       }
+      ],
+      "refs": [
+       "AllyArmorPercent",
+       "BaseResists"
+      ]
+     },
+     "GrantedAllyMR": {
+      "expr": "BaseResists=[20/25/30/35/40] + (AllyArmorPercent=0.12)xbonus moveSpeed?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "moveSpeed?",
+        "scope": "bonus",
+        "coef": 0.12,
+        "dataValue": "AllyArmorPercent"
+       }
+      ],
+      "refs": [
+       "AllyArmorPercent",
+       "BaseResists"
+      ]
+     },
+     "GrantedBraumArmor": {
+      "expr": "BaseResists=[20/25/30/35/40] + (BraumArmorPercent=0.36)xbonus armor?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "bonus",
+        "coef": 0.36,
+        "dataValue": "BraumArmorPercent"
+       }
+      ],
+      "refs": [
+       "BaseResists",
+       "BraumArmorPercent"
+      ]
+     },
+     "GrantedBraumMR": {
+      "expr": "BaseResists=[20/25/30/35/40] + (BraumArmorPercent=0.36)xbonus moveSpeed?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "moveSpeed?",
+        "scope": "bonus",
+        "coef": 0.36,
+        "dataValue": "BraumArmorPercent"
+       }
+      ],
+      "refs": [
+       "BaseResists",
+       "BraumArmorPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "BraumE",
+    "key": "Characters/Braum/Spells/BraumEAbility/BraumE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      14,
+      12,
+      10,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RangedReflect": 0.15,
+     "ShieldHoldDuration": {
+      "axis": "rank",
+      "v": [
+       3,
+       3.25,
+       3.5,
+       3.75,
+       4
+      ]
+     },
+     "ShieldFacingDRAmount": {
+      "axis": "rank",
+      "v": [
+       35,
+       40,
+       45,
+       50,
+       55
+      ]
+     },
+     "MoveSpeedPercent": 10
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "BraumRWrapper",
+    "key": "Characters/Braum/Spells/BraumRWrapperAbility/BraumRWrapper",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      130,
+      115,
+      100
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "KnockupDuration": 0.6,
+     "FirstKnockupDuration": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.5,
+       2
+      ]
+     },
+     "MoveSpeedMod": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60
+      ]
+     },
+     "SlowZoneDuration": 4,
+     "SlowDebuffDuration": 0.25,
+     "MinKnockup": 0.6,
+     "MaxKnockup": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.5,
+       2
+      ]
+     },
+     "MaxKnockupRatio": 0.9
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[150/250/350] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "BraumQ",
+  "W": "BraumW",
+  "E": "BraumE",
+  "R": "BraumRWrapper",
+  "P": "BraumPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 311,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.07
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Braum",
+  "name": "Braum",
+  "partype": "Mana",
+  "passive": "Concussive Blows",
+  "spells": [
+   {
+    "id": "BraumQ",
+    "name": "Winter's Bite",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ]
+   },
+   {
+    "id": "BraumW",
+    "name": "Stand Behind Me",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "BraumE",
+    "name": "Unbreakable",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "cost": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ]
+   },
+   {
+    "id": "BraumRWrapper",
+    "name": "Glacial Fissure",
+    "maxrank": 3,
+    "cooldown": [
+     130,
+     115,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Concussive Blows": {
+    "damagetype": "Magic",
+    "spelleffects": "Proc",
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Winter's Bite": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Stand Behind Me": {
+    "targeting": "Unit",
+    "affects": "Self, Allies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Unbreakable": {
+    "targeting": "Direction",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Glacial Fissure": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

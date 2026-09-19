@@ -1,0 +1,201 @@
+{
+ "name": "Second Skin",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_basedamage",
+   "meaning": "Caustic Wounds magic damage dealt when Plasma is applied",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    4.0,
+    5.529412,
+    7.0588235,
+    8.588235,
+    10.117647,
+    11.6470588,
+    13.176471,
+    14.705882,
+    16.235294,
+    17.764706,
+    19.2941176,
+    20.82353,
+    22.352941,
+    23.882353,
+    25.411765,
+    26.941177,
+    28.470588,
+    30.0
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.12
+    }
+   ],
+   "quote": "{{pplevel|4 to 30}} {{as|(+ 12% AP)}} '''additional''' magic damage",
+   "bin": [
+    "KaisaPassive#PBaseDamage"
+   ]
+  },
+  {
+   "id": "p_perstackdamage",
+   "meaning": "additional Caustic Wounds damage per Plasma stack already on the target before this application",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    1.0,
+    1.4117647,
+    1.8235294,
+    2.235294,
+    2.6470588,
+    3.0588235,
+    3.4705882,
+    3.8823529,
+    4.2941176,
+    4.7058824,
+    5.117647,
+    5.529412,
+    5.9411765,
+    6.352941,
+    6.76470588,
+    7.1764706,
+    7.5882353,
+    8.0
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.03
+    }
+   ],
+   "quote": "{{pplevel|1 to 8}} {{as|(+ 3% AP)}} '''additional''' magic damage|magic damage}} {{as|per Plasma stack before application|buzzword}}",
+   "bin": [
+    "KaisaPassive#PCurrentPerStackDamage"
+   ]
+  },
+  {
+   "id": "p_maxstacks",
+   "meaning": "maximum Plasma stacks held before the detonation stack",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "4 Plasma stacks before application",
+   "bin": [
+    "KaisaPassive.PMaxStacks"
+   ]
+  },
+  {
+   "id": "p_duration",
+   "meaning": "Plasma stack duration, refreshed on reapplication",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "apply {{tip|stacks}} of {{as|Plasma|buzzword}} to enemies for 4 seconds, refreshing on subsequent applications",
+   "bin": [
+    "KaisaPassive.PDuration"
+   ]
+  },
+  {
+   "id": "p_execute",
+   "meaning": "bonus missing-health magic damage dealt when the 5th Plasma stack detonates",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": 0.15,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.06
+      }
+     ]
+    }
+   ],
+   "quote": "15% {{as|(+ 6% per 100 AP)}} of the target's '''missing''' health",
+   "bin": [
+    "KaisaPassive#PExecutePercentage"
+   ]
+  },
+  {
+   "id": "p_executecap",
+   "meaning": "cap on the missing-health detonation damage against monsters",
+   "role": "other",
+   "damageType": "magic",
+   "by": "const",
+   "base": 400,
+   "terms": [],
+   "quote": "capped at 400 against {{tip|monster|monsters}}",
+   "bin": [
+    "KaisaPassive.PDamageCap"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Kai'Sa's basic attacks apply 1 Plasma stack on-hit, and Void Seeker applies 2 stacks (3 if evolved).",
+   "quote": "Basic attacks each apply 1 stack and ''{{ai|Void Seeker|Kai'Sa}}'' applies 2 stacks, increased to 3 if it is {{ai|Void Seeker 2|Kai'Sa|evolved}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each Plasma application deals the base plus per-stack Caustic Wounds magic damage; a fresh application refreshes the 4-second duration rather than stacking a new timer per stack.",
+   "quote": "'''Kai'Sa's''' basic attacks or ''{{ai|Void Seeker|Kai'Sa}}'' deal {{as|{{pplevel|4 to 30}} {{as|(+ 12% AP)}} '''additional''' magic damage|magic damage}} plus {{as|{{pplevel|1 to 8}} {{as|(+ 3% AP)}} '''additional''' magic damage|magic damage}} {{as|per Plasma stack before application|buzzword}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The 5th Plasma stack consumes all stacks and deals the missing-health detonation damage instead of another stack application.",
+   "quote": "The fifth stack against a target consumes them all to deal {{as|'''additional''' magic damage|magic damage}} equal to {{as|15% {{as|(+ 6% per 100 AP)}} of the target's '''missing''' health|health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The missing-health detonation damage is evaluated after the initial Caustic Wounds damage and after Void Seeker's own damage if it triggered the detonation, but before a triggering basic attack's damage.",
+   "quote": "The bonus missing health damage is evaluated after the initial damage from ''Caustic Wounds'' is evaluated, and after {{ais|Void Seeker|Kai'Sa}} damage if triggered by it, but before a triggering basic attack's is.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield only blocks the Plasma application from Void Seeker, not from basic attacks.",
+   "quote": "{{tip|Spell shield}} will block the {{as|Plasma|buzzword}} application from {{ai|Void Seeker|Kai'Sa}} only.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Void Seeker detonates Plasma, any remaining stacks beyond the detonation are reapplied afterward, and Void Seeker's own damage is calculated as if each stack were applied successively.",
+   "quote": "With {{ai|Void Seeker|Kai'Sa}}, if the stacks detonate {{as|Plasma|buzzword}}, any remaining stacks are reapplied afterwards. {{ai|Void Seeker|Kai'Sa}} also deals ''Caustic Wounds' ''damage based on {{as|Plasma|buzzword}} stacks on the target. This damage is calculated as if each stack was applied successively.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KaisaPassive.PCoefficient",
+   "reason": "unknown"
+  },
+  {
+   "ref": "KaisaPassive.PExecuteRatio",
+   "reason": null
+  },
+  {
+   "ref": "KaisaPassive.PAllyStacks",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KaisaPassive.PExecuteAPRatio",
+   "reason": null
+  },
+  {
+   "ref": "KaisaPassive.PTotalDamageMultiplier_ForModesBalance",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,845 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "LockePassive",
+    "key": "Characters/Locke/Spells/LockePassiveAbility/LockePassive",
+    "cooldown": 0,
+    "dataValues": {
+     "MinOnHitStartValue": 5,
+     "MinOnHitEndValue": 40,
+     "MaxOnHitStartValue": 10,
+     "MaxOnHitEndValue": 80
+    },
+    "calcs": {
+     "MinOnHitDamage": {
+      "expr": "<{ee18a47b}> + 0.1xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "MaxOnHitDamage": {
+      "expr": "<{ee18a47b}> + 0.2xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {ee18a47b}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "LockeQ",
+    "key": "Characters/Locke/Spells/LockeQAbility/LockeQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 70,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseMissileDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       48,
+       56,
+       64,
+       72
+      ]
+     },
+     "Duration": 4,
+     "Ammo": 3,
+     "MaxStacks": 3,
+     "NailDuration": 4,
+     "SlowAmount1": 0.25,
+     "SlowAmount2": 0.25,
+     "SlowAmount3": 0.6,
+     "SlowDuration1": 1,
+     "SlowDuration2": 1,
+     "SlowDuration3": 2,
+     "MarkDamage": {
+      "axis": "rank",
+      "v": [
+       18,
+       26,
+       34,
+       42,
+       50
+      ]
+     },
+     "MarkRatio": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.275,
+       0.3,
+       0.325,
+       0.35
+      ]
+     },
+     "TwoMarkBonusPercent": 20,
+     "ThreeMarkBonusPercent": 40,
+     "QMissileMinionMod": 1,
+     "QMarkMinionMod": 1
+    },
+    "calcs": {
+     "MissileDamage": {
+      "expr": "BaseMissileDamage=[40/48/56/64/72] + 0.2xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        48,
+        56,
+        64,
+        72
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "BaseMissileDamage"
+      ]
+     },
+     "NailDamage": {
+      "expr": "(MarkRatio=[0.25/0.275/0.3/0.325/0.35])xap + MarkDamage=[18/26/34/42/50]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        18,
+        26,
+        34,
+        42,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.25,
+          0.275,
+          0.3,
+          0.325,
+          0.35
+         ]
+        },
+        "dataValue": "MarkRatio"
+       }
+      ],
+      "refs": [
+       "MarkDamage",
+       "MarkRatio"
+      ]
+     },
+     "AmmoCooldownReset": {
+      "expr": "byLevel(0.2..0.35)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.2,
+        0.20882353,
+        0.21764706,
+        0.22647059,
+        0.23529412,
+        0.24411765,
+        0.2529412,
+        0.2617647,
+        0.27058823,
+        0.27941176,
+        0.2882353,
+        0.29705882,
+        0.3058823496103287,
+        0.31470588,
+        0.32352941,
+        0.33235294,
+        0.34117646515369415,
+        0.35
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "LockeW",
+    "key": "Characters/Locke/Spells/LockeWAbility/LockeW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "costLegacy": 50,
+    "dataValues": {
+     "BaseMoveSpeed": 0.4,
+     "BaseDuration": 6,
+     "Radius": 250,
+     "BaseDamageRestoreAmount": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "HealthCost": 0.02,
+     "DecayTime": 1,
+     "MinMoveSpeed": 0.2,
+     "TimeMaxPower": 1,
+     "HealCapAPRatio": 0.6,
+     "HealCapLevel1Value": 150,
+     "HealCapLevel18Value": 450
+    },
+    "calcs": {
+     "MoveSpeed": {
+      "expr": "BaseMoveSpeed=0.4 + 0.0002xap",
+      "flat": 0.4,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0002
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseMoveSpeed"
+      ]
+     },
+     "DamageRestoreAmount": {
+      "expr": "BaseDamageRestoreAmount=[40/60/80/100/120] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamageRestoreAmount"
+      ]
+     },
+     "Duration": {
+      "expr": "BaseDuration=6",
+      "flat": 6,
+      "terms": [],
+      "refs": [
+       "BaseDuration"
+      ]
+     },
+     "AttackSpeed": {
+      "expr": "byLevel(0.4..0.7)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.4,
+        0.41764706,
+        0.43529412,
+        0.45294118,
+        0.47058824,
+        0.4882353,
+        0.5058824,
+        0.5235294,
+        0.5411764681339264,
+        0.5588235,
+        0.5764706,
+        0.59411764,
+        0.6117646992206573,
+        0.62941176,
+        0.6470588147640228,
+        0.6647059,
+        0.6823529,
+        0.7
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "MaxHealingThreshold": {
+      "expr": "<{ee18a47b}> + (HealCapAPRatio=0.6)xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "HealCapAPRatio"
+      ]
+     },
+     "AdditionalHeal": {
+      "expr": "byLevel(40..200) + 0.2xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        49.411765,
+        58.82353,
+        68.23529,
+        77.64706,
+        87.05882,
+        96.47059,
+        105.882353,
+        115.29412,
+        124.70588,
+        134.11765,
+        143.529412,
+        152.94118,
+        162.35294,
+        171.76471,
+        181.17647,
+        190.58824,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": []
+     },
+     "DecayTimeHelper": {
+      "expr": "DecayTime=1 + TimeMaxPower=1",
+      "flat": 2,
+      "terms": [],
+      "refs": [
+       "DecayTime",
+       "TimeMaxPower"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {ee18a47b}"
+    ]
+   },
+   {
+    "script": "LockeWRecast",
+    "key": "Characters/Locke/Spells/LockeWAbility/LockeWRecast",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "BaseMoveSpeed": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "Duration": 6,
+     "Radius": 200,
+     "BaseDamageRestoreAmount": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "MinDashRange": 100,
+     "HealthCost": {
+      "axis": "rank",
+      "v": [
+       60,
+       80,
+       100,
+       120,
+       140
+      ]
+     }
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MoveSpeed": {
+      "expr": "BaseMoveSpeed=[0.4/0.45/0.5/0.55/0.6] + 0.0005xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0005
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseMoveSpeed"
+      ]
+     },
+     "DamageRestoreAmount": {
+      "expr": "BaseDamageRestoreAmount=[60/90/120/150/180] + 0.6xap + HealthCost=[60/80/100/120/140]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        170,
+        220,
+        270,
+        320
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamageRestoreAmount",
+       "HealthCost"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "LockeE",
+    "key": "Characters/Locke/Spells/LockeEAbility/LockeE",
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      40,
+      50,
+      60,
+      70
+     ]
+    },
+    "castTime": 0.175,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseOnHitDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60,
+       70,
+       80
+      ]
+     },
+     "MinCastRange": 150,
+     "Radius": 100,
+     "BaseDashDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "BonusRange": 275,
+     "E2AttackDelay": 0.1,
+     "APRatio": 0.4
+    },
+    "calcs": {
+     "OnHitDamage": {
+      "expr": "BaseOnHitDamage=[40/50/60/70/80] + 0.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        50,
+        60,
+        70,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "BaseOnHitDamage"
+      ]
+     },
+     "DashDamage": {
+      "expr": "BaseDashDamage=[40/60/80/100/120] + (APRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDashDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "LockeR",
+    "key": "Characters/Locke/Spells/LockeRAbility/LockeR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       225,
+       300
+      ]
+     },
+     "SlowDuration": 2,
+     "Radius": 400,
+     "SlowAmount": 0.99,
+     "ExecutionThreshold": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.11,
+       0.12
+      ]
+     },
+     "Duration": 5,
+     "CooldownReduction": 20,
+     "AbilityHastePerStack": 6,
+     "Anim_BiteTime": 0.39,
+     "ExecuteThresholdPerStack": 0.005
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[150/225/300] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        225,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "ExecuteBonusCalc": {
+      "expr": "(ExecuteThresholdPerStack=0.005)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({b5c3348f})",
+        "scope": "total",
+        "coef": 0.005,
+        "dataValue": "ExecuteThresholdPerStack"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ExecuteThresholdPerStack"
+      ]
+     },
+     "{6c540a3a}": {
+      "expr": "ExecutionThreshold=[0.1/0.11/0.12] + (ExecuteThresholdPerStack=0.005)xbuffStacks",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.1,
+        0.11,
+        0.12
+       ]
+      },
+      "terms": [
+       {
+        "stat": "buffStacks({b5c3348f})",
+        "scope": "total",
+        "coef": 0.005,
+        "dataValue": "ExecuteThresholdPerStack"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ExecuteThresholdPerStack",
+       "ExecutionThreshold"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "LockeQ",
+  "W": "LockeW",
+  "E": "LockeE",
+  "R": "LockeR",
+  "P": "LockePassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 280,
+   "{6216bf7b}": 70,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Locke",
+  "name": "Locke",
+  "partype": "Mana",
+  "passive": "Silver Stake",
+  "spells": [
+   {
+    "id": "LockeQ",
+    "name": "Ritual Nails",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "LockeW",
+    "name": "Soul Ignition",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "LockeE",
+    "name": "Ashen Pursuit",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     30,
+     40,
+     50,
+     60,
+     70
+    ]
+   },
+   {
+    "id": "LockeR",
+    "name": "Purgatory",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Silver Stake": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Ritual Nails": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Soul Ignition": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana ({{as|+ {{fd|0.5}}% '''current''' health}} per {{fd|0.25}} seconds)"
+   }
+  },
+  "E": {
+   "Ashen Pursuit": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "false",
+    "targeting": "Location",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Purgatory": {
+    "damagetype": "Magic True",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies, Self",
+    "costtype": "mana"
+   }
+  }
+ }
+}

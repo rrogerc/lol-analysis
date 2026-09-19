@@ -1,0 +1,144 @@
+{
+ "name": "Break the Mold",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "bonus on-hit magic damage equal to % of total armor and % of total MR",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "armor",
+     "coef": 0.05
+    },
+    {
+     "stat": "mr",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{as|5% of her '''total''' armor}} and {{as|5% of her '''total''' magic resistance}}",
+   "bin": [
+    "RellP#OnHitDamage"
+   ]
+  },
+  {
+   "id": "p_2",
+   "meaning": "Break the Mold stack duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "apply a {{tip|stack}} of ''Break The Mold'' for 5 seconds",
+   "bin": [
+    "RellP.ShredDuration"
+   ]
+  },
+  {
+   "id": "p_3",
+   "meaning": "max stacks of Break the Mold",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "stacking up to 5 times",
+   "bin": [
+    "RellP.MaxStacks"
+   ]
+  },
+  {
+   "id": "p_4",
+   "meaning": "armor/MR reduction per stack",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.03,
+   "terms": [],
+   "quote": "Each stack reduces the target's {{sti|ar|{{as|armor}}}} and {{sti|mr|{{as|magic resistance}}}} by 3% for a maximum of 15% reduction",
+   "bin": [
+    "RellP.StealPercent"
+   ]
+  },
+  {
+   "id": "p_5",
+   "meaning": "maximum total armor/MR reduction",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.15,
+   "terms": [],
+   "quote": "for a maximum of 15% reduction",
+   "bin": [
+    "RellP.MaxPercentTooltipOnly"
+   ]
+  },
+  {
+   "id": "p_6",
+   "meaning": "minimum flat reduction per stack (scales by level, 20 levels of data but champion max level 18)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    1.5,
+    1.588,
+    1.676,
+    1.765,
+    1.853,
+    1.941,
+    2.029,
+    2.118,
+    2.206,
+    2.294,
+    2.382,
+    2.471,
+    2.559,
+    2.647,
+    2.735,
+    2.824,
+    2.912,
+    3.0
+   ],
+   "terms": [],
+   "quote": "reduce the target's {{as|armor}} and {{as|magic resistance}} by a minimum of {{pp|1.5 + (3-1.5)/17*(x-1) for 20}}",
+   "bin": [
+    "RellP#StealFloor"
+   ],
+   "binNote": "Bin's byLevel(1.5..3) is defined over 20 steps but champions only reach level 18; values computed via wiki's formula 1.5+(1.5/17)*(x-1) for x=1..18, matching bin's linear interpolation endpoints."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Rell gains bonus armor and magic resist equal to the sum of resistances reduced from all afflicted enemies.",
+   "quote": "'''Rell''' gains {{as|'''bonus''' armor}} and {{as|'''bonus''' magic resistance}} equal to the sum of resistances reduced from all afflicted enemies.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Basic attacks on-hit and abilities against non-minions apply a stack, refreshing duration on subsequent hits.",
+   "quote": "apply a {{tip|stack}} of ''Break The Mold'' for 5 seconds, refreshing on subsequent hits and stacking up to 5 times",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first stack snapshots the target's current armor and MR; later stacks reduce based on that snapshot until the debuff expires.",
+   "quote": "The first stack of ''Break the Mold'' that is applied to a target will snapshot the targets current {{sti|ar|{{as|armor}}}} and {{sti|mr|{{as|magic resistance}}}}. All subsequent stacks will reduce the targets resistances based on the snapshotted amount",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bonus on-hit magic damage does not affect structures.",
+   "quote": "The attacks do not affect [[structures]].",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "RellP.RefreshDuration",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,86 @@
+{
+ "name": "Counter Strike",
+ "cooldown": {
+  "values": [17, 15, 13, 11, 9],
+  "quote": "{{ap|17 to 9}}"
+ },
+ "cost": {
+  "values": [50, 60, 70, 80, 90],
+  "quote": "{{ap|50 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": null,
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [40, 70, 100, 130, 160],
+   "terms": [{"stat": "ap", "coef": 0.7}, {"stat": "targetMaxHp", "coef": 0.04}],
+   "quote": "{{ap|40 to 160}} {{as|(+ 70% AP)}} {{as|(+ 4% of target's '''maximum''' health)}}",
+   "bin": ["JaxE#TotalDamage", "JaxE.PercentHealthDamage"]
+  },
+  {
+   "id": "e_2",
+   "meaning": "seconds Jax remains in Evasion before it automatically recasts if not recast sooner",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "enters ''Evasion'' for 2 seconds",
+   "bin": ["JaxE.DodgeDuration"]
+  },
+  {
+   "id": "e_3",
+   "meaning": "seconds after casting before Counter Strike can be manually recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "can be recast after 1 second, and does so automatically after the duration.",
+   "bin": [],
+   "binNote": "The wiki states this 1s minimum recast delay separately from the on-hit stun duration on the recast. The sheet's only data value of 1 for this ability is JaxE.StunDuration, which by name matches the recast's stun instead; it is not clear whether the same field also gates this minimum recast delay or whether that delay is simply not exposed as a data value here, so it is not cited as the source."
+  },
+  {
+   "id": "e_4",
+   "meaning": "damage increase to the recast, per basic attack (or on-hit-triggering ability) dodged during Evasion",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "increased by 20% for each attack dodged",
+   "bin": ["JaxE.PercentIncreasedPerDodge"]
+  },
+  {
+   "id": "e_5",
+   "meaning": "maximum number of dodges counted toward the recast's damage increase (each worth 20%, capping the increase at 100%)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "up to a 100% increase",
+   "bin": ["JaxE.MaxDodgesForDamageIncrease"]
+  }
+ ],
+ "mechanics": [
+  {"claim": "Counter Strike's cooldown starts only once its effect resolves (after the recast), not at the moment it is initially cast.",
+   "quote": "cdstart = post-effect",
+   "affectsDamageFight": true},
+  {"claim": "Both the initial cast and the recast of Counter Strike each count as a separate ability activation, e.g. for on-cast item effects like Spellblade.",
+   "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true},
+  {"claim": "The recast's bonus damage scales only with attacks or on-hit-triggering abilities Jax actually dodged during Evasion; since this simulator's target dummy never attacks, no dodges can ever occur, so Counter Strike always deals its Minimum (undoubled) damage in this fight model.",
+   "quote": "with the '''total''' damage increased by 20% for each attack dodged, up to a 100% increase",
+   "affectsDamageFight": true}
+ ],
+ "binUnused": [
+  {"ref": "JaxE.StunDuration", "reason": "not-in-a-dummy-fight"},
+  {"ref": "JaxE.AoEDamageReduction", "reason": "defensive"}
+ ]
+}

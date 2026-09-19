@@ -1,0 +1,210 @@
+{
+ "name": "Blazing Stampede",
+ "cooldown": {
+  "values": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "quote": "{{tt|6|Starts on-cast, but recasting refreshes the cooldown}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   36.6,
+   33.2,
+   29.8,
+   26.4,
+   23
+  ],
+  "quote": "{{pp|40 - (40-23)/17*(x-1) for 20}}",
+  "resource": "mana",
+  "binNote": "Bin's flat 'cost: 40' and 'ddragon E cost [40,40,40,40,40,40]' are per-cast-instance base rows; the wiki's pp-formula describes cost decreasing by rank via a scaling formula the bin does not expose as a per-rank array. Reporting the wiki's stated values as the finding."
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Bonus Movement Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    25,
+    31,
+    37,
+    43,
+    49,
+    55
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.05,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.05
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|25 to 55 6}}% {{as|(+ 5% per 100 '''bonus''' AD)}}",
+   "bin": [
+    "UdyrE#MoveSpeed",
+    "UdyrE.BaseMoveSpeed"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Decayed Bonus Movement Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    7.5,
+    9.3,
+    11.1,
+    12.9,
+    14.7,
+    16.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.015,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.015
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|25*0.3 to 55*0.3 6}}% {{as|(+ {{ap|5*0.3}}% per 100 '''bonus''' AD)}}",
+   "bin": [],
+   "binNote": "Decayed value is 30% of e_1, computed by the wiki's own formula; no separate bin row carries it."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Stun Duration on empowered attack",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{fd|0.75}} seconds",
+   "bin": [
+    "UdyrE.StunDuration"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Bonus Movement Speed duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "gains {{sti|{{as|'''bonus''' movement speed}}}} for 4 seconds",
+   "bin": [
+    "UdyrE.MoveSpeedDuration"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Time over which the speed buff decays",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "decays to 30% effectiveness over {{fd|1.5}} seconds",
+   "bin": [],
+   "binNote": "No dedicated decay-time data value found in the bin; UnstoppableDuration (1.5) matches numerically but is described elsewhere as the Awaken CC-immunity duration, so not cited here."
+  },
+  {
+   "id": "e_6",
+   "meaning": "Awaken bonus attack range",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 75,
+   "terms": [],
+   "quote": "gains {{sti|range|75}} '''bonus''' attack range",
+   "bin": [
+    "UdyrE.EmpoweredBonusRange"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "Awaken CC-immunity duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "gains {{tip|cc-immune|immunity to crowd control}} for {{fd|1.5}} seconds",
+   "bin": [
+    "UdyrE.UnstoppableDuration"
+   ]
+  },
+  {
+   "id": "e_8",
+   "meaning": "Internal cooldown between stuns on the same target",
+   "role": "interval",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    6,
+    5.6,
+    5.2,
+    4.8,
+    4.4,
+    4
+   ],
+   "terms": [],
+   "quote": "This cannot affect the same target more than once every few seconds.",
+   "bin": [
+    "UdyrE.ICD"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Empowered attacks in Stampede Stance have an uncancellable windup and dash onto the target if not already in range.",
+   "quote": "empowering his basic attacks to have an {{tip|uncancellable windup}} and {{tt|{{tip|dash|pounce}} on the target|to 75 units closer than attack range, if Udyr is not closer already (pending for test)}} to {{tip|stun}} them",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack still applies its effects even if the dash is interrupted, but does not trigger or get consumed on structures, wards, or if parried.",
+   "quote": "The empowered attack will still apply its effects even if the dash is interrupted.\n* The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each empowered attack is its own cast instance, meaning on-hit/on-cast effects tied to distinct casts apply separately.",
+   "quote": "Each empowered attack is considered to belong to its own {{tip|cast instance}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Udyr becomes ghosted and gains movement speed for 4 seconds while in this stance, unrelated to damage output.",
+   "quote": "'''Udyr''' becomes {{tip|ghosted}} and gains {{sti|{{as|'''bonus''' movement speed}}}} for 4 seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Recasting the ability refreshes its cooldown instead of starting a new one from a fixed point.",
+   "quote": "Starts on-cast, but recasting refreshes the cooldown",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

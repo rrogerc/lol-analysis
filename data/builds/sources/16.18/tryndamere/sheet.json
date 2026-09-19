@@ -1,0 +1,406 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TryndamerePassive",
+    "key": "Characters/Tryndamere/Spells/TryndamerePassiveAbility/TryndamerePassive",
+    "dataValues": {
+     "CherryFuryModifier": 1.5
+    },
+    "calcs": {
+     "PassiveCritConversionTooltip": {
+      "expr": "0.5",
+      "flat": 0.5,
+      "terms": [],
+      "refs": []
+     },
+     "{dc63b617}": {
+      "expr": "(byLevel0.05) * 0.1",
+      "flat": 0.005,
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "TryndamereQ",
+    "key": "Characters/Tryndamere/Spells/TryndamereQAbility/TryndamereQ",
+    "cooldown": 12,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseHealing": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50,
+       60,
+       70
+      ]
+     },
+     "BonusHealPerFury": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       0.95,
+       1.4,
+       1.85,
+       2.3
+      ]
+     },
+     "APRatio": 0.3,
+     "APRatioPerFury": 0.012,
+     "MaximumBonusAD": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     },
+     "RemainingHealthThreshold": 0.1
+    },
+    "calcs": {
+     "BaseHeal": {
+      "expr": "BaseHealing=[30/40/50/60/70] + (APRatio=0.3)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        40,
+        50,
+        60,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseHealing"
+      ]
+     },
+     "HealPerFury": {
+      "expr": "BonusHealPerFury=[0.5/0.95/1.4/1.85/2.3] + (APRatioPerFury=0.012)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.5,
+        0.95,
+        1.4,
+        1.85,
+        2.3
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.012,
+        "dataValue": "APRatioPerFury"
+       }
+      ],
+      "refs": [
+       "APRatioPerFury",
+       "BonusHealPerFury"
+      ]
+     },
+     "MaximumHeal": {
+      "expr": "BaseHealing=[30/40/50/60/70] + (APRatio=0.3)xap + (1xtotal abilityResource)*(BonusHealPerFury=[0.5/0.95/1.4/1.85/2.3] + (APRatioPerFury=0.012)xap)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "APRatio",
+       "APRatioPerFury",
+       "BaseHealing",
+       "BonusHealPerFury"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "TryndamereW",
+    "key": "Characters/Tryndamere/Spells/TryndamereWAbility/TryndamereW",
+    "cooldown": 14,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ADReduction": {
+      "axis": "rank",
+      "v": [
+       -20,
+       -35,
+       -50,
+       -65,
+       -80
+      ]
+     },
+     "SlowPotency": {
+      "axis": "rank",
+      "v": [
+       -0.3,
+       -0.35,
+       -0.4,
+       -0.45,
+       -0.5
+      ]
+     },
+     "ReductionDuration": 4,
+     "SlowDuration": 3.25
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TryndamereE",
+    "key": "Characters/Tryndamere/Spells/TryndamereEAbility/TryndamereE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "ADRatio": 1,
+     "APRatio": 0.8,
+     "NonChampCDRefund": 0.75,
+     "ChampCDRefund": 1.5,
+     "NonChampFuryGain": 2,
+     "ChampFuryGain": 5,
+     "DamageAoE": 225
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[80/120/160/200/240] + (ADRatio=1)xbonus ad + (APRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "UndyingRage",
+    "key": "Characters/Tryndamere/Spells/UndyingRageAbility/UndyingRage",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TryndRFuryGain": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100
+      ]
+     },
+     "TryndRMinHealth": {
+      "axis": "rank",
+      "v": [
+       30,
+       50,
+       70
+      ]
+     },
+     "TryndRDuration": 5
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "TryndamereQ",
+  "W": "TryndamereW",
+  "E": "TryndamereE",
+  "R": "UndyingRage",
+  "P": "TryndamerePassive"
+ },
+ "resource": {
+  "arType": 4,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.11
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Tryndamere",
+  "name": "Tryndamere",
+  "partype": "Fury",
+  "passive": "Battle Fury",
+  "spells": [
+   {
+    "id": "TryndamereQ",
+    "name": "Bloodlust",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "TryndamereW",
+    "name": "Mocking Shout",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "TryndamereE",
+    "name": "Spinning Slash",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "UndyingRage",
+    "name": "Undying Rage",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Battle Fury": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Bloodlust": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "{{as|'''Current''' Fury}}"
+   }
+  },
+  "W": {
+   "Mocking Shout": {
+    "spellshield": "True",
+    "targeting": "Proximity",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Spinning Slash": {
+    "damagetype": "physical",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Undying Rage": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  }
+ }
+}

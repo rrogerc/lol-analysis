@@ -1,0 +1,836 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AmbessaPassive",
+    "key": "Characters/Ambessa/Spells/AmbessaPassiveAbility/AmbessaPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "Buffer_Dash_Time": 0.3,
+     "Buffer_Dash_Distance": 350,
+     "Buffer_Dash_Min_Distance": 175,
+     "Buffer_Dash_Forgiveness_Window": 0.275,
+     "Buffer_Dash_W_Forgiveness_Window": 0.25,
+     "Buffer_Dash_Wall_Forgiveness": 500,
+     "Attack_Range_Amount": 75,
+     "Attack_Range_Total": 200,
+     "Attack_Buff_Max_Stacks": 3,
+     "Attack_Buff_Duration": 4,
+     "Attack_Speed": 0.5
+    },
+    "calcs": {
+     "{57d26a55}": {
+      "expr": "byLevelL[770/770/770/770/770/830/830/830/830/830/890/890/890/890/890/950/950/950] + 1xstat7?",
+      "flat": {
+       "axis": "level",
+       "v": [
+        770,
+        770,
+        770,
+        770,
+        770,
+        830,
+        830,
+        830,
+        830,
+        830,
+        890,
+        890,
+        890,
+        890,
+        890,
+        950,
+        950,
+        950
+       ]
+      },
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "Calc_OnHit_Damage_Flat": {
+      "expr": "byLevel(5..30) + 0.25xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        5,
+        6.470588,
+        7.9411765,
+        9.411765,
+        10.882353,
+        12.3529412,
+        13.823529,
+        15.294118,
+        16.764706,
+        18.235294,
+        19.7058824,
+        21.17647,
+        22.647059,
+        24.117647,
+        25.588235,
+        27.058823,
+        28.529412,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.25
+       }
+      ],
+      "refs": []
+     },
+     "Calc_OnHit_Energy_Refund": {
+      "expr": "byLevelL[40/40/40/40/40/40/55/55/55/55/55/55/70/70/70/70/70/70]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        55,
+        55,
+        55,
+        55,
+        55,
+        55,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "Calc_Attack_Speed": {
+      "expr": "Attack_Speed=0.5",
+      "flat": 0.5,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "Attack_Speed"
+      ]
+     },
+     "{d87d470b}": {
+      "expr": "byLevel(0..0)",
+      "flat": 0,
+      "terms": [],
+      "refs": []
+     },
+     "{01a5d393}": {
+      "expr": "Calc_OnHit_Damage_Flat * 1xcritDamage",
+      "modifies": "Calc_OnHit_Damage_Flat",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AmbessaQ",
+    "key": "Characters/Ambessa/Spells/AmbessaQAbility/AmbessaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 70,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Swap_Duration": 4,
+     "Swap_Static_Cooldown": 0.5,
+     "Damage_1_Base": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "Damage_1_Percent": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.045,
+       0.05,
+       0.055,
+       0.06
+      ]
+     },
+     "Damage_2_Base": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "Damage_2_Percent": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.045,
+       0.05,
+       0.055,
+       0.06
+      ]
+     },
+     "Damage_1_Min_Ratio": 0.5,
+     "Damage_2_Min_Ratio": 0.5,
+     "Damage_1_BAD_Ratio": 0.6,
+     "Damage_2_BAD_Ratio": 0.9
+    },
+    "calcs": {
+     "{a7907b77}": {
+      "expr": "Calc_Damage_1_Max * <{f3cbe7b2}>",
+      "modifies": "Calc_Damage_1_Max",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "Calc_Damage_1_Max": {
+      "expr": "Damage_1_Base=[40/60/80/100/120] + (Damage_1_BAD_Ratio=0.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "Damage_1_BAD_Ratio"
+       }
+      ],
+      "refs": [
+       "Damage_1_BAD_Ratio",
+       "Damage_1_Base"
+      ]
+     },
+     "{17768f39}": {
+      "expr": "Calc_Damage_1_Percent_Max * <{f3cbe7b2}>",
+      "modifies": "Calc_Damage_1_Percent_Max",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "Calc_Damage_1_Percent_Max": {
+      "expr": "Damage_1_Percent=[0.04/0.045/0.05/0.055/0.06] + 0.0003xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0003
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "Damage_1_Percent"
+      ]
+     },
+     "{3ce89b9e}": {
+      "expr": "Calc_Damage_2_Max * <{f3cbe7b2}>",
+      "modifies": "Calc_Damage_2_Max",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "Calc_Damage_2_Max": {
+      "expr": "Damage_2_Base=[50/75/100/125/150] + (Damage_2_BAD_Ratio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100,
+        125,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "Damage_2_BAD_Ratio"
+       }
+      ],
+      "refs": [
+       "Damage_2_BAD_Ratio",
+       "Damage_2_Base"
+      ]
+     },
+     "{1442dbe0}": {
+      "expr": "Calc_Damage_2_Percent_Max * <{f3cbe7b2}>",
+      "modifies": "Calc_Damage_2_Percent_Max",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "Calc_Damage_2_Percent_Max": {
+      "expr": "Damage_2_Percent=[0.04/0.045/0.05/0.055/0.06] + 0.0004xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0004
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "Damage_2_Percent"
+      ]
+     },
+     "Calc_Damage_1_Min_Ratio": {
+      "expr": "Damage_1_Min_Ratio=0.5",
+      "flat": 0.5,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "Damage_1_Min_Ratio"
+      ]
+     },
+     "Calc_Damage_2_Min_Ratio": {
+      "expr": "Damage_2_Min_Ratio=0.5",
+      "flat": 0.5,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "Damage_2_Min_Ratio"
+      ]
+     },
+     "Calc_Damage_Monster_Flat_Bonus": {
+      "expr": "75",
+      "flat": 75,
+      "terms": [],
+      "refs": []
+     },
+     "Calc_Damage_Monster_Percent_Cap": {
+      "expr": "byLevel(100..300)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        100,
+        111.76471,
+        123.52941,
+        135.29412,
+        147.05882,
+        158.82353,
+        170.58824,
+        182.35294,
+        194.11765,
+        205.88235,
+        217.64706,
+        229.41176,
+        241.17647,
+        252.94118,
+        264.70588,
+        276.47059,
+        288.2353,
+        300
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "AmbessaW",
+    "key": "Characters/Ambessa/Spells/AmbessaWAbility/AmbessaW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      17,
+      16,
+      15,
+      14
+     ]
+    },
+    "cost": 70,
+    "dataValues": {
+     "Dash_Delay": 0.225,
+     "Buff_Duration": 0.5,
+     "Shield_Duration": 1.5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "HighDamageMultiplier": 1.5,
+     "DamageADRatio": 0.5
+    },
+    "calcs": {
+     "Calc_Shield": {
+      "expr": "byLevel(50..320) + 1.5xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        50,
+        65.882353,
+        81.76471,
+        97.64706,
+        113.52941,
+        129.41176,
+        145.29412,
+        161.17647,
+        177.05882,
+        192.94118,
+        208.82353,
+        224.70588,
+        240.58824,
+        256.47059,
+        272.35294,
+        288.2353,
+        304.11765,
+        320
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": []
+     },
+     "Calc_Damage_Low": {
+      "expr": "BaseDamage=[50/75/100/125/150] + (DamageADRatio=0.5)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100,
+        125,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "DamageADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageADRatio"
+      ]
+     },
+     "Calc_Damage_High": {
+      "expr": "Calc_Damage_Low * HighDamageMultiplier=1.5",
+      "modifies": "Calc_Damage_Low",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        112.5,
+        150,
+        187.5,
+        225
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.75,
+        "dataValue": "DamageADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageADRatio",
+       "HighDamageMultiplier"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "AmbessaE",
+    "key": "Characters/Ambessa/Spells/AmbessaEAbility/AmbessaE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "cost": 70,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Slow_Duration": 1,
+     "Slow_Amount": 0.99,
+     "Damage_Flat_Base": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "ADRatio": 0.5
+    },
+    "calcs": {
+     "Calc_Damage_Flat": {
+      "expr": "Damage_Flat_Base=[40/60/80/100/120] + (ADRatio=0.5)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "Damage_Flat_Base"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "AmbessaR",
+    "key": "Characters/Ambessa/Spells/AmbessaRAbility/AmbessaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      130,
+      115,
+      100
+     ]
+    },
+    "castTime": 0.7,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "ADRatio": 0.8,
+     "Suppress_Duration": 0.75,
+     "Stun_Duration": 0.4,
+     "Armor_Penetration": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.2,
+       0.3
+      ]
+     },
+     "Omnivamp": {
+      "axis": "rank",
+      "v": [
+       0.15,
+       0.175,
+       0.2
+      ]
+     },
+     "Omnivamp_LifeStealScaling": 0.5,
+     "Omnivamp_MinionMod": 0.25,
+     "Omnivamp_MonsterMod": 0.25
+    },
+    "calcs": {
+     "Calc_Damage": {
+      "expr": "Damage=[150/250/350] + (ADRatio=0.8)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.8,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "Damage"
+      ]
+     },
+     "Calc_Omnivamp": {
+      "expr": "Omnivamp=[0.15/0.175/0.2] + (Omnivamp_LifeStealScaling=0.5)xstat18?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.15,
+        0.175,
+        0.2
+       ]
+      },
+      "terms": [
+       {
+        "stat": "stat18?",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "Omnivamp_LifeStealScaling"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "Omnivamp",
+       "Omnivamp_LifeStealScaling"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "AmbessaQ",
+  "W": "AmbessaW",
+  "E": "AmbessaE",
+  "R": "AmbessaR",
+  "P": "AmbessaPassive"
+ },
+ "resource": {
+  "arType": 1,
+  "values": {
+   "{726ee5cd}": 200,
+   "{c4ab3550}": 10
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Ambessa",
+  "name": "Ambessa",
+  "partype": "Energy",
+  "passive": "Drakehound's Step",
+  "spells": [
+   {
+    "id": "AmbessaQ",
+    "name": "Cunning Sweep / Sundering Slam",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "AmbessaW",
+    "name": "Repudiation",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "AmbessaE",
+    "name": "Lacerate",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "AmbessaR",
+    "name": "Public Execution",
+    "maxrank": 3,
+    "cooldown": [
+     130,
+     115,
+     100
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Drakehound's Step": {
+    "damagetype": "physical",
+    "spelleffects": "proc",
+    "spellshield": "false",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Cunning Sweep": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   },
+   "Sundering Slam": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "W": {
+   "Repudiation": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "E": {
+   "Lacerate": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "R": {
+   "Public Execution": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

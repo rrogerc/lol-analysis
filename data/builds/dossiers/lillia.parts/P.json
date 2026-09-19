@@ -1,0 +1,168 @@
+{
+ "name": "Dream-Laden Bough",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_dot_percent",
+   "meaning": "Dream Dust total damage as percent of target's maximum health, scaling with AP",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.05,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.0125
+      }
+     ]
+    }
+   ],
+   "quote": "5% {{as|(+ {{fd|1.25}}% per 100 AP)}} of the target's '''maximum''' health",
+   "bin": [
+    "LilliaP#DotPercentTotal"
+   ]
+  },
+  {
+   "id": "p_duration",
+   "meaning": "Dream Dust duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "over 3 seconds",
+   "bin": [
+    "LilliaP.Duration"
+   ]
+  },
+  {
+   "id": "p_ticks",
+   "meaning": "number of Dream Dust damage/heal ticks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "every {{fd|0.5}} seconds over 3 seconds",
+   "bin": [
+    "LilliaP.DotTicks"
+   ]
+  },
+  {
+   "id": "p_interval",
+   "meaning": "interval between Dream Dust ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "0.5s interval is not a separate bin data value; it is implied by Duration=3 / DotTicks=6, neither of which is itself an interval field."
+  },
+  {
+   "id": "p_heal_champion",
+   "meaning": "total self-heal over Dream Dust duration against champions",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    6,
+    9.56,
+    13.29,
+    17.19,
+    21.27,
+    25.52,
+    29.94,
+    34.54,
+    39.3,
+    44.24,
+    49.36,
+    54.65,
+    60.11,
+    65.74,
+    71.54,
+    77.51,
+    83.66,
+    90
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{pplevel|6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1))|color=heal}} {{as|(+ 30% AP)}} against {{tip|champions}}",
+   "bin": [
+    "LilliaP#ChampionHealTT"
+   ],
+   "binNote": "The wiki's pplevel formula 6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1)) is quadratic in level and does not match the bin's LilliaP#ChampionHeal byLevel(1..15) curve (which multiplied by DotTicks=6 gives a linearly-interpolated 6..90 progression, e.g. level 10 = 55.41 vs wiki's 49.36). The two sources disagree on the level curve shape; flat values here follow the wiki's stated formula, not the bin's byLevel array."
+  },
+  {
+   "id": "p_multiheal_mod",
+   "meaning": "healing effectiveness reduction per additional target afflicted beyond the first",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.15,
+   "terms": [],
+   "quote": "reduced to 15% effectiveness for each target afflicted beyond the first",
+   "bin": [
+    "LilliaP.MultiHealMod"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "All of Lillia's abilities apply Dream Dust to enemies they hit, which deals damage over time and heals her simultaneously.",
+   "quote": "'''Lillia's''' {{tip|abilities}} apply ''Dream Dust'' to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Lilting Lullaby's sleep application does not apply Dream Dust, but the damage it triggers does.",
+   "quote": "{{ais|Lilting Lullaby|Lillia}} application does not apply ''Dream Dust'', but its triggering damage does.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Dream Dust is applied even if the ability's damage is prevented by a shield or invulnerability, but not if the ability itself is prevented (e.g. by spell shield).",
+   "quote": "''Dream Dust'' is applied even if the target takes no damage from an ability, e.g. by being {{tip|shield|shielded}} or {{tip|invulnerability|invulnerable}}, but not when the ability hit is prevented in the first place (e.g. {{tip|spell shield}})",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Dream-Laden Bough's damage is persistent, indirect damage, and applies spell effects (i.e. on-hit-adjacent effects) as it ticks.",
+   "quote": "''Dream-Laden Bough'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Lillia can only be healed by Dream Dust against one monster at a time.",
+   "quote": "She may only heal against 1 monster at a time.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "LilliaP.MonsterHealingPercent",
+   "reason": "unknown"
+  },
+  {
+   "ref": "LilliaP.ChampionHealingPercent",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "LilliaP.LargeMonsterHealMod",
+   "reason": "unknown"
+  },
+  {
+   "ref": "LilliaP.SmallMonsterHealMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

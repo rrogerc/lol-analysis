@@ -1,0 +1,724 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "RenektonPredator",
+    "key": "Characters/Renekton/Spells/RenektonPredatorAbility/RenektonPredator",
+    "cooldown": 0,
+    "dataValues": {
+     "FuryPerAttack": 5,
+     "FuryIncreasePercent": 0.5,
+     "LowHealthPercentThreshold": 0.5,
+     "InCombatDuration": 12,
+     "FuryCost": 50
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "RenektonCleave",
+    "key": "Characters/Renekton/Spells/RenektonCleaveAbility/RenektonCleave",
+    "cooldown": 7,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "BaseADRatio": 1,
+     "BaseMinionHeal": {
+      "axis": "rank",
+      "v": [
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     },
+     "MinionHealADRatio": 0.02,
+     "ChampHeal": {
+      "axis": "rank",
+      "v": [
+       12,
+       20,
+       28,
+       36,
+       44
+      ]
+     },
+     "ChampionHealADRatio": 0.17,
+     "BasicHealCap": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "EmpoweredBaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       135,
+       180,
+       225,
+       270
+      ]
+     },
+     "EmpoweredADRatio": 1.4,
+     "EmpoweredHealCap": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400,
+       500,
+       600
+      ]
+     },
+     "EmpoweredHealMultiplier": 3,
+     "Range": 400,
+     "UltimateRangeMod": 1.2,
+     "MinionFuryGain": 2.5,
+     "ChampionFuryGain": 10,
+     "FuryGainCap": 30
+    },
+    "calcs": {
+     "BasicDamage": {
+      "expr": "BaseDamage=[60/90/120/150/180] + (BaseADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "BaseADRatio"
+       }
+      ],
+      "refs": [
+       "BaseADRatio",
+       "BaseDamage"
+      ]
+     },
+     "EmpDamage": {
+      "expr": "EmpoweredBaseDamage=[90/135/180/225/270] + (EmpoweredADRatio=1.4)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        135,
+        180,
+        225,
+        270
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.4,
+        "dataValue": "EmpoweredADRatio"
+       }
+      ],
+      "refs": [
+       "EmpoweredADRatio",
+       "EmpoweredBaseDamage"
+      ]
+     },
+     "NonChampHealing": {
+      "expr": "BaseMinionHeal=[2/3/4/5/6] + (MinionHealADRatio=0.02)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        2,
+        3,
+        4,
+        5,
+        6
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.02,
+        "dataValue": "MinionHealADRatio"
+       }
+      ],
+      "refs": [
+       "BaseMinionHeal",
+       "MinionHealADRatio"
+      ]
+     },
+     "ChampHealing": {
+      "expr": "ChampHeal=[12/20/28/36/44] + (ChampionHealADRatio=0.17)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        12,
+        20,
+        28,
+        36,
+        44
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.17,
+        "dataValue": "ChampionHealADRatio"
+       }
+      ],
+      "refs": [
+       "ChampHeal",
+       "ChampionHealADRatio"
+      ]
+     },
+     "EmpNonChampHealing": {
+      "expr": "NonChampHealing * EmpoweredHealMultiplier=3",
+      "modifies": "NonChampHealing",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        6,
+        9,
+        12,
+        15,
+        18
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.06,
+        "dataValue": "MinionHealADRatio"
+       }
+      ],
+      "refs": [
+       "BaseMinionHeal",
+       "EmpoweredHealMultiplier",
+       "MinionHealADRatio"
+      ]
+     },
+     "EmpChampHealing": {
+      "expr": "ChampHealing * EmpoweredHealMultiplier=3",
+      "modifies": "ChampHealing",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        36,
+        60,
+        84,
+        108,
+        132
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.51,
+        "dataValue": "ChampionHealADRatio"
+       }
+      ],
+      "refs": [
+       "ChampHeal",
+       "ChampionHealADRatio",
+       "EmpoweredHealMultiplier"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "RenektonPreExecute",
+    "key": "Characters/Renekton/Spells/RenektonPreExecuteAbility/RenektonPreExecute",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      14,
+      12,
+      10,
+      8
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamagePerHit": {
+      "axis": "rank",
+      "v": [
+       5,
+       20,
+       35,
+       50,
+       65
+      ]
+     },
+     "TotalADPerHit": 0.75,
+     "StunDuration": 0.75,
+     "EnragedStunDuration": 1.5,
+     "BonusFuryVsChamps": 10,
+     "BuffDuration": 6
+    },
+    "calcs": {
+     "BasicTotalDamage": {
+      "expr": "HitDamage * 2",
+      "modifies": "HitDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        40,
+        70,
+        100,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.5,
+        "dataValue": "TotalADPerHit"
+       }
+      ],
+      "refs": [
+       "BaseDamagePerHit",
+       "TotalADPerHit"
+      ]
+     },
+     "EmpTotalDamage": {
+      "expr": "HitDamage * 3",
+      "modifies": "HitDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        60,
+        105,
+        150,
+        195
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 2.25,
+        "dataValue": "TotalADPerHit"
+       }
+      ],
+      "refs": [
+       "BaseDamagePerHit",
+       "TotalADPerHit"
+      ]
+     },
+     "HitDamage": {
+      "expr": "BaseDamagePerHit=[5/20/35/50/65] + (TotalADPerHit=0.75)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        20,
+        35,
+        50,
+        65
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "TotalADPerHit"
+       }
+      ],
+      "refs": [
+       "BaseDamagePerHit",
+       "TotalADPerHit"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "RenektonSliceAndDice",
+    "key": "Characters/Renekton/Spells/RenektonSliceAndDiceAbility/RenektonSliceAndDice",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      14.5,
+      13,
+      11.5,
+      10
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       70,
+       100,
+       130,
+       160
+      ]
+     },
+     "BaseADRatio": 0.9,
+     "EnragedBaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       115,
+       160,
+       205,
+       250
+      ]
+     },
+     "EnragedADRatio": 1.35,
+     "EnragedArmorShred": {
+      "axis": "rank",
+      "v": [
+       25,
+       27.5,
+       30,
+       32.5,
+       35
+      ]
+     },
+     "ShredTimer": 4,
+     "MinionRageGeneration": 2,
+     "ChampionRageGeneration": 10,
+     "FuryMax": 30,
+     "DiceTimer": 4,
+     "BaseDashSpeed": 750
+    },
+    "calcs": {
+     "BasicDamage": {
+      "expr": "BaseDamage=[40/70/100/130/160] + (BaseADRatio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        70,
+        100,
+        130,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "BaseADRatio"
+       }
+      ],
+      "refs": [
+       "BaseADRatio",
+       "BaseDamage"
+      ]
+     },
+     "EmpDamage": {
+      "expr": "EnragedBaseDamage=[70/115/160/205/250] + (EnragedADRatio=1.35)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        115,
+        160,
+        205,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.35,
+        "dataValue": "EnragedADRatio"
+       }
+      ],
+      "refs": [
+       "EnragedADRatio",
+       "EnragedBaseDamage"
+      ]
+     },
+     "DashSpeed": {
+      "expr": "BaseDashSpeed=750 + 1xstat7?",
+      "flat": 750,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDashSpeed"
+      ]
+     }
+    }
+   },
+   {
+    "script": "RenektonDice",
+    "key": "Characters/Renekton/Spells/RenektonSliceAndDiceAbility/RenektonDice",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      17,
+      16,
+      15,
+      14
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       60,
+       90,
+       120,
+       150
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "RenektonReignOfTheTyrant",
+    "key": "Characters/Renekton/Spells/RenektonReignOfTheTyrantAbility/RenektonReignOfTheTyrant",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HealthGain": {
+      "axis": "rank",
+      "v": [
+       300,
+       500,
+       700
+      ]
+     },
+     "AuraDamagePerSecond": {
+      "axis": "rank",
+      "v": [
+       60,
+       150,
+       240
+      ]
+     },
+     "FuryPerSecond": 5,
+     "FuryOnCast": 20,
+     "BuffDuration": 15,
+     "TickRate": 0.5
+    },
+    "calcs": {
+     "TotalDamagePerSecond": {
+      "expr": "AuraDamagePerSecond=[60/150/240] + 0.1xap + 0.1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        150,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "AuraDamagePerSecond"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "RenektonCleave",
+  "W": "RenektonPreExecute",
+  "E": "RenektonSliceAndDice",
+  "R": "RenektonReignOfTheTyrant",
+  "P": "RenektonPredator"
+ },
+ "resource": {
+  "arType": 6,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.12269503623247147
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Renekton",
+  "name": "Renekton",
+  "partype": "Fury",
+  "passive": "Reign of Anger",
+  "spells": [
+   {
+    "id": "RenektonCleave",
+    "name": "Cull the Meek",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "RenektonPreExecute",
+    "name": "Ruthless Predator",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "RenektonSliceAndDice",
+    "name": "Slice and Dice",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14.5,
+     13,
+     11.5,
+     10
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "RenektonReignOfTheTyrant",
+    "name": "Dominus",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Reign of Anger": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Cull the Meek": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies / Self"
+   }
+  },
+  "W": {
+   "Ruthless Predator": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies / Self"
+   }
+  },
+  "E": {
+   "Slice and Dice": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Dominus": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Enemies / Self"
+   }
+  }
+ }
+}

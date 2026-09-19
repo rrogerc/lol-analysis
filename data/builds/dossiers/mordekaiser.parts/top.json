@@ -1,0 +1,187 @@
+{
+ "champion": "mordekaiser",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Darkness Rise basic attack bonus magic damage (40% AP), proc damage"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "3 stacks (from autos/Q/E hits) within 4s each grant Darkness Rise: MS + damaging aura"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Darkness Rise aura: persistent area damage per second while active, scales with target max HP and AP"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Obliterate and Death's Grasp deal on-cast (or fixed-delay) damage on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Obliterate deals increased damage (1.3x-1.5x) if it hits only one (isolated) enemy"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "W"
+   ],
+   "note": "Indestructible passive converts damage dealt/taken into Potential Shield resource"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Indestructible: cast to shield, recast to convert remaining shield into heal"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Realm of Death reduces target's current AP, total AS, max HP, armor, MR, size, base AD by 10% for duration"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "true damage from 10% max-HP reduction, ignores resistances/shields, floors target at 1 HP"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "R"
+   ],
+   "note": "Mordekaiser heals for 10% of target's max HP and gains stolen stats (survival-fight relevant, not self-damage but stat/HP transfer)"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Potential Shield / shield-to-heal conversion primarily matters for the survival fight, not damage output"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Mordekaiser's W (Indestructible) is a resource-conversion shield/heal system (Potential Shield banked from % of damage dealt and taken, capped at 30% max HP with decay and a recast-to-heal mechanic) that the closed primitive list only approximates via stat-conversion + recast-or-multipart; a faithful survival-fight simulation needs bespoke logic tracking the Potential Shield meter (gain rates, decay, min/max caps, recast conversion to healing) rather than a generic timed shield. Additionally R's stat-steal (multi-stat theft applied to both caster and target simultaneously, including base AD reduction computed off current total AD, plus 'keeps stats if target dies') is a bespoke dual-buff/debuff transfer not cleanly covered by target-debuff alone."
+ },
+ "unsettled": [
+  {
+   "question": "Does Death's Grasp's cooldown use the wiki value (16/14/12/10/8) or the ddragon/bin value (18/16/14/12/10)? The two sources disagree.",
+   "options": [
+    "Use wiki cooldown [16,14,12,10,8]",
+    "Use bin/ddragon cooldown [18,16,14,12,10]"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown     = {{ap|16 to 8}}",
+    "ddragon E Death's Grasp: maxrank 5, cooldown [16, 14, 12, 10, 8], cost [0, 0, 0, 0, 0]"
+   ]
+  },
+  {
+   "question": "Does the wiki's stated W shield duration of 4 seconds override the bin's MordekaiserW.Duration = 5?",
+   "options": [
+    "Use wiki value: 4s shield duration",
+    "Use bin value: 5s shield duration"
+   ],
+   "impact": "low",
+   "quotes": [
+    "grant himself a {{tip|shield}} for the same amount for 4 seconds",
+    "MordekaiserW.Duration = 5"
+   ]
+  },
+  {
+   "question": "Does Darkness Rise's on-hit bonus damage and its aura DoT count as the same 'cast instance' as the triggering Q/E, or as independent instances, for on-hit/on-cast item interactions relevant to the damage fight (e.g. Spellblade proc, once-per-cast effects)?",
+   "options": [
+    "Treat as separate independent proc (safe simplification, ignore the cast-instance bug)",
+    "Model as merged with the triggering spell's cast instance per the documented bug"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If ''Darkness Rise'' is activated through either {{ai|Obliterate|Mordekaiser}} or {{ai|Death's Grasp|Mordekaiser}}, it will be treated as the same {{tip|cast instance}} as the triggering spell."
+   ]
+  },
+  {
+   "question": "In a target-dummy damage fight, is it assumed the dummy is 'isolated' (alone) for Obliterate's increased single-target damage bonus, since the fight has only one enemy?",
+   "options": [
+    "Always apply isolation bonus (only one target exists in the fight)",
+    "Never apply isolation bonus (simulate Q as if hitting a group, i.e. base multi-hit damage only)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|magic damage}} to enemies within, {{ccs|increased|magic}} if it hits only one enemy."
+   ]
+  },
+  {
+   "question": "Does the target-dummy in the damage fight count as a monster or a champion for Darkness Rise's aura damage cap (40-200/s cap only applies 'against monsters')?",
+   "options": [
+    "Treat dummy as a champion: no aura damage cap applies",
+    "Treat dummy as a monster: aura damage is capped per level"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Against monsters, the damage is capped at{{ft|{{pplevel|40 to 200}} per second."
+   ]
+  },
+  {
+   "question": "The bin's MordekaiserQ#QDamage includes an unlabeled byLevelL flat-damage term (0 through level 9, +5/level from 10-18) not explicitly printed as a named DataValue; is this term correctly reconstructed and actually additive on top of the rank-based QBaseDamage, or could it be a stale/unused calculation branch?",
+   "options": [
+    "Apply the level-based flat bonus in addition to rank base damage (as sheet formula implies)",
+    "Ignore it as potentially unused/legacy, use only rank-based QBaseDamage + ratios"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "MordekaiserQ#QDamage = QBaseDamage=[80/115/150/185/220] + byLevelL[0/0/0/0/0/0/0/0/0/5/10/15/20/25/30/35/40/45] + (ADRatio=1.2)xbonus ad + (APRatio=0.7)xap"
+   ]
+  },
+  {
+   "question": "Does R's true-damage health reduction (10% of target max HP) apply meaningfully to the stationary dummy target in the damage fight, and should it be added to total damage output, given it 'ignores invulnerability, shields and resistances' and doesn't apply damage modifiers?",
+   "options": [
+    "Count the 10% max-HP true damage as part of Mordekaiser's damage output against the dummy",
+    "Exclude it since R's primary purpose/duration (7s Death Realm) may not fit within/interact normally with a 15s dummy fight, or its 'no damage event trigger' flag makes it not count toward kill-time tracking"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "This is the damage dealt by the reduction of {{as|10% of the target's pre-reduction '''maximum''' health}}.",
+    "dTriggerDamageEvents = false"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: assume Darkness Rise passive stacks are at zero (no prior combat) and Potential Shield (W) meter is empty at the start.",
+   "Open with Realm of Death (R) on the dummy if available, to secure the 10% max-HP true damage, the heal, and the stat-steal buff before committing to the rest of the burst (only usable once given ~140-100s cooldown, so it lands at most once in the 15s window).",
+   "Immediately follow with Death's Grasp (E) for its magic damage and to build a Darkness Rise stack.",
+   "Follow with Obliterate (Q) for its high-scaling magic damage (isolated bonus applies since dummy is the only enemy) and another Darkness Rise stack.",
+   "Weave in basic attacks throughout (each auto contributes on-hit Darkness Rise bonus damage and builds a stack toward the 3-stack Darkness Rise aura); once 3 stacks are reached, Darkness Rise's damaging aura ticks automatically each second while stacks are maintained by continuing to attack/cast.",
+   "Recast Q and E on cooldown for the rest of the 15s window (cooldowns 4-8s each at higher ranks), interspersed with autos to keep Darkness Rise active and maximize aura uptime.",
+   "Do not cast Indestructible (W) offensively in the damage fight — it produces no direct damage and its passive shield/heal conversion only matters for the survival fight; skip it entirely when optimizing damage output."
+  ],
+  "questions": [
+   "Should R be used at all in a single 15s damage-fight simulation given its long cooldown, or is it excluded on the assumption that ultimates are evaluated separately/not assumed available?",
+   "Is the assumed ability rank/level for a 15s dummy fight max rank on Q/W/E (5) and R (3), or should it match the champion's overall level progression (e.g. only some ranks available depending on level)?",
+   "Should the simulator assume Mordekaiser starts the fight already at 3 Darkness Rise stacks (from a hypothetical pre-fight instance) or strictly at 0 stacks, since stack ramp-up meaningfully changes early damage in a short 15s window?",
+   "Given E's cast time (0.25s) plus a further 0.5s delay before the claw deals damage, and Q's 0.5s cast time, how should ability queueing/animation cancels be modeled to determine the actual number of casts obtainable in 15 seconds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

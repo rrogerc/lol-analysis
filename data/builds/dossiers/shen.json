@@ -1,0 +1,889 @@
+{
+ "champion": "shen",
+ "abilities": {
+  "P": {
+   "name": "Ki Barrier",
+   "cooldown": {
+    "values": [
+     11
+    ],
+    "quote": "{{tt|11|Starts upon gaining the shield}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_shield",
+     "meaning": "shield amount granted after an ability's effects complete",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      47,
+      51.294,
+      55.588,
+      59.882,
+      64.176,
+      68.471,
+      72.765,
+      77.059,
+      81.353,
+      85.647,
+      89.941,
+      94.235,
+      98.529,
+      102.824,
+      107.118,
+      111.412,
+      115.706,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.13
+      }
+     ],
+     "quote": "grants himself a {{tip|shield}} for {{pp|47 + (120-47)/17*(x-1) for 20}} {{as|(+ 13% '''bonus''' health)}}",
+     "bin": [
+      "ShenPassive#{58a09e24}"
+     ]
+    },
+    {
+     "id": "p_shieldduration",
+     "meaning": "duration the shield lasts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "ShenPassive.ShieldDuration"
+     ]
+    },
+    {
+     "id": "p_cdr",
+     "meaning": "cooldown reduction on Ki Barrier when an ability affects another champion",
+     "role": "utility",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      4,
+      4.235,
+      4.47,
+      4.705,
+      4.94,
+      5.175,
+      5.41,
+      5.645,
+      5.88,
+      6.115,
+      6.35,
+      6.585,
+      6.82,
+      7.055,
+      7.29,
+      7.525,
+      7.76,
+      7.995
+     ],
+     "terms": [],
+     "quote": "{{sti|cooldown}} is reduced by {{pp|4 to 8 for 18; then +0.125*x for 2|formula=4 + 4 / 17 * (level - 1) until level 18, then +0.125 per level}} seconds",
+     "bin": [
+      "ShenPassive#ShieldCooldownReduction"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield is only granted after the triggering ability's effects have completed (e.g. when the Spirit Blade returns, the dash ends, or the channel finishes), not on cast.",
+     "quote": "After completing an {{tip|champion ability|ability's}} effects, '''Shen''' grants himself a {{tip|shield}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown reduction only triggers if the ability affects at least one other champion (not just the shield itself).",
+     "quote": "If '''Shen''' affects at least one other {{tip|champion}} with an ability, ''Ki Barrier's'' {{sti|cooldown}} is reduced",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The passive cooldown starts upon gaining the shield, not upon the triggering ability's cast.",
+     "quote": "Starts upon gaining the shield",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShenPassive.LeashDistanceThreshold",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShenPassive.LeashPreferredResultDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShenPassive.DirectionIndicatorMinimumDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShenPassive.PassiveCDFlexAmount",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShenPassive.ShieldCooldown",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShenPassive.ShenZedQuestShieldMultiplier",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Twilight Assault / Twilight Assault 2 / Twilight Assault 3",
+   "cooldown": {
+    "values": [
+     8,
+     7.25,
+     6.5,
+     5.75,
+     5
+    ],
+    "quote": "{{ap|8 to 5}}"
+   },
+   "cost": {
+    "values": [
+     140,
+     130,
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|140 to 100}}",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      30,
+      35,
+      40,
+      45
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 45}}%",
+     "bin": [
+      "ShenQ.SlowPercent"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Magic Damage (on-hit, first two of three empowered attacks unless enhanced)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10,
+      10,
+      10,
+      16,
+      16,
+      16,
+      22,
+      22,
+      22,
+      28,
+      28,
+      28,
+      34,
+      34,
+      34,
+      40,
+      40,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.02,
+        0.025,
+        0.03,
+        0.035,
+        0.04
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.015
+        }
+       ]
+      }
+     ],
+     "quote": "{{pp|10 to 40 for 6|1 to 16}} {{as|(+ {{ap|2 to 4}}% {{as|(+ {{fd|1.5}}% per 100 AP)}} of target's '''maximum''' health)|health}}",
+     "bin": [
+      "ShenQ#BaseFlatDamage",
+      "ShenQ#BasePercentHealth"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Increased Bonus Damage (on-hit, enhanced version when Spirit Blade hit an enemy champion in flight)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10,
+      10,
+      10,
+      16,
+      16,
+      16,
+      22,
+      22,
+      22,
+      28,
+      28,
+      28,
+      34,
+      34,
+      34,
+      40,
+      40,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.05,
+        0.055,
+        0.06,
+        0.065,
+        0.07
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.02
+        }
+       ]
+      }
+     ],
+     "quote": "{{pp|10 to 40 for 6|1 to 16}} {{as|(+ {{ap|5 to 7}}% {{as|(+ 2% per 100 AP)}} of target's '''maximum''' health)|health}}",
+     "bin": [
+      "ShenQ#BaseFlatDamage",
+      "ShenQ#EmpPercentHealth"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Maximum Monster Damage (empowered-attack damage cap vs monsters)",
+     "role": "other",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      125,
+      150,
+      175,
+      200
+     ],
+     "terms": [],
+     "quote": "{{ap|100 to 200}}",
+     "bin": [
+      "ShenQ.MinionDamageCap"
+     ]
+    },
+    {
+     "id": "q_19",
+     "meaning": "Empowered-attack window duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "empowers his next 3 {{tip|basic attacks}} within 8 seconds",
+     "bin": [
+      "ShenQ.AttackBuffDuration"
+     ]
+    },
+    {
+     "id": "q_20",
+     "meaning": "Number of empowered basic attacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "empowers his next 3 {{tip|basic attacks}}",
+     "bin": [
+      "ShenQ.NumEnhancedAttacks"
+     ]
+    },
+    {
+     "id": "q_21",
+     "meaning": "Bonus attack speed granted when enhanced (Spirit Blade hit an enemy champion)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "and additionally grant '''Shen''' {{sti|as|{{as|50% '''bonus''' attack speed}}}}",
+     "bin": [
+      "ShenQ.SteroidAS"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Once the Spirit Blade arrives, Shen empowers his next 3 basic attacks within 8 seconds to deal bonus magic damage on-hit.",
+     "quote": "empowers his next 3 {{tip|basic attacks}} within 8 seconds to gain {{sti|range|75 '''bonus''' range}} and deal {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against structures, only the flat damage portion of the empowered attack is applied (the max-health ratio is not).",
+     "quote": "Against {{tip|structures}}, only the flat damage portion is applied.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the Spirit Blade hits at least one enemy champion during its travel, the empowered attacks deal increased bonus damage and additionally grant Shen 50% bonus attack speed.",
+     "quote": "If the {{as|Spirit Blade|buzzword}} hits at least one enemy {{tip|champion}} during the travel, the attacks are further enhanced to deal {{ccs|{{as|'''increased bonus''' magic damage}}|magic}} and additionally grant '''Shen''' {{sti|as|{{as|50% '''bonus''' attack speed}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the Spirit Blade collides with a projectile-intercepting effect it stops in place and Shen does not gain the empowered attacks.",
+     "quote": "The {{as|Spirit Blade|buzzword}} will stop in place upon colliding with {{tip|projectile|projectile-intercepting}} effects. If this occurs, '''Shen''' will not gain the empowered attacks as the {{as|Spirit Blade|buzzword}} failed to complete its travel to him.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered attacks against monsters deal 100% bonus damage, but total damage is capped.",
+     "quote": "Empowered attacks against {{tip|monsters}} deal 100% '''bonus''' damage, but their '''total''' damage is capped.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Q's cooldown begins on cast, not on the Spirit Blade's return.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShenQ.QBaseOnHitDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShenQ.QPerLevelOnHitDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ShenQ.QTowerDamageModifier",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShenQ.QCollisionRadiusStart",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenQ.QCollisionRadiusEnd",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenQ.MonsterAmp",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShenQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShenQ.SteroidDuration",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Spirit's Refuge",
+   "cooldown": {
+    "values": [
+     16,
+     14.5,
+     13,
+     11.5,
+     10
+    ],
+    "quote": "{{ap|16 to 10}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "delay before the zone erupts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "After {{fd|2}} seconds",
+     "bin": [
+      "ShenW.ZoneDelay"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "duration the protective zone blocks basic attacks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}} seconds",
+     "bin": [
+      "ShenW.ZoneDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The zone blocks all non-turret basic attacks that hit Shen or allies in the area, but not ability damage in general.",
+     "quote": "blocking all non-{{tip|turret}} basic attacks that hit '''Shen''' or allied champions in the area",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "It also blocks damage from abilities that use basic attack damage (e.g. Lunge, Mystic Shot, Steel Tempest).",
+     "quote": "will also block damage from all abilities that use {{tip|basic damage}} ({{ai|Lunge|Fiora}}, {{ai|Mystic Shot|Ezreal}}, {{ai|Steel Tempest|Yasuo}})",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown does not start until after the zone effect completes.",
+     "quote": "post-effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The zone can be moved while active if Shen uses Twilight Assault.",
+     "quote": "''Spirit's Refuge's'' protective zone can be moved while active if '''Shen''' uses {{ai|Twilight Assault|Shen}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Shadow Dash",
+   "cooldown": {
+    "values": [
+     18,
+     16,
+     14,
+     12,
+     10
+    ],
+    "quote": "{{tt|{{ap|18 to 10}}|Starts after the dash ends}}"
+   },
+   "cost": {
+    "values": [
+     150,
+     150,
+     150,
+     150,
+     150
+    ],
+    "quote": "150",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.11
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 11% '''bonus''' health)}}",
+     "bin": [
+      "ShenE#TauntDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "taunt duration",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "ShenE.CCDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "energy restored on damaging hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      30,
+      30,
+      30,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50
+     ],
+     "terms": [],
+     "quote": "{{pp|30 to 50 for 3|1;4;12}} energy",
+     "bin": [
+      "ShenE#energyrefund"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Shen dashes to the target location, dealing physical damage to enemy champions and monsters he passes through and taunting them.",
+     "quote": "dashes to the target location, dealing {{as|physical damage}} to enemy {{tip|champions}} and {{tip|monsters}} he passes through and {{tip|taunt|taunting}} them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage cannot hit the same enemy more than once, even if Flash ends the dash early and the end-of-dash collision still triggers.",
+     "quote": "This still cannot affect the same enemy more than once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dealing damage with Twilight Assault or Shadow Dash restores energy, but this restore can only occur once per cast of Shadow Dash.",
+     "quote": "The energy restore from ''Shadow Dash'' may only occur once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts after the dash ends, not on cast.",
+     "quote": "Starts after the dash ends",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Twilight Assault and Spirit's Refuge can be cast during the dash.",
+     "quote": "''{{ai|Twilight Assault|Shen}} and {{ai|Spirit's Refuge|Shen}} can be cast during the dash.''",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShenE.CollisionPadding",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenE.DepartureCollisionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenE.ArrivalCollisionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenE.DashBonusSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "ShenE.MinimumDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Stand United / Stand United 2",
+   "cooldown": {
+    "values": [
+     200,
+     180,
+     160
+    ],
+    "quote": "{{ap|200 to 160}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Minimum Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      120,
+      220,
+      320
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.35
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|120 to 320}} {{as|(+ 135% AP)}} {{as|(+ 15% of his '''bonus''' health)}}",
+     "bin": [
+      "ShenR#Shield"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Maximum Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      192,
+      352,
+      512
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 2.16
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.24
+      }
+     ],
+     "quote": "{{ap|120*1.6 to 320*1.6}} {{as|(+ 216% AP)}} {{as|(+ {{ap|15*1.6}}% of his '''bonus''' health)}}",
+     "bin": [
+      "ShenR#MaxShield"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield increases based on the target's missing health, up to +60% at 60% missing health.",
+     "quote": "increased by {{as|{{pp|type=target's '''missing''' health|key=%|0 to 60 for 7|key1=%|0 to 60|formula=1% per 1% of target's '''missing''' health. ''This is capped at 60% '''missing''' health.''}}|health}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Shen channels for 3 seconds before the shield is applied and he blinks to the ally.",
+     "quote": "channeling for 3 seconds and granting the target allied champion a shield for 5 seconds at the time of cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield lasts 5 seconds from the time of cast.",
+     "quote": "granting the target allied champion a {{tip|shield}} for 5 seconds at the time of cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Interrupting the channel does not remove the shield early once granted, but if the target dies the channel is canceled and the ability goes on full cooldown.",
+     "quote": "Interrupting ''Stand United's'' channel will not remove the shield prematurely.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown starts on cast, not on completion of the channel.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Casting immediately upon respawn desyncs the cooldown from ability haste and removes the AP scaling from the shield (bug).",
+     "quote": "casting ''Stand United'' immediately upon respawning will cause its cooldown to be unaffected by ability haste, and the shielding will not be increased by '''Shen's''' {{as|ability power}}, but will be increased by his {{as|'''bonus''' maximum health}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ShenR.ArrivalPersonalSpace",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenR.ArrivalCheckRadiusVisible",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenR.ArrivalCheckRadiusInvisible",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ShenR.MaxShieldThreshold",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ShenR.ShieldDuration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ShenR.ChannelDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Once the recalled Spirit Blade reaches Shen, his next 3 basic attacks within 8s deal bonus magic on-hit damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The empowered-attack bonus scales off the target's maximum health, and jumps to a higher (enhanced) tier if the Spirit Blade hit an enemy champion during its travel; against structures only the flat portion applies."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Whether the Spirit Blade's recall path actually overlaps the single target (needed to decide base vs. enhanced empowered-attack tier and the AS buff) depends on Shen's position relative to the target, which a stationary 1v1 dummy fight must assume one way or the other."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "50% bonus attack speed for 8s (AttackBuffDuration) if the Spirit Blade hit an enemy champion en route, granted alongside the enhanced empowered attacks."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shadow Dash deals a flat+bonus-HP-scaled physical damage instance to enemies it passes through, once per cast, on a fixed post-dash cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Energy costs (Q 140-100, W 40, E 150) constrain how often abilities can be recast in a 15s fight; Q and E hits also refund energy (E's refund fires at most once per cast)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shadow Dash's cooldown starts only after the dash ends (post-effect), not on cast, effectively lengthening its real cooldown relative to a naive on-cast timer."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Ki Barrier's self-shield (after any ability completes), Spirit's Refuge's attack-block zone, and Stand United's ally shield are all read only by the survival fight, never by the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Shen's damage-relevant kit is a resource-gated empowered-attack ability (Q) whose tier depends on a geometric hit-check during a projectile recall, plus a plain-cast dash nuke (E) with a post-effect cooldown and shared energy refunds, and purely defensive shields/blocks (P, W, R) that only matter for the survival fight. All of this is expressible with existing primitives once the Q hit-check assumption is settled; no unique stacking/resource/transform system requires bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "In the 1v1 damage fight, does the recalled Spirit Blade actually pass through/overlap the single target on each Q cast, thereby granting the enhanced (higher, description3) empowered-attack damage tier and the 50% bonus attack speed buff, or does it return to Shen without hitting anything (giving only the base description2 tier and no AS buff)?",
+   "options": [
+    "Assume the blade always overlaps the target (best case: enhanced tier + AS buff every Q cast)",
+    "Assume the blade never overlaps the target because it starts adjacent to Shen with no travel distance to intercept anything (worst case: base tier only, no AS buff)",
+    "Model it as a positioning choice the simulator must fix once per fight rather than per-cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the {{as|Spirit Blade|buzzword}} hits at least one enemy {{tip|champion}} during the travel, the attacks are further enhanced to deal {{ccs|{{as|'''increased bonus''' magic damage}}|magic}} and additionally grant '''Shen''' {{sti|as|{{as|50% '''bonus''' attack speed}}}}.",
+    "The {{as|Spirit Blade|buzzword}} spawns with '''Shen''', teleports closer to him if he gets too far away..."
+   ]
+  },
+  {
+   "question": "If Twilight Assault (Q) is recast while the previous cast's 3 empowered attacks have not all been consumed, does the new cast reset the counter to 3 (and overwrite the tier/AS buff), stack additively, or is the recast simply wasted until the charges are used up?",
+   "options": [
+    "New cast resets/overwrites to a fresh 3-attack window at the new tier",
+    "Charges add on top of remaining ones, up to some cap",
+    "Not addressed by either source; treat as reset since only one buff instance is described"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Once it arrives, '''Shen''' empowers his next 3 {{tip|basic attacks}} within 8 seconds to gain {{sti|range|75 '''bonus''' range}} and deal {{as|'''bonus''' magic damage}} {{tip|on-hit}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Auto-attack the target continuously throughout the 15s window; basic attacks (especially empowered ones) are Shen's primary damage source.",
+   "Cast Twilight Assault (Q) as the opener to arm the next 3 basic attacks with bonus magic on-hit damage.",
+   "Cast Shadow Dash (E) through the target as soon as available for its flat+bonus-HP physical damage hit and its energy refund; recast on cooldown thereafter (cooldown starts only once the dash ends).",
+   "Recast Twilight Assault every time it comes off cooldown, prioritizing keeping empowered charges up so as many basic attacks as possible land while armed.",
+   "If the enhanced (champion-hit) tier and its 50% attack speed buff are available, weight Q recasts to maximize uptime of that buff since it also increases the auto-attack rate.",
+   "Never cast Spirit's Refuge (W) or Stand United (R) in the damage fight: they deal no damage and only matter for survival.",
+   "Manage energy spending between Q (100-140) and E (150) so that neither ability is ever starved of energy for a full cast cycle across the 15s."
+  ],
+  "questions": [
+   "Does the Spirit Blade's recall in a stationary 1v1 dummy fight actually intercept the target, and if so, does it do so on every Q cast or only some?",
+   "What is Shen's energy pool and base regeneration at the simulated level, to know how many Q/E casts the 15s fight can actually sustain?",
+   "When Q is recast before its 3 empowered attacks are consumed, does it reset, stack, or is the extra cast simply idle?",
+   "Is auto-attacking between Q/E casts strictly correct, or should Shen delay auto-attacks to line them up precisely with Q's empowerment window for maximum empowered-attack count?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

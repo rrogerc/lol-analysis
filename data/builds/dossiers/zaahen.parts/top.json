@@ -1,0 +1,185 @@
+{
+ "champion": "zaahen",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Determination: stacks (cap 12, 5s falloff, refreshed on any champion-damage instance) grant bonus AD as % of current bonus AD, doubling at max stacks; feeds all of Zaahen's AD-scaling damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "At max stacks, lethal damage instead triggers a 4s invulnerable/untargetable resurrection that restores a %maxHP heal in ticks; relevant only to the survival fight."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q1 arms the next basic attack to strike twice for modified physical damage + self-heal; Q2 (recast) arms the next basic attack for bonus physical damage + knockup."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Recast available 1.5s-5.5s after the first empowered attack lands, at no extra mana cost; cooldown starts post-effect (after this window resolves)."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Both the first cast and the recast reset Zaahen's basic attack timer on landing."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q1's two strikes roll a critical strike once and apply the same outcome to both hits."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W deals an initial physical-damage pass along its path, then a separately-timed second physical damage instance (plus stun/pull) upon reaching max range."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Damage occurs on arrival at the dash destination (not on cast); fails entirely if the dash is interrupted."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Enemies hit by the outer edge of E take 50% increased physical damage plus a separate %maxHP magic-damage instance; inner-radius hits only get base physical damage — a dummy fight must assume which zone is hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's AoE physical damage and self-heal-per-champion-hit occur on a fixed 0.6s delayed slam after the dash/cast."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's passive component grants permanent (rank-scaling, not duration-limited) armor penetration once R is ranked, amplifying all of Zaahen's physical damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "50% damage reduction and CC immunity from the start of R's cast time through the slam and briefly after; relevant only to the survival fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (25/50/40/100, all flat across ranks) may cap how many casts fit in the 15s fight depending on mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Zaahen's kit maps onto the closed primitive list: a stacking self-buff passive with a defensive revive branch, a multi-part empowered-attack/recast Q with attack resets and shared-crit rolls, a two-part W, a positional E, and a delayed-slam R with a permanent armor-pen buff and defensive damage reduction. No mechanic requires logic outside these primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Does Q's first-cast total damage include a separate 100% base-AD ratio on top of the bonus-AD ratio (per the wiki's leveling table), or is the bin's ZaahenQ#InitialDamage (base + bonus-AD ratio only) the complete ability-side formula, with the 100% AD term actually coming from the underlying basic attack itself rather than an ability ratio?",
+   "options": [
+    "Total Q1 damage = base + 100% AD + scaling% bonus AD, as stated in the wiki leveling table",
+    "Ability-side damage is only base + scaling% bonus AD (ZaahenQ#InitialDamage); the '100% AD' in the wiki total is just the normal basic attack's own AD damage riding along, not an additive ability term"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|15 to 75}} {{as|(+ 100% AD)}} {{as|(+ {{ap|{{#var:q_bad1}} to {{#var:q_bad5}}}}% '''bonus''' AD)}}",
+    "ZaahenQ#InitialDamage = Q1BaseDamage=[15/30/45/60/75] + (QCoeff=[0.2/0.25/0.3/0.35/0.4])xbonus ad"
+   ]
+  },
+  {
+   "question": "What is the exact per-level formula for Determination's bonus-AD-per-stack percentage? The bin's ZaahenPassive#PercentBonusADCalc calculation is unresolved, and PBonusADMin/PBonusADMax (0.015/0.028) only bound the wiki's stated 1.5%-2.8% range without confirming the interpolation shape.",
+   "options": [
+    "Wiki's stated linear interpolation (1.5% at level 1 to 2.8% at level 18) is exact",
+    "The true per-level curve differs from linear interpolation and is unknown until the bin calculation resolves"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "At what Determination stack count should the damage fight start Zaahen (this materially changes his effective bonus AD and thus every AD-scaling ability/auto-attack throughout the 15s)?",
+   "options": [
+    "Start at 0 stacks and build toward the 12-stack cap by attacking the dummy during the fight",
+    "Start at maximum (12) stacks, assuming pre-fight stacking against a lane opponent/minions is allowed",
+    "Start at some partial stack count representing typical mid-fight state"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Which W cooldown values are live: the wiki's stated leveling (14s to 12s) or the bin's cooldown array (16/15/14/13/12s), which disagree at ranks 1-2?",
+   "options": [
+    "Wiki's 14-to-12s progression is correct",
+    "Bin's 16/15/14/13/12s array is correct"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "Q's cooldown starts 'post-effect'. Does that mean the cooldown only begins after the full 4-second recast window elapses (i.e. roughly 5.5s after the initial attack lands, whether or not the recast is used), or does it begin immediately once the recast is actually used (or immediately if the recast window is skipped)?",
+   "options": [
+    "Cooldown always starts only after the recast window fully expires or is consumed, regardless of when the player recasts",
+    "Cooldown starts as soon as the recast is used (or immediately if the player chooses not to use the empowered attack at all)"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Should the damage fight assume Zaahen's E always lands on the AoE's outer edge (triggering the +50% physical and bonus %maxHP magic damage), or a plain inner-radius hit (base damage only), given a stationary single-target dummy?",
+   "options": [
+    "Assume outer-edge hit for maximum damage output",
+    "Assume inner-radius/base-only hit as the conservative default"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "What is the exact per-level revive heal-percent formula for the passive's resurrection (relevant to the survival fight): the bin's ZaahenPassive#RevivePercentCalc is unresolved and the RevivePercent constant (0.6) matches neither the wiki's stepped 30/45/60/75% values nor an obvious blend of ReviveLevel1Value/ReviveAdditionalBonusAtThisLevel?",
+   "options": [
+    "Wiki's stepped values (30% base, +15% at levels 6/11/16, capping at 75%) are correct",
+    "The bin's flat RevivePercent=0.6 (60%) constant applies uniformly regardless of level"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (The Darkin Glaive) to arm the empowered attack, then immediately basic-attack the dummy to trigger the double-strike (bonus physical damage, self-heal, two potential Determination stacks, and an attack-timer reset).",
+   "Weave E (Aureate Rush) on cooldown, dashing so the flourish's outer-edge zone covers the dummy for the increased physical + bonus magic damage.",
+   "Weave W (Dreaded Return) on cooldown at max range so both the initial pass and the max-range secondary damage connect on the dummy.",
+   "Within the 1.5-4s window after the Q1 attack lands, recast Q on the next basic attack for the knockup bonus-damage strike (also resets the attack timer), before the recast window expires.",
+   "Cast R (Grim Deliverance) as soon as it is off cooldown for its high AoE physical damage and self-heal; its passive armor penetration is already active continuously once ranked, amplifying every physical hit for the rest of the fight.",
+   "Keep auto-attacking between ability casts throughout the 15s both for baseline AD damage and to keep re-arming/recasting Q and refreshing Determination stacks toward the 12-stack cap.",
+   "Repeat the E -> auto-attack(s) -> W -> auto-attack(s) loop, weaving Q's cast/recast and R whenever off cooldown, prioritizing whichever ability is available to minimize idle time, respecting mana costs (25/50/40/100)."
+  ],
+  "questions": [
+   "Does the simulator assume Zaahen starts the 15s fight at 0, partial, or maximum (12) Determination stacks?",
+   "Should Q's recast be used immediately at the 1.5s mark, or held later within the 4s window to fit more auto-attacks first, and how does that interact with the 'post-effect' cooldown start?",
+   "Is E's outer-edge sweet-spot damage achievable/assumed against a single stationary target dummy, or should inner-radius damage be the default?",
+   "What champion level and ability ranks (especially R rank, which gates armor penetration and ultimate damage) should the damage fight assume for this rotation?",
+   "Is Zaahen's mana pool at the assumed level/items sufficient to sustain this full rotation for 15s, or does mana starvation force dropping some casts (e.g. skipping E or W in later loops)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

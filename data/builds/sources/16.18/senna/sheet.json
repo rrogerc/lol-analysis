@@ -1,0 +1,689 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SennaPassive",
+    "key": "Characters/Senna/Spells/SennaPassiveAbility/SennaPassive",
+    "dataValues": {
+     "ADPerStack": 0.75,
+     "StacksForBonus": 20,
+     "SoulDuration": 8,
+     "BonusRange": 20,
+     "CritDamageMod": 0.8,
+     "BonusCritChance": 10,
+     "CritToLifestealConversionPercent": 0.35,
+     "SoulDropPercentChance": 0.32,
+     "SoulDropPercentChanceOnSennaKill": 0.05,
+     "MSStealDuration": 0.5,
+     "SoulTravelDistanceBad": 350,
+     "SoulTravelDistanceGood": -50,
+     "SoulTravelVarianceRadiusInner": 130,
+     "SoulTravelVarianceRadiusOuter": 150,
+     "ChanceForGoodSoul": 0.2,
+     "ThreshSoulsToTriggerQuest": 50,
+     "SennaSoulsToTriggerQuest": 100,
+     "QuestRewardForSennaStacks": 40,
+     "QuestRewardSennaAPPerStack": 1,
+     "QuestRewardSennaArmorPerStack": 1,
+     "QuestRewardForThreshStacks": 40,
+     "QuestAssistWindow": 3,
+     "MarkDuration": 4,
+     "ArmorShredDuration": 6
+    },
+    "calcs": {
+     "BonusOnHitDamage": {
+      "expr": "0.2xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": []
+     },
+     "MSSteal": {
+      "expr": "byLevelL[0.1/0.1/0.1/0.1/0.1/0.15/0.15/0.15/0.2/0.2/0.2/0.2/0.2/0.2/0.2/0.2/0.2/0.2]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.15,
+        0.15,
+        0.15,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "{bb59ad08}": {
+      "expr": "(ADPerStack=0.75)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({e88568f8})",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "ADPerStack"
+       }
+      ],
+      "refs": [
+       "ADPerStack"
+      ]
+     },
+     "BonusCurentHealthDamage": {
+      "expr": "byLevelL[1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "DebuffDuration": {
+      "expr": "byLevelL[6/6/6/6/6/5/5/5/5/5/4/4/4/4/4/4/4/4]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "CriticalDamage": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SennaQ",
+    "key": "Characters/Senna/Spells/SennaQAbility/SennaQ",
+    "cooldown": 15,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      80,
+      90,
+      100,
+      110
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       55,
+       80,
+       105,
+       130
+      ]
+     },
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "HealAPRatio": 0.35,
+     "HealADRatio": 0.4,
+     "CDReductionOnHit": 1,
+     "RectangleWidthEnemy": 100,
+     "RectangleWidthAlly": 280,
+     "RectangleLeadDistance": 80,
+     "RectangleRange": 1300,
+     "MaxTargetingRange": 1100,
+     "BaseSlow": 0.15,
+     "SlowDuration": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.25,
+       1.5,
+       1.75,
+       2
+      ]
+     },
+     "SlowAPRatio": 0.0007,
+     "BADDamageRatio": 0.6
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[30/55/80/105/130] + (BADDamageRatio=0.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        55,
+        80,
+        105,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "BADDamageRatio"
+       }
+      ],
+      "refs": [
+       "BADDamageRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalHeal": {
+      "expr": "BaseHeal=[40/60/80/100/120] + (HealAPRatio=0.35)xap + (HealADRatio=0.4)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35,
+        "dataValue": "HealAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.4,
+        "dataValue": "HealADRatio"
+       }
+      ],
+      "refs": [
+       "BaseHeal",
+       "HealADRatio",
+       "HealAPRatio"
+      ]
+     },
+     "TotalSlow": {
+      "expr": "BaseSlow=0.15 + (SlowAPRatio=0.0007)xap + 0.0015xbonus ad",
+      "flat": 0.15,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0007,
+        "dataValue": "SlowAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0015
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseSlow",
+       "SlowAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SennaW",
+    "key": "Characters/Senna/Spells/SennaWAbility/SennaW",
+    "cooldown": 11,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "RootDuration": {
+      "axis": "rank",
+      "v": [
+       1.25,
+       1.5,
+       1.75,
+       2,
+       2.25
+      ]
+     },
+     "DelayTime": 1
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[70/110/150/190/230] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SennaE",
+    "key": "Characters/Senna/Spells/SennaEAbility/SennaE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      26,
+      24.5,
+      23,
+      21.5,
+      20
+     ]
+    },
+    "cost": 70,
+    "castTime": 1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BuffDuration": {
+      "axis": "rank",
+      "v": [
+       6,
+       6.5,
+       7,
+       7.5,
+       8
+      ]
+     },
+     "MovementSpeedPercent": 0.2,
+     "DefenseRadius": 400,
+     "DurationBeforeRestealth": 1.5,
+     "MinAllyduration": 2,
+     "AllyMSMult": 1,
+     "SmokeLinger": 3.5,
+     "SmokeArmTime": 0.25,
+     "SmokeRadius": 150,
+     "MSAPRatio": 0.0005
+    },
+    "calcs": {
+     "TotalMS": {
+      "expr": "MovementSpeedPercent=0.2 + (MSAPRatio=0.0005)xap",
+      "flat": 0.2,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0005,
+        "dataValue": "MSAPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "MSAPRatio",
+       "MovementSpeedPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SennaR",
+    "key": "Characters/Senna/Spells/SennaRAbility/SennaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      120,
+      100
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       250,
+       400,
+       550
+      ]
+     },
+     "Shield": {
+      "axis": "rank",
+      "v": [
+       120,
+       160,
+       200
+      ]
+     },
+     "ShieldDuration": 3,
+     "PostCastAnimLock": 0.5,
+     "DamageAPRatio": 0.7,
+     "ShieldAPRatio": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[250/400/550] + (DamageAPRatio=0.7)xap + 1.15xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        250,
+        400,
+        550
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "DamageAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.15
+       }
+      ],
+      "refs": [
+       "Damage",
+       "DamageAPRatio"
+      ]
+     },
+     "TotalShield": {
+      "expr": "Shield=[120/160/200] + (ShieldAPRatio=0.5)xap + 1.5xbuffStacks",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        160,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "ShieldAPRatio"
+       },
+       {
+        "stat": "buffStacks({e88568f8})",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "Shield",
+       "ShieldAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "SennaSkin56Manager",
+    "key": "Characters/Senna/Spells/SennaSkin56Manager",
+    "dataValues": {
+     "TransformDuration": 8,
+     "StacksRequiredForLongBasicAudio": 120,
+     "StacksRefreshInterval": 30
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "SennaQ",
+  "W": "SennaW",
+  "E": "SennaE",
+  "R": "SennaR",
+  "P": "SennaPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 2.3,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Senna",
+  "name": "Senna",
+  "partype": "Mana",
+  "passive": "Absolution",
+  "spells": [
+   {
+    "id": "SennaQ",
+    "name": "Piercing Darkness",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "cost": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ]
+   },
+   {
+    "id": "SennaW",
+    "name": "Last Embrace",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     11,
+     11,
+     11,
+     11
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "SennaE",
+    "name": "Curse of the Black Mist",
+    "maxrank": 5,
+    "cooldown": [
+     26,
+     24.5,
+     23,
+     21.5,
+     20
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "SennaR",
+    "name": "Dawning Shadow",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     120,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Absolution": {
+    "spellshield": "False",
+    "projectile": "true",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Piercing Darkness": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "onhiteffects": "true",
+    "spellshield": "special",
+    "projectile": "False",
+    "targeting": "Unit",
+    "affects": "Allies, Enemies, Turrets, Wards",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Last Embrace": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Curse of the Black Mist": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Dawning Shadow": {
+    "damagetype": "physical",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Self, Allies, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

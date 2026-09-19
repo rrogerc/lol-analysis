@@ -1,0 +1,288 @@
+{
+ "name": "Comeuppance",
+ "cooldown": {
+  "values": [
+   100,
+   85,
+   70
+  ],
+  "quote": "{{ap|100 to 70}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Maximum Bullets Stored",
+   "role": "count",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    5,
+    6,
+    7
+   ],
+   "terms": [],
+   "quote": "{{ap|5 to 7}}",
+   "bin": [
+    "AkshanR.NumberOfBullets"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Bullet Storing Interval Time",
+   "role": "interval",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.625,
+    0.5,
+    0.4167
+   ],
+   "terms": [],
+   "quote": "{{ap|2.5/4 to 2.5/6|round=4}} seconds",
+   "bin": [
+    "AkshanR.ChannelDuration",
+    "AkshanR.NumberOfBullets"
+   ],
+   "binNote": "Not a direct data value; derived as ChannelDuration / (NumberOfBullets - 1) (2.5/4 at rank1 with 5 bullets, 2.5/6 at rank3 with 7 bullets)."
+  },
+  {
+   "id": "r_3",
+   "meaning": "Minimum Physical Damage per Bullet",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    25,
+    35,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|25 to 45}} {{as|(+ 15% AD)}}<!--\n-->",
+   "bin": [
+    "AkshanR.BonusDamage",
+    "AkshanR.ADRatio",
+    "AkshanR#DamagePerBulletWithCrit"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "Maximum Physical Damage per Bullet",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    75,
+    105,
+    135
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|25*3 to 45*3}} {{as|(+ {{ap|15*3}}% AD)}}<!--\n-->",
+   "bin": [
+    "AkshanR.BonusDamage",
+    "AkshanR.ADRatio",
+    "AkshanR.MaxIncrease"
+   ],
+   "binNote": "Not a direct data value; equals (BonusDamage + ADRatio x bonus AD) x MaxIncrease=3, i.e. the per-bullet minimum tripled by the crit multiplier cap; AkshanR#MaxDamagePerBullet reads these same rows via DamagePerBulletWithCrit x MaxIncrease."
+  },
+  {
+   "id": "r_5",
+   "meaning": "Minimum Charged Physical Damage (all bullets, no crit/missing-hp)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    125,
+    210,
+    315
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": [
+      0.75,
+      0.9,
+      1.05
+     ]
+    }
+   ],
+   "quote": "{{ap|5*25|6*35|7*45}} {{as|(+ {{ap|15*5 to 15*7}}% AD)}}<!--\n-->",
+   "bin": [
+    "AkshanR.BonusDamage",
+    "AkshanR.ADRatio",
+    "AkshanR.NumberOfBullets"
+   ],
+   "binNote": "Not a single bin row; equals BonusDamage x NumberOfBullets plus ADRatio x AD x NumberOfBullets, i.e. NumberOfBullets copies of the minimum per-bullet damage."
+  },
+  {
+   "id": "r_6",
+   "meaning": "Damage to target on 67% missing hp (all bullets, tripled)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    375,
+    630,
+    945
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": [
+      2.25,
+      2.7,
+      3.15
+     ]
+    }
+   ],
+   "quote": "{{ap|3*5*25|3*6*35|3*7*45}} {{as|(+ {{ap|3*5*15 to 3*7*15}}% AD)}}<!--\n-->",
+   "bin": [
+    "AkshanR.BonusDamage",
+    "AkshanR.ADRatio",
+    "AkshanR.NumberOfBullets",
+    "AkshanR.MaxIncrease"
+   ],
+   "binNote": "Wiki labels this as damage at '67% missing hp' but the numbers are exactly 3x the r_5 total (i.e. the fully-scaled maximum from AkshanR.MaxIncrease=3), not the true value at 67% missing health under the stated 2%-per-1% formula (which would give a 2.34x multiplier, not 3x); recorded as the wiki states it."
+  },
+  {
+   "id": "r_7",
+   "meaning": "Critical damage scaling factor added to bullet damage per point of crit chance",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{critical damage|0 to 30|critScaling=true}}",
+   "bin": [
+    "AkshanR.CritDamageMod",
+    "AkshanR#DamagePerBulletWithCrit"
+   ],
+   "binNote": "CritDamageMod (0.3) is multiplied by critChance and by (critDamage - 1) per the bin calculation; wiki quotes the resulting 0-30% range at 100% crit chance and default crit damage."
+  },
+  {
+   "id": "r_8",
+   "meaning": "Cooldown applied if the channel is cancelled",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "5-second",
+   "bin": [
+    "AkshanR.GraceCooldown"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Minimum time before the recast becomes available during the channel",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{fd|0.5}}",
+   "bin": [
+    "AkshanR.MinimumChannelDuration"
+   ]
+  },
+  {
+   "id": "r_10",
+   "meaning": "Channel duration before automatic recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "{{fd|2.5}} seconds",
+   "bin": [
+    "AkshanR.ChannelDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Akshan channels for 2.5 seconds, gradually storing bullets, before the recast fires them; the recast happens automatically after the channel ends.",
+   "quote": "begins {{tip|channel|channeling}} for {{fd|2.5}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability can be recast early, 0.5 seconds into the channel, or fires automatically once the channel completes.",
+   "quote": "can be recast after {{fd|0.5}} seconds during the channel, and does so automatically afterwards",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the channel is cancelled (before any bullets fire), the ability goes on a flat 5-second cooldown instead of its normal cooldown.",
+   "quote": "is placed on a {{sti|cd|5-second}} cooldown if the channel is cancelled",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bullet damage scales up with the target's missing health at 2% bonus damage per 1% missing health, capped at 100% missing health (a 200% increase).",
+   "quote": "2% per 1% of target's '''missing''' health, capped at 100% '''missing''' health",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each bullet applies life steal to Akshan and executes (instantly kills) minions.",
+   "quote": "Each bullet's damage {{tip|applies life steal|applies}} {{as|{{sti|life steal}}}} and {{tip|execute|executes}} {{tip|minions}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Spell shield does not prevent the lock-on/channel and only blocks a single bullet, not the whole volley.",
+   "quote": "will not prevent the lock-on and will only block a single bullet",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The channel (and thus the whole cast) is cancelled if the target becomes untargetable or dies during the channel.",
+   "quote": "will cancel if the target becomes {{tip|untargetable}} or {{tip|death|dies}} during the channel",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage is calculated dynamically off Akshan's current stats (AD, crit) rather than locked in at cast time.",
+   "quote": "This ability's damage is calculated based on the caster's current stats and changes dynamically.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During the channel, Q and W cannot be cast, but E remains usable.",
+   "quote": "{{ai|Q|Akshan}} and {{ai|W|Akshan}} are disabled. {{ai|E|Akshan}} is usable.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The channel refreshes the duration of the passive's Dirty Fighting stacks on the target every 0.25 seconds.",
+   "quote": "''Comeuppance'' refreshes the duration of ''{{ai|Dirty Fighting|Akshan}}'' stacks on the target every {{fd|0.25}} seconds.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AkshanR.CastTimePerBullet",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

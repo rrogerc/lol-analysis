@@ -1,0 +1,623 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SyndraPassive",
+    "key": "Characters/Syndra/Spells/SyndraPassiveAbility/SyndraPassive",
+    "dataValues": {
+     "MarkDuration": 4,
+     "Q1UpgradeThreshold": 40,
+     "WUpgradeThreshold": 60,
+     "EUpgradeThreshold": 80,
+     "RUpgradeThreshold": 100,
+     "CapstoneAPPerc": 0.15,
+     "MaxStackAmount": 120,
+     "StackPerSiege": 1,
+     "PassiveMarkCooldown": 8,
+     "PassiveStacksPerLevel": 5
+    },
+    "calcs": {
+     "StacksPerProc": {
+      "expr": "byLevelL[1/1/1/1/1/1/1/1/1/1/2/2/2/2/2/2/2/3]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "ManaPerProc": {
+      "expr": "byLevelL[20/24/28/32/36/40/46/52/58/64/79/94/109/124/139/159/179/199]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        24,
+        28,
+        32,
+        36,
+        40,
+        46,
+        52,
+        58,
+        64,
+        79,
+        94,
+        109,
+        124,
+        139,
+        159,
+        179,
+        199
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SyndraQ",
+    "key": "Characters/Syndra/Spells/SyndraQAbility/SyndraQ",
+    "cooldown": 7,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Upgrade1MaxAmmo": 2,
+     "Upgrade2MaxAmmo": 3,
+     "SphereDuration": 6,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       125,
+       160,
+       195,
+       230
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[90/125/160/195/230] + 0.7xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        125,
+        160,
+        195,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SyndraW",
+    "key": "Characters/Syndra/Spells/SyndraWAbility/SyndraW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseSlow": 25,
+     "SlowDuration": 1.5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       100,
+       130,
+       160,
+       190
+      ]
+     },
+     "ExtraSpherePickupRadius": 450
+    },
+    "calcs": {
+     "ThrowDamage": {
+      "expr": "BaseDamage=[70/100/130/160/190] + 0.65xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        100,
+        130,
+        160,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.65
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "PassiveBonusDamage": {
+      "expr": "ThrowDamage * 0.12 + (0.02xap)*(0.01)",
+      "modifies": "ThrowDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "TotalSlowAmount": {
+      "expr": "BaseSlow=25",
+      "flat": 25,
+      "terms": [],
+      "refs": [
+       "BaseSlow"
+      ]
+     },
+     "TOOLTIPONLYPassiveBonusPercent": {
+      "expr": "(12 + 0.02xap) * 0.01",
+      "flat": 0.12,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0002
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SyndraE",
+    "key": "Characters/Syndra/Spells/SyndraEAbility/SyndraE",
+    "cooldown": 15,
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ConeAngle": 56,
+     "StunDuration": 1.25,
+     "UpgradedSlowDuration": 1.25,
+     "UpgradedSlowAmount": 0.7,
+     "UpgradedConeAngle": 84,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       95,
+       130,
+       165,
+       200
+      ]
+     },
+     "APRatio": 0.6
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/95/130/165/200] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        95,
+        130,
+        165,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SyndraR",
+    "key": "Characters/Syndra/Spells/SyndraRAbility/SyndraR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamagePerSphere": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160
+      ]
+     },
+     "MaxSpheresToUse": 7,
+     "UpgradeExecuteThreshold": 0.15,
+     "QHastePerRank": 10,
+     "TOOLTIPONLYTotalQHaste": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30
+      ]
+     },
+     "MinSpheresToUse": 3,
+     "APRatio": 0.2
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "DamagePerSphere=[80/120/160] + (APRatio=0.2)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "DamagePerSphere"
+      ]
+     },
+     "MinDamageCalc": {
+      "expr": "DamageCalc * MinSpheresToUse=3",
+      "modifies": "DamageCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        240,
+        360,
+        480
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "DamagePerSphere",
+       "MinSpheresToUse"
+      ]
+     },
+     "MaxDamageCalc": {
+      "expr": "DamageCalc * MaxSpheresToUse=7",
+      "modifies": "DamageCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        560,
+        840,
+        1120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "DamagePerSphere",
+       "MaxSpheresToUse"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "SyndraQUpgrade",
+    "key": "Characters/Syndra/Spells/SyndraQAbility/SyndraQUpgrade",
+    "cooldown": 1.25,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60,
+      60
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Upgrade1MaxAmmo": 2,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       125,
+       160,
+       195,
+       230,
+       265
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[90/125/160/195/230/265] + 0.7xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        125,
+        160,
+        195,
+        230,
+        265
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "SyndraQ",
+  "W": "SyndraW",
+  "E": "SyndraE",
+  "R": "SyndraR",
+  "P": "SyndraPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 480,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1125
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Syndra",
+  "name": "Syndra",
+  "partype": "Mana",
+  "passive": "Transcendent",
+  "spells": [
+   {
+    "id": "SyndraQ",
+    "name": "Dark Sphere",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "SyndraW",
+    "name": "Force of Will",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "SyndraE",
+    "name": "Scatter the Weak",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "SyndraR",
+    "name": "Unleashed Power",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Transcendent": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Dark Sphere": {
+    "damagetype": "magic",
+    "spelleffects": "Aoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Force of Will": {
+    "damagetype": "magic",
+    "spelleffects": "Aoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "{{dv|[[Unit-targeted|Unit]]|[[Location-targeted|Location]]}}",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Force of Will 2": {
+    "damagetype": "magic",
+    "spelleffects": "Aoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "{{dv|[[Unit-targeted|Unit]]|[[Location-targeted|Location]]}}",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Scatter the Weak": {
+    "damagetype": "magic",
+    "spelleffects": "Aoe",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Unleashed Power": {
+    "damagetype": "magic",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

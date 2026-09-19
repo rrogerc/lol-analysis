@@ -1,0 +1,765 @@
+{
+ "champion": "garen",
+ "abilities": {
+  "P": {
+   "name": "Perseverance",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "health regenerated every 0.5 seconds as percent of max health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.13,
+      0.15,
+      0.17,
+      0.19,
+      0.21,
+      0.23,
+      0.31,
+      0.39,
+      0.47,
+      0.55,
+      0.63,
+      0.71,
+      0.79,
+      0.83,
+      0.87,
+      0.91,
+      0.95,
+      0.99
+     ],
+     "terms": [],
+     "quote": "{{as|{{pplevel|key=%|(1.5+0.2*(x-1))/10 for 6;then + 0.8/10*x for 7; then + 0.4/10*x|formula=0.13%+0.02% per level up to level 6, then+0.08% up to level 13, then+0.04%}} of his {{sti|'''maximum''' health}}}} every {{fd|0.5}} seconds.",
+     "bin": [
+      "GarenPassive#RegenCalc"
+     ],
+     "binNote": "Bin gives per-5-second values [1.5/1.7/1.9/2.1/2.3/2.5/3.3/4.1/4.9/5.7/6.5/7.3/8.1/8.5/8.9/9.3/9.7/10.1]; wiki description text states the per-0.5s tick value which is exactly 1/10 of the bin's per-5s value, consistent with the bin's 5s cadence being split into 10 ticks."
+    },
+    {
+     "id": "p_2",
+     "meaning": "regen disabled duration after taking damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "is lost for {{tt|8 seconds|Not a cooldown, unaffected by ability haste}}",
+     "bin": [
+      "GarenPassive.DamageTimer"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "This is purely a self-heal with no damage or debuff on the target; it cannot affect the dummy.",
+     "quote": "{{sbc|Innate:}} {{ci|Garen}} continually {{sti|health regeneration|regenerates}} a portion of his {{sti|health|{{as|'''maximum''' health}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Regen is disabled and its timer refreshes upon taking champion/epic monster/turret damage or being hit by an enemy ability/summoner spell.",
+     "quote": "is lost for {{tt|8 seconds|Not a cooldown, unaffected by ability haste}} if '''Garen''' takes damage from {{tip|champion|champions}}, epic {{tip|monster|monsters}}, or {{tip|turret|turrets}}, or if he is hit by an enemy {{tip|ability}} or affected by an enemy [[summoner spell]], refreshing on subsequent damage and hits taken from them.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "0 damage instances, damage to shields, or damage absorbed by invulnerability do not trigger or refresh the disable.",
+     "quote": "does not go on nor refresh its cooldown from damage which was",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GarenPassive.DamageTimer",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Decisive Strike",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "8"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "cast time = none"
+   },
+   "values": [
+    {
+     "id": "q_2",
+     "meaning": "Bonus Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      60,
+      90,
+      120,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|30 to 150}} {{as|(+ 50% AD)}}",
+     "bin": [
+      "GarenQ.BaseDamage",
+      "GarenQ#TotalDamage"
+     ],
+     "binNote": "Wiki states 50% AD but bin's tADRatio is 1.5 (150% AD); GarenQ#TotalDamage = BaseDamage + 1.5xad. This is a significant disagreement."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Window to use the empowered attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4.5,
+     "terms": [],
+     "quote": "{{fd|4.5}} seconds",
+     "bin": [
+      "GarenQ.AttackWindow"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Silence duration on target",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{tip|silence}} them for {{fd|1.5}} seconds",
+     "bin": [
+      "GarenQ.SilenceDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The enhanced attack applies on-hit effects and can critically strike, but the bonus flat/AD damage from Q itself does not crit.",
+     "quote": "The enhanced attack will apply other {{tip|on-hit}} effects and can {{tip|critical strike|critically strike}} as normal (the bonus damage does not).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Decisive Strike resets Garen's basic attack timer.",
+     "quote": "Decisive Strike {{tip|basic attack reset|resets}} '''Garen's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage from the empowered attack applies life steal.",
+     "quote": "The bonus damage will also apply {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Using Decisive Strike locks Garen out of basic attacks for a short period, shortened by attack speed.",
+     "quote": "Decisive Strike'' locks '''Garen''' out of using basic attacks for a short period of time.<!--The enhanced attack or the ability itself?--> This is shortened with {{as|{{sti|attack speed}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack has an uncancellable windup and lunges at the target, dealing bonus physical damage and silencing.",
+     "quote": "empowers his next {{tip|basic attack}} within {{fd|4.5}} seconds to have an {{tip|uncancellable windup}}, {{tip|lunge}} at the target, deal {{as|'''bonus''' physical damage}}, and {{tip|silence}} them for {{fd|1.5}} seconds.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GarenQ.MovementSpeedDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "GarenQ.MovementSpeedAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Courage",
+   "cooldown": {
+    "values": [
+     22,
+     19.5,
+     17,
+     14.5,
+     12
+    ],
+    "quote": "{{ap|22 to 12}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Damage Reduction",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      29,
+      33,
+      37,
+      41
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 41}}%",
+     "bin": [
+      "GarenW.DRPercent"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the damage reduction",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Garen''' reduces incoming damage for 4 seconds",
+     "bin": [
+      "GarenW.DRDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The active's cooldown begins on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Courage has no cast time (instant self-buff).",
+     "quote": "cast time    = none",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The damage reduction applies to incoming damage on Garen, not outgoing damage, so it has no effect on a target dummy that never attacks.",
+     "quote": "'''Garen''' reduces incoming damage for a few seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The passive bonus resistances from kills only apply once the ability has been ranked up at least once.",
+     "quote": "''Courage's'' bonus resistances are only gained when it is ranked up at least once",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GarenW.BuffCounterPerKill",
+     "reason": "defensive"
+    },
+    {
+     "ref": "GarenW.ResistGainOnKill",
+     "reason": "defensive"
+    },
+    {
+     "ref": "GarenW.ResistGainOnKillTooltip",
+     "reason": "defensive"
+    },
+    {
+     "ref": "GarenW.ResistMax",
+     "reason": "defensive"
+    },
+    {
+     "ref": "GarenW.UpfrontTenacity",
+     "reason": "utility"
+    },
+    {
+     "ref": "GarenW.UpfrontDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "GarenW.LargeMonsterStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "GarenW.EpicMonsterStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "GarenW.ShieldHealthRatio",
+     "reason": "defensive"
+    },
+    {
+     "ref": "GarenW.BaseShield",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Judgment / Judgment 2",
+   "cooldown": {
+    "values": [
+     9,
+     8.25,
+     7.5,
+     6.75,
+     6
+    ],
+    "quote": "{{ap|9 to 6}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage Per Spin (base tick damage)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      4,
+      7,
+      10,
+      13,
+      16
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.4,
+        0.43,
+        0.46,
+        0.49,
+        0.52
+       ]
+      }
+     ],
+     "quote": "{{ap|4 to 16}} {{as|(+ {{ap|40 to 52}}% AD)}}",
+     "bin": [
+      "GarenE.BaseDamagePerTick",
+      "GarenE.ADRatioPerTick",
+      "GarenE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Damage Per Spin against the nearest enemy hit (the only target in a dummy fight is always the nearest) - equals base tick damage multiplied by 1.25",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      8.75,
+      12.5,
+      16.25,
+      20
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.5,
+        0.5375,
+        0.575,
+        0.6125,
+        0.65
+       ]
+      }
+     ],
+     "quote": "{{ap|4*1.25 to 16*1.25}} {{as|(+ {{ap|40*1.25 to 52*1.25}}% AD)}}",
+     "bin": [
+      "GarenE.BaseDamagePerTick",
+      "GarenE.ADRatioPerTick",
+      "GarenE.NearestEnemyBonus",
+      "GarenE#TotalDamage"
+     ],
+     "binNote": "No bin row states 5/8.75/... or the 1.25x AD coefficients directly. The wiki computes this by multiplying GarenE#TotalDamage's base and AD-ratio components by the near-bonus multiplier (1 + GarenE.NearestEnemyBonus = 1.25), i.e. 4*1.25=5, 0.4*1.25=0.5, etc. These derived numbers are not present as standalone bin values; they are reconstructed from BaseDamagePerTick x 1.25 and ADRatioPerTick x 1.25 per the wiki's own {{#var:near}}=1.25 formula."
+    },
+    {
+     "id": "e_ticks",
+     "meaning": "Number of spins (damage ticks), base + bonus from bonus attack speed",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [
+      {
+       "stat": "bonusAttackSpeed",
+       "coef": 4
+      }
+     ],
+     "quote": "'''Garen''' rapidly spins his sword around himself {{#var:spin_b}} (+ 1 per {{tt|{{as|{{#var:spin_as}}% '''bonus''' attack speed}}",
+     "bin": [
+      "GarenE.NumTicks",
+      "GarenE.ASPerTick",
+      "GarenE#NumberOfStrikes"
+     ],
+     "binNote": "GarenE.ASPerTick=0.25 is the bonus-AS fraction required per extra spin (1 extra spin per 25% bonus AS); the stated coef 4 = 1/0.25 expresses this as 'extra spins per 100% bonus AS' for the fight sim's convenience, not a separate bin row."
+    },
+    {
+     "id": "e_duration",
+     "meaning": "Total duration over which all spins occur (sets tick interval = duration / numTicks)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "times over 3 seconds",
+     "bin": [
+      "GarenE.Duration"
+     ]
+    },
+    {
+     "id": "e_shred",
+     "meaning": "Armor reduction inflicted on champions hit 6 times",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds",
+     "bin": [
+      "GarenE.ShredAmount"
+     ]
+    },
+    {
+     "id": "e_shred_duration",
+     "meaning": "Duration of the armor reduction debuff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "{{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds",
+     "bin": [
+      "GarenE.ShredDuration"
+     ]
+    },
+    {
+     "id": "e_shred_stacks",
+     "meaning": "Number of spin-hits needed to apply/refresh the armor reduction",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "Enemy champions hit 6 times by ''Judgment'' are inflicted with {{sti|armor penetration|{{as|25% armor reduction}}}}",
+     "bin": [
+      "GarenE.StacksToShred"
+     ]
+    },
+    {
+     "id": "e_critmod",
+     "meaning": "Critical strike damage bonus applied per spin when Garen crits",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "{{#vardefine:crit|0.3}}",
+     "bin": [
+      "GarenE.CritMod"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Each spin deals damage simultaneously to all enemies within its range when the spin is completed.",
+     "quote": "Each spin deals damage simultaneously to all enemies within its range when the spin is completed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Judgment can be recast after 1 second while active, and does so automatically after it ends, meaning it cannot be extended past its base duration.",
+     "quote": "''Judgment'' can be recast after 1 second while active, and does so automatically after it ends.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Armor reduction is applied on the 6th hit, then refreshes every 6th hit thereafter (7th, 13th, ...).",
+     "quote": "Enemy champions hit 6 times by ''Judgment'' are inflicted with {{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds, with the duration refreshing upon the 7th hit and every 6th hit thereafter.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Judgment's extra-spin scaling only counts bonus attack speed from items and level growth, not other bonus attack speed sources (e.g. buffs) - relevant for determining tick count from a given build.",
+     "quote": "''Judgment'' only scales with {{as|'''bonus''' attack speed}} from items and growth (per level).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The visible spin animation is capped at 200% bonus attack speed, but the number of damage ticks keeps scaling beyond that cap.",
+     "quote": "The spin animation is capped at {{as|{{tt|200%|Once per 0.2 seconds, 15 spins total}} '''bonus''' attack speed}}, but the amount of ticks will keep on scaling.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Garen cannot use basic attacks while spinning.",
+     "quote": "becoming {{tip|lockout|unable}} to declare basic attacks but gaining {{tip|ghosting}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown starts only after the spin sequence ends, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Manually deactivating Judgment early does not count as an ability activation for on-cast effects (e.g. Spellblade), which matters for item interactions in a build fight.",
+     "quote": "Deactivating the ability manually does not count as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Demacian Justice",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.435,
+    "quote": "{{fd|0.435}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      125,
+      200,
+      275
+     ],
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 0.25,
+       "coefScaling": null
+      }
+     ],
+     "quote": "{{ap|125 to 275}} {{as|(+ {{ap|25 to 35}}% of target's '''missing''' health)}}",
+     "bin": [
+      "GarenR.BaseDamage",
+      "GarenR.ExecuteDamage"
+     ],
+     "binNote": "GarenR.ExecuteDamage=[0.25/0.3/0.35] carries the missing-health ratio at rank 1 = 0.25, matching this term's coef of 0.25 (25%); at ranks 2-3 the coef would be 0.3 and 0.35 respectively per rank, matching the wiki's 25 to 35%."
+    },
+    {
+     "id": "r_1b",
+     "meaning": "True Damage missing-health ratio by rank",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": [
+        0.25,
+        0.3,
+        0.35
+       ]
+      }
+     ],
+     "quote": "{{as|(+ {{ap|25 to 35}}% of target's '''missing''' health)}}",
+     "bin": [
+      "GarenR.ExecuteDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability is unit-targeted with a cast time before the damage is dealt, during which Garen reveals the target.",
+     "quote": "dealing them {{sti|{{as|true damage}}}} as well as {{tip|true sight|revealing}} them for 1 second at the start of the cast time",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is true damage, ignoring resistances entirely.",
+     "quote": "dealing them {{sti|{{as|true damage}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The missing-health scaling means the true damage effectively increases as the target's health drops, favoring later hits in a prolonged fight.",
+     "quote": "based on the {{as|target's '''missing''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield = True",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Garen dies during the cast time, the ability visually shows as on cooldown and cannot be recast until the cooldown elapses (a known bug), though clicking the ability icon fixes this.",
+     "quote": "If '''Garen''' dies during ''Demacian Justice's'' cast time, it will visually appear as on cooldown and he won't be able to cast it until the cooldown has elapsed.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GarenR.RevealDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Decisive Strike arms Garen's next basic attack (within a 4.5s window) with bonus physical damage, a lunge, and a silence"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Decisive Strike resets Garen's basic attack timer on cast"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment deals physical damage in periodic ticks (spins) to nearby enemies over its active duration"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment is a channelled spin that locks Garen out of basic attacks while active; it can be recast after 1s to end early or auto-ends after its ticks complete"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment's spin (tick) count increases with bonus attack speed from items/level growth (1 extra spin per 25% bonus AS), directly determining total dot damage"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment builds a hit-counter on the enemy champion target that triggers a 25% armor-reduction debuff on the 6th hit, refreshing every 6th hit thereafter"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment's per-spin damage can critically strike, but only for a reduced (30% of normal crit bonus) amount rather than full crit damage"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Judgment deals 25% increased damage to the 'nearest' enemy hit; with a single stationary dummy target this bonus is always satisfied"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demacian Justice deals a burst of true damage on a fixed 0.435s cast time, on a long cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demacian Justice's true damage scales with a percentage of the target's current missing health, so its value depends on prior damage dealt"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (Q's empowered-attack-plus-reset, E's AS-scaling channelled dot with a target hit-counter and crit-capable ticks, R's flat-plus-missing-health true damage) map onto existing primitives; no unique logic beyond combining them is required. W and P are purely defensive/self-sustain and never read by a damage-only fight."
+ },
+ "unsettled": [
+  {
+   "question": "Does Decisive Strike's bonus damage scale with 50% AD (as stated in the wiki leveling line) or 150% AD (as the bin's tADRatio=1.5 computes)?",
+   "options": [
+    "50% bonus AD per the wiki's displayed tooltip value",
+    "150% bonus AD per the bin's tADRatio constant, treating the wiki tooltip as stale/wrong"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|30 to 150}} {{as|(+ 50% AD)}}",
+    "GarenQ.tADRatio = 1.5"
+   ]
+  },
+  {
+   "question": "How long is the basic-attack lockout that Decisive Strike imposes on Garen, and how exactly does attack speed shorten it? Neither source gives a base duration value.",
+   "options": [
+    "Lockout is simply the normal attack windup/timer with no separate penalty",
+    "There is a distinct, undocumented base lockout value that is reduced by bonus attack speed"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Decisive Strike'' locks '''Garen''' out of using basic attacks for a short period of time.<!--The enhanced attack or the ability itself?--> This is shortened with {{as|{{sti|attack speed}}}}."
+   ]
+  },
+  {
+   "question": "Is Judgment's 'nearest enemy' 25% bonus damage a single damage instance (base tick already multiplied by 1.25) or two separate simultaneous damage instances (a base tick plus a distinct bonus tick)?",
+   "options": [
+    "Single instance: each spin against the (only) target deals TotalDamage*1.25 as one hit",
+    "Two instances: each spin deals a base-tick hit and a separate 'increased damage' hit"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Judgment'' deals {{ap|({{#var:near}}-1)*100}}% increased damage against the nearest enemy hit."
+   ]
+  },
+  {
+   "question": "Does Judgment's 6-hit counter (for triggering the 25% armor-reduction debuff) persist cumulatively across separate casts of Judgment regardless of gaps, or does it reset if the prior armor-reduction debuff instance expires (6s) before 6 more hits land?",
+   "options": [
+    "Counter is a persistent lifetime/fight hit-tally on the target, independent of the debuff's own 6s timer",
+    "Counter resets to 0 whenever the active debuff instance expires before reaching the next 6-hit threshold"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemy champions hit 6 times by ''Judgment'' are inflicted with {{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds, with the duration refreshing upon the 7th hit and every 6th hit thereafter."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Judgment (E) to start the continuous spin, generating dot damage ticks and building toward the 6-hit armor-shred debuff on the dummy.",
+   "Weave in Decisive Strike (Q) on its 8s cooldown as soon as it is available; its cast does not require a target and grants the empowered next-attack (bonus physical damage, silence) plus an attack-timer reset, so use it to refresh/queue an auto-attack whenever Garen is not locked out by E's spin.",
+   "Auto-attack whenever not locked out by Judgment's channel, prioritizing landing Q's empowered attack as soon as the window opens after each Q cast.",
+   "Let each Judgment fully run its spins (do not manually recast/cancel early) to maximize tick count and hit-counter progress toward the armor-shred, then recast Judgment again as soon as its post-effect cooldown allows.",
+   "Cast Demacian Justice (R) once it is off cooldown; because R's true damage scales with the target's missing health percentage and its cooldown (80-120s) allows only a single cast within the 15s window, time it after some sustained Q/E/auto-attack damage has already lowered the dummy's health, to maximize the missing-health term.",
+   "Ignore Courage (W) and Perseverance (P) entirely, since neither deals damage or debuffs the target."
+  ],
+  "questions": [
+   "Can Decisive Strike be cast while Judgment's spin-lockout is active (to queue the empowered attack for right after the spin ends), or does casting Q during E's channel get blocked/delayed?",
+   "Given R's cooldown exceeds the 15s fight window, is there any scenario where casting R immediately (for guaranteed inclusion) beats delaying it for a larger missing-health percentage, e.g. if the dummy's health/resist profile makes early flat damage more valuable than the later missing-health scaling?",
+   "During Judgment's channel, is Garen able to walk into attack range/reposition for a real fight, and does that matter for a stationary dummy with no range constraints (i.e., is there ever a reason to delay E to stay in auto-attack range)?",
+   "Does landing Decisive Strike's empowered attack during Judgment's active channel interrupt or delay the ongoing spin ticks?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

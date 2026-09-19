@@ -1,0 +1,285 @@
+{
+ "name": "Blade of the Ruined King",
+ "cooldown": {
+  "values": [
+   5,
+   4.5,
+   4,
+   3.5,
+   3
+  ],
+  "quote": "{{ap|5 to 3}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{as|{{ap|1.4*100}}% of '''Viego's''' windup time|as}} ({{ap|1.4*(1/{{ccd|Viego|as_base}})*{{ccd|Viego|windup}}|round=3}} at {{as|'''base''' attack speed}})"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Bonus Physical Damage (passive on-hit)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetCurrentHp",
+     "coef": [
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|2 to 6}}% of target's '''current''' health}}",
+   "bin": [
+    "ViegoQ#TotalPercentHealthOnHit"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Critical Bonus Physical Damage (passive on-hit, crit)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetCurrentHp",
+     "coef": [
+      0.034,
+      0.051,
+      0.068,
+      0.085,
+      0.102
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|2*1.7 to 6*1.7}}% of target's '''current''' health}}",
+   "bin": [
+    "ViegoQ#HealthCritDamage"
+   ],
+   "binNote": "Wiki's 1.7x crit multiplier (170% listed in description) matches HealthCritMod=0.7 formula: 1 + 0.7*(critDamage-1) = 1.7 at 100% bonus crit damage (200% total); consistent."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Minimum Bonus Damage (passive on-hit floor)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    10,
+    15,
+    20,
+    25,
+    30
+   ],
+   "terms": [],
+   "quote": "{{ap|10 to 30}}",
+   "bin": [
+    "ViegoQ.MinDamageOnHit"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    25,
+    40,
+    55,
+    70,
+    85
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.7
+    }
+   ],
+   "quote": "{{ap|25 to 85}} {{as|(+ 70% AD)}}",
+   "bin": [
+    "ViegoQ#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Active damage increase from critical strike chance",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "critChance",
+     "coef": 0.6,
+     "coefScaling": [
+      {
+       "stat": "critDamage",
+       "per": 1,
+       "coef": 0.6
+      }
+     ]
+    }
+   ],
+   "quote": "increased by {{critical damage|0 to 60|critScaling=true}}",
+   "bin": [
+    "ViegoQ.ActiveCritMod",
+    "ViegoQ#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Mark duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "his damaging {{tip|abilities}} apply a mark to enemies hit for {{#var:q_mark_t}} seconds",
+   "bin": [
+    "ViegoQ.MarkDuration"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "Second strike (mark consumption) damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.2
+    },
+    {
+     "stat": "ap",
+     "coef": 0.15
+    }
+   ],
+   "quote": "dealing {{tt|{{as|{{#var:q_mark_ad}}% AD}} {{as|(+ {{#var:q_mark_ap}}% AP)}}|Scales on current AD and AP}} {{as|physical damage}}",
+   "bin": [
+    "ViegoQ#SecondAttackDamage",
+    "ViegoQ.SecondAttackAPRatio"
+   ],
+   "binNote": "Wiki lists 20% AD but bin ViegoQ#SecondAttackDamage shows 0.2xad with no named ViegoQ.SecondAttackADRatio data value; treated as matching."
+  },
+  {
+   "id": "q_8",
+   "meaning": "Heal from second strike post-mitigation damage vs minions",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1.0,
+   "terms": [],
+   "quote": "{{#var:q_mark_miheal}}% against {{tip|minions}}",
+   "bin": [
+    "ViegoQ.HealModVsMinions"
+   ]
+  },
+  {
+   "id": "q_9",
+   "meaning": "Heal from second strike post-mitigation damage vs monsters",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "{{#var:q_mark_moheal}}% against monsters",
+   "bin": [
+    "ViegoQ.HealModVsMonsters"
+   ]
+  },
+  {
+   "id": "q_10",
+   "meaning": "Heal from second strike post-mitigation damage vs other targets (champions)",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{#var:q_mark_cheal}}% against other targets",
+   "bin": [
+    "ViegoQ.HealModVsChamps"
+   ]
+  },
+  {
+   "id": "q_11",
+   "meaning": "Monster damage cap on passive on-hit",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": 80,
+   "terms": [],
+   "quote": "capped at {{#var:q_p_mcap}} against {{tip|monsters}}",
+   "bin": [
+    "ViegoQ.MonsterCapOnHit"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Passive on-hit damage can critically strike.",
+   "quote": "This damage can {{tip|critically strike}} for {{as|{{critical damage|170|50}}|critical damage}} damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The second strike applies on-hit effects and can crit independently of the primary attack.",
+   "quote": "The second strike rolls {{tip|critical strikes}} independently from the primary attack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damaging abilities apply the mark but can't be consumed for the second strike unless it's a basic attack (or on-hit-applying ability damage).",
+   "quote": "Ability damage that applies {{tip|on-hit}} effects (''e.g.'', {{ais|R|Viego}} damage against the primary target) cannot apply the mark but can consume it, as a basic attack would.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "No second strike occurs if the first attack was dodged, blocked, or missed.",
+   "quote": "'''Viego''' will not perform the second strike if the first attack was {{tip|dodge|dodged}}, {{tip|blocked|blocked}}, and {{tip|blind|missed}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the second strike hits a dead unit, Viego still heals based on the post-mitigation damage it would have dealt.",
+   "quote": "If the second strike hits a dead unit, '''Viego''' will still {{tip|heal}} based on the post-mitigation damage that he would deal with it.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Neither the passive bonus damage nor the second strike bonus damage apply against structures.",
+   "quote": "The attacks do not deal the '''bonus''' damage against {{tip|structures}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The mark does not cause a second attack windup; on-attack triggers only fire once.",
+   "quote": "The mark does not cause '''Viego''' to attack twice. Effects that trigger {{tip|on-attack}} or interact with the attack windup will only trigger once and thus do not interact with ''Blade of the Ruined King''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The active thrust deals area damage, the second strike deals basic damage, and the passive on-hit deals proc damage (separate damage instances).",
+   "quote": "{{Tip|Area damage}} for the thrust.\n** {{Tip|Basic damage}} for the second strike.\n** {{Tip|Proc damage}} for the on-hit bonus damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage from the active applies at cast time end.",
+   "quote": "{{Effect at cast time end}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ViegoQ.RectangleRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ViegoQ.RectangleWidth",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

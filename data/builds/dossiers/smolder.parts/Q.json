@@ -1,0 +1,303 @@
+{
+ "name": "Super Scorcher Breath",
+ "cooldown": {
+  "values": [
+   5.5,
+   5,
+   4.5,
+   4,
+   3.5
+  ],
+  "quote": "{{ap|5.5 to 3.5}}"
+ },
+ "cost": {
+  "values": [
+   25,
+   25,
+   25,
+   25,
+   25
+  ],
+  "quote": "25",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{as|100% of '''Smolder's''' windup time|as}} ({{ap|(1/{{ccd|Smolder|as_base}})*{{ccd|Smolder|windup}}|round=3}} at {{as|'''base''' attack speed}})"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    60,
+    70,
+    80,
+    90,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.3
+    },
+    {
+     "stat": "critChance",
+     "coef": 0.75,
+     "coefScaling": []
+    }
+   ],
+   "quote": "{{ap|60 to 100}} {{as|(+ 130% '''bonus''' AD)}}",
+   "bin": [
+    "SmolderQ#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    35,
+    40,
+    45,
+    50
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.65
+    }
+   ],
+   "quote": "{{ap|60*0.5 to 100*0.5}} {{as|(+ {{ap|130*0.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "SmolderQ.BaseDamage",
+    "SmolderQ.ADRatio",
+    "SmolderQ.Tier2_BlowbackPercentageDamage"
+   ],
+   "binNote": "Wiki's t2_mod (0.5) matches Tier2_BlowbackPercentageDamage=50%; scales base damage and AD ratio by 50%."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Tier 3 burn true damage per second, from bonus AD and stacks",
+   "role": "dot",
+   "damageType": "true",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.025,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.025
+      }
+     ]
+    },
+    {
+     "stat": "stacks",
+     "coef": 0.005,
+     "coefScaling": [
+      {
+       "stat": "stacks",
+       "per": 100,
+       "coef": 0.005
+      }
+     ]
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 1
+    }
+   ],
+   "quote": "{{as|{{fd|{{#var:t3_ad}}}}% per 100 '''bonus''' AD}} {{as|(+ {{fd|{{#var:t3_i}}}}% per 100 ''{{ai|Dragon Practice|Smolder}}'' stacks)|buzzword3}} {{as|of their '''maximum''' health}} over the duration",
+   "bin": [
+    "SmolderQ#Tier3_Burn"
+   ],
+   "binNote": "Bin: 0.00025xbonus ad + 5e-05xbuffStacks per instant unit of health (i.e. per point, matching 2.5%/100AD and 0.5%/100stacks over the 3s duration); wiki gives total-over-duration numbers, consistent."
+  },
+  {
+   "id": "q_4",
+   "meaning": "Tier 3 burn duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "set on fire for 3 seconds",
+   "bin": [
+    "SmolderQ.Tier3_DotLength"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Tier 3 execute threshold (% max health)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 6.5,
+   "terms": [],
+   "quote": "{{as|{{fd|6.5}}% of their '''maximum''' health}}",
+   "bin": [
+    "SmolderQ.Tier3_ExecuteThresholdStart"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Life steal effectiveness on Q damage",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "applies {{as|{{sti|life steal}}}} at 50% effectiveness",
+   "bin": [
+    "SmolderQ.LifestealMod"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "Mana restored on kill",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "'''Smolder''' restores {{sti|{{as|15 mana}}}}",
+   "bin": [
+    "SmolderQ.ManaRestore"
+   ]
+  },
+  {
+   "id": "q_8a",
+   "meaning": "Dragon Practice stack threshold for Q Tier 1 (explosion)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 25,
+   "terms": [],
+   "quote": "{{sbc|Tier 1 - 25 stacks:}}",
+   "bin": [
+    "SmolderQ.StackTier1"
+   ]
+  },
+  {
+   "id": "q_8b",
+   "meaning": "Dragon Practice stack threshold for Q Tier 2 (bolts)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 125,
+   "terms": [],
+   "quote": "{{sbc|Tier 2 - 125 stacks:}}",
+   "bin": [
+    "SmolderQ.StackTier2"
+   ]
+  },
+  {
+   "id": "q_8c",
+   "meaning": "Dragon Practice stack threshold for Q Tier 3 (burn/execute)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 225,
+   "terms": [],
+   "quote": "{{sbc|Tier 3 - 225 stacks:}}",
+   "bin": [
+    "SmolderQ.StackTier3"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The fireball applies on-hit effects and triggers on-attack effects.",
+   "quote": "applies {{tip|on-hit}} effects; applies {{as|{{sti|life steal}}}} at 50% effectiveness; and triggers {{tip|on-attack}} effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Any applied Dragon Practice (stack-based bonus) damage uses the same modifiers as Q but does not get life steal.",
+   "quote": "Any applied ''{{ai|Dragon Practice|Smolder}}'' damage is affected by the same damage modifiers as ''Super Scorcher Breath'' and does not benefit from the ability's {{sti|life steal}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tier 1 explosion also applies on-hit and life steal at 50% effectiveness.",
+   "quote": "The explosion benefits from {{as|{{sti|life steal}}}} at 50% effectiveness and applies {{tip|on-hit}} effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Tier 2 bolts also apply on-hit and life steal at 50% effectiveness.",
+   "quote": "The bolts benefit from {{as|{{sti|life steal}}}} at 50% effectiveness and apply {{tip|on-hit}} effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Subsequent burn applications stack damage but do not refresh duration.",
+   "quote": "Subsequent applications of the burn stack, though not refreshing the duration of the previous burn.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only Smolder's own damage counts toward triggering the tier 3 execute, and a killing blow that would drop below threshold executes on that same instance.",
+   "quote": "Only '''Smolder's''' damage counts for triggering the execute. ... If ''Super Scorcher Breath'' would damage the target to below the execution threshold, they are executed on the same damage instance.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Q can only hit each enemy once per cast.",
+   "quote": "''Super Scorcher Breath'' can only hit enemies once per cast.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Minion/monster damage modifier only applies to the physical damage component (not the true damage burn).",
+   "quote": "The minion and monster damage modifier applies only to the physical damage.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SmolderQ.Tier1_ExplosionRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SmolderQ.Tier2_BlowbackDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SmolderQ.Tier2_BlowbackAmountBase",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SmolderQ.Tier2_BlowbackExplosionRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SmolderQ.Tier2_BlowbackSpreadAngle",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SmolderQ.Tier3_TrueDamagePercent",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SmolderQ.Tier3_MonsterCap",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SmolderQ.CritRatio",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "SmolderQ.minionmod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SmolderQ.Tier3_Burn_Stack_Mult",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

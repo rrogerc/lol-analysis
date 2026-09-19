@@ -1,0 +1,139 @@
+{
+ "champion": "lissandra",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Q/W/E deal on-cast (or short-delay) magic damage on cooldown; R enemy-cast deals damage/CC but is irrelevant to a stationary-dummy damage fight, R self-cast is defensive-only"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's missile passes through and can hit multiple targets, and shatters on hit to extend range/width; E's claw also hits enemies it passes through; against a single stationary dummy this collapses to a single hit unless the sim assumes multi-hit geometry"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Glacial Path is cast then optionally recast (blink) 0.5s later; both casts count as separate ability activations for on-cast effects (e.g. Spellblade)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs scale with rank and could matter for a low-mana build across a 15s fight, though base mana pool/regen aren't in this dossier"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's ice field can damage an enemy once every 4s while active (spreads/lingers for ~3s), functionally a single delayed tick rather than a true DOT in a 15s dummy fight"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "slows on Q/W/R do not affect damage or damage taken by a stationary dummy; included only for completeness, not needed for damage fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "R self-cast (stasis + missing-health heal) is purely defensive/survival-fight relevant, not used in the damage fight"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive spawns an invulnerable/untargetable Frozen Thrall from an enemy champion death that deals a separate magic-damage explosion after 4s; cannot trigger in a dummy fight since the dummy target never dies, but is directly relevant to survival-fight setup if the attacking champion's kill triggers it"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (plain casts, a multi-hit/pass-through projectile, a recast-blink ability, and a delayed-explosion pet triggered on enemy death) are expressible with existing primitives; the passive's death-trigger condition means it will almost never fire in a single-target damage fight (the dummy doesn't die) and can be treated as inapplicable there."
+ },
+ "unsettled": [
+  {
+   "question": "In the single-dummy damage fight, does Ice Shard's pass-through/shatter mechanic ever produce more than one damage instance on the same target, or does the dummy's stationary single-body geometry mean it always hits exactly once per cast?",
+   "options": [
+    "Always exactly one hit per cast against a single dummy",
+    "The shatter mechanic could hit the same dummy twice if the dummy occupies both the pre-shatter and post-shatter path (unlikely but sheet-ambiguous geometry)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "deals {{as|magic damage}} to all enemies it passes through",
+    "If ''Ice Shard'' hits an enemy, it will shatter, increasing its width and maximum range."
+   ]
+  },
+  {
+   "question": "Should Glacial Path's recast (blink to the claw) be used at all in the max-damage rotation, given it deals no additional damage itself and its main function (repositioning) is explicitly out of scope (mobility ignored), but the recast does count as a second 'cast' for on-cast/on-cooldown-start interactions?",
+   "options": [
+    "Skip the recast entirely since it has no direct damage and mobility is ignored, treat E as a single plain-cast",
+    "Always recast immediately since 'Starts on-cast' means cooldown timing is unaffected either way and recast could matter for item/rune on-cast triggers not modeled here"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+    "cdstart = Starts on-cast"
+   ]
+  },
+  {
+   "question": "Is the P passive's Frozen Thrall explosion damage ever reachable in the damage fight (single stationary dummy that never dies), or should it be excluded entirely from the damage-fight simulation?",
+   "options": [
+    "Exclude P entirely from the damage fight since the sole trigger (enemy champion death) cannot occur against a dummy that has health and never dies",
+    "Include P if the simulator's dummy is scripted to 'die' at some point (e.g. at the end of the 15s window) triggering a thrall spawn irrelevant to the timed kill/damage measurement"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Whenever a nearby enemy champion dies, '''Lissandra''' spawns a ''Frozen Thrall'' from their corpse."
+   ]
+  },
+  {
+   "question": "For R's enemy-cast in the damage fight, does the ~4-second cooldown on the ice field's damage tick combined with the ability's 80-120s cooldown mean R is realistically cast at most once in a 15s fight, and should the field's chip damage plus initial CalculatedDamage both be counted as one combined instance per cast?",
+   "options": [
+    "Count R as a single combined damage instance (CalculatedDamage + one ice-field tick) once per fight",
+    "Treat CalculatedDamage and the ice-field tick as two separate damage instances with distinct timings (spread delay of 1.5s)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies can only be damaged by the field of ice once every 4 seconds.",
+    "spreads out from the target over {{fd|1.5}} seconds and covers the surrounding area for 3 seconds, dealing {{as|magic damage}} to enemies"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (Frozen Tomb) enemy-cast on the dummy for its upfront magic damage plus the delayed ice-field tick, since its long cooldown means it should be used exactly once, as early as possible.",
+   "Follow immediately with Q (Ice Shard) on cooldown for its magic damage plus AP ratio; recast every time it comes off cooldown for the full 15s.",
+   "Weave in W (Ring of Frost) on cooldown between Q casts for its magic damage tick, since it has no cast time and low mana cost.",
+   "Cast E (Glacial Path) on cooldown for its damage; treat the ability as effectively resolved on the initial cast for damage purposes and either skip the recast or fire it immediately afterward if it interacts with on-cast item effects (see unsettled question), since the blink itself deals no damage and repositioning is irrelevant against a stationary dummy.",
+   "Repeat Q > W > E on cooldown for the remainder of the 15s window, prioritizing whichever ability is off cooldown to maximize total instances landed; basic attacks fill any remaining time between casts."
+  ],
+  "questions": [
+   "Does the simulator model Lissandra's passive Frozen Thrall spawn at all, given the dummy never dies during the timed fight — should P be omitted from expected damage entirely?",
+   "Should R's enemy-cast be assumed castable on a stationary target-dummy without needing to path around cast-cancel conditions (untargetable/too-far/dies), i.e., does the dummy meet R's targeting requirements the whole fight?",
+   "In the 15s window, is there a fixed order expectation (e.g., always open with hardest-hitting ability R, or always lead with Q for cooldown-efficiency) that the simulator's ranking cares about, or does it evaluate all valid orderings and take the best kill time?",
+   "Does E's recast (blink) get executed in the simulated rotation at all, given the survival/damage fights have no walls or repositioning need, and does skipping it forgo any measurable damage or on-hit trigger opportunity?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

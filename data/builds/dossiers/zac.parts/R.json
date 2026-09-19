@@ -1,0 +1,197 @@
+{
+ "name": "Let's Bounce!",
+ "cooldown": {
+  "values": [
+   120,
+   105,
+   90
+  ],
+  "quote": "{{ap|120 to 90}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.3,
+  "quote": "{{fd|0.3}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage Per Hit",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    120,
+    190,
+    260
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|120 to 260}} {{as|(+ 40% AP)}}",
+   "bin": [
+    "ZacR#DamagePerBounce"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Reduced Damage Per Hit",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    95,
+    130
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|120/2 to 260/2}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "ZacR#DamagePerSubsequentBounce"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Total Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    300,
+    475,
+    650
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|120*2.5 to 260*2.5}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "ZacR#MaxDamageTooltip"
+   ],
+   "binNote": "ZacR#MaxDamageTooltip's raw terms print as flat=[120,190,260] and ap=[0.4] because the sheet only shows the formula's leaf tokens, not its evaluated result. The full formula is DamagePerBounce + DamagePerBounce*DamageReductionBounce*(Bounces-1) = base*(1+0.5*3) = base*2.5 and ap*0.4*2.5 = ap*1.0, which equals the wiki's stated 300/475/650 base and 100% AP ratio - the numbers agree once the formula is evaluated, they are not raw bin fields."
+  },
+  {
+   "id": "r_4",
+   "meaning": "number of bounces",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "'''Zac''' bounces after the cast time, then bounces 3 additional times each second over 3 seconds",
+   "bin": [
+    "ZacR.Bounces"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "time between bounces",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "then bounces 3 additional times each second over 3 seconds",
+   "bin": [
+    "ZacR.TimeBetweenBounces"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "slow amount per bounce",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "{{tip|slows}} them by 20% for the same duration",
+   "bin": [
+    "ZacR.SlowAmount"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "slow/knockback duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "knocks them back over 1 second, and slows them ... for the same duration",
+   "bin": [
+    "ZacR.KnockupDuration",
+    "ZacR.SlowDuration"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "damage reduction for subsequent bounces on same target",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "ones beyond the first deal 50% damage to them",
+   "bin": [
+    "ZacR.DamageReductionBounce"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "An enemy can be hit by multiple bounces, but bounces beyond the first deal 50% damage and no knockback.",
+   "quote": "An enemy can be hit by multiple bounces, but ones beyond the first deal 50% damage to them and do not apply the knock back.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While Let's Bounce! is active, Zac cannot use basic attacks, Q, or E.",
+   "quote": "{{ai|Q|Zac}} and {{ai|E|Zac}} are disabled. {{ai|W|Zac}} is usable.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield only blocks a single instance of the ability's damage.",
+   "quote": "{{tip|Spell shield}} only blocks a single instance of damage.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Cooldown starts on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Entering stasis ends Let's Bounce! prematurely, cutting off remaining bounces.",
+   "quote": "Entering {{tip|stasis (buff)|stasis}} will end ''Let's Bounce!'' prematurely.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZacR.KnockbackDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ZacR.KnockbackRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ZacR.BeginningMS",
+   "reason": "utility"
+  },
+  {
+   "ref": "ZacR.EndingMS",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

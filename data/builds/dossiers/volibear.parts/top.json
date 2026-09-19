@@ -1,0 +1,173 @@
+{
+ "champion": "volibear",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "The Relentless Storm: each basic attack or ability hit grants a stack (cap 5, 6s refresh timer) of bonus attack speed"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "AP is converted into extra bonus attack speed per stack (0.05 base + 0.0003xAP per stack)"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "At the 5th stack, the next on-hit attack or ability is empowered with Lightning Claws"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Lightning Claws grants bonus magic on-hit damage on the empowered hit"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q arms Volibear's next basic attack with a dash, bonus physical damage, and a stun"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's empowered attack resets the basic attack timer without consuming/putting the normal attack on cooldown (double reset)"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The empowered attack's windup time is reduced by Volibear's bonus attack speed (0.4s - 0.1s per 100% bonus AS)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W deals an initial ability strike, then forces a separately-timed basic-attack 'bite' that lands after a 0.25s cast time"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "The initial strike places an 8s Wounded mark on the target; the bite reads/consumes it for bonus damage and a heal"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "W's bite deals more damage if the target is still Wounded when the cast time completes; E's damage scales with the target's max health (capped against non-champions)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50, W 20-40, E 50, R 100) can meaningfully limit how many casts fit in the 15s window"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Stormbringer grants bonus health, bonus attack range, and 25 extra W range for 12s on cast"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "W's heal, E's self-shield, and R's bonus health are irrelevant in the damage fight but matter for the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (stacking attack-speed passive with an AP-to-AS conversion, a 5th-stack empowered on-hit proc, an empowered dash-attack that free-resets the auto-attack timer, a two-part ability with a target mark read by its second part, and health%-scaled bolt damage) are each expressible with existing primitives, combined."
+ },
+ "unsettled": [
+  {
+   "question": "What is the correct per-level base damage for Lightning Claws (P)?",
+   "options": [
+    "Use the wiki's derived per-level formula (10,11,12,14,17,20,23,27,31,35,39,43,47,51,55,59,63,67)",
+    "Use the bin's VolibearP#ChainLightningDamage byLevelL array (11,12,13,15,17,19,22,25,28,31,34,37,40,44,48,52,56,60)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{pp|10+1*x for 3; then + 2*x for 3; then + 3*x for 7; then + 4*x for 7}}",
+    "VolibearP#ChainLightningDamage = byLevelL[11/12/13/15/17/19/22/25/28/31/34/37/40/44/48/52/56/60] + (APRatio=0.45)xap"
+   ]
+  },
+  {
+   "question": "What is Thundering Smash's (Q) actual cooldown by rank?",
+   "options": [
+    "Use the wiki's cooldown [12, 11.5, 11, 10.5, 10]",
+    "Use the bin's ddragon/VolibearQ cooldown [14, 13, 12, 11, 10]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|12 to 10}}",
+    "cooldown: [14/13/12/11/10]"
+   ]
+  },
+  {
+   "question": "Does W's forced 'bite' basic attack grant Volibear an extra attack on top of his normal auto-attack timer, or does it consume/replace the queued auto-attack (no net tempo gain beyond the bite's own damage)?",
+   "options": [
+    "The ordered bite attack is an additional attack, effectively resetting/adding an attack each W cast, increasing overall attack tempo",
+    "The ordered bite attack simply uses the existing attack queue slot with no net increase in attack frequency"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Volibear''' will be ordered to [[basic attack]] the target after casting ''Frenzied Maul''."
+   ]
+  },
+  {
+   "question": "Does each part of a single W cast (the initial strike and the forced bite) independently generate/refresh a Relentless Storm (P) stack, i.e. does one W cast produce two stack-generating hit events?",
+   "options": [
+    "The strike and the bite each count as a separate ability/attack hit for P stacking purposes (2 events per cast)",
+    "The whole W cast is treated as a single stack-generating event"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Whenever '''Volibear''' damages at least one enemy with a {{tip|basic attack}} or {{tip|ability}}, he generates a {{tip|stack}}",
+    "trigger {{tip|on-attack}} effects"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight already auto-attacking the dummy to begin building Relentless Storm stacks.",
+   "Cast Stormbringer (R) as early as possible for its large burst physical damage on impact, since its cooldown (110-160s) is far longer than the fight, so only one cast fits and it should land early.",
+   "Cast Sky Splitter (E) immediately after, since its 2-second travel delay and 16s cooldown mean only one cast fits in the 15s window; casting it early lets the bolt land well before the fight ends.",
+   "Cast Thundering Smash (Q) whenever it is off cooldown, since it arms the next attack with bonus physical damage plus a free attack-timer reset that does not consume the normal attack cooldown.",
+   "Cast Frenzied Maul (W) every time it comes off cooldown (5s); after the first cast the target stays Wounded for 8s, so essentially every subsequent W lands the higher-damage 'bite'.",
+   "Fill all remaining time between ability casts with basic attacks on the dummy to keep refreshing Relentless Storm stacks and to trigger the Lightning Claws bonus magic proc whenever stacks reach 5.",
+   "For the rest of the 15s, alternate Q and W on cooldown (whichever is available first), continuing to auto-attack in the gaps."
+  ],
+  "questions": [
+   "Does the simulated dummy fight assume Volibear starts at 0 Relentless Storm stacks, or 'warmed up' at 5 stacks, given it affects how soon Lightning Claws first procs?",
+   "Is there enough starting mana to open with R (100) + E (50) + Q (50) + W (20) back-to-back (220 mana), or should the opener be paced against a realistic mana pool and regen?",
+   "Given the Q cooldown discrepancy between the wiki and bin, how many Q casts actually fit inside the 15-second fight?",
+   "Can E be cast immediately after/alongside R's cast+dash without either canceling the other's animation, or does R's dash briefly delay E's cast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

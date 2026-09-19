@@ -1,0 +1,129 @@
+{
+ "champion": "teemo",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Blinding Dart deals magic damage on cast (7s cooldown, mana cost); the blind itself is pure CC and irrelevant since the dummy never attacks back"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "E"
+   ],
+   "note": "Toxic Shot adds flat+AP/bonus-AD-scaling magic damage to every basic attack, always active from level 1 (ranked by E level)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Toxic Shot inflicts a refreshable 4-tick poison over 4s on-hit; Noxious Trap's explosion applies an equivalent poison DoT on the target it hits"
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "P"
+   ],
+   "note": "Guerrilla Warfare's stealth is a pre-fight state; whether Teemo opens the fight stealthed decides if the first action triggers Element of Surprise"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Element of Surprise grants a non-stacking bonus attack speed buff for 5s upon breaking stealth"
+  },
+  {
+   "id": "level-gated-passive",
+   "abilities": [
+    "P"
+   ],
+   "note": "Element of Surprise's bonus AS magnitude scales with champion level (byLevelL array), not with ability rank"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "R"
+   ],
+   "note": "Noxious Trap runs on a charge/ammo system (3-5 max charges, per-charge mana cost) that limits how many mushrooms can be placed in the 15s window"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Mana costs for Blinding Dart and Noxious Trap can constrain how often they're cast over 15s"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Noxious Trap only detonates on enemy contact with the placed mushroom; whether a stationary, never-moving dummy target can ever trigger a planted mushroom is a geometry assumption the simulator must make"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic that affects the damage fight (Q's plain-cast nuke, E's onhit rider + poison DoT, P's stealth-gated timed AS buff, R's charge-limited mushroom DoT) maps onto an existing primitive. The one open item -- whether R can ever hit a target that never moves -- is a rotation/geometry assumption (positional-assumption) rather than a missing mechanic; W is pure movement speed and is ignored entirely per the fight rules."
+ },
+ "unsettled": [
+  {
+   "question": "Does the 15s damage fight assume Teemo starts already stealthed via Guerrilla Warfare (so his opening action breaks stealth and triggers Element of Surprise's bonus attack speed), or does the fight start from an already-engaged neutral state with no starting AS buff?",
+   "options": [
+    "Assume pre-fight stealth: the first cast/attack breaks stealth and grants the level-scaled Element of Surprise AS buff for 5s at the start of the fight",
+    "Assume no pre-fight stealth: Teemo never accrues the 1.5s idle window needed inside a continuous 15s fight, so Element of Surprise never triggers and the AS buff is excluded entirely"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Teemo''' gains {{tip|invisibility}} after {{fd|1.5}} seconds without moving, taking non-{{tip|persistent damage|over time}} damage, performing actions that {{tip|break stealth}}...",
+    "When '''Teemo''' breaks the stealth, he gains {{sti|{{as|{{pp|key=%|20 to 80 for 4|1;5;10;15}} '''bonus''' attack speed}}}} for 5 seconds."
+   ]
+  },
+  {
+   "question": "Can Noxious Trap (R) deal any damage in this fight format at all, given its mushrooms only explode on 'enemy contact' and the target dummy never moves?",
+   "options": [
+    "Exclude R from the damage rotation entirely since the stationary target can never step on a mushroom",
+    "Assume the mushroom is placed at/under the target's current location and detonates immediately once armed (1s) since the target already occupies that space",
+    "Model R as if it were a location-targeted DoT that always lands on the target on a charge/mana-limited cadence, ignoring the movement requirement"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The mushroom will explode upon enemy contact, inflicting {{tip|poison}} to nearby enemies and {{tip|slow|slowing}} them for 4 seconds, as well as {{tip|standard sight|revealing}} them.",
+    "'''Teemo''' tosses a poisonous mushroom to the target location that becomes {{tip|stealthed trap|stealthed}} after arming over 1 second"
+   ]
+  },
+  {
+   "question": "If Teemo opens the fight stealthed, does casting Q (a normal stealth-breaking action) count as the trigger for Element of Surprise, or only a basic attack does -- which determines whether Q or the first auto-attack should be cast first for maximum AS uptime?",
+   "options": [
+    "Any stealth-breaking action (including casting Q) triggers Element of Surprise, so cast order doesn't matter for the buff",
+    "Only breaking stealth via a basic attack (which breaks stealth at the end of its windup) triggers the buff, so the first auto-attack should precede Q for the buff to cover more of the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Using a basic attack breaks the stealth at the end of the attack windup.",
+    "All {{tip|forced action}} effects will break ''Guerilla Warfare's'' {{tip|stealth}} while '''Teemo''' is standing outside of {{tip|brush}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Teemo enters the fight already stealthed via Guerrilla Warfare (pre-fight idle state).",
+   "Open with Blinding Dart (Q) on the target, which deals its magic damage and breaks stealth, triggering Element of Surprise's bonus attack speed for 5 seconds.",
+   "Immediately begin auto-attacking continuously; every basic attack applies Toxic Shot's on-hit magic damage and refreshes the poison DoT.",
+   "Recast Blinding Dart every time it comes off its 7s cooldown, mana permitting.",
+   "If Noxious Trap is judged able to hit the stationary target, place a mushroom at the target's location as early as possible and again whenever a charge and mana are available, to add its poison DoT.",
+   "Sustain auto-attacking as the primary damage source throughout the ~15s window, since E's on-hit and DoT scale directly with attack frequency, with Q on cooldown as a supplement."
+  ],
+  "questions": [
+   "Does the simulator assume Teemo begins the damage fight pre-stealthed, and if so, does the very first action (cast or attack) trigger Element of Surprise?",
+   "Should Noxious Trap be included in the rotation at all given the target never moves, and if included, how is its trigger modeled?",
+   "Is mana treated as unlimited/regenerating enough over 15s to sustain repeated Q and R casts, or does the resource budget meaningfully cap casts within the fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

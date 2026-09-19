@@ -1,0 +1,913 @@
+{
+ "champion": "nautilus",
+ "abilities": {
+  "P": {
+   "name": "Staggering Blow",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus physical damage on empowered basic attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      14,
+      20,
+      26,
+      32,
+      38,
+      44,
+      50,
+      56,
+      62,
+      68,
+      74,
+      80,
+      86,
+      92,
+      98,
+      104,
+      110,
+      116
+     ],
+     "terms": [],
+     "quote": "{{pp|14 + (116-14)/17*(x-1) for 20}}",
+     "bin": [
+      "NautilusPassive#BonusDamage"
+     ],
+     "binNote": "Sheet expresses this as an unresolved ByCharLevelFormulaCalculationPart; values here are computed from the wiki's stated level formula 14 + (116-14)/17*(level-1), which the sheet does not spell out numerically."
+    },
+    {
+     "id": "p_2",
+     "meaning": "root duration on empowered basic attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.5,
+      1.5,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{pp|changedisplay=true|0.75 to 1.5 for 4|1 to 16}} seconds",
+     "bin": [
+      "NautilusPassive#RootDuration"
+     ],
+     "binNote": "Sheet lists this as NautilusPassive#RootDuration (a calculation, not a data value as the skeleton's stub labeled it), given directly as byLevelL[0.75/.../1.5] matching the wiki's stated values exactly."
+    },
+    {
+     "id": "p_3",
+     "meaning": "cooldown before the passive can trigger again on the same target",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "ontargetcdstatic= 6",
+     "bin": [
+      "NautilusPassive.PerTargetCD"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive triggers off basic attacks, adding bonus physical damage and a brief root; it cannot re-trigger on the same target for several seconds.",
+     "quote": "Nautilus' basic attacks are empowered to deal {{as|{{pp|14 + (116-14)/17*(x-1) for 20}}|physical damage}} {{as|'''bonus''' physical damage}} and root the target",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the root but not the bonus damage, so the damage still applies even if the effect is spell-shielded.",
+     "quote": "Spell shield will block the root but not the bonus damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack can still be blocked or dodged, and in that case the on-target cooldown is still applied (but presumably no bonus damage lands).",
+     "quote": "Staggering Blow's enhanced attack can be blocked and dodged (the on-target cooldown will still be applied).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive fails to trigger entirely while Nautilus is blinded.",
+     "quote": "It will fail to trigger while he is blinded.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack (and thus its bonus damage) will not trigger against structures.",
+     "quote": "The empowered attack will not trigger against structures.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NautilusPassive#TotalDamageTooltip",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Dredge Line",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      85,
+      125,
+      165,
+      205,
+      245
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|85 to 245}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "NautilusAnchorDrag#QDamageCalc"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "root duration on hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|stun|stuns}} them for 1 second",
+     "bin": [],
+     "binNote": "wiki text says stun for 1 second while the description flag/notes call it root; no matching bin data value found for this duration"
+    },
+    {
+     "id": "q_3",
+     "meaning": "drag/dash travel time",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.9,
+     "terms": [],
+     "quote": "both over {{fd|0.9}} seconds",
+     "bin": [],
+     "binNote": "no matching data value in sheet for this travel duration"
+    },
+    {
+     "id": "q_4",
+     "meaning": "cooldown and mana refund fraction on terrain hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "50% of ''Dredge Line's'' {{sti|cooldown}} and {{sti|mana|{{as|mana cost}}}} are refunded",
+     "bin": [
+      "NautilusAnchorDrag.TerrainCDR",
+      "NautilusAnchorDrag.TerrainManaRefund"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Nautilus is unable to move or attack while the anchor is in flight, but can cast other abilities during the dash.",
+     "quote": "'''Nautilus''' is {{tip|lockout|unable}} to move or attack while Dredge Line is in flight. He can cast any of his abilities during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the anchor hits terrain instead of an enemy, no damage is dealt and Nautilus only dashes to the location, refunding cooldown and mana.",
+     "quote": "If the anchor hits terrain, '''Nautilus''' {{tip|dash|dashes}} to that location and 50% of ''Dredge Line's'' {{sti|cooldown}} and {{sti|mana|{{as|mana cost}}}} are refunded.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks the ability's damage but Nautilus still dashes partway to the target.",
+     "quote": "{{tip|Spell shield}} will block the ability but '''Nautilus''' will still dash partway to the target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Nautilus dies while the anchor is traveling, enemies hit are still dealt damage, but the drag and root do not apply.",
+     "quote": "The anchor projectile will stop if '''Nautilus''' dies while the projectile is traveling. Enemies hit will still be dealt damage. The {{tip|airborne|drag}} and {{tip|root}} are not applied if '''Nautilus''' did not initiate the dash.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NautilusAnchorDrag.TerrainMana",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "NautilusAnchorDrag.TerrainReduction",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Titan's Wrath",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.08,
+        0.09,
+        0.1,
+        0.11,
+        0.12
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 90}} {{as|(+ {{ap|8 to 12}}% '''maximum''' health)}}",
+     "bin": [
+      "NautilusPiercingGaze#ShieldCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Total Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      40,
+      50,
+      60,
+      70
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|30 to 70}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "NautilusPiercingGaze#DotDamageCalc"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Magic Damage per Instance",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      15,
+      20,
+      25,
+      30,
+      35
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|30/2 to 70/2}} {{as|(+ {{ap|40/2}}% AP)}}",
+     "bin": [],
+     "binNote": "This is the wiki's per-instance split (half of DotDamageCalc's total); the bin only stores the total via DotDamageBase/DotDamageAPRatio in NautilusPiercingGaze#DotDamageCalc, not a separate per-instance row."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "grants himself a {{tip|shield}} for 6 seconds",
+     "bin": [
+      "NautilusPiercingGaze.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Delay before second damage instance",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "the other half dealt after {{fd|1.25}} seconds",
+     "bin": [],
+     "binNote": "No standalone bin data value for this delay was found in the sheet; only ShieldDuration, DotDamageBase and DotDamageAPRatio are exposed for this ability."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While the shield holds, Nautilus's basic attacks apply Pain of Wrath to the target and surrounding enemies.",
+     "quote": "his {{tip|basic attacks}} are empowered to apply ''Pain of Wrath'' to the target and enemies near them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pain of Wrath deals half its damage immediately and half after 1.25 seconds.",
+     "quote": "The target takes {{as|magic damage}} over time, half dealt immediately and the other half dealt after {{fd|1.25}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Titan's Wrath resets Nautilus' basic attack timer when it triggers the empowered attack.",
+     "quote": "Titan's Wrath {{tip|basic attack reset|resets}} '''Nautilus' ''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reapplying Pain of Wrath to the same target adds a stack but does not restart the tick timer, and extra stacks deal no additional damage.",
+     "quote": "''Pain of Wrath'' damage over time debuff gains another stack when reapplied to the target, but doesn't restart its tick timer. Additional stacks of ''Pain of Wrath'' expire when the original debuff does and do not deal any additional damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pain of Wrath is applied if the empowered attack was active at the start of the windup, even if the shield expires during the windup.",
+     "quote": "''Pain of Wrath'' will be applied by '''Nautilus's''' basic attack if he is affected by ''Titan's Wrath'' at the start of the {{tip|attack windup}}, even if ''Titan's Wrath'' expires during the windup.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pain of Wrath is not applied if the attack is dodged or blocked, but is applied if it misses due to blind.",
+     "quote": "''Pain of Wrath'' will not be applied if the basic attack is {{tip|dodged}} or {{tip|blocked}}, but will be applied if it is {{tip|blind|missed}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks Pain of Wrath, but only a single application.",
+     "quote": "{{tip|Spell shield}} will block the ability (but only a single application).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not apply Pain of Wrath to structures.",
+     "quote": "The empowered attack does not apply ''Pain of Wrath'' to {{tip|structures}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield's cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Riptide",
+   "cooldown": {
+    "values": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "quote": "{{ap|7 to 5}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      90,
+      125,
+      160,
+      195
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|55 to 195}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "NautilusSplashZone#DamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      27.5,
+      45,
+      62.5,
+      80,
+      97.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|55*0.5 to 195*0.5}} {{as|(+ {{ap|50*0.5}}% AP)}}",
+     "bin": [
+      "NautilusSplashZone.MultiHitReduction",
+      "NautilusSplashZone#DamageCalc"
+     ],
+     "binNote": "the wiki halves both flat base and AP ratio of DamageCalc via MultiHitReduction=0.5; no dedicated bin row carries the halved 27.5/45/62.5/80/97.5 or 0.25 numbers directly, they are derived by multiplying DamageCalc's outputs by MultiHitReduction"
+    },
+    {
+     "id": "e_3",
+     "meaning": "Maximum Total Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      110,
+      180,
+      250,
+      320,
+      390
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|55*2 to 195*2}} {{as|(+ {{ap|50*2}}% AP)}}",
+     "bin": [],
+     "binNote": "this is a derived sum (first wave full + two reduced waves) restating e_1/e_2, no dedicated bin row"
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "NautilusSplashZone.SlowPercent"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Monster Bonus Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      125,
+      165,
+      205,
+      245,
+      285
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|125 to 285}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "NautilusSplashZone#MonsterBonusCalc"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "duration over which the three waves radiate out",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.561,
+     "terms": [],
+     "quote": "over {{fd|0.561}} seconds",
+     "bin": [],
+     "binNote": "wave timing (0.561s total, with waves at 0/0.297/0.561) is not present as a data value in the sheet; only measured wiki timing"
+    },
+    {
+     "id": "e_7",
+     "meaning": "duration over which the slow decays",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "slows them by an amount that decays over {{fd|1.5}} seconds",
+     "bin": [
+      "NautilusSplashZone.SlowDuration"
+     ],
+     "binNote": "wiki states the slow decays over 1.5s while the bin's SlowDuration is 1.25; kept the wiki's stated number per instructions, disagreement noted"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Nautilus sends three waves of explosions that each deal magic damage; damage from waves after the first hitting the same target is reduced to 50%.",
+     "quote": "Each wave deals {{as|magic damage}} to enemies hit, reduced to 50% against those hit by subsequent waves beyond the first",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first wave happens at 0s after cast time ends, second at 0.297s, third at 0.561s after cast.",
+     "quote": "The first wave happens at 0 seconds after the cast time ends, the second wave at {{fd|0.297}} seconds and the third wave at {{fd|0.561}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first hit against monsters deals bonus magic damage.",
+     "quote": "The first hit against {{tip|monsters}} deals {{as|'''bonus''' magic damage}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NautilusSplashZone.DamageMonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "NautilusSplashZone.ExtraWavePenalty",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "NautilusSplashZone.DamageRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Depth Charge / Depth Charge 2",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.46,
+    "quote": "{{fd|0.46}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      125,
+      175,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|125 to 225}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "NautilusGrandLine#SecondaryTargetDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Stun Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.5,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 2}} seconds",
+     "bin": [
+      "NautilusGrandLine.StunDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Increased Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      275,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|150 to 400}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "NautilusGrandLine#PrimaryTargetDamage"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Knock Up Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|airborne|knocked up}} for 1 second",
+     "bin": [],
+     "binNote": "No bin row carries the underway-eruption knock up duration; NautilusGrandLine.StunDuration covers the stun, but the 1 second knock up on non-final eruptions is not separately exposed in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The Depth Charge creates damaging eruptions periodically as it chases the target, not one instance.",
+     "quote": "creating eruptions every {{rutngt|0.25}} in its wake",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies hit by non-final eruptions are knocked up and stunned; the final eruption at the primary target deals increased damage.",
+     "quote": "Upon reaching the primary target, the ''Depth Charge'' erupts a final time at their location. The primary target takes increased damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The final eruption's knock up duration is modified (implied same as stun duration by rank, not the 1 second base of underway eruptions).",
+     "quote": "airborne|knocked up}} for a modified duration",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Enemies far enough away from the charge/eruption are knocked back instead of up; this does not change damage.",
+     "quote": "Enemies a certain distance away from the charge / eruption are instead {{tip|airborne|knocked back}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Depth Charge keeps chasing even if the target dies or becomes untargetable.",
+     "quote": "''Depth Charge'' will not stop chasing if the target dies or becomes untargetable.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NautilusGrandLine.PrimaryDamage",
+     "reason": null
+    },
+    {
+     "ref": "NautilusGrandLine.SecondaryDamage",
+     "reason": null
+    },
+    {
+     "ref": "NautilusGrandLine.StunDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Staggering Blow adds bonus physical damage to basic attacks, limited to once per 6s per target"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dredge Line deals a single magic damage instance on hitting the dummy"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "While the shield holds, basic attacks apply Pain of Wrath to the target"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Titan's Wrath's empowered attack resets Nautilus' basic attack timer"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Pain of Wrath deals half its damage immediately, half after 1.25s"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Riptide fires three separately timed wave damage instances from one cast, later waves reduced to 50%"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Depth Charge deals periodic underway eruption damage every 0.25s while chasing, then a larger final eruption on reaching the target"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (60/60/50-90/100) against a 15s fight may cap total casts, especially with low starting mana"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Titan's Wrath's shield (base + % max HP) only matters for damage taken in the survival fight"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Number of underway Depth Charge eruptions that land on a stationary dummy before the final eruption depends on assumed cast range and the charge's accelerating travel speed"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Depth Charge (R) needs bespoke chase/acceleration logic (starts at 275 units/s, accelerates by 466.67/s, erupts every 0.25s) to determine how many underway damage instances land on a stationary dummy before the larger final eruption at the target's location; this can't be captured by a fixed-count multipart primitive without an assumed travel distance. Titan's Wrath (W)'s Pain of Wrath also needs bespoke stacking-cap logic: reapplying it while active adds a stack that does not restart the tick timer and deals no additional damage, which is stricter than a generic dot/onhit-rider primitive would assume."
+ },
+ "unsettled": [
+  {
+   "question": "How many underway Depth Charge (R) eruptions should be assumed to hit a stationary dummy before the final eruption lands?",
+   "options": [
+    "Assume the charge reaches the target almost immediately (0-1 underway hits) since dummy doesn't move and cast range is close",
+    "Assume a mid-range cast (e.g. 600-800 units) yielding roughly 2-4 underway eruptions given the accelerating speed formula",
+    "Ignore underway eruptions entirely and only count the final eruption's damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "creating eruptions every {{rutngt|0.25}} in its wake",
+    "speed        = 275 + {{fd|466.67}} per second",
+    "Upon reaching the primary target, the ''Depth Charge'' erupts a final time at their location."
+   ]
+  },
+  {
+   "question": "Do Riptide's (E) second and third wave hits on the same stationary dummy count as separate damage instances (each able to proc on-hit/on-damage item and rune effects), or is the reduction just a single combined damage number?",
+   "options": [
+    "Treat each of the three waves as a separate damage instance against the dummy since it never leaves the overlapping hit radius",
+    "Treat only the first wave as a real 'hit' and the later waves as passive damage-over-time ticks that don't proc on-hit effects"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Each wave deals {{as|magic damage}} to enemies hit, reduced to 50% against those hit by subsequent waves beyond the first",
+    "The first wave happens at 0 seconds after the cast time ends, the second wave at {{fd|0.297}} seconds and the third wave at {{fd|0.561}} seconds."
+   ]
+  },
+  {
+   "question": "Passive (P) bonus damage per level is given in the bin only as an unresolved ByCharLevelFormulaCalculationPart; is the wiki's stated linear interpolation formula (14 + (116-14)/17*(level-1)) exactly what the game uses, or could the live formula differ from this reconstruction at some levels?",
+   "options": [
+    "Trust the wiki's linear interpolation formula exactly as given",
+    "Treat the per-level values as uncertain outside the levels the wiki explicitly cross-checks, pending the unresolved bin formula"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|14 + (116-14)/17*(x-1) for 20}}",
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Dredge Line) on the dummy for its magic damage hit and to close to melee range.",
+   "Immediately follow with W (Titan's Wrath) to raise the shield and arm the next basic attacks with Pain of Wrath.",
+   "Cast R (Depth Charge) on the dummy early, since its long cooldown (80-120s) means it can only be used once in the 15s fight.",
+   "Auto-attack continuously between ability casts: this triggers Staggering Blow's bonus damage (once per 6s per target) and, while the W shield holds, applies and refreshes Pain of Wrath, resetting the attack timer each time it lands.",
+   "Cast E (Riptide) on cooldown for its three-wave AoE damage against the dummy.",
+   "Recast Q and W again as soon as they come off cooldown, always weaving basic attacks in between to keep Pain of Wrath and Staggering Blow procs active as much as possible.",
+   "Do not attempt to recast R, since even at max rank its 80s cooldown exceeds the 15s fight window."
+  ],
+  "questions": [
+   "What cast range against the dummy should be assumed for Depth Charge, since it directly determines how many underway eruptions land before the final burst?",
+   "Should R be cast at the very start of the fight to maximize the number of full-cooldown windows for Q/W/E, or held until W's shield and Pain of Wrath are already active to add onto the burst?",
+   "Given Q's cost (60) and W's cost (60) and E's rising cost (50-90) plus R's 100, does mana realistically run out before 15s at typical starting mana/regen, capping the number of casts of each spell?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

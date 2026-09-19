@@ -1,0 +1,115 @@
+{
+ "champion": "zed",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Contempt for the Weak adds bonus magic on-hit damage vs targets below 50% max HP, gated by a 10s per-target internal cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "P only triggers while target HP is below the 50% max-HP threshold"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q and E deal fixed base + bonus AD damage on cast/cooldown"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "The Shadow from W (and the longer-lived Shadow from R) mimics Zed's Q and E casts, adding extra damage instances against the same target"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W and R each have a Shadow Swap recast; R additionally has a delayed detonation separate from the initial mark application"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Energy costs (Q 75-55, W 40-20, E 40) meaningfully cap cast frequency in a 15s fight"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shadow Slash reduces Living Shadow's current cooldown by 3s per enemy champion hit"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "R"
+   ],
+   "note": "Marked for Death stores a % of all pre-mitigation physical/magic damage Zed and his Shadows deal to the target, detonating as physical damage at duration's end"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Zed's mechanics (on-hit conditional bonus, plain-cast abilities, a mimicking pet/summon, a stored-damage detonation on the target, and cooldown/energy interactions) are all expressible by combining existing primitives; no unique mechanic falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "Do Zed's Shadows (from W and R) automatically mimic every Q and E cast while active, adding a second (and while both a W-Shadow and R-Shadow exist, a third) full damage instance against the dummy, or does mimicry require some other condition not stated in the sources?",
+   "options": [
+    "Every Q/E cast while a Shadow is active is automatically also cast by the Shadow, dealing a second full instance of that ability's damage to the target",
+    "Mimicry only happens under some additional unstated condition (e.g. only on the first cast after the Shadow spawns), so not every Q/E cast is doubled"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Zed''' creates a ... ''Shadow'' that dashes to the target location and remains there for {{fd|5.25}} seconds, being able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range."
+   ]
+  },
+  {
+   "question": "How long does the Shadow spawned by Death Mark actually persist and remain able to mimic Q/E: the wiki description states 9 seconds, but the bin's RShadowDurationDisplayed (7.5) and the calculated {43a019eb} (7.5+0.5=8) do not match 9?",
+   "options": [
+    "9 seconds is live (wiki description text)",
+    "7.5 seconds is live (RShadowDurationDisplayed)",
+    "8 seconds is live (ZedR#{43a019eb} calculation)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Zed''' also spawns a [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' at his casting position for 9 seconds",
+    "ZedR#{43a019eb} = RShadowDurationDisplayed=7.5 + 0.5"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting W (Living Shadow) onto or near the target so a Shadow is present to mimic upcoming Q/E casts.",
+   "Cast R (Death Mark) on the target to apply Marked for Death and spawn R's longer-lived Shadow, beginning the stored-damage window.",
+   "Immediately cast Q (Razor Shuriken) so both Zed and the active Shadow(s) hit the target with Q's damage.",
+   "Cast E (Shadow Slash) so Zed's and the Shadow's slashes both land on the target (extra slashes beyond the first apply no bonus damage but reduce W's cooldown).",
+   "Weave basic attacks between ability casts; Contempt for the Weak (P) adds bonus magic damage once the target drops below 50% max HP, subject to its 10s per-target cooldown.",
+   "Recast Q and E on cooldown as energy allows, prioritizing keeping a Shadow alive/present so it continues mimicking casts.",
+   "Let Marked for Death detonate at the end of its 3-second duration for its stored-damage physical burst.",
+   "Continue the Q/E/auto-attack loop for the remainder of the 15s window, recasting W to refresh a Shadow when its duration or R's Shadow lapses."
+  ],
+  "questions": [
+   "Is Shadow mimicry of Q/E fully automatic on every cast while a Shadow is present, and does it happen for both a W-Shadow and an R-Shadow simultaneously if both exist?",
+   "What target health trajectory should the simulator assume for the dummy, since Contempt for the Weak's trigger and its 10s internal cooldown depend on when the target crosses the 50% HP threshold?",
+   "Given Q/W/E energy costs and Zed's max energy/regen (not given in these sources), is the proposed cast-everything-on-cooldown rotation energy-sustainable for the full 15s, or does energy force skipping some E or W casts?",
+   "Does the Death Mark detonation's stored-damage percentage draw only from damage dealt during the 3s Marked-for-Death window, or does it also include the R cast's own flat 100% AD component as a separate simultaneous hit rather than part of one combined detonation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

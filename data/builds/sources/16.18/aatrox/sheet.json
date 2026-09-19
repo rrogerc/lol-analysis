@@ -1,0 +1,614 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AatroxPassive",
+    "key": "Characters/Aatrox/Spells/AatroxPassiveAbility/AatroxPassive",
+    "dataValues": {
+     "PBonusAARange": 50,
+     "PChargeRate": 2,
+     "PDamageTADBonusLevel1": 0.15,
+     "PDamageTADBonusLevel18": 0.25,
+     "PStructureCap": 100,
+     "PHealShieldReduction": 0.4,
+     "PDebuffDuration": 3,
+     "PHealingMinionMod": 0.25,
+     "PHealingRatio": 1
+    },
+    "calcs": {
+     "PDamage": {
+      "expr": "byLevel(0.04..0.1)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.04,
+        0.04352941,
+        0.04705882291583454,
+        0.05058823482078664,
+        0.05411764672573875,
+        0.057647058630690855,
+        0.06117647,
+        0.06470588244059507,
+        0.06823529,
+        0.07176471,
+        0.07529411815545138,
+        0.07882353,
+        0.08235294,
+        0.08588235,
+        0.0894117657752598,
+        0.09294118,
+        0.09647059,
+        0.1
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "PCooldown": {
+      "expr": "byLevel(22..10)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        22,
+        21.2941176,
+        20.588235,
+        19.882353,
+        19.17647,
+        18.470588,
+        17.764706,
+        17.058823,
+        16.352941,
+        15.6470588,
+        14.941176,
+        14.235294,
+        13.52941176,
+        12.823529,
+        12.117647,
+        11.411765,
+        10.705882,
+        10
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "MonsterDamageCap": {
+      "expr": "byLevel(100..320)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        100,
+        112.94118,
+        125.882353,
+        138.82353,
+        151.76471,
+        164.70588,
+        177.64706,
+        190.58824,
+        203.529412,
+        216.470588,
+        229.41176,
+        242.35294,
+        255.29412,
+        268.2353,
+        281.17647,
+        294.11765,
+        307.058824,
+        320
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AatroxQ",
+    "key": "Characters/Aatrox/Spells/AatroxQAbility/AatroxQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      12,
+      10,
+      8,
+      6
+     ]
+    },
+    "dataValues": {
+     "QBaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       25,
+       40,
+       55,
+       70
+      ]
+     },
+     "QTotalADRatio": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.675,
+       0.75,
+       0.825,
+       0.9
+      ]
+     },
+     "QSweetSpotBonus": 0.75,
+     "QKnockupDuration": 0.25,
+     "QRampBonus": 0.25,
+     "QMonsterBonus": 25,
+     "QExtensionTime": 4
+    },
+    "calcs": {
+     "QDamage": {
+      "expr": "QBaseDamage=[10/25/40/55/70] + (QTotalADRatio=[0.6/0.675/0.75/0.825/0.9])xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        25,
+        40,
+        55,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.6,
+          0.675,
+          0.75,
+          0.825,
+          0.9
+         ]
+        },
+        "dataValue": "QTotalADRatio"
+       }
+      ],
+      "refs": [
+       "QBaseDamage",
+       "QTotalADRatio"
+      ]
+     },
+     "QMinionDamage": {
+      "expr": "byLevelL[0.55/0.55/0.55/0.55/0.55/0.6/0.6/0.6/0.6/0.6/0.65/0.65/0.65/0.65/0.65/0.7/0.7/0.7]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.55,
+        0.55,
+        0.55,
+        0.55,
+        0.55,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.65000001,
+        0.65000001,
+        0.65000001,
+        0.65000001,
+        0.65000001,
+        0.7,
+        0.7,
+        0.7
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "QEdgeDamage": {
+      "expr": "QDamage * 1 + QSweetSpotBonus=0.75",
+      "modifies": "QDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        17.5,
+        43.75,
+        70,
+        96.25,
+        122.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          1.05,
+          1.18125,
+          1.3125,
+          1.44375,
+          1.575
+         ]
+        },
+        "dataValue": "QTotalADRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "QBaseDamage",
+       "QSweetSpotBonus",
+       "QTotalADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "AatroxW",
+    "key": "Characters/Aatrox/Spells/AatroxWAbility/AatroxW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "WBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50,
+       60,
+       70
+      ]
+     },
+     "WBonusADRatio": 0.4,
+     "WSlowPercentage": {
+      "axis": "rank",
+      "v": [
+       -0.25,
+       -0.275,
+       -0.3,
+       -0.325,
+       -0.35
+      ]
+     },
+     "WSlowDuration": 1.5,
+     "WTotalADRatio": 0.4
+    },
+    "calcs": {
+     "WDamage": {
+      "expr": "WBaseDamage=[30/40/50/60/70] + (WTotalADRatio=0.4)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        40,
+        50,
+        60,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "WTotalADRatio"
+       }
+      ],
+      "refs": [
+       "WBaseDamage",
+       "WTotalADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "AatroxE",
+    "key": "Characters/Aatrox/Spells/AatroxEAbility/AatroxE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ESpellVamp": 16,
+     "EBonusAD": {
+      "axis": "rank",
+      "v": [
+       15,
+       25,
+       35,
+       45,
+       55
+      ]
+     },
+     "EResistancePerAD": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "EDashSpeed": 800,
+     "EMaxRange": 300,
+     "EDuration": 1.5,
+     "EBaseRechargeTime": {
+      "axis": "rank",
+      "v": [
+       26,
+       22,
+       18,
+       14,
+       10
+      ]
+     },
+     "EMinRange": 75,
+     "ESpellVampEmpowered": 16,
+     "EVampHPRatio": 0.011
+    },
+    "calcs": {
+     "TotalEVamp": {
+      "expr": "(ESpellVamp=16 + (EVampHPRatio=0.011)xbonus maxHp) * 0.01",
+      "flat": 0.16,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.00011,
+        "dataValue": "EVampHPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ESpellVamp",
+       "EVampHPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "AatroxR",
+    "key": "Characters/Aatrox/Spells/AatroxRAbility/AatroxR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RDuration": 10,
+     "RERechargeBonus": 0.5,
+     "RMovementSpeed": {
+      "axis": "rank",
+      "v": [
+       0.15,
+       0.2,
+       0.25
+      ]
+     },
+     "RMovementSpeedBonus": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "RTotalADAmp": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.3,
+       0.4
+      ]
+     },
+     "RBonusADRange": 75,
+     "RSpeedMinDuration": 3,
+     "RFXExtraDuration": 0.6,
+     "RPercentBloodWellToBoostToMax": 0.8,
+     "RHealingAmp": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       0.75,
+       1
+      ]
+     },
+     "RExtension": 5,
+     "RFearRadius": 600,
+     "RMinionFearDuration": 3,
+     "RChampionFearDuration": 1
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "AatroxQ",
+  "W": "AatroxW",
+  "E": "AatroxE",
+  "R": "AatroxR",
+  "P": "AatroxPassive"
+ },
+ "resource": {
+  "arType": 10,
+  "values": {
+   "{726ee5cd}": 0,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Aatrox",
+  "name": "Aatrox",
+  "partype": "Blood Well",
+  "passive": "Deathbringer Stance",
+  "spells": [
+   {
+    "id": "AatroxQ",
+    "name": "The Darkin Blade",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     12,
+     10,
+     8,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "AatroxW",
+    "name": "Infernal Chains",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "AatroxE",
+    "name": "Umbral Dash",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "AatroxR",
+    "name": "World Ender",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Deathbringer Stance": {
+    "damagetype": "magic",
+    "spelleffects": "proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "The Darkin Blade": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   },
+   "The Darkin Blade 2": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   },
+   "The Darkin Blade 3": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Infernal Chains": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Umbral Dash": {
+    "targeting": "Location",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "World Ender": {
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   }
+  }
+ }
+}

@@ -1,0 +1,144 @@
+{
+ "champion": "tryndamere",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Fury is a capped resource built by basic attacks (+5), crits/kills (+10), stacking additively per instance, decaying at 5/s after 8s without dealing/taking damage; drives the crit-chance conversion."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Current Fury (0-100) is converted directly into critical strike chance (0-50%), i.e. Fury is a proxy resource that ultimately buffs crit chance/damage."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q",
+    "E"
+   ],
+   "note": "Tryndamere has no innate base crit; all crit chance comes from Fury via P. Q's cast-timing note (crit roll locked in at windup start, before a mid-windup Bloodlust cast) and E's crit-triggered cooldown refund both depend on this crit chance."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bloodlust's passive grants bonus AD scaling linearly with Tryndamere's missing health, capped at 90% missing health."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bloodlust's active consumes 100% of current Fury; casting it zeroes the Fury pool and therefore Fury-derived crit chance, trading crit/damage potential for a heal (heal itself is defensive-only)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "On-hit critical strikes reduce Spinning Slash's current cooldown by 0.75s (1.5s vs champions), stacking with normal cooldown countdown."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spinning Slash deals a single instance of physical damage (base + 100% bonus AD + 80% AP) to each enemy hit by the dash, on a fixed cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spinning Slash's hit depends on dash geometry (max 660 range, 225 hit radius, cast-at-max-range if out of range); a stationary single-target dummy fight must assume Tryndamere dashes onto/through the dummy every cast."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Reduces the target's bonus AD (and slows if facing away) for 4s; irrelevant to the damage-dealing (Tryndamere-attacks-dummy) fight since the dummy never attacks, but reduces damage taken from Tryndamere's target in the survival fight when Tryndamere is the tanky side attacked by a champion... actually here W is cast BY Tryndamere, so it only matters if Tryndamere is the survival-fight tank being hit by a champion and can reach/cast W on the attacker to reduce incoming damage."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Undying Rage instantly grants a flat burst of Fury (50/75/100), which feeds directly into the P crit-chance conversion."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Bloodlust's heal (min/max heal formulas) and Undying Rage's minimum-health-threshold/duration are never read by the damage-only dummy fight; they matter only for Tryndamere's own survivability in the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Tryndamere's entire crit chance is generated dynamically by a shared Fury resource that is built by attacks/crits/kills/E-hits/R, decays after 8s of inactivity, and can be entirely zeroed out by casting Q. Correctly simulating damage requires modeling this closed loop (attack -> Fury -> crit chance -> expected crit damage -> more Fury) tick-by-tick across the 15s window, plus E's on-crit cooldown refunds feeding back into cast frequency, and the timing quirk where a mid-windup Bloodlust cast uses the pre-cast crit chance but grants Fury only after the windup completes. This is more than the closed-list primitives can express as independent, composable effects; it needs bespoke stateful simulation of the Fury/crit feedback loop."
+ },
+ "unsettled": [
+  {
+   "question": "Bloodlust's passive AD scales with Tryndamere's missing health, but in the damage-fight the dummy never damages Tryndamere, so his missing health stays at (or very near) 0 for the whole 15s. Should the simulator treat this passive as contributing ~0 bonus AD for the entire damage fight, or assume some non-zero missing-health baseline?",
+   "options": [
+    "Compute missing health as 0 throughout, so the passive contributes 0 AD in the damage fight (literal reading of the fight rules)",
+    "Assume a fixed/average missing-health value (e.g. some percent) to approximate realistic play",
+    "Treat the passive AD term as not applicable to the damage-fight simulation at all"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Tryndamere''' gains {{sti|{{as|'''bonus''' attack damage}}}} based on his {{as|'''missing''' health}}, up to a maximum amount at {{as|{{#var:low}}% '''missing''' health}}."
+   ]
+  },
+  {
+   "question": "Does Spinning Slash's damage instance resolve instantly on cast (front-loaded), or only when the dash physically reaches/passes the target's location (delayed by travel time)? This changes exactly when damage lands relative to other actions in a tight 15s window.",
+   "options": [
+    "Damage is dealt at the moment of cast (instant hit, dash is purely visual/positional)",
+    "Damage is dealt when the dash reaches the enemy's position (small travel-time delay based on 660 range and dash speed)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Tryndamere''' {{tip|dashes}} to the target location, dealing {{as|physical damage}} to enemies hit"
+   ]
+  },
+  {
+   "question": "The bin's TryndamerePassive#{dc63b617} formula '(byLevel0.05) * 0.1' suggests the Fury-to-crit-chance conversion (or some related passive value) may scale by champion level, but the wiki describes a flat 0.5% crit per Fury point (0 to 50% over 0 to 100 Fury) at all levels. Which is correct for computing crit chance during the fight?",
+   "options": [
+    "Flat conversion regardless of level, as stated on the wiki (0.5% crit per Fury point, cap 50%)",
+    "Conversion coefficient scales with champion level per the unexplained bin formula",
+    "The bin term is unrelated to the crit conversion (e.g. a different, unused passive value)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "TryndamerePassive#{dc63b617} = (byLevel0.05) * 0.1",
+    "{{pp|0 to {{#var:max}}|key=%|0 to 100 by 5|type=Fury|color=Fury|label=Crit chance}} critical strike chance"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by auto-attacking the dummy immediately to start generating Fury (5 per hit, more on crits) since Tryndamere has zero Fury and zero crit chance at fight start.",
+   "Cast Spinning Slash (E) as soon as it is available (no cast time) to land a large upfront physical-damage instance, generate 5 Fury (champion target), and start its cooldown-refund-on-crit loop.",
+   "Cast Undying Rage (R) early for its instant Fury gain (50-100 depending on rank) purely to spike Fury-derived crit chance sooner, since its defensive minimum-health-threshold effect is not read in the damage fight.",
+   "Continue auto-attacking between E casts; recast Spinning Slash on cooldown, with cooldown further shortened by any on-hit crits landed since its last cast.",
+   "Do not cast Bloodlust (Q): consuming 100% of current Fury would zero out Fury-derived crit chance (reducing subsequent auto-attack and E damage) for a heal that the damage fight never rewards, and its passive AD bonus is near-zero since the dummy deals no damage back.",
+   "Do not cast Mocking Shout (W) in the damage fight: it only reduces the target's own AD, which a non-attacking dummy never uses, so it deals and enables no extra damage."
+  ],
+  "questions": [
+   "At what Fury value (if any) does the simulator assume Tryndamere starts the fight — 0, or some pre-fight-buildup value?",
+   "Should Undying Rage be assumed available/used at all in the pure damage fight given its primary purpose is defensive, or should the rotation instead assume R is saved (not cast) since it contributes only a secondary Fury/crit side-effect?",
+   "In the survival fight, is Tryndamere expected to spend actions casting Mocking Shout on the attacking champion for its AD-reduction/slow, or does the fixed enemy rotation make that impractical to model?",
+   "Does the simulator's crit-chance model apply Fury-derived crit multiplicatively/additively with any itemized crit chance, and is total crit chance capped at 100% as normal?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

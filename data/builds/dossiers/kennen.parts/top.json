@@ -1,0 +1,180 @@
+{
+ "champion": "kennen",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Thundering Shuriken deals its full damage on hit to the first enemy struck, on cooldown"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Slicing Maelstrom is cast once (0.25s cast time) to start the storm"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "storm strikes bolts every 0.5s for 3s, each a separate damage instance with a per-hit ramp"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "each subsequent bolt a target has taken deals 10% more damage, capped at 150% of the initial bolt's damage"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lightning Rush is a ghosted form that blocks basic attacks while active"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "E can be manually recast after 0.5s or auto-recasts after its 2s duration; cooldown starts post-effect"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "recasting E grants bonus attack speed for 4s, extendable by 1s per crit up to the original duration"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "the recast's bonus attack speed is allowed to exceed the normal attack speed cap"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "basic attacks generate a stack of Electrical Surge up to a cap of 4"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "the attack that reaches 4 stacks is empowered"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "the 4th basic attack consumes all stacks to deal bonus magic on-hit damage (can crit) and apply a Mark of the Storm stack"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "the passive's bonus on-hit damage can critically strike for 140%/+40% bonus crit damage"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "the active can only be cast on a target that already carries a Mark of the Storm stack (or is inside Slicing Maelstrom), and only damages such targets"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mark of the Storm: every ability application adds/refreshes a stack (6s), capping at 3, shared across Kennen's whole kit on a given target"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "energy costs (Q 60-40, W 40, E 80) and passive/E energy restores on stun-proc or successful E damage meaningfully gate casts within 15s"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's bonus armor/MR for its duration only matters for the survival fight, not the damage fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Mark of the Storm is a stack system shared across all four abilities (Q, W-active, E, R) plus, ambiguously, basic attacks: any ability hit adds/refreshes a stack on the target (cap 3, 6s duration), and the 3rd stack self-consumes to stun and restore 25 energy, with a 6s diminishing-return window per target. This is a cross-ability target-stack counter with a trigger effect (stun+resource) that the closed primitive list's single-ability target-stacks primitive does not capture on its own; it needs to be modeled as one shared counter fed by multiple sources with a proc effect and its own separate 'stack immunity' rule when triggered by R specifically. Additionally, W's active has a hard precondition (a nearby marked target or being inside R's radius) to even be castable, which is a bespoke castability gate rather than a simple conditional-damage modifier."
+ },
+ "unsettled": [
+  {
+   "question": "Do Kennen's plain (unempowered) basic attacks apply a stack of Mark of the Storm, or only his abilities (Q/E/R) and the 4-stack-empowered W attack?",
+   "options": [
+    "Only Q, E, R casts and the Electrical Surge-empowered 4th attack apply Mark of the Storm stacks; ordinary basic attacks do not",
+    "All basic attacks apply Mark of the Storm stacks in addition to abilities, since the passive tooltip calls out 'abilities' broadly and on-hit sources are often included"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{sbc|Innate:}} '''Kennen's''' {{tip|abilities}} apply a {{tip|stack}} of ''Mark of the Storm'' to enemies hit for 6 seconds"
+   ]
+  },
+  {
+   "question": "Does the Electrical Surge stack-consuming (4th) attack itself also generate a fresh Electrical Surge stack, or does the counter reset to 0 and require 4 more attacks before the next empowered attack?",
+   "options": [
+    "The empowering attack consumes stacks and does not add a new one; next empowered attack requires 4 more attacks (period of 4)",
+    "The consuming attack also generates a stack simultaneously, effectively shortening the cycle"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "At 4 stacks, his next basic attack {{tip|on-attack}} consumes all stacks to both deal {{as|'''bonus''' magic damage}} and apply a stack of ''{{ai|Mark of the Storm|Kennen}}'' {{tip|on-hit}}"
+   ]
+  },
+  {
+   "question": "During Slicing Maelstrom, do the periodic bolt strikes (every 0.5s) each count as a separate 'ability hit' for Mark of the Storm purposes, meaning the passive stun could trigger repeatedly (every 1.5s) throughout R's 3s duration on a stationary target?",
+   "options": [
+    "Yes, each R tick applies/refreshes a Mark of the Storm stack like any other ability hit, so the passive stun can trigger mid-R",
+    "No, R's DoT ticks are excluded from Mark of the Storm application and only the initial cast (or none of R) applies a stack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After {{ai|Slicing Maelstrom|Kennen}} applies its third stack, the target gains a 6-second stack immunity against ''Slicing Maelstrom'' that refreshes on subsequent hits."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: max Q first, then take W/E per standard order, take R at level 6 and whenever available thereafter.",
+   "Open with Q (Thundering Shuriken) on the dummy for upfront magic damage and to apply a Mark of the Storm stack.",
+   "Auto-attack to build Electrical Surge stacks while Q is on cooldown.",
+   "Cast E (Lightning Rush) to pass through the dummy for its magic damage, apply another Mark of the Storm stack, and restore 40 energy.",
+   "If a Mark of the Storm stack is present (from Q/E) and W is off cooldown, cast W (Electrical Surge active) for AoE magic damage and another mark application.",
+   "Once R is available (level 6+), cast R to start the storm's periodic bolt damage and bonus resists (resists irrelevant to the damage fight), continuing to auto-attack and weave Q/E/W on cooldown.",
+   "Recast E (or let it auto-recast) as soon as it has dealt its damage, since a single stationary target is hit only once regardless of dash duration, in order to gain the bonus attack speed sooner and exceed the attack speed cap for more autos.",
+   "Weave basic attacks continuously between spell casts so the 4th attack consumes Electrical Surge stacks for its bonus on-hit magic damage as often as possible.",
+   "Whenever the passive's 3rd Mark of the Storm stack lands on the dummy, take the free stun window as an opportunity to land more autos/casts (the stun itself does not need modeling as CC, but the accompanying 25 energy restore should be tracked to sustain the energy-cost rotation)."
+  ],
+  "questions": [
+   "Should E be recast immediately (0.5s) for earliest attack-speed uptime, or held for its full 2s duration for any reason relevant to the dummy fight?",
+   "Is it worth delaying W's active cast to wait for a mark from Q/E, or can R's radius alone satisfy W's cast precondition for the whole duration of R, letting W be cast off cooldown regardless of Q/E landing?",
+   "In the 15s window, is it optimal to hold R until near the end (to maximize DoT ramp uptime given its 120s cooldown means it casts once) or open with it early to front-load more of the fight under its bolts?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

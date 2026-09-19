@@ -1,0 +1,908 @@
+{
+ "champion": "warwick",
+ "abilities": {
+  "P": {
+   "name": "Eternal Hunger",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_onhit",
+     "meaning": "bonus magic on-hit damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      6.0,
+      8.882353,
+      11.764706,
+      14.6470588,
+      17.529412,
+      20.411765,
+      23.2941176,
+      26.17647,
+      29.058823,
+      31.941177,
+      34.82353,
+      37.705882,
+      40.588235,
+      43.47059,
+      46.35294,
+      49.235294,
+      52.117647,
+      55.0
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.15
+      },
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{as|{{pp|6 + (55-6)/17*(x-1) for 20}} {{as|(+ 15% '''bonus''' AD)}} {{as|(+ 10% AP)}}|magic damage}}",
+     "bin": [
+      "WarwickP#OnHitDamage"
+     ],
+     "binNote": "wiki template's 'for 20' formula generates 20 entries, but the bin's WarwickP#OnHitDamage flat array has exactly 18 values (levels 1-18) with a linear step of ~2.882353 between 6 and 55, not the ~2.0526 step implied by the wiki's (55-6)/17 formula applied across 20 entries; used the bin's 18 values directly since champion levels are 1-18 and the wiki's own formula denominator (17) matches 18 levels, but the wiki template's literal rendering would produce different intermediate numbers than the bin - this is a case where the wiki's displayed formula and the bin's actual array diverge in interpolation, though both endpoints (6 and 55) agree"
+    },
+    {
+     "id": "p_heal_threshold",
+     "meaning": "health threshold below which Eternal Hunger heals Warwick",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "While {{as|below 50% '''maximum''' health}}",
+     "bin": [
+      "WarwickP.HealingThreshold"
+     ]
+    },
+    {
+     "id": "p_heal_ratio",
+     "meaning": "percent of post-mitigation Eternal Hunger damage healed below 50% health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1.0,
+     "terms": [],
+     "quote": "'''Warwick''' also {{tip|heal|heals}} for 100% of the {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} dealt by ''Eternal Hunger''",
+     "bin": [
+      "WarwickP.HealingRatio"
+     ]
+    },
+    {
+     "id": "p_empowered_heal_threshold",
+     "meaning": "health threshold below which Eternal Hunger's heal is empowered",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "increased to 250% while {{as|below 25% '''maximum''' health}}",
+     "bin": [
+      "WarwickP.EmpoweredHealingThreshold"
+     ]
+    },
+    {
+     "id": "p_empowered_heal_ratio",
+     "meaning": "percent of post-mitigation Eternal Hunger damage healed below 25% health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "increased to 250% while {{as|below 25% '''maximum''' health}}",
+     "bin": [
+      "WarwickP.EmpoweredHealingRatio"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Eternal Hunger's damage is applied before the damage of the effect that triggers it.",
+     "quote": "''Eternal Hunger's'' damage is applied before the damage of the effect that triggers it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Eternal Hunger does not proc against structures, wards (except effigies), jungle plants, or Gangplank kegs.",
+     "quote": "''Eternal Hunger'' does not affect:",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The heal is based on post-mitigation damage dealt by Eternal Hunger, applying self-healing that changes damage taken outcomes but not damage dealt.",
+     "quote": "heals for 100% of the {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} dealt by ''Eternal Hunger''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "WarwickP.HealthRestoreSlushTime",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Jaws of the Beast",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ],
+    "quote": "{{ap|80 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "{{tt|none|See notes}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.06,
+        0.07,
+        0.08,
+        0.09,
+        0.1
+       ]
+      },
+      {
+       "stat": "ad",
+       "coef": 1.2
+      },
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{as|{{ap|6 to 10}}% of target's '''maximum''' health}} {{as|(+ 120% AD)}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "WarwickQ#BaseBiteDamage",
+      "WarwickQ.TargetPercentHPDamage",
+      "WarwickQ.APRatio"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Capped Monster Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      165,
+      180,
+      195,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.2
+      },
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|150 to 210}} {{as|(+ 120% AD)}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "WarwickQ.HPDamageCap",
+      "WarwickQ#BaseBiteDamage",
+      "WarwickQ.APRatio"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Healing Percentage",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      37.5,
+      50,
+      62.5,
+      75
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 75}}%",
+     "bin": [
+      "WarwickQ.LifestealPercent"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "cast delay before the bite occurs",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2475,
+     "terms": [],
+     "quote": "{{rutngt|0.2475}}",
+     "bin": [],
+     "binNote": "Cast/lunge delay not present as a separate data value in the sheet; not covered by the listed rows."
+    },
+    {
+     "id": "q_5",
+     "meaning": "hold/charge duration extending the channel",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5 seconds}}",
+     "bin": [],
+     "binNote": "Matches WarwickQ.CheatLength/CheatLengthMoveBlock geometry values only in spirit; no direct duration data value listed."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Warwick heals for a percentage of the post-mitigation damage dealt by the bite.",
+     "quote": "healing himself for a percentage of the {{tt|post-mitigation damage|Damage calculated after resistances and most modifiers.}} dealt",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability applies on-hit effects and life steal, and triggers on-attack effects.",
+     "quote": "applying {{tip|on-hit}} effects and {{as|{{sti|life steal}}}}, and triggering {{tip|on-attack}} effects",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The health-ratio damage component is capped against monsters at a flat value instead.",
+     "quote": "The damage based on the target's health ratio is capped against {{tip|monster|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The healing is calculated only from the bite's own damage, not from on-hit or other added effects.",
+     "quote": "The healing is calculated only from ''Jaws of the Beast's'' damage, while additional effects, such as on-hits, are not.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target dies before Warwick reaches them on a tapped cast, the ability's cooldown (not mana cost) is refunded.",
+     "quote": "If the target dies prior to '''Warwick''' reaching them, ''Jaws of the Beast'' refunds its cooldown when tapped.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts only after the bite effect resolves, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "WarwickQ.BiteZoneLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "WarwickQ.CheatLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "WarwickQ.CheatLengthMoveBlock",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "WarwickQ.QCastRangeOverride",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Blood Hunt",
+   "cooldown": {
+    "values": [
+     80,
+     70,
+     60,
+     50,
+     40
+    ],
+    "quote": "{{ap|80 to 40}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     55,
+     55,
+     55,
+     55
+    ],
+    "quote": "55",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed gained while target is below the health threshold",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      70,
+      80,
+      90,
+      100,
+      110
+     ],
+     "terms": [],
+     "quote": "{{ap|70 to 110}}%",
+     "bin": [
+      "WarwickW.PassiveASBonus",
+      "WarwickW.ASBonus"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Increased (doubled) Attack Speed against targets below 25% health",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      140,
+      160,
+      180,
+      200,
+      220
+     ],
+     "terms": [],
+     "quote": "{{ap|70*2 to 110*2}}%",
+     "bin": [
+      "WarwickW.PassiveASBonus"
+     ],
+     "binNote": "Bin stores only the base 70-110 array (PassiveASBonus/ASBonus); the wiki-stated doubled value against sub-25%-health targets is not a separate data row, it is 2x that value applied by the doubling mechanic."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Duration of the active mark placed on the sensed enemy champion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "marking them with ''Blood Hunt'' for 8 seconds",
+     "bin": [
+      "WarwickW.Duration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Duration of the passive bonus attack speed buff after a qualifying hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "for {{fd|1.25}} seconds upon damaging a target",
+     "bin": [
+      "WarwickW.PassiveASDuration"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "Health threshold below which the base attack speed (and movement speed) bonuses apply",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "to or while they are below {{as|{{sti|health|50% of their '''maximum''' health}}}}",
+     "bin": [
+      "WarwickW.FirstHPThreshold"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "Health threshold below which the attack speed (and movement speed) bonuses are doubled",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "who are below {{as|{{sti|health|25% of their '''maximum''' health}}}}",
+     "bin": [
+      "WarwickW.SecondHPThreshold"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Warwick gains bonus attack speed upon damaging a target to or while below 50% max health with a basic attack or ability damage, and the buff refreshes on subsequent qualifying damage.",
+     "quote": "gains {{sti|{{as|'''bonus''' attack speed}}}} for {{fd|1.25}} seconds upon damaging a target to or while they are below {{as|{{sti|health|50% of their '''maximum''' health}}}} with a basic attack or {{tip|ability damage}}, refreshing with subsequent damaging basic attacks or ability damage to enemies below the threshold",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Warwick does not already have the bonus attack speed, he also gains it upon initiating an attack windup against a target below the threshold (but this does not refresh an existing buff).",
+     "quote": "The initiation of the attack windup to gain the bonus attack speed is only for ''gaining'' the bonus; it does not refresh the duration of the attack speed buff if '''Warwick''' has it already.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the attack speed and movement speed bonuses are doubled against enemies below 25% max health.",
+     "quote": "The {{as|attack speed|attack speed}} and {{as|movement speed}} bonuses granted by both passives are doubled against enemies who are below {{as|{{sti|health|25% of their '''maximum''' health}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active grants the passive attack speed and movement speed bonuses against the marked target regardless of that target's current health for the mark's duration.",
+     "quote": "'''Warwick''' senses the nearest enemy champion in the area at the start of the cast time, marking them with ''Blood Hunt'' for 8 seconds, gaining both passive bonuses against them regardless of their {{as|{{sti|health|'''current''' health}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Blood Hunt marks a target as sensed from wherever Warwick was at the start of the cast time, and if no enemy champion was found, it still goes on (reduced) cooldown without marking anyone.",
+     "quote": "If ''Blood Hunt'' was cast with no enemy champions within range, the ability incurs its cast time then goes on cooldown without marking any target.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "WarwickW.MoveSpeedBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "WarwickW.PassiveMSBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "WarwickW.NoTargetCDReduction",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "WarwickW.MSBonus",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Primal Howl",
+   "cooldown": {
+    "values": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "quote": "{{ap|15 to 11}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Damage Reduction",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      35,
+      40,
+      45,
+      50,
+      55
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 55}}%",
+     "bin": [
+      "WarwickE.DRAmount"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "duration of the damage reduction buff before it ends automatically",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.75,
+     "terms": [],
+     "quote": "{{fd|2.75}} seconds",
+     "bin": [
+      "WarwickE.DRDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "delay before the ability can be recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "can be recast after 1 second",
+     "bin": [
+      "WarwickE.RecastDelay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Primal Howl can be recast within the duration, and does so automatically afterwards.",
+     "quote": "''Primal Howl'' can be recast within the duration, and does so automatically afterwards.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown starts after the recast/end of the effect, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Starting the R channel while Primal Howl is active triggers the recast without ending the damage reduction buff early.",
+     "quote": "Starting ''{{ais|Infinite Duress|Warwick}}'' channel while ''Primal Howl'' is active will initiate the recast without ending the damage reduction buff prematurely.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The recast resets Warwick's basic attack timer.",
+     "quote": "''Primal Howl's recast {{tip|basic attack reset|resets}} '''Warwick's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast has a lockout animation that cancels a basic attack and prevents attacking or casting during it.",
+     "quote": "The recast's howling animation has a {{fd|0.25}}-second {{tip|lockout}} time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial cast and manual recast each count as ability activations for on-cast effects like Spellblade.",
+     "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If not manually recast, the secondary effect triggers without counting as an ability activation.",
+     "quote": "If the ability is not manually recasted, the secondary effect will trigger without being considered as an ability activation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The basic attack reset from the recast does not count as one for Hail of Blades.",
+     "quote": "The basic attack reset is not considered one for {{ri|Hail of Blades}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "WarwickE.RecastDelay",
+     "reason": null
+    },
+    {
+     "ref": "WarwickE.FearDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "WarwickE.DRDurationTooltipOnly",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Infinite Duress",
+   "cooldown": {
+    "values": [
+     110,
+     90,
+     70
+    ],
+    "quote": "{{ap|110 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.1,
+    "quote": "{{fd|0.1}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      175,
+      350,
+      525
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.67
+      }
+     ],
+     "quote": "{{ap|175 to 525}} {{as|(+ 167% '''bonus''' AD)}}",
+     "bin": [
+      "WarwickR#DamageCumulative"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{tip|channel|channels}} for up to {{fd|1.5}} seconds",
+     "bin": [
+      "WarwickR.RDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "damage tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "deal {{as|magic damage}} every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "Sheet has no explicit tick-interval field; RDuration=1.5 and 6 instances imply a 0.25s interval (1.5/6), consistent with the wiki's stated value but not directly named by any bin row."
+    },
+    {
+     "id": "r_4",
+     "meaning": "number of damage instances",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "''Infinite Duress'' deals a total of 6 damage instances",
+     "bin": [],
+     "binNote": "No bin row enumerates instance count; it is inferable from RDuration=1.5 divided by the 0.25s tick interval described in the wiki text, but the bin does not state either the interval or the count directly."
+    },
+    {
+     "id": "r_5",
+     "meaning": "healing from post-mitigation damage dealt to target",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": 1
+      }
+     ],
+     "quote": "'''Warwick''' {{tip|heals}} for 100% of all {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} he deals to the target during ''Infinite Duress''",
+     "bin": [],
+     "binNote": "This heal ratio is not present anywhere in the WarwickR sheet rows; it appears to be an undocumented (tooltip-only in the bin, or handled by a generic heal-on-damage effect not exposed as a DataValue/Calculation) mechanic."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "This damage applies life steal.",
+     "quote": "This damage {{tip|applies life steal|applies}} {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Infinite Duress both applies on-hit effects and triggers on-attack effects 3 times over its duration.",
+     "quote": "''Infinite Duress'' both applies {{tip|on-hit}} effects and triggers {{tip|on-attack}} effects 3 times over its duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The 1st, 3rd, and 5th ticks deal 2/9ths of total damage as a single instance while applying both spell and on-hit effects and triggering on-attack effects; the 2nd, 4th, 6th ticks deal 1/9th while applying spell effects only.",
+     "quote": "The 1st, 3rd, and 5th ticks deals 2/9ths of the total damage as a single instance while applying both spell and on-hit effects, and triggering on-attack effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If cleansed, Warwick continues to strike but deals no damage during the channel.",
+     "quote": "Cleansing the suppression does not interrupt the channel and Warwick will continue to strike but not deal any damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target is crowd control immune or spell-shielded on collision, Warwick will not start the channel and deals no damage.",
+     "quote": "If the target is crowd control immune or protected by spell shield upon collision, '''Warwick''' will not start the channel.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Warwick can cast Primal Howl during the dash and channel.",
+     "quote": "''{{ai|Primal Howl|Warwick}} can be cast during the dash.''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "WarwickR.RDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "Eternal Hunger (P) is a flat bonus magic on-hit proc that fires on every basic attack and is explicitly re-triggered whenever Jaws of the Beast (Q) or Infinite Duress (R, on its 1st/3rd/5th ticks) 'apply on-hit effects'."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "Q",
+    "W"
+   ],
+   "note": "P's heal ratio and W's AS/MS bonus magnitude both switch on the target's current-health thresholds (50%/25% max HP); Q's primary damage term is itself a % of the target's max HP."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blood Hunt grants a duration-limited (1.25s, refreshed on qualifying hits; or 8s while actively marked) attack-speed and move-speed buff."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Primal Howl's recast explicitly resets Warwick's basic attack timer."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Primal Howl is a cast-then-recast (or auto-recast) ability; Infinite Duress delivers its total damage as 6 separately timed 0.25s-interval instances over a 1.5s channel."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Infinite Duress ticks magic damage every 0.25s for up to 1.5s."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "Infinite Duress channels for up to 1.5s, blocking attacks per the wiki's channel interaction table; Jaws of the Beast can optionally be held to channel/charge (no extra damage, mobility-only, so lower priority for the damage fight)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Jaws of the Beast refunds its cooldown (not its cost) if the target dies before Warwick reaches it on a tapped cast."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (Q 80-100, W 55, E 40, R 100); Warwick's mana pool may constrain how often the full rotation can be repeated in 15s."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "P/Q/R self-heals (100%/250% post-mitigation for P, lifesteal-style heal for Q, 100% post-mitigation heal for R) and E's damage-reduction buff change damage taken, not damage dealt, and only matter for the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic in Warwick's kit (flat on-hit proc, health-threshold-gated buffs and heals, an attack-reset recast, a multi-tick channelled ultimate, mana costs, and a conditional cooldown refund) maps onto existing primitives; nothing requires bespoke simulator logic."
+ },
+ "unsettled": [
+  {
+   "question": "What are the true per-champion-level (1-18) values of Eternal Hunger's (P) bonus on-hit magic damage?",
+   "options": [
+    "Use the bin's WarwickP#OnHitDamage array directly: 18 explicit values from 6 (lvl1) to 55 (lvl18) with a step of (55-6)/17 ≈ 2.882 per level.",
+    "Use the wiki template's literal formula {{pp|6 + (55-6)/17*(x-1) for 20}}, which generates 20 stepped entries (step ≈2.0526 if spread over 20) and would need to be mapped/truncated onto 18 champion levels, producing different intermediate values than the bin array."
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|{{pp|6 + (55-6)/17*(x-1) for 20}} {{as|(+ 15% '''bonus''' AD)}} {{as|(+ 10% AP)}}|magic damage}}",
+    "WarwickP#OnHitDamage = byLevel(6..55) + (ADRatio=0.15)xbonus ad + (APRatio=0.1)xap"
+   ]
+  },
+  {
+   "question": "Where does Infinite Duress's (R) 100%-post-mitigation-damage self-heal come from, and is it actually live in this patch?",
+   "options": [
+    "It is a real, undocumented-in-the-bin heal effect (handled by a generic heal-on-damage component not exposed as a listed DataValue/Calculation), so it should be modeled as stated by the wiki.",
+    "It is only a wiki description/legacy claim with no corroborating bin row at all, so its presence or exact ratio should be treated as unverified pending a stronger check of the bin."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Warwick''' {{tip|heals}} for 100% of all {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} he deals to the target during ''Infinite Duress''."
+   ]
+  },
+  {
+   "question": "In the simulated 15s damage-race fight where the dummy can die, should Jaws of the Beast's (Q) cooldown-refund-on-kill (tapped cast, target dies before Warwick reaches them) be modeled, given the wiki also flags this refund as sometimes failing and having buggy edge cases?",
+   "options": [
+    "Always apply the refund when a tapped Q's target dies before the bite lands, matching the documented rule.",
+    "Never apply it (treat as an unreliable/bugged edge case not worth modeling), since the wiki explicitly notes the refund 'can occasionally fail' and even has patch-specific known-issue variants."
+   ],
+   "impact": "low",
+   "quotes": [
+    "If the target dies prior to '''Warwick''' reaching them, ''Jaws of the Beast'' refunds its cooldown when tapped.",
+    "The refund can occasionally fail."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Jaws of the Beast) on the dummy for immediate magic damage, on-hit application (triggering P), and lifesteal.",
+   "Auto-attack continuously between ability casts so P's on-hit damage and any on-hit item effects always tick.",
+   "Cast W (Blood Hunt) early (either the active for a guaranteed 8s AS/MS-eligibility window, or simply rely on the passive proc once the dummy's health first drops below 50%) to keep the attack-speed buff up as much as possible.",
+   "Weave E (Primal Howl) in and recast it as soon as the 1s minimum delay allows, primarily to use its attack-reset to fit in extra auto-attacks; its damage-reduction buff itself is irrelevant in the damage fight.",
+   "Cast R (Infinite Duress) on cooldown for its 6-instance, 1.5s channelled magic DoT with 3 on-hit-triggering ticks, accepting that autos are blocked during the channel.",
+   "Re-cast Q on cooldown throughout the fight (short 6-8s CD) since it is the highest-damage frequently-available spell, keeping mana permitting.",
+   "Prioritize spending mana on Q > R > E > W if mana becomes the binding constraint over the 15s window."
+  ],
+  "questions": [
+   "Is it worth spending 55 mana and a 0.5s cast time on W's active early (to guarantee its AS/MS eligibility before the dummy's health drops), or should mana be reserved for Q/R given Warwick's small mana pool?",
+   "Does R's channel (attack=false per the wiki's interaction table) fully block Warwick's basic attacks for its whole 1.5s, meaning it should be sequenced to minimize interrupting an ongoing on-hit-heavy auto-attack rhythm?",
+   "Is Q's hold/charge variant (which adds no extra damage, only repositioning) ever worth using in a stationary-dummy fight, or should Warwick always tap-cast Q for minimum lockout time?",
+   "Given all four abilities cost mana (Q 80-100, W 55, E 40, R 100) with no listed mana regen data here, is mana actually a binding constraint over 15s, or does Warwick's base mana pool/regen comfortably allow the full proposed rotation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

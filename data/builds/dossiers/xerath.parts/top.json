@@ -1,0 +1,116 @@
+{
+ "champion": "xerath",
+ "primitives": [
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's charge-up (up to ~3-4s, self-slowing) blocks other actions until recast fires the beam; R's channel (up to 10s) blocks other actions while enabling up to 4-6 Arcane Barrage recasts."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q is an active/recast pair (charge then beam); R is a channel with multiple separately-timed Arcane Barrage recasts, each its own damage instance."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Arcane Perfection: landing an Arcane Barrage on an enemy champion (the dummy counts as one) grants a stack (cap 3-5 by rank) that increases the damage of subsequent Arcane Barrage casts, but not the cast that granted the stack."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q/W 80-120, E 60-80, R flat 100) meaningfully gate how many casts fit in a 15s fight; Mana Surge (P) restores mana on the next empowered basic attack, doubled vs champions, partially offsetting spend."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "Single damage instance dealt after a short cast time / travel-or-impact delay, then on cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W"
+   ],
+   "note": "Eye of Destruction deals 66.7% increased damage (x1.667) if the target is in the inner 'epicenter' radius versus the outer effect radius; the dummy fight must assume which the target occupies."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Q's charge/recast, W's plain cast with an epicenter damage multiplier, E's plain cast, R's channel/multi-recast with a per-stack self-buff, and mana as a binding resource) decomposes into existing primitives; nothing requires bespoke logic beyond them."
+ },
+ "unsettled": [
+  {
+   "question": "Should Eye of Destruction (W) be assumed to land in the inner epicenter (66.7% increased damage) or at the outer edge (base damage only) against the single stationary dummy target?",
+   "options": [
+    "Always assume epicenter hit (max multiplier, x1.667 total)",
+    "Always assume outer-radius hit (base damage only)",
+    "Some blended/partial assumption"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Enemies in the epicenter take {{fd|66.7}}% increased damage and are {{tip|slow|slowed}} by a greater amount",
+    "{{st|Increased Damage|{{ap|50*1.667 to 190*1.667}} {{as|(+ {{ap|65*1.667}}% AP)}}}}"
+   ]
+  },
+  {
+   "question": "For Rite of the Arcane (R), does the 0.6s static per-cast cooldown and the 0.6s missile travel/impact delay stack sequentially (~1.2s between casts landing) or represent the same 0.6s interval (recasts and impacts both gated at 0.6s apart), which changes how much of the 15s fight window R's full recast sequence consumes?",
+   "options": [
+    "0.6s cooldown and 0.6s travel delay overlap/are the same interval (fastest possible cadence ~0.6s between landed hits)",
+    "0.6s cooldown must elapse after each cast is issued, and travel delay is additional on top (~1.2s+ between landed hits)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Each cast has a {{tt|static cooldown|Unaffected by ability haste}} of {{rutngt|0.6}}.",
+    "'''Xerath''' catapults an arcane missile that strikes the target location after a {{rutngt|0.6}} delay"
+   ]
+  },
+  {
+   "question": "Arcanopulse's (Q) bin ChargeTime value (4s) disagrees with the wiki's stated charge cap (up to 3s) before auto-cancel; which is the live charge duration cap, and does it matter given a player would typically recast at minimum charge for fastest DPS?",
+   "options": [
+    "3s cap per wiki text",
+    "4s cap per bin ChargeTime",
+    "Discrepancy is immaterial since optimal play always recasts near-instantly"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Xerath''' {{tip|channel|charges}} while being {{tip|slow|slowed}} ... for up to 3 seconds",
+    "XerathArcanopulseChargeUp.ChargeTime = 4"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Enter the fight at full mana.",
+   "Cast Q (Arcanopulse): begin the charge and recast at minimum charge time to fire the beam as fast as possible for early damage and to start its cooldown (cdstart is post-effect).",
+   "Cast E (Shocking Orb) for its flat magic damage.",
+   "Cast W (Eye of Destruction) on the dummy, aiming for the epicenter for maximum damage.",
+   "Cast R (Rite of the Arcane): channel and recast Arcane Barrage as fast as the 0.6s per-shot interval allows, using all available recasts (4-6 by rank); each recast after the first benefits from Arcane Perfection stacks built by hitting the dummy on prior casts.",
+   "After R ends (or its recasts are exhausted), resume weaving Q, W, and E on cooldown in whatever order they come off cooldown, mana permitting.",
+   "Auto-attack in any gap where no ability is off cooldown or affordable, both for the small extra damage and to trigger Mana Surge's mana restoration.",
+   "Repeat until the 15s fight window ends."
+  ],
+  "questions": [
+   "Should R be opened immediately for its long cooldown and stacking payoff, or held until after Q/W/E have been used once so mana is spent optimally?",
+   "Against a single stationary dummy, does Arcane Perfection reliably reach its stack cap (3-5) before R's recasts are exhausted, or should the rotation assume partial stacking only?",
+   "Is auto-attacking between casts actually worth it given Xerath's low base AD and lack of any on-hit damage rider, or should mana always be held for the next spell cast instead?",
+   "Does the simulator enforce a fixed real-time duration for Q's charge and R's channel regardless of how fast the player recasts, or does recasting immediately shorten the time these abilities occupy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,164 @@
+{
+ "name": "Hemorrhage",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_bleed_per_stack",
+   "meaning": "physical damage per Hemorrhage stack over the bleed duration",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "level",
+   "base": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{pplevel|13 to 30}}|physical damage}} {{as|(+ 30% '''bonus''' AD)}} {{as|'''total''' physical damage}} over the duration",
+   "bin": [
+    "DariusHemoMarker#BleedDamagePerStack"
+   ]
+  },
+  {
+   "id": "p_tick_interval",
+   "meaning": "interval between Hemorrhage damage ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "every {{fd|1.25}} seconds over the duration",
+   "bin": [
+    "DariusHemoMarker.SecondsPerTick"
+   ],
+   "binNote": "Wiki states the tick interval as 1.25 seconds, but the bin's DariusHemoMarker.SecondsPerTick is 1.26."
+  },
+  {
+   "id": "p_bleed_duration",
+   "meaning": "duration a Hemorrhage stack (and its bleed) lasts",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "apply a {{tip|stack}} of ''Hemorrhage'' to enemies for 5 seconds",
+   "bin": [
+    "DariusHemoMarker.BleedDuration"
+   ]
+  },
+  {
+   "id": "p_stack_cap",
+   "meaning": "maximum Hemorrhage stacks on a target",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "refreshing on subsequent applications and stacking up to 5 times",
+   "bin": [
+    "DariusHemoMarker.MaxStacks"
+   ]
+  },
+  {
+   "id": "p_noxian_might_ad",
+   "meaning": "bonus attack damage granted by Noxian Might",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    35,
+    40,
+    40,
+    40,
+    45,
+    45,
+    45,
+    50,
+    55
+   ],
+   "terms": [],
+   "quote": "{{pplevel|30; then +5*x for 9; then +10*x for 3; then +25*x|formula=30 + 5 per level until level 10, then + 10 per level until level 13, then + 25 per level|color=AD}} {{sti|{{as|'''bonus''' attack damage}}}}",
+   "bin": [
+    "DariusHemoMarker#NoxianMightBonusAD"
+   ],
+   "binNote": "The sheet's byLevel array [30/35/40/45/50/55/60/65/70/75/85/95/105/130/155/180/205/230] is given for 18 champion levels directly; used verbatim rather than re-deriving from the wiki's stepwise formula description."
+  },
+  {
+   "id": "p_noxian_might_duration",
+   "meaning": "duration of the Noxian Might empowered state",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "he becomes empowered with ''Noxian Might'' for 5 seconds",
+   "bin": [],
+   "binNote": "No standalone bin data value found for the Noxian Might buff duration; taken from the wiki description text only."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks and damaging abilities apply a Hemorrhage stack that refreshes duration on reapplication.",
+   "quote": "damaging {{tip|basic attacks}} and {{tip|abilities}} apply a {{tip|stack}} of ''Hemorrhage'' to enemies for 5 seconds, refreshing on subsequent applications",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Attacks and abilities must actually deal damage to apply or refresh Hemorrhage; it can also be applied on-hit.",
+   "quote": "'''Darius'''' attacks and abilities have to deal damage to apply ''Hemorrhage''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "When Darius applies 5 stacks to an enemy champion, he becomes empowered with Noxian Might and instantly applies 5 Hemorrhage stacks through his usual means.",
+   "quote": "'''Darius''' gains {{pplevel|30; then +5*x for 9; then +10*x for 3; then +25*x|formula=30 + 5 per level until level 10, then + 10 per level until level 13, then + 25 per level|color=AD}} {{sti|{{as|'''bonus''' attack damage}}}} and instantly applies 5 ''Hemorrhage'' stacks through his usual means.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Hemorrhage deals bonus damage (250%) against monsters, not against champions.",
+   "quote": "''Hemorrhage'' deals 250% damage against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Spell shield only blocks Hemorrhage's application from abilities, not from basic attacks.",
+   "quote": "{{tip|Spell shield}} prevents ''Hemorrhage's'' application from abilities only.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "DariusHemoMarker.MonsterMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

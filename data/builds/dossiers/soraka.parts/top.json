@@ -1,0 +1,101 @@
+{
+ "champion": "soraka",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Starcall deals its magic damage once, on a delay after cast based on target distance (0.25 to 1s), on Q's cooldown"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Starcall's travel time before it lands (and thus deals damage) scales with the distance from Soraka to the target location (0.25s at 50 range to 1s at 800 range); the dummy fight must assume a cast distance"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Equinox's initial magic damage instance fires immediately on cast against enemies in the zone"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Equinox is a two-part ability: an instant damage instance on cast, then the zone erupts 1.5s later for a second, separately-timed instance of the same damage"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Mana costs (Q 45-65, E 70-90) against a base mana pool can constrain how many casts of the only two damaging abilities fit into the 15s window, especially before level 6+/blue buff/mana items"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Salvation (movement speed while facing a low-health ally), Astral Infusion (ally heal, costs Soraka's own health), and Wish (global self/ally heal) deal no damage and are never read by the damage fight; they only matter for the survival fight as self-sustain"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "W"
+   ],
+   "note": "Astral Infusion costs Soraka 10% of her maximum health (reduced if she has Rejuvenation from Starcall) in addition to mana; relevant to survival-fight self-sustain, not to damage output"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Soraka has only two damage-dealing abilities. Starcall (Q) is a single delayed hit on cooldown (plain-cast, with a distance-dependent travel time the fight must assume) and Equinox (E) is a two-part multipart ability (instant cast damage, then a same-size eruption damage instance ~1.5s later). Mana costs are modest but worth tracking as resource-budget. Everything else in the kit (passive, W, R) is a heal/mobility effect that a damage-only dummy fight never reads. No bespoke logic beyond the existing primitives is required."
+ },
+ "unsettled": [
+  {
+   "question": "What target distance should be assumed for Starcall's (Q) travel-time delay, since the delay scales linearly with distance from 0.25s at 50 range up to 1s at 800 range?",
+   "options": [
+    "Assume point-blank/minimum range (~0.25s delay, fastest damage application)",
+    "Assume max range 800 (~1s delay)",
+    "Assume a fixed 'typical' mid-range distance"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "grants sight of the area before landing after {{pp|type=target range|0.25 to 1 for 16|50 to 800}} seconds"
+   ]
+  },
+  {
+   "question": "Does Equinox's eruption (second damage instance) apply automatically to a target that was hit by the initial cast damage and remains stationary in the zone, i.e. is the bin's single SorakaE#TotalDamage calculation applied twice (matching the wiki's explicit '70*2 to 170*2' doubled total), or could conditions (e.g. spellshield on one instance only) cause only one instance to land?",
+   "options": [
+    "Both instances always land on a stationary dummy (total damage = 2x SorakaE#TotalDamage, per wiki's explicit doubling)",
+    "Only the guaranteed on-cast instance is certain; the eruption instance is conditional on the target remaining in the 260-radius zone for 1.5s"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{st|Total Magic Damage|{{ap|70*2 to 170*2}} {{as|(+ 80% AP)}}}}",
+    "Afterwards, the zone erupts to deal the same damage to enemy champions within and root them for a duration."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Equinox (E) as soon as it is off cooldown at the start of the fight, since its long cooldown (16-20s depending on rank) means it can typically only be cast once or twice in the 15s window; this lands its instant on-cast damage immediately and its eruption damage ~1.5s later.",
+   "Cast Starcall (Q) immediately after E, then recast Q every time it comes off cooldown for the remainder of the fight, since Q's short cooldown (4-8s depending on rank) allows several casts within 15s and it is Soraka's primary repeatable damage source.",
+   "Do not cast Astral Infusion (W) or Wish (R) during the damage fight; they deal zero damage and only cost mana/health that would otherwise fund Q casts.",
+   "Basic-attack the target between Q casts if no ability is available, though Soraka's low base AD makes this a minor damage contributor relative to Q and E."
+  ],
+  "questions": [
+   "At what champion level and ability ranks is the damage fight run, since Q's cooldown (4-8s) and cost (45-65) and E's cooldown (16-20s) vary by rank and materially change how many casts fit in 15s?",
+   "What target distance should be assumed for Starcall's travel delay (affects when Q's damage actually lands, and thus kill time, though not total damage)?",
+   "Is a second cast of Equinox (E) realistically achievable within 15s at low ranks (20s cooldown), or should the rotation assume only a single E cast for most of the simulated level range?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

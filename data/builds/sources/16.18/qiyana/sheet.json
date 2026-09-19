@@ -1,0 +1,1316 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "QiyanaPassive",
+    "key": "Characters/Qiyana/Spells/QiyanaPassiveAbility/QiyanaPassive",
+    "dataValues": {
+     "BurnDuration": 4,
+     "SlowDuration": 1.5,
+     "StunDuration": 0.5,
+     "HasteDuration": 1.5,
+     "StoneExecuteBase": 0.06,
+     "HealDuration": 4,
+     "HealRadius": 360,
+     "DoubleHitBuffDuration": 6,
+     "BonusADRatio": 0.25,
+     "APRatio": 0.3
+    },
+    "calcs": {
+     "FinalDamage": {
+      "expr": "byLevelL[15/19/23/27/31/35/39/43/47/51/55/59/63/67/71/75/79/83] + (BonusADRatio=0.25)xbonus ad + (APRatio=0.3)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        19,
+        23,
+        27,
+        31,
+        35,
+        39,
+        43,
+        47,
+        51,
+        55,
+        59,
+        63,
+        67,
+        71,
+        75,
+        79,
+        83
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.25,
+        "dataValue": "BonusADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BonusADRatio"
+      ]
+     },
+     "ICD": {
+      "expr": "byLevel(14..14)",
+      "flat": 14,
+      "terms": [],
+      "refs": []
+     },
+     "{222614ec}": {
+      "expr": "byLevel1",
+      "flat": 1,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "QiyanaQ",
+    "key": "Characters/Qiyana/Spells/QiyanaQAbility/QiyanaQ",
+    "cooldown": 7,
+    "cost": 35,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "VanillaBase": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "StealthDuration": 3,
+     "TremorBonus": 0.4,
+     "Haste": 0.2,
+     "RockExplosionDelay": 0.4,
+     "RootDuration": 0.5,
+     "SlowDuration": 1,
+     "SlowPotency": -0.2,
+     "CritThreshold": 0.5,
+     "FalloffMod": 0.75,
+     "JungleDamageAmp": 1.6
+    },
+    "calcs": {
+     "EnchantedDamage": {
+      "expr": "BaseDamage=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "VanillaDamage": {
+      "expr": "VanillaBase=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "VanillaBase"
+      ]
+     },
+     "TremorDamage": {
+      "expr": "EnchantedDamage * byLevel0.6",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        48,
+        66,
+        84,
+        102,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.54
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{7dc40c72}": {
+      "expr": "0.06 + 0.0006xbonus ad",
+      "flat": 0.06,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0006
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "FalloffDamage": {
+      "expr": "FalloffMod=0.75",
+      "flat": 0.75,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "FalloffMod"
+      ]
+     },
+     "EnchantedFalloff": {
+      "expr": "EnchantedDamage * FalloffMod=0.75",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FalloffMod"
+      ]
+     },
+     "VanillaFalloff": {
+      "expr": "VanillaDamage * FalloffMod=0.75",
+      "modifies": "VanillaDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "FalloffMod",
+       "VanillaBase"
+      ]
+     }
+    }
+   },
+   {
+    "script": "QiyanaQ_Grass",
+    "key": "Characters/Qiyana/Spells/QiyanaQAbility/QiyanaQ_Grass",
+    "cooldown": 7,
+    "cost": 35,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "VanillaBase": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "StealthDuration": 3,
+     "TremorBonus": 0.4,
+     "Haste": 0.2,
+     "RockExplosionDelay": 0.4,
+     "RootDuration": 0.5,
+     "SlowDuration": 1,
+     "SlowPotency": -0.2,
+     "CritThreshold": 0.5,
+     "FalloffMod": 0.75,
+     "JungleDamageAmp": 1.6
+    },
+    "calcs": {
+     "EnchantedDamage": {
+      "expr": "BaseDamage=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "VanillaDamage": {
+      "expr": "VanillaBase=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "VanillaBase"
+      ]
+     },
+     "TremorDamage": {
+      "expr": "EnchantedDamage * byLevel0.6",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        48,
+        66,
+        84,
+        102,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.54
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{7dc40c72}": {
+      "expr": "0.06 + 0.0006xbonus ad",
+      "flat": 0.06,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0006
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "FalloffDamage": {
+      "expr": "FalloffMod=0.75",
+      "flat": 0.75,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "FalloffMod"
+      ]
+     },
+     "EnchantedFalloff": {
+      "expr": "EnchantedDamage * FalloffMod=0.75",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FalloffMod"
+      ]
+     },
+     "VanillaFalloff": {
+      "expr": "VanillaDamage * FalloffMod=0.75",
+      "modifies": "VanillaDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "FalloffMod",
+       "VanillaBase"
+      ]
+     }
+    }
+   },
+   {
+    "script": "QiyanaQ_Rock",
+    "key": "Characters/Qiyana/Spells/QiyanaQAbility/QiyanaQ_Rock",
+    "cooldown": 7,
+    "cost": 35,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "VanillaBase": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "StealthDuration": 3,
+     "TremorBonus": 0.4,
+     "Haste": 0.2,
+     "RockExplosionDelay": 0.4,
+     "RootDuration": 0.5,
+     "SlowDuration": 1,
+     "SlowPotency": -0.2,
+     "CritThreshold": 0.5,
+     "FalloffMod": 0.75,
+     "JungleDamageAmp": 1.6
+    },
+    "calcs": {
+     "EnchantedDamage": {
+      "expr": "BaseDamage=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "VanillaDamage": {
+      "expr": "VanillaBase=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "VanillaBase"
+      ]
+     },
+     "TremorDamage": {
+      "expr": "EnchantedDamage * byLevel0.6",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        48,
+        66,
+        84,
+        102,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.54
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{7dc40c72}": {
+      "expr": "0.06 + 0.0006xbonus ad",
+      "flat": 0.06,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0006
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "FalloffDamage": {
+      "expr": "FalloffMod=0.75",
+      "flat": 0.75,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "FalloffMod"
+      ]
+     },
+     "EnchantedFalloff": {
+      "expr": "EnchantedDamage * FalloffMod=0.75",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FalloffMod"
+      ]
+     },
+     "VanillaFalloff": {
+      "expr": "VanillaDamage * FalloffMod=0.75",
+      "modifies": "VanillaDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "FalloffMod",
+       "VanillaBase"
+      ]
+     }
+    }
+   },
+   {
+    "script": "QiyanaQ_Water",
+    "key": "Characters/Qiyana/Spells/QiyanaQAbility/QiyanaQ_Water",
+    "cooldown": 7,
+    "cost": 35,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "VanillaBase": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "StealthDuration": 3,
+     "TremorBonus": 0.4,
+     "Haste": 0.2,
+     "RockExplosionDelay": 0.4,
+     "RootDuration": 0.5,
+     "SlowDuration": 1,
+     "SlowPotency": -0.2,
+     "CritThreshold": 0.5,
+     "FalloffMod": 0.75,
+     "JungleDamageAmp": 1.6
+    },
+    "calcs": {
+     "EnchantedDamage": {
+      "expr": "BaseDamage=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "VanillaDamage": {
+      "expr": "VanillaBase=[80/110/140/170/200] + 0.9xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "VanillaBase"
+      ]
+     },
+     "TremorDamage": {
+      "expr": "EnchantedDamage * byLevel0.6",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        48,
+        66,
+        84,
+        102,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.54
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{7dc40c72}": {
+      "expr": "0.06 + 0.0006xbonus ad",
+      "flat": 0.06,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0006
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "FalloffDamage": {
+      "expr": "FalloffMod=0.75",
+      "flat": 0.75,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "FalloffMod"
+      ]
+     },
+     "EnchantedFalloff": {
+      "expr": "EnchantedDamage * FalloffMod=0.75",
+      "modifies": "EnchantedDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FalloffMod"
+      ]
+     },
+     "VanillaFalloff": {
+      "expr": "VanillaDamage * FalloffMod=0.75",
+      "modifies": "VanillaDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        82.5,
+        105,
+        127.5,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.675
+       }
+      ],
+      "refs": [
+       "FalloffMod",
+       "VanillaBase"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "QiyanaW",
+    "key": "Characters/Qiyana/Spells/QiyanaWAbility/QiyanaW",
+    "cooldown": 7,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      25,
+      30,
+      35,
+      40,
+      45
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       8,
+       16,
+       24,
+       32,
+       40
+      ]
+     },
+     "StealthDuration": 3,
+     "SlowDuration": 1.5,
+     "Range": 425,
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.15,
+       0.2,
+       0.25,
+       0.3,
+       0.35
+      ]
+     },
+     "TremorBonus": 0.35,
+     "PassiveMS": {
+      "axis": "rank",
+      "v": [
+       0.03,
+       0.05,
+       0.07,
+       0.09,
+       0.11
+      ]
+     },
+     "TravelDistance": 300,
+     "DashSpeed": 440,
+     "OnHitAPRatio": 0.45,
+     "OnHitADRatio": 0.2
+    },
+    "calcs": {
+     "CleaveDamage": {
+      "expr": "BaseDamage=[8/16/24/32/40] + 1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        8,
+        16,
+        24,
+        32,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TremorDamage": {
+      "expr": "CleaveDamage * TremorBonus=0.35",
+      "modifies": "CleaveDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        2.8,
+        5.6,
+        8.4,
+        11.2,
+        14
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.35
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "TremorBonus"
+      ]
+     },
+     "OnHitDamage": {
+      "expr": "BaseDamage=[8/16/24/32/40] + (OnHitAPRatio=0.45)xap + (OnHitADRatio=0.2)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        8,
+        16,
+        24,
+        32,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.45,
+        "dataValue": "OnHitAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2,
+        "dataValue": "OnHitADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "OnHitADRatio",
+       "OnHitAPRatio"
+      ]
+     }
+    }
+   },
+   {
+    "script": "QiyanaWMis_Grass",
+    "key": "Characters/Qiyana/Spells/QiyanaWAbility/QiyanaWMis_Grass",
+    "uncancellableWindup": true,
+    "dataValues": {
+     "1": 1
+    }
+   },
+   {
+    "script": "QiyanaWMis_Rock",
+    "key": "Characters/Qiyana/Spells/QiyanaWAbility/QiyanaWMis_Rock",
+    "uncancellableWindup": true,
+    "dataValues": {
+     "1": 1
+    }
+   },
+   {
+    "script": "QiyanaWMis_Water",
+    "key": "Characters/Qiyana/Spells/QiyanaWAbility/QiyanaWMis_Water",
+    "uncancellableWindup": true,
+    "dataValues": {
+     "1": 1
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "QiyanaE",
+    "key": "Characters/Qiyana/Spells/QiyanaEAbility/QiyanaE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10,
+      9,
+      8,
+      7
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       90,
+       130,
+       170,
+       210
+      ]
+     },
+     "DashSpeed": 600,
+     "DashSpeedMax": 1200,
+     "ADRatio": 0.5
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[50/90/130/170/210] + (ADRatio=0.5)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        90,
+        130,
+        170,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "QiyanaR",
+    "key": "Characters/Qiyana/Spells/QiyanaRAbility/QiyanaR",
+    "cooldown": 120,
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       100,
+       200,
+       300
+      ]
+     },
+     "Slow": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.5,
+       0.6
+      ]
+     },
+     "BonusDamageBase": {
+      "axis": "rank",
+      "v": [
+       50,
+       100,
+       150
+      ]
+     },
+     "SlowDuration": 2,
+     "RecastWindow": 10,
+     "StunDuration": 1,
+     "MonsterCapBase": {
+      "axis": "rank",
+      "v": [
+       500,
+       750,
+       1000
+      ]
+     },
+     "PercentHPDamageBaseRock": 0.1,
+     "RootDuration": 1.5,
+     "StunDurationMin": 0.5
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[100/200/300] + 1.25xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        200,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.25
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MissingHealthDamageRock": {
+      "expr": "PercentHPDamageBaseRock=0.1",
+      "flat": 0.1,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "PercentHPDamageBaseRock"
+      ]
+     },
+     "MonsterCap": {
+      "expr": "MonsterCapBase=[500/750/1000] + 1.25xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        500,
+        750,
+        1000
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.25
+       }
+      ],
+      "refs": [
+       "MonsterCapBase"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "QiyanaQ",
+  "W": "QiyanaW",
+  "E": "QiyanaE",
+  "R": "QiyanaR",
+  "P": "QiyanaPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 375,
+   "{6216bf7b}": 60,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Qiyana",
+  "name": "Qiyana",
+  "partype": "Mana",
+  "passive": "Royal Privilege",
+  "spells": [
+   {
+    "id": "QiyanaQ",
+    "name": "Elemental Wrath / Edge of Ixtal",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     35,
+     35,
+     35,
+     35,
+     35
+    ]
+   },
+   {
+    "id": "QiyanaW",
+    "name": "Terrashape",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     25,
+     30,
+     35,
+     40,
+     45
+    ]
+   },
+   {
+    "id": "QiyanaE",
+    "name": "Audacity",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "QiyanaR",
+    "name": "Supreme Display of Talent",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     120,
+     120
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Royal Privilege": {
+    "damagetype": "physical",
+    "spelleffects": "proc",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Edge of Ixtal": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "true",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   },
+   "Elemental Wrath": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies, Self"
+   }
+  },
+  "W": {
+   "Terrashape": {
+    "damagetype": "magic",
+    "spelleffects": "proc",
+    "targeting": "Location",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Audacity": {
+    "damagetype": "physical",
+    "spelleffects": "Single",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Supreme Display of Talent": {
+    "damagetype": "physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "Direction",
+    "affects": "Enemies, Terrain",
+    "costtype": "mana"
+   }
+  }
+ }
+}

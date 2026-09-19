@@ -1,0 +1,175 @@
+{
+ "name": "Neurotoxin / Venomous Bite",
+ "cooldown": {
+  "values": [
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "quote": "6"
+ },
+ "cost": {
+  "values": [
+   80,
+   85,
+   90,
+   95,
+   100
+  ],
+  "quote": "{{ap|80 to 100}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic Damage (current health, Neurotoxin)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    40,
+    70,
+    100,
+    130,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "targetCurrentHp",
+     "coef": 0.04,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.03
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|40 to 160}} {{as|(+ 4% {{as|(+ 3% per 100 AP)}} of target's '''current''' health)}}",
+   "bin": [
+    "EliseHumanQ.BaseDamage",
+    "EliseHumanQ#HumanPercentHealth"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Capped Monster Damage (Neurotoxin)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    65,
+    85,
+    105,
+    125,
+    145
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.9
+    }
+   ],
+   "quote": "{{ap|65 to 145}} {{as|(+ 90% AP)}}",
+   "bin": [
+    "EliseHumanQ.MonsterCapDamage",
+    "EliseHumanQ#MonsterDamageCapCalc"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Magic Damage (missing health, Venomous Bite)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    80,
+    110,
+    140,
+    170
+   ],
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": 0.08,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.03
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|50 to 170}} {{as|(+ 8% {{as|(+ 3% per 100 AP)}} of target's '''missing''' health)|health}}",
+   "bin": [
+    "EliseHumanQ.SpiderBaseDamage",
+    "EliseSpiderQCast#MissingHPDamage"
+   ],
+   "binNote": "EliseHumanQ.SpiderBaseDamage matches the wiki's flat base for Venomous Bite; the missing-HP ratio calc (8% + 3%/100AP) is only found under the EliseSpiderQCast spell, not EliseHumanQ, which lacks its own ratio/TargetMissingHPDamage rows."
+  },
+  {
+   "id": "q_4",
+   "meaning": "Capped Monster Damage (Venomous Bite)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    65,
+    85,
+    105,
+    125,
+    145
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.9
+    }
+   ],
+   "quote": "{{ap|65 to 145}} {{as|(+ 90% AP)}}",
+   "bin": [
+    "EliseSpiderQCast.MonsterCapDamage",
+    "EliseSpiderQCast#MonsterDamageCapCalc"
+   ],
+   "binNote": "Only EliseSpiderQCast carries a matching monster-cap calc; EliseHumanQ.MonsterCapDamage is already used for q_2, so this reuses the spider-form spell's identical numbers as the closest bin match."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Elise will not dash if the target is within basic attack range.",
+   "quote": "'''Elise''' will not dash if the target is within basic attack range.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Venomous Bite applies on-hit effects and always deals its damage after the cast time even if the dash is interrupted; it still deals damage without on-hit effects if blocked or dodged.",
+   "quote": "''Venomous Bite'' will always apply its effects after the cast time, even if the dash is interrupted.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Venomous Bite deals damage but not on-hit effects if blocked or dodged.",
+   "quote": "''Venomous Bite'' will still deal its damage but not apply on-hit effects if it is {{tip|blocked}} or {{tip|dodged}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Active Spiderlings/Volatile Spiderlings dash alongside Elise on Venomous Bite's cast and attack the target.",
+   "quote": "they will {{tip|dash}} alongside '''Elise''' to the target upon ''Venomous Bite's'' cast and reprioritize them.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "EliseHumanQ.APRatio",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

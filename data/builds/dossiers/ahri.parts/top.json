@@ -1,0 +1,107 @@
+{
+ "champion": "ahri",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Orb of Deception and Charm deal their damage on a short (0.25s) cast/travel resolution and go back on cooldown; no other gating."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Orb of Deception is a returning projectile: it deals magic damage passing through the target outbound, then true damage passing back through it on return, i.e. two damage instances per cast against a stationary target."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Fox-Fire conjures three flames that land as separately timed hits on the same target if it is the only enemy champion present: one primary-damage hit and two subsequent (40%) hits."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Spirit Rush is castable up to 3 times within a 15s window (1s static cooldown between casts) at no extra mana cost, each cast firing bolts at up to 3 nearby visible enemies (only 1 relevant target vs a dummy)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 55-95, W 30, E 60, R 100) can meaningfully cap how many casts fit into the 15s window depending on mana pool/regen from items."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Essence Theft's stack-heal and takedown-heal only heal Ahri and never change damage dealt or taken by a stationary dummy; relevant only if Ahri herself is the survival-fight target and scores a kill/last-hit, which a single ongoing dummy fight will rarely realize mid-fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant behavior (returning-projectile double hit on Q, multi-part delayed flame hits on W, free multi-cast structure on R, plain single-hit E, and self-only sustain on P) is expressible with the listed primitives."
+ },
+ "unsettled": [
+  {
+   "question": "When does Fox-Fire's cooldown actually start: at cast, or only after the flames finish resolving (up to 2.5s later, per the wiki's 'starts post-effect' note)?",
+   "options": [
+    "Cooldown starts at cast completion, like Q/E/R (treat cdstart as effectively on-cast for simulation purposes)",
+    "Cooldown starts only once all three flames have fired/expired, delaying the next W cast by up to ~2.5s beyond the listed cooldown value"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{tt|{{ap|9 to 5}}|Starts post-effect}}"
+   ]
+  },
+  {
+   "question": "Against a single stationary target sitting at Orb of Deception's return point, does the 'return point circle' check add a distinct damage opportunity beyond the normal outbound-pass/return-pass hits, or is it fully subsumed by the 'each pass can only hit once' rule (i.e. no extra hit for a lone target)?",
+   "options": [
+    "No extra hit: a lone target simply takes exactly one magic hit outbound and one true hit on return, as the two 'passes'",
+    "The return-point circle is a separate check that could, depending on exact geometry/timing, register as an additional instance distinct from the return pass"
+   ],
+   "impact": "low",
+   "quotes": [
+    "''Orb of Deception'' will hit additional units around the return point in a small circle when the orb turns around.",
+    "This applies both to the initial and return missile's damage, but the initial missile only deals damage if the unit was not hit by it already."
+   ]
+  },
+  {
+   "question": "Charm's damage is stated to snapshot 'at the time of its application' (distinct wording from Q/W/R's 'current stats, changes dynamically'); does this mean the snapshot is taken at cast-completion (before travel) or at the moment of impact (after up to ~0.65s of travel at 1550 speed over up to 1000 range)?",
+   "options": [
+    "Snapshot at cast completion (~0.25s after cast start), before the missile travels",
+    "Snapshot at impact, after travel time, functionally the same as the other spells' dynamic recalculation"
+   ],
+   "impact": "low",
+   "quotes": [
+    "This ability's damage is calculated based on the caster's stats at the time of its application."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the fight by casting Q (Orb of Deception) toward the dummy first since it is off cooldown and cheap relative to its long-cooldown counterparts.",
+   "Immediately follow with E (Charm) and W (Fox-Fire) in quick succession (all castable within roughly 1 second combined given their short/no cast times).",
+   "Cast R (Spirit Rush) once the initial Q/W/E volley is out, then immediately recast R twice more (1s apart) to spend all 3 free casts back-to-back early, since R's cooldown (100-140s) means it will not come off cooldown again inside the 15s window.",
+   "Fill all remaining time with basic attacks, and recast Q, E, and W each time they come off cooldown (Q every 7s, E every 12s, W every 5-9s depending on rank) for the rest of the 15 seconds.",
+   "Do not hold or delay any ability for setup purposes (no crowd-control sequencing needed against a stationary dummy); cast everything as soon as it is available and affordable."
+  ],
+  "questions": [
+   "Does the simulator model Fox-Fire's 'starts post-effect' cooldown as delaying the next W cast, and if so by how long should that delay be assumed to be against a stationary target?",
+   "Should all three Spirit Rush casts be front-loaded at the very start of the fight, or is there a build/scenario where holding recasts later in the 15s window yields more total damage (e.g., to line up with cooldown resets on Q/W/E)?",
+   "Is mana assumed unlimited/fully regenerated for this rotation, or does the simulator enforce Ahri's actual mana pool and regen, which could force skipping casts of Q/E/R late in the 15s window?",
+   "Are basic attacks assumed to weave freely between every ability cast (i.e. cast times/animations don't block the attack timer), or do Q/E's 0.25s cast times delay the next auto-attack?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

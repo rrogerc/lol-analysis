@@ -1,0 +1,150 @@
+{
+ "champion": "fiddlesticks",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q and E deal damage on a fixed delay/cast time then go on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q double-damages a recently-feared target based on current HP; W's last tick scales with target's missing HP"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W channel ticks 4x/sec for 2s; R ticks every 0.25s for 5s after the channel completes"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W tethers then channels up to 2s dealing damage; R channels 1.5s (no damage) before blinking and starting its damage-dealing duration"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "an uninterrupted W channel refunds 60% of its current cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs scale with rank and could gate casts across the 15s window at low mana pools"
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Terrify's passive (unseen/out-of-combat/effigy) governs whether the opening cast fears and doubles damage; a dummy fight must assume an initial state"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q and W's bonus components scale off target's current/missing health rather than flat damage"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's self-heal from drain damage never matters in the damage fight but matters in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is expressible with existing primitives: plain-cast damage for Q/E, dot/channel for W and R, a conditional-damage doubling mechanic for Q against recently-feared targets, cooldown-manipulation for W's refund, and a stealth-or-opener gate for the passive fear/double-damage interaction."
+ },
+ "unsettled": [
+  {
+   "question": "Does the dummy in the damage fight count as 'recently feared' for Q's double-damage/doubled-minimum after being feared once (e.g., by an earlier Q, R, or the passive), and can this be chained repeatedly within the 15s window?",
+   "options": [
+    "Fiddlesticks can only ever get one feared-target double-damage Q per fight since only R or the passive-empowered W/E can fear before Q is off cooldown",
+    "Any prior fear (from Q's own passive-fear on a prior cast, R, or empowered W/E) sets up the next Q to double-damage, and this can be re-applied whenever the fear-immunity timer (equal to Q's cooldown) lines up with Q coming off cooldown",
+    "The simulator should just assume Q never gets the doubled-damage bonus in a simple stationary-dummy fight since it requires a prior fear application, which itself requires the passive's unseen/out-of-combat gate"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target has recently been feared by '''Fiddlesticks''', ''Terrify'' will instead deal {{ccs|double damage|magic}}.",
+    "Targets feared by '''Fiddlesticks''' by any means cannot be affected by it again for a duration equal to ''Terrify's'' cooldown."
+   ]
+  },
+  {
+   "question": "Does Fiddlesticks start the 15s damage fight already satisfying Terrify's passive condition (unseen/out-of-combat), so that the opening ability (Q, W, or R) applies fear and, for Q, gets rank-doubled damage on top of the passive's separate 2x from a subsequent Q?",
+   "options": [
+    "Assume the passive condition is active at the start of the fight (Fiddlesticks opens from stealth/unseen), so the first damaging ability fears its target",
+    "Assume the passive condition is not active (a stationary target dummy fight starts in combat/visible), so no ability fears on opening and Q's feared-target bonus never triggers",
+    "Treat it as champion-specific ambiguous and let the simulator pick a fixed convention across all champions with stealth openers"
+   ],
+   "impact": "high",
+   "quotes": [
+    "While '''Fiddlesticks''' has been [[combat status|out of combat]] for at least {{tt|{{fd|2.25}} seconds|Estimated}} and is not {{tip|sight|visible}} to the enemy team, or is impersonating an ''{{ai|A Harmless Scarecrow|Fiddlesticks|Effigy}}'', its damaging ability will additionally {{tip|fear}} targets hit for a duration."
+   ]
+  },
+  {
+   "question": "Does R's cooldown start on cast (i.e., during the 1.5s channel) or only once the channel completes and damage begins, and does R's 1.5s channel block Fiddlesticks from casting Q/W/E during that time in the rotation?",
+   "options": [
+    "Cooldown starts at the moment R is cast (as stated: cdstart = on-cast), and the 1.5s channel fully blocks other actions, delaying the next cast by 1.5s",
+    "Cooldown effectively starts when damage begins (channel completion), treating the listed cooldown as starting from cast for bookkeeping only but functionally the same because casting is blocked throughout"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = on-cast",
+    "'''Fiddlesticks''' {{tip|channel|channels}} for {{fd|1.5}} seconds, then {{tip|blink|blinks}} to the target location"
+   ]
+  },
+  {
+   "question": "In a single-target dummy fight, does W's channel actually connect to the dummy given its Proximity targeting and tether/leash range, or must the simulator simply assume it always tethers and channels the full 2s uninterrupted?",
+   "options": [
+    "Assume W always successfully tethers the single dummy target and channels for the full 2s, dealing all 8 ticks including the final missing-health tick",
+    "Treat W's connection to a single target as a positional-assumption requiring explicit sim convention (e.g., must be within 725 range and stay there)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Fiddlesticks''' forms a {{tip|tether}} between itself and each nearby enemy over the cast time, then {{tip|channel|channels}} for up to {{#var:channel_duration}} seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Terrify (Q) on the dummy, assuming the pre-fight stealth/out-of-combat state is active so this first Q fears the target (fear itself doesn't matter for damage, but sets up the fear-immunity window relevant to a later Q if it lines up)",
+   "Immediately follow with Bountiful Harvest (W): let the tether form during its 0.25s cast time, then channel the full 2s uninterrupted against the stationary dummy, taking all ticks including the enhanced final tick",
+   "Cast Reap (E) on the dummy whenever off cooldown, positioning so the dummy is hit by the center of the slash (silence has no damage fight impact but center-hit is the intended max-value use)",
+   "Cast Crowstorm (R) once available: channel 1.5s, blink onto the dummy, and let all 20 ticks (5s at 0.25s intervals) land on the stationary target",
+   "Repeat Q, W, E on cooldown (respecting mana cost/resource-budget) for the remainder of the 15s, weaving them in as each comes off cooldown to maximize total damage output",
+   "If mana becomes the binding constraint, prioritize casting Q and W (mana efficient/health-scaling and armor/MR% ignoring nothing here) before E, since E's damage is comparatively lower value at high AP relative to its cost"
+  ],
+  "questions": [
+   "Does the simulator's stationary target dummy count as 'unseen'/out of combat for Terrify's passive at fight start, and does it remain visible thereafter (blocking any further passive fear triggers) once combat begins?",
+   "Should the rotation assume R is taken at level 6 and available for at least one cast within the 15s window, or does the simulated level/kit availability vary and require a rotation without R for lower levels?",
+   "Is there a canonical ordering convention (e.g., always open with ultimate if available) that the simulator expects, or is 'maximize total damage over 15s via correct cooldown weaving' the sole criterion?",
+   "Given W's cast time (0.25s) plus channel (2s) plus E's cast time (0.4s) plus R's channel (1.5s), do these serialized commitments actually all fit and interleave within roughly 15s once cooldowns and animation locks are accounted for, or does the simulator handle time budgeting separately from this proposal?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

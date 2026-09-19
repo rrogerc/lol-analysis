@@ -1,0 +1,130 @@
+{
+ "champion": "trundle",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Chomp arms the next basic attack within 7s to deal bonus physical damage and slow"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Casting Chomp resets Trundle's basic attack timer"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q grants bonus AD for 5s after the empowered attack lands; W grants bonus attack speed (+ movement speed, + 25% healing received) for 8s while standing in the zone; R grants Trundle bonus armor/MR mirroring the target's shred for up to 8s"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q reduces the target's bonus AD by half of Trundle's gain for 5s (relevant only if target attacks back, i.e. survival fight); R shreds the target's current armor/MR by up to 40%, increasing damage dealt to the target in the damage fight"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Subjugate applies half its total damage on-cast and the rest as ticks over the following seconds"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Subjugate's damage and healing scale off the target's snapshotted maximum health"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "King's Tribute heals Trundle only when a nearby enemy dies, irrelevant to a stationary dummy that only dies once at kill time and never attacks back; Subjugate's self-heal (equal to its damage dealt) likewise only affects damage Trundle takes/survives, not damage dealt, so it is only read in the survival fight, never in the damage fight"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (20/40/75/100) against Trundle's base mana pool may cap how often Q especially can be recast inside a 15s fight, particularly at low levels/no mana items"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Subjugate's (R) armor/MR shred is not a flat target-debuff for its duration: it ramps in discrete steps (20% applied on-cast, then +5% per tick up to 40% by the end of the drain), and Trundle's own mirrored bonus-resist gain tracks that same ramping value rather than a fixed amount. The closed primitive list has 'target-debuff' (implicitly a fixed value for a duration) and 'ramping-per-cast' (stacks across separate casts), but nothing for a value that ramps tick-by-tick within a single cast's duration while simultaneously mirroring onto the caster. Simulating R's damage-to-target interaction (does the shred at tick N apply before or after that tick's own damage calculation) and the self-resist gain needs bespoke step logic rather than a primitive parameterization."
+ },
+ "unsettled": [
+  {
+   "question": "For Chomp's (Q) bonus physical damage, is the damage instance the wiki's stated 15%-55% bonus AD (on top of the attack's own normal AD damage, i.e. two separate damage line items) or the bin's ADScaling of 1.15-1.55x AD as one folded total-damage instance replacing the base attack's AD component?",
+   "options": [
+    "Treat as separate: base auto-attack damage (100% AD) + Chomp's bonus (10-90 + 15-55% AD) as two instances",
+    "Treat as one folded instance: Chomp's attack deals BonusDamage + 115%-155% AD total, replacing the base attack's own AD portion"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|10 to 90}} {{as|(+ {{ap|15 to 55}}% AD)}}",
+    "TrundleTrollSmash#TotalDamage = BonusDamage=[10/30/50/70/90] + (ADScaling=[1.15/1.25/1.35/1.45/1.55])xad"
+   ]
+  },
+  {
+   "question": "Does each tick of Subjugate's drain (the on-cast application and each of the 4 subsequent ticks) separately re-trigger on-hit/on-cast item and rune damage procs (e.g. Liandry's, Riftmaker, spellblade-type effects), or only the initial on-cast application counts as a triggering spell-hit?",
+   "options": [
+    "Every tick (5 total applications) independently triggers spell-hit-based item/rune effects",
+    "Only the initial on-cast application triggers spell-hit-based effects; the DoT ticks are passive damage that doesn't re-trigger them"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Subjugate'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+    "the other half is applied every second over the next 4 seconds"
+   ]
+  },
+  {
+   "question": "Does Subjugate's drain actually last 4 ticks over 4 seconds (as the wiki description states) or 5 seconds as the bin's ActualDurationOfDrainBuff=5 implies, which would add an extra tick's worth of damage/healing/shred not accounted for in the wiki's leveling numbers?",
+   "options": [
+    "4 ticks over 4 seconds as described (bin's 5s buff duration is just a slightly padded internal buff window with no extra damage tick)",
+    "5 ticks/5 seconds of effective drain, meaning total damage split across 5 applications instead of the wiki's implied split of on-cast + 4"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the other half is applied every second over the next 4 seconds",
+    "TrundlePain.ActualDurationOfDrainBuff = 5",
+    "TrundlePain.NumberOfTicks = 4"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast Subjugate (R) on the target immediately at the start of the fight, since it is a long-cooldown %max-health drain and starting it earliest maximizes the number of drain ticks that land inside the 15-second window.",
+   "Cast Chomp (Q) right after, arming the next basic attack; this also resets Trundle's attack timer, letting an attack come out immediately.",
+   "Auto-attack to consume the empowered Chomp attack for its bonus physical damage and the follow-up bonus-AD buff.",
+   "Cast Frozen Domain (W) under Trundle (it has no cast time) to pick up bonus attack speed for the rest of the fight window it covers.",
+   "Continue basic-attacking continuously at the buffed attack speed, weaving Chomp back in exactly on cooldown (3.5s) each time, since each cast both deals bonus damage and resets the attack timer for an effectively higher attack rate.",
+   "Do not cast Pillar of Ice (E); it deals no direct damage and its knockback/slow are crowd control with no offensive value against a stationary, non-reacting dummy.",
+   "Recast Frozen Domain (W) again if its cooldown comes back up before the fight ends, to keep the attack-speed buff active as much as possible.",
+   "Do not expect a second cast of Subjugate (R); its cooldown (80-120s) far exceeds the 15-second fight."
+  ],
+  "questions": [
+   "What level, ability ranks, and item build is being simulated? This determines Trundle's mana pool (whether Q can actually be recast every 3.5s without running dry), his cooldown reduction on R/Q, and his AP (which scales R's damage/healing ratio and the mirrored resist steal).",
+   "Should Pillar of Ice (E) ever be cast purely to proc a 'deals 0 true damage but counts as a spell hit' interaction with an equipped item/rune, even though it contributes zero damage itself?",
+   "Is the intended cast order for the opener R-into-Q-into-attack, or should Q be cast first (to have the empowered attack land during R's cast time / snapshot window) — does the sequencing affect which stats get snapshotted by R?",
+   "In the survival fight where Trundle is the tanky target, should the rotation instead prioritize casting Q on the attacking enemy champion (for the AD-reduction target-debuff) and standing in W's zone for the healing-received buff, rather than the damage-maximizing sequence above?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,242 @@
+{
+ "name": "Aegis Assault",
+ "cooldown": {
+  "values": [
+   22,
+   21,
+   20,
+   19,
+   18
+  ],
+  "quote": "{{ap|22 to 18}}"
+ },
+ "cost": {
+  "values": [
+   80,
+   80,
+   80,
+   80,
+   80
+  ],
+  "quote": "80",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|None|Initial cast}}|{{tt|{{fd|0.25}}|Recast}}}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Recast slam physical damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    55,
+    105,
+    155,
+    205,
+    255
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{ap|55 to 255}} {{as|(+ 150% '''bonus''' AD)}}",
+   "bin": [
+    "PantheonE#ShieldDamageCalc"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Channel strike physical damage per tick",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.0833
+    }
+   ],
+   "quote": "{{as|{{fd|8.{{recurring|3}}}}% AD}} {{as|physical damage}} every {{fd|0.125}} seconds",
+   "bin": [
+    "PantheonE#DamageCalc"
+   ],
+   "binNote": "Wiki states 8.33% AD every 0.125s (12 ticks over the 1.5s channel = 100% AD total, matching the stated cap). The bin's PantheonE#{e62bc5e9} calc = DamageCalc*0.167 (16.7% AD) would instead match a 6-tick channel at PantheonE.AttacksPerSecond=4 (0.25s interval). This is a disagreement between the wiki's stated tick rate/damage and the bin's AttacksPerSecond-derived rate; recording the wiki's numbers per instructions."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Channel strikes total physical damage cap",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.0
+    }
+   ],
+   "quote": "up to {{as|100% AD}} {{as|'''total''' physical damage}}",
+   "bin": [
+    "PantheonE#DamageCalc"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{fd|1.5}} seconds",
+   "bin": [
+    "PantheonE.ShieldDuration"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Time before recast becomes available",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "can be recast after {{fd|0.3}} seconds",
+   "bin": [
+    "PantheonE.RecastLockout"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Interval between channel damage ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.125,
+   "terms": [],
+   "quote": "every {{fd|0.125}} seconds",
+   "bin": [
+    "PantheonE.AttacksPerSecond"
+   ],
+   "binNote": "PantheonE.AttacksPerSecond=4 implies a 0.25s tick interval, not the 0.125s the wiki states; recording the wiki's stated value as it directly describes the visible tick rate."
+  },
+  {
+   "id": "e_7",
+   "meaning": "Bonus armor and magic resistance gained after recasting (Mortal Will)",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    5,
+    6.47,
+    7.94,
+    9.41,
+    10.88,
+    12.35,
+    13.82,
+    15.29,
+    16.76,
+    18.24,
+    19.71,
+    21.18,
+    22.65,
+    24.12,
+    25.59,
+    27.06,
+    28.53,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.025
+    }
+   ],
+   "quote": "{{pp|5 + (30-5)/17*(x-1) for 20}} {{as|(+ {{fd|2.5}}% '''bonus''' health)}} {{sti|{{as|'''bonus''' armor}}}} and {{sti|{{as|'''bonus''' magic resistance}}}}",
+   "bin": [
+    "PantheonE#ResistsCalc"
+   ],
+   "binNote": "Bin's PantheonE#ResistsCalc flat term is byLevel(5..30) with exact values 5, 6.470588, 7.9411765, ... 30 (step (30-5)/17), matching the wiki's {{pp|5 + (30-5)/17*(x-1) for 20}} formula; the values listed here are rounded to 2 decimals from that same progression, not an independent disagreement."
+  },
+  {
+   "id": "e_8",
+   "meaning": "Duration of the Mortal Will resist buff",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for 4 seconds",
+   "bin": [
+    "PantheonE.ResistsDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Pantheon is invulnerable to non-turret damage from enemies in the target direction while channeling.",
+   "quote": "he becomes {{tip|invulnerability|invulnerable}} to non-{{tip|turret}} damage dealt by enemies from the target direction",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The channel cannot be interrupted by crowd control.",
+   "quote": "''Aegis Assault's'' channel cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability automatically recasts (delivering the slam damage) after the channel duration ends.",
+   "quote": "and does so automatically after the duration",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The initial cast counts as an ability activation for on-cast effects like Spellblade, but a manual recast does not.",
+   "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}}... Recasting the ability manually does not.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Continuous channel strikes and the recast slam are separate damage instances (persistent area damage vs area damage).",
+   "quote": "Deals {{tip|persistent area damage}} for the continuous strikes and {{tip|area damage}} with the slam.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Channel damage against minions is reduced by 50% and the total is capped at 100% AD, which does not apply to a champion-type target.",
+   "quote": "reduced by 50% against {{tip|minions}} and up to {{as|100% AD}} {{as|'''total''' physical damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield only blocks the recast slam's damage, not the continuous channel strikes.",
+   "quote": "{{tip|Spell shield}} will only block the slam's damage.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "PantheonE.SpearStrikesRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "PantheonE.ShieldSwipeRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "PantheonE.MinionDamageReduction",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "PantheonE.SpeedDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "PantheonE.SpeedAmount",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

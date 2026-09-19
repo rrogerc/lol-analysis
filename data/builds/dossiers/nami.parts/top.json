@@ -1,0 +1,102 @@
+{
+ "champion": "nami",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's bubble and R's wave each deal a single burst of magic damage on a fixed cast-time/travel delay, on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ebb and Flow is a single cast that produces up to three separately-resolved bounce instances (initial hit plus up to two bounces), each with its own damage/heal value modified by the bounce-potency term."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tidecaller's Blessing arms the next 3 basic attacks or ability-hits from the blessed unit (Nami herself in the solo dummy fight) with bonus magic damage, consumed on hit."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (Q 60, W 70-90, E 55-75, R 100); base mana pool/regen are not in either source, so whether Nami can sustain full-rotation casting for 15s is unclear."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's bounce alternates between enemy and ally/Nami targets and skips already-affected champions; with only one enemy dummy and no allies present, how many of the up-to-three hits actually land on the dummy is a geometry/target-availability assumption, not a stated rule."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Nami's damage-relevant mechanics (single-instance Q/R casts, W's multi-part bounce, E's empowered-hit charges, and mana costs) are each expressible with one closed-list primitive; the open questions are about how those primitives resolve in the no-ally dummy fight, not about missing mechanics."
+ },
+ "unsettled": [
+  {
+   "question": "In a 1v1 fight with no allied champions, how many of W's up-to-three hits actually land on the single enemy dummy?",
+   "options": [
+    "The initial cast on the dummy deals one full-potency hit, then bounces alternate to Nami (ally-type) and then fail to find a second unaffected enemy, so the dummy is only hit once per cast",
+    "The ability still resolves three hits total (enemy, Nami, and a repeat hit on the same dummy) because 'unaffected' only restricts consecutive same-cycle targeting, not the whole cast",
+    "Nami should self-cast W first so the bounce sequence lands on the dummy as the very next (still full/near-full potency) hit instead of the initial hit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "which then bounces to nearby unaffected champions up to twice, alternating between enemies and allies and Nami",
+    "each bounce modifying the effectiveness of the next by -20% {{as|(+ 15% per 100 AP)}}"
+   ]
+  },
+  {
+   "question": "Do Nami's own ability casts (Q/W/R) count as the 'abilities' that consume and trigger Tidecaller's Blessing's empowered bonus damage against the dummy, or is the buff effectively only consumed by basic attacks in practice?",
+   "options": [
+    "Any of Q, W, or R landing on the dummy while blessed consumes a charge and adds the full bonus magic damage, same as a basic attack",
+    "Only basic attacks realistically consume charges within the rotation because ability cooldowns rarely line up three casts inside the 6s buff window, so charges are mostly spent on autos",
+    "Sources do not specify whether an AoE ability hitting a single target consumes exactly one charge (vs. per unit hit), though with only one dummy this is moot"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Nami''' blesses herself or an allied champion for 6 seconds, empowering their next 3 [[basic attack]]s or [[champion ability|abilities]] to each deal {{as|'''bonus''' magic damage}}"
+   ]
+  },
+  {
+   "question": "Neither source states Nami's base mana pool or mana regeneration, so it is unclear whether she can sustain a full Q/W/E(+autos)/R rotation for the full 15s damage fight without going oom.",
+   "options": [
+    "Assume unlimited/sufficient mana for the simulator (ignore resource-budget as a binding constraint)",
+    "Pull base mana/regen from champion stats outside these two sources and enforce it as a real cast limiter"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: cast Tidecaller's Blessing (E) on herself to arm the next 3 attacks/abilities with bonus magic damage.",
+   "Open with Tidal Wave (R) on the dummy for the large upfront magic-damage burst (also instantly triggers her own Surging Tides passive, which is offense-irrelevant).",
+   "Cast Aqua Prison (Q) on the dummy as soon as its 0.25s cast/0.7s travel resolves, on cooldown thereafter (8-12s depending on rank).",
+   "Cast Ebb and Flow (W) on the dummy on cooldown (10s) for its direct magic-damage hit.",
+   "Auto-attack the dummy in all gaps between ability casts to keep consuming/refreshing the Tidecaller's Blessing empowered charges and to add base AA damage.",
+   "Recast E on cooldown (11s) to keep the empowered-attack buff active as much as possible.",
+   "Do not plan to recast R; its 100-120s cooldown exceeds the ~15s fight, so it is a once-per-fight opener only."
+  ],
+  "questions": [
+   "Should R be cast first (to front-load burst and passive uptime) or held until E/Q are already active so the wave benefits from an empowered charge, or does that not matter since R's damage is not itself flagged as empowerable?",
+   "What is Nami's actual mana pool/regen at the fight's assumed level/items, and does it actually force skipping W or auto-attacking more to stay in mana?",
+   "Given the W bounce-target-availability question above, is it ever correct to self-cast W first instead of enemy-casting it, for maximum total damage to the dummy?",
+   "Does the 0.99s total Q travel time and 0.5s R cast+travel meaningfully change optimal cast order versus treating all abilities as instant for a 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

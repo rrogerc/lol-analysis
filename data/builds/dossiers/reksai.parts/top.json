@@ -1,0 +1,163 @@
+{
+ "champion": "reksai",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks and abilities generate Fury which feeds E's max-Fury true-damage conversion"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Fury is a resource that gates whether Furious Bite hits its empowered (100% Fury) true-damage state"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Furious Bite deals 1.2x damage as true damage at max Fury instead of physical damage"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Queen's Wrath arms next basic attack(s) with bonus physical damage and attack speed"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "35% bonus attack speed for 3s, refreshed on each empowered attack landed, up to 3 attacks"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Queen's Wrath basic attack reset on cast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Queen's Wrath primary target hit (spell damage/crit) + AoE secondary hits (proc damage) are separately calculated"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Unburrow, Furious Bite, and Void Rush deal on-cast/on-delay damage on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Void Rush deals bonus damage scaling with target's max health"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "W"
+   ],
+   "note": "Burrowed/Unburrowed toggle swaps which abilities (and their damage) are available"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Burrowed Fury-consumption heal only matters for survival, not the damage fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Fury is a resource that both generates from all sources (attacks, abilities) and decays out-of-combat, and Furious Bite's damage type/amount depends non-linearly on current Fury (only fully converts to 1.2x true damage exactly at 100 Fury, otherwise scales as plain physical damage at RekSaiE.BaseDamageCalculation with no partial bonus described). The simulator needs bespoke logic to track a Fury meter across the 15s rotation (gains of 25 per ability/attack, decay after 8s out of combat) to decide whether each Furious Bite cast lands as physical or true/empowered damage — this is more than a simple resource-budget primitive since it also gates a conditional-damage branch, and the two interact (attack resets from Q change how fast Fury accumulates)."
+ },
+ "unsettled": [
+  {
+   "question": "Does Furious Bite's damage scale continuously with current Fury (partial bonus below 100) or is it strictly binary (normal damage below 100 Fury, full 1.2x true damage only at exactly 100 Fury)?",
+   "options": [
+    "Binary: only max Fury (100) grants the 1.2x true damage conversion, otherwise plain physical damage per RekSaiE.BaseDamageCalculation",
+    "Continuous: some partial scaling with Fury percentage is applied even below 100"
+   ],
+   "impact": "high",
+   "quotes": [
+    "At maximum {{tip|fury|{{as|Fury}}}}, ''Furious Bite'' deals {{ap|{{#var:ue_r}}*100|round=2}}% damage and is converted to {{ccs|{{as|true damage}}|true}}."
+   ]
+  },
+  {
+   "question": "Is Queen's Wrath's AoE secondary damage a separate damage instance from the primary target hit, and does it also scale/crit the same way, or is it a flat non-crit proc?",
+   "options": [
+    "Secondary AoE damage is a separate on-hit/proc instance using the same UnburrowedADRatio but without crit modifiers",
+    "Secondary AoE damage is identical in all respects including crit eligibility"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Damage to the primary target applies {{tip|spell damage}} and damage to secondary targets applies {{tip|proc damage}}.",
+    "''Queen's Wrath's'' damage to the primary target is affected by {{tip|critical strike}} modifiers."
+   ]
+  },
+  {
+   "question": "Which R base-damage/scaling row is live: RekSaiR (150/250/350 base, 15-25% target max HP) or RekSaiRWrapper (150/300/450 base, 25-35% target missing HP)? The wiki text matches RekSaiR's numbers but the sheet carries both, and RekSaiRWrapper's cooldown array (100/90/80) also differs from RekSaiR's (120/100/80) and the wiki (also 120/100/80).",
+   "options": [
+    "RekSaiR is the live spell (matches wiki description and cooldowns)",
+    "RekSaiRWrapper is the live spell (a newer rework not yet reflected on the wiki)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|150 to 350}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ {{ap|15 to 25}}% of target's '''maximum''' health)}}",
+    "RekSaiRWrapper.PercentMissingHealthDamage = [25/30/35]"
+   ]
+  },
+  {
+   "question": "In the 15s damage-fight against a stationary full-health dummy, does Rek'Sai realistically reach 100 Fury (needed for Furious Bite's true-damage bonus) given the decay-after-8s-out-of-combat rule doesn't apply mid-fight, or should the sim assume she starts the fight at 0 Fury and must build it up via attacks/abilities first?",
+   "options": [
+    "Assume Fury starts at 0 and accumulates during the fight from attacks/abilities (25 per source)",
+    "Assume Fury starts at some pre-built value (e.g. 100) since real play often pre-stacks Fury before engaging"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "Does Void Rush require a pre-existing Marked as Prey debuff (from prior damage) to be cast at all, meaning in a 15s solo dummy fight it can only be used after another ability/attack has already applied the mark, delaying its first use?",
+   "options": [
+    "Yes, R can only be cast on a marked target, so the rotation must land a hit first",
+    "No practical restriction relevant to a dummy target that is always valid to mark/target"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Rek'Sai''' applies ''Marked as Prey'' to enemy champions she damages, lasting for 5 seconds.",
+    "'''Rek'Sai''' selects the target ''Marked as Prey''"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start Unburrowed (or immediately Unburrow if starting Burrowed) to access Queen's Wrath, Furious Bite, and basic attacks against the dummy",
+   "Auto-attack once to apply Marked as Prey and generate Fury, then use Queen's Wrath to empower the next attacks with bonus physical damage and attack speed",
+   "Weave Furious Bite on cooldown (every 6s) targeting the dummy, ideally timed for when Fury is near or at 100 for the true-damage conversion",
+   "Cast Void Rush once the dummy is Marked as Prey (from the first attack or ability hit) for its large physical + max-health-percent burst, then again if cooldown allows within 15s (rank 1 cooldown 120s means only one cast per fight at any rank)",
+   "Fill all remaining time with basic attacks (empowered by Queen's Wrath when available) and recast Queen's Wrath and Furious Bite on cooldown",
+   "Do not use Burrow/Unburrow toggle or Tunnel for repositioning since there is no terrain or movement benefit in the dummy fight, and toggling burrowed state costs no damage but the Unburrow damage burst itself should be counted once if she starts Burrowed"
+  ],
+  "questions": [
+   "Should the simulated fight assume Rek'Sai starts Unburrowed (typical mid-fight state) or Burrowed (requiring an initial Unburrow burst as part of the rotation)?",
+   "Is there an established optimal Fury-management opener in practice (e.g., pre-stacking Fury via jungle camps before engaging) that the 15s isolated dummy fight should mimic, or should Fury simply start at 0?",
+   "Given Void Rush's long cooldown (80-120s), should it be included in the rotation for level/item comparisons at all ranks, or only assumed once R is maxed/available (i.e., is R itself expected to be down at the relevant simulated level)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

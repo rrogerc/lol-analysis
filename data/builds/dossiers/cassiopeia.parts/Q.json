@@ -1,0 +1,90 @@
+{
+ "name": "Noxious Blast",
+ "cooldown": {
+  "values": 3.5,
+  "quote": "{{fd|3.5}}"
+ },
+ "cost": {
+  "values": [50, 55, 60, 65, 70],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Total magic damage dealt by the poison over its duration",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [65, 100, 135, 170, 205],
+   "terms": [{"stat": "ap", "coef": 0.75}],
+   "quote": "{{ap|65 to 205}} {{as|(+ 75% AP)}}",
+   "bin": ["CassiopeiaQ.BaseDamage", "CassiopeiaQ#TooltipTotalDamage"]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Duration enemies hit by the blast are poisoned (and over which the total damage is dealt)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "{{tip|poison|poisoned}} for 3 seconds",
+   "bin": ["CassiopeiaQ.PoisonDuration"],
+   "binNote": "Matches the bin's PoisonDuration=3 and the ability's main description. A separate wiki note flagged {{pending for test}} claims the real duration is 3.2-3.3 s instead; that note is unconfirmed by the wiki's own admission, so it is reported as an open doubt rather than adopted here."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Number of damage ticks the poison's total damage is split across",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 7,
+   "terms": [],
+   "quote": "damage / 7 ticks rounded down to the nearest integer",
+   "bin": ["CassiopeiaQ.NumDamageTicks"]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Delay between cast (blast landing at the target location) and the blast exploding, before any poison damage is applied",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "explodes after a {{fd|0.4}}-second delay",
+   "bin": [],
+   "binNote": "No bin data value carries the 0.4 s explosion delay; it only appears in the wiki's description text, so it is likely a hardcoded script/animation timer rather than an exposed DataValue."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Noxious Blast's poison damage (and the on-champion-hit movement speed buff) begins only after a 0.4 s delay following the cast, not immediately on cast.",
+   "quote": "creates a blast at the target location that explodes after a {{fd|0.4}}-second delay",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The poison's displayed per-tick damage is computed by taking (running total damage so far in the tick sequence) floored to an integer, then subtracting the previous ticks' floored totals, so individual ticks can differ from a flat total/7 split by up to 1 point.",
+   "quote": "The damage inflicted by ''Noxious Blast'' is calculated as follows: damage / 7 ticks rounded down to the nearest integer",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Noxious Blast always uses quick cast, which is a targeting/input behavior and does not change when its damage lands.",
+   "quote": "''Noxious Blast'' always uses [[quick cast]], regardless of player settings.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The wiki itself flags the 3-second poison duration as unconfirmed: a separate note (marked pending for test) claims the real duration is 3.2-3.3 seconds, which would stretch the tick window beyond what the main description and the bin's PoisonDuration=3 state.",
+   "quote": "{{pending for test}} Enemies within the blast of ''Noxious Blast'' are {{tip|poison|poisoned}} for something between {{fd|3.2}} and {{fd|3.3}} seconds.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "CassiopeiaQ.ChampHitMSBonus", "reason": "utility"},
+  {"ref": "CassiopeiaQ.ChampHitMSDuration", "reason": "utility"}
+ ]
+}

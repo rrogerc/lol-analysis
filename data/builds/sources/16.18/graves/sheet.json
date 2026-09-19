@@ -1,0 +1,533 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "GravesPassive",
+    "key": "Characters/Graves/Spells/GravesPassiveAbility/GravesPassive",
+    "dataValues": {
+     "CritDamageRatio": 0.5,
+     "StructureDamageReduction": 0.25
+    },
+    "calcs": {
+     "SingleBulletDamage": {
+      "expr": "(<ByCharLevelFormulaCalculationPart>)xad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "MultiBulletDamage": {
+      "expr": "SingleBulletDamage * 0.333",
+      "modifies": "SingleBulletDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "CritDamageMult": {
+      "expr": "(CritDamageRatio=0.5)*(-1 + 1xcritDamage)",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "CritDamageRatio"
+      ]
+     },
+     "{549cda4d}": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ByCharLevelFormulaCalculationPart"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "GravesQLineSpell",
+    "key": "Characters/Graves/Spells/GravesQLineSpellAbility/GravesQLineSpell",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      11.25,
+      9.5,
+      7.75,
+      6
+     ]
+    },
+    "cost": 80,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "FirstADRatio": 0.55,
+     "BaseDetonationDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       125,
+       170,
+       215,
+       260
+      ]
+     },
+     "bADDetonationRatio": {
+      "axis": "rank",
+      "v": [
+       0.45,
+       0.6,
+       0.75,
+       0.9,
+       1.05
+      ]
+     },
+     "TerrainCollisionDelay": 0.2
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[50/75/100/125/150] + (FirstADRatio=0.55)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100,
+        125,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.55,
+        "dataValue": "FirstADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "FirstADRatio"
+      ]
+     },
+     "TotalDetonationDamage": {
+      "expr": "BaseDetonationDamage=[80/125/170/215/260] + (bADDetonationRatio=[0.45/0.6/0.75/0.9/1.05])xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        125,
+        170,
+        215,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.45,
+          0.6,
+          0.75,
+          0.9,
+          1.05
+         ]
+        },
+        "dataValue": "bADDetonationRatio"
+       }
+      ],
+      "refs": [
+       "BaseDetonationDamage",
+       "bADDetonationRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "GravesSmokeGrenade",
+    "key": "Characters/Graves/Spells/GravesSmokeGrenadeAbility/GravesSmokeGrenade",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      26,
+      24,
+      22,
+      20,
+      18
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       110,
+       160,
+       210,
+       260
+      ]
+     },
+     "SlowAmount": 50,
+     "SmokeRadius": 200,
+     "SmokeDuration": 4,
+     "SlowDuration": 0.5
+    },
+    "calcs": {
+     "ImpactDamage": {
+      "expr": "BaseDamage=[60/110/160/210/260] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        110,
+        160,
+        210,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "GravesMove",
+    "key": "Characters/Graves/Spells/GravesMoveAbility/GravesMove",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ArmorPerStack": {
+      "axis": "rank",
+      "v": [
+       7,
+       10,
+       13,
+       16,
+       19
+      ]
+     },
+     "MRGrantPercent": 0.5,
+     "BuffDuration": 4,
+     "CooldownPerHit": 0.5,
+     "MaxStacks": 8,
+     "DashSpeed": 750,
+     "DashMaxDistance": 375,
+     "DashMinDistance": 275,
+     "DashAngle": 60
+    },
+    "calcs": {
+     "MRGrant": {
+      "expr": "(ArmorPerStack=[7/10/13/16/19]) * MRGrantPercent=0.5",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        3.5,
+        5,
+        6.5,
+        8,
+        9.5
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "ArmorPerStack",
+       "MRGrantPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "GravesChargeShot",
+    "key": "Characters/Graves/Spells/GravesChargeShotAbility/GravesChargeShot",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      80,
+      60
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       275,
+       425,
+       575
+      ]
+     },
+     "RFalloffDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       320,
+       440
+      ]
+     },
+     "RKnockbackDistance": 400
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "RBaseDamage=[275/425/575] + 1.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        275,
+        425,
+        575
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "RBaseDamage"
+      ]
+     },
+     "FalloffDamage": {
+      "expr": "RFalloffDamage=[200/320/440] + 1.2xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        320,
+        440
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "RFalloffDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "GravesQLineSpell",
+  "W": "GravesSmokeGrenade",
+  "E": "GravesMove",
+  "R": "GravesChargeShot",
+  "P": "GravesPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 325,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.295
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Graves",
+  "name": "Graves",
+  "partype": "Mana",
+  "passive": "New Destiny",
+  "spells": [
+   {
+    "id": "GravesQLineSpell",
+    "name": "End of the Line",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     11.25,
+     9.5,
+     7.75,
+     6
+    ],
+    "cost": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   {
+    "id": "GravesSmokeGrenade",
+    "name": "Smoke Screen",
+    "maxrank": 5,
+    "cooldown": [
+     26,
+     24,
+     22,
+     20,
+     18
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "GravesMove",
+    "name": "Quickdraw",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "GravesChargeShot",
+    "name": "Collateral Damage",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     80,
+     60
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "New Destiny": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Self, Enemies",
+    "occurrence": "On-hit"
+   }
+  },
+  "Q": {
+   "End of the Line": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Smoke Screen": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Quickdraw": {
+    "targeting": "Location",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Collateral Damage": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "{{dv|Enemies|Self}}",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

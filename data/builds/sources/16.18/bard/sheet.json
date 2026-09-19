@@ -1,0 +1,476 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "BardPTooltip_D_nS",
+    "key": "Characters/Bard/Spells/BardPTooltip_D_nSAbility/BardPTooltip_D_nS",
+    "dataValues": {
+     "TooltipMSPerStack": 24,
+     "TooltipMSMax": 150,
+     "TooltipManaRestore": 12,
+     "BaseMeepSpawnCD": 8,
+     "BaseMeepDamage": 30,
+     "TooltipChimeDamageCheckpoint": 5,
+     "DamagePerCheckpoint": 6,
+     "SlowDuration": 1,
+     "ChimesPerUpgrade": 5,
+     "MeepAPRatio": 0.4,
+     "MaxSpeedStacks": 10,
+     "SpeedStackDuration": 20
+    },
+    "calcs": {
+     "MeepDamageNoChime": {
+      "expr": "BaseMeepDamage=30 + (MeepAPRatio=0.4)xap",
+      "flat": 30,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "MeepAPRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseMeepDamage",
+       "MeepAPRatio"
+      ]
+     },
+     "ChimesForSlowUpgrade": {
+      "expr": "(ChimesPerUpgrade=5) * 1",
+      "flat": 5,
+      "terms": [],
+      "refs": [
+       "ChimesPerUpgrade"
+      ]
+     },
+     "ChimesForSplashDamageUpgrade": {
+      "expr": "(ChimesPerUpgrade=5) * 3",
+      "flat": 15,
+      "terms": [],
+      "refs": [
+       "ChimesPerUpgrade"
+      ]
+     },
+     "ChimesForSplashAreaUpgrade": {
+      "expr": "(ChimesPerUpgrade=5) * 7",
+      "flat": 35,
+      "terms": [],
+      "refs": [
+       "ChimesPerUpgrade"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "BardQ",
+    "key": "Characters/Bard/Spells/BardQAbility/BardQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10,
+      9,
+      8,
+      7
+     ]
+    },
+    "cost": 60,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "APRatio": 0.8,
+     "SlowAmountPercentage": 60,
+     "SlowDuration": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.2,
+       1.4,
+       1.6,
+       1.8
+      ]
+     },
+     "StunDuration": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.2,
+       1.4,
+       1.6,
+       1.8
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + (APRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "BardW",
+    "key": "Characters/Bard/Spells/BardWAbility/BardW",
+    "cooldown": 0,
+    "cost": 70,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ChargeupTime": 5,
+     "MaxPacks": 3,
+     "HealingMult": 1,
+     "Ammo_Limit": 2,
+     "Ammo_Cooldown": 18,
+     "MoveSpeed_Duration": 1.5,
+     "MoveSpeed_Base": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.225,
+       0.25,
+       0.275,
+       0.3
+      ]
+     },
+     "MoveSpeed_Ratio": 0.0006,
+     "APRatio_Min": 0.4,
+     "APRatio_Max": 0.7,
+     "MinimumHeal": {
+      "axis": "rank",
+      "v": [
+       25,
+       50,
+       75,
+       100,
+       125
+      ]
+     },
+     "MaximumHeal": {
+      "axis": "rank",
+      "v": [
+       50,
+       87.5,
+       125,
+       162.5,
+       200
+      ]
+     }
+    },
+    "calcs": {
+     "InitialHeal": {
+      "expr": "(MinimumHeal=[25/50/75/100/125] + (APRatio_Min=0.4)xap) * HealingMult=1",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        50,
+        75,
+        100,
+        125
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio_Min"
+       }
+      ],
+      "refs": [
+       "APRatio_Min",
+       "HealingMult",
+       "MinimumHeal"
+      ]
+     },
+     "MaxHeal": {
+      "expr": "(MaximumHeal=[50/87.5/125/162.5/200] + (APRatio_Max=0.7)xap) * HealingMult=1",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        87.5,
+        125,
+        162.5,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio_Max"
+       }
+      ],
+      "refs": [
+       "APRatio_Max",
+       "HealingMult",
+       "MaximumHeal"
+      ]
+     },
+     "Calc_MoveSpeed": {
+      "expr": "MoveSpeed_Base=[0.2/0.225/0.25/0.275/0.3] + (MoveSpeed_Ratio=0.0006)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.2,
+        0.225,
+        0.25,
+        0.275,
+        0.3
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0006,
+        "dataValue": "MoveSpeed_Ratio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "MoveSpeed_Base",
+       "MoveSpeed_Ratio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "BardE",
+    "key": "Characters/Bard/Spells/BardEAbility/BardE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      20.5,
+      19,
+      17.5,
+      16
+     ]
+    },
+    "cost": 30,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "FriendlyMovementBonusPercentage": 33,
+     "DoorDuration": 10,
+     "BaseTravelSpeed": 900
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "BardR",
+    "key": "Characters/Bard/Spells/BardRAbility/BardR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      95,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RStasisDuration": 2.5
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "BardQ",
+  "W": "BardW",
+  "E": "BardE",
+  "R": "BardR",
+  "P": "BardPTooltip_D_nS"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.09
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Bard",
+  "name": "Bard",
+  "partype": "Mana",
+  "passive": "Traveler's Call",
+  "spells": [
+   {
+    "id": "BardQ",
+    "name": "Cosmic Binding",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "BardW",
+    "name": "Caretaker's Shrine",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "BardE",
+    "name": "Magical Journey",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     20.5,
+     19,
+     17.5,
+     16
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "BardR",
+    "name": "Tempered Fate",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     95,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Traveler's Call": {
+    "damagetype": "Magic",
+    "spelleffects": "mixed",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   },
+   "Traveler's Call 2": {
+    "damagetype": "Magic",
+    "spelleffects": "mixed",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Cosmic Binding": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Caretaker's Shrine": {
+    "targeting": "[[Location-targeted|Location]] / [[Unit-targeted|Unit]]",
+    "affects": "Allies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Magical Journey": {
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Self, Allies, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Tempered Fate": {
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Location",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

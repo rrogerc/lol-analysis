@@ -1,0 +1,208 @@
+{
+ "name": "Devour / Regurgitate",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}",
+  "binNote": "Sheet's ddragon field and DataCooldown show [120/100/80] matching the wiki; the base cooldown field lists 0 and CDCalc multiplies DataCooldown by an unresolved CooldownMultiplierCalculationPart, so the raw 'cooldown: 0' row is a placeholder, not the live value."
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Shield Strength",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    650,
+    800,
+    950
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|650 to 950}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "TahmKenchRWrapper#TotalShield"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    100,
+    250,
+    400
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.15,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.07
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|100 to 400}} {{as|(+ 15% {{as|(+ 7% per 100 AP)}} of the target's '''maximum''' health)}}",
+   "bin": [
+    "TahmKenchRWrapper.BaseDamage",
+    "TahmKenchRWrapper#PercentHPDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Ally shield decay rate after Regurgitate",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 200,
+   "terms": [],
+   "quote": "decays in strength by 50 every {{fd|0.25}} seconds after they are ''{{ai|Regurgitate|Tahm Kench|Regurgitated}}''",
+   "bin": [
+    "TahmKenchRWrapper.ShieldDecayPerSecond"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "Self bonus movement speed while ally swallowed",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.6,
+   "terms": [],
+   "quote": "gain {{sti|{{as|60% '''bonus''' movement speed}}}} for 3 seconds",
+   "bin": [
+    "TahmKenchRWrapper.AllySpeedAmount"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "Duration a champion can be swallowed",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "carry them in his belly for up to 3 seconds",
+   "bin": [
+    "TahmKenchRWrapper.EnemyDuration",
+    "TahmKenchRWrapper.AllyDuration"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "Self-slow while enemy swallowed",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "grounded and {{tip|slow|slowed}} by 40% under those same conditions",
+   "bin": [
+    "TahmKenchRWrapper.SlowAmount"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Tahm Kench lockout duration after casting Regurgitate",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "unable to act for {{fd|0.4}} seconds after casting Regurgitate",
+   "bin": [],
+   "binNote": "No bin row carries this 0.4s lockout duration; it does not appear among Regurgitate/Devour data values, so this is wiki-only and unverifiable against the sheet."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Regurgitate deals magic damage based on the target's maximum health only when the swallowed champion is an enemy.",
+   "quote": "If they are an enemy, he deals {{as|magic damage}} to them at the end of the displacement.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The damage instance occurs at the end of the spit displacement, not at the moment of casting Regurgitate.",
+   "quote": "deals {{as|magic damage}} to them at the end of the displacement",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Devour can only be cast on enemies who have 3 stacks of the passive.",
+   "quote": "''Devour'' can only be cast on enemies with 3 stacks of ''{{ai|An Acquired Taste|Tahm Kench}}''.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the target is an ally, Devour grants a shield instead of dealing damage.",
+   "quote": "If the target is an ally, they become {{tip|lockout|unable to act}} and are granted a {{tip|shield}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The shield decays in strength by 50 every 0.25 seconds after the ally is Regurgitated.",
+   "quote": "which decays in strength by 50 every {{fd|0.25}} seconds after they are ''{{ai|Regurgitate|Tahm Kench|Regurgitated}}''",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Regurgitate automatically casts after Devour's swallow duration ends, or can be manually cast after 1 second.",
+   "quote": "After 1 second, '''Tahm Kench''' can cast ''{{ai|Regurgitate|Tahm Kench}}'' while a target is inside of his belly, and automatically does so after the duration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown for Devour starts post-effect (after Regurgitate resolves), and the time spent active reduces the cooldown afterward.",
+   "quote": "Starts post-effect, but time spent active will be reduced by current cooldown afterwards",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TahmKenchRWrapper.SpitOutRangeAlly",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "TahmKenchRWrapper.SpitOutRangeEnemy",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "TahmKenchRWrapper.CastTime",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "TahmKenchRWrapper.MinimumAllyDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "TahmKenchRWrapper.DataCooldown",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "TahmKenchRWrapper.DataManaCost",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

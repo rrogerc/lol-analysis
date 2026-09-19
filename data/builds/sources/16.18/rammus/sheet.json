@@ -1,0 +1,670 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "RammusP",
+    "key": "Characters/Rammus/Spells/RammusPAbility/RammusP",
+    "dataValues": {
+     "ArmorRatio": 0.15,
+     "MagicResistRatio": 0.15,
+     "BaseDamage": 10
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "(ArmorRatio=0.15)xarmor? + (MagicResistRatio=0.15)xmoveSpeed?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "ArmorRatio"
+       },
+       {
+        "stat": "moveSpeed?",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "MagicResistRatio"
+       }
+      ],
+      "refs": [
+       "ArmorRatio",
+       "MagicResistRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "PowerBall",
+    "key": "Characters/Rammus/Spells/PowerBallAbility/PowerBall",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      10.5,
+      9,
+      7.5,
+      6
+     ]
+    },
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "QBaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "MSMultiplier": 1,
+     "APRatio": 1,
+     "RollDuration": 6,
+     "StunDuration": 0.35,
+     "KnockbackDistance": 125,
+     "HeightVariable": 25,
+     "SelfStunTiming": 0.25,
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60,
+       70,
+       80
+      ]
+     },
+     "SlowDuration": 1
+    },
+    "calcs": {
+     "PowerBallDamage": {
+      "expr": "QBaseDamage=[80/120/160/200/240] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "QBaseDamage"
+      ]
+     },
+     "MinimumMoveSpeed": {
+      "expr": "(byLevel(0.25..0.391)) * MSMultiplier=1",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.25,
+        0.2582941,
+        0.26658824,
+        0.27488235,
+        0.28317647,
+        0.2914706,
+        0.2997647,
+        0.30805882,
+        0.31635294,
+        0.32464706,
+        0.33294118,
+        0.3412353,
+        0.34952941,
+        0.35782353,
+        0.36611765,
+        0.37441177,
+        0.3827059,
+        0.391
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "MSMultiplier"
+      ]
+     },
+     "MaximumMoveSpeed": {
+      "expr": "MinimumMoveSpeed * RollDuration=6",
+      "modifies": "MinimumMoveSpeed",
+      "flat": {
+       "axis": "level",
+       "v": [
+        1.5,
+        1.5497646,
+        1.5995294,
+        1.6492941,
+        1.6990588,
+        1.7488236,
+        1.7985882,
+        1.8483529,
+        1.89811764,
+        1.9478824,
+        1.997647,
+        2.047412,
+        2.0971765,
+        2.1469412,
+        2.1967059,
+        2.2464706,
+        2.2962354,
+        2.346
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "MSMultiplier",
+       "RollDuration"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "DefensiveBallCurl",
+    "key": "Characters/Rammus/Spells/DefensiveBallCurlAbility/DefensiveBallCurl",
+    "cooldown": 7,
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BonusArmorPercent": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.375,
+       0.45,
+       0.525,
+       0.6
+      ]
+     },
+     "BonusMRPercent": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.375,
+       0.45,
+       0.525,
+       0.6
+      ]
+     },
+     "FlatBonusArmor": {
+      "axis": "rank",
+      "v": [
+       27,
+       32,
+       37,
+       42,
+       47
+      ]
+     },
+     "FlatBonusMR": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "BuffDuration": 7,
+     "DamageArmorRatio": 0.1,
+     "DamageMRRatio": 0.1,
+     "FlatDamageReturn": 15
+    },
+    "calcs": {
+     "ReturnDamageCalc": {
+      "expr": "FlatDamageReturn=15 + (DamageArmorRatio=0.1)xarmor? + (DamageMRRatio=0.1)xmoveSpeed?",
+      "flat": 15,
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "DamageArmorRatio"
+       },
+       {
+        "stat": "moveSpeed?",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "DamageMRRatio"
+       }
+      ],
+      "refs": [
+       "DamageArmorRatio",
+       "DamageMRRatio",
+       "FlatDamageReturn"
+      ]
+     },
+     "BonusArmorTooltip": {
+      "expr": "(FlatBonusArmor=[27/32/37/42/47])*(1 + BonusArmorPercent=[0.3/0.375/0.45/0.525/0.6]) + (BonusArmorPercent=[0.3/0.375/0.45/0.525/0.6])xarmor?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35.1,
+        44,
+        53.65,
+        64.05,
+        75.2
+       ]
+      },
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.3,
+          0.375,
+          0.45,
+          0.525,
+          0.6
+         ]
+        },
+        "dataValue": "BonusArmorPercent"
+       }
+      ],
+      "refs": [
+       "BonusArmorPercent",
+       "FlatBonusArmor"
+      ]
+     },
+     "BonusMRTooltip": {
+      "expr": "(FlatBonusMR=[20/25/30/35/40])*(1 + BonusMRPercent=[0.3/0.375/0.45/0.525/0.6]) + (BonusMRPercent=[0.3/0.375/0.45/0.525/0.6])xmoveSpeed?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        26,
+        34.375,
+        43.5,
+        53.375,
+        64
+       ]
+      },
+      "terms": [
+       {
+        "stat": "moveSpeed?",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.3,
+          0.375,
+          0.45,
+          0.525,
+          0.6
+         ]
+        },
+        "dataValue": "BonusMRPercent"
+       }
+      ],
+      "refs": [
+       "BonusMRPercent",
+       "FlatBonusMR"
+      ]
+     },
+     "RecastDamageTooltip": {
+      "expr": "FlatDamageReturn=15 + (DamageArmorRatio=0.1)xarmor? + (DamageMRRatio=0.1)xmoveSpeed?",
+      "flat": 15,
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "DamageArmorRatio"
+       },
+       {
+        "stat": "moveSpeed?",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "DamageMRRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DamageArmorRatio",
+       "DamageMRRatio",
+       "FlatDamageReturn"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "PuncturingTaunt",
+    "key": "Characters/Rammus/Spells/PuncturingTauntAbility/PuncturingTaunt",
+    "cooldown": 12,
+    "cost": 50,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": {
+      "axis": "rank",
+      "v": [
+       1.2,
+       1.4,
+       1.6,
+       1.8,
+       2
+      ]
+     },
+     "MonsterDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       100,
+       120,
+       140,
+       160
+      ]
+     },
+     "APRatio": 0.7
+    },
+    "calcs": {
+     "MonsterDamageCalc": {
+      "expr": "MonsterDamage=[80/100/120/140/160] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        100,
+        120,
+        140,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "MonsterDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "Tremors2",
+    "key": "Characters/Rammus/Spells/Tremors2Ability/Tremors2",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      105,
+      90
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowDuration": 1.5,
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5
+      ]
+     },
+     "TurretDamageModifier": 2,
+     "InitialDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "NumberOfPulses": 3,
+     "BuffDuration": 3.5,
+     "BaseCastRange": 800,
+     "TremorsAoERange": 400,
+     "TremorsKnockupRange": 200,
+     "KnockupDuration": 0.75,
+     "DashRangeGrowth": 1.5,
+     "MaxRangeForDmgGrowth": 1700,
+     "DashSpeedGrowth": 1.1,
+     "MinDashSpeed": 900,
+     "MaxDashSpeed": 2000,
+     "APRatio": 0.6
+    },
+    "calcs": {
+     "InitialDamageCalc": {
+      "expr": "InitialDamage=[150/250/350] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "InitialDamage"
+      ]
+     },
+     "PulseDamageCalc": {
+      "expr": "PulseBaseDamage + 0.1xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "PulseBaseDamage"
+      ]
+     },
+     "TooltipMaxDamageCalc": {
+      "expr": "(InitialDamage=[150/250/350] + 0.6xap) * BonusDamageMultiplier + 1",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "BonusDamageMultiplier",
+       "InitialDamage"
+      ]
+     },
+     "MaxSlow": {
+      "expr": "((SlowAmount=[0.3/0.4/0.5])*(100)) * NumberOfPulses=3",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        120,
+        150
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "NumberOfPulses",
+       "SlowAmount"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value BonusDamageMultiplier",
+     "calculation names a missing data value PulseBaseDamage"
+    ]
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "PowerBall",
+  "W": "DefensiveBallCurl",
+  "E": "PuncturingTaunt",
+  "R": "Tremors2",
+  "P": "RammusP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 310,
+   "{6216bf7b}": 33,
+   "{c4ab3550}": 1.57,
+   "{3a509002}": 0.1
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.07083333
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Rammus",
+  "name": "Rammus",
+  "partype": "Mana",
+  "passive": "Spiked Shell",
+  "spells": [
+   {
+    "id": "PowerBall",
+    "name": "Powerball",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     10.5,
+     9,
+     7.5,
+     6
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "DefensiveBallCurl",
+    "name": "Defensive Ball Curl",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "PuncturingTaunt",
+    "name": "Frenzying Taunt",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "Tremors2",
+    "name": "Soaring Slam",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     105,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Spiked Shell": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Powerball": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Defensive Ball Curl": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Frenzying Taunt": {
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Soaring Slam": {
+    "damagetype": "Magic",
+    "spelleffects": "AoE",
+    "spellshield": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

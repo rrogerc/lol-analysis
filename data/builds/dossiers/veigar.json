@@ -1,0 +1,610 @@
+{
+ "champion": "veigar",
+ "abilities": {
+  "P": {
+   "name": "Phenomenal Evil Power",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "AP gained per stack of Phenomenal Evil",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "'''Veigar''' gains {{sti|AP|{{as|1 ability power}}}}",
+     "bin": [
+      "VeigarPassive#APPerStack"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "stacks gained per enemy champion hit by an ability",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "generates a {{tip|stack}} of ''Phenomenal Evil'' for each enemy {{tip|champion}} hit by his {{tip|abilities}}",
+     "bin": [
+      "VeigarPassive.dAbilityStacks"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "stacks gained on an enemy champion takedown",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "5 stacks whenever he scores an enemy champion {{tip|takedown}}",
+     "bin": [
+      "VeigarPassive.dTakedownStacks"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ability hits and takedown stacks combine, so an ability-secured takedown grants both hit and takedown stacks (6 total, or 7 with Baleful Strike's extra hit stack).",
+     "quote": "The two effects stack, granting 6 stacks for each enemy champion taken down by an ability, 7 with {{ai|Baleful Strike|Veigar}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Stacks are granted for hitting an enemy champion regardless of whether damage or any effect actually occurs.",
+     "quote": "'''Veigar's''' abilities do not have to deal damage nor affect their targets to grant a stack.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VeigarPassive.dQKillStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VeigarPassive.dQKillStacksLarge",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VeigarPassive.PStacksPerDarkMatterCDR",
+     "reason": "utility"
+    },
+    {
+     "ref": "VeigarPassive.DarkMatterCDRIncrement",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Baleful Strike",
+   "cooldown": {
+    "values": [
+     6,
+     5.5,
+     5,
+     4.5,
+     4
+    ],
+    "quote": "{{ap|6 to 4}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "quote": "{{ap|30 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage to first enemy hit",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.5,
+        0.55,
+        0.6,
+        0.65,
+        0.7
+       ]
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ {{ap|50 to 70}}% AP)}}",
+     "bin": [
+      "VeigarBalefulStrike#TotalDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bolt deals damage to the first two enemies hit, as a single-target line missile.",
+     "quote": "blasts a dark bolt in the target direction that deals {{as|magic damage}} to the first two enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second target hit may take slightly more damage due to missile travel.",
+     "quote": "the second hit may deal 1 damage more on enemies further along the missile's flight path",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Killing an enemy grants a stack of Phenomenal Evil Power, tripled against large minions/monsters (not relevant to a single dummy target, but affects self-buff APPerStack if kills occur).",
+     "quote": "If this kills an enemy, it generates 1 stack of ''{{ai|Phenomenal Evil Power|Veigar|Phenomenal Evil}}'', tripled against large {{tip|minions}} and {{tip|monsters}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VeigarBalefulStrike.APRatio",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VeigarBalefulStrike.BaseDamage",
+     "reason": "range-or-geometry"
+    }
+   ]
+  },
+  "W": {
+   "name": "Dark Matter",
+   "cooldown": {
+    "values": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "quote": "{{pp|type=[[File:Phenomenal_Evil_Power.png|20px|link=Veigar#Phenomenal_Evil_Power]] [[Veigar#Phenomenal_Evil_Power|Phenomenal Evil]] stacks|8*0.9^(x-1);...;0|0 to 900 for 19;...;∞|formula=8 * 0.9^N. ''N{{equals}}Number of times that 50 Phenomenal Evil stacks are earned.''}}",
+    "binNote": "Base cooldown is reduced by stacks of Phenomenal Evil Power (passive), not by ability rank; bin lists cooldown as flat 0 per rank and separately VeigarDarkMatter.BaseCooldown = 8, matching the wiki's base of 8 before stack-based reduction."
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      85,
+      140,
+      195,
+      250,
+      305
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.7,
+        0.8,
+        0.9,
+        1.0,
+        1.1
+       ]
+      }
+     ],
+     "quote": "{{ap|85 to 305}} {{as|(+ {{ap|70 to 110}}% AP)}}",
+     "bin": [
+      "VeigarDarkMatter#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "impact delay before Dark Matter deals damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.2,
+     "terms": [],
+     "quote": "{{rutngt|1.2}} {{tt|delay|from the start of the cast time}}",
+     "bin": [
+      "VeigarDarkMatter.ImpactDelay"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "base cooldown before Phenomenal Evil Power reduction",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "8*0.9^(x-1);...;0",
+     "bin": [
+      "VeigarDarkMatter.BaseCooldown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Dark Matter deals damage after a delay when it strikes the target location, not on cast.",
+     "quote": "casts down a mass of dark matter that strikes the target location after a {{rutngt|1.2}} {{tt|delay|from the start of the cast time}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The impact delay begins at the start of the cast time, not after the cast finishes.",
+     "quote": "The delay starts at the beginning of the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dark Matter's cooldown is reduced based on stacks of Phenomenal Evil Power rather than following a flat per-rank cooldown.",
+     "quote": "''Dark Matter's'' {{sti|cooldown}} is reduced based on stacks of ''{{ai|Phenomenal Evil Power|Veigar|Phenomenal Evil}}''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dark Matter still lands and deals damage even if Veigar dies during the cast time.",
+     "quote": "If '''Veigar''' dies during the cast time, ''Dark Matter'' will still successfully fall from the sky.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Event Horizon",
+   "cooldown": {
+    "values": [
+     20,
+     18.5,
+     17,
+     15.5,
+     14
+    ],
+    "quote": "{{ap|20 to 14}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Stun Duration",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5
+     ],
+     "terms": [],
+     "quote": "{{ap|1.5 to 2.5}} seconds",
+     "bin": [
+      "VeigarEventHorizon.StunDuration"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "delay before the cage erects",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "erects after a {{fd|0.5}} second delay",
+     "bin": [
+      "VeigarEventHorizon.CageDelay"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration the cage remains after erecting",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "remaining there for 3 seconds",
+     "bin": [],
+     "binNote": "No bin data value in the sheet matches the cage's active duration; the sheet only lists StunDuration and CageDelay for this ability, so this number is wiki-only."
+    },
+    {
+     "id": "e_4",
+     "meaning": "cooldown before Event Horizon can affect the same enemy again",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 4.5,
+     "terms": [],
+     "quote": "only once every {{fd|4.5}} seconds",
+     "bin": [],
+     "binNote": "No corresponding data value appears in the sheet for this per-target re-affect cooldown; likely a hardcoded or hidden value not exposed under VeigarEventHorizon in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Event Horizon deals no damage; it only knocks down and stuns enemies who touch the cage edges.",
+     "quote": "Enemies that touch the cage edges are briefly {{tip|knockdown|knocked down}} and {{tip|stun|stunned}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Event Horizon can affect each enemy only once per cast.",
+     "quote": "''Event Horizon'' can affect enemies only once per cast.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown starts on cast, not on the cage's activation or expiry.",
+     "quote": "on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VeigarEventHorizon.CageDelay",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Primordial Burst",
+   "cooldown": {
+    "values": [
+     120,
+     90,
+     60
+    ],
+    "quote": "{{ap|120 to 60}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Minimum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      175,
+      250,
+      325
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.65,
+        0.7,
+        0.75
+       ]
+      }
+     ],
+     "quote": "{{ap|175 to 325}} {{as|(+ {{ap|65 to 75}}% AP)}}",
+     "bin": [
+      "VeigarR#MinDamage",
+      "VeigarR.APRatio",
+      "VeigarR.BaseDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Maximum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      350,
+      500,
+      650
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        1.3,
+        1.4,
+        1.5
+       ]
+      }
+     ],
+     "quote": "{{ap|175*2 to 325*2}} {{as|(+ {{ap|65*2 to 75*2}}% AP)}}",
+     "bin": [
+      "VeigarR#MaxDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "missing health amplification per 1% missing health, capped at 66.66%",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 1.5,
+       "coefScaling": []
+      }
+     ],
+     "quote": "{{pp|type=target's '''missing''' health|key=%|0 to 100 for 11|key1=%|0 to 100*2/3|formula=1.5% per 1% of target's '''missing''' health. ''This is capped at 66.66% '''missing''' health.''}}",
+     "bin": [
+      "VeigarR.MaxExecuteMult"
+     ],
+     "binNote": "MaxExecuteMult=2 matches the max damage being 2x min damage (100% missing hp * 1.5%/1% -> 150% amp = 2x min damage at cap); the 1.5%-per-1% scaling formula and 66.66% cap are only stated in the wiki tooltip text, not as a separate bin row."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Deals magic damage based on the target's missing health, scaling from minimum at full health to maximum (2x) at or above 66.66% missing health.",
+     "quote": "deals {{as|magic damage}} based on {{as|their '''missing''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield      = True",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is delivered by a projectile, so it lands after travel time rather than instantly on cast.",
+     "quote": "projectile   = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Baleful Strike, Dark Matter, and Primordial Burst each deal magic damage on cast (Q immediate, W after a 1.2s impact delay, R via projectile) on their own cooldowns."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Phenomenal Evil Power: each enemy-champion hit by an ability grants 1 stack (+1 AP), a takedown grants 5 more; stacks are uncapped and never expire, so AP (and thus Q/W/R damage) ramps over the fight as abilities land on the dummy."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Dark Matter's cooldown is not the flat per-rank value (bin lists 0 for all ranks); it starts at a base of 8s and steps down by a factor of 0.9 each time 50 Phenomenal Evil stacks are accumulated, so W's cast frequency depends on how fast stacks build during the fight."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Primordial Burst's damage is amplified 1.5% per 1% of the target's missing health, capped at 66.66% missing health for a 2x (max) multiplier; against a full-health dummy this starts at minimum damage and ramps as the dummy is damaged."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "The 2x max-damage multiplier is only reached once the target is at or below one-third remaining health, functioning as a soft execute threshold worth timing R around."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Event Horizon deals no damage (damagetype is blank, spelleffects blank); its only effects are stun/knockdown, which a damage-only dummy fight never reads. It may still be worth casting purely to trigger a Phenomenal Evil stack (see unsettled)."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Q/W/R damage-on-cast, the passive's stack-based AP buff, W's stack-gated cooldown reduction, R's missing-health damage scaling/execute cap, and E's damage-free status are all expressible with existing primitives (plain-cast, stacking-self-buff, cooldown-manipulation, conditional-damage, execute-or-threshold, defensive-only). No unique engine logic is required beyond combining these."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting Event Horizon at a stationary dummy actually register as an ability 'hit' for Phenomenal Evil Power purposes, given the ability's stun/knockdown only trigger on units crossing the cage edge and a stationary dummy standing at the cage center may never cross it?",
+   "options": [
+    "The dummy is treated as hit/affected by the cast regardless of movement (per 'abilities do not have to deal damage nor affect their targets to grant a stack'), so E generates a passive stack every cast",
+    "The dummy never crosses the cage boundary and so is never 'hit', meaning E generates no stack and is pure dead time/mana cost in the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Veigar's''' abilities do not have to deal damage nor affect their targets to grant a stack.",
+    "Enemies that collide with the edges of the cage are {{tip|knockdown|knocked down}} and {{tip|stun|stunned}} for a duration."
+   ]
+  },
+  {
+   "question": "How exactly does Dark Matter's stack-gated cooldown formula (base 8s, x0.9 per 50-stack threshold) resolve within a single 15s fight where stacks are actively accumulating mid-cooldown — is the applicable cooldown for a given cast determined by stacks at the moment W was last cast, or does an in-progress cooldown get shortened retroactively the instant a 50-stack threshold is crossed?",
+   "options": [
+    "Cooldown length is fixed at the value implied by current stacks when W is cast, and does not change again until the ability is off cooldown",
+    "Cooldown updates live: crossing a 50-stack threshold mid-cooldown immediately shortens the remaining cooldown to match the new (lower) total cooldown"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{pp|type=[[File:Phenomenal_Evil_Power.png|20px|link=Veigar#Phenomenal_Evil_Power]] [[Veigar#Phenomenal_Evil_Power|Phenomenal Evil]] stacks|8*0.9^(x-1);...;0|0 to 900 for 19;...;∞|formula=8 * 0.9^N. ''N{{equals}}Number of times that 50 Phenomenal Evil stacks are earned.''}}"
+   ]
+  },
+  {
+   "question": "For ordinary ability-hit stacks (as opposed to kill-triggered stacks, which the wiki explicitly says apply 'on next game tick'), is there any similar tick delay before the +1 AP from a hit applies, which would matter for whether a spell's own hit can boost its own damage calculation or only later casts within the same 15s window?",
+   "options": [
+    "Hit-based stacks (and their AP) apply instantly/synchronously with the hit, so even later hits in the same frame/cast see the updated AP",
+    "Hit-based stacks apply with the same 'next game tick' delay described for kills, so AP updates only affect subsequent casts, not anything resolving in the same instant"
+   ],
+   "impact": "low",
+   "quotes": [
+    "The stacks are added immediately on enemy kill (on next game tick)."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Baleful Strike (Q) and Dark Matter (W) back to back (each has only a 0.25s cast time) to start generating Phenomenal Evil Power stacks and begin damaging the dummy.",
+   "Continue casting Q on its short cooldown (4-6s by rank) and W whenever it comes off cooldown (reduced over time as Phenomenal Evil stacks accumulate) to build burst damage and drive the dummy's health down as fast as possible.",
+   "Hold Primordial Burst (R) until the dummy's remaining health is at or below roughly one-third (i.e. missing health at or above the 66.66% cap), then cast it to land at the maximum 2x damage multiplier; given R's long cooldown (60-120s by rank), only one cast is realistically available in a 15s window, so timing it for the cap is a pure gain.",
+   "Fill all remaining time with Q on cooldown and W on cooldown; do not cast Event Horizon, since it deals no damage and its value (a possible passive stack) is unsettled and likely marginal compared to spending the cast time/mana on Q or W instead."
+  ],
+  "questions": [
+   "Is Event Horizon worth casting purely for the Phenomenal Evil stack (and its +1 AP) against a stationary dummy, or does it never actually register as a 'hit'?",
+   "At what specific stack counts (given expected cast frequency of Q/W/passive triggers over 15s) does Dark Matter's cooldown actually drop below its 8s base, and does that reduction apply retroactively mid-cooldown or only to the next cast?",
+   "Should R be delayed to hit the 66.66%-missing-health cap even if that means it lands later in the 15s window, or is casting it as early as possible (accepting a lower multiplier) better for total kill time given the simulator's fixed fight length?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

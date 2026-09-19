@@ -1,0 +1,817 @@
+{
+ "champion": "braum",
+ "abilities": {
+  "P": {
+   "name": "Concussive Blows",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_stun_damage",
+     "meaning": "magic damage dealt when the 4th stack triggers the stun",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      26,
+      36,
+      46,
+      56,
+      66,
+      76,
+      86,
+      96,
+      106,
+      116,
+      126,
+      136,
+      146,
+      156,
+      166,
+      176,
+      186,
+      196
+     ],
+     "terms": [],
+     "quote": "{{pplevel|26 to 196|type=his level|label1=level}}",
+     "bin": [
+      "BraumPassive#TotalDamage"
+     ],
+     "binNote": "TotalDamage reads an unresolved ByCharLevelFormulaCalculationPart; wiki's by-level values are used since the bin formula is not resolved in the sheet."
+    },
+    {
+     "id": "p_onhit_bonus_damage",
+     "meaning": "bonus magic damage from Braum's basic attacks during the target's immunity window",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10.4,
+      14.4,
+      18.4,
+      22.4,
+      26.4,
+      30.4,
+      34.4,
+      38.4,
+      42.4,
+      46.4,
+      50.4,
+      54.4,
+      58.4,
+      62.4,
+      66.4,
+      70.4,
+      74.4,
+      78.4
+     ],
+     "terms": [],
+     "quote": "{{pplevel|26*0.4 to 196*0.4}} '''bonus''' magic damage",
+     "bin": [
+      "BraumPassive#OnHitDamage",
+      "BraumPassive.AlreadyStunnedDamageAmp"
+     ],
+     "binNote": "OnHitDamage = TotalDamage x 0.4, same unresolved formula issue as p_stun_damage."
+    },
+    {
+     "id": "p_stun_duration",
+     "meaning": "duration of the stun applied on the 4th stack",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.5,
+      1.5,
+      1.5,
+      1.5,
+      1.5,
+      1.5,
+      1.75,
+      1.75,
+      1.75,
+      1.75,
+      1.75,
+      1.75
+     ],
+     "terms": [],
+     "quote": "{{pp|changedisplay=true|1.25 to 1.75 for 3|1 to 13|type=his level|label1=level}}",
+     "bin": [
+      "BraumPassive#StunDuration"
+     ]
+    },
+    {
+     "id": "p_target_immunity_duration",
+     "meaning": "duration a target is immune to new stacks (and takes bonus on-hit damage) after being stunned",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      6,
+      6,
+      6,
+      6,
+      6,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+     ],
+     "terms": [],
+     "quote": "{{pp|8 to 4 for 3|1 to 11}}",
+     "bin": [
+      "BraumPassive#StunCD"
+     ]
+    },
+    {
+     "id": "p_stack_duration",
+     "meaning": "duration a stack of Concussive Blows lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds, refreshing on subsequent applications and stacking up to 4 times",
+     "bin": [
+      "BraumPassive.StackDuration"
+     ]
+    },
+    {
+     "id": "p_stack_cap",
+     "meaning": "number of stacks required to trigger the stun",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds, refreshing on subsequent applications and stacking up to 4 times",
+     "bin": [
+      "BraumPassive.StackCap"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Braum's basic attacks and Winter's Bite apply a stack; after the first stack, allied champions' basic attacks can also add stacks on-hit.",
+     "quote": "'''Braum's''' {{tip|basic attacks}} and ''{{ai|Winter's Bite|Braum}}'' each apply a {{tip|stack}} of ''Concussive Blows'' to their target for 4 seconds, refreshing on subsequent applications and stacking up to 4 times. Once the first stack has been applied, any allied {{tip|champion|champion's}} basic attack applies an additional stack to the target {{tip|on-hit}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The 4th stack consumes all stacks to deal magic damage and stun the target.",
+     "quote": "The fourth stack against a target consumes them all to deal {{as|{{pplevel|26 to 196|type=his level|label1=his level}}|magic damage}} {{as|magic damage}} and {{tip|stun}} them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After triggering, the target cannot receive new stacks for a period, but takes bonus magic damage from Braum's basic attacks during that window.",
+     "quote": "This effect cannot apply to the same target more than once every few seconds. During this immunity period, affected targets take",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Concussive Blows is not applied if the attack is dodged, blocked, or misses.",
+     "quote": "''Concussive Blows'' won't be applied if the attack is {{tip|dodge|dodged}} or {{tip|block|blocked}} or if the attack {{tip|blind|misses}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Winter's Bite",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      120,
+      165,
+      210,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.025
+      }
+     ],
+     "quote": "{{ap|75 to 255}} {{as|(+ {{fd|2.5}}% of '''Braum's''' '''maximum''' health)}}",
+     "bin": [
+      "BraumQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "initial slow percent",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 70,
+     "terms": [],
+     "quote": "slowing them by 70% decaying over 2 seconds",
+     "bin": [
+      "BraumQ.InitialSlow"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "slow decay duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slowing them by 70% decaying over 2 seconds",
+     "bin": [
+      "BraumQ.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Winter's Bite is a single-target projectile that damages and slows the first enemy hit.",
+     "quote": "propels ice from his shield in the target direction, dealing {{as|magic damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BraumQ.MissileRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "BraumQ.MinSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "BraumQ.DebuffDuration",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Stand Behind Me",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Ally Bonus Armor",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.12
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ 12% '''bonus''' armor)}}",
+     "bin": [
+      "BraumW#GrantedAllyArmor"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Ally Bonus Magic Resistance",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "bonusMr",
+       "coef": 0.12
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ 12% '''bonus''' magic resistance)}}",
+     "bin": [
+      "BraumW#GrantedAllyMR"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Self Bonus Armor",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.36
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ 36% '''bonus''' armor)}}",
+     "bin": [
+      "BraumW#GrantedBraumArmor"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Self Bonus Magic Resistance",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "bonusMr",
+       "coef": 0.36
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ 36% '''bonus''' magic resistance)}}",
+     "bin": [
+      "BraumW#GrantedBraumMR"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "duration of the bonus resistances",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "for 3 seconds",
+     "bin": [
+      "BraumW.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Braum dashes to a target allied champion or minion; on arrival both gain the bonus armor and magic resistance.",
+     "quote": "'''Braum''' {{tip|dashes}} to put himself {{tt|between|150 units from his ally towards the closest enemy}} the target ally and the closest {{tip|sight|visible}} enemy {{tip|champion}} {{tt|within 1500 units|from the ally's location}}, and upon arrival grants himself and the ally {{sti|armor|{{as|'''bonus''' armor}}}} and {{sti|mr|{{as|'''bonus''' magic resistance}}}} for 3 seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If self cast, the bonus resistances (at the higher, self rate) are granted to Braum instantly with no dash.",
+     "quote": "''Stand Behind Me'' can be [[Self-targeted|self cast]] to instantly grant '''Braum''' the '''bonus''' resistances.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the dash is interrupted, neither Braum nor his ally receive the bonus resistances.",
+     "quote": "If the {{tip|dash}} is interrupted, neither '''Braum''' nor his ally receive the bonus resistances.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Unbreakable can be cast during the W dash, potentially letting Q and R also be cast then.",
+     "quote": "If {{ai|Unbreakable|Braum}} is cast during the dash, {{ai|Winter's Bite|Braum}} and {{ai|Glacial Fissure|Braum}} may also be cast.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BraumW.RangedDamageThreshold",
+     "reason": "unknown"
+    },
+    {
+     "ref": "BraumW.BonusDashSpeed",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Unbreakable",
+   "cooldown": {
+    "values": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "quote": "{{ap|16 to 8}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "quote": "{{ap|30 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Damage reduction",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      35,
+      40,
+      45,
+      50,
+      55
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 55}}%",
+     "bin": [
+      "BraumE.ShieldFacingDRAmount"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Barrier Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4
+     ],
+     "terms": [],
+     "quote": "{{ap|3 to 4}} seconds",
+     "bin": [
+      "BraumE.ShieldHoldDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "First champion damage instance from the shielded direction is reduced by 100%",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 100,
+     "terms": [],
+     "quote": "The first instance of damage dealt by a {{tip|champion}} from this direction is reduced by 100%.",
+     "bin": [],
+     "binNote": "No bin row stores a 100% figure for this one-time full block; the sheet only has ShieldFacingDRAmount (the partial facing DR) and no separate data value for the champion first-hit full-block mechanic, so this number is wiki-only."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Braum's shield intercepts all incoming hostile projectiles from the target direction, destroying them, in addition to the damage reduction.",
+     "quote": "creating a barrier in front of him that intercepts all incoming hostile {{tip|projectiles}} and reduces the damage '''Braum''' takes through it from enemies in the target direction",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The 100% damage reduction can block multiple instances of damage dealt at the same time, not just one attack.",
+     "quote": "''Unbreakable's'' full damage reduction can block multiple instances of damage if they're dealt at the same time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "For damage over time, the reduction applies to only a single tick, and the flat damage reduction applies to each qualifying instance separately.",
+     "quote": "{{tip|Damage over time}} is calculated per tick but the full damage reduction will still only apply to a single tick.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The one-time full damage reduction is not consumed by pure true damage sources.",
+     "quote": "The one-time-use full damage reduction will not be consumed if the damage source is nothing but {{tip|true damage}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "While active, Braum gains bonus movement speed and ghosting.",
+     "quote": "'''Braum''' also gains {{sti|ms|{{as|10% '''bonus''' movement speed}}}} and {{tip|ghosting}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability does not affect turrets.",
+     "quote": "''Unbreakable'' does not affect {{tip|turret|turrets}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts after the shield's effect ends, not on cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BraumE.RangedReflect",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "BraumE.MoveSpeedPercent",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Glacial Fissure",
+   "cooldown": {
+    "values": [
+     130,
+     115,
+     100
+    ],
+    "quote": "{{ap|130 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "BraumRWrapper#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Maximum Knock up Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.5,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 2}} seconds",
+     "bin": [
+      "BraumRWrapper.FirstKnockupDuration",
+      "BraumRWrapper.MaxKnockup"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [],
+     "binNote": "Slow strength is a CC value and not present as a numeric row in this sheet excerpt (MoveSpeedMod covers the ally speed boost, not this slow); kept only for completeness, does not affect either fight."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies in the fissure's path and around Braum take magic damage as well as those around Braum.",
+     "quote": "dealing {{as|magic damage}} to enemies within its path as well as those around '''Braum'''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This is a single damage instance per target when the fissure hits, not a DoT.",
+     "quote": "creating a fissure from the impact that travels forth in the target direction, dealing {{as|magic damage}} to enemies within its path",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BraumRWrapper.KnockupDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "BraumRWrapper.MoveSpeedMod",
+     "reason": "utility"
+    },
+    {
+     "ref": "BraumRWrapper.SlowZoneDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "BraumRWrapper.SlowDebuffDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "BraumRWrapper.MinKnockup",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "BraumRWrapper.MaxKnockupRatio",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Concussive Blows: Braum's basic attacks and Winter's Bite each place a stack (refreshing, cap 4, 4s duration) on the dummy; the 4th stack consumes all stacks to deal burst magic damage and stun."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "After the stun triggers, the target is immune to new stacks for a level-gated duration, during which Braum's basic attacks deal +40% bonus magic damage on-hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Winter's Bite: magic damage (base + %maxHP) to the dummy on a 0.25s cast, on cooldown."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Glacial Fissure: magic damage (base + 60% AP) to the dummy on a 0.5s cast, on cooldown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Self-cast Stand Behind Me instantly grants Braum bonus armor and MR (36% of bonus resists) for 3s; relevant only to the survival fight's damage-taken."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Unbreakable grants a facing damage-reduction percent plus a one-time 100% block of the first champion damage instance from that direction; relevant only to the survival fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana; casting Q/R on cooldown plus any W/E use over a 15s fight is a real mana constraint, though base mana/regen at the tested level/items aren't given in these sheets."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is fully describable with the closed-list primitives: passive stacking-to-consume plus a post-proc conditional on-hit bonus, two plain-cast nukes (Q, R), a timed self-buff (W self-cast) and a pure defensive mechanic (E) that only the survival fight reads, gated by a real mana budget. No extra logic (pets, forms, ammo, crits, stat conversion, etc.) is needed."
+ },
+ "unsettled": [
+  {
+   "question": "Is the passive's 4th-stack burst damage (and its +40% on-hit follow-up) a distinct 'spell' damage instance that can trigger on-cast/spell-based item and rune effects, or is it folded into whichever attack/spell applied the triggering stack for on-hit purposes?",
+   "options": [
+    "Treated as its own proc damage instance (per flags: spelleffects=Proc, spellshield=True), separate from the attack/spell that applied the 4th stack, so on-hit effects from that attack still apply once and the proc is a second, independent magic-damage event",
+    "Bundled with the triggering attack as a single combined damage event for on-hit/on-cast interaction purposes"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The fourth stack against a target consumes them all to deal {{as|{{pplevel|26 to 196|type=his level|label1=level}}|magic damage}} {{as|magic damage}} and {{tip|stun}} them"
+   ]
+  },
+  {
+   "question": "The bin's own passive damage formula (BraumPassive#TotalDamage) is an unresolved ByCharLevelFormulaCalculationPart in this sheet, so the by-level values used (26 to 196) come only from the wiki tooltip. Does the live bin formula match this table exactly, or could it include a hidden scaling term (e.g., AP or bonus health) not reflected in the wiki text?",
+   "options": [
+    "Wiki's flat by-level table (26 to 196) is the complete, correct value with no additional ratio",
+    "The bin formula includes an additional stat ratio (AP, health, etc.) that the wiki tooltip omits or simplifies away"
+   ],
+   "impact": "high",
+   "quotes": [
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart",
+    "{{pplevel|26 to 196|type=his level|label1=level}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the 15s window auto-attacking the dummy continuously to start applying Concussive Blows stacks and generate basic-attack damage.",
+   "Cast Winter's Bite (Q) as soon as it comes off cooldown each time, both for its own magic damage (base + 2.5% max HP) and because it also applies a Concussive Blows stack.",
+   "Let the passive trigger naturally: whenever the 4th stack lands (from an auto or Q), it fires its burst magic damage and stun-flag on the dummy, then Braum's autos deal +40% bonus magic damage during the target's immunity window.",
+   "Cast Glacial Fissure (R) once available (its long cooldown means only one cast fits in 15s) for its flat + 60% AP magic damage, timed so the cast (0.5s) doesn't stall auto-attacking/Q-weaving longer than necessary.",
+   "Do not cast Stand Behind Me (W) or Unbreakable (E) in the damage fight: both are purely defensive/self-buff and add no damage against a stationary, non-retaliating dummy, so casting them would only waste time and mana that could go to Q/R casts and auto-attacks.",
+   "In the survival fight, self-cast W at the opener (or on cooldown) for the self-armor/MR buff, and face Unbreakable (E) toward the attacker to get its facing damage reduction and one-time full block, refreshing E off cooldown."
+  ],
+  "questions": [
+   "At the target level/items being simulated, is there enough mana to cast Q on every cooldown plus one R cast across the full 15s without stalling, or does mana starvation change the realistic rotation?",
+   "Should Glacial Fissure be cast as the very first action (to front-load its long cooldown and start its AoE damage timer) or held until Concussive Blows stacks are already primed, given its 0.5s cast time delays auto-attacking either way?",
+   "Does the simulator model Concussive Blows' 4-stack cap purely from Braum's own attacks/Q in a duel (no allies), and does it correctly track the 4s per-stack refresh window when weaving Q between autos?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

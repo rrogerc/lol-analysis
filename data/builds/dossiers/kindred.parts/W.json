@@ -1,0 +1,242 @@
+{
+ "name": "Wolf's Frenzy",
+ "cooldown": {
+  "values": [
+   18,
+   17,
+   16,
+   15,
+   14
+  ],
+  "quote": "{{ap|18 to 14}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   40,
+   40,
+   40,
+   40
+  ],
+  "quote": "40",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    30,
+    35,
+    40,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.2
+    },
+    {
+     "stat": "ap",
+     "coef": 0.2
+    },
+    {
+     "stat": "targetCurrentHp",
+     "coef": 0.015,
+     "coefScaling": [
+      {
+       "stat": "stacks",
+       "per": 1,
+       "coef": 0.01
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|25 to 45}} {{as|(+ 20% '''bonus''' AD)}} {{as|(+ 20% AP)}} {{as|(+ {{fd|1.5}}% {{as|(+ 1% per {{ai|Mark of the Kindred|Kindred|mark}})|buzzword}} of target's '''current''' health)}}",
+   "bin": [
+    "KindredW#BaseWolfDamage",
+    "KindredW#PercentWolfDamage"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Monster Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    37.5,
+    45,
+    52.5,
+    60,
+    67.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.3
+    },
+    {
+     "stat": "ap",
+     "coef": 0.3
+    },
+    {
+     "stat": "targetCurrentHp",
+     "coef": 0.0225,
+     "coefScaling": [
+      {
+       "stat": "stacks",
+       "per": 1,
+       "coef": 0.015
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|25*1.5 to 45*1.5}} {{as|(+ {{ap|20*1.5}}% '''bonus''' AD)}} {{as|(+ {{ap|20*1.5}}% AP)}} {{as|(+ {{ap|1.5*1.5}}% {{as|(+ {{ap|1*1.5}}% per {{ai|Mark of the Kindred|Kindred|mark}})|buzzword}} of target's '''current''' health)}}",
+   "bin": [
+    "KindredW#BaseWolfDamage",
+    "KindredW#PercentWolfDamage",
+    "KindredW.MonsterBonusDmg"
+   ],
+   "binNote": "Monster damage is 150% of the base formula (1.0 + MonsterBonusDmg=0.5); no separate bin row states the 1.5x-scaled numbers directly, they are derived from MonsterBonusDmg applied to BaseWolfDamage/PercentWolfDamage."
+  },
+  {
+   "id": "w_3",
+   "meaning": "zone duration Wolf occupies before separating",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 8.5,
+   "terms": [],
+   "quote": "{{fd|8.5}}",
+   "bin": [
+    "KindredW.ZoneDuration"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Wolf's attack rate scaling from Kindred's bonus attack speed",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{as|25% of '''Kindred's bonus''' attack speed}}",
+   "bin": [
+    "KindredW.LambToWolfAttackSpeedConversionPercent"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "cap on the target-current-health-ratio component of monster damage",
+   "role": "other",
+   "damageType": "magic",
+   "by": "const",
+   "base": 112.5,
+   "terms": [
+    {
+     "stat": "stacks",
+     "coef": 15
+    }
+   ],
+   "quote": "{{fd|112.5}} {{as|(+ 15 per {{ai|Mark of the Kindred|Kindred|mark}})|buzzword}}",
+   "bin": [],
+   "binNote": "No bin row states this cap value directly; it is a tooltip-only derived constant not present in the listed data values."
+  },
+  {
+   "id": "w_6",
+   "meaning": "Hunter's Vigor heal amount at max stacks",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    47,
+    49,
+    51,
+    53,
+    55,
+    57,
+    59,
+    61,
+    63,
+    65,
+    67,
+    69,
+    71,
+    73,
+    75,
+    77,
+    79,
+    81
+   ],
+   "terms": [],
+   "quote": "{{pplevel|47 to 81|color=heal}}",
+   "bin": [
+    "KindredW#AttackHeal"
+   ],
+   "binNote": "The wiki also scales this heal up by 1.25% per 1% of Kindred's missing health (capped at 80% missing health via the pp formula); that multiplicative scaling is not represented as a separate bin row and is not modeled as a term here."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "He automatically attacks the closest nearby sight-visible enemy within the area, prioritizing the last enemy Lamb has attacked, then enemy champions, then non-champions.",
+   "quote": "prioritizing the last enemy '''Lamb''' has attacked, then enemy champions, then non-champions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The effect (and Wolf's attacking) ends immediately if Lamb leaves the area or dies, cutting the zone duration short.",
+   "quote": "''Wolf's Frenzy'' ends immediately if '''Lamb''' leaves the area or dies.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts on cast, but ability haste is applied to the remaining cooldown only after the effect ends, so cooldown reduction is not fully realized until the zone ends.",
+   "quote": "''Wolf's Frenzy'' applies ability haste to its cooldown post-effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Hunter's Vigor heal is not triggered on attacks against structures and wards.",
+   "quote": "''Hunter's Vigor's'' heal is not triggered on attacks against {{tip|structures}} and {{tip|wards}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The heal is not triggered if Kindred is at full health.",
+   "quote": "The heal is not triggered if '''Kindred''' is at full health.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KindredW.RingRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KindredW.CloneBasePercentDamage",
+   "reason": null
+  },
+  {
+   "ref": "KindredW.CloneADRatio",
+   "reason": null
+  },
+  {
+   "ref": "KindredW.ClonePercentDamagePerBounty",
+   "reason": null
+  },
+  {
+   "ref": "KindredW.BaseCurrentHealthDamage",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "KindredW.MonsterSlowAmount",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

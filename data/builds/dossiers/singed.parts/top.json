@@ -1,0 +1,143 @@
+{
+ "champion": "singed",
+ "primitives": [
+  {
+   "id": "dot",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Poison Trail toggle applies a poison debuff dealing magic damage per tick over 2s, refreshed on re-hit"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q per-second, W/E/R flat) constrain how much can be cast in the 15s window"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Fling deals a one-time magic damage burst on cast (with 0.25s cast time)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Fling's damage scales with the target's maximum health (capped vs non-champions, irrelevant in a champion-vs-champion dummy fight)"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Insanity Potion grants bonus AP/armor/MR/MS/regen for 25s, boosting Q's AP ratio damage output"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "While R is active, Poison Trail additionally applies Grievous Wounds (reduces healing on target) for 1s, refreshed while poisoned"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Noxious Slipstream stacks give Singed bonus movement speed only; does not affect damage dealt or taken"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Mega Adhesive's slow/ground/root and R's armor/MR/regen only affect damage taken or crowd control, not relevant to the damage-dealing rotation in a dummy fight; ground/slow don't change damage in a stationary-dummy fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Poison Trail's toggle-on-cooldown-1s mechanic with periodic re-application/refresh ticking is expressible as a dot primitive with per-tick base+AP scaling; Fling's max-HP-based damage is a conditional-damage primitive; Insanity Potion's stat buff and Grievous Wounds application on Q are expressible as timed-self-buff and target-debuff. No unique mechanic (recast chains, stacks consumed on cast, crit interactions, etc.) falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "Does Poison Trail's 'double tick on first application' (the 0.1s-delayed extra instance when the debuff is newly applied rather than refreshed) apply every time Singed re-enters melee range/re-toggles on the dummy, effectively doubling the first tick's damage repeatedly, or only on the very first application of the whole fight?",
+   "options": [
+    "Only once, on the very first poison application of the fight",
+    "Every time the debuff lapses (2s duration) and is freshly re-applied rather than refreshed, i.e. periodically throughout sustained Q uptime"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "When ''Poison Trail's'' debuff is applied instead of refreshed, the target is dealt one additional instance of the debuff at the same time as the application. This is done by delaying the actual debuff by {{fd|0.1}} seconds."
+   ]
+  },
+  {
+   "question": "Is Poison Trail's effective uptime against a single stationary dummy 100% (clouds always overlap the target under Singed) or reduced because clouds only spawn near Singed's current position/movement, meaning a stationary dummy fight must assume Singed stands on/near the dummy the whole time?",
+   "options": [
+    "Assume 100% uptime (Singed stands in place on the dummy for the whole toggle duration)",
+    "Uptime is less than 100% because of the movement-based cloud-spawn mechanic (clouds spawn in front of Singed every 1s if he barely moves) requiring some minimum motion to keep clouds on the dummy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If '''Singed''' has moved fewer than 90 units since spawning the last poison cloud, it will spawn 35 units in front of him. They also only spawn every 1 second in this case."
+   ]
+  },
+  {
+   "question": "Does the 1s ToggleCooldown on Poison Trail (from the bin) mean Singed cannot toggle Q off and back on more than once per second, or does it also gate the very first activation cast at the start of the fight (adding a small delay before Q's damage starts)?",
+   "options": [
+    "Only limits re-toggling after the first activation; first cast is instant",
+    "Also applies to initial activation, delaying the start of poison damage by up to 1s"
+   ],
+   "impact": "low",
+   "quotes": [
+    "PoisonTrail.ToggleCooldown = 1"
+   ]
+  },
+  {
+   "question": "Does Fling's magic damage crit or interact with basic attacks landed on the airborne target (the wiki notes a basic attack can be landed mid-fling), and should that attack be counted as a bonus attack-reset/extra attack in the rotation, or is it purely a flavor/positional note not modeled in a dummy fight?",
+   "options": [
+    "Model it as an extra guaranteed basic attack whenever Fling is cast (since the target cannot escape or move)",
+    "Ignore it as a corner-case/positional note not reliably repeatable in the simulated fight"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Singed''' may successfully issue a basic attack against the target of ''Fling'' while it is mid-air."
+   ]
+  },
+  {
+   "question": "Grievous Wounds (from R + Q) reduces healing received, which affects the survival fight if Singed is the one being hit by an enemy applying Grievous Wounds is irrelevant, but reduces effectiveness of Singed's own self-healing/regen when Singed is the tanky survival-fight defender under R — does the sim need to model Grievous Wounds being applied by Singed onto the attacking enemy (only matters in the damage fight, where the dummy doesn't heal) or is it dead weight in both fight types?",
+   "options": [
+    "Grievous Wounds is essentially irrelevant since the target dummy doesn't heal and enemy champions in the survival fight aren't Singed's target",
+    "Grievous Wounds should still be tracked as a target-debuff for completeness even though it never changes outcomes in either fight type as modeled"
+   ],
+   "impact": "low",
+   "quotes": [
+    "applies {{tip|Grievous Wounds}} for 1 second, which refreshes every {{fd|0.25}} seconds while the {{tip|poison}} persists"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: toggle on Poison Trail (Q) and stand on the dummy so its lingering cloud continuously ticks poison damage for the whole fight.",
+   "On engage, cast Insanity Potion (R) immediately for the AP/stat buff, which raises Poison Trail's AP-scaled damage per tick for its 25s duration (covers the whole 15s fight).",
+   "Cast Fling (E) on cooldown (every 8-10s depending on rank) for its burst magic damage based on the target's max health plus AP ratio.",
+   "Do not cast Mega Adhesive (W) for damage purposes in the damage fight, since it deals no damage and only slows/grounds — it is irrelevant against a stationary dummy that cannot flee.",
+   "Weave in basic attacks between Q's passive ticking and E's cooldown windows to add auto-attack damage on top of the poison DoT and Fling bursts.",
+   "Maintain mana to sustain Q's per-second cost plus E's cast cost; if mana runs low, deprioritize extra E casts over keeping Q toggled on, since Q is the primary sustained damage source."
+  ],
+  "questions": [
+   "In a stationary-dummy damage fight, does Singed have to physically move to keep spawning fresh Poison Trail clouds under the dummy, or does an existing cloud simply persist and keep ticking on a target that doesn't move away?",
+   "Should Mega Adhesive ever be cast in the damage fight (e.g., to check whether grounding the dummy has any interaction with tooltip damage), or is it truly dead weight since the target is already stationary and doesn't need slowing?",
+   "For the survival fight, does the tanky Singed use Insanity Potion primarily for the extra armor/MR/health regen rather than the AP, and should the rotation proposal differ (prioritize R for defense, E only to peel/reposition — irrelevant here since CC is ignored) versus the offensive proposal above?",
+   "How should the sim treat Fling's cast time (0.25s) and travel time (0.666s to complete the fling) relative to when its damage is dealt — instantly on cast, or after the full displacement animation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,169 @@
+{
+ "champion": "malphite",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Seismic Shard, Ground Slam, Unstoppable Force deal damage on cast/impact on cooldown"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Thunderclap active empowers next basic attack with on-hit physical damage and 50 bonus range within 6s"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Following the empowered attack, basic attacks trigger a cone splash on-hit for 5s"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Thunderclap's empowered attack resets Malphite's basic attack timer"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "passive bonus armor from Thunderclap ranks, tripled while Granite Shield is up (armor->damage via ratios on W/E)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Seismic Shard slow and Ground Slam attack speed cripple on the target/nearby enemies; cripple only relevant if simulator gives dummy attack speed, otherwise cosmetic in a dummy fight (no damage-taken change to dummy)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs for all four abilities may gate casts over 15s"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Thunderclap cooldown starts on cast, distinguishing it from other abilities in cooldown timing during the fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Granite Shield is a self-shield that reduces damage taken, irrelevant to the damage fight but relevant to the survival fight"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Thunderclap's cone, Ground Slam's radius, and Unstoppable Force's landing radius are AoE effects that in a single-dummy fight are assumed to always hit the one target"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Thunderclap's kit combines an armor-scaling stat-conversion (bonus armor feeds W and E damage via armor ratios) with an empowered-attack that also triggers a distinct, separately-timed cone on-hit rider for a different duration (6s empowered-attack window vs 5s cone-splash window) and an attack-reset — no single closed-list primitive captures the combination of 'armor is itself a damage-scaling stat fed by a self-buff whose magnitude is tripled by a shield state' plus the two-tier empowered-attack/on-hit-cone structure with independent timers. The simulator needs bespoke logic to: (1) track Malphite's armor stat live (base+bonus+item armor, further increased by the passive itself and its own W rank), (2) apply the tripled multiplier only while Granite Shield (a defensive proc-based shield) is currently up, and (3) manage two separate expiring windows (empowered-attack-arm at 6s, cone-active at 5s) stacked on the attack-reset behavior."
+ },
+ "unsettled": [
+  {
+   "question": "Does the armor-ratio damage term in W's on-hit damage (w_3), W's cone splash (w_4), and E's damage (e_1) use Malphite's total armor including the Thunderclap passive's own bonus armor (recursion), or armor excluding that self-buff?",
+   "options": [
+    "Uses total armor including W's own passive bonus armor (recursive, as wiki notes: 'The passive's bonus armor stacks with an instance of recursion')",
+    "Uses only base+item armor excluding the W passive bonus",
+    "Uses armor snapshotted at some fixed point rather than live current armor"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The passive's bonus armor stacks with an instance of [[recursion]]."
+   ]
+  },
+  {
+   "question": "Is the Granite Shield 3x armor multiplier assumed active for the whole 15s damage fight (since the dummy never damages Malphite back, the shield would stay up permanently) or only intermittently?",
+   "options": [
+    "Assume Granite Shield is always up in the damage fight (dummy is stationary/non-damaging per rules, so shield never breaks) → armor bonus always tripled",
+    "Assume shield is broken at fight start and never mentioned as refreshed, so use the base (non-tripled) bonus armor throughout",
+    "Model shield state dynamically based on whether the dummy deals any damage at all"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Malphite''' gains {{sti|armor|{{as|'''bonus''' armor}}}}, tripled while ''{{ai|Granite Shield|Malphite}}'' is active."
+   ]
+  },
+  {
+   "question": "Does the empowered basic attack's on-hit cone damage (w_4) count as a separate simultaneous damage instance from the main attack damage (w_3 + base AD), or are they sequenced/dependent (e.g., cone only triggers if the cone's positional check would hit, which in a 1v1 dummy fight is trivially true)?",
+   "options": [
+    "Cone always lands as a separate simultaneous instance alongside the main hit in a 1-target fight",
+    "Cone damage is a distinct instance but could theoretically be blocked by target leaving the AoE — irrelevant for a stationary dummy, so effectively same as option 1",
+    "Cone damage does not apply to on-hit effects/items at all and must be excluded from item-based on-hit calculations even though it deals raw damage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The cone will trigger {{cai|E|Jax}} damage reduction... It is also special cased to trigger {{ii|Tear of the Goddess}}.",
+    "The cone does not benefit from {{iis|Spear of Shojin}} damage amp."
+   ]
+  },
+  {
+   "question": "Does Thunderclap's on-hit cone damage apply life steal / on-hit item effects (since the main hit explicitly does not apply life steal, but the cone's status re on-hit items besides those explicitly listed is unclear)?",
+   "options": [
+    "Cone damage never applies on-hit/on-attack item effects except the explicitly whitelisted ones (Jax E, Cheap Shot, Conqueror, Dark Harvest, Electrocute, Aery, Eclipse, World Atlas, Ocean Dragon Soul, Tear of the Goddess)",
+    "Cone damage applies all normal on-hit effects like a standard on-hit rider",
+    "Ambiguous which of the whitelisted procs matter for a damage-fight simulator vs which are excluded (e.g., Spear of Shojin amp explicitly excluded)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "while the cone deals {{tip|area damage|area}} non-{{tip|proc damage|proc}} damage without applying {{tip|spell effects}}",
+    "The cone does not benefit from {{iis|Spear of Shojin}} damage amp."
+   ]
+  },
+  {
+   "question": "Is the 6-second empowered-attack arm window (leveling2/description2) refreshed or reset if Thunderclap is recast before the empowered attack lands, or does recasting simply refresh the timer with no stacking?",
+   "options": [
+    "Recasting Thunderclap before the empowered attack lands simply refreshes the 6s timer, attack remains single-empowered",
+    "Recasting has no additional effect since only one empowered-attack charge can exist at a time (bin has no stacking data)",
+    "Unknown/unspecified by either source"
+   ],
+   "impact": "low",
+   "quotes": [
+    "empowers his next basic attack within 6 seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: assume Granite Shield is up (dummy never damages Malphite), so Thunderclap's passive bonus armor is tripled for the whole fight.",
+   "Open with Ground Slam (E) on cooldown for its high magic damage-to-armor/AP scaling and short 7s cooldown.",
+   "Cast Thunderclap (W) to arm the empowered basic attack, then immediately auto-attack to consume the empowerment (also resets attack timer) and to start the on-hit cone window.",
+   "Cast Seismic Shard (Q) on cooldown for magic damage (its slow/speed-steal is not relevant to the dummy fight).",
+   "Keep auto-attacking throughout to benefit from the 5s on-hit cone splash window after each Thunderclap cast, refreshing Thunderclap on cooldown to re-arm the empowered attack and reset the attack timer again.",
+   "Cast Unstoppable Force (R) once available (100/115/130s cooldown, likely only usable once near the start of a 15s fight if at all) for its large magic burst.",
+   "Continue looping E > W(+auto) > Q on cooldown, weaving in basic attacks between casts, prioritizing whichever ability comes off cooldown first to minimize downtime, subject to mana budget."
+  ],
+  "questions": [
+   "In the damage fight's ~15s window with likely level 16-18 CDR-less base cooldowns, will Malphite realistically ever get to cast R (100-130s CD) at all, or should R be excluded from the rotation entirely?",
+   "Should the rotation assume max mana (or infinite mana) is provided, given Q+W+E costs could exceed a fresh Malphite's mana pool well before 15s elapses?",
+   "Does the simulator model auto-attacks between spell casts at all, or does it only count declared abilities — if autos are excluded, does Thunderclap's active even deal its w_3/w_4 damage in this framework?",
+   "Should the opening sequence prioritize maximizing early single large-cooldown casts (R, E) or maximize total auto-attack uptime with W's empowerment, given W's cooldown (8-10s) is much shorter than the empowered-attack arm window (6s) and cone window (5s)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,240 @@
+{
+ "name": "Barrel Roll / Barrel Roll 2",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": {
+  "values": [
+   80,
+   80,
+   80,
+   80,
+   80
+  ],
+  "quote": "80",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    120,
+    160,
+    200,
+    240
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.8
+    }
+   ],
+   "quote": "{{ap|80 to 240}} {{as|(+ 80% AP)}}",
+   "bin": [
+    "GragasQ#MinDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Maximum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    120,
+    180,
+    240,
+    300,
+    360
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.2
+    }
+   ],
+   "quote": "{{ap|80*1.5 to 240*1.5}} {{as|(+ 120% AP)}}",
+   "bin": [
+    "GragasQ#MaxDamage"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Minimum Minion Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    56,
+    84,
+    112,
+    140,
+    168
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.56
+    }
+   ],
+   "quote": "{{ap|80*0.7 to 240*0.7}} {{as|(+ 56% AP)}}",
+   "bin": [
+    "GragasQ.MinionDamageMod"
+   ],
+   "binNote": "Wiki minion damage = min damage * (MinionDamageMod=70%); no separate calculation row exists for the reduced value."
+  },
+  {
+   "id": "q_4",
+   "meaning": "Maximum Minion Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    84,
+    126,
+    168,
+    210,
+    252
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.84
+    }
+   ],
+   "quote": "{{ap|80*1.5*0.7 to 240*1.5*0.7}} {{as|(+ 84% AP)}}",
+   "bin": [
+    "GragasQ.MinionDamageMod"
+   ],
+   "binNote": "Wiki minion damage = max damage * (MinionDamageMod=70%); no separate calculation row exists for the reduced value."
+  },
+  {
+   "id": "q_5",
+   "meaning": "Minimum Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    45,
+    50,
+    55,
+    60
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 60}}%",
+   "bin": [
+    "GragasQ.SlowPercent"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Maximum Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    60,
+    67.5,
+    75,
+    82.5,
+    90
+   ],
+   "terms": [],
+   "quote": "{{ap|40*1.5 to 60*1.5}}%",
+   "bin": [
+    "GragasQ.SlowPercent"
+   ],
+   "binNote": "Bin gives base SlowPercent only; the 150% max amplification (BarrelCookMaxAmp) is not itself a separate percentage row."
+  },
+  {
+   "id": "q_13",
+   "meaning": "Slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "{{tip|slow|slowing}} them for 2 seconds",
+   "bin": [
+    "GragasQ.SlowDuration"
+   ]
+  },
+  {
+   "id": "q_14",
+   "meaning": "Cask lingers before auto-detonating / can be recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "remaining there for 4 seconds and granting {{tip|sight}} of the area",
+   "bin": [
+    "GragasQ.BarrelMaxDuration"
+   ]
+  },
+  {
+   "id": "q_15",
+   "meaning": "Time to fully ferment to maximum damage/slow",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "ferment over the first 2 seconds of its duration to increase its {{ccs|damage|magic}} and the effectiveness of its {{tip|slow}}",
+   "bin": [
+    "GragasQ.BarrelCookMaxTime"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The initial cast is a separate activation event from the recast/detonation, relevant to on-cast triggers.",
+   "quote": "The initial cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Deactivating the ability manually (recast) does not count as an ability activation for on-cast effects.",
+   "quote": "Deactivating the ability manually does not.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cask automatically detonates once its 4-second duration ends if not recast manually.",
+   "quote": "does so automatically after its duration ends",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage and slow scale up continuously from minimum to maximum over the first 2 seconds after landing, capping at 150% of initial values.",
+   "quote": "increase its {{ccs|damage|magic}} and the effectiveness of its {{tip|slow}}, up to a maximum of 150% of their initial values",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Detonation damage is reduced by 30% against minions.",
+   "quote": "reduced by 30% against {{tip|minion|minions}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "GragasQ.BarrelCookMaxAmp",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

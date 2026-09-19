@@ -1,0 +1,1159 @@
+{
+ "champion": "locke",
+ "abilities": {
+  "P": {
+   "name": "Silver Stake",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_onhit_base",
+     "meaning": "bonus magic on-hit damage at 0% target missing health",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      5,
+      7.06,
+      9.12,
+      11.18,
+      13.24,
+      15.29,
+      17.35,
+      19.41,
+      21.47,
+      23.53,
+      25.59,
+      27.65,
+      29.71,
+      31.76,
+      33.82,
+      35.88,
+      37.94,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{pplevel|5 to 40|color=magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+     "bin": [
+      "LockePassive.MinOnHitStartValue",
+      "LockePassive.MinOnHitEndValue"
+     ],
+     "binNote": "Bin only stores the level 1 (5) and level 18 (40) endpoints; intermediate levels here are linearly interpolated to match the wiki's pplevel scaling, matching LockePassive#MinOnHitDamage's base+0.1xAP form."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive damage is a bonus magic on-hit effect applied by basic attacks.",
+     "quote": "'''Locke's''' {{tip|basic attacks}} deal {{pplevel|5 to 40|color=magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The on-hit damage scales up with the target's missing health, from the base amount at 0% missing health up to double at 70%+ missing health (10 to 80 base, +20% AP).",
+     "quote": "increased by {{pp|key=%|type=target's '''missing''' health|0 to 100|0 to 70 by 5|key1=%|formula=7.14% for every 5% target's missing health, with the maximum at 70% target's missing health|color=health}}, up to {{pplevel|5*2 to 40*2|color=magic damage}} {{as|(+ 20% AP)}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LockePassive.MaxOnHitStartValue",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "LockePassive.MaxOnHitEndValue",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Ritual Nails",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}<!--no cast bar in-game?-->"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage per Nail",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      48,
+      56,
+      64,
+      72
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|40 to 72}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "LockeQ#MissileDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "One Stack Bonus Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      18,
+      26,
+      34,
+      42,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.25,
+        0.275,
+        0.3,
+        0.325,
+        0.35
+       ]
+      }
+     ],
+     "quote": "{{ap|18 to 50}} {{as|(+ {{ap|25 to 35}}% AP)}}",
+     "bin": [
+      "LockeQ#NailDamage"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Two Stacks Bonus Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      43.2,
+      62.4,
+      81.6,
+      100.8,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.6,
+        0.66,
+        0.72,
+        0.78,
+        0.84
+       ]
+      }
+     ],
+     "quote": "{{ap|18*2*1.2 to 50*2*1.2}} {{as|(+ {{ap|25*2*1.2 to 35*2*1.2}}% AP)}}",
+     "bin": [
+      "LockeQ.MarkDamage",
+      "LockeQ.MarkRatio",
+      "LockeQ.TwoMarkBonusPercent"
+     ],
+     "binNote": "The wiki's Two-Stack value is one-stack MarkDamage/MarkRatio multiplied by 2 stacks and by (1 + TwoMarkBonusPercent/100 = 1.2). No bin calculation performs this multiplication (LockeQ#NailDamage only computes the single-stack case); the final numbers (e.g. 43.2, coef 0.6) are a derived combination of LockeQ.MarkDamage, LockeQ.MarkRatio and LockeQ.TwoMarkBonusPercent, not a literal bin row."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Three Stacks Bonus Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75.6,
+      109.2,
+      142.8,
+      176.4,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        1.05,
+        1.155,
+        1.26,
+        1.365,
+        1.47
+       ]
+      }
+     ],
+     "quote": "{{ap|18*3*1.4 to 50*3*1.4}} {{as|(+ {{ap|25*3*1.4 to 35*3*1.4}}% AP)}}",
+     "bin": [
+      "LockeQ.MarkDamage",
+      "LockeQ.MarkRatio",
+      "LockeQ.ThreeMarkBonusPercent"
+     ],
+     "binNote": "The wiki's Three-Stack value is one-stack MarkDamage/MarkRatio multiplied by 3 stacks and by (1 + ThreeMarkBonusPercent/100 = 1.4). No bin calculation performs this multiplication (LockeQ#NailDamage only computes the single-stack case); the final numbers (e.g. 75.6, coef 1.05) are a derived combination of LockeQ.MarkDamage, LockeQ.MarkRatio and LockeQ.ThreeMarkBonusPercent, not a literal bin row."
+    },
+    {
+     "id": "q_7",
+     "meaning": "recast window / Soul Nails duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "can be recast twice more within 4 seconds of the activation",
+     "bin": [
+      "LockeQ.Duration",
+      "LockeQ.NailDuration"
+     ]
+    },
+    {
+     "id": "q_8",
+     "meaning": "Ritual Nails ammo (max charges)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "can be recast twice more within 4 seconds of the activation at no additional cost",
+     "bin": [
+      "LockeQ.Ammo"
+     ]
+    },
+    {
+     "id": "q_9",
+     "meaning": "Maximum Soul Nails stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [
+      "LockeQ.MaxStacks"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ritual Nails can be recast up to twice more within 4 seconds of the first cast at no additional cost, with a fixed 0.5-second cooldown between casts regardless of ability haste.",
+     "quote": "''Ritual Nails'' can be recast twice more within 4 seconds of the activation at no additional cost, with a {{fd|0.5}}-second {{tt|static cooldown|Unaffected by ability haste}} between casts.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "For each recast not used when the window ends, a percentage of the ability's cooldown and mana cost is refunded (up to double that percentage for two unused recasts).",
+     "quote": "For each recast not used when ''Ritual Nails'' ends, {{pp|20 to 35|key=%}} of the ability's {{sti|cooldown}} and {{sti|{{as|mana}}}} cost is refunded, up to a {{pp|20*2 to 35*2|key=%}} refund for two remaining recasts.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Locke's next damaging basic attack or Ashen Pursuit against a target with Soul Nails stacks consumes all stacks to deal bonus magic damage scaling with the number of stacks consumed.",
+     "quote": "'''Locke's''' next damaging {{tip|basic attack}} or ''{{ai|Ashen Pursuit|Locke}}'' against an enemy with ''Soul Nails'' stacks consumes them all to deal {{as|'''bonus''' magic damage}} based on the amount of stacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The nail missile deals area damage while the stack-consumption bonus damage is a separate spell-damage instance.",
+     "quote": "Applies {{tip|area damage}} for the nail missile and deals {{tip|spell damage}} for the stack consumption.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the nail missile but does not block the stack-consumption bonus damage.",
+     "quote": "{{tip|Spell shield}} will block the nail missile but not the stack consumption.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Soul Nails stacks are not consumed if the triggering basic attack is dodged, blocked, or missed while Locke is blinded.",
+     "quote": "The stacks will not be consumed if the triggering basic attack is {{tip|dodge|dodged}}, {{tip|block|blocked}}, or missed while '''Locke''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LockeQ.SlowAmount1",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeQ.SlowAmount2",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeQ.SlowAmount3",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeQ.SlowDuration1",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeQ.SlowDuration2",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeQ.SlowDuration3",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeQ.QMissileMinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LockeQ.QMarkMinionMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Soul Ignition",
+   "cooldown": {
+    "values": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "quote": "{{ap|18 to 14}}",
+    "binNote": "ddragon/bin cooldown array is [20/18/16/14/12], which disagrees with the wiki's stated [18/17/16/15/14]."
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana ({{as|+ {{fd|0.5}}% '''current''' health}} per {{fd|0.25}} seconds)"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Damage taken grey health cap (also the base damage-taken grey-health amount stored)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "LockeW#DamageRestoreAmount",
+      "LockeW.BaseDamageRestoreAmount"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "bonus attack speed while Soul Ignition is active",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.4,
+      0.41764706,
+      0.43529412,
+      0.45294118,
+      0.47058824,
+      0.4882353,
+      0.5058824,
+      0.5235294,
+      0.5411764681339264,
+      0.5588235,
+      0.5764706,
+      0.59411764,
+      0.6117646992206573,
+      0.62941176,
+      0.6470588147640228,
+      0.6647059,
+      0.6823529,
+      0.7
+     ],
+     "terms": [],
+     "quote": "{{as|{{pplevel|40 to 70|key=%}} '''bonus''' attack speed}}",
+     "bin": [
+      "LockeW#AttackSpeed"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of Soul Ignition before automatic recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "ignites his soul for 6 seconds",
+     "bin": [
+      "LockeW#Duration",
+      "LockeW.BaseDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "additional grey health stored based on missing health and elapsed duration",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      40,
+      49.41,
+      58.82,
+      68.24,
+      77.65,
+      87.06,
+      96.47,
+      105.88,
+      115.29,
+      124.71,
+      134.12,
+      143.53,
+      152.94,
+      162.35,
+      171.76,
+      181.18,
+      190.59,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "'''Locke''' additionally stores up to {{pplevel|40 to 200}} {{as|(+ 20% AP)}} grey health for himself",
+     "bin": [
+      "LockeW#AdditionalHeal"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "current health threshold at/below which the missing-health grey health bonus is maximized",
+     "role": "other",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      150,
+      167.65,
+      185.29,
+      202.94,
+      220.59,
+      238.24,
+      255.88,
+      273.53,
+      291.18,
+      308.82,
+      326.47,
+      344.12,
+      361.76,
+      379.41,
+      397.06,
+      414.71,
+      432.35,
+      450
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "his {{as|'''current''' health}} is at or below {{pplevel|150 to 450|color=health}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "LockeW.HealCapLevel1Value",
+      "LockeW.HealCapLevel18Value",
+      "LockeW.HealCapAPRatio"
+     ],
+     "binNote": "Bin gives only the level-1 (150) and level-18 (450) endpoints plus the 0.6 AP ratio; the wiki's intermediate levels are linearly interpolated from these two endpoints, matching LockeW#MaxHealingThreshold's formula shape."
+    },
+    {
+     "id": "w_6",
+     "meaning": "mana-and-health cost drained per tick, as a fraction of current health",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.005,
+     "terms": [],
+     "quote": "{{as|+ {{fd|0.5}}% '''current''' health}} per {{fd|0.25}} seconds",
+     "bin": [
+      "LockeW.HealthCost"
+     ],
+     "binNote": "LockeW.HealthCost=0.02 is the per-second drain rate (2%/s); the wiki quotes it per 0.25s tick (0.5%), the same rate."
+    },
+    {
+     "id": "w_7",
+     "meaning": "interval between health-cost ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "per {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No bin row states a tick interval directly; LockeW.HealthCost=0.02 is expressed per second in the bin, and the wiki's 0.25s cadence is not present as a separate data value."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Locke stores grey health equal to 100% of post-mitigation damage taken from enemy champions while Soul Ignition is active.",
+     "quote": "he stores an amount of [[grey health]] on his [[health bar]] equal to 100% of the {{tt|post-mitigation damage|Damage calculated after modifiers}} he takes from enemy {{tip|champions}}, up to a cap",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The recast (manual or automatic) ends Soul Ignition and heals Locke for the amount of grey health stored.",
+     "quote": "'''Locke''' ends ''Soul Ignition'' and consumes his [[grey health]] to {{tip|heal}} for the same amount",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Soul Ignition's cooldown does not begin until after the effect (and its recast) ends.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The recast becomes available 0.5 seconds after cast and happens automatically if not used manually before the duration ends.",
+     "quote": "After {{fd|0.5}} seconds, ''Soul Ignition'' can be recast within the duration, and does so automatically afterwards.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The health cost is based on Locke's current health at the time of each tick, not his health at the moment of cast, so it decreases as his health drops.",
+     "quote": "The health cost updates dynamically with '''Locke's''' {{as|'''current''' health}}, costing less the lower his remaining health is. It is not based on his {{as|'''current''' health}} at the time of cast.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LockeW.BaseMoveSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeW.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LockeW.DecayTime",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeW.MinMoveSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "LockeW.TimeMaxPower",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Ashen Pursuit",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     30,
+     40,
+     50,
+     60,
+     70
+    ],
+    "quote": "{{ap|30 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}",
+    "binNote": "Bin's 'castTime' field for LockeE is 0.175, which matches the wiki's separate 'queue time' field, not the wiki's 0.5 cast time."
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Blink Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|40 to 80}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "LockeE#OnHitDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Dash Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "LockeE#DashDamage"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "window to trigger the empowered attack after casting the blink",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "within 4 seconds",
+     "bin": [],
+     "binNote": "No matching data value found in the sheet for this duration."
+    },
+    {
+     "id": "e_5",
+     "meaning": "delay before the empowered attack/dash is performed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "{{fd|0.1}}-second delay",
+     "bin": [
+      "LockeE.E2AttackDelay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The empowered attack applies on-hit effects to the primary target it dashes to.",
+     "quote": "dealing {{as|magic damage}} to nearby enemies along the way, and applying {{tip|on-hit}} effects to the primary target hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The dash does not count as a basic attack and does not trigger the basic attack timer.",
+     "quote": "Does not count as a basic attack and will not trigger any basic attack-specific interactions (e.g. {{tip|on-attack}} effects, basic attack timer, etc) unless it is special cased to do so.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The dash deals spell damage (not area damage) to the primary target, and area damage to secondary targets.",
+     "quote": "The dash deals {{tip|spell damage}} to the primary target and {{tip|area damage}} to secondary targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown only starts after the full effect (blink and empowered attack window) resolves.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Scoring a champion takedown while the ability is active or on cooldown resets its cooldown, allowing another cast even while already active.",
+     "quote": "Scoring a {{tip|takedown}} against an enemy {{tip|champion}} resets the {{sti|cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Shield can block either the blink damage or the dash damage, but not both from a single cast.",
+     "quote": "{{tip|Spell shield}} can block either the blink damage or the dash damage, but not both.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Soul Ignition (W) can be cast during the Ashen Pursuit dash without interrupting it.",
+     "quote": "''{{ai|Soul Ignition|Locke}}'' can be cast during ''Ashen Pursuit's'' dash.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LockeE.MinCastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LockeE.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LockeE.BonusRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Purgatory",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}",
+    "binNote": "wiki's infobox 'cast time' field says {{fd|0.5}} (the totem's travel/queue time), but the sheet's castTime is 0.25; using the bin's castTime value since it reflects the champion-locking cast animation, while 0.5s is the totem's travel duration to the target location (queue time field)."
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      225,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|150 to 300}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "LockeR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Execute Threshold",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.11,
+      0.12
+     ],
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.005
+      }
+     ],
+     "quote": "{{as|{{ap|10 to 12}}%|hp}} {{as|(+ {{fd|0.5}}% per Sealed Champion stack)|buzzword}} {{as|of the target's '''maximum''' health}}",
+     "bin": [
+      "LockeR.ExecutionThreshold",
+      "LockeR.ExecuteThresholdPerStack",
+      "LockeR#{6c540a3a}"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "totem landing delay before firing nails",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "After landing for {{fd|0.25}} seconds, the totem fires latching nails",
+     "bin": [],
+     "binNote": "no data value in the sheet corresponds to this landing delay; the sheet's castTime=0.25 is a different value (the cast animation, not the post-landing delay)."
+    },
+    {
+     "id": "r_4",
+     "meaning": "mark duration on hit champions",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "marking enemy {{tip|champions}} hit for 5 seconds",
+     "bin": [
+      "LockeR.Duration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "slow amount from nails",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.99,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 99% decaying over 2 seconds",
+     "bin": [
+      "LockeR.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "slow decay duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slowing them by 99% decaying over 2 seconds",
+     "bin": [
+      "LockeR.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "totem-drop delay after sealing begins",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.25,
+     "terms": [],
+     "quote": "seals the souls of all executed champions and drops to the ground both over {{fd|2.25}} seconds",
+     "bin": [],
+     "binNote": "no data value in the sheet corresponds to this post-mark-expiry sealing/drop animation delay; it is not present among the LockeR data values."
+    },
+    {
+     "id": "r_8",
+     "meaning": "minimum lingering duration of sealed totem",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "but for no less than 10 seconds",
+     "bin": [],
+     "binNote": "no data value in the sheet corresponds to this minimum lingering-duration floor; it is not present among the LockeR data values."
+    },
+    {
+     "id": "r_9",
+     "meaning": "current cooldown reduction per collected soul",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "reduce ''Purgatory's'' {{sti|'''current''' cooldown}} by 20% of its '''total''' cooldown",
+     "bin": [
+      "LockeR.CooldownReduction"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The totem's nails deal magic damage and the execution deals separate raw (true) damage to already-marked targets below the threshold.",
+     "quote": "Applies {{tip|area damage}} with the nail and deals {{tip|raw damage}} to executed targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the nail damage/mark but not the subsequent execution.",
+     "quote": "{{tip|Spell shield}} will block the nail from the totem but not the execute.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Successful executions refresh the mark duration on all other affected targets, extending the execute window.",
+     "quote": "Successful executions refresh the mark duration on all affected targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins on cast, not on totem landing or resolution.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LockeR.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LockeR.AbilityHastePerStack",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LockeR.Anim_BiteTime",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Silver Stake: every basic attack deals bonus magic on-hit damage (base by level + 10% AP)."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Silver Stake's on-hit damage scales up with the target's missing health, doubling (to +20% AP) at 70%+ missing health."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Ritual Nails missile deals magic damage on cast (and on each recast)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Up to two free recasts within 4s of the first cast, each an identical missile hit, with a fixed 0.5s inter-cast delay."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Nail hits apply stacking Soul Nails (up to 3, 4s refreshing duration) on the target; consumed by Locke's next damaging basic attack or by Ashen Pursuit's empowered dash."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Consuming Soul Nails stacks deals bonus magic damage that scales non-linearly with stack count (1/2/3 stacks, with per-stack multipliers 1x/1.2x/1.4x applied to the base+AP formula)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Any Ritual Nails recast left unused when the window ends refunds a percentage of the ability's cooldown and mana cost."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (and W's added health cost) that can constrain how often each ability is cast within the 15s fight."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Soul Ignition grants bonus attack speed (40-70% by level, scaled with AP indirectly via the level-gated values) for its 6s duration, boosting basic-attack and on-hit throughput."
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "W"
+   ],
+   "note": "Soul Ignition continuously drains Locke's current health (0.5% current HP per 0.25s) for its duration, on top of its mana cost."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Ashen Pursuit arms Locke's next basic-attack command within 4s to become an empowered dash that deals bonus dash damage and applies on-hit effects to the primary target."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Ashen Pursuit's blink itself deals magic damage to enemies near the landing point on cast."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Purgatory's totem fires nails dealing magic damage to nearby enemies after a landing delay."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Purgatory's nails mark hit champions for 5s (refreshed by successful executions), which is the condition gating the execute."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "Marked targets below a % max-health threshold (10-12% by rank, +0.5% per Sealed Champion stack) are executed for true (raw) damage separate from the nail's magic damage."
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "R"
+   ],
+   "note": "Permanent Sealed Champion stacks (gained by collecting the totem after a successful execution) raise the execute threshold by 0.5%/stack and cut current cooldown by 20% of total per soul; a damage-fight simulation must assume a stack count (0 is the conservative baseline absent prior kills)."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Soul Ignition (W)'s grey-health system is the champion's main survival-fight lever and the closed primitive list has no shield/banked-heal entry to express it: while active, Locke banks 100% of post-mitigation champion damage taken (capped, +100% AP) plus a separate missing-health/AP/elapsed-duration bonus (up to 40-200 +20% AP), then converts the entire bank into a heal on recast (manual after 0.5s, or automatic at 6s). Modeling this in the survival fight requires bespoke logic to track banked grey health from incoming hits over the active window and apply it as a delayed lump-sum heal, rather than any primitive from the list (timed-self-buff/self-damage-or-health-cost only cover the AS buff and the health-cost side, not the incoming-damage-to-heal conversion)."
+ },
+ "unsettled": [
+  {
+   "question": "Which W (Soul Ignition) cooldown array is live: the ddragon/bin array [20/18/16/14/12] or the wiki's stated [18/17/16/15/14]?",
+   "options": [
+    "Use bin values [20,18,16,14,12]",
+    "Use wiki values [18,17,16,15,14]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: [20/18/16/14/12]",
+    "|cooldown     = {{ap|18 to 14}}"
+   ]
+  },
+  {
+   "question": "Ashen Pursuit (E)'s effective cast time before the blink resolves: is it the bin's castTime (0.175s, matching the wiki's separate 'queue time' field) or the wiki infobox's 'cast time' of 0.5s?",
+   "options": [
+    "0.175s (bin castTime / wiki queue time)",
+    "0.5s (wiki infobox cast time)",
+    "Both apply in sequence (0.175s cast lock, then a further 0.5s before the blink lands)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "castTime: 0.175",
+    "|cast time    = {{fd|0.5}}",
+    "|queue time   = {{fd|0.175}}"
+   ]
+  },
+  {
+   "question": "Purgatory (R)'s cast time: bin lists 0.25s but the wiki infobox lists 0.5s (which may instead describe the totem's travel/queue time to the target location).",
+   "options": [
+    "0.25s cast time, 0.5s separate totem travel time (both apply)",
+    "0.5s is the actual cast lock and 0.25s refers to something else (e.g. an internal field not meaning cast time)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.25",
+    "|cast time    = {{fd|0.5}}",
+    "|queue time   = {{fd|0.5}}"
+   ]
+  },
+  {
+   "question": "Silver Stake (P)'s missing-health scaling: does the bonus cap and plateau at 70% target missing health (as the wiki's pp formula states) or does it continue scaling toward 100% missing health, given the bin's own formula only shows base+0.1xAP with an unresolved lookup <{ee18a47b}> for the missing-health multiplier?",
+   "options": [
+    "Caps at 70% missing health per the wiki's explicit formula",
+    "Continues scaling linearly to 100% missing health as the pp range '0 to 100' suggests",
+    "Unresolved bin function differs from both wiki readings"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{pp|key=%|type=target's '''missing''' health|0 to 100|0 to 70 by 5|key1=%|formula=7.14% for every 5% target's missing health, with the maximum at 70% target's missing health|color=health}}",
+    "LockePassive#MinOnHitDamage = <{ee18a47b}> + 0.1xap"
+   ]
+  },
+  {
+   "question": "Purgatory (R)'s execute check: when the totem's nail damage itself brings a marked target below the execute threshold, does the true-damage execution trigger immediately as part of the same instance, or only on a later health check while the mark persists?",
+   "options": [
+    "Execute check happens instantly alongside/after the nail damage in the same resolution",
+    "Execute is only evaluated on a separate subsequent tick/check while marked, independent of the triggering hit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Marked enemies are {{tip|execute|executed}} below a portion of their {{as|health}}.",
+    "Applies {{tip|area damage}} with the nail and deals {{tip|raw damage}} to executed targets."
+   ]
+  },
+  {
+   "question": "What Sealed Champion stack count should the damage fight assume for R's execute threshold (+0.5%/stack) and cooldown math, given stacks are permanent and earned outside the simulated fight?",
+   "options": [
+    "Assume 0 stacks (fresh totem, no prior kills)",
+    "Assume some non-zero baseline reflecting a mid-game Locke with several prior executions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "for each soul sealed it will both reduce ''Purgatory's'' {{sti|'''current''' cooldown}} by 20% of its '''total''' cooldown and grant him a permanent {{as|Sealed Champion|buzzword}} stack."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Ritual Nails) on the dummy, then immediately fire both free recasts (0.5s apart) to land all three nail hits and stack Soul Nails to 3 before the 4s window closes.",
+   "Weave continuous basic attacks throughout the fight to trigger Silver Stake's on-hit passive on every attack.",
+   "Cast E (Ashen Pursuit) to blink onto/near the dummy for its blink damage, then let the empowered dash resolve on the next attack command, landing the dash damage, applying on-hit, and consuming the banked Soul Nails stacks for their bonus damage.",
+   "Cast W (Soul Ignition) for its attack-speed buff to raise auto-attack/on-hit throughput for its 6s duration, accepting the health cost since the fight is damage-focused and the eventual recast heal is irrelevant to a damage-fight target dummy.",
+   "Cast R (Purgatory) as soon as available, ideally once the dummy's health has been brought below the execute threshold by prior damage, to add the true-damage execution on top of the totem's magic damage.",
+   "Repeat the Q 3-cast cycle (respecting its 10-6s base cooldown by rank) and re-cast E on cooldown for the remainder of the ~15s window, continuing to weave basic attacks and re-triggering the Soul Nails consume/E-dash combo each time stacks are available.",
+   "Avoid letting a Q recast window lapse with unused recasts mid-fight, since that only refunds partial cooldown/cost rather than dealing the missed instance's damage."
+  ],
+  "questions": [
+   "Does the simulator apply Ashen Pursuit's empowered dash and Soul Nails stack-consumption bonus on the very next basic attack instantly, or does it wait for Locke's attack windup/timer, changing the optimal cast order between E and auto-attacks?",
+   "Is casting W (Soul Ignition) actually worth it in the pure damage fight given its DPS contribution is only the attack-speed buff (no direct damage or damage amp), against its mana and health cost eating into casts of Q/E/R?",
+   "Should R be cast on cooldown as soon as available for guaranteed damage, or deliberately delayed until the target is provably below the execute threshold to secure the true-damage bonus, within a single ~15s window where R may only be castable once or twice?",
+   "For the Soul Nails stack-consumption bonus, is it optimal to always wait for all 3 stacks before consuming via E/auto-attack, or does consuming at 1-2 stacks earlier (to avoid stacks expiring) yield more total damage over 15 seconds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

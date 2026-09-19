@@ -1,0 +1,179 @@
+{
+ "champion": "hecarim",
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Warpath converts a level-scaled percentage (12%-24%) of Hecarim's bonus movement speed into bonus AD, recalculated every 0.25s"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Rampage deals AoE physical damage on cast, on a 4s cooldown before stack reductions"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Hitting an enemy grants a Rampage stack (max 3, 8s duration, refreshes on hit) that increases Rampage's own damage"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Rampage stack reduces Q's base cooldown by 0.75s, up to 2.25s at 3 stacks"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Spirit of Dread deals magic damage per tick to nearby enemies over its 4s active duration"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "W is cast to start the aura/DoT, on a flat 14s cooldown starting on-cast"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Devastating Charge grants ghosting and ramping bonus movement speed for 4s, which feeds Warpath's AD conversion"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "E replaces Hecarim's next basic attack with a dash-attack dealing modified physical damage"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "The Devastating Charge attack resets Hecarim's basic attack timer"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Devastating Charge's damage scales from 0% to +100% bonus based on distance traveled since cast (0 to 1200 units)"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Distance traveled before the empowered attack lands directly sets its damage (min/max base and AD ratio); the dummy fight must assume a travel distance"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Devastating Charge can critically strike for bonus AD physical damage per the champion's crit stats"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Onslaught of Shadows deals magic damage via spectral riders on cast, on a long cooldown (140/120/100s)"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "5 spectral riders travel in a parallel arrow formation; whether a single stationary target is struck once or multiple times depends on formation geometry relative to the target"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 28-20, W 50-70, E 60 flat, R 100) may constrain how many casts fit in the 15s window depending on mana pool/regen"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bonus armor/MR and the post-mitigation-damage heal only matter for the survival fight (damage taken), not the damage-dealt fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Warpath's speed->AD conversion, Rampage's stacking self-buff with cooldown reduction, Spirit of Dread's DoT, Devastating Charge's empowered/reset attack with distance-conditional damage and crit, and Onslaught of Shadows' plain-cast AoE) maps onto existing primitives. The only open items are which concrete geometry/timing assumptions to plug into the positional-assumption and interval primitives, not missing mechanics the primitive list cannot express."
+ },
+ "unsettled": [
+  {
+   "question": "What distance should Hecarim be assumed to travel during Devastating Charge's 4s window before the empowered attack lands, since this linearly scales its damage from the minimum (30-90 +50% bonus AD) to double that at 1200 units?",
+   "options": [
+    "Assume 0 distance / minimal movement since the dummy is stationary and already in range, giving minimum damage",
+    "Assume the full 1200-unit distance-to-max-damage is reached (e.g. by kiting away and charging back) for maximum damage",
+    "Assume some fixed intermediate distance representing a typical trade/engage gap"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{pp|type=distance traveled|key=%|0 to 100 for 9|0 to 1200}}",
+    "empowering it to gain {{pp|type=distance traveled|50 to 250 for 9|0 to 1200}} {{sti|range|'''bonus''' range}}"
+   ]
+  },
+  {
+   "question": "Does a single stationary target take damage from one spectral rider or from multiple (up to 5) of Onslaught of Shadows' riders, given they travel in a parallel arrow formation through the same area?",
+   "options": [
+    "Target is hit once regardless of formation (single AoE damage instance)",
+    "Target can be hit by multiple riders simultaneously if standing within the overlapping formation width, multiplying R's damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "summons 5 spectral riders {{tt|in an arrow formation|see notes}} that charge alongside him in the target direction, dealing {{as|magic damage}} to all enemies in their path",
+    "The spectral rider missiles originate at '''Hecarim's''' location, 145 units behind and 100 units to either side of him, and 290 units behind and 200 units to either side. They travel 1510 units forward parallel to Hecarim from their origin each."
+   ]
+  },
+  {
+   "question": "Does Spirit of Dread tick every 0.5s (8 ticks per activation, per the bin's TickTime) or every 1s (4 ticks, per the wiki description), and does this change how often it can refresh Rampage stacks or trigger on-hit/on-damage effects within the fight?",
+   "options": [
+    "Trust the bin's HecarimW.TickTime = 0.5s (8 ticks, same total damage but more frequent triggers)",
+    "Trust the wiki's stated 'every second' (4 ticks, matching Total = PerTick*4 as written)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "HecarimW.TickTime = 0.5",
+    "dealing {{as|magic damage}} every second to nearby enemies"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "On entering range of the dummy, cast W (Spirit of Dread) immediately to start its 4s DoT/heal aura on the earliest possible timer.",
+   "Cast E (Devastating Charge) to gain ghosting and ramping bonus movement speed (which feeds Warpath's bonus AD) and arm the empowered next basic attack; let the assumed travel distance accrue before the attack lands to maximize Devastating Charge's damage.",
+   "Weave Q (Rampage) on cooldown between autos to build and refresh Rampage stacks (up to 3) for its increasing damage and shrinking cooldown.",
+   "Auto-attack the dummy continuously; the attack empowered by Devastating Charge lands as a bonus modified physical-damage hit and resets the auto-attack timer, after which normal autos resume.",
+   "Cast R (Onslaught of Shadows) the moment it comes off cooldown for its magic damage hit(s), likely usable at most once given its 140s base cooldown within a 15s fight.",
+   "Re-cast W and E again as soon as their cooldowns allow (W every 14s, E every 20s to 16s depending on rank) to keep Warpath's bonus AD and the DoT active for the remainder of the fight, prioritizing Q casts whenever available since its cooldown is shortest."
+  ],
+  "questions": [
+   "Is R (140/120/100s base cooldown) realistically available at all within the simulated 15s fight without heavy CDR, or should the rotation assume it is pre-cast/off cooldown at the start, or excluded entirely at low levels?",
+   "In the dummy-only damage fight, is Hecarim allowed to move away from and back toward the target to build Devastating Charge's distance-traveled bonus, or must he stay adjacent to the stationary dummy the whole time?",
+   "Should mana be treated as effectively unlimited for this rotation, or does the simulator enforce the listed mana costs/regen such that some casts (especially repeated W/E) must be skipped?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

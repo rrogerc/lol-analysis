@@ -1,0 +1,102 @@
+{
+ "champion": "kayle",
+ "primitives": [
+  {"id": "stacking-self-buff", "abilities": ["P"], "note": "Zeal: 6% bonus attack speed per basic attack, up to 5 stacks (30%), each stack lasting 5s and refreshing on attack."},
+  {"id": "level-gated-passive", "abilities": ["P", "E"], "note": "Zealous at level 1, ranged form at 6, Aflame fire wave (P) and explosion bonus on E's active at 11, permanent max Zeal at 16."},
+  {"id": "onhit-rider", "abilities": ["P", "E"], "note": "P's Aflame fire wave rides every qualifying attack while Exalted; E's passive adds bonus magic damage to every basic attack."},
+  {"id": "crit-interaction", "abilities": ["P", "E"], "note": "P's fire wave and E's Aflame explosion are both explicitly affected by critical strike modifiers."},
+  {"id": "empowered-attack", "abilities": ["E"], "note": "E's active arms Kayle's next basic attack with extra on-hit magic damage based on the target's missing health."},
+  {"id": "attack-reset", "abilities": ["E"], "note": "Starfire Spellblade resets Kayle's basic attack timer."},
+  {"id": "conditional-damage", "abilities": ["E"], "note": "E's active bonus damage scales with the target's current missing health (plus a per-100-AP ratio)."},
+  {"id": "target-debuff", "abilities": ["Q"], "note": "Q inflicts a 15% armor/magic resistance shred (Sundered) for 4 seconds on everything it hits."},
+  {"id": "plain-cast", "abilities": ["Q", "R"], "note": "Q's damage lands on a fixed 0.25s delay from cast start; R's damage lands 2.5s after cast start. Both are on-cooldown casts, no further tracking after cast."},
+  {"id": "resource-budget", "abilities": ["Q", "R"], "note": "Both cost mana (Q 60-100, R 100/50/0); whether this binds inside a 15s fight depends on level/items and on Q's unexplained 50% mana refund (see unsettled)."},
+  {"id": "positional-assumption", "abilities": ["Q", "R"], "note": "Q is a skillshot missile assumed to always connect; R's damage falls around its target (Kayle if self-cast) and is assumed to always reach the dummy standing next to her."},
+  {"id": "defensive-only", "abilities": ["W"], "note": "W is a pure heal plus move-speed buff with no damage; irrelevant to a damage-only dummy fight."}
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic maps onto an existing primitive and the value schema's term types (in particular the targetMissingHp term covers E's execute-style scaling); what remains is just timing bookkeeping (cast delays, buff durations, a post-effect cooldown start) that ordinary cooldown/duration tracking should already support."
+ },
+ "unsettled": [
+  {
+   "question": "Does Radiant Blast's cast time scale with Kayle's attack speed (the wiki's main documented behavior, windup percent 0.193555 / total attack speed), or is it a flat 0.25s (matching the bin's castTime field)?",
+   "options": [
+    "Scales with attack speed: 0.30968s at base AS, up to 0.96775s at 0.2 AS, down to 0.06445s at the 3.003 AS cap",
+    "Flat 0.25s regardless of attack speed, per the bin and the ability's pre-V10.4 behavior"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The cast time can be calculated by dividing '''Kayle's''' ''windup percent'' value ({{fd|0.193555}}) with her current total attack speed.",
+    "in patch [[V9.17]], ''Radiant Blast's'' cast time was changed to be a flat {{fd|0.25}} seconds, rather than scaling with the attack windup time. In patch [[V10.4]], this was undocumentedly changed back. Whether the change to scale with windup time again was intentional or not is unknown."
+   ]
+  },
+  {
+   "question": "In a single-target fight, does Starfire Spellblade's Aflame explosion (level 11+) deal a second instance of the active's damage to the dummy itself (the only 'surrounding enemy'), or does it only ever reach additional enemies beyond the main target (a no-op with one target)?",
+   "options": [
+    "The explosion re-hits the same, only target for a second full instance of the active's damage",
+    "The explosion only extends to other enemies beyond the main target, so it adds nothing in a single-target fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The attack explodes upon the target, dealing its damage to surrounding enemies and applying {{tip|on-hit}} effects. This is affected by {{tip|critical strike}} modifiers."
+   ]
+  },
+  {
+   "question": "When Kayle is Exalted and level 11+, does the E-empowered basic attack also count as a qualifying attack for P's Aflame fire wave, so one auto-attack lands base attack damage + E's on-hit (passive and active) + the fire wave together?",
+   "options": [
+    "Yes: the fire wave and E's active both key off 'a basic attack while Exalted' independently and both fire on the same attack",
+    "They are mutually exclusive or otherwise interact on the same attack in a way neither ability's text states"
+   ],
+   "impact": "high",
+   "quotes": [
+    "While '''Kayle''' is ''Exalted'', her basic attacks {{tip|on-attack}} also launch a ''wave'' of fire forward",
+    "'''Kayle''' kindles her blade, empowering her next [[basic attack]] within 6 seconds to have an {{tip|uncancellable windup}} and deal additional {{as|'''bonus''' magic damage}} {{tip|on-hit}}"
+   ]
+  },
+  {
+   "question": "How long does Starfire Spellblade's active empowerment actually last on Kayle's next basic attack: the wiki's 6 seconds, or the bin's KayleE.BuffDuration of 5?",
+   "options": [
+    "6 seconds, per the wiki text",
+    "5 seconds, per the bin's KayleE.BuffDuration"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "empowering her next [[basic attack]] within 6 seconds to have an {{tip|uncancellable windup}}"
+   ]
+  },
+  {
+   "question": "What triggers Radiant Blast's undocumented 50% mana refund (KayleQ.ManaRefundPercent), and does it apply inside a 15s dummy fight?",
+   "options": [
+    "It refunds 50% of Q's mana cost on some condition (e.g. on hit), effectively halving Q's sustained mana cost",
+    "It is unused or conditioned on something that never happens in this fight (e.g. only refunds on a miss, which cannot occur against a stationary dummy), so it never applies here"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "What does Starfire Spellblade's 0.1s queue time actually gate: a real delay before the empowerment attaches to the next attack, or just an input-buffer technicality with no timing effect?",
+   "options": [
+    "A real 0.1s delay before the active's empowerment becomes attached to the next attack",
+    "Purely an input-queue technicality with no effect on when damage can land"
+   ],
+   "impact": "low",
+   "quotes": ["{{fd|0.1}}"]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Self-cast R (Divine Judgment) immediately at the start of the fight for its unconditional magic damage burst; its invulnerability grant has no use against a dummy that never attacks back.",
+   "Activate E's active (Starfire Spellblade) as soon as it comes off cooldown, timed right before the next basic attack, so the empowered on-hit damage is never wasted waiting out its window.",
+   "Auto-attack continuously with no gaps, to build and hold 5 stacks of Zeal for +30% bonus attack speed, and, from level 11 onward while Exalted, to keep triggering the Aflame fire wave on every attack.",
+   "Cast Q (Radiant Blast) on cooldown throughout the fight, both for its direct magic damage and to keep the target's armor/magic resistance shredded (Sundered) as continuously as possible.",
+   "Never cast W (Celestial Blessing): it deals no damage and only heals/speeds up allies, who do not exist and would not matter in this fight."
+  ],
+  "questions": [
+   "Does the E-empowered attack also trigger P's fire wave on the same swing (see unsettled), which would change whether E should be timed to land before or after reaching 5 Zeal stacks?",
+   "Should R be cast at the very start (to land its damage earliest, for a faster kill time) or does timing not matter since its cooldown will never come back up within 15s either way?",
+   "Does Radiant Blast's cast time actually shrink with attack speed (see unsettled), which would change how tightly it can be weaved between auto-attacks and E activations?",
+   "Does Q's mana refund change how aggressively Q can be cast on cooldown at low levels/mana pools before mana becomes a limiter?"
+  ]
+ }
+}

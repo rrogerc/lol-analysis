@@ -1,0 +1,565 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SejuaniPassive",
+    "key": "Characters/Sejuani/Spells/SejuaniPassiveAbility/SejuaniPassive",
+    "dataValues": {
+     "FrostArmorDuration": 3,
+     "EpicMonsterCap": 250,
+     "BonusArmorRatio": 0.75,
+     "BonusMRRatio": 0.75,
+     "BonusArmorBase": 10,
+     "BonusMRBase": 10,
+     "PercentHPDamageBase": 0.1
+    },
+    "calcs": {
+     "PercentHPDamage": {
+      "expr": "PercentHPDamageBase=0.1",
+      "flat": 0.1,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "PercentHPDamageBase"
+      ]
+     },
+     "TotalArmorTooltip": {
+      "expr": "BonusArmorBase=10 + (BonusArmorRatio=0.75)xbonus armor?",
+      "flat": 10,
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "bonus",
+        "coef": 0.75,
+        "dataValue": "BonusArmorRatio"
+       }
+      ],
+      "refs": [
+       "BonusArmorBase",
+       "BonusArmorRatio"
+      ]
+     },
+     "TotalMRTooltip": {
+      "expr": "BonusMRBase=10 + (BonusMRRatio=0.75)xbonus moveSpeed?",
+      "flat": 10,
+      "terms": [
+       {
+        "stat": "moveSpeed?",
+        "scope": "bonus",
+        "coef": 0.75,
+        "dataValue": "BonusMRRatio"
+       }
+      ],
+      "refs": [
+       "BonusMRBase",
+       "BonusMRRatio"
+      ]
+     },
+     "FrostArmorOOC": {
+      "expr": "byLevel(12..6)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        12,
+        11.6470588,
+        11.294118,
+        10.941176,
+        10.588235,
+        10.235294,
+        9.882353,
+        9.52941176,
+        9.176471,
+        8.823529,
+        8.47058824,
+        8.117647,
+        7.76470588,
+        7.4117647,
+        7.0588235,
+        6.7058824,
+        6.352941,
+        6
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SejuaniQ",
+    "key": "Characters/Sejuani/Spells/SejuaniQAbility/SejuaniQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      16.5,
+      15,
+      13.5,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       140,
+       190,
+       240,
+       290
+      ]
+     },
+     "APRatio": 0.75,
+     "MaxTravelDistance": 625,
+     "DashSpeed": 1000,
+     "KnockupDurationTOOLTIPONLY": 0.5
+    },
+    "calcs": {
+     "TotalDamageTooltip": {
+      "expr": "BaseDamage=[90/140/190/240/290] + (APRatio=0.75)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        140,
+        190,
+        240,
+        290
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SejuaniW",
+    "key": "Characters/Sejuani/Spells/SejuaniWAbility/SejuaniW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowAmount": 0.75,
+     "SlowDuration": 0.25,
+     "BaseDamageOne": {
+      "axis": "rank",
+      "v": [
+       5,
+       15,
+       25,
+       35,
+       45
+      ]
+     },
+     "BaseDamageTwo": {
+      "axis": "rank",
+      "v": [
+       5,
+       25,
+       45,
+       65,
+       85
+      ]
+     },
+     "APRatioOne": 0.3,
+     "APRatioTwo": 0.6,
+     "HPRatioOne": 0.04,
+     "HPRatioTwo": 0.08
+    },
+    "calcs": {
+     "FirstHitDamageTooltip": {
+      "expr": "BaseDamageOne=[5/15/25/35/45] + (APRatioOne=0.3)xap + (HPRatioOne=0.04)xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        15,
+        25,
+        35,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "APRatioOne"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.04,
+        "dataValue": "HPRatioOne"
+       }
+      ],
+      "refs": [
+       "APRatioOne",
+       "BaseDamageOne",
+       "HPRatioOne"
+      ]
+     },
+     "SecondHitDamageTooltip": {
+      "expr": "BaseDamageTwo=[5/25/45/65/85] + (APRatioTwo=0.6)xap + (HPRatioTwo=0.08)xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        25,
+        45,
+        65,
+        85
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatioTwo"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.08,
+        "dataValue": "HPRatioTwo"
+       }
+      ],
+      "refs": [
+       "APRatioTwo",
+       "BaseDamageTwo",
+       "HPRatioTwo"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SejuaniE",
+    "key": "Characters/Sejuani/Spells/SejuaniEAbility/SejuaniE",
+    "cooldown": 1.5,
+    "cost": 20,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PerChampionCD": 8,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       55,
+       105,
+       155,
+       205,
+       255
+      ]
+     },
+     "APRatio": 0.7,
+     "CCDuration": 1,
+     "MaxStacks": 4,
+     "StackDuration": 5,
+     "AuraRange": 1100
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[55/105/155/205/255] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        105,
+        155,
+        205,
+        255
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SejuaniR",
+    "key": "Characters/Sejuani/Spells/SejuaniRAbility/SejuaniR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      105,
+      90
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       150,
+       175
+      ]
+     },
+     "BaseStunDuration": 1,
+     "ZoneDuration": 2,
+     "ExplosionSlowAmount": 80,
+     "ExplosionSlowDuration": 1,
+     "EmpoweredStunDuration": 1.5,
+     "EmpoweredBaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "ZoneSlowAmount": 30
+    },
+    "calcs": {
+     "TotalDamageTooltip": {
+      "expr": "EmpoweredBaseDamage=[200/300/400] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "EmpoweredBaseDamage"
+      ]
+     },
+     "MinorDamageTooltip": {
+      "expr": "BaseDamage=[125/150/175] + 0.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        150,
+        175
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SejuaniQ",
+  "W": "SejuaniW",
+  "E": "SejuaniE",
+  "R": "SejuaniR",
+  "P": "SejuaniPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 400,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Sejuani",
+  "name": "Sejuani",
+  "partype": "Mana",
+  "passive": "Fury of the North",
+  "spells": [
+   {
+    "id": "SejuaniQ",
+    "name": "Arctic Assault",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     16.5,
+     15,
+     13.5,
+     12
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "SejuaniW",
+    "name": "Winter's Wrath",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "SejuaniE",
+    "name": "Permafrost",
+    "maxrank": 5,
+    "cooldown": [
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5
+    ],
+    "cost": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ]
+   },
+   {
+    "id": "SejuaniR",
+    "name": "Glacial Prison",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     105,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Fury of the North": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "spellshield": "unknown",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Arctic Assault": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Winter's Wrath": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Permafrost": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Allies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Glacial Prison": {
+    "damagetype": "Magic",
+    "spelleffects": "Special",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

@@ -1,0 +1,847 @@
+{
+ "champion": "sejuani",
+ "abilities": {
+  "P": {
+   "name": "Fury of the North",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_icebreaker",
+     "meaning": "bonus magic damage dealt to a Frozen (stunned) target, based on their max health",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "deal {{as|'''bonus''' magic damage}} equal to {{as|10% of their '''maximum''' health}}, capped at 250 against epic monsters",
+     "bin": [
+      "SejuaniPassive.PercentHPDamageBase",
+      "SejuaniPassive#PercentHPDamage"
+     ]
+    },
+    {
+     "id": "p_epicmonstercap",
+     "meaning": "cap on Icebreaker's bonus damage against epic monsters",
+     "role": "other",
+     "damageType": "magic",
+     "by": "const",
+     "base": 250,
+     "terms": [],
+     "quote": "capped at 250 against epic monsters",
+     "bin": [
+      "SejuaniPassive.EpicMonsterCap"
+     ],
+     "binNote": "Not relevant to a dummy fight since the dummy is not an epic monster, but the wiki explicitly states this number so it is recorded."
+    },
+    {
+     "id": "p_frostarmorduration",
+     "meaning": "duration Frost Armor lingers after taking damage from champions/turrets/large monsters",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "lingers for 3 seconds after taking damage from enemy {{tip|champions}}, {{tip|turrets}}, or large {{tip|monsters}}",
+     "bin": [
+      "SejuaniPassive.FrostArmorDuration"
+     ]
+    },
+    {
+     "id": "p_frostarmor_bonusarmor",
+     "meaning": "Frost Armor bonus armor",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{sti|armor|{{as|10 (+ 75% '''bonus''' armor) '''bonus''' armor}}}}",
+     "bin": [
+      "SejuaniPassive.BonusArmorBase",
+      "SejuaniPassive.BonusArmorRatio",
+      "SejuaniPassive#TotalArmorTooltip"
+     ]
+    },
+    {
+     "id": "p_frostarmor_bonusmr",
+     "meaning": "Frost Armor bonus magic resist",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [
+      {
+       "stat": "bonusMr",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{sti|mr|{{as|10 (+ 75% '''bonus''' magic resistance) '''bonus''' magic resistance}}}}",
+     "bin": [
+      "SejuaniPassive.BonusMRBase",
+      "SejuaniPassive.BonusMRRatio",
+      "SejuaniPassive#TotalMRTooltip"
+     ],
+     "binNote": "SejuaniPassive#TotalMRTooltip is written as BonusMRRatio x moveSpeed in the sheet, which appears to be a labeling error since the wiki and BonusMRRatio value clearly describe bonus magic resist, not move speed."
+    },
+    {
+     "id": "p_frostarmor_ooc_restore",
+     "meaning": "seconds without taking damage from champions/turrets/large monsters before Frost Armor restores, scaling with level",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      12,
+      11.647,
+      11.294,
+      10.941,
+      10.588,
+      10.235,
+      9.882,
+      9.529,
+      9.176,
+      8.824,
+      8.471,
+      8.118,
+      7.765,
+      7.412,
+      7.059,
+      6.706,
+      6.353,
+      6
+     ],
+     "terms": [],
+     "quote": "{{pp|12 - (12-6)/17*(x-1) for 20}} seconds without taking damage",
+     "bin": [
+      "SejuaniPassive#FrostArmorOOC"
+     ],
+     "binNote": "Sheet lists FrostArmorOOC as byLevel(12..6), matching the wiki's linear formula from 12 to 6 across levels 1-18."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies stunned by Sejuani are marked Frozen for the disable's duration, and her next basic attack or ability against a Frozen target consumes the mark to deal the bonus damage.",
+     "quote": "Enemies {{tip|stun|stunned}} by '''Sejuani''' are marked ''Frozen'' for the disable's duration. '''Sejuani's''' next {{tip|basic attack}} or {{tip|ability}} against a ''Frozen'' enemy will consume the mark",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Icebreaker does not trigger if the basic attack is blocked or misses due to blind.",
+     "quote": "''Icebreaker'' will not trigger if the basic attack is {{tip|blocked}} or misses due to {{tip|blind}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Frost Armor grants slow immunity and cripple immunity in addition to bonus armor and magic resist.",
+     "quote": "'''Sejuani''' gains {{tip|slow-immune|slow immunity}}, {{tip|cripple-immune|cripple immunity}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Gaining Frost Armor does not remove any pre-existing slows or cripples.",
+     "quote": "Gaining ''Frost Armor'' does not remove any pre-existing {{tip|slow|slows}} or {{tip|cripple|cripples}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Arctic Assault",
+   "cooldown": {
+    "values": [
+     18,
+     16.5,
+     15,
+     13.5,
+     12
+    ],
+    "quote": "{{ap|18 to 12}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      90,
+      140,
+      190,
+      240,
+      290
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|90 to 290}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "SejuaniQ#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "knockup duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}} seconds",
+     "bin": [
+      "SejuaniQ.KnockupDurationTOOLTIPONLY"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sejuani dashes until she collides with an enemy champion, dealing damage to enemies passed through along the way.",
+     "quote": "dashes to the target location until he collides with an enemy champion, dealing {{as|magic damage}} to enemies he passes through",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Q can be cast during other abilities without interrupting them, and vice versa.",
+     "quote": "Arctic Assault can be cast during her other abilities without cancelling them and vice versa.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the dash collides with an enemy champion, Sejuani is ordered to basic attack them, which can reset the attack timer.",
+     "quote": "If the dash collides with an enemy champion, '''Sejuani''' will be ordered to basic attack them.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SejuaniQ.MaxTravelDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SejuaniQ.DashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Winter's Wrath",
+   "cooldown": {
+    "values": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "quote": "{{ap|9 to 5}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 1,
+    "quote": "1"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      15,
+      25,
+      35,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "maxHp",
+       "coef": 0.04
+      }
+     ],
+     "quote": "{{ap|5 to 45}} {{as|(+ 30% AP)}} {{as|(+ 4% of her '''maximum''' health)}}",
+     "bin": [
+      "SejuaniW#FirstHitDamageTooltip"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      25,
+      45,
+      65,
+      85
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      },
+      {
+       "stat": "maxHp",
+       "coef": 0.08
+      }
+     ],
+     "quote": "{{ap|5 to 85}} {{as|(+ 60% AP)}} {{as|(+ 8% of her '''maximum''' health)}}",
+     "bin": [
+      "SejuaniW#SecondHitDamageTooltip"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The cone swing lands 0.25 seconds into the 1-second cast time, not on cast.",
+     "quote": "After {{fd|0.25}} seconds into the cast time, '''Sejuani''' swings her flail in a cone",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The line lash happens after the cast time ends, from Sejuani's position at that time, and slows enemies hit by 75% for 0.25 seconds.",
+     "quote": "After the cast time, '''Sejuani''' lashes out with her flail in a line in the same direction, dealing {{as|physical damage}} to enemies hit and {{tip|slow|slowing}} them by 75% for {{fd|0.25}} seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sejuani can move during the cast time, which does not change damage output.",
+     "quote": "'''''Sejuani''' can move during Winter's Wrath's cast time.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A spell shield blocks only one of the two hits (swing or lash), not both.",
+     "quote": "{{tip|Spell shield|Spell shields}} will block only a single instance of damage - either the swing or the lash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the swing and the lash strike in the original cast direction, but the lash originates from Sejuani's location at the end of the cast time.",
+     "quote": "Both swings will strike in the cast direction, but the second swing will do so from '''Sejuani's''' location at the end of the cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SejuaniW.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "SejuaniW.SlowDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Permafrost",
+   "cooldown": {
+    "values": [
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5
+    ],
+    "quote": "{{fd|1.5}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      105,
+      155,
+      205,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|55 to 255}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "SejuaniE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "stun duration",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|stun|stuns}} them for 1 second",
+     "bin": [
+      "SejuaniE.CCDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Frost stacks required to cast and consumed",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Sejuani''' can cast ''Permafrost'' against an enemy with 4 stacks",
+     "bin": [
+      "SejuaniE.MaxStacks"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "duration Frost stacks last before refreshing/expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "stacking up to 4 times... for 5 seconds",
+     "bin": [
+      "SejuaniE.StackDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "duration a champion cannot regain Frost after stacks consumed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "Enemy champions cannot be affected by ''Frost'' for 8 seconds after having it consumed",
+     "bin": [
+      "SejuaniE.PerChampionCD"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Melee basic attacks (Sejuani's and nearby allies') apply on-hit stacks of Frost, which are consumed by Permafrost or Glacial Prison to enable/enhance those abilities.",
+     "quote": "basic attacks on-hit apply stacks of Frost to enemy champions, medium or large monsters, and large minions for 5 seconds, refreshing on subsequent applications and stacking up to 4 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Permafrost resets Sejuani's basic attack timer.",
+     "quote": "Permafrost resets Sejuani's basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Frost stacks are not applied if the target is currently frozen/stunned by Fury of the North.",
+     "quote": "though not applying if the target is ''{{ai|Fury of the North|Sejuani|Frozen}}''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the cast is canceled because the target becomes untargetable, dies, or leaves range/sight during the cast time, the ability still goes on cooldown and pays its cost.",
+     "quote": "If the target becomes untargetable, dies, or is too far away or no longer in sight during the cast time, this ability will cancel but still go on cooldown and pay its cost.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Frost stacks are not applied if the triggering basic attack is blocked.",
+     "quote": "Frost stacks will not be applied if the basic attack is blocked.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SejuaniE.AuraRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Glacial Prison",
+   "cooldown": {
+    "values": [
+     120,
+     105,
+     90
+    ],
+    "quote": "{{ap|120 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      125,
+      150,
+      175
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|125 to 175}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SejuaniR.BaseDamage",
+      "SejuaniR#MinorDamageTooltip"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Increased Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "SejuaniR.EmpoweredBaseDamage",
+      "SejuaniR#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "stun duration on primary bola hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "stunning}} them for 1 second",
+     "bin": [
+      "SejuaniR.BaseStunDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "empowered stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds instead",
+     "bin": [
+      "SejuaniR.EmpoweredStunDuration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "distance needed to empower the bola",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 425,
+     "terms": [],
+     "quote": "If the bola travels at least 425 units",
+     "bin": [],
+     "binNote": "No matching data value in the sheet; the sheet has no threshold-distance row for empowerment (MaxTravelDistance belongs to Q), so this number cannot be cross-checked against the bin."
+    },
+    {
+     "id": "r_6",
+     "meaning": "frost storm duration before it shatters",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "After 2 seconds, the storm shatters",
+     "bin": [
+      "SejuaniR.ZoneDuration"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "storm slow while active",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "slows}} enemies within by 30%",
+     "bin": [
+      "SejuaniR.ZoneSlowAmount"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "shatter slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "slow}} them by 80% for 1 second",
+     "bin": [
+      "SejuaniR.ExplosionSlowAmount"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "shatter slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "slow}} them by 80% for 1 second",
+     "bin": [
+      "SejuaniR.ExplosionSlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bola stops and deals damage/stun only upon hitting an enemy champion; if it travels far enough first it becomes empowered.",
+     "quote": "throws an ice bola in the target direction that stops upon hitting an enemy champion, dealing {{as|magic damage}} and briefly {{tip|stun|stunning}} them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered detonation deals the increased damage separately from the initial hit and creates a frost storm.",
+     "quote": "gaining increased damage and stun duration. The detonation creates a frost storm",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The storm shatters after a delay dealing the increased damage again to all enemies within, as a separate area damage instance.",
+     "quote": "After a brief moment, the storm shatters to deal {{as|magic damage}} and briefly {{tip|slow}} enemies within",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary target hit by the bola does not take the storm's damage/slow.",
+     "quote": "The enemy hit by the bola is unaffected by the storm's effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bola applies spell damage to the primary target but area damage to secondary targets caught in the storm.",
+     "quote": "Applies {{tip|spell damage}} to the primary target and {{tip|area damage}} to secondary targets in the ice storm.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks only one instance of this ability's damage (primary hit or storm, not both).",
+     "quote": "{{tip|Spell shield|Spell shields}} will block only a single instance of damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SejuaniR.ZoneSlowAmount",
+     "reason": null
+    },
+    {
+     "ref": "SejuaniR.ExplosionSlowAmount",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q deals damage on the dash, E deals damage on cast (with a fixed 0.25s cast-time delay), R's bola deals damage on hit; each goes on cooldown/costs mana as its own instance"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W has two separately timed physical damage instances (cone swing 0.25s into cast, line lash at cast end); R has up to three separately timed magic damage instances (bola hit, storm detonation, storm shatter), though against a single stationary dummy the storm/shatter never lands because the wiki states the enemy hit by the bola is excluded from the storm's effects"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q orders a basic attack on the dash-target on collision with an enemy champion; Permafrost (E) explicitly resets Sejuani's basic attack timer on cast"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E"
+   ],
+   "note": "Sejuani's (and melee allies') basic attacks and Winter's Wrath apply stacking 'Frost' on the target (cap 4, 5s duration each); Permafrost consumes all stacks to cast, and the target cannot regain Frost for 8s after consumption (per-champion internal cooldown)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "P (Icebreaker): a target stunned by Sejuani is marked Frozen; her next basic attack or ability against that target consumes the mark for bonus magic damage = 10% of target max HP (capped 250 vs epic monsters, irrelevant to a champion-flagged dummy). R: the bola's damage value itself is conditional on travel distance before impact (base vs. empowered tier)"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's bola must travel at least 425 units before hitting the target to become 'empowered' (200-400 +0.8AP magic damage instead of 125-175 +0.4AP); in a fixed-distance dummy fight this depends on assumed starting range, which materially changes R's total damage"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Frost Armor (bonus armor/MR, slow/cripple immunity, gained after taking damage from champions and restored after time without taking damage) never triggers in the damage fight since the dummy never attacks; it only matters for the survival fight"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q 60-80, W 60, E 20, R 100) could plausibly limit casts of the more expensive abilities across a 15s fight depending on mana pool/regen from the build"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics (multi-part W/R damage, Frost stack building/consumption, Icebreaker's stun-then-consume mark, Q's attack-reset-on-collision) all map onto existing primitives (plain-cast, recast-or-multipart, target-stacks, conditional-damage, attack-reset, positional-assumption). No mechanic requires logic outside that list."
+ },
+ "unsettled": [
+  {
+   "question": "In the fixed-distance damage fight, does Sejuani's Glacial Prison bola travel the required 425+ units before reaching the dummy, so R deals the empowered damage tier instead of the base tier?",
+   "options": [
+    "Assume a starting range >=425 units so R is always empowered when it lands",
+    "Assume Sejuani casts R at close/arbitrary range so it only sometimes or never empowers",
+    "Treat R's damage as always the base (non-empowered) tier for a conservative/simple simulation"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the bola travels at least 425 units, it becomes empowered to detonate upon reaching maximum range or hitting an enemy champion, dealing increased {{as|magic damage}}"
+   ]
+  },
+  {
+   "question": "Does Winter's Wrath's 1-second cast time (and Permafrost's 0.25s cast time) block Sejuani from casting her other abilities during that window, or can other abilities/attacks be queued through it the way Q explicitly can be cast during other abilities?",
+   "options": [
+    "Only Q can be woven through other casts (as stated); W and E cast times are exclusive and block other actions",
+    "All of Sejuani's abilities can be freely interleaved during each other's cast times",
+    "Cast times only block movement-canceling attacks, not other spell casts"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Arctic Assault can be cast during her other abilities without cancelling them and vice versa.",
+    "'''''Sejuani''' can move during Winter's Wrath's cast time.''"
+   ]
+  },
+  {
+   "question": "When Icebreaker's Frozen mark is consumed by an ability (e.g. Permafrost or the R bola) rather than a basic attack, is the bonus damage added as part of that ability's own damage instance (and thus benefits from the same spell-shield block, on-hit item triggers) or is it a wholly separate damage event?",
+   "options": [
+    "Icebreaker bonus damage is bundled into the consuming ability/attack's single damage instance",
+    "Icebreaker bonus damage is always a distinct, separately-applied magic damage instance regardless of what consumes it"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Sejuani's''' next {{tip|basic attack}} or {{tip|ability}} against a ''Frozen'' enemy will consume the mark to deal {{as|'''bonus''' magic damage}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Position at range (at least 425 units from the dummy) rather than in melee at the start of the fight, so the opening R can travel far enough to empower before it lands.",
+   "Open with R (Glacial Prison), thrown so the bola travels its full distance before hitting the dummy, landing the empowered magic damage and stun.",
+   "Immediately follow with Q (Arctic Assault), dashing onto the dummy for its damage and knockup; the dash-collision orders an attack-reset basic attack on arrival, closing to melee range.",
+   "Weave in basic attacks whenever off cooldown; each attack applies/refreshes a Frost stack on the dummy and, on the first attack after a stun, consumes the Icebreaker Frozen mark for bonus true-max-HP magic damage.",
+   "Cast E (Permafrost) as soon as the dummy has 4 Frost stacks, dealing its magic damage, stunning, and resetting the basic attack timer; repeat E once its 8s per-target Frost lockout has expired and stacks have re-accumulated to 4.",
+   "Cast W (Winter's Wrath) on cooldown, timing the cast so both the cone swing (0.25s into cast) and the line lash (at cast end) connect with the dummy as two separate physical damage instances.",
+   "Recast Q and R on cooldown for the rest of the 15s window, subject to mana, continuing to weave basic attacks and E between them."
+  ],
+  "questions": [
+   "Does the simulator assume the fight starts at a range that lets the opening R travel 425+ units before hitting the dummy, or does Sejuani start in melee (in which case R never empowers on the opening cast)?",
+   "How quickly do Frost stacks realistically re-accumulate to 4 within the 8-second per-target lockout given typical attack speed, i.e. is more than one extra E cast realistic in a 15s fight?",
+   "Should Icebreaker's Frozen-mark bonus damage be scored as attached to the ability/attack that consumes it, or tracked as its own separate damage line for kill-time purposes?",
+   "Is the target (a champion-flagged dummy) ever treated as an epic monster for the purposes of Icebreaker's 250-damage cap, or is that cap always irrelevant in the damage fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,153 @@
+{
+ "name": "Curtain Call / Curtain Call 2 / Curtain Call 3",
+ "cooldown": {
+  "values": [
+   120,
+   105,
+   90
+  ],
+  "quote": "{{ap|120 to 90}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 1,
+  "quote": "{{dv|{{tt|1|Active}}|{{tt|{{fd|0.25}}|Recast}}}}",
+  "binNote": "The wiki lists a dual cast time: 1s to begin the channel (Active) and 0.25s per recast. The bin's top-level castTime=1 matches only the Active activation; the 0.25 recast cast time is not separately represented here."
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Minimum Physical Damage per Bullet",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    64,
+    128,
+    192
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|64 to 192}} {{as|(+ 25% AD)}}",
+   "bin": [
+    "JhinR#DamageCalc"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Minimum Fourth Shot Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    128,
+    256,
+    384
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|64*2 to 192*2}} {{as|(+ {{ap|25*2}}% AD)}}",
+   "bin": [
+    "JhinR#DamageCalc",
+    "JhinR.FourthShotMultiplier"
+   ],
+   "binNote": "Not a direct bin row: computed as DamageCalc (base [64,128,192], ad 0.25) multiplied by FourthShotMultiplier=2, giving base [128,256,384] and ad coef 0.5. Neither the bin nor a single calculation states this doubled number directly; it is derived from the two named rows."
+  },
+  {
+   "id": "r_13",
+   "meaning": "Damage amplification based on target's missing health",
+   "role": "damage",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": 3
+    }
+   ],
+   "quote": "increased by {{as|{{pp|type=target's '''missing''' health|key=%|key1=%|0 to 300 for 11|0 to 100|formula=3% per 1% of target's '''missing''' health.}}}}",
+   "bin": [
+    "JhinR.PercentMissingAmp",
+    "JhinR#MaxIncreaseCalc"
+   ]
+  },
+  {
+   "id": "r_14",
+   "meaning": "Static per-cast cooldown between recasts",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "Each cast has a {{tt|static cooldown|Unaffected by ability haste}} of 1 second.",
+   "bin": [
+    "JhinR.MInimumDelayBetweenShots"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Jhin channels for up to 10 seconds and can recast Curtain Call up to 4 times within that duration.",
+   "quote": "channels for up to 10 seconds, transforming his weapon into a cannon and gaining the ability to recast ''Curtain Call'' 4 times within the duration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each recast fires after a 0.2s delay into the 0.25s cast time and the bullet stops upon hitting the first enemy champion it hits.",
+   "quote": "After {{fd|0.2}} seconds into the cast time, '''Jhin''' fires a round in the target direction... The bullet stops upon hitting an enemy champion",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The fourth shot critically strikes for bonus physical damage (double damage, per FourthShotMultiplier), independent of crit chance/crit damage stats.",
+   "quote": "The fourth shot {{tip|critical strike|critically strikes}} for {{as|{{critical damage|200|100}}|critical damage}} damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Curtain Call applies spell damage to enemy champions and area damage to other enemy units, meaning non-champion units may take different damage handling.",
+   "quote": "Applies {{tip|spell damage}} to enemy champions and {{tip|area damage}} to other enemy units.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each recast counts as a separate ability activation, triggering on-cast effects like Spellblade for each of the up to 4 shots.",
+   "quote": "Each cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's on-use cooldown begins only after the channel/recast sequence ends (post-effect), not on initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Curtain Call can be blocked by spell shields.",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "JhinR.SlowPercent",
+   "reason": "utility"
+  },
+  {
+   "ref": "JhinR.SlowDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

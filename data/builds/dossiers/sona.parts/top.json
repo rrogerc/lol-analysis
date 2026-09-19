@@ -1,0 +1,133 @@
+{
+ "champion": "sona",
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every basic ability cast adds a Power Chord stack; at 3 stacks the next basic attack is empowered"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "P"
+   ],
+   "note": "Gaining the empowered Power Chord attack resets Sona's basic attack timer"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Power Chord's empowered attack adds bonus magic on-hit damage; Q's Melody tag separately arms the next attack with its own bonus on-hit magic damage within 5s"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Power Chord's bonus effect/damage changes based on which basic ability (Q/W/E) was cast last (Staccato raises the bonus damage when Q was last)"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Accelerando: permanent stacks (from Q champion hits or W heal/shield thresholds) grant ability haste up to a 60 AH cap"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "At max Accelerando stacks, each further proc cuts Crescendo's current cooldown by 1.5s instead of granting more AH; the AH from Accelerando also lowers cooldowns on all abilities including R"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Hymn of Valor and Crescendo are direct-damage casts on cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (rising per rank on Q/W) can limit how much ability-casting/weaving is sustainable across the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "Heal/shield (W) and movement speed (E) do not change damage dealt or taken by the champion being fought in the damage fight; W's shield/heal values are irrelevant there. E is irrelevant everywhere in this simulator (mobility only)"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's distinctive pieces (Power Chord arming/empowerment, Accelerando's stacking-AH-into-cooldown-reduction feedback loop, and the last-ability-cast conditional bonus) are each expressible with existing primitives (nth-hit-or-cast, attack-reset, onhit-rider, stacking-self-buff, cooldown-manipulation, conditional-damage). No mechanic here requires logic outside that closed list for a single-target damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "Hymn of Valor sends bolts to the two nearest visible enemies. In a one-target dummy fight, does the second bolt also strike the sole dummy target (doubling Q's direct damage per cast), or does it simply have no second target and only one bolt connects?",
+   "options": [
+    "Both bolts converge on the single available target, dealing SonaQ#TotalDamage twice per cast",
+    "Only one bolt finds a target; the second bolt has no valid enemy and deals no damage",
+    "The simulator should treat this as an explicit assumption/positional case rather than infer from the wiki text"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sona''' sends out bolts of sound to the two nearest {{tip|sight|visible}} enemies, prioritizing champions. Each bolt deals {{as|magic damage}}",
+    "SonaQ.EnemiesToHit = 2"
+   ]
+  },
+  {
+   "question": "Does healing herself with Aria of Perseverance's self-heal count as 'healing a wounded ally' for generating an Accelerando stack, or does only the secondary bolt (which targets the most-wounded ally, possibly Sona herself if solo) count?",
+   "options": [
+    "Self-heal always grants an Accelerando stack (Sona counts as her own healed ally)",
+    "Only the bolt portion (which may retarget to Sona if she is the most wounded / only ally present) grants the stack, and it must clear the minimum-heal/shield threshold",
+    "In a no-ally solo dummy fight, W never generates an Accelerando stack at all"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Sona''' gains a stack of ''{{ai|Power Chord|Sona|Accelerando}}'' whenever she {{tip|heals}} a wounded ally or {{tip|shields}} a minimum amount of damage for an ally with ''Aria of Perseverance''"
+   ]
+  },
+  {
+   "question": "When Power Chord reaches 3 stacks from a non-Q cast (e.g. W or E) but Q was cast earlier, is the empowered attack's bonus effect determined by the ability that pushed the stack to 3, or by whichever basic ability was cast most recently at the moment the attack actually lands (which could differ if another ability is cast in between)?",
+   "options": [
+    "The 'last ability cast' is locked in at the moment 3 stacks is reached",
+    "The 'last ability cast' is re-evaluated live, using whichever ability was most recently cast when the empowered attack lands",
+    "Not distinguishable from wiki/bin text; needs a ruling"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "apply an additional effect based on the last basic ability she cast"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Basic-attack the dummy continuously as the baseline DPS source between ability casts.",
+   "Cast Crescendo (R) as soon as it is available for its large flat+AP magic burst, since its cooldown (100-140s) will not come off again within the 15s window at any relevant rank.",
+   "Cast Hymn of Valor (Q) on cooldown (8s, reduced by ability haste) as the primary repeatable direct-damage ability and main source of on-hit Melody bonus damage tags and Accelerando stacks.",
+   "Weave Aria of Perseverance (W) and Song of Celerity (E) off cooldown purely to add Power Chord stacks faster (each basic ability cast, not just Q, adds a stack), so that every third cast arms an empowered basic attack; cast Q immediately beforehand when possible so the empowered attack rolls the higher-damage Staccato bonus rather than the non-damaging Diminuendo/Tempo variants.",
+   "Let each empowered Power Chord attack fire as soon as armed (it resets the attack timer, so it does not lose auto-attack uptime) and stack Accelerando throughout to gain ability haste, which shortens Q/W/E cooldowns and, once capped, chips time off Crescendo's cooldown as well."
+  ],
+  "questions": [
+   "Should W and E actually be cast against a solo dummy (no allies to benefit, and W's self-heal/shield does nothing for damage output), purely to speed up Power Chord stacking, or does the mana/cast-time cost of casting them outweigh the value of extra empowered attacks compared to just spamming Q and auto-attacking?",
+   "Is it correct to assume the player always sequences a non-Q ability's Power Chord proc so that Q was the most recent cast (to get Staccato), or would an expert say the natural weave (Q, W, E, Q, W, E...) sometimes lands the proc off W or E instead?",
+   "Given Crescendo's long cooldown, is opening with R before Q correct for maximizing 15s damage, or should R be delayed to synchronize with a Power Chord Staccato-empowered attack for a bigger opening burst?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

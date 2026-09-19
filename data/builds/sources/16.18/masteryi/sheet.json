@@ -1,0 +1,516 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MasterYiPassive",
+    "key": "Characters/MasterYi/Spells/MasterYiPassiveAbility/MasterYiPassive",
+    "dataValues": {
+     "StackDuration": 4,
+     "AttackCount": 4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "0.5xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AlphaStrike",
+    "key": "Characters/MasterYi/Spells/AlphaStrikeAbility/AlphaStrike",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      19.5,
+      19,
+      18.5,
+      18
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SubsequentHitMultiplier": 0.25,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       40,
+       60,
+       80,
+       100
+      ]
+     },
+     "BonusMonsterDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     },
+     "AttackDamageRatio": 0.7,
+     "BonusCritDamageRatio": 1,
+     "BaseBasicAttackCDR": 1,
+     "AlphaStrikeBounces": 4,
+     "BaseOnHitMultiplier": 0.75
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/40/60/80/100] + (AttackDamageRatio=0.7)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        40,
+        60,
+        80,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "AttackDamageRatio"
+       }
+      ],
+      "refs": [
+       "AttackDamageRatio",
+       "BaseDamage"
+      ]
+     },
+     "SubesquentDamage": {
+      "expr": "(BaseDamage=[20/40/60/80/100] + (AttackDamageRatio=0.7)xad) * SubsequentHitMultiplier=0.25",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        10,
+        15,
+        20,
+        25
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.175,
+        "dataValue": "AttackDamageRatio"
+       }
+      ],
+      "refs": [
+       "AttackDamageRatio",
+       "BaseDamage",
+       "SubsequentHitMultiplier"
+      ]
+     },
+     "CritBonus": {
+      "expr": "TotalDamage * (BonusCritDamageRatio=1)*(1xcritDamage + -1)",
+      "modifies": "TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BonusCritDamageRatio"
+      ]
+     },
+     "{b0f66055}": {
+      "expr": "SubesquentDamage * (BonusCritDamageRatio=1)*(1xcritDamage + -1)",
+      "modifies": "SubesquentDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BonusCritDamageRatio"
+      ]
+     },
+     "BasicAttackCDR": {
+      "expr": "(<CooldownMultiplierCalculationPart>)*(BaseBasicAttackCDR=1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BaseBasicAttackCDR"
+      ]
+     },
+     "SingleTotalDamage": {
+      "expr": "TotalDamage * 1 + (SubsequentHitMultiplier=0.25)*(-1 + AlphaStrikeBounces=4)",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        70,
+        105,
+        140,
+        175
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.225,
+        "dataValue": "AttackDamageRatio"
+       }
+      ],
+      "refs": [
+       "AlphaStrikeBounces",
+       "AttackDamageRatio",
+       "BaseDamage",
+       "SubsequentHitMultiplier"
+      ]
+     },
+     "SingleCritTotalDamage": {
+      "expr": "((BaseDamage=[20/40/60/80/100] + (AttackDamageRatio=0.7)xad)*(1 + (SubsequentHitMultiplier=0.25)*(-1 + AlphaStrikeBounces=4))) * (BonusCritDamageRatio=1)*(1xcritDamage)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "AlphaStrikeBounces",
+       "AttackDamageRatio",
+       "BaseDamage",
+       "BonusCritDamageRatio",
+       "SubsequentHitMultiplier"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "Meditate",
+    "key": "Characters/MasterYi/Spells/MeditateAbility/Meditate",
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       120,
+       200,
+       280,
+       360,
+       440
+      ]
+     },
+     "HealDuration": 4,
+     "MaxMissingHealthPercent": 1,
+     "TickFrequency": 0.5,
+     "DamageReduction": {
+      "axis": "rank",
+      "v": [
+       0.45,
+       0.475,
+       0.5,
+       0.525,
+       0.55
+      ]
+     },
+     "DamageReductionTowerMod": 0.5,
+     "BaseManaCost": 40,
+     "PercentManaCostPerSecond": 0.06,
+     "InitialExtraDR": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.225,
+       0.2,
+       0.175,
+       0.15
+      ]
+     },
+     "InitialExtraDRDuration": 0.5,
+     "DRLinger": 0.5
+    },
+    "calcs": {
+     "TotalHeal": {
+      "expr": "BaseHeal=[120/200/280/360/440] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        200,
+        280,
+        360,
+        440
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseHeal"
+      ]
+     },
+     "InitialDR": {
+      "expr": "DamageReduction=[0.45/0.475/0.5/0.525/0.55] + InitialExtraDR=[0.25/0.225/0.2/0.175/0.15]",
+      "flat": 0.7,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "DamageReduction",
+       "InitialExtraDR"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "WujuStyle",
+    "key": "Characters/MasterYi/Spells/WujuStyleAbility/WujuStyle",
+    "cooldown": 14,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "ADRatio": 0.35,
+     "Duration": 5,
+     "LegacySwordVFXDuration": 3
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/25/30/35/40] + (ADRatio=0.35)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.35,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "Highlander",
+    "key": "Characters/MasterYi/Spells/HighlanderAbility/Highlander",
+    "cooldown": 85,
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RDuration": 7,
+     "RASBonus": {
+      "axis": "rank",
+      "v": [
+       25,
+       45,
+       65
+      ]
+     },
+     "RMSBonus": {
+      "axis": "rank",
+      "v": [
+       40,
+       50,
+       60
+      ]
+     },
+     "RKillAssistExtension": 7,
+     "RCooldownRefund": 0.7
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "AlphaStrike",
+  "W": "Meditate",
+  "E": "WujuStyle",
+  "R": "Highlander",
+  "P": "MasterYiPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 251,
+   "{6216bf7b}": 42,
+   "{c4ab3550}": 1.45,
+   "{3a509002}": 0.09
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.056
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "MasterYi",
+  "name": "Master Yi",
+  "partype": "Mana",
+  "passive": "Double Strike",
+  "spells": [
+   {
+    "id": "AlphaStrike",
+    "name": "Alpha Strike",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     19.5,
+     19,
+     18.5,
+     18
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "Meditate",
+    "name": "Meditate",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "WujuStyle",
+    "name": "Wuju Style",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "Highlander",
+    "name": "Highlander",
+    "maxrank": 3,
+    "cooldown": [
+     85,
+     85,
+     85
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Double Strike": {
+    "damagetype": "Physical",
+    "spelleffects": "attack",
+    "targeting": "Passive",
+    "affects": "Enemies",
+    "occurrence": "On-hit"
+   }
+  },
+  "Q": {
+   "Alpha Strike": {
+    "damagetype": "Physical",
+    "spelleffects": "AoE",
+    "spellshield": "Special",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Meditate": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana ({{as|+ 6% '''maximum''' mana}} per second)"
+   }
+  },
+  "E": {
+   "Wuju Style": {
+    "damagetype": "True",
+    "spelleffects": "Proc",
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "Highlander": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

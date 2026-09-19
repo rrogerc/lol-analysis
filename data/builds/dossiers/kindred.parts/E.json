@@ -1,0 +1,140 @@
+{
+ "name": "Mounting Dread",
+ "cooldown": {
+  "values": [
+   14,
+   12.5,
+   11,
+   9.5,
+   8
+  ],
+  "quote": "{{ap|14 to 8}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   50,
+   50,
+   50,
+   50
+  ],
+  "quote": "50",
+  "resource": "mana",
+  "binNote": "ddragon and the KindredEWrapper cooldown/cost table list cost as [0,0,0,0,0] for all ranks, but the wiki states a flat 50 mana cost; using the wiki's stated number."
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Additional Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    80,
+    110,
+    140,
+    170,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.0
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": 0.05,
+     "coefScaling": [
+      {
+       "stat": "stacks",
+       "per": 1,
+       "coef": 0.005
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|80 to 200}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 5% {{as|(+ {{fd|0.5}}% per {{ai|Mark of the Kindred|Kindred|Mark}})|buzzword}} of target's '''missing''' health)}}",
+   "bin": [
+    "KindredEWrapper#BaseBiteDamage",
+    "KindredEWrapper#PercentBiteDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "duration of the Mounting Dread mark",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "marks them for 4 seconds",
+   "bin": [
+    "KindredEWrapper.TotalDuration"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "number of stacks (basic attacks) needed to detonate Mounting Dread",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times",
+   "bin": [
+    "KindredEWrapper.StacksToProc"
+   ],
+   "binNote": "The wiki text says the mark stacks up to 3 times and the third stack triggers the pounce ('the third stack directs Wolf to pounce'), but KindredEWrapper.StacksToProc = 4 in the bin. Recording the wiki's stated value of 3; this is a genuine discrepancy."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks against the marked target each apply a stack, refreshing the mark's duration, up to the stack cap; reaching the cap consumes all stacks and triggers the bonus pounce damage.",
+   "quote": "Her {{tip|basic attacks}} against the marked target each apply a {{tip|stack}}, refreshing the duration and stacking up to 3 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "This ability cannot be recast on a target that already has Mounting Dread stacks (only used to apply the initial mark and slow).",
+   "quote": "This ability cannot target a unit with ''Mounting Dread'' stacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the target dies, becomes untargetable, or leaves range/sight during the cast time, the ability cancels, does not pay its cost, but still goes on cooldown.",
+   "quote": "If the target becomes {{tip|untargetable}}, {{tip|death|dies}}, or is too far away or no longer in {{tip|sight}} during the cast time, this ability will cancel and not pay its cost but still go on {{sti|cooldown}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The pounce damage is further increased by up to 50% based on Kindred's critical strike chance and critical damage.",
+   "quote": "increased by {{critical damage|0 to 50|critScaling=true}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The missing-health portion of the pounce damage is capped against monsters, not against champions.",
+   "quote": "The damage based on the {{as|'''missing''' health}} ratio is capped at 200 against {{tip|monster|monsters}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KindredEWrapper.MonsterCap",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KindredEWrapper.SlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "KindredEWrapper.SlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "KindredEWrapper.SlowAPRatio",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

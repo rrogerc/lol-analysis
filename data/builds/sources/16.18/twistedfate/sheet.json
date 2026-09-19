@@ -1,0 +1,487 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SecondSight",
+    "key": "Characters/TwistedFate/Spells/SecondSightAbility/SecondSight",
+    "dataValues": {
+     "GoldRatioMinCherry": 0.02,
+     "GoldRatioMaxCherry": 0.08,
+     "GameModeInteger": 1
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "WildCards",
+    "key": "Characters/TwistedFate/Spells/WildCardsAbility/WildCards",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      6,
+      5.75,
+      5.5,
+      5.25,
+      5
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       105,
+       150,
+       195,
+       240
+      ]
+     },
+     "APRatio": 0.85,
+     "BonusADRatio": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/105/150/195/240] + (BonusADRatio=0.5)xbonus ad + (APRatio=0.85)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        105,
+        150,
+        195,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "BonusADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.85,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "PickACard",
+    "key": "Characters/TwistedFate/Spells/PickACardAbility/PickACard",
+    "cooldown": 6,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BlueBase": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "RedBase": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60,
+       75,
+       90
+      ]
+     },
+     "GoldBase": {
+      "axis": "rank",
+      "v": [
+       15,
+       22.5,
+       30,
+       37.5,
+       45
+      ]
+     },
+     "BlueCritMultiplier": 0.575,
+     "RedCritMultiplier": 0.35,
+     "GoldCritMultiplier": 0.25,
+     "ttBlueAP": 1,
+     "ttRedAP": 0.7,
+     "ttGoldAP": 0.5,
+     "ttAD": 1
+    },
+    "calcs": {
+     "BlueDamage": {
+      "expr": "BlueBase=[40/60/80/100/120] + 1xad + 1xap + ((BlueCritMultiplier=0.575)*(BlueBase=[40/60/80/100/120] + 1xad + 1xap))xcritChance",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BlueBase",
+       "BlueCritMultiplier"
+      ]
+     },
+     "RedDamage": {
+      "expr": "RedBase=[30/45/60/75/90] + 1xad + 0.7xap + ((RedCritMultiplier=0.35)*(RedBase=[30/45/60/75/90] + 1xad + 0.7xap))xcritChance",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "RedBase",
+       "RedCritMultiplier"
+      ]
+     },
+     "GoldDamage": {
+      "expr": "GoldBase=[15/22.5/30/37.5/45] + 1xad + 0.5xap + ((GoldCritMultiplier=0.25)*(GoldBase=[15/22.5/30/37.5/45] + 1xad + 0.5xap))xcritChance",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "GoldBase",
+       "GoldCritMultiplier"
+      ]
+     },
+     "ttBlueDamage": {
+      "expr": "BlueDamage * 1",
+      "modifies": "BlueDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BlueBase",
+       "BlueCritMultiplier"
+      ]
+     },
+     "ttRedDamage": {
+      "expr": "RedDamage * 1",
+      "modifies": "RedDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "RedBase",
+       "RedCritMultiplier"
+      ]
+     },
+     "ttGoldDamage": {
+      "expr": "GoldDamage * 1",
+      "modifies": "GoldDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "GoldBase",
+       "GoldCritMultiplier"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "CardmasterStack",
+    "key": "Characters/TwistedFate/Spells/CardmasterStackAbility/CardmasterStack",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AttackSpeedBonus": {
+      "axis": "rank",
+      "v": [
+       15,
+       25,
+       35,
+       45,
+       55
+      ]
+     },
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       65,
+       90,
+       115,
+       140,
+       165
+      ]
+     },
+     "APRatio": 0.4,
+     "BonusADRatio": 0.2,
+     "TowerEffectiveness": 0.5
+    },
+    "calcs": {
+     "BonusDamage": {
+      "expr": "Damage=[65/90/115/140/165] + (BonusADRatio=0.2)xbonus ad + (APRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        90,
+        115,
+        140,
+        165
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2,
+        "dataValue": "BonusADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BonusADRatio",
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "Destiny",
+    "key": "Characters/TwistedFate/Spells/DestinyAbility/Destiny",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      170,
+      140,
+      110
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RecastDuration": {
+      "axis": "rank",
+      "v": [
+       6,
+       8,
+       10
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "WildCards",
+  "W": "PickACard",
+  "E": "CardmasterStack",
+  "R": "Destiny",
+  "P": "SecondSight"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 333,
+   "{6216bf7b}": 39,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "TwistedFate",
+  "name": "Twisted Fate",
+  "partype": "Mana",
+  "passive": "Loaded Dice",
+  "spells": [
+   {
+    "id": "WildCards",
+    "name": "Wild Cards",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     5.75,
+     5.5,
+     5.25,
+     5
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "PickACard",
+    "name": "Pick a Card",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "CardmasterStack",
+    "name": "Stacked Deck",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "Destiny",
+    "name": "Destiny",
+    "maxrank": 3,
+    "cooldown": [
+     170,
+     140,
+     110
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Loaded Dice": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Wild Cards": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Pick a Card": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Blue Card": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Red Card": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Gold Card": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Stacked Deck": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "spellshield": "false",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Enemies, Self"
+   }
+  },
+  "R": {
+   "Destiny": {
+    "spellshield": "True",
+    "targeting": "[[Auto-targeted|Auto]] / [[Location-targeted|Location]]",
+    "affects": "Enemies, Allies, Self",
+    "costtype": "Mana"
+   },
+   "Gate": {
+    "spellshield": "True",
+    "targeting": "[[Auto-targeted|Auto]] / [[Location-targeted|Location]]",
+    "affects": "Enemies, Allies, Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

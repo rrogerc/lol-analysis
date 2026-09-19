@@ -1,0 +1,168 @@
+{
+ "name": "Flamespitter",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_3",
+   "meaning": "Magic Damage per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    4.167,
+    6.25,
+    8.333,
+    10.417,
+    12.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0875
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.005,
+      0.005417,
+      0.005833,
+      0.00625,
+      0.006667
+     ]
+    }
+   ],
+   "quote": "{{ap|50/12 to 150/12|round=3}} {{as|(+ {{ap|105/12|round=3}}% AP)}} {{as|(+ {{ap|6/12 to 8/12|round=3}}% of target's '''maximum''' health)}}<!--\n-->",
+   "bin": [
+    "RumbleFlameThrower#FlatDamage",
+    "RumbleFlameThrower.HealthDamage"
+   ],
+   "binNote": "The wiki divides the bin's 3-second totals (FlatDamage's base/AP ratio and HealthDamage's health ratio) by the 12 ticks in the 3-second duration to give the per-tick amount shown here; stated numbers equal the bin rows divided by 12."
+  },
+  {
+   "id": "q_overheat",
+   "meaning": "Danger Zone (overheat) damage multiplier on Flamespitter",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "''Flamespitter's'' damage is increased by 50%.",
+   "bin": [
+    "RumbleFlameThrower.OverheatMulti"
+   ]
+  },
+  {
+   "id": "q_duration",
+   "meaning": "Flamespitter active duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "activate his flamethrower for 3 seconds",
+   "bin": [
+    "RumbleFlameThrower.FlamespitterDuration"
+   ]
+  },
+  {
+   "id": "q_tickrate",
+   "meaning": "Interval between Flamespitter flame ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "spewing forth flames in a {{tt|frontal|In his facing direction}} cone every {{fd|0.25}} seconds",
+   "bin": [
+    "RumbleFlameThrower.TickRate"
+   ]
+  },
+  {
+   "id": "q_burnduration",
+   "meaning": "Scorch debuff duration on refresh (max window)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.6,
+   "terms": [],
+   "quote": "its duration is refreshed to the maximum ({{fd|0.6}} seconds)",
+   "bin": [
+    "RumbleFlameThrower.BurnDuration"
+   ]
+  },
+  {
+   "id": "q_heatgen",
+   "meaning": "Heat generated on cast to activate Flamespitter",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 20,
+   "terms": [],
+   "quote": "'''Rumble''' generates {{tip|Heat|20 Heat}} to activate his flamethrower",
+   "bin": [
+    "RumbleFlameThrower.InitialHeatCost"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Rumble activates a flamethrower that continually deals magic damage in a frontal cone for the duration, ticking every 0.25s.",
+   "quote": "activates a flamethrower for a short time that continually deals {{as|magic damage}} in a frontal cone",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown begins counting down on cast, not when the flamethrower ends.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Enemies hit by the flame take damage on each tick and also on initial hit if not currently scorched, with the debuff refreshing on subsequent hits.",
+   "quote": "taking {{as|magic damage}} every {{fd|0.25}} seconds as well as upon being hit if not currently scorched, refreshing on subsequent inflictions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "When the debuff is newly applied (not refreshed), the target takes one additional instance of the debuff, delayed by 0.1 seconds, effectively dealing extra damage on first application.",
+   "quote": "the target is dealt one additional instance of the debuff at the same time as the application. This is done by delaying the actual debuff by {{fd|0.1}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While in the Danger Zone (overheated), Flamespitter's damage is increased by 50%.",
+   "quote": "{{sbc|{{ai|Junkyard Titan 2|Rumble|Danger Zone}} Bonus:}} ''Flamespitter's'' damage is increased.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Flamespitter's damage against monsters is capped based on a scaling formula, but no such cap applies to champions.",
+   "quote": "''Flamespitter's'' total damage based on the target's health is capped at ... against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "RumbleFlameThrower.MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "RumbleFlameThrower.DebuffTicks",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "RumbleFlameThrower.TotalTicks",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

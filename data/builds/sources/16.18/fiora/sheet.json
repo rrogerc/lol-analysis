@@ -1,0 +1,479 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "FioraPassive",
+    "key": "Characters/Fiora/Spells/FioraPassiveAbility/FioraPassive",
+    "dataValues": {
+     "PassiveDamageADRatio": 0.0004,
+     "PassiveDamageBase": 0.03,
+     "MovementSpeedDuration": 2
+    },
+    "calcs": {
+     "PassiveHealAmount": {
+      "expr": "byLevel(35..100)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        35,
+        38.82353,
+        42.64706,
+        46.47059,
+        50.294118,
+        54.117647,
+        57.941176,
+        61.764706,
+        65.588235,
+        69.411765,
+        73.23529,
+        77.05882,
+        80.882353,
+        84.70588,
+        88.52941,
+        92.35294,
+        96.17647,
+        100
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "PassiveDamageTotal": {
+      "expr": "PassiveDamageBase=0.03 + (PassiveDamageADRatio=0.0004)xbonus ad",
+      "flat": 0.03,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0004,
+        "dataValue": "PassiveDamageADRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "PassiveDamageADRatio",
+       "PassiveDamageBase"
+      ]
+     },
+     "RDamageTotal": {
+      "expr": "PassiveDamageTotal * 4",
+      "modifies": "PassiveDamageTotal",
+      "flat": 0.12,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0016,
+        "dataValue": "PassiveDamageADRatio"
+       }
+      ],
+      "refs": [
+       "PassiveDamageADRatio",
+       "PassiveDamageBase"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "FioraQ",
+    "key": "Characters/Fiora/Spells/FioraQAbility/FioraQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      11.25,
+      9.5,
+      7.75,
+      6
+     ]
+    },
+    "cost": 20,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       70,
+       80,
+       90,
+       100,
+       110
+      ]
+     },
+     "bADRatio": {
+      "axis": "rank",
+      "v": [
+       0.9,
+       0.95,
+       1,
+       1.05,
+       1.1
+      ]
+     },
+     "CDRefundPercent": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[70/80/90/100/110] + (BADRatio)xbonus ad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BADRatio",
+       "Damage"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value BADRatio"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "FioraW",
+    "key": "Characters/Fiora/Spells/FioraWAbility/FioraW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      24,
+      22,
+      20,
+      18,
+      16
+     ]
+    },
+    "cost": 50,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       110,
+       150,
+       190,
+       230,
+       270
+      ]
+     },
+     "ParryDuration": 0.75,
+     "CCDuration": 2,
+     "MSSlowPercent": -0.5,
+     "SmallBlockPercent": 0.03,
+     "BigBlockPercent": 0.15,
+     "AttackSlowPercent": -0.25
+    },
+    "calcs": {
+     "StabDamage": {
+      "expr": "BaseDamage=[110/150/190/230/270] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        110,
+        150,
+        190,
+        230,
+        270
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "FioraE",
+    "key": "Characters/Fiora/Spells/FioraEAbility/FioraE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10,
+      9,
+      8,
+      7
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BuffDuration": 3,
+     "SlowDuration": 1,
+     "SlowPercent": -0.3,
+     "ASPercent": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       0.6,
+       0.7,
+       0.8,
+       0.9
+      ]
+     },
+     "AttackOnePercentTAD": 1,
+     "AttackTwoPercentTAD": {
+      "axis": "rank",
+      "v": [
+       1.6,
+       1.7,
+       1.8,
+       1.9,
+       2
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "FioraR",
+    "key": "Characters/Fiora/Spells/FioraRAbility/FioraR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      90,
+      70
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MarkDuration": 8,
+     "PassiveAS": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5
+      ]
+     },
+     "PercentMS": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5
+      ]
+     },
+     "MSRingRadius": 500,
+     "HealDuration": 5,
+     "HealPerSecond": {
+      "axis": "rank",
+      "v": [
+       75,
+       100,
+       125
+      ]
+     },
+     "HealRingRadius": 550,
+     "HealDurationExtension": 1,
+     "Ratio": 0.6
+    },
+    "calcs": {
+     "HealPerSecondCalc": {
+      "expr": "HealPerSecond=[75/100/125] + 0.6xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        100,
+        125
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "HealPerSecond"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "FioraQ",
+  "W": "FioraW",
+  "E": "FioraE",
+  "R": "FioraR",
+  "P": "FioraPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 60,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Fiora",
+  "name": "Fiora",
+  "partype": "Mana",
+  "passive": "Duelist's Dance",
+  "spells": [
+   {
+    "id": "FioraQ",
+    "name": "Lunge",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     11.25,
+     9.5,
+     7.75,
+     6
+    ],
+    "cost": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ]
+   },
+   {
+    "id": "FioraW",
+    "name": "Riposte",
+    "maxrank": 5,
+    "cooldown": [
+     24,
+     22,
+     20,
+     18,
+     16
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "FioraE",
+    "name": "Bladework",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "FioraR",
+    "name": "Grand Challenge",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     90,
+     70
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Duelist's Dance": {
+    "damagetype": "True",
+    "spelleffects": "Proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   },
+   "Duelist's Dance 2": {
+    "damagetype": "True",
+    "spelleffects": "Proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Lunge": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "onhiteffects": "True",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Riposte": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Bladework": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana",
+    "occurrence": "On-hit"
+   }
+  },
+  "R": {
+   "Grand Challenge": {
+    "spellshield": "false",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Grand Challenge 2": {
+    "spellshield": "false",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

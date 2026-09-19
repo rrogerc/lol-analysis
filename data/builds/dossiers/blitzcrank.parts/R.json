@@ -1,0 +1,129 @@
+{
+ "name": "Static Field",
+ "cooldown": {
+  "values": [
+   60,
+   40,
+   20
+  ],
+  "quote": "{{ap|60 to 20}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Passive lightning bolt magic damage per stack",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    100,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.3,
+      0.4,
+      0.5
+     ]
+    },
+    {
+     "stat": "maxMana",
+     "coef": 0.02
+    }
+   ],
+   "quote": "{{ap|50 to 150}} {{as|(+ {{ap|30 to 50}}% AP)}} {{as|(+ 2% '''maximum''' mana)}}",
+   "bin": [
+    "StaticField#PassiveDamage"
+   ],
+   "binNote": "PassiveDamage's calc uses a literal 0.02 coefficient for max mana, matching the wiki's 2%; the separate data value PassiveManaRatio=0.05 is not read by this calculation and is listed unused."
+  },
+  {
+   "id": "r_2",
+   "meaning": "Active detonation magic damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    275,
+    400,
+    525
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|275 to 525}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "StaticField#ActiveDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Time between passive stack detonations (zap interval)",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "one stack is consumed every 1 second to strike them with lightning",
+   "bin": [
+    "StaticField.ZapCountdown"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "While Static Field is off cooldown, Blitzcrank's basic attacks apply a stack to the target on-hit, which does not require the attack to deal damage.",
+   "quote": "Blitzcrank's attacks do not have to deal damage to apply the mark.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "One stack is consumed every 1 second dealing magic damage to the target, as a separate spell damage instance.",
+   "quote": "one stack is consumed every 1 second to strike them with lightning, dealing {{as|magic damage}} each time.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The lightning bolt ticks are spell damage while the active detonation is area damage.",
+   "quote": "The lightning bolts deal {{tip|spell damage}} while the static field applies {{tip|area damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The active detonation destroys shields on all nearby enemies (except monsters) before dealing damage, even if blocked by a spell shield.",
+   "quote": "Even if ''Static Field'' is blocked by a {{tip|spell shield}}, it will still destroy any existing damage {{tip|shield|shields}} on the target.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "StaticField.ActiveRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "StaticField.SilenceDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "StaticField.PassiveManaRatio",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

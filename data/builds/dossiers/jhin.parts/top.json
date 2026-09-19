@@ -1,0 +1,185 @@
+{
+ "champion": "jhin",
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "4-shot magazine with 2.5s reload gates all basic-attack damage output"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Jhin's 4th basic attack, and each Curtain Call's 4th recast, are empowered"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "4th basic shot and 4th Curtain Call shot always crit; passive halves crit damage multiplier and fixes attack speed so crit chance feeds the AD-conversion instead"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "4th basic shot bonus damage and Curtain Call bullet damage both scale with target's missing health"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every Moment Matters converts level, bonus crit chance and bonus attack speed into bonus AD"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Jhin's attack speed is fixed except by leveling; bonus AS from items is instead read by the stat-conversion term, not applied to attack interval"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q, W and E deal on-cast/short-delay damage on cooldown"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's bounce needs additional nearby unhit enemies; E's trap needs an enemy to walk into it - both assume behavior against a single stationary dummy"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "grenade damage amplifies 35% (stacking) if a hit enemy dies before the next bounce"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (and E's separate charge/recharge system) limit casts over 15s"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Lotus Trap slows for 2s then detonates for its damage - a delayed single payload rather than instant"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Curtain Call channels for up to 10s, blocking some other actions"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "up to 4 separately-timed recasts each dealing their own damage instance"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is unusual (ammo/reload cycle, a stat-conversion passive AD formula gated by level/crit/AS, a channel with four independently-scaling recasts, missing-health scaling on two different abilities) but each piece maps onto an existing primitive; no mechanic requires logic outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "In a single-stationary-dummy fight, does Dancing Grenade's bounce (which 'prioritizes the closest enemy that has not been hit') re-hit the same dummy for additional instances, or fail to bounce since no unhit enemy exists, effectively landing as a single hit?",
+   "options": [
+    "Grenade bounces back onto the same dummy for up to 3 extra hits (each potentially gaining the 35%-on-kill amp if the dummy is treated as never dying)",
+    "Grenade only ever lands its first hit against a lone target; the bounce mechanic and its damage amp never trigger"
+   ],
+   "impact": "high",
+   "quotes": [
+    "can bounce to up to three additional nearby enemies, prioritizing the closest enemy that has not been hit"
+   ]
+  },
+  {
+   "question": "Does Curtain Call's 3%-per-1%-missing-health damage amplification apply to the already-doubled 4th ('critical') bullet, or is the 4th-shot figure in the wiki's leveling table (AD*2, base*2) the complete formula with the missing-health term applied only to bullets 1-3?",
+   "options": [
+    "Missing-health amp multiplies the 4th bullet's base+AD damage as well, i.e. total multiplier = 2 x (1 + 3xmissingFraction)",
+    "Missing-health amp only applies to normal (non-4th) Curtain Call bullets; the 4th bullet uses a flat 2x multiplier with no missing-health scaling"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Damage to enemies hit, increased by ... 3% per 1% of target's missing health",
+    "The fourth shot critically strikes for {{as|{{critical damage|200|100}}|critical damage}} damage."
+   ]
+  },
+  {
+   "question": "Does channeling Curtain Call lock Jhin out of basic attacks (his ammo-based DPS) for the full up-to-10s channel, or does the channel effectively end once the 4th shot is fired (freeing him to resume attacking sooner)?",
+   "options": [
+    "Channel occupies Jhin until either the 4th recast fires or 10s elapses, whichever first, then normal actions resume",
+    "Channel is a hard 10s lockout on non-recast actions regardless of how many shots were fired"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Jhin''' {{tip|channel|channels}} for up to 10 seconds, transforming his weapon into a cannon and gaining the ability to recast ''Curtain Call'' 4 times within the duration.",
+    "{{ct|channel|cast=interrupts|items=interrupts,true,,false|spells=true,false,interrupts,interrupts,false}}"
+   ]
+  },
+  {
+   "question": "Against a stationary target dummy that never moves, does a Lotus Trap placed on/under the dummy still 'bloom' and detonate (treating the dummy as already crossing/being in its radius once armed), or does the trap require the target to walk into it and thus never trigger on an immobile target?",
+   "options": [
+    "Trap triggers as soon as it finishes arming if the dummy is already standing in its radius, dealing its damage on a fixed delay",
+    "Trap never triggers against a target that never moves into it, making E's damage unusable in the dummy fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "becomes {{tip|stealthed trap|stealthed}} after arming over 1 second... The ''Lotus Trap blooms'' upon enemy contact"
+   ]
+  },
+  {
+   "question": "How long can Jhin go without attacking/casting before the out-of-combat auto-reload timer starts: the wiki's stated 10 seconds, or the bin's OutOfCombatTimeBeforeReload = 8?",
+   "options": [
+    "10 seconds (wiki text)",
+    "8 seconds (bin value)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "withholding leftover rounds after 10 seconds of being [[out of combat]]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Deadly Flourish (W) as the first action for its guaranteed physical damage while it's off cooldown and mana is full.",
+   "Throw Dancing Grenade (Q) on cooldown throughout the fight for its base physical damage.",
+   "Weave continuous basic attacks between ability casts, respecting the 4-shot magazine and 2.5s reload, so every 4th shot lands (always crits, includes the missing-health execute bonus).",
+   "Place Lotus Trap (E) whenever a charge is available and mana allows, accepting the source-uncertainty about whether it can trigger on a stationary dummy.",
+   "Cast Curtain Call (R) once mana and cooldown allow, then recast it as fast as its 1s static per-shot cooldown permits to land all 4 bullets (including the empowered 4th) before resuming the basic-attack/Q/W/E rotation.",
+   "Keep Q, W, R off cooldown as much as mana permits for the remainder of the 15s window; treat E as opportunistic given its long per-charge recharge (14-24s) and the uncertainty over whether it deals damage at all in this fight."
+  ],
+  "questions": [
+   "Does Curtain Call lock out basic attacks and Q/W/E casts for its full channel duration, and if so, is it still worth using early (for its own high burst) versus saving it to not eat into the ammo-based attack window?",
+   "Is E worth including in the optimal rotation at all against a stationary target dummy, or should it be omitted from the damage-fight rotation entirely?",
+   "At what level/item state is this rotation evaluated - does Jhin have enough mana to cast Q, W, E and R at their stated costs across a full 15s rotation, or does mana become the binding constraint before cooldowns do?",
+   "Does the simulator treat Dancing Grenade's bounce as landing extra hits on the sole target, and if so, how many (up to 3, per NumberOfBounces)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

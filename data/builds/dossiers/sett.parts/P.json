@@ -1,0 +1,200 @@
+{
+ "name": "Pit Grit",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "bonus health regenerated per 0.5s per 5% missing health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    1,
+    1,
+    1
+   ],
+   "terms": [],
+   "quote": "{{pp|0.075;0.25;0.5;1;1.025;1.05|1 to 16 for 4;19;20|changedisplay=true|round=3}} health}} every {{fd|0.5}} seconds",
+   "bin": [
+    "SettPassive#{7733e08c}"
+   ],
+   "binNote": "SettPassive#{7733e08c} evaluates to [0.03,0.03,0.03,0.03,0.03,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.2,0.4,0.4,0.4] (byLevel[3..40]*0.01), which is exactly 0.4x the wiki's stated per-tick values (0.075..1); the related tooltip calc {7733e08c}*5 gives 0.15..2, also not matching. This is a genuine disagreement between the wiki text and the bin's resolved numbers; stating the wiki's number here."
+  },
+  {
+   "id": "p_2",
+   "meaning": "health regen tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "No standalone tick-interval data value found in the sheet; only present in the wiki description."
+  },
+  {
+   "id": "p_3",
+   "meaning": "missing health fraction per regen unit (5%)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [],
+   "quote": "per {{sti|{{as|5% of his '''missing''' health}}}}",
+   "bin": [],
+   "binNote": "SettPassive.MissingHealthUnit = 0.01 is the 1% unit used inside the {7733e08c} calc; the wiki's 5% figure is 5x that unit and isn't a separate data row."
+  },
+  {
+   "id": "p_4",
+   "meaning": "Right Punch bonus physical damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "level",
+   "base": [
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.55
+    }
+   ],
+   "quote": "{{as|{{pp|5 + (90-5)/17*(x-1) for 20}}|physical damage}} {{as|(+ 55% '''bonus''' AD)}}",
+   "bin": [
+    "SettPassive#RightPunchBonus"
+   ],
+   "binNote": "RightPunchBonus's base term reads an unresolved ByCharLevelFormulaCalculationPart; the linear 5-to-90 progression from the wiki matches a straightforward +5/level formula but the exact bin base values could not be independently confirmed."
+  },
+  {
+   "id": "p_5",
+   "meaning": "Right Punch windup as a fraction of Left Punch windup (effective attack speed multiplier)",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 0.125,
+   "terms": [],
+   "quote": "windup is sped up and fixed at {{ft|{{fd|12.5%}} of a {{as|Left Punch's|armor}} windup time.|800% of a {{as|Left Punch's|armor}} windup speed.}}",
+   "bin": [],
+   "binNote": "No matching data value found; SettPassive.AttackSpeed = 1.5 does not equal the wiki's stated 8x (800%) windup speed, so it is not used for this number (see binUnused)."
+  },
+  {
+   "id": "p_6",
+   "meaning": "Left Punch reset window (time before reverting from Right Punch state)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "reset back to it after 2 seconds of not performing a {{as|Right Punch|buzzword3}}",
+   "bin": [],
+   "binNote": "No matching data value found in the Passive slot rows for this 2-second reset timer."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Sett regenerates additional health based on his missing health, on top of normal regen.",
+   "quote": "regenerates additional health based on {{as|his '''missing''' health}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Basic attacks alternate between a normal Left Punch and an empowered Right Punch, resetting to Left Punch if no Right Punch occurs for 2 seconds.",
+   "quote": "basic attacks alternate between his {{as|Left Punch|armor}} and a {{as|Right Punch|buzzword3}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Right Punch's bonus damage can be life stolen from.",
+   "quote": "The bonus physical damage from the {{as|Right Punch|buzzword3}} benefits from {{as|{{sti|life steal}}}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Right Punch does not grant bonus attack speed; instead its windup time is separately fixed to be much shorter, and this fixed windup is still affected by attack speed buffs not already active on the prior Left Punch.",
+   "quote": "does not grant {{as|{{sti|'''bonus''' attack speed}}}}, rather its windup is sped up and fixed",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SettPassive.NumHits",
+   "reason": "utility"
+  },
+  {
+   "ref": "SettPassive.LockoutTimer",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.MarkerDuration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.GrabDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SettPassive.SelfSlowPercent",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SettPassive.MaxHPOnHit",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.AttackSpeed",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.JabDamagePercent",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.HookDamagePercentFinal",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.PassiveHealthThreshold",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.PassiveHealthThresholdAmp",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettPassive.MissingHealthUnit",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

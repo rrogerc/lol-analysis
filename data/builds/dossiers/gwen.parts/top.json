@@ -1,0 +1,165 @@
+{
+ "champion": "gwen",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "A Thousand Cuts adds bonus magic damage to every basic attack on-hit, and to the center hit of Q and to R's needle hits."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "A Thousand Cuts' bonus damage is 1% (+0.6%/100AP) of the target's current maximum health, applied per proc from autos, Q's snip centers, and R's needles."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "A single Q cast fires 2-6 separate damage instances (1-5 mini-snips scaled by consumed Snippy stacks, plus one final snip dealing more damage), each center also converting 50% to true damage and applying A Thousand Cuts."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R can be recast up to two more times within 8s at no extra cost, firing 1, then 3, then 5 needles per cast (up to 9 total), each on a fixed 1s static-cooldown gap between casts."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Basic attacks on-hit generate Snippy stacks (cap 4, 6s duration, refreshed by further attacks); Q consumes all current stacks to add that many bonus mini-snips to its cast."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "After the dash, Gwen's basic attacks for 4s deal 15 (+20% AP) bonus magic damage on-hit and gain range."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Casting Skip 'n Slash resets Gwen's basic attack timer and can be cast during any other ability (and vice versa), enabling attack-cancel weaving."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Gwen's first basic attack within E's empowered window refunds 25-65% of E's remaining cooldown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "E grants 30-80% bonus attack speed for 4 seconds, directly raising auto-attack (and on-hit rider) throughput."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "While inside the mist, Gwen gains 22-30 (+7% AP) bonus armor and magic resistance -- relevant to the survival fight's damage taken, not the damage fight."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ghosting, untargetability to enemy champions outside the mist, destruction of enemy targeted projectiles, and negation of monster damage from outside the mist -- all purely damage-taken/survival-fight mechanics with no counterpart in the damage fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Flat mana costs (40/60/35/100) with Gwen's modest mana pool can meaningfully cap how many Q/E/R casts fit in a 15s window, especially R at 100 per activation (recasts are free)."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Hallowed Mist's untargetability against enemy champions outside the zone is effectively a temporary, near-total incoming-damage negation window (not merely a resist/health buff, and not merely CC/mobility to ignore) with a geometric attacker-position condition ('outside the mist'). The closed primitive list has 'defensive-only' and 'timed-self-buff' for the resist gain, but nothing that expresses periodic full damage immunity conditioned on a position check the survival fight (no terrain, single stationary/attacking pair) would need to approximate or special-case. The simulator needs bespoke handling to decide whether/how W blocks the enemy's rotation while active."
+ },
+ "unsettled": [
+  {
+   "question": "Does A Thousand Cuts (the % max-health bonus magic damage, and its 67%-of-post-mitigation-damage heal, capped per instance) trigger once per Q cast, or once per individual snip (mini-snip + final snip) within that cast, each separately subject to the heal cap?",
+   "options": [
+    "Once per snip instance (mini-snip and final snip each separately proc it and each heal is separately capped)",
+    "Once per Q cast overall, using only the final snip's damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The center of each snip converts 50% of the damage to {{ccs|{{sti|{{as|true damage}}}}|true}}, then applies ''{{ai|A Thousand Cuts|Gwen}}''."
+   ]
+  },
+  {
+   "question": "What is GwenP#{5bade13c} = 1xbuffStacks (an unlabeled bin formula scaling linearly with an unnamed 'buffStacks' variable), and does it modify any on-hit or ability damage value used in the damage fight?",
+   "options": [
+    "It is unused tooltip/internal plumbing with no gameplay effect on damage",
+    "It represents an undocumented stack-based damage or scaling multiplier (e.g. tied to Snippy stacks) that should modify P, Q, or R damage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "GwenP#{5bade13c} = 1xbuffStacks"
+   ]
+  },
+  {
+   "question": "Is A Thousand Cuts' scaling on R's needle damage really the flat '1% (+0.6%/100AP) of target max HP' per needle stated on the wiki, or does the bin's GwenP#PassiveMaxRTooltip (= {540bce84} * 0.09, i.e. a 9%-base formula) indicate a different, larger per-needle or per-max-cast scaling that the wiki simplified/omitted?",
+   "options": [
+    "Wiki is correct: each needle procs the standard 1% (+0.6%/100AP) instance, consistent across all abilities",
+    "Bin's 0.09 multiplier reflects an actual different (larger) scaling specific to R that the wiki failed to state explicitly"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "GwenP#PassiveMaxRTooltip = {540bce84} * 0.09",
+    "{{as|(+ {{#var:pd1}}% {{as|(+ {{ap|{{#var:pd2}}*1}}% per 100 AP)}} of the target's '''maximum''' health)}}"
+   ]
+  },
+  {
+   "question": "In the damage fight, should the Snippy-stack timing be treated as 'always at cap (4) when Q is cast' (best-case simulator assumption) or built up organically from actual auto-attack cadence within the 15s window, which could leave early Q casts with fewer than 4 stacks?",
+   "options": [
+    "Assume Snippy is always fully stacked at 4 for every Q cast (idealized)",
+    "Simulate stack accumulation from the actual attack timeline, so early Q casts (before 4 attacks land) fire fewer mini-snips"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Gwen's''' {{tip|basic attacks}} generate a {{tip|stack}} of ''Snippy'' {{tip|on-hit}} for 6 seconds, stacking up to 4 times and refreshing on subsequent attacks."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by auto-attacking the dummy immediately to start generating Snippy stacks (each auto also procs A Thousand Cuts bonus magic damage).",
+   "Cast Skip 'n Slash (E) early to dash in (irrelevant for a stationary dummy but free), gaining the empowered on-hit magic damage, bonus attack speed, and an attack-timer reset so the next auto lands immediately.",
+   "Let the first auto-attack after E land to claim E's cooldown refund, then continue auto-attacking under the empowered/attack-speed buff.",
+   "Fire Needlework (R) as soon as available, immediately recasting twice (1-3-2s gaps) to unload all 9 needles, each applying A Thousand Cuts; keep auto-attacking between the short cast times.",
+   "Cast Snip Snip! (Q) once several Snippy stacks (ideally near the 4 cap) have accumulated, to maximize the number of mini-snips (each converting part to true damage and applying A Thousand Cuts) alongside the final snip.",
+   "Recast E again as soon as it comes off cooldown (shortened by the earlier refund) to refresh the attack-speed/on-hit window and reset the attack timer for another burst of empowered autos.",
+   "Recast Q again on cooldown (as low as 3.5s at rank 5) whenever new Snippy stacks have built up, continuing to weave auto-attacks between casts.",
+   "Recast R again once off cooldown near the end of the 15s window if mana and time allow.",
+   "Do not cast Hallowed Mist (W): it deals no damage and only provides resists/untargetability, which is irrelevant to maximizing damage output against a stationary dummy."
+  ],
+  "questions": [
+   "Should Q be cast immediately at low/zero Snippy stacks for a fast minimum-damage burst, or delayed to pool stacks near the 4 cap for maximum mini-snip count, given Q's cooldown is often shorter than the 6s Snippy refresh window?",
+   "Is R best front-loaded as an opening 9-needle nuke, or held/staggered to land alongside E's on-hit buff and freshly stacked Snippy Q casts for maximum combined A Thousand Cuts procs?",
+   "How many auto-attacks realistically land between E's cast, its cooldown-refund proc, and its 4s empowered window given the target's attack speed and E's resets, to correctly time E recasts within 15s?",
+   "Does true damage from Q's 50% conversion get computed before or after the target's magic resistance reduces the other 50%, and does that change which item build (raw AP vs penetration) the simulator should favor?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,967 @@
+{
+ "champion": "sylas",
+ "abilities": {
+  "P": {
+   "name": "Petricite Burst",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "primary target damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.3
+      },
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{as|130% AD}} {{as|(+ 30% AP)}} {{as|magic damage}} to the primary target",
+     "bin": [
+      "SylasPassive#PassiveDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "secondary target AoE damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.4
+      },
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{as|40% AD}} {{as|(+ 20% AP)}} {{as|magic damage}} to nearby enemies",
+     "bin": [
+      "SylasPassive#PassiveAoEDamage"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "bonus attack speed while stacked",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{as|{{sti|125% '''bonus''' attack speed}}}}",
+     "bin": [
+      "SylasPassive.PassiveAttackSpeed"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "generates a {{tip|stack}} of ''Unshackled'' for 4 seconds",
+     "bin": [
+      "SylasPassive.PassiveDuration"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "maximum stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [
+      "SylasPassive.PassiveCharges"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "damage multiplier vs monsters",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": 1.15,
+     "terms": [],
+     "quote": "deals 115% damage to {{tip|monsters}}",
+     "bin": [
+      "SylasPassive.MonsterDamageMulti"
+     ]
+    },
+    {
+     "id": "p_7",
+     "meaning": "critical strike damage on primary target",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "critically strike for {{as|{{critical damage|175|100}}|critical damage}} damage only against the primary target",
+     "bin": [],
+     "binNote": "No bin data value for crit damage percent; wiki notes this is a bug (should be 200% but is 175%). Not present in this sheet's SylasPassive rows."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sylas casting an ability generates a stack, refreshing on subsequent casts.",
+     "quote": "Whenever '''Sylas''' casts an {{tip|ability}}, he generates a {{tip|stack}} of ''Unshackled'' for 4 seconds, refreshing on subsequent casts",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Next basic attack consumes a stack and is uncancellable, applying the passive damage.",
+     "quote": "is empowered to have an {{tip|uncancellable windup}} and consume a stack to whirl his chains around him",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stacks are only granted at the end of the ability's cast time, not on cast start.",
+     "quote": "''Unshackled'' stacks are granted at the end of the abilities' cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If duration is under 0.5s remaining and an attack begins, duration refreshes to 1s to avoid expiring mid-windup.",
+     "quote": "If ''Unshackled'' has less than {{fd|0.5}} seconds remaining and '''Sylas''' begins an attack, its duration will refresh to 1 second to prevent it from expiring during the windup.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spellblade-style damage does not convert to magic and only hits the primary target.",
+     "quote": "{{tip|Spellblade}} damage does not get converted to magic damage, and will deal its damage only to the primary target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic damage applies to primary target, area damage to secondary targets.",
+     "quote": "Applies {{tip|basic damage}} to the primary target and {{tip|area damage}} to secondary targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only the primary target's damage can critically strike.",
+     "quote": "''Petricite Burst's'' damage cannot critically strike against secondary targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "On-hit effects only apply to the primary target.",
+     "quote": "''Petricite Burst'' only applies {{tip|on-hit}} effects to the primary target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The attack benefits from life steal.",
+     "quote": "''Petricite Burst'' attacks benefit from {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Secondary-target minions that would drop below 25 health are executed.",
+     "quote": "executes {{tip|minions}} that are secondary targets and would be left below {{sti|{{as|25 health}}}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SylasPassive.AoE",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SylasPassive.CheatingThreshold",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Chain Lash",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     55,
+     55,
+     55,
+     55
+    ],
+    "quote": "55",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.4,
+    "quote": "{{fd|0.4}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SylasQ#Damage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.15,
+      0.2,
+      0.25,
+      0.3,
+      0.35
+     ],
+     "terms": [],
+     "quote": "{{ap|15 to 35}}%",
+     "bin": [
+      "SylasQ#SlowAmountCalc"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      115,
+      170,
+      225,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|60 to 280}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "SylasQ#ExplosionDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Minion Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      24,
+      46,
+      68,
+      90,
+      112
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.32
+      }
+     ],
+     "quote": "{{ap|60*0.4 to 280*0.4}} {{as|(+ {{ap|80*0.4}}% AP)}}",
+     "bin": [
+      "SylasQ.MinionMod",
+      "SylasQ#ExplosionDamage"
+     ],
+     "binNote": "Minion damage is not its own bin calculation; it is ExplosionDamage scaled by MinionMod=0.4, and only applies to minions (not dummy target champion)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The chains converge and deal damage immediately on hit, then after a 0.6-second delay the intersection explodes for separate damage.",
+     "quote": "After a {{fd|0.6}}-second delay, the chains' intersection explodes to deal {{as|magic damage}} to enemies within",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The slow lasts 1.5 seconds.",
+     "quote": "{{fd|1.5}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The explosion detonation radius center is placed at the intersection of the initial cast chains, so a max-range cast's explosion can reach further than the chains themselves.",
+     "quote": "The detonation's effect radius center is placed at the intersection between the chains from the initial cast, meaning a max range cast can create a detonation that reaches further than the chains do.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion's damage against minions is reduced to 40%.",
+     "quote": "reduced to 40% against {{tip|minions}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SylasQ.Q2AoE",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SylasQ.DetonationDelay",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SylasQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SylasQ.MonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Kingslayer",
+   "cooldown": {
+    "values": [
+     12,
+     10.5,
+     9,
+     7.5,
+     6
+    ],
+    "quote": "{{ap|12 to 6}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      110,
+      145,
+      180,
+      215
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|75 to 215}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "SylasW#MinDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Minimum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      40,
+      60,
+      80,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|20 to 100}} {{as|(+ 30% AP)}} {{as|(+ 5% of his '''bonus''' health)}}",
+     "bin": [
+      "SylasW#MinHealing"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Maximum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      80,
+      120,
+      160,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{ap|20*2 to 100*2}} {{as|(+ {{ap|30*2}}% AP)}} {{as|(+ {{ap|5*2}}% of his '''bonus''' health)}}",
+     "bin": [
+      "SylasW#MaxHealing"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "heal scales with missing health, from 0% to 100% missing health at 11% per 0.6% missing health step (min at full HP, max at 60% missing HP)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.6,
+     "terms": [],
+     "quote": "{{pp|type=his '''missing''' health|key=%|0 to 100 for 11|key1=%|0 to 60|formula=1% per 0.6% of '''Sylas'' missing health}}",
+     "bin": [
+      "SylasW.MaxExecuteThreshold"
+     ],
+     "binNote": "MaxExecuteThreshold=0.4 in the bin does not clearly match the wiki's stated 60% missing health breakpoint for max heal; kept wiki's number, flagging the discrepancy."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sylas dashes to the front of the target enemy's location then strikes them.",
+     "quote": "'''Sylas''' {{tip|dashes}} to the front of the target enemy's location then strikes them to deal {{as|magic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is dealt if the dash completes uninterrupted, regardless of the target's final position.",
+     "quote": "The damage will be dealt if the dash completed uninterrupted, and regardless of how far the target's location is at the end of the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sylas heals only if the strike damages a champion target, based on his own missing health.",
+     "quote": "If this damages a {{tip|champion}}, '''Sylas''' is also {{tip|heal|healed}}, increased by {{as|{{pp|type=his '''missing''' health",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sylas heals even if the target champion dies before the dash is completed, unless the target becomes untargetable, which negates the whole effect.",
+     "quote": "'''Sylas''' will heal even if the target champion dies before the dash is completed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target becomes untargetable, Kingslayer has no effect.",
+     "quote": "The only exception is if the target becomes {{tip|untargetable}}, in which case ''Kingslayer'' will have no effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Kingslayer generates an extra Hail of Blades stack despite not resetting the basic attack timer.",
+     "quote": "''Kingslayer's'' cast generates an additional stack of {{ri|Hail of Blades}} despite the ability not {{tip|basic attack reset|resetting}} his basic attack timer.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SylasW.MaxHealingPercentAmp",
+     "reason": null
+    },
+    {
+     "ref": "SylasW.HealMinAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "SylasW.HealMinHPRatio",
+     "reason": null
+    },
+    {
+     "ref": "SylasW.DamageAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "SylasW.Damage",
+     "reason": null
+    },
+    {
+     "ref": "SylasW.Healing",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Abscond / Abduct",
+   "cooldown": {
+    "values": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "quote": "{{ap|13 to 9}}"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      130,
+      180,
+      230,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|80 to 280}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "SylasE#Damage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "stun duration on the first enemy hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "Bin has no dedicated stun-duration field for the chain-hit stun; SylasE.KnockUpDuration is a separate value for the landing knock-up (e_3)."
+    },
+    {
+     "id": "e_3",
+     "meaning": "knock up duration upon dash arrival",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}} seconds",
+     "bin": [
+      "SylasE.KnockUpDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "window to cast Abduct after casting Abscond",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3.5,
+     "terms": [],
+     "quote": "{{fd|3.5}} seconds",
+     "bin": [],
+     "binNote": "No bin field for this window; not present as a DataValue in the sheet."
+    },
+    {
+     "id": "e_5",
+     "meaning": "Abduct cast time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{fd|0.25}}",
+     "bin": [],
+     "binNote": "SylasE has no castTime field listed in the sheet (only SylasE.PullDamage, KnockUpDuration, APRatio are given); cast time not exposed as a data value here."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Abduct's chain deals magic damage and stuns the first enemy hit, then Sylas dashes to them and knocks them up on arrival.",
+     "quote": "deal {{as|magic damage}} to the first enemy hit and {{tip|standard sight|reveal}} and {{tip|stun|stun}} them for {{fd|0.5}} seconds. Upon hitting the target, '''Sylas''' {{tip|dash|dashes}} to their location and {{tip|airborne|knocks them up}} for {{fd|0.5}} seconds upon arrival.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Sylas cannot cast Chain Lash while the Abduct chains are in flight.",
+     "quote": "'''Sylas''' is {{tip|lockout|unable}} to cast {{ai|Chain Lash|Sylas}} while the chains are in flight.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Abduct counts as an ability activation for on-cast effects like Spellblade.",
+     "quote": "''Abduct'' counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sylas will not dash to the target if the chains are blocked by a spell shield.",
+     "quote": "'''Sylas''' will not dash to his target if the chains are blocked by {{tip|spell shield}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Kingslayer can be cast during the Abscond dash.",
+     "quote": "''{{ai|Kingslayer|Sylas}} can be cast during the dash.''",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SylasE2.BaseDamage",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Hijack",
+   "cooldown": {
+    "values": [
+     80,
+     55,
+     30
+    ],
+    "quote": "{{tt|{{ap|80 to 30}}|Starts on cast and restarts on recast or when hold duration ends}}"
+   },
+   "cost": {
+    "values": [
+     75,
+     75,
+     75
+    ],
+    "quote": "75",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_reveal_duration",
+     "meaning": "true sight duration on the target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.825,
+     "terms": [],
+     "quote": "{{tt|{{fd|0.825}} seconds|Estimated, from start of cast time}}",
+     "bin": [],
+     "binNote": "Not present as a data value in the sheet; wiki notes it is an estimate derived from cast time, not a stated bin row."
+    },
+    {
+     "id": "r_hold_duration",
+     "meaning": "maximum time Sylas can hold the hijacked ultimate before it is lost",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 90,
+     "terms": [],
+     "quote": "can hold the ''hijacked'' ultimate for up to 90 seconds",
+     "bin": [
+      "SylasR.UltHoldDuration"
+     ]
+    },
+    {
+     "id": "r_ontarget_cooldown_pct",
+     "meaning": "on-target cooldown as a percent of the target's base ultimate cooldown",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 200,
+     "terms": [],
+     "quote": "200% of target's base ultimate cooldown|A minimum of 40 second cooldown. Starts on steal, rather than on casting the stolen ability.",
+     "bin": [
+      "SylasR.EnemyCooldownPercent",
+      "SylasR.EnemyCooldownTooltip"
+     ],
+     "binNote": "EnemyCooldownPercent is 2 (i.e. 200%) matching EnemyCooldownTooltip's 200; both agree with the wiki's 200%."
+    },
+    {
+     "id": "r_ontarget_cooldown_min",
+     "meaning": "minimum on-target cooldown before Sylas can target the same champion again",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [],
+     "quote": "A minimum of 40 second cooldown",
+     "bin": [
+      "SylasR.MinimumEnemyCooldown"
+     ]
+    },
+    {
+     "id": "r_ad_to_ap_total",
+     "meaning": "conversion rate for AD ratios into AP ratios on hijacked abilities, per 1% total AD",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.6,
+     "terms": [],
+     "quote": "scaling with {{as|{{fd|0.6}}% AP}} per {{as|1% '''total''' AD}}",
+     "bin": [],
+     "binNote": "No matching data value found in the sheet; likely tooltip-only conversion logic not exposed as a plain DataValue."
+    },
+    {
+     "id": "r_ad_to_ap_bonus",
+     "meaning": "conversion rate for AD ratios into AP ratios on hijacked abilities, per 1% bonus AD",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "{{as|{{fd|0.4}}% AP}} per {{as|1% '''bonus''' AD}}",
+     "bin": [],
+     "binNote": "No matching data value found in the sheet; likely tooltip-only conversion logic not exposed as a plain DataValue."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Hijack steals a copy of the target's ultimate ability and can later recast it at no cost.",
+     "quote": "gaining a copy of their {{tip|champion ability|ultimate ability}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast of the hijacked ultimate costs no resource.",
+     "quote": "'''Sylas''' casts his ''hijacked'' ability at no cost.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hijacked abilities lacking AP scaling have their AD ratios converted into AP ratios, scaled by Sylas's own AP.",
+     "quote": "''Hijacked'' abilities that do not scale with {{as|{{sti|ability power}}}} have their {{as|{{sti|attack damage}}}} ratios converted to {{as|ability power}} ratios.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The stolen ability scales based on Hijack's own rank and Sylas's stats, not the target's ability rank.",
+     "quote": "scaling based on ''Hijack's'' rank and his own [[Champion statistic|statistics]]",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast and restarts either upon recast or when the hold duration expires.",
+     "quote": "Starts on cast and restarts on recast or when hold duration ends",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sylas cannot select the same enemy champion again until a per-target cooldown expires; it is 200% of the target's base ultimate cooldown (minimum 40s) and starts on steal, not on casting the stolen ability.",
+     "quote": "200% of target's base ultimate cooldown|A minimum of 40 second cooldown. Starts on steal, rather than on casting the stolen ability.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Hijack applies a spell shield-blockable, targeted projectile that can be intercepted, granting Sylas a copy of the interceptor's ultimate instead.",
+     "quote": "If ''Hijack'' is intercepted by {{cai|Unbreakable|Braum}}, '''Sylas''' will gain a copy of {{ai|R|Braum}} instead",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SylasR.EnemyCooldownPercent",
+     "reason": null
+    },
+    {
+     "ref": "SylasR.EnemyCooldownTooltip",
+     "reason": null
+    },
+    {
+     "ref": "SylasR.MinimumEnemyCooldown",
+     "reason": null
+    },
+    {
+     "ref": "SylasR.UltHoldDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Unshackled stacks up to 3 (4s duration each, refreshing on cast) granting 125% bonus attack speed while stacked; casting any ability generates a stack"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Next basic attack consumes a stack to become an uncancellable, empowered whirl dealing magic damage to the primary target and reduced magic damage to nearby enemies"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Petricite Burst's primary-target damage can critically strike (wiki-noted bug: 175% instead of intended 200%); no crit on secondary targets"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's initial converging-chain hit and W's dash-strike each deal magic damage on cast/short delay, on cooldown, for mana"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Chain Lash has two separately timed damage instances: the initial chain hit, then a 0.6s-delayed explosion at the intersection point"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Abscond (no damage, sets up) followed within a 3.5s window by Abduct (the actual chain-hit damage + dash), functioning as a two-part ability"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Kingslayer's self-heal scales with Sylas's own missing health, from a minimum to a doubled maximum heal; relevant to the survival fight's damage-taken accounting"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on all four active abilities can meaningfully cap the number of casts achievable within the 15s window"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hijack's per-target cooldown (200% of the target's base ultimate cooldown, minimum 40s, starting on steal) effectively prevents casting R twice on the same dummy within a 15s fight"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hijacked abilities that lack an AP ratio have their AD ratios converted into AP ratios scaling off Sylas's own total/bonus AD"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "R (Hijack) steals a copy of the targeted enemy champion's ultimate ability, and its damage/behavior entirely depends on which champion's kit is copied. The primitive list cannot express an arbitrary borrowed ability's mechanics; simulating R's offensive contribution against a stationary dummy (which likely has no ultimate to steal) requires a bespoke assumption about what, if anything, R contributes to the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "Does Hijack contribute any direct damage in the dummy fight, given the target is a stationary dummy rather than a champion with a stealable, damage-dealing ultimate?",
+   "options": [
+    "Exclude R from the damage fight entirely (only its own cast contributes an Unshackled stack; no stolen-ultimate damage is modeled)",
+    "Assume some generic/average stolen ultimate and model its damage using the AD-to-AP conversion rules",
+    "Assume R is never cast in the damage fight since no valid steal target/ability exists"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "What is the correct missing-health breakpoint for Kingslayer's heal to reach its maximum (2x) value: the bin's SylasW.MaxExecuteThreshold=0.4 (40% missing health) or the wiki's stated 0 to 60% missing health scaling?",
+   "options": [
+    "Use bin value: heal reaches max at 40% missing health",
+    "Use wiki value: heal reaches max at 60% missing health"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|type=his '''missing''' health|key=%|0 to 100 for 11|key1=%|0 to 60|formula=1% per 0.6% of '''Sylas'' missing health}}"
+   ]
+  },
+  {
+   "question": "Does casting E (Abscond then Abduct) generate one Unshackled stack for the whole combo, or two separate stack-generating events (one per ability activation, since the bin lists SylasE and SylasE2 as distinct spells)?",
+   "options": [
+    "Abscond and Abduct each independently generate/refresh a stack (two events from one E use)",
+    "The Abscond→Abduct sequence is treated as a single ability activation granting one stack"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "Does Kingslayer's 0.5s 'queue time' function like a cast time that delays the dash/strike and locks Sylas out of other actions, or is it a targeting-only queue with the ability otherwise resolving near-instantly (consistent with its stated 'cast time = none')?",
+   "options": [
+    "Treat the 0.5s as an effective cast/action-lock delaying the damage instance",
+    "Treat 'cast time = none' as authoritative and ignore the queue time for pacing purposes"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "|cast time = none",
+    "|queue time   = {{fd|0.5}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Enter the fight at max ranks with an Unshackled stack window already primed (auto-attack once beforehand if allowed, to have the empowered Petricite Burst attack ready).",
+   "Open with Abscond into Abduct (E) to close distance, generate/refresh an Unshackled stack, and land its magic-damage hit.",
+   "Immediately follow with Kingslayer (W) to dash-strike the dummy for magic damage and refresh the Unshackled stack window.",
+   "Weave in the empowered basic attack (consumes a stack for bonus magic damage via Petricite Burst) whenever a stack is available.",
+   "Cast Chain Lash (Q) at the dummy for its initial magic damage, then let the 0.6s-delayed explosion land as a separate damage instance while continuing basic attacks.",
+   "Cast Hijack (R) once, primarily to bank an extra Unshackled stack from the cast; recast its stolen ability only if the dossier's ruling on R's damage contribution allows it.",
+   "Repeat E → W → Q on cooldown for the remainder of the 15s window, filling every gap with empowered/basic attacks, respecting each ability's mana cost against Sylas's mana pool."
+  ],
+  "questions": [
+   "Should R be included in the optimal rotation at all, or omitted given the dummy fight offers no meaningful stealable ultimate?",
+   "Does the simulator assume abilities are already at max rank for the whole 15s fight, or does leveling occur during it (affecting Q/W/E/R damage values used in the rotation)?",
+   "Is Sylas assumed to open already in range of the dummy, or does he need to spend part of the 15s closing distance with E before any damage lands?",
+   "Should the rotation prioritize maximizing raw damage output (favoring Q/W/E on cooldown) or maximizing empowered-attack uptime (favoring auto-attack weaving), if the two conflict under mana constraints?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,228 @@
+{
+ "name": "Unraveled Earth",
+ "cooldown": {
+  "values": [
+   14,
+   14,
+   14,
+   14,
+   14
+  ],
+  "quote": "14"
+ },
+ "cost": {
+  "values": [
+   90,
+   90,
+   90,
+   90,
+   90
+  ],
+  "quote": "90",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    105,
+    150,
+    195,
+    240
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|60 to 240}} {{as|(+ 60% AP)}}",
+   "bin": [
+    "TaliyahE#ScatterDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Detonation Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    25,
+    40,
+    55,
+    70,
+    85
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|25 to 85}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "TaliyahE#DetonationDamage"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Total Maximum Detonation Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    62.5,
+    100,
+    137.5,
+    175,
+    212.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.75
+    }
+   ],
+   "quote": "{{ap|25*(1+0.75+0.5+0.25) to 85*(1+0.75+0.5+0.25)}} {{as|(+ 75% AP)}}",
+   "bin": [],
+   "binNote": "This is a derived total (sum of 4 detonations with falloff) restating e_2 and MineDamageFalloff; no bin row carries the summed total directly."
+  },
+  {
+   "id": "e_4",
+   "meaning": "duration stones remain on the ground",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "The stones then remain for 4 seconds and {{tip|slow}} enemies within the area by 20%.",
+   "bin": [
+    "TaliyahE.MineLifetime"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "slow percent within the stone field",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "slow}} enemies within the area by 20%",
+   "bin": [
+    "TaliyahE.SlowPercent"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "detonation stun duration",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "becoming {{tip|stun|stunned}} for {{fd|0.75}} seconds, increased to 2 seconds if they are a {{tip|monster}}",
+   "bin": [
+    "TaliyahE.StunDuration"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "damage reduction per additional stone detonated (up to 4)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    0,
+    25,
+    50,
+    75
+   ],
+   "terms": [],
+   "quote": "the damage is reduced by {{pp|changedisplay=true|key=%|type=stones detonated|0 to 75 for 4}}",
+   "bin": [
+    "TaliyahE.MineDamageFalloff"
+   ],
+   "binNote": "Bin stores the falloff as a fraction per stack (0.25), i.e. damage multiplier per Nth detonation is 1-0.25*(N-1); wiki states the cumulative reduction percentages 0/25/50/75 directly, which are 0.25*(N-1)*100 for N=1..4 - consistent, not a genuine disagreement, just a different representation."
+  },
+  {
+   "id": "e_8",
+   "meaning": "delay between cascading rows of stones",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.17,
+   "terms": [],
+   "quote": "The stones spawn in rows that cascade in {{fd|0.17}} second intervals.",
+   "bin": [
+    "TaliyahE.DelayBetweenRows"
+   ]
+  },
+  {
+   "id": "e_9",
+   "meaning": "damage multiplier against monsters",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 2.25,
+   "terms": [],
+   "quote": "''Unraveled Earth'' deals 225% damage against {{tip|monsters}}.",
+   "bin": [
+    "TaliyahE.MonsterModPercent"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Unraveled Earth deals damage to enemies hit while the stones erupt, i.e. on cast/scatter, separate from detonation damage.",
+   "quote": "scatters a field of 22 stones across the ground in the target direction that deals {{as|magic damage}} to enemies hit while they erupt",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A dashing or knocked-up enemy detonates a stone, dealing separate detonation damage and stunning once the displacement ends.",
+   "quote": "Enemies that {{tip|dash}} or are {{tip|airborne|knocked}} over a stone will detonate it, taking {{as|magic damage}} and becoming {{tip|stun|stunned}} for {{fd|0.75}} seconds ... The stun is applied once the displacement ends.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Monster detonation stun is increased to 2 seconds, and the mine damage falloff means up to 4 detonations per cast per enemy with reduced damage each stack.",
+   "quote": "An enemy can detonate up to 4 stones, but the damage is reduced by {{pp|changedisplay=true|key=%|type=stones detonated|0 to 75 for 4}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Unraveled Earth can only apply its effects to a given target once per cast; further stone contact still detonates the stone visually but has no effect.",
+   "quote": "''Unraveled Earth'' can affect targets only once per cast; the stones will still detonate but not apply their effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Unraveled Earth fires in 6 cascading rows, first with 2 stones and the rest with 4 each, over the cast.",
+   "quote": "''Unraveled Earth'' fires 6 rows of stones: the first row has 2 stones, and the rest have 4 each.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability will not detonate if the target is untargetable while dashing over the stones, or if they blink onto the stones.",
+   "quote": "''Unraveled Earth'' will not detonate if the target dashes over the stones while being untargetable. ... will not detonate against enemies that blink onto the stones.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TaliyahE.MaxStunDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "TaliyahE.MineRadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

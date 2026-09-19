@@ -1,0 +1,181 @@
+{
+ "name": "Winds of War",
+ "cooldown": {
+  "values": [
+   11,
+   10,
+   9,
+   8,
+   7
+  ],
+  "quote": "{{ap|11 to 7}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   65,
+   70,
+   75,
+   80
+  ],
+  "quote": "{{ap|60 to 80}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    70,
+    105,
+    140,
+    175,
+    210
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.7
+    }
+   ],
+   "quote": "{{ap|70 to 210}} {{as|(+ 70% AP)}}",
+   "bin": [
+    "GalioQ#QMissileDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "tornado duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "persists for 2 seconds",
+   "bin": [
+    "GalioQ.SuperQDuration"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "tornado tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{fd|0.5}} seconds",
+   "bin": [],
+   "binNote": "The 0.5s tick interval is not itself a bin data value; it is implied by TornadoTicks=4 over SuperQDuration=2, i.e. 2/4=0.5s per tick."
+  },
+  {
+   "id": "q_4",
+   "meaning": "tornado tick damage, percent of target's maximum health",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "const",
+   "base": 0.02,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.02,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.01
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|2% {{as|(+ 1% per 100 AP)}} of target's '''maximum''' health}} every {{fd|0.5}} seconds",
+   "bin": [
+    "GalioQ#{85f4c0e9}"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "tornado total damage over duration, percent of target's maximum health",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "const",
+   "base": 0.08,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.08,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.04
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|8% {{as|(+ 4% per 100 AP)}} of target's '''maximum''' health}} over the duration",
+   "bin": [
+    "GalioQ#PercentSuperQDamageTT"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "tornado tick damage cap against monsters",
+   "role": "other",
+   "damageType": "magic",
+   "by": "const",
+   "base": 150,
+   "terms": [],
+   "quote": "capped at{{ft|150 per tick|600 total}}against {{tip|monsters}}",
+   "bin": [
+    "GalioQ.SuperQMonsterMaxDamage"
+   ],
+   "binNote": "Wiki states the per-tick monster cap as 150, but the bin's SuperQMonsterMaxDamage row is 50. The wiki's own footnote total (600) is 4x150, not 4x50=200 as the bin's SuperQMonsterMaxDamageTotal calculation would give; this is a disagreement between wiki text and bin values, reported as-is."
+  },
+  {
+   "id": "q_7",
+   "meaning": "tornado total damage cap against monsters",
+   "role": "other",
+   "damageType": "magic",
+   "by": "const",
+   "base": 600,
+   "terms": [],
+   "quote": "{{ft|150 per tick|600 total}}against {{tip|monsters}}",
+   "bin": [
+    "GalioQ#SuperQMonsterMaxDamageTotal"
+   ],
+   "binNote": "Wiki states 600 total (150/tick x 4 ticks), but the bin calculation SuperQMonsterMaxDamageTotal = SuperQMonsterMaxDamage(50) x TornadoTicks(4) = 200. This is a disagreement between the wiki text and the bin's computed value; reported as a finding, not reconciled."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The gust deals area damage on hit, and applies the tornado as a separate persistent area damage instance.",
+   "quote": "Deals {{tip|area damage}} on the gust, and applies {{tip|persistent area damage}}, additionally tagged as {{tip|indirect damage}} for the tornado.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield blocks the initial gust damage but not the tornado's damage.",
+   "quote": "{{tip|Spell shield}} will block the gusts damage but not the tornado's.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The tornado only forms if both windblasts converge; if blocked individually the tornado will not form.",
+   "quote": "The tornado will not form if only one windblast reaches the target location.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "GalioQ.TornadoTicks",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

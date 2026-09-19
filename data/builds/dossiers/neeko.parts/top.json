@@ -1,0 +1,93 @@
+{
+ "champion": "neeko",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q's initial burst, E's spiral hit, and R's landing burst each deal a single fixed-timing magic damage instance on cast/cast-end"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Blooming Burst re-blooms up to 2 more times at a fixed 0.75s delay after the initial hit whenever it hits a champion (the dummy always counts), each bloom a separately timed damage instance"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shapesplitter passive: every basic attack adds a stack (cap 2, refreshing), and the attack that reaches 2 stacks consumes them to deal a bonus magic damage on-hit instance"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Pop Blossom has a 1.25s wind-up plus a 0.6s cast time before its damage lands, during which Neeko is airborne/committed to the cast"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Q, E, R, and W's on-hit passive are all expressible with plain-cast, recast-or-multipart, and nth-hit-or-cast. Passive P (Inherent Glamour) requires an allied champion or a non-champion unit (minion/monster/ward/plant) to disguise as; since the damage and survival fights have no allies, minions or terrain, disguising cannot occur and P contributes no damage-fight logic. W's active (clone) deals no damage of its own (only the passive on-hit rider does), so it is skipped in the dummy fight and needs no primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does R's 1.25s wind-up block Neeko from acting (auto-attacking, casting Q/E) before the 0.6s committed cast time begins, or can she act freely during the wind-up and only the final 0.6s is a hard commit?",
+   "options": [
+    "The full 1.25s wind-up + 0.6s cast time (1.85s total) blocks all other actions, matching a charge-or-channel with total duration 1.85s",
+    "Only the 0.6s wiki 'cast time' field blocks actions; the 1.25s wind-up (highlighting the area) does not prevent auto-attacks or other casts"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Neeko''' winds up spiritual essence over {{fd|1.25}} seconds and highlights an area around herself",
+    "|cast time    = {{fd|0.6}}",
+    "On-cast effects are applied on activation."
+   ]
+  },
+  {
+   "question": "Does each of Q's up-to-2 follow-up blooms count as a separate spell cast for on-hit/on-cast item and rune interactions (e.g. procs that trigger 'on ability cast' or apply per-instance), or are they treated as part of the single original cast?",
+   "options": [
+    "Each bloom is a fully separate damage/spell instance that can re-trigger on-hit or spell-based item effects",
+    "Only the initial burst counts as the 'cast'; the 2 blooms are follow-up damage from the same cast and do not re-trigger cast-based procs"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the seed blooms after {{fd|0.75}} seconds to burst again, dealing {{as|magic damage}} to enemies in the same area. This may occur up to 2 times per cast."
+   ]
+  },
+  {
+   "question": "NeekoW.CloneDamageTimer in the bin is 0.75 but the wiki text states the clone disappears 0.5 seconds after taking damage; since the clone deals no damage in the dummy fight this doesn't change output, but is either value authoritative for any downstream timing use?",
+   "options": [
+    "Wiki's stated 0.5s is correct and the bin value is stale/unused",
+    "Bin's 0.75s is the live value and the wiki text is outdated"
+   ],
+   "impact": "low",
+   "quotes": [
+    "it will disappear prematurely after {{fd|0.5}} seconds",
+    "NeekoW.CloneDamageTimer = 0.75"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Neeko starts undisguised (no allied champions or other units exist to disguise as in this fight format), so Inherent Glamour contributes nothing.",
+   "Open by casting Q (Blooming Burst) on the dummy immediately; it deals its initial magic damage and then blooms up to two more times over the next 1.5 seconds for extra magic damage.",
+   "Cast E (Tangle-Barbs) as soon as its 0.25s cast time allows, adding another magic damage hit and refreshing on cooldown thereafter.",
+   "Weave in basic attacks continuously between and during ability casts; every second attack consumes Shapesplitter stacks for a bonus magic damage on-hit strike.",
+   "Cast R (Pop Blossom) once for its large burst of magic damage, accepting the wind-up/cast time before it lands; given its 90-120s cooldown it will not be available again within the 15s window.",
+   "Recast Q and E on cooldown for the remainder of the fight, continuing to auto-attack in between to keep triggering the W passive's empowered attacks."
+  ],
+  "questions": [
+   "Should R be cast immediately at the start of the fight to front-load its burst, or held until after Q/E have been used, given the simulator ranks by kill time and total damage over ~15s?",
+   "Does casting W's active clone ever benefit the damage fight (e.g. via any AP/haste self-buff that could indirectly matter to attack speed/casting), or should it be omitted entirely as proposed?",
+   "How much of the 15s window is actually available for casting given R's wind-up/cast-time commitment — does this materially reduce the number of Q/E casts and auto-attacks achievable?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

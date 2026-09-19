@@ -1,0 +1,178 @@
+{
+ "champion": "viego",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Blade of the Ruined King passive: bonus physical on-hit damage based on target's current health, capped vs monsters, with min threshold, can crit"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q"
+   ],
+   "note": "damaging abilities apply a mark (4s duration) to enemies hit; next basic attack consumes the mark for the second strike"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "next basic attack against a marked target is empowered to strike a second time with bonus AD/AP physical damage that heals Viego"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "active thrust: flat + AD ratio physical damage in a line, crit-chance-scaled bonus, on cooldown"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q active/passive/second-strike and R damage all scale up with crit chance/crit damage even without guaranteed crits (partial-crit formula)"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "W is charged up to 3s (blocking Q/R casts), then recast fires the actual damage/stun; cancels to full CD if not recast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's damage/stun only happens on the recast half of the ability, timed separately from the initial charge"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "the W recast blast resets Viego's basic attack timer"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals AD-ratio physical damage (with crit scaling) to all enemies hit on arrival, on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "primary (most wounded) target takes additional bonus physical damage scaled to their missing health % and bonus AD"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Harrowed Path grants bonus attack speed (and movement speed/camo, not relevant to damage fight) for its mist duration"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [],
+   "note": "not applicable to Viego; no ability costs Viego health"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Sovereign's Domination heal/blink/untargetability on Mist Wraith consumption; W's self-slow during charge; none of this affects the damage fight directly except possibly the heal in a survival fight (Mist Wraiths won't exist vs a stationary dummy though)"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Sovereign's Domination (Possession) replaces Viego's entire kit with a slain enemy champion's abilities, items and base stats for 10 seconds. The closed primitive list has no entry for 'temporarily become an arbitrary other champion with their own kit and item effects' (form-or-stance only covers a champion's own predefined alternate forms with known abilities, not an open-ended possessed kit). This cannot be simulated generically against a dummy without picking a specific champion to possess, which is out of scope for a single champion's kit fight; it also cannot occur in the specified fights at all since it requires a champion takedown, which never happens against a stationary dummy or in a single enemy rotation. We treat Possession as unreachable/inapplicable in both fight types and exclude it from the rotation and primitives beyond noting its dependency structure."
+ },
+ "unsettled": [
+  {
+   "question": "Does the passive on-hit damage of Blade of the Ruined King (percent current health) count as a separate damage instance from the second-strike mark consumption when both trigger on the same basic attack (i.e., does a marked attack deal passive on-hit + second-strike simultaneously, and do both independently roll crit)?",
+   "options": [
+    "Both effects apply simultaneously on the same attack as separate instances, each rolling crit independently",
+    "The second strike replaces or otherwise interacts with the passive on-hit so they are not simply additive"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The second strike rolls {{tip|critical strikes}} independently from the primary attack.",
+    "his damaging abilities apply a mark to enemies hit for {{#var:q_mark_t}} seconds. '''Viego's''' next basic attack against a marked target is empowered to consume the mark {{tip|on-hit}} to strike a second time"
+   ]
+  },
+  {
+   "question": "In Q's active-damage crit formula (ViegoQ#TotalDamage / ViegoR#TotalDamage), does 'critChance' mean the champion's actual crit chance stat is multiplied in (partial credit even without guaranteed crit), or does this only apply when an actual crit roll occurs (i.e., the ability either fully crits or doesn't, and the formula is just how big that crit is)?",
+   "options": [
+    "Damage scales continuously with crit chance stat every cast (expected-value smoothing, no randomness)",
+    "The ability rolls to crit like a normal attack and only applies the bonus multiplier on a successful crit roll"
+   ],
+   "impact": "high",
+   "quotes": [
+    "ViegoQ#TotalDamage = (Damage=[25/40/55/70/85] + (ActiveADRatio=0.7)xad) * 1 + ((ActiveCritMod=0.6)xcritChance)*(1xcritDamage + -1)",
+    "increased by {{critical damage|0 to 60|critScaling=true}}"
+   ]
+  },
+  {
+   "question": "Does W's charge time matter in an optimal damage rotation, i.e. should Viego always charge W to max (3s) for max stun/range, or fire it immediately at minimum charge, given that damage magnitude (Damage=[80/135/190/245/300]+100%AP) is fixed regardless of charge time and only stun/range scale with charge?",
+   "options": [
+    "W damage is fixed regardless of charge duration, so casting it with minimal charge is always damage-optimal in a dummy fight since CC does not matter here",
+    "Charging W longer meaningfully delays the attack-reset/damage window and interacts with rotation timing, making minimum charge not obviously optimal"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Viego''' {{tip|channel|charges}} up to a short time to increase the {{sti|range}} and stun of his blast.",
+    "leveling3    = {{st|Magic Damage|{{ap|80 to 300}} {{as|(+ 100% AP)}}}}"
+   ]
+  },
+  {
+   "question": "Does the E (Harrowed Path) bonus attack speed apply throughout the full 15s dummy fight if Viego stands in the mist zone continuously, or does casting other abilities/attacking break the buff (only the movement-speed/camo portion is stated to break on attack/cast, not explicitly the attack speed)?",
+   "options": [
+    "Bonus attack speed persists as long as Viego is standing in the mist regardless of attacking/casting",
+    "Attacking/casting also interrupts or prevents refreshing the attack-speed buff, not just movement speed/camo"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "While inside the mist, '''Viego''' gains {{sti|{{as|'''bonus''' attack speed}}}}. If he does not attack or cast abilities, he also gains {{sti|{{as|'''bonus''' movement speed}}}} and {{tip|camouflage}}."
+   ]
+  },
+  {
+   "question": "For R's primary-target bonus missing-health damage, does 'missing health' refresh mid-fight as the dummy's health drops from prior hits within the same 15s window, making R's damage contribution dependent on cast order (i.e. cast late for a bigger numerical hit as % of a larger missing-health pool early, vs smaller current health later)?",
+   "options": [
+    "Missing-health % is computed fresh at time of R's cast based on current dummy HP, so cast order changes the absolute damage number",
+    "The simulator should treat missing-health damage as fixed/ignorable for build-ranking purposes since it's a minor rotation-order effect"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{as|{{ap|12 to 20}}% {{as|(+ 5% per 100 '''bonus''' AD)}} of target's '''missing''' health}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight with a basic attack to begin building auto-attack damage and Blade of the Ruined King on-hit rider.",
+   "Cast Q (Blade of the Ruined King active) to apply its line damage and mark the target, then continue basic attacking to consume the mark for the second strike and passive on-hit percent-health damage.",
+   "Weave R (Heartbreaker) on cooldown against the dummy: it deals AD-ratio physical damage plus a large missing-health-based bonus to the primary (only) target, and triggers an automatic follow-up basic attack.",
+   "Use W (Spectral Maw) on cooldown: charge briefly (since damage is fixed regardless of charge time) then recast immediately to fire the magic damage blast, which also resets the basic attack timer, then resume auto-attacking.",
+   "Maintain uptime in Harrowed Path's (E) mist zone once cast, for the bonus attack speed buff, without unnecessary movement away from it.",
+   "Repeat: weave Q (active + auto-attack mark consumption) and R and W on cooldown, prioritizing whichever comes off cooldown first, while auto-attacking between casts to maximize on-hit procs.",
+   "Do not cast Harrowed Path or Sovereign's Domination for their non-damage components (movement/camo/heal), since the dummy fight has no takedowns to spawn Mist Wraiths and stealth/movement do not affect damage."
+  ],
+  "questions": [
+   "Should E (Harrowed Path) be cast at all in the damage fight, given its only useful effect there (attack speed) requires standing in a mist zone that must be actively positioned, and does the increased attack speed outweigh the lost auto-attack-timer windows from casting it?",
+   "Is there a canonical optimal charge time for W in a no-CC-matters dummy fight, or is minimum charge (near-instant recast) always correct since the value list only shows damage as flat+AP with no charge-time term?",
+   "Does the simulator model the mark-consumption second strike and passive on-hit as simultaneously applying on every basic attack landed on a freshly-marked target, or does the mark only get set up once per fight and rarely get reapplied given Q's cooldown, meaningfully limiting how many second strikes occur in 15s?",
+   "How should the auto-attack windup/interaction with Q's active cast time (which scales with attack speed) be sequenced against R's automatic post-strike attack command, to avoid clipping or wasting attack timer resets?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

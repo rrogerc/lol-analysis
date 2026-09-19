@@ -1,0 +1,220 @@
+{
+ "name": "Vault Breaker",
+ "cooldown": {
+  "values": [
+   12,
+   10.5,
+   9,
+   7.5,
+   6
+  ],
+  "quote": "{{ap|12 to 6}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   60,
+   70,
+   80,
+   90
+  ],
+  "quote": "{{ap|50 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Minimum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    40,
+    60,
+    80,
+    100,
+    120
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|40 to 120}} {{as|(+ 60% '''bonus''' AD)}}",
+   "bin": [
+    "ViQ#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Maximum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    100,
+    150,
+    200,
+    250,
+    300
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.5
+    }
+   ],
+   "quote": "{{ap|40*2.5 to 120*2.5}} {{as|(+ {{ap|60*2.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "ViQ#MaxDamageTooltip"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "maximum charge time to reach max range/speed/damage",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "over the first {{fd|1.25}} seconds of the channel",
+   "bin": [],
+   "binNote": "No bin row exists for the 1.25s damage-scaling cap; the closest bin field, ViQ.ChargeDuration = 6, is a different (larger) number covering the full charge-to-auto-cancel window (see q_7), not this damage-scaling window."
+  },
+  {
+   "id": "q_4",
+   "meaning": "knockback duration on hit champion",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{tip|airborne|knocking them back}} over {{fd|0.75}} seconds",
+   "bin": [
+    "ViQ.KnockbackDuration"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "mana refund percent on cancel or interrupt",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{as|50% of the mana cost}} is refunded",
+   "bin": [
+    "ViQ.ManaRefundPercent"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "cooldown when interrupted mid-charge",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "placed on a {{sti|cd|3-second cooldown}}",
+   "bin": [
+    "ViQ.CanceledRefundTime"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "maximum charge duration before auto-cancel",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "for up to 4 seconds to increase ''Vault Breaker's'' {{sti|range}}, speed, and damage",
+   "bin": [
+    "ViQ.ChargeDuration"
+   ],
+   "binNote": "Wiki text says charge is up to 4 seconds while ViQ.ChargeDuration = 6; discrepancy between wiki's 4s max charge and bin's ChargeDuration=6 is unresolved."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Vault Breaker is a channel that must be recast to deal damage; damage scales with charge time up to 1.25 seconds.",
+   "quote": "increased by {{pp|type=channel time|key=%|0 to 150 for 11|0 to 1.25|round1=3|formula=15% per 0.125 seconds. ''This is capped at 1.25 seconds.''}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the charge completes without recast, the ability is cancelled, half the mana is refunded, and it goes on full cooldown.",
+   "quote": "If the charge completes without reactivation, ''Vault Breaker'' is cancelled, {{sti|mana|{{as|50% of the mana cost}}}} is refunded, and it is placed on {{sti|cd|full cooldown}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If interrupted while charging, half the mana is refunded and it goes on a short 3-second cooldown instead of full cooldown.",
+   "quote": "If the charge is {{tip|interrupt|interrupted}}, {{sti|mana|{{as|50% of the mana cost}}}} is refunded and it is placed on a {{sti|cd|3-second cooldown}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts after the dash/recast effect resolves, not on initial cast.",
+   "quote": "post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Vi stops upon hitting an enemy champion and knocks them back, so only the first champion hit is struck by the dash (others in path are non-champions pulled toward her).",
+   "quote": "She stops upon hitting an enemy {{tip|champion}}, {{tip|airborne|knocking them back}} over {{fd|0.75}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Vi is slowed by 15% while channeling, but this does not affect damage output in a stationary fight.",
+   "quote": "charges while being {{tip|slow|slowed}} by 15%",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Stuck targets are briefly immune to being hit again by Vault Breaker from the same caster.",
+   "quote": "Stuck targets (including those that block ''Vault Breaker'' with a {{tip|spell shield}}) are briefly immune to being affected again by ''Vault Breaker'' from this player, for about {{fd|1.25}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Relentless Force and Cease and Desist can be cast during the dash.",
+   "quote": "''{{ai|Relentless Force|Vi}} and {{ai|Cease and Desist|Vi}} can be cast during the dash.''",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ViQ.MaxDamageMult",
+   "reason": null
+  },
+  {
+   "ref": "ViQ.MinionDamageMult",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "ViQ.MinDashRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ViQ.ExtraDashRangeAtMaxCharge",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ViQ.DashWallCheating",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ViQ.ADRatio",
+   "reason": null
+  },
+  {
+   "ref": "ViQ.SelfSlow",
+   "reason": "utility"
+  },
+  {
+   "ref": "ViQ.VFXChargeDuration",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

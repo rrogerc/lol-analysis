@@ -1,0 +1,167 @@
+{
+ "name": "Umbra Blades",
+ "cooldown": {
+  "values": [
+   12
+  ],
+  "quote": "12"
+ },
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_damage_nocrit",
+   "meaning": "physical damage to primary target (non-crit)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.2
+    }
+   ],
+   "quote": "dealing {{as|120% AD}} {{as|physical damage}} to the target and nearby enemies",
+   "bin": [
+    "NocturneP#TotalDamageNoCrit"
+   ]
+  },
+  {
+   "id": "p_damage_crit",
+   "meaning": "physical damage to primary target when critically striking (before total critical damage multiplier)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1
+    }
+   ],
+   "quote": "{{as|110% AD}}{{times}}{{sti|{{as|'''total''' critical damage}}}}",
+   "bin": [
+    "NocturneP#TotalDamageCrit"
+   ]
+  },
+  {
+   "id": "p_heal",
+   "meaning": "self heal per enemy hit",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{pp|13 + (30-13)/17*(x-1) for 20|color=heal}} {{as|(+ 30% AP)}} per enemy hit",
+   "bin": [
+    "NocturneP#TotalHealing",
+    "NocturneP.HealLevel1Value",
+    "NocturneP.HealLevel18Value"
+   ],
+   "binNote": "Wiki's level-scaling formula (13 + (30-13)/17*(x-1)) yields 30 at level 18, but the bin's NocturneP.HealLevel18Value is 32; the flat term of NocturneP#TotalHealing is an unresolved reference so its endpoint cannot be confirmed from the sheet alone."
+  },
+  {
+   "id": "p_aa_cdr_base",
+   "meaning": "cooldown reduction on Umbra Blades granted per basic attack against non-champion/monster targets",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "Basic attacks reduce ''Umbra Blades' '' {{sti|cooldown}} by 1 second",
+   "bin": [
+    "NocturneP.AACDR"
+   ]
+  },
+  {
+   "id": "p_aa_cdr_champ_monster",
+   "meaning": "cooldown reduction on Umbra Blades granted per basic attack against enemy champions and monsters",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "increased to 3 against enemy {{tip|champions}} and {{tip|monsters}}",
+   "bin": [
+    "NocturneP.AAChampMonsterCDR"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Umbra Blades periodically empowers Nocturne's next basic attack to slash in a circle, dealing increased physical damage to the target and nearby enemies and healing him per enemy hit.",
+   "quote": "Periodically, '''Nocturne''' empowers his next {{tip|basic attack}} to slash in a circle, dealing {{as|120% AD}} {{as|physical damage}} to the target and nearby enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The primary target of the empowered attack is dealt basic damage while secondary targets in the slash are dealt proc damage.",
+   "quote": "The primary target of the enhanced attack is dealt {{tip|basic damage}} while the secondary targets of the slash are dealt {{tip|proc damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Umbra Blades can critically strike against the primary target, changing its damage to 110% AD multiplied by Nocturne's total critical damage.",
+   "quote": "modifying the {{as|physical damage}} dealt to{{ft|{{as|{{critical damage|{{ccd|Nocturne|crit_base}}|100|mod=1.1}} AD.|AD}}|{{as|110% AD}}{{times}}{{sti|{{as|'''total''' critical damage}}}}.}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Against minions, Umbra Blades' damage to secondary targets and healing are reduced by 50%, and it applies on-hit effects to all targets at 100% effectiveness.",
+   "quote": "Against {{tip|minions}}, ''Umbra Blades' '' damage to secondary targets and healing are reduced by 50% and it applies {{tip|on-hit}} effects to all targets{{bug|2}} at 100% effectiveness.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Basic attacks reduce Umbra Blades' cooldown by 1 second, increased to 3 seconds against enemy champions and monsters.",
+   "quote": "Basic attacks reduce ''Umbra Blades' '' {{sti|cooldown}} by 1 second, increased to 3 against enemy {{tip|champions}} and {{tip|monsters}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Parry effects only block the damage dealt to the primary target of Umbra Blades.",
+   "quote": "Parry effects will only block the damage dealt to the primary target.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The empowered attack will not trigger against structures nor wards.",
+   "quote": "The empowered attack will not trigger against {{tip|structures}} nor {{tip|wards}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NocturneP.Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NocturneP.DamageMinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NocturneP.HealMinionMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,182 @@
+{
+ "champion": "rell",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Break the Mold adds bonus magic on-hit damage equal to 5% of Rell's total armor + 5% of total MR on every basic attack"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Break the Mold stacks reduce the dummy's armor/MR by 3% each (snapshotted, cap 15%, min flat floor by level), increasing damage taken from all sources"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Rell gains bonus armor/MR equal to the resistances stolen from the target; only relevant to the survival fight (defensive), not to damage dealt"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Shattering Strike, Crash Down landing, and Magnet Storm's pull all deal fixed on-cast/on-arrival magic damage"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q has 0.4s cast + 0.35s post-cast lockout, W(Crash Down) has 0.625s dash/cast time, R has 0.25s cast time; each briefly blocks other actions"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "W"
+   ],
+   "note": "W toggles between Mounted (passive MS, can cast Crash Down) and Dismounted (passive armor/MR/AS/range, can cast Mount Up) forms with separate tooltips/effects"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Crash Down's landing hit and its subsequent 320-unit slide are separately timed damage parts against enemies in the path"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "Mount Up arms Rell's next basic attack (bonus magic damage, charge, stun) within 3.5s; Full Tilt arms Rell's next basic attack or Shattering Strike within 5s with a max-health-based explosion"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Casting Mount Up resets Rell's basic attack timer"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Full Tilt's bonus explosion damage scales off the target's current maximum health (capped only vs monsters/structures, not champions)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Magnet Storm deals magic damage every 0.25s for 2s (8 ticks) after the initial cast"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (50/40/40/100) on non-trivial cooldowns can matter for how many casts fit in the 15s window at low mana pools"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics (on-hit passive with target debuff, a two-form W with an armed next-attack and an attack reset, an armed next-attack-or-ability explosion on E scaling off target max HP, and a DoT ultimate) are each expressible with existing primitives. The main modeling risk is not a missing primitive but unresolved specifics (see unsettled) such as whether Crash Down's slide is a second hit on the same stationary target and whether Full Tilt is even castable with no allies present."
+ },
+ "unsettled": [
+  {
+   "question": "Do Ferromancy: Crash Down and Ferromancy: Mount Up share a single ability cooldown, or does each form have its own independent 10s cooldown that only starts counting while that form is active?",
+   "options": [
+    "Single shared 10s cooldown for the W ability slot regardless of form, so dismount->mount->dismount is gated by one timer",
+    "Each form (Crash Down, Mount Up) has its own independent 10s cooldown, so casting one does not consume the other's cooldown and Rell can weave dismount/mount more often"
+   ],
+   "impact": "high",
+   "quotes": [
+    "|cooldown     = 10",
+    "|cooldown     = 10"
+   ]
+  },
+  {
+   "question": "Against a single stationary dummy, does Crash Down's landing-impact damage and its subsequent forward slide constitute two separate damage instances on the same target, or does the target (already airborne/stunned from the landing hit) only take the initial hit?",
+   "options": [
+    "Two separate damage instances: the landing AoE hit, then a second hit as the slide passes over/through the same target's location",
+    "One damage instance only: the target is knocked up/displaced by the landing hit and is not positioned to be hit again by the slide"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Upon arrival, she deals {{as|magic damage}} to nearby enemies, {{tip|stun|stuns}} them for {{fd|0.8}} seconds, and {{tip|airborne|knocks them up}} for {{fd|0.4}} seconds. She will continue {{tip|dash|sliding}} forward another 320 units over {{tt|{{fd|0.5}} seconds|Estimated}}, though not through terrain, affecting further enemies along her path."
+   ]
+  },
+  {
+   "question": "Full Tilt (E) targets an allied champion by default (or the closest ally if self-cast/untargeted). In a damage fight with no allies present, can Rell cast E at all, and if so, what does it target/do?",
+   "options": [
+    "E cannot be cast in a fight with zero allies (no valid target exists), so it is excluded from the rotation entirely",
+    "E can be self-cast (targeting Rell herself) when no other champion is in range, still arming the next basic-attack/Shattering-Strike explosion",
+    "The simulator should treat E as always castable for the purpose of arming the explosion, ignoring its ally-targeting requirement"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If cast without a valid target, or [[self-targeted|self-cast]], ''Full Tilt'' will automatically target the closest allied champion in range."
+   ]
+  },
+  {
+   "question": "Is Mount Up's empowered basic attack (0.2s cast time, 100 bonus range, 40% bonus AS, dash-to-target) faster or slower overall than Rell's normal auto-attack cadence, i.e., does using it every 10s cooldown gain or cost total auto-attack damage over the 15s window versus just autoattacking normally?",
+   "options": [
+    "The 0.2s fixed cast time plus dash travel time makes the empowered attack slower than continuing normal autoattacks at high attack speed, so it should be minimized/delayed",
+    "The 0.2s cast time is fast enough (and it triggers an attack reset) that using it on cooldown is a net DPS gain over skipping it"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "empowering her next basic attack within {{fd|3.5}} seconds to have a {{fd|0.2}}-second cast time, gain {{sti|100 '''bonus''' attack range}} and {{as|40% '''bonus''' attack speed}}"
+   ]
+  },
+  {
+   "question": "The bin lists an unresolved 'ClampSubPartsCalculationPart' calculation for both RellW_Dismount and RellW_MountUp that isn't reflected in any wiki tooltip value. What does it clamp (e.g., a minimum/maximum on the shield, damage, or move-speed values), and does it change the effective numbers used in the damage fight?",
+   "options": [
+    "It clamps a value already captured correctly by the wiki tooltip formulas (no practical effect on damage-fight numbers)",
+    "It clamps something not visible in the wiki tooltip (e.g., a hidden cap on shield or dash distance) that could change simulated outcomes"
+   ],
+   "impact": "low",
+   "quotes": [
+    "RellW_Dismount#{a71a11d7} = <ClampSubPartsCalculationPart>",
+    "! unresolved calculation part ClampSubPartsCalculationPart"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start Mounted (Rell's default state) at the start of the fight.",
+   "Cast W (Ferromancy: Crash Down) onto the dummy immediately to dismount, dealing the landing magic damage (and slide damage if it applies to a stationary target), and gain the shield.",
+   "Cast Q (Shattering Strike) on the dummy for its magic damage.",
+   "If a valid E target exists (see unsettled), cast E (Full Tilt) to arm the next basic attack or Q with the bonus max-health explosion, then land it via the next auto-attack or the next Q cast.",
+   "Cast R (Magnet Storm) on the dummy as soon as it is off cooldown (120/100/80s CD, likely only usable once in a 15s window) for its DoT.",
+   "Auto-attack the dummy continuously between ability casts so Break the Mold's on-hit bonus damage and stacking shred apply on every hit.",
+   "Recast W (Ferromancy: Mount Up) once dismounted and off cooldown to arm the next basic attack with its bonus magic damage and reset the attack timer, then immediately attack the dummy to consume it.",
+   "Recast W (Crash Down) again once its cooldown is up to redismount and repeat the landing damage plus another shield/mount-up-attack cycle for the remainder of the 15s.",
+   "Recast Q on cooldown throughout for its flat magic damage.",
+   "Weave normal auto-attacks in all remaining time to keep Break the Mold's on-hit procs and stacks near their cap."
+  ],
+  "questions": [
+   "Can Full Tilt (E) be cast at all in a no-ally dummy fight, and if so what does it do/target?",
+   "Do Crash Down and Mount Up share one W cooldown or does each form cooldown independently, and does casting W-Crash-Down then immediately W-Mount-Up cost one or two 10s cooldowns?",
+   "Is the intended maximum-damage loop to stay mostly Dismounted (using Crash Down's damage/shield and the passive dismounted attack speed) or to cycle Mounted/Dismounted every cooldown for the extra Mount Up empowered-attack damage and attack reset?",
+   "Should Magnet Storm (R) be opened with immediately (burst front-loading) or held to guarantee a second cast never happens anyway in 15s, given its 120/100/80s cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,1313 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ApheliosP",
+    "key": "{267f31a5}",
+    "cooldown": 2,
+    "cost": 20,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MaxRanksPerStat": 6,
+     "ADPerRank": 4,
+     "ASPerRank": 0.09,
+     "APPerRank": 4.5
+    },
+    "calcs": {
+     "AttackSpeed": {
+      "expr": "(ASPerRank=0.09)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({f6907f1b})",
+        "scope": "total",
+        "coef": 0.09,
+        "dataValue": "ASPerRank"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ASPerRank"
+      ]
+     },
+     "AttackSpeedMax": {
+      "expr": "(MaxRanksPerStat=6)*(ASPerRank=0.09)",
+      "flat": 0.54,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "ASPerRank",
+       "MaxRanksPerStat"
+      ]
+     },
+     "AttackDamage": {
+      "expr": "(ADPerRank=4)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({eb906dca})",
+        "scope": "total",
+        "coef": 4,
+        "dataValue": "ADPerRank"
+       }
+      ],
+      "refs": [
+       "ADPerRank"
+      ]
+     },
+     "AttackDamageMax": {
+      "expr": "(MaxRanksPerStat=6)*(ADPerRank=4)",
+      "flat": 24,
+      "terms": [],
+      "refs": [
+       "ADPerRank",
+       "MaxRanksPerStat"
+      ]
+     },
+     "ArPenBonus": {
+      "expr": "(APPerRank=4.5)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({f79080ae})",
+        "scope": "total",
+        "coef": 4.5,
+        "dataValue": "APPerRank"
+       }
+      ],
+      "refs": [
+       "APPerRank"
+      ]
+     },
+     "ArPenBonusMax": {
+      "expr": "(MaxRanksPerStat=6)*(APPerRank=4.5)",
+      "flat": 27,
+      "terms": [],
+      "refs": [
+       "APPerRank",
+       "MaxRanksPerStat"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ApheliosQ_ClientTooltipWrapper",
+    "key": "Characters/Aphelios/Spells/ApheliosQ_ClientTooltipWrapper",
+    "cooldown": 9,
+    "cost": 60,
+    "castTime": 0.35,
+    "uncancellableWindup": true
+   }
+  ],
+  "W": [
+   {
+    "script": "ApheliosW",
+    "key": "Characters/Aphelios/Spells/ApheliosWAbility/ApheliosW",
+    "cooldown": 0.8
+   }
+  ],
+  "E": [
+   {
+    "script": "ApheliosE_ClientTooltipWrapper",
+    "key": "Characters/Aphelios/Spells/ApheliosE_ClientTooltipWrapper",
+    "cooldown": 0,
+    "castTime": 0.5,
+    "uncancellableWindup": true
+   }
+  ],
+  "R": [
+   {
+    "script": "ApheliosR",
+    "key": "Characters/Aphelios/Spells/ApheliosRAbility/ApheliosR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      110,
+      100
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       175,
+       225
+      ]
+     },
+     "SeverumRHealBonus": {
+      "axis": "rank",
+      "v": [
+       250,
+       350,
+       450
+      ]
+     },
+     "CalibrumRMarkBonusDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       80,
+       110
+      ]
+     },
+     "CrescendumRBonusMinis": 5,
+     "InfernumRBonusDamageBase": {
+      "axis": "rank",
+      "v": [
+       50,
+       100,
+       150
+      ]
+     },
+     "GravitumRBonusSlowBase": 0.99,
+     "CritDamageMod": 0.3,
+     "GravitumRRootDuration": 1.35
+    },
+    "calcs": {
+     "MaxDamage": {
+      "expr": "RBaseDamage=[125/175/225] + 0.2xbonus ad + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        175,
+        225
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "RBaseDamage"
+      ]
+     },
+     "InfernumRBonusDamage": {
+      "expr": "InfernumRBonusDamageBase=[50/100/150] + 0.25xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        100,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.25
+       }
+      ],
+      "refs": [
+       "InfernumRBonusDamageBase"
+      ]
+     },
+     "GravitumRBonusSlow": {
+      "expr": "GravitumRBonusSlowBase=0.99",
+      "flat": 0.99,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "GravitumRBonusSlowBase"
+      ]
+     },
+     "CritDamageModCalc": {
+      "expr": "1 + (CritDamageMod=0.3)*((1xcritChance)*(1xcritDamage + -1))",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": [
+       "CritDamageMod"
+      ]
+     },
+     "InfernumRPenalty": {
+      "expr": "0.9",
+      "flat": 0.9,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "{36ebd3cf}": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "ApheliosCalibrumQ",
+    "key": "{9501e989}",
+    "cost": 60,
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MarkDuration": 4.5,
+     "BonusRange": 100,
+     "MoonlightCost": 10,
+     "BonusAS": {
+      "axis": "rank",
+      "v": [
+       0.09,
+       0.13,
+       0.17,
+       0.21,
+       0.25,
+       0.29
+      ]
+     },
+     "BonusASMax": 0.25,
+     "MaxMarkRange": 1800
+    },
+    "calcs": {
+     "BonusDamagePerMark": {
+      "expr": "15 + 0.15xbonus ad",
+      "flat": 15,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.15
+       }
+      ],
+      "refs": []
+     },
+     "SpellDamage": {
+      "expr": "byLevelL[70/70/85/85/100/100/115/115/130/130/145/145/160/160/160/160/160/160] + (byLevelL[0.42/0.42/0.45/0.45/0.48/0.48/0.51/0.51/0.54/0.54/0.57/0.57/0.6/0.6/0.6/0.6/0.6/0.6])xbonus ad + 1xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        70,
+        70,
+        85,
+        85,
+        100,
+        100,
+        115,
+        115,
+        130,
+        130,
+        145,
+        145,
+        160,
+        160,
+        160,
+        160,
+        160,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.42,
+          0.42,
+          0.45,
+          0.45,
+          0.48,
+          0.48,
+          0.51,
+          0.51,
+          0.53999998,
+          0.53999998,
+          0.57,
+          0.57,
+          0.59999998,
+          0.59999998,
+          0.59999998,
+          0.59999998,
+          0.59999998,
+          0.59999998
+         ]
+        }
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "AttackDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "CalibrumQCD": {
+      "expr": "(byLevelL[10/10/9.667/9.667/9.334/9.334/9.001/9.001/8.668/8.668/8.335/8.335/8.002/8.002/8.002/8.002/8.002/8.002]) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "{ee06b7fb}": {
+      "expr": "BonusDamagePerMark * 0.4",
+      "modifies": "BonusDamagePerMark",
+      "flat": 6,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.06
+       }
+      ],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   },
+   {
+    "script": "ApheliosCrescendumQ",
+    "key": "{ad4cfba9}",
+    "cost": 60,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MiniBuffDuration": 5,
+     "MiniBuffResetDuration": 3.5,
+     "UnitsPerPercentAttackSpeedPerSecond": 750,
+     "TurretDurationIdle": 20,
+     "TurretDurationActive": 4,
+     "AttackRange": 500,
+     "MiniDamageRatioMax": 0.15,
+     "MiniDamageRatioMin": 0.05,
+     "MiniBaseDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       35,
+       45,
+       55,
+       65,
+       75
+      ]
+     },
+     "TurretAPRatio": 0.5,
+     "MiniDamageRatioDecPer": 0.015
+    },
+    "calcs": {
+     "{c61fdd37}": {
+      "expr": "600 + (UnitsPerPercentAttackSpeedPerSecond=750)xbonus attackWindup?",
+      "flat": 600,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 750,
+        "dataValue": "UnitsPerPercentAttackSpeedPerSecond"
+       }
+      ],
+      "refs": [
+       "UnitsPerPercentAttackSpeedPerSecond"
+      ]
+     },
+     "MiniDamageMin": {
+      "expr": "(MiniDamageRatioMin=0.05)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.05,
+        "dataValue": "MiniDamageRatioMin"
+       }
+      ],
+      "refs": [
+       "MiniDamageRatioMin"
+      ]
+     },
+     "MiniDamageMax": {
+      "expr": "(MiniDamageRatioMax=0.15)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "MiniDamageRatioMax"
+       }
+      ],
+      "refs": [
+       "MiniDamageRatioMax"
+      ]
+     },
+     "TurretDamage": {
+      "expr": "byLevelL[35/35/50/50/65/65/80/80/95/95/110/110/125/125/125/125/125/125] + (byLevelL[0.34/0.34/0.37/0.37/0.4/0.4/0.43/0.43/0.46/0.46/0.49/0.49/0.52/0.52/0.52/0.52/0.52/0.52])xbonus ad + (TurretAPRatio=0.5)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        35,
+        35,
+        50,
+        50,
+        65,
+        65,
+        80,
+        80,
+        95,
+        95,
+        110,
+        110,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.34,
+          0.34,
+          0.37,
+          0.37,
+          0.4,
+          0.4,
+          0.43,
+          0.43,
+          0.46,
+          0.46,
+          0.49,
+          0.49,
+          0.52,
+          0.52,
+          0.52,
+          0.52,
+          0.52,
+          0.52
+         ]
+        }
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "TurretAPRatio"
+       }
+      ],
+      "refs": [
+       "TurretAPRatio"
+      ]
+     },
+     "AttackDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "CrescendumQCD": {
+      "expr": "(byLevelL[9/9/8.5/8.5/8/8/7.5/7.5/7/7/6.5/6.5/6/6/6/6/6/6]) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   },
+   {
+    "script": "ApheliosGravitumQ",
+    "key": "{b3ce4169}",
+    "cost": 60,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowDuration": 2.5,
+     "RootDuration": 1
+    },
+    "calcs": {
+     "SlowAmountInitial": {
+      "expr": "0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "{dec81e53}": {
+      "expr": "0.1",
+      "flat": 0.1,
+      "terms": [],
+      "refs": []
+     },
+     "AttackDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "Damage": {
+      "expr": "byLevelL[50/50/65/65/80/80/95/95/110/110/125/125/140/140/140/140/140/140] + (byLevelL[0.32/0.32/0.35/0.35/0.38/0.38/0.41/0.41/0.44/0.44/0.47/0.47/0.5/0.5/0.5/0.5/0.5/0.5])xbonus ad + 0.7xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        50,
+        50,
+        65,
+        65,
+        80,
+        80,
+        95,
+        95,
+        110,
+        110,
+        125,
+        125,
+        140,
+        140,
+        140,
+        140,
+        140,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.32,
+          0.32,
+          0.35,
+          0.35,
+          0.38,
+          0.38,
+          0.41,
+          0.41,
+          0.44,
+          0.44,
+          0.47,
+          0.47,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+         ]
+        }
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": []
+     },
+     "GravitumQCD": {
+      "expr": "(byLevelL[12/12/11.667/11.667/11.334/11.334/11.001/11.001/10.668/10.668/10.335/10.335/10.002/10.002/10.002/10.002/10.002/10.002]) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   },
+   {
+    "script": "ApheliosSeverumQ",
+    "key": "{c872c72d}",
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 1.75,
+     "DecayTakes": 5,
+     "ASCoeff": 0.33334,
+     "StartingAttacks": 6
+    },
+    "calcs": {
+     "NumAttacks": {
+      "expr": "(1 + (ASCoeff=0.33334)xbonus attackWindup?) * StartingAttacks=6",
+      "flat": 6,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 2.00004,
+        "dataValue": "ASCoeff"
+       }
+      ],
+      "refs": [
+       "ASCoeff",
+       "StartingAttacks"
+      ]
+     },
+     "{9480e64f}": {
+      "expr": "(byLevelL[0.2/0.2/0.235/0.235/0.27/0.27/0.305/0.305/0.34/0.34/0.375/0.375/0.41/0.41/0.41/0.41/0.41/0.41])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.2,
+          0.2,
+          0.235,
+          0.235,
+          0.27,
+          0.27,
+          0.305,
+          0.305,
+          0.34,
+          0.34,
+          0.375,
+          0.375,
+          0.41,
+          0.41,
+          0.41,
+          0.41,
+          0.41,
+          0.41
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "TotalDamage": {
+      "expr": "NumAttacks * (byLevelL[0.19/0.19/0.225/0.225/0.26/0.26/0.295/0.295/0.33/0.33/0.365/0.365/0.4/0.4/0.4/0.4/0.4/0.4])xad",
+      "modifies": "NumAttacks",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "Haste": {
+      "expr": "0.25 + 0.001xap",
+      "flat": 0.25,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.001
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "HealAmount": {
+      "expr": "byLevel(0.02..0.071)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.02,
+        0.023,
+        0.026,
+        0.029,
+        0.032,
+        0.035,
+        0.038,
+        0.041,
+        0.044,
+        0.04700000102029127,
+        0.05,
+        0.05300000134636374,
+        0.056,
+        0.059,
+        0.06200000183547244,
+        0.06500000199850868,
+        0.068,
+        0.071
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "AttackDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "MaxShield": {
+      "expr": "byLevelL[10/10/10/10/10/20/30/40/50/60/70/80/90/100/110/120/130/140] + 0.06xmaxHp",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100,
+        110,
+        120,
+        130,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.06
+       }
+      ],
+      "refs": []
+     },
+     "SeverumQCD": {
+      "expr": "(byLevelL[10/10/9.667/9.667/9.334/9.334/9.001/9.001/8.668/8.668/8.335/8.335/8.002/8.002/8.002/8.002/8.002/8.002]) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "{3f4c2ea7}": {
+      "expr": "25",
+      "flat": 25,
+      "terms": [],
+      "refs": []
+     },
+     "TotalDecayDurationForTooltip": {
+      "expr": "byLevel25 + DecayTakes=5",
+      "flat": 30,
+      "terms": [],
+      "refs": [
+       "DecayTakes"
+      ]
+     },
+     "{31c5a522}": {
+      "expr": "byLevel(35..100)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        35,
+        38.82353,
+        42.64706,
+        46.47059,
+        50.294118,
+        54.117647,
+        57.941176,
+        61.764706,
+        65.588235,
+        69.411765,
+        73.23529,
+        77.05882,
+        80.882353,
+        84.70588,
+        88.52941,
+        92.35294,
+        96.17647,
+        100
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "OnHitDamageReduction": {
+      "expr": "0.25",
+      "flat": 0.25,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "HealAmountSpell": {
+      "expr": "HealAmount * 2.5",
+      "modifies": "HealAmount",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.05,
+        0.0575,
+        0.065,
+        0.0725,
+        0.08,
+        0.0875,
+        0.095,
+        0.1025,
+        0.11,
+        0.1175,
+        0.125,
+        0.13250000336590936,
+        0.14,
+        0.1475,
+        0.155,
+        0.1625000049962717,
+        0.17,
+        0.1775
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   },
+   {
+    "script": "ApheliosInfernumQ",
+    "key": "{d29e7023}",
+    "cooldown": 9,
+    "cost": 60,
+    "castTime": 0.4,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "InfernumDamageMultiplier": 1.1,
+     "MinionPenaltyBase": 0.3
+    },
+    "calcs": {
+     "InfernumQCD": {
+      "expr": "(byLevelL[9/9/8.5/8.5/8/8/7.5/7.5/7/7/6.5/6.5/6/6/6/6/6/6]) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "QWaveDamage": {
+      "expr": "byLevelL[20/20/35/35/50/50/65/65/80/80/95/95/110/110/110/110/110/110] + (byLevelL[0.15/0.15/0.16/0.16/0.17/0.17/0.18/0.18/0.19/0.19/0.2/0.2/0.21/0.21/0.21/0.21/0.21/0.21])xbonus ad + 0.7xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        20,
+        35,
+        35,
+        50,
+        50,
+        65,
+        65,
+        80,
+        80,
+        95,
+        95,
+        110,
+        110,
+        110,
+        110,
+        110,
+        110
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.15,
+          0.15,
+          0.16000001,
+          0.16000001,
+          0.17,
+          0.17,
+          0.18,
+          0.18,
+          0.19,
+          0.19,
+          0.2,
+          0.2,
+          0.21000000461935997,
+          0.21000000461935997,
+          0.21000000461935997,
+          0.21000000461935997,
+          0.21000000461935997,
+          0.21000000461935997
+         ]
+        }
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": []
+     },
+     "AttackDamage": {
+      "expr": "(1xad) * InfernumDamageMultiplier=1.1",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.1
+       }
+      ],
+      "refs": [
+       "InfernumDamageMultiplier"
+      ]
+     },
+     "SecondaryTargetPenalty": {
+      "expr": "byLevelL[0.75/0.75/0.75/0.75/0.75/0.75/0.75/0.75/1/1/1/1/1/1/1/1/1/1]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "MinionPenalty": {
+      "expr": "MinionPenaltyBase=0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "MinionPenaltyBase"
+      ]
+     },
+     "SecondaryMinionPenalty": {
+      "expr": "SecondaryTargetPenalty * MinionPenaltyBase=0.3",
+      "modifies": "SecondaryTargetPenalty",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.225,
+        0.225,
+        0.225,
+        0.225,
+        0.225,
+        0.225,
+        0.225,
+        0.225,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "MinionPenaltyBase"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ]
+ },
+ "roots": {
+  "Q": "ApheliosQ_ClientTooltipWrapper",
+  "W": "ApheliosW",
+  "E": "ApheliosE_ClientTooltipWrapper",
+  "R": "ApheliosR",
+  "P": "{267f31a5}"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 348,
+   "{6216bf7b}": 42,
+   "{c4ab3550}": 1.3,
+   "{3a509002}": 0.08
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Aphelios",
+  "name": "Aphelios",
+  "partype": "Mana",
+  "passive": "The Hitman and the Seer",
+  "spells": [
+   {
+    "id": "ApheliosQ_ClientTooltipWrapper",
+    "name": "Weapon Abilites",
+    "maxrank": 6,
+    "cooldown": [
+     9,
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "ApheliosW",
+    "name": "Phase",
+    "maxrank": 6,
+    "cooldown": [
+     0.8,
+     0.8,
+     0.8,
+     0.8,
+     0.8,
+     0.8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ApheliosE_ClientTooltipWrapper",
+    "name": "Weapon Queue System",
+    "maxrank": 6,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ApheliosR",
+    "name": "Moonlight Vigil",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     110,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "The Hitman and the Seer": {
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "Calibrum": {
+    "damagetype": "Physical",
+    "spelleffects": "attack",
+    "projectile": "Special",
+    "targeting": "Passive",
+    "affects": "Self, Enemies",
+    "costtype": "Moonlight per attack"
+   },
+   "Severum": {
+    "damagetype": "Physical",
+    "spelleffects": "attack",
+    "projectile": "False",
+    "targeting": "Passive",
+    "affects": "Self",
+    "costtype": "Moonlight per attack"
+   },
+   "Gravitum": {
+    "damagetype": "Physical",
+    "spelleffects": "attack",
+    "spellshield": "False",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Enemies",
+    "costtype": "Moonlight per attack"
+   },
+   "Infernum": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Enemies",
+    "costtype": "Moonlight per attack"
+   },
+   "Crescendum": {
+    "damagetype": "Physical",
+    "spelleffects": "default",
+    "projectile": "false",
+    "targeting": "Passive",
+    "affects": "Enemies",
+    "costtype": "Moonlight per attack"
+   }
+  },
+  "Q": {
+   "Weapons of the Faithful": {
+    "targeting": "N/A"
+   },
+   "Moonshot": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Onslaught": {
+    "damagetype": "Physical",
+    "spelleffects": "attack",
+    "projectile": "Special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   },
+   "Binding Eclipse": {
+    "damagetype": "Magic",
+    "spelleffects": "Spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Duskwave": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Sentry": {
+    "damagetype": "physical",
+    "spelleffects": "spell",
+    "projectile": "Special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Phase": {
+    "targeting": "Auto"
+   }
+  },
+  "E": {
+   "Weapon Queue System": {
+    "targeting": "Auto"
+   }
+  },
+  "R": {
+   "Moonlight Vigil": {
+    "damagetype": "physical",
+    "spelleffects": "aoe",
+    "spellshield": "special",
+    "projectile": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

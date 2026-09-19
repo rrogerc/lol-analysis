@@ -1,0 +1,113 @@
+{
+ "champion": "brand",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Sear, Pillar of Flame and Conflagration each deal fixed magic damage on cast or after a short fixed delay, gated by cooldown/cost."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Pyroclasm is a single cast that produces up to 4 separately timed bounce-damage instances with a 0.15s delay between them."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Ablaze applies a 4s, 0.25s-tick damage-over-time (2% max HP per full duration) per stack, each stack ticking on its own independent schedule even when refreshed."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Ablaze stacks (max 3) are added by any ability hit, read by W (and Q/R) to grant conditional bonus effects, and consumed at 3 stacks to trigger a delayed AoE explosion that also reapplies a stack."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (70/60-100/90/100) against a limited mana pool constrain how many casts fit in the 15s window; partially offset by passive mana restore on kills, which is unlikely to trigger against a non-dying dummy."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Conflagration's damage spread to 'nearby enemies' and Pyroclasm's bounce-to-nearby-enemies-or-Brand mechanic assume multiple targets/geometry that a single stationary dummy does not provide; needs an assumption for how these resolve against exactly one enemy."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Ablaze's DoT ticks per stack are scheduled independently by the time each stack was applied (not reset by refreshes), and reaching 3 stacks spawns a delayed (2s) AoE explosion that consumes the stacks, deals separate burst damage, and reapplies exactly one new stack while blocking further stacking on that target for 4s. This stack-tracking-with-delayed-consumption-and-reapplication behavior, plus W's conditional 25% bonus damage gated on live Ablaze status at the moment of hit, is more than the closed list's plain dot/target-stacks primitives capture on their own and needs bespoke sequencing logic to simulate correctly."
+ },
+ "unsettled": [
+  {
+   "question": "In a fight with only Brand and one target (the dummy), how many of Pyroclasm's up to 4 bounces actually land damage on the dummy, given the ability's stated priority order (Ablaze champions, then other champions, then any valid bounce target, then Brand)?",
+   "options": [
+    "The missile bounces dummy -> Brand -> dummy -> Brand ..., re-hitting the dummy on every other bounce (up to 2-3 total hits on the dummy)",
+    "The missile only ever hits the dummy once (the initial cast) since 'other enemy champions'/'any valid bounce target' pools are empty and it is unclear whether the same already-hit target can be re-selected",
+    "The missile bounces to Brand and back to the dummy every bounce, hitting the dummy for all remaining bounces after Brand"
+   ],
+   "impact": "high",
+   "quotes": [
+    "bounces between nearby enemies and '''Brand''' up to four times, dealing {{as|magic damage}} to enemies each time",
+    "''Pyroclasm'' prioritizes ''{{ai|Blaze|Brand|Ablaze}}'' enemy champions, then other enemy champions, then any valid bounce target, then '''Brand'''."
+   ]
+  },
+  {
+   "question": "Does Conflagration's spread-to-nearby-enemies component ever deal a second damage instance to the same single dummy target, or does it require a distinct secondary target that doesn't exist in a 1v1 dummy fight?",
+   "options": [
+    "The spread never re-hits the primary target; with one target present E only ever deals one damage instance per cast",
+    "The 'spread' logic could target the same unit again if it re-enters the search radius, dealing a second instance"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "causes the flame to spread from the target to nearby enemies, dealing them the same damage",
+    "The flame spreads to enemies near the primary target at the time of cast."
+   ]
+  },
+  {
+   "question": "When Ablaze reaches 3 stacks on the dummy and the ring explosion resolves 2s later, does the explosion's damage instance count separately from (and stack with) the ongoing DoT ticks and W's ablaze bonus, and can the explosion be triggered repeatedly across the 15s fight (every time 3 stacks + 4s non-restack window elapse)?",
+   "options": [
+    "The explosion is a distinct extra damage source that can trigger multiple times in 15s as stacks are rebuilt after each 4s immunity window",
+    "The explosion is rare/edge-case and the simulator should not assume it reliably re-triggers within the fight window given ability cooldowns"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "after 2 seconds, consumes their stacks to explode. All enemies within the detonation are applied a stack of ''Ablaze''",
+    "'''Brand''' cannot stack ''Ablaze'' more than once on enemies that have had a ring explode from them in the last 4 seconds."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open at max range with Conflagration (E) on the dummy to apply the first Ablaze stack and deal its base magic damage.",
+   "Follow immediately with Sear (Q) to add a second Ablaze stack and deal its magic damage (the stun is irrelevant to the damage fight).",
+   "Cast Pillar of Flame (W) third: the target is already Ablaze so W deals its 25% empowered bonus damage, and this hit brings Ablaze to 3 stacks, triggering the delayed ring explosion for extra AoE damage on the dummy 2 seconds later.",
+   "Cast Pyroclasm (R) as soon as it is available (its base cooldown of 80-100s means it will likely only be cast once in the 15s window), taking whatever bounce damage the engine resolves against the single target and Brand.",
+   "For the remainder of the 15s fight, recast Q, W, and E each on cooldown as mana allows, prioritizing whichever comes off cooldown soonest, since each application refreshes/adds an Ablaze stack and re-triggers W's empowered bonus and the periodic 3-stack explosion.",
+   "Do not withhold any ability for setup purposes (no crowd control or positioning value exists against a stationary dummy); cast on cooldown for maximum sustained damage."
+  ],
+  "questions": [
+   "Does the simulator model Ablaze's per-stack independent tick timers and the delayed 3-stack explosion, or does it need a simplified approximation (e.g. average DoT percentage) instead?",
+   "Should R be cast first (before any Ablaze stacks exist) to front-load its long-cooldown damage, or held until after E/Q/W establish Ablaze so its slow (irrelevant here) and any Ablaze-dependent behavior line up - does cast order among Q/W/E/R change total damage in this engine at all, or is it purely a function of not wasting cooldowns?",
+   "Given mana costs (Q 70, W 60-100 by rank, E 90, R 100) against a champion's mana pool, will the build/level assumed for the damage fight actually sustain full-cooldown recasting of Q/W/E for 15 seconds, or does mana become a binding constraint that changes the optimal rotation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

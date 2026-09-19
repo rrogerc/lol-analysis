@@ -1,0 +1,144 @@
+{
+ "name": "Steel Tempest / Steel Tempest 2 / Steel Tempest 3",
+ "cooldown": {
+  "values": [
+   4,
+   4,
+   4,
+   4,
+   4
+  ],
+  "quote": "{{as|{{pp|type='''bonus''' attack speed|4 to 1.48 for 8;4/3|key1=%|0 to 105;1000/9|formula=4*(1-(0.01 per 1.67% '''bonus''' attack speed)). ''This is capped at 67% reduction at 111.1% '''bonus''' attack speed.''}}|attack speed}}",
+  "binNote": "Bin gives a flat 4s cooldown at every rank (YasuoQ1Wrapper.Cooldown=4). The wiki's cooldown template is not a per-rank leveling array but a formula reducing the base 4s cooldown by bonus attack speed (down to 1.48s at 111.1% bonus AS); the base value (4) matches the bin."
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.35,
+  "quote": "0.35;0.33;0.297;0.264;0.231;0.198;0.175",
+  "binNote": "No cast time field appears in the sheet's Q rows; the 0.35s base thrust cast time (reduced by bonus attack speed, capped at 50% reduction) is wiki-only."
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    20,
+    45,
+    70,
+    95,
+    120
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.05
+    }
+   ],
+   "quote": "{{ap|20 to 120}} {{as|(+ 105% AD)}}",
+   "bin": [
+    "YasuoQ1Wrapper#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Critical Strike Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    20,
+    45,
+    70,
+    95,
+    120
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.05
+    }
+   ],
+   "quote": "{{ap|20 to 120}} {{as|(+ {{as|{{critical damage|{{ccd|Yasuo|crit_base}}*1.05|105|mod={{ccd|Yasuo|crit_mod}}}}|critical damage}} AD)|ad}}",
+   "bin": [
+    "YasuoQ1Wrapper#TotalDamageCrit"
+   ],
+   "binNote": "TotalDamageCrit multiplies the AD-ratio portion (105% AD) by the champion's current critDamage multiplier; this schema's single stat+coef term cannot express that multiplicative combination, see mechanics."
+  },
+  {
+   "id": "q_gathering_storm",
+   "meaning": "Gathering Storm stack duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "generates a {{tip|stack}} of ''Gathering Storm'' for 6 seconds, stacking up to 2 times and refreshing on subsequent hits",
+   "bin": [
+    "YasuoQ1Wrapper.GatheringStormDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Steel Tempest applies basic damage (on-hit/on-attack effects) only to the first (closest) enemy hit; secondary enemies take area damage and only they receive spell effects.",
+   "quote": "''Steel Tempest'' applies {{tip|basic damage}} to the first (closest) enemy hit and {{tip|area damage}} to secondary enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Life steal heals based on damage dealt to the first target hit; spell vamp only heals from damage to secondary targets at 33% effectiveness.",
+   "quote": "{{as|{{sti|Life steal}}}} will heal based on the damage dealt to the first target hit.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Steel Tempest rolls its critical strikes individually against each enemy hit.",
+   "quote": "''Steel Tempest'' rolls its {{tip|critical strike|critical strikes}} individually against each enemy hit.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At 2 Gathering Storm stacks, the next Steel Tempest cast consumes them to become an empowered whirlwind dealing the same damage (with knockup) to enemies in the direction, rather than a thrust.",
+   "quote": "At 2 stacks, the next ''Steel Tempest'' cast consumes them all to become empowered with a new effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Critical Strike Damage multiplies the AD-ratio portion of the base damage by Yasuo's crit damage multiplier, rather than critting the whole ability value.",
+   "quote": "{{as|(+ {{as|{{critical damage|{{ccd|Yasuo|crit_base}}*1.05|105|mod={{ccd|Yasuo|crit_mod}}}}|critical damage}} AD)|ad}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting Steel Tempest during Sweeping Blade removes its cast time but locks out basic attacks for 0.5 seconds after the dash ends.",
+   "quote": "''Steel Tempest's'' cast time is not incurred when it is cast this way, but '''Yasuo''' will become {{tip|lockout|unable}} to declare basic attacks for {{fd|0.5}} seconds after the dash ends.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Yasuo is affected by disarming crowd control during the cast time, the thrust fails to hit but the cooldown is reset to 0.1 seconds.",
+   "quote": "the {{sti|cooldown}} of the ability is reset to {{fd|0.1}} seconds",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YasuoQ1Wrapper.StabRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YasuoQ1Wrapper.TornadoRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YasuoQ1Wrapper.StabWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YasuoQ1Wrapper.SpinWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "YasuoQ1Wrapper.KnockUpDurationTOOLTIPONLY",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

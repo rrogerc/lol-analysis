@@ -1,0 +1,866 @@
+{
+ "champion": "caitlyn",
+ "abilities": {
+  "P": {
+   "name": "Headshot",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_headshot_ad_ratio",
+     "meaning": "Headshot bonus physical damage AD ratio vs champions (base by level, plus crit-scaling portion)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.8,
+        0.8,
+        0.8,
+        0.8,
+        0.8,
+        0.8,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+       ]
+      },
+      {
+       "stat": "critDamage",
+       "coef": 1,
+       "coefScaling": [
+        {
+         "stat": "critChance",
+         "per": 1,
+         "coef": 1
+        }
+       ]
+      }
+     ],
+     "quote": "{{pp|key=%|60 to 100 for 3|1 to 13}}|ad}} {{as|(+ {{critical damage|0 to 100|critScaling=true}}) AD}}",
+     "bin": [
+      "CaitlynPassive#HeadShotBonusDamage"
+     ],
+     "binNote": "The by-level base (0.6/0.8/1) is the byLevelL[...] array inside CaitlynPassive#HeadShotBonusDamage, matching the wiki exactly. The critDamage term's coefficient of 1 with crit-chance scaling comes from the formula's (CriticalStrikeScaling=1 x critChance)*(1xcritDamage - 1) part; CriticalStrikeScaling=1 is the only bin row directly carrying that '1' coefficient standalone, which is why the checker matched it there rather than in the calculation row's ad-term array - both rows are cited as they jointly compose the calculation."
+    },
+    {
+     "id": "p_headshot_ad_ratio_nonchamp",
+     "meaning": "Headshot bonus physical damage AD ratio vs non-champions (flat, overrides level scaling)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      }
+     ],
+     "quote": "increased to {{as|110% (+ {{critical damage|0 to 100|critScaling=true}}) AD}} against non-champions",
+     "bin": [],
+     "binNote": "No bin row was found matching a flat 110% non-champion multiplier; CaitlynPassive#HeadShotMinionBonusDamage is a differently-shaped reduction formula (1 - byLevel) x ad and does not obviously correspond to this wiki value. Unresolved discrepancy."
+    },
+    {
+     "id": "p_stacks_to_headshot",
+     "meaning": "basic attacks needed to charge a Headshot (out of brush)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "At 5 stacks, or 4 while in ''brush''",
+     "bin": [
+      "CaitlynPassive.AttacksPerHeadshot"
+     ]
+    },
+    {
+     "id": "p_stacks_to_headshot_brush",
+     "meaning": "basic attacks needed to charge a Headshot while in brush (stacks doubled on-attack)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "At 5 stacks, or 4 while in ''brush''",
+     "bin": [
+      "CaitlynPassive.BrushStackBonus",
+      "CaitlynPassive.AttacksPerHeadshot"
+     ],
+     "binNote": "BrushStackBonus=1 is not the threshold itself but an additive stack bonus applied per attack while in brush (CaitlynPassive#BrushAttackTotal = 1 + BrushStackBonus = 2 stacks per attack in brush). Combined with AttacksPerHeadshot=5, doubled stack gain in brush means only ceil(5/2)=3 attacks by that arithmetic, yet the wiki states 4; the bin does not carry a direct '4' value anywhere, so this is reported as an unresolved discrepancy between the wiki's stated threshold and the derivable bin arithmetic rather than a directly matching row."
+    },
+    {
+     "id": "p_trap_headshot_window",
+     "meaning": "seconds after being trapped/netted during which an extra ranged Headshot can be granted",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.8,
+     "terms": [],
+     "quote": "{{fd|1.8}} seconds",
+     "bin": [],
+     "binNote": "No corresponding data value found in the sheet for this 1.8s window; unknown."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks generate a stack of Count on-attack, doubled if Caitlyn is within brush.",
+     "quote": "basic attacks generate a {{tip|stack}} of ''Count'' {{tip|on-attack}}, doubled if she is within {{tip|brush}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At max stacks the next basic attack consumes all stacks on-attack to become a Headshot with an uncancellable windup.",
+     "quote": "'''Caitlyn's''' basic attack is empowered to have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only the ordinary 100% AD portion of the attack can critically strike; the Headshot bonus is added after the crit roll.",
+     "quote": "Only the ordinary {{as|100% attack damage}} portion of the attack can critically strike. The bonus from ''Headshot'' is added after the critical strike is rolled.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Headshot is a single instance of damage, so it does not trigger on-hit-per-instance effects like Tantrum or Warden's Mail twice.",
+     "quote": "''Headshot'' is a single instance of damage, thus does not trigger {{cais|Tantrum|Amumu}} or {{ii|Warden's Mail}} passives twice",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ability-granted Headshots (from traps/nets) trigger on-attack effects including further Headshot stacking, the same as the normal Headshot override attack.",
+     "quote": "Ability-granted ''Headshots'' are the same as the original ''Headshot'' override attack... They trigger {{tip|on-attack}} effects (including stacking ''Headshot'')",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Attacking a target that becomes trapped/netted while Caitlyn's attack is on cooldown refunds part of the ongoing attack cooldown, letting the next attack start sooner.",
+     "quote": "this ongoing cooldown will be refunded partially so that her next attack on them can begin earlier",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Runaan's Hurricane bolts do not generate Headshot stacks since stacks are only generated on-attack.",
+     "quote": "Because ''Headshot'' stacks are generated {{tip|on-attack}}, {{iis|Runaan's Hurricane}} {{nies|Wind's Fury}} bolts will not generate any",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered Headshot attack will not trigger against wards, though stacks are still generated when attacking them.",
+     "quote": "The empowered attack will not trigger against {{tip|ward}}s.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The full Headshot damage applies life steal.",
+     "quote": "The full damage of ''Headshot'' applies {{as|{{sti|life steal}}}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "CaitlynPassive.TowerCap",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Piltover Peacemaker",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ],
+    "quote": "{{ap|55 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.625,
+    "quote": "{{fd|0.625}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      90,
+      130,
+      170,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        1.25,
+        1.45,
+        1.65,
+        1.85,
+        2.05
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 210}} {{as|(+ {{ap|125 to 205}}% AD)}}",
+     "bin": [
+      "CaitlynQ#InitialDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      54,
+      78,
+      102,
+      126
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.75,
+        0.87,
+        0.99,
+        1.11,
+        1.23
+       ]
+      }
+     ],
+     "quote": "{{ap|50*0.6 to 210*0.6}} {{as|(+ {{ap|125*0.6 to 205*0.6}}% AD)}}",
+     "bin": [
+      "CaitlynQ#SecondaryDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The projectile deals full damage to the first enemy hit, then expands and deals only 60% damage to enemies hit thereafter.",
+     "quote": "fires a piercing shot in the target direction that deals {{as|physical damage}} to the first enemy it passes through, after which it expands in width but deals only 60% damage to enemies it hits thereafter",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dealing damage with this ability resets Caitlyn's basic attack timer.",
+     "quote": "Upon ''Piltover Peacemaker'' dealing damage to an enemy, '''Caitlyn's''' [[attack timer]] is forcibly {{tip|basic attack reset|reset}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies revealed by Yordle Snap Trap always take full (non-reduced) damage from this ability regardless of hit order.",
+     "quote": "Enemies {{tip|true sight|revealed}} by ''{{ai|Yordle Snap Trap|Caitlyn}}'' always take {{ccs|full damage|physical}} from ''Piltover Peacemaker''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies hit while protected by a spell shield still count as a target for the damage calculation of subsequent hits (i.e. still trigger the reduced-damage expansion).",
+     "quote": "Enemies hit while protected by a {{tip|spell shield}} will still be considered a target for calculating damage for subsequent hits.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Yordle Snap Trap",
+   "cooldown": {
+    "values": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "quote": "{{fd|0.5}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana + 1 charge"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Trap Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}} seconds",
+     "bin": [
+      "CaitlynW.TrapDuration"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Maximum Number of Traps",
+     "role": "count",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3,
+      3,
+      4,
+      4,
+      5
+     ],
+     "terms": [],
+     "quote": "{{ap|3|3|4|4|5}}",
+     "bin": [
+      "CaitlynW.MaximumTraps"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Headshot Damage Increase",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      35,
+      80,
+      125,
+      170,
+      215
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|35 to 215}} {{as|(+ 30% '''bonus''' AD)}}",
+     "bin": [
+      "CaitlynW#HeadShotBonusDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "root duration on a sprung trap",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "CaitlynW.RootDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "trap arm time after being placed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "arms after 1 second",
+     "bin": [],
+     "binNote": "wiki-only text, no matching bin data value found"
+    },
+    {
+     "id": "w_6",
+     "meaning": "immunity duration to further traps after being trapped",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "immune to further ''Yordle Snap Traps'' for 3 seconds",
+     "bin": [],
+     "binNote": "wiki-only text, no matching bin data value found"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The next Headshot attack against a champion trapped by this ability deals additional physical damage on top of the normal headshot bonus.",
+     "quote": "takes additional damage from the {{ai|Headshot|Caitlyn}} granted by this ability",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Trapping a target roots it and reveals it, but the target becomes immune to further traps for 3 seconds, preventing repeat roots.",
+     "quote": "Trapped targets become immune to further ''Yordle Snap Traps'' for 3 seconds, preventing them from springing subsequent traps for the duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Multiple traps stacked on the same spot all spring simultaneously.",
+     "quote": "Multiple armed traps on the same location will spring all at once if an enemy steps on one of them.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "CaitlynW.MaximumCharges",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "90 Caliber Net",
+   "cooldown": {
+    "values": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "quote": "{{ap|16 to 8}}"
+   },
+   "cost": {
+    "values": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ],
+    "quote": "75",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.15,
+    "quote": "{{fd|0.15}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      130,
+      180,
+      230,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|80 to 280}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "CaitlynE#NetDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 50,
+     "terms": [],
+     "quote": "{{tip|slow|slows}} them by 50% for 1 second",
+     "bin": [
+      "CaitlynE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|slow|slows}} them by 50% for 1 second",
+     "bin": [
+      "CaitlynE.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The net deals magic damage only to the first enemy hit, a single-target effect.",
+     "quote": "The net deals {{as|magic damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting the net causes Caitlyn to recoil (dash) 390 units backward, which does not affect damage output directly but can delay buffered actions.",
+     "quote": "recoils 390 units in the opposite direction",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Caitlyn buffers an ability or basic attack during the cast time, it starts only after the recoil dash ends, delaying the next damage instance.",
+     "quote": "If '''Caitlyn''' buffers an ability or [[basic attack]] during this ability's cast time, the buffered ability or basic attack will instead start after the dash ends.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Other abilities can be cast during the recoil dash if input after the cast time, allowing damage abilities to fire without waiting for the dash to finish.",
+     "quote": "Other abilities can be cast while {{tip|dash|dashing}} if they are input after the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The net's missile can fail to fire (and thus deal no damage) if Caitlyn is suppressed during the cast time.",
+     "quote": "''90 Caliber Net's'' missile will fail to fire if '''Caitlyn''' is {{tip|suppression|suppressed}} during the cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Ace in the Hole",
+   "cooldown": {
+    "values": [
+     90,
+     90,
+     90
+    ],
+    "quote": "90"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.375,
+    "quote": "{{fd|0.375}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      300,
+      475,
+      650
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|300 to 650}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "CaitlynR.RBaseDamage",
+      "CaitlynR.RADRatio",
+      "CaitlynR#RTotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "bonus damage from critical strike chance",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critChance",
+       "coef": [
+        0.3,
+        0.3,
+        0.3
+       ]
+      }
+     ],
+     "quote": "increased by {{critical damage|0 to 30|critScaling=true}}",
+     "bin": [
+      "CaitlynR.CriticalStrikeModifier",
+      "CaitlynR#RTotalDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "channel duration before the bullet fires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "channels for 1 second",
+     "bin": [],
+     "binNote": "no bin row found for channel duration; not present in sheet"
+    },
+    {
+     "id": "r_4",
+     "meaning": "cooldown when the channel is canceled",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "placed on a 5-second {{sti|cooldown}} if canceled",
+     "bin": [],
+     "binNote": "no bin row found for the reduced canceled-cast cooldown"
+    },
+    {
+     "id": "r_5",
+     "meaning": "reveal buff duration on target/Caitlyn",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "a buff that lasts for up to 4 seconds",
+     "bin": [],
+     "binNote": "not-in-a-dummy-fight / no bin row; reveal is not relevant to damage or survival fight"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Caitlyn channels before firing; the shot only deals damage once the channel completes and the bullet hits.",
+     "quote": "Once '''Caitlyn''' completes the channel, she fires a homing bullet toward the target that deals {{as|physical damage}} to the first enemy champion it hits",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be canceled by interruption, target becoming untargetable, or either party dying, and mana is not refunded if canceled.",
+     "quote": "The following will cancel ''Ace in the Hole's'' channel (mana expenditure is not compensated)",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast (i.e., at the beginning of the channel), not on the bullet landing.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bullet deals no damage if it fails to hit the primary target because they are untargetable on arrival.",
+     "quote": "The bullet missile will fail to hit the primary target if they are {{tip|untargetable}} upon arrival, dealing no damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "CaitlynR.RBaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "CaitlynR.RADRatio",
+     "reason": null
+    },
+    {
+     "ref": "CaitlynR.CriticalStrikeModifier",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Headshot: stacks reach threshold, next basic attack is empowered with bonus physical damage scaling with AD and crit chance/damage"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "on-attack stack counter toward Headshot, capped at 5 (4 in brush), no expiry stated"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "trapped/netted status grants an extra ranged Headshot at bonus damage; consumed on the next attack"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piltover Peacemaker dealing damage resets Caitlyn's basic attack timer"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q, E, R each deal on-cast/on-delay damage on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piltover Peacemaker is two separately-computed damage instances: full damage to first target, 60% to subsequent targets"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Ace in the Hole channels for 1s before firing, blocking other actions during the channel (though other abilities can be cast during the recoil-analog window per notes for E; R's channel is a true block)"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Headshot's bonus and Ace in the Hole's damage both scale with critChance/critDamage without the base attack itself needing to crit for those bonus terms"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs across abilities may limit casts within the 15s window depending on mana pool/regen"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "attacking a target that becomes trapped/netted refunds part of Caitlyn's ongoing attack cooldown"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Headshot's stack-to-empower mechanic interacts with basic attacks in a way not fully captured by a single primitive: it is simultaneously a stacking counter (stacking-self-buff), the trigger for an empowered attack (empowered-attack), and its bonus damage term depends on the attacker's own crit chance/damage even on non-crit-rolled portions (crit-interaction) — the combination of stack-gating, only-base-portion-can-crit, and ability-granted bonus Headshots off W/E consuming a separate 'trapped' state needs bespoke sequencing logic to simulate correctly inside 15s (e.g., tracking attack count, brush assumption, and whether W/E procs are available)."
+ },
+ "unsettled": [
+  {
+   "question": "Does the Headshot 110% AD bonus against non-champions apply to the target dummy in the damage fight (since the dummy 'counts as an enemy champion' per the fight rules)?",
+   "options": [
+    "Dummy is treated as a champion so the champion-rate Headshot bonus (0.6/0.8/1.0 by level, per wiki quote) applies",
+    "Dummy is non-champion-like and gets the 110% flat bonus"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased to {{as|110% (+ {{critical damage|0 to 100|critScaling=true}}) AD}} against non-champions"
+   ]
+  },
+  {
+   "question": "How many basic attacks does it actually take to charge a Headshot while in brush: the wiki says 4, but the bin's BrushStackBonus=1 (doubling to 2 stacks/attack) with AttacksPerHeadshot=5 arithmetically implies 3 attacks (ceil(5/2))?",
+   "options": [
+    "Trust wiki's stated 4 attacks in brush",
+    "Trust bin arithmetic implying 3 attacks in brush",
+    "Some other stacking rule not captured by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "At 5 stacks, or 4 while in ''brush''"
+   ]
+  },
+  {
+   "question": "Should the damage-fight rotation assume the target dummy is standing in brush (doubling Headshot stack gain) or not, since neither source specifies brush presence in this fight setup?",
+   "options": [
+    "Assume no brush (worst case, 5 attacks to stack)",
+    "Assume brush is available (best case, 3-4 attacks to stack)"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "Does Piltover Peacemaker's first-hit-full/60%-after damage apply as two separate damage instances against a single stationary dummy target (i.e. can the dummy be hit twice by the same cast, once as 'first' and once as 'expanded'), or does a single target only ever receive one of the two values?",
+   "options": [
+    "A single target can only be the 'first' hit (full damage) since the projectile passes through it once",
+    "A single target could conceivably be hit by both the initial and expanded portions if it has significant hitbox width, doubling instances"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "deals {{as|physical damage}} to the first enemy it passes through, after which it expands in width but deals only 60% damage to enemies it hits thereafter"
+   ]
+  },
+  {
+   "question": "In Ace in the Hole, can Caitlyn queue/cast Q, W, E during the 1-second channel, or does the channel fully block other actions (affecting total rotation DPS accounting)?",
+   "options": [
+    "Channel fully blocks all other ability casts and attacks (per the channel interaction table's cast=false)",
+    "Some buffered actions can still execute after the channel similar to E's cast-time buffering rules"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ct|channel|attack=false|move=false|cast=false|items=false,true,false,false,false|spells=true,false,false,false,false}}"
+   ]
+  },
+  {
+   "question": "Does Yordle Snap Trap's bonus Headshot damage (target-stacks) require Caitlyn to actually walk the dummy over a placed trap, which the fight's 'no terrain, dummy never moves' rules make impossible unless the trap is placed directly under the stationary target - is this proc available at all in the damage fight?",
+   "options": [
+    "W's target-stacks Headshot bonus is usable since the trap can be placed on the stationary dummy's location",
+    "W's bonus is not meaningfully usable/rotation should exclude it since dummy doesn't move onto traps"
+   ],
+   "impact": "low",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with 90 Caliber Net (E) on the dummy for magic damage and the attack-reset-adjacent slow (slow itself doesn't matter for a stationary dummy, but the damage does)",
+   "Follow immediately with Piltover Peacemaker (Q) for its full first-hit physical damage, casting it during/after E's cast time",
+   "Weave in basic attacks throughout, tracking Headshot stack count (assume no brush unless ruled otherwise) so that every 5th attack becomes an empowered Headshot",
+   "Place a Yordle Snap Trap (W) at the dummy's location before or during the opener if the trapped-target Headshot bonus is deemed usable in this fight, to add bonus damage to the next Headshot",
+   "Cast Ace in the Hole (R) as soon as it is off cooldown, accepting the 1-second channel block, since its base+bonus-AD+crit-scaling damage is very large",
+   "Recast Q and E on cooldown throughout the 15s window, using basic attacks to fill all remaining time between casts",
+   "Prioritize aligning a Headshot-empowered attack with Q's attack-reset so the reset does not waste attack progress"
+  ],
+  "questions": [
+   "Should the simulated dummy be assumed to sit in brush for Headshot stacking purposes, or never?",
+   "Is Yordle Snap Trap's ground-trap bonus considered usable against a stationary, non-moving dummy target that never 'steps on' the trap unless it's placed directly under it at time zero?",
+   "Does Ace in the Hole's 1-second channel actually block basic attacks and other ability casts entirely, reducing total attacks/casts landed in the 15s window?",
+   "Is the level-1-vs-18 Headshot AD ratio (0.6/0.8/1.0) meant to represent per-level growth within a single 15s fight, or is a single champion level assumed for the whole fight (affecting which of the three bin brackets applies)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

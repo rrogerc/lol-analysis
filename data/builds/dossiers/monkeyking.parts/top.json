@@ -1,0 +1,159 @@
+{
+ "champion": "monkeyking",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nimbus Strike deals magic damage on the dash (fixed cast, no windup)"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Crushing Blow arms Wukong's next basic attack with bonus physical damage, extra range and an uncancellable windup"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The Crushing Blow attack resets Wukong's basic attack timer, letting another auto-attack (or ability) chain immediately"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Crushing Blow's landed attack shreds a percent of the target's armor for 3s"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Every instance of damage Wukong (or his clone) deals reduces Crushing Blow's cooldown by 0.5s"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Strength of Stone stacks (up to 5, 5s refresh, 1/sec falloff) scale Stone Skin's bonus armor and % max-health regen; defensive, matters for the survival fight"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nimbus Strike grants Wukong bonus attack speed for 5s on arrival"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cyclone ticks physical damage (%max HP + AD ratio) every 0.25s while spinning"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cyclone ends after up to 2s and can/does recast for a second 2s spin within an 8s window, with a 1s lockout before the recast is available"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (esp. W 60-40, E 30-50 rising with rank, R flat 100) can meaningfully cap casts inside a 15s fight depending on mana pool/regen"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W"
+   ],
+   "note": "Warrior Trickster's clone persists for 4s, auto-attacks independently, and can mirror Q/E/R effects at reduced (CloneDamageMod) damage, acting as a second damage source"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "The W clone is not a simple fire-and-forget pet: it auto-attacks on its own timer AND, if Wukong casts Q, E's attack-speed buff, or R while the clone exists (or simultaneously), the clone replicates that ability's effects at CloneDamageMod (40%-60%) damage, running its own copy of Crushing Blow's empowered attack / Cyclone's tick-DoT in parallel with Wukong's. The closed primitive list's pet-or-summon assumes an independent damage source but does not capture 'mirrors the caster's other ability casts, scaled by a separate damage modifier, with its own attack-reset/empowered-attack/dot interactions.' Simulating this faithfully needs bespoke logic layering the same primitives a second time on a second actor timeline."
+ },
+ "unsettled": [
+  {
+   "question": "Crushing Blow's empowerment window before the bonus attack expires: is it 5 seconds (wiki description) or 6 seconds (bin BuffDuration)?",
+   "options": [
+    "5 seconds as stated in the wiki prose",
+    "6 seconds as stored in MonkeyKingDoubleAttack.BuffDuration"
+   ],
+   "impact": "low",
+   "quotes": [
+    "empowers his next {{tip|basic attack}} within 5 seconds",
+    "MonkeyKingDoubleAttack.BuffDuration = 6"
+   ]
+  },
+  {
+   "question": "When the clone mirrors Q or R because Wukong cast them, does CloneDamageMod (40-60%) scale only the clone's plain basic attacks, or does it also scale the clone's copy of Crushing Blow's bonus damage and Cyclone's DoT?",
+   "options": [
+    "CloneDamageMod applies uniformly to all clone damage sources (attacks and mirrored abilities)",
+    "CloneDamageMod only reduces the clone's basic attacks; mirrored ability damage uses the ability's own numbers unscaled"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The clone deals reduced damage.",
+    "{{st|Clone Outgoing Damage|{{ap|40 to 60}}%}}",
+    "It can also gain the effects of ''{{ai|Crushing Blow|Wukong}}'' and ''{{ais|Nimbus Strike|Wukong}}'' {{as|'''bonus''' attack speed}}, and casts ''{{ai|Cyclone|Wukong}}'' whenever '''Wukong''' does."
+   ]
+  },
+  {
+   "question": "Does Cyclone's automatic/manual recast (the second up-to-2s spin) cost another 100 mana, or is the recast free since it is part of the same R activation?",
+   "options": [
+    "The recast pays the full 100 mana cost again",
+    "The recast is free, only the initial cast paid the cost"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cost         = 100",
+    "''Cyclone'' can be recast after {{fd|0.5}} seconds within the duration, and does so automatically afterwards or by casting another {{tip|ability}}."
+   ]
+  },
+  {
+   "question": "How many stacks of Strength of Stone (0-5) should be assumed active for the tank in the survival fight, given stacks require Wukong to land hits on the attacker (not guaranteed in a pure defense scenario)?",
+   "options": [
+    "Assume 0 stacks (worst case, purely defensive sim)",
+    "Assume max 5 stacks maintained throughout (best case, Wukong trades hits back)",
+    "Assume a ramp-up curve reaching max stacks partway through the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "he generates a {{tip|stack}} of ''Strength of Stone'' for 5 seconds, refreshing on subsequent hits and stacking up to 5 times"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting W to plant a clone at the current position; it will auto-attack the dummy and mirror later Q/E/R casts for extra parallel damage across the fight.",
+   "Cast Q to empower the next basic attack, then immediately auto-attack the dummy to land the bonus physical damage and apply the 3s armor shred.",
+   "Cast E to dash onto the dummy (can be cast mid-Crushing-Blow-windup per its description) for magic damage and the 5s bonus attack-speed buff.",
+   "Continue auto-attacking and recasting Q on cooldown (each landed Q attack also shaves 0.5s off Q's own cooldown and refreshes the armor shred) while Q/E are off Cyclone's channel.",
+   "Cast R (Cyclone) as a standalone block once Q/E have been used and are on cooldown, since casting a basic ability (Q/W/E) during Cyclone interrupts it; let it tick for its full 2s.",
+   "Recast R at the earliest opportunity (0.5s after the first cast ends, within the 8s window) for a second 2s spin, again without weaving in Q/W/E mid-spin.",
+   "After both Cyclone spins finish, resume Q on cooldown with auto-attacks in between for the remainder of the 15s window; E if its cooldown and mana allow another cast.",
+   "Let the clone continue auto-attacking and mirroring whatever Wukong casts for the rest of the fight, contributing reduced-damage instances of the same rotation in parallel."
+  ],
+  "questions": [
+   "Does 'casting a basic ability' interrupting Cyclone include only Q/W/E casts, or does a plain basic attack during the spin also cut Cyclone short?",
+   "Given R's long base cooldown (130/110/90s) versus a 15s fight, is only a single R activation (plus its 8s-window recast) realistically available, and should R be front-loaded or saved until after the Q/E opener to avoid wasting the interrupt-sensitive channel?",
+   "When the clone independently mirrors Wukong's R cast, does it run its own full 2s (or recast 4s) Cyclone tick sequence as a separate damage source, and does the clone's copy get interrupted independently of Wukong's own spin?",
+   "Should W be cast at the very start (to maximize the clone's 4s uptime and its chance to mirror the opening Q/E/R) or held until after the initial burst so it can mirror a mid-fight R recast instead?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,986 @@
+{
+ "champion": "senna",
+ "abilities": {
+  "P": {
+   "name": "Absolution",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_markDamage",
+     "meaning": "bonus physical damage dealt when consuming a Mist mark, as a percent of target's current health",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": [
+        0.01,
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08,
+        0.09,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|1 to 10 for 10|formula=1% * level, capped at level 10|key=%}} of the target's '''current''' health}}",
+     "bin": [
+      "SennaPassive#BonusCurentHealthDamage"
+     ],
+     "binNote": "The bin's raw byLevel array continues linearly to 18 at level 18, but the wiki's pp formula caps the value at 10 from level 10 onward; the sheet does not encode the cap itself."
+    },
+    {
+     "id": "p_markDuration",
+     "meaning": "duration a Mist mark lasts on a target before it can be consumed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "mark enemy champions hit for 4 seconds",
+     "bin": [
+      "SennaPassive.MarkDuration"
+     ]
+    },
+    {
+     "id": "p_markImmunity",
+     "meaning": "duration a target is immune to being marked again after a mark is consumed",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      5,
+      5,
+      5,
+      5,
+      5,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+     ],
+     "terms": [],
+     "quote": "{{pp|6;5;4|1;6;11}}",
+     "bin": [
+      "SennaPassive#DebuffDuration"
+     ]
+    },
+    {
+     "id": "p_relicCannonDamage",
+     "meaning": "on-hit bonus physical damage from basic attacks (Relic Cannon)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{as|20% AD}} {{as|'''bonus''' physical damage}}",
+     "bin": [
+      "SennaPassive#BonusOnHitDamage"
+     ]
+    },
+    {
+     "id": "p_adPerStack",
+     "meaning": "bonus attack damage granted per stack of Mist",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{fd|{{#var:i_ad}}}} '''bonus''' attack damage",
+     "bin": [
+      "SennaPassive.ADPerStack",
+      "SennaPassive#{bb59ad08}"
+     ]
+    },
+    {
+     "id": "p_stackThreshold",
+     "meaning": "number of Mist stacks needed for each critical strike chance/range bonus tier",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 20,
+     "terms": [],
+     "quote": "For every {{#var:stack}} stacks, she also gains",
+     "bin": [
+      "SennaPassive.StacksForBonus"
+     ]
+    },
+    {
+     "id": "p_critChancePerTier",
+     "meaning": "critical strike chance granted per stack threshold tier",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "{{as|{{#var:cs}}% critical strike chance}}",
+     "bin": [
+      "SennaPassive.BonusCritChance"
+     ]
+    },
+    {
+     "id": "p_critToLifesteal",
+     "meaning": "life steal gained per 1% crit chance in excess of 100%",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "{{fd|{{#var:ls}}}}% {{as|{{sti|life steal}}}}",
+     "bin": [
+      "SennaPassive.CritToLifestealConversionPercent"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks on-hit and abilities against enemy champions apply a mark; a subsequent hit on a marked target consumes it to deal the current-health damage and grant a Mist stack.",
+     "quote": "Subsequent attacks or ability hits against marked targets will consume the mark to grant '''Senna''' a {{tip|stack}} of {{as|Mist}} and deal {{as|'''bonus''' physical damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The mark-consumption damage applies life steal at 100% effectiveness.",
+     "quote": "This damage {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}} at 100% effectiveness.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Relic Cannon's on-hit damage also applies life steal at 100% effectiveness, but only triggers if the attack deals more than 0 damage.",
+     "quote": "* ''Relic Cannon'' is only applied if the attack deals more than 0 damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Relic Cannon's damage applies at 100% life steal effectiveness.",
+     "quote": "The damage {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}} at 100% effectiveness.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mist stacks grant bonus attack damage continuously (a stacking self-buff), separate from the range/crit-chance tier bonuses.",
+     "quote": "For each stack of {{as|Mist}}, '''Senna''' gains {{sti|attack damage|{{as|{{fd|{{#var:i_ad}}}} '''bonus''' attack damage}}}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SennaPassive.SoulDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SennaPassive.BonusRange",
+     "reason": "utility"
+    },
+    {
+     "ref": "SennaPassive.CritDamageMod",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.SoulDropPercentChance",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SennaPassive.SoulDropPercentChanceOnSennaKill",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SennaPassive.MSStealDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SennaPassive.SoulTravelDistanceBad",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaPassive.SoulTravelDistanceGood",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaPassive.SoulTravelVarianceRadiusInner",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaPassive.SoulTravelVarianceRadiusOuter",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaPassive.ChanceForGoodSoul",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaPassive.ThreshSoulsToTriggerQuest",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.SennaSoulsToTriggerQuest",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.QuestRewardForSennaStacks",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.QuestRewardSennaAPPerStack",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.QuestRewardSennaArmorPerStack",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.QuestRewardForThreshStacks",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.QuestAssistWindow",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SennaPassive.ArmorShredDuration",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Piercing Darkness",
+   "cooldown": {
+    "values": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "quote": "15"
+   },
+   "cost": {
+    "values": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ],
+    "quote": "{{ap|70 to 110}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "The cast time equals {{rutngt|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      55,
+      80,
+      105,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|30 to 130}} {{as|(+ 60% '''bonus''' AD)}}",
+     "bin": [
+      "SennaQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 2}} seconds",
+     "bin": [
+      "SennaQ.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      },
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 40% '''bonus''' AD)}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "SennaQ#TotalHeal"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": 0.15,
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.0015
+      },
+      {
+       "stat": "ap",
+       "coef": 0.0007
+      }
+     ],
+     "quote": "slows them by 15% {{as|(+ 15% per 100 '''bonus''' AD)}} {{as|(+ 7% per 100 AP)}} for a duration",
+     "bin": [
+      "SennaQ.BaseSlow",
+      "SennaQ.SlowAPRatio"
+     ],
+     "binNote": "The sheet's inline calculation text 'SennaQ#TotalSlow (percent) = BaseSlow=0.15 + (SlowAPRatio=0.0007)xap + 0.0015xbonus ad' is not a named calculation the checker recognizes (no separate SennaQ.BADSlowRatio data value exists for the 0.0015 bonus AD coefficient); it appears only as a literal in that calculation's text, matching the wiki's 15% per 100 bonus AD."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Cooldown reduction on-attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "''current'' cooldown}} is reduced by 1 second {{tip|on-attack}}",
+     "bin": [
+      "SennaQ.CDReductionOnHit"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemy damage applies life steal at 100% effectiveness.",
+     "quote": "The damage dealt to enemy champions {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}} at 100% effectiveness.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Applies on-hit effects against champions and turrets hit, and triggers on-attack effects against one champion hit.",
+     "quote": "It also applies {{tip|on-hit}} effects against {{tip|champions}} and {{tip|turrets}} hit, and triggers {{tip|on-attack}} effects against {{tt|one champion hit|see notes}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Applies spell damage to the same champion it applies on-attack effects to, and area damage to all other targets.",
+     "quote": "Applies {{tip|spell damage}} to the same champion it applies {{tip|on-attack}} effects to and {{tip|area damage}} to all other targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cast time respects the attack speed floor and cap.",
+     "quote": "The ability's cast time respects the attack speed [[Attack speed|floor and cap]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield does not prevent on-hit effects from being applied.",
+     "quote": "{{tip|Spell shield}} will not prevent on-hit effects from being applied.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SennaQ.RectangleWidthEnemy",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaQ.RectangleWidthAlly",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaQ.RectangleLeadDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaQ.RectangleRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaQ.MaxTargetingRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaQ.BADDamageRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Last Embrace",
+   "cooldown": {
+    "values": [
+     11,
+     11,
+     11,
+     11,
+     11
+    ],
+    "quote": "11"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 90% '''bonus''' AD)}}",
+     "bin": [
+      "SennaW#Damage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25
+     ],
+     "terms": [],
+     "quote": "{{ap|1.25 to 2.25}} seconds",
+     "bin": [
+      "SennaW.RootDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration the Black Mist stays attached before spreading and rooting",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "attaches to them for 1 second",
+     "bin": [
+      "SennaW.DelayTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The projectile deals physical damage to the first enemy hit and attaches to them for 1 second before the mist spreads out and roots them and surrounding enemies.",
+     "quote": "throws a globule of Black Mist in the target direction that deals {{as|physical damage}} to the first enemy hit and attaches to them for 1 second.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The primary target will not be rooted if they are untargetable when the mist spreads.",
+     "quote": "''Last Embrace'' will not {{tip|root}} the primary target if they are {{tip|untargetable}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage is dealt only once, to the first enemy hit by the projectile; the later root pulse is not a second damage instance.",
+     "quote": "deals {{as|physical damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Curse of the Black Mist",
+   "cooldown": {
+    "values": [
+     26,
+     24.5,
+     23,
+     21.5,
+     20
+    ],
+    "quote": "{{ap|26 to 20}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 1,
+    "quote": "1"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Effect Duration (camouflage/aura duration)",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      6,
+      6.5,
+      7,
+      7.5,
+      8
+     ],
+     "terms": [],
+     "quote": "{{ap|6 to 8}} seconds",
+     "bin": [
+      "SennaE.BuffDuration"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "bonus movement speed for Senna and allies in Wraith Form",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0005,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.05
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|20%|ms}}}} {{as|(+ 5% per 100 AP)}}",
+     "bin": [
+      "SennaE#TotalMS"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "time without stealth-breaking actions before regaining camouflage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}} seconds",
+     "bin": [
+      "SennaE.DurationBeforeRestealth"
+     ],
+     "binNote": "wiki states 1.75, bin value is 1.5; disagreement between sources."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Senna gains camouflage for the effect duration and quickly regains it after breaking stealth if she performs no stealth-breaking actions.",
+     "quote": "gains {{tip|camouflage}} for a duration. If '''Senna''' {{tip|breaks stealth|breaks the camouflage}}, she regains it after {{fd|1.75}} seconds without performing actions that break stealth.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Using a basic attack breaks stealth at the start of the attack windup, and refreshes the stealth-regain timer.",
+     "quote": "Using a basic attack breaks the stealth at the start of the attack windup.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Wraith Form ends immediately upon Senna's death.",
+     "quote": "''Wraith Form'' ends immediately upon '''Senna's''' {{tip|death}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Senna can move during the ability's cast time.",
+     "quote": "'''''Senna''' can move during Curse of the Black Mist's cast time.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown starts after the effect (post-cast), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SennaE.MovementSpeedPercent",
+     "reason": null
+    },
+    {
+     "ref": "SennaE.DefenseRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaE.MinAllyduration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SennaE.AllyMSMult",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SennaE.SmokeLinger",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SennaE.SmokeArmTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SennaE.SmokeRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SennaE.MSAPRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Dawning Shadow",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{ap|140 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "{{ap|100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 1,
+    "quote": "1"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      250,
+      400,
+      550
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.15
+      },
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|250 to 550}} {{as|(+ 115% '''bonus''' AD)}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "SennaR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      120,
+      160,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      },
+      {
+       "stat": "stacks",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|120 to 200}} {{as|(+ 50% AP)}} {{as|(+ 150% {{ai|Absolution|Senna|Mist}})|mist}}",
+     "bin": [
+      "SennaR#TotalShield"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "shielded for a short time",
+     "bin": [
+      "SennaR.ShieldDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "reveal duration on enemies hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "reveals them for 3 seconds",
+     "bin": [],
+     "binNote": "No bin data value corresponds to this reveal duration; it is not present anywhere in the sheet for R, only in the wiki description text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shadow wave (damage) is a narrow beam at the center, separate from the broad light wave (shield); enemy champions hit by the shadow wave take damage while allies hit by the light wave get shielded.",
+     "quote": "The beam consists of a broad wave of light, and a narrow wave of shadow at the center.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The projectile can be destroyed by a spell shield or similar, which also destroys the damage-dealing shadow wave.",
+     "quote": "The broad wave is a singular projectile that can be {{tip|projectile|destroyed}}.\n** The narrow wave will be destroyed with it in the process.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Senna is revealed during the cast time.",
+     "quote": "'''Senna''' reveals herself during the cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SennaR.PostCastAnimLock",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mist stacks (gained by consuming marks or Mist Wraiths) grant permanent bonus AD (0.75/stack, no stated cap or decay found) and, every 20 stacks, bonus crit chance (10%); stack count also feeds R's shield scaling."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every 1% of total crit chance (items + Mist tiers) above 100% converts to 0.35% life steal."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Consuming a Mist mark deals bonus physical damage equal to a level-scaled percent of the target's current health (1%/level, capped at 10% from level 10), applying life steal at 100%."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "P"
+   ],
+   "note": "A hit applies a 4s Mist mark to the target; consuming it renders the target immune to being re-marked for a level-scaled duration (6s down to 4s)."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Relic Cannon: basic attacks on-hit deal 20% AD bonus physical damage (100% life steal) if damage >0; Piercing Darkness applies on-hit effects to the champion it triggers on-attack against."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piercing Darkness' current cooldown is reduced by 1 second on every on-attack (basic attack landed), independent of Q's own casts."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q, W and R each deal one fixed physical damage instance per cast, scaling with bonus AD/AP and level/rank."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 70-110, W 50-70, E 70 flat, R 100 flat) could cap casts inside a 15s fight depending on mana pool/regen."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks can crit using crit chance granted by Mist-stack tiers; a bin value (CritDamageMod=0.8) may modify Senna's own critical strike damage multiplier but is not tied to any named calculation."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E's camouflage and movement speed, and R's shield to self/allies, are never read by a damage-only fight against a stationary dummy."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every offensive mechanic (mark-and-consume, stacking AD/crit from Mist, crit-to-lifesteal conversion, Relic Cannon on-hit, Q's on-attack cooldown refund, and Q/W/R's plain-cast damage) maps onto a primitive in the closed list. The remaining difficulty is entirely about how those primitives interact over time against a single continuously-attacked target (the mark/immunity duty cycle and resulting stack growth), which is a rotation/timing question rather than a missing mechanic type."
+ },
+ "unsettled": [
+  {
+   "question": "How does the Mist mark / consume / re-mark-immunity cycle play out against one continuously attacked target over 15s (does every other hit alternate apply/consume, and does the ~4-6s immunity window throttle this at high attack speed)?",
+   "options": [
+    "Simulate the full state machine per hit (unmarked -> mark applied -> consumed on next hit -> immune for N seconds -> repeat), which caps the rate of conditional-damage procs and Mist-stack gains regardless of attack speed",
+    "Approximate as a fixed proc rate (e.g., one consume per immunity-duration window) for simplicity",
+    "Treat every attack/ability hit as marking+consuming simultaneously (ignore the immunity gate), overcounting stack gain and current-health damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Subsequent attacks or ability hits against marked targets will consume the mark to grant '''Senna''' a {{tip|stack}} of {{as|Mist}} and deal {{as|'''bonus''' physical damage}}... rendering the target immune to being marked again for a few seconds."
+   ]
+  },
+  {
+   "question": "Does SennaPassive.CritDamageMod (0.8) modify Senna's own critical strike damage multiplier (e.g., her crits do 180% instead of 200%), or is it unused/tied to something else (e.g., Mist Wraiths)?",
+   "options": [
+    "It reduces Senna's own crit damage multiplier to 180%, affecting all basic-attack crit damage in the dummy fight",
+    "It is unused for Senna's own attacks and should be ignored"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "SennaPassive.CritDamageMod = 0.8",
+    "SennaPassive#CriticalDamage (percent) = 1xcritDamage"
+   ]
+  },
+  {
+   "question": "What starting Mist stack count should be assumed at the beginning of the damage fight (affects starting bonus AD, crit chance tier, and R's shield-from-stacks term)?",
+   "options": [
+    "0 stacks (no prior kills/marks before the timed fight begins)",
+    "Some nonzero baseline representing a typical mid-game stack count, left to the simulator's item/level assumptions"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with a basic attack or Q (Piercing Darkness) to apply the first Mist mark on the dummy, since the dummy counts as an enemy champion for marking purposes.",
+   "Weave continuous basic attacks throughout the fight to trigger Relic Cannon's on-hit bonus damage and to consume/re-apply Mist marks for the current-health-percent bonus damage and Mist stack gain.",
+   "Cast Q on cooldown once available; note Q's own cooldown is refunded 1s per basic attack landed (on-attack), so Q comes off cooldown faster the more Senna is actively auto-attacking.",
+   "Cast W (Last Embrace) on cooldown for its flat physical damage instance, timed so its hit also lands on the target to interact with the mark cycle.",
+   "Cast R (Dawning Shadow) as soon as it is available for its large physical-damage instance (250-550 + 0.7 AP + 1.15 bonus AD); given its long cooldown relative to a 15s window, it will likely be cast at most once, so cast it as early as safely possible to maximize total damage dealt in the window.",
+   "Do not cast E (Curse of the Black Mist) during the damage fight: it deals no damage and its camouflage/movement-speed effects are mobility/stealth, which the fight ignores."
+  ],
+  "questions": [
+   "Given the mark/immunity duty cycle, is there an attack-speed threshold beyond which extra basic attacks stop producing extra conditional-damage procs (i.e., is the cycle rate-limited by the mark's immunity duration rather than attack speed)?",
+   "Should R be front-loaded at the very start of the 15s window (maximizing chance to land once) or held to combo with a Q/W mark-consume for the current-health-percent proc, and does R's own hit count as an 'ability hit' that can apply or consume the Mist mark like Q and W do?",
+   "Does the simulator need to model Senna gaining a Mist Wraith kill from the dummy dying mid-fight (extra stack + gold), or is the dummy assumed to have effectively infinite health for the 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

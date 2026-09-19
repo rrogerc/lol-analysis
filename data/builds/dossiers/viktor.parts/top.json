@@ -1,0 +1,99 @@
+{
+ "champion": "viktor",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's initial missile hit and E's laser are fixed-damage instances dealt on cast/after travel time, recastable on cooldown against the stationary dummy."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Discharge arms Viktor's next basic attack to deal separate modified magic damage (base + AD + AP) instead of a normal auto-attack."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Arcane Storm has a distinct initial burst followed by a separately-timed ticking storm phase; it can be recast to redirect the storm, which has no effect against a single stationary target."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "After the initial burst, the singularity ticks roughly once per second on the dummy for the storm's duration, dealing the subsequent-burst damage per tick."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs and cooldowns (especially R's 80-120s cooldown, castable at most once in a 15s window) limit how many times each ability is recast during the fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Viktor's damage-relevant kit reduces to standard shapes: Q is a plain-cast missile plus a separately-instanced empowered next attack (Discharge), E is a plain-cast laser, and R is an initial-burst-plus-DoT recastable ability. W deals no damage and its crowd control has no effect on a dummy that doesn't move or fight back, so it's outside the damage fight entirely. The Glorious Evolution augment system requires 100 Hex Fragments from kills/takedowns, which are unreachable in a 15s single-target dummy fight, so augmented ability variants never activate and need no bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "Over Arcane Storm's 6.5s base duration at a 1s tick cadence, how many total damage instances (initial burst + subsequent ticks) does it actually deal?",
+   "options": [
+    "6 total instances: bin's ViktorR.MaxTicks = 6 is the count of subsequent-tick instances, giving initial + 5 subsequent ticks (6 total hits)",
+    "7 total instances: wiki explicitly states 'The base duration allows for 7 strikes (including the initial one)', i.e. initial + 6 subsequent ticks"
+   ],
+   "impact": "high",
+   "quotes": [
+    "ViktorR.MaxTicks = 6",
+    "The base duration allows for 7 strikes (including the initial one)."
+   ]
+  },
+  {
+   "question": "Is Discharge granted immediately when Q is cast, or only once the Q missile actually lands on the target?",
+   "options": [
+    "Discharge (and the shield) apply on cast, unconditional on the missile hitting",
+    "Discharge is only granted after the missile connects with the target (consistent with the Turbocharge augment's 'After the device hits' language for its bonus effects)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Viktor''' throws a draining device at the target enemy that deals {{as|magic damage}}. He also grants himself a {{tip|shield}}... and gains ''Discharge'' for 4 seconds.",
+    "{{sbc|{{ai|Glorious Evolution|Viktor|Augment: Turbocharge}} — }} After the device hits, '''Viktor''' gains..."
+   ]
+  },
+  {
+   "question": "Does casting Q reset/advance Viktor's basic attack timer, or does the Discharge-empowered attack simply wait for the next naturally scheduled auto-attack?",
+   "options": [
+    "No attack-timer reset; Discharge just marks whichever auto-attack comes next on the existing swing timer",
+    "Casting Q also functions as an attack reset, letting Viktor immediately follow up with the empowered attack without losing swing-timer progress"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Siphon Power) on the dummy for its initial magic missile damage, which also grants Discharge.",
+   "Immediately follow with a basic attack to consume Discharge for its separate modified magic damage before it can expire.",
+   "Cast E (Hextech Ray) through the dummy for its laser damage; it has no cast time, so weave it freely between attacks and other casts.",
+   "Cast R (Arcane Storm) on the dummy for its initial burst damage, then let the singularity tick on the dummy roughly once per second for the remainder of its ~6.5s duration; a recast to redirect it is unnecessary since there is only one stationary target.",
+   "For the rest of the 15s window, recast Q and E on cooldown, always pairing each Q with a following basic attack to use Discharge, and keep auto-attacking between casts to maximize on-hit and empowered-attack uptime.",
+   "Never cast W: it deals no damage, and its slow/stun has no effect on a stationary dummy that does not move or fight back.",
+   "R will not come off cooldown again inside the 15s window (80-120s cooldown, post-effect start), so it is cast exactly once."
+  ],
+  "questions": [
+   "Does Q's cast reset or otherwise interact with Viktor's basic-attack swing timer, and should the auto-attack that consumes Discharge be thrown just before or just after the Q cast for maximum uptime?",
+   "Given R's long cooldown means it fires at most once regardless of sequencing, does opening the fight with R (to front-load its 6.5s DoT before the fight ends) beat opening with Q/E to build early Discharge/attack-speed uptime?",
+   "Should E be cast before or after Q and the first auto-attack, given its instant cast time but nonzero travel delay before the laser actually connects with the dummy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

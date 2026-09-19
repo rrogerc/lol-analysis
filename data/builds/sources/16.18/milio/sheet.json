@@ -1,0 +1,523 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MilioPassive",
+    "key": "Characters/Milio/Spells/MilioPassiveAbility/MilioPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "MaxMonsterDamage": 100,
+     "BurnDuration": 1.5,
+     "BaseDamageStart": 10,
+     "BaseDamageEnd": 50
+    },
+    "calcs": {
+     "ADBurstRatio": {
+      "expr": "byLevelL[0.07/0.07/0.07/0.07/0.07/0.11/0.11/0.11/0.15/0.15/0.15/0.15/0.15/0.15/0.15/0.15/0.15/0.15]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.07,
+        0.07,
+        0.07,
+        0.07,
+        0.07,
+        0.11,
+        0.11,
+        0.11,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "BurnDamage": {
+      "expr": "<{ee18a47b}> + 0.2xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {ee18a47b}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "MilioQ",
+    "key": "Characters/Milio/Spells/MilioQAbility/MilioQ",
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "SlowDuration": 1.5,
+     "FallDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       140,
+       200,
+       260,
+       320
+      ]
+     },
+     "FallTime": 0.8,
+     "FallRadius": 250,
+     "KnockbackDistance": 140,
+     "KnockbackMinionDistance": 340,
+     "ImpactAdjustment": 50,
+     "ExtraVisionDuration": 1.25,
+     "MinionFallRadius": 275,
+     "MinionFallTime": 0.9,
+     "RefundRatio": 0.5
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "FallDamage=[80/140/200/260/320] + 1.2xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        140,
+        200,
+        260,
+        320
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "FallDamage"
+      ]
+     },
+     "SlowAmountPercent": {
+      "expr": "SlowAmount=[0.4/0.45/0.5/0.55/0.6] + 0.0005xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0005
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "SlowAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "MilioW",
+    "key": "Characters/Milio/Spells/MilioWAbility/MilioW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      29,
+      27,
+      25,
+      23,
+      21
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      90,
+      100,
+      110,
+      120,
+      130
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ZoneDuration": 6,
+     "Radius": 350,
+     "RangePctIncrease": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.125,
+       0.15,
+       0.175,
+       0.2
+      ]
+     },
+     "HealFrequencySeconds": 3,
+     "TotalHealingOverTime": {
+      "axis": "rank",
+      "v": [
+       70,
+       90,
+       110,
+       130,
+       150
+      ]
+     },
+     "HealAPRatio": 0.15
+    },
+    "calcs": {
+     "RangePercent": {
+      "expr": "RangePctIncrease=[0.1/0.125/0.15/0.175/0.2]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.1,
+        0.125,
+        0.15,
+        0.175,
+        0.2
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "RangePctIncrease"
+      ]
+     },
+     "HealingOverTime": {
+      "expr": "TotalHealingOverTime=[70/90/110/130/150] + (HealAPRatio=0.15)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        90,
+        110,
+        130,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "HealAPRatio"
+       }
+      ],
+      "refs": [
+       "HealAPRatio",
+       "TotalHealingOverTime"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "MilioE",
+    "key": "Characters/Milio/Spells/MilioEAbility/MilioE",
+    "cooldown": 0.5,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ]
+    },
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MoveSpeedAmount": {
+      "axis": "rank",
+      "v": [
+       0.12,
+       0.14,
+       0.16,
+       0.18,
+       0.2
+      ]
+     },
+     "MoveSpeedDuration": 2.5,
+     "ShieldBase": {
+      "axis": "rank",
+      "v": [
+       45,
+       75,
+       105,
+       135,
+       165
+      ]
+     },
+     "DecayDelay": 0.15
+    },
+    "calcs": {
+     "ShieldCalc": {
+      "expr": "ShieldBase=[45/75/105/135/165] + 0.45xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        45,
+        75,
+        105,
+        135,
+        165
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.45
+       }
+      ],
+      "refs": [
+       "ShieldBase"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "MilioR",
+    "key": "Characters/Milio/Spells/MilioRAbility/MilioR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      145,
+      130
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.713,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HealBase": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "TenacityDuration": 3,
+     "TenacityAmount": 0.65,
+     "HealFXDelay": 0.1
+    },
+    "calcs": {
+     "HealCalc": {
+      "expr": "HealBase=[150/250/350] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "HealBase"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "MilioQ",
+  "W": "MilioW",
+  "E": "MilioE",
+  "R": "MilioR",
+  "P": "MilioPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 365,
+   "{6216bf7b}": 43,
+   "{c4ab3550}": 2.3,
+   "{3a509002}": 0.08
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Milio",
+  "name": "Milio",
+  "partype": "Mana",
+  "passive": "Fired Up!",
+  "spells": [
+   {
+    "id": "MilioQ",
+    "name": "Ultra Mega Fire Kick",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "MilioW",
+    "name": "Cozy Campfire",
+    "maxrank": 5,
+    "cooldown": [
+     29,
+     27,
+     25,
+     23,
+     21
+    ],
+    "cost": [
+     90,
+     100,
+     110,
+     120,
+     130
+    ]
+   },
+   {
+    "id": "MilioE",
+    "name": "Warm Hugs",
+    "maxrank": 5,
+    "cooldown": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "cost": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ]
+   },
+   {
+    "id": "MilioR",
+    "name": "Breath of Life",
+    "maxrank": 3,
+    "cooldown": [
+     160,
+     145,
+     130
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Fired Up!": {
+    "damagetype": "Magic",
+    "spelleffects": "default",
+    "spellshield": "Special",
+    "targeting": "Passive",
+    "affects": "Allies, Enemies"
+   }
+  },
+  "Q": {
+   "Ultra Mega Fire Kick": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Cozy Campfire": {
+    "targeting": "{{dv|[[Location-targeted|Location]]|[[Unit-targeted|Unit]]}}",
+    "affects": "Self, Allies",
+    "costtype": "Mana"
+   },
+   "Cozy Campfire 2": {}
+  },
+  "E": {
+   "Warm Hugs": {
+    "targeting": "Unit",
+    "affects": "Self, Allies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Breath of Life": {
+    "targeting": "Auto",
+    "affects": "Self, Allies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

@@ -1,0 +1,143 @@
+{
+ "champion": "sylas",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Unshackled stacks up to 3 (4s duration each, refreshing on cast) granting 125% bonus attack speed while stacked; casting any ability generates a stack"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Next basic attack consumes a stack to become an uncancellable, empowered whirl dealing magic damage to the primary target and reduced magic damage to nearby enemies"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Petricite Burst's primary-target damage can critically strike (wiki-noted bug: 175% instead of intended 200%); no crit on secondary targets"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's initial converging-chain hit and W's dash-strike each deal magic damage on cast/short delay, on cooldown, for mana"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Chain Lash has two separately timed damage instances: the initial chain hit, then a 0.6s-delayed explosion at the intersection point"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Abscond (no damage, sets up) followed within a 3.5s window by Abduct (the actual chain-hit damage + dash), functioning as a two-part ability"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Kingslayer's self-heal scales with Sylas's own missing health, from a minimum to a doubled maximum heal; relevant to the survival fight's damage-taken accounting"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on all four active abilities can meaningfully cap the number of casts achievable within the 15s window"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hijack's per-target cooldown (200% of the target's base ultimate cooldown, minimum 40s, starting on steal) effectively prevents casting R twice on the same dummy within a 15s fight"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hijacked abilities that lack an AP ratio have their AD ratios converted into AP ratios scaling off Sylas's own total/bonus AD"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "R (Hijack) steals a copy of the targeted enemy champion's ultimate ability, and its damage/behavior entirely depends on which champion's kit is copied. The primitive list cannot express an arbitrary borrowed ability's mechanics; simulating R's offensive contribution against a stationary dummy (which likely has no ultimate to steal) requires a bespoke assumption about what, if anything, R contributes to the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "Does Hijack contribute any direct damage in the dummy fight, given the target is a stationary dummy rather than a champion with a stealable, damage-dealing ultimate?",
+   "options": [
+    "Exclude R from the damage fight entirely (only its own cast contributes an Unshackled stack; no stolen-ultimate damage is modeled)",
+    "Assume some generic/average stolen ultimate and model its damage using the AD-to-AP conversion rules",
+    "Assume R is never cast in the damage fight since no valid steal target/ability exists"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "What is the correct missing-health breakpoint for Kingslayer's heal to reach its maximum (2x) value: the bin's SylasW.MaxExecuteThreshold=0.4 (40% missing health) or the wiki's stated 0 to 60% missing health scaling?",
+   "options": [
+    "Use bin value: heal reaches max at 40% missing health",
+    "Use wiki value: heal reaches max at 60% missing health"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|type=his '''missing''' health|key=%|0 to 100 for 11|key1=%|0 to 60|formula=1% per 0.6% of '''Sylas'' missing health}}"
+   ]
+  },
+  {
+   "question": "Does casting E (Abscond then Abduct) generate one Unshackled stack for the whole combo, or two separate stack-generating events (one per ability activation, since the bin lists SylasE and SylasE2 as distinct spells)?",
+   "options": [
+    "Abscond and Abduct each independently generate/refresh a stack (two events from one E use)",
+    "The Abscond→Abduct sequence is treated as a single ability activation granting one stack"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "Does Kingslayer's 0.5s 'queue time' function like a cast time that delays the dash/strike and locks Sylas out of other actions, or is it a targeting-only queue with the ability otherwise resolving near-instantly (consistent with its stated 'cast time = none')?",
+   "options": [
+    "Treat the 0.5s as an effective cast/action-lock delaying the damage instance",
+    "Treat 'cast time = none' as authoritative and ignore the queue time for pacing purposes"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "|cast time = none",
+    "|queue time   = {{fd|0.5}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Enter the fight at max ranks with an Unshackled stack window already primed (auto-attack once beforehand if allowed, to have the empowered Petricite Burst attack ready).",
+   "Open with Abscond into Abduct (E) to close distance, generate/refresh an Unshackled stack, and land its magic-damage hit.",
+   "Immediately follow with Kingslayer (W) to dash-strike the dummy for magic damage and refresh the Unshackled stack window.",
+   "Weave in the empowered basic attack (consumes a stack for bonus magic damage via Petricite Burst) whenever a stack is available.",
+   "Cast Chain Lash (Q) at the dummy for its initial magic damage, then let the 0.6s-delayed explosion land as a separate damage instance while continuing basic attacks.",
+   "Cast Hijack (R) once, primarily to bank an extra Unshackled stack from the cast; recast its stolen ability only if the dossier's ruling on R's damage contribution allows it.",
+   "Repeat E → W → Q on cooldown for the remainder of the 15s window, filling every gap with empowered/basic attacks, respecting each ability's mana cost against Sylas's mana pool."
+  ],
+  "questions": [
+   "Should R be included in the optimal rotation at all, or omitted given the dummy fight offers no meaningful stealable ultimate?",
+   "Does the simulator assume abilities are already at max rank for the whole 15s fight, or does leveling occur during it (affecting Q/W/E/R damage values used in the rotation)?",
+   "Is Sylas assumed to open already in range of the dummy, or does he need to spend part of the 15s closing distance with E before any damage lands?",
+   "Should the rotation prioritize maximizing raw damage output (favoring Q/W/E on cooldown) or maximizing empowered-attack uptime (favoring auto-attack weaving), if the two conflict under mana constraints?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,261 @@
+{
+ "name": "Darkin Daggers",
+ "cooldown": {
+  "values": [
+   9,
+   8.5,
+   8,
+   7.5,
+   7
+  ],
+  "quote": "{{ap|9 to 7}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   60,
+   70,
+   80,
+   90
+  ],
+  "quote": "{{ap|50 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Initial Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    35,
+    40,
+    45,
+    50,
+    55
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|35 to 55}} {{as|(+ 20% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriQ#TotalDamageFirstCast"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Bleed Physical Damage per Tick",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    3.5,
+    6,
+    8.5,
+    11,
+    13.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.08
+    }
+   ],
+   "quote": "{{ap|35/10 to 135/10}} {{as|(+ {{ap|80/10}}% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriQ.BleedBaseDamage",
+    "NaafiriQ.BleedInterval",
+    "NaafiriQ.BleedDuration"
+   ],
+   "binNote": "The bin only stores the total bleed damage (NaafiriQ.BleedBaseDamage=[35/60/85/110/135], bonus AD ratio 0.8) delivered over BleedDuration=5 seconds in ticks every BleedInterval=0.5s, i.e. 10 ticks. The wiki's per-tick value divides these totals by 10 (35/10..135/10, 0.8/10=0.08); no bin row states the per-tick number directly."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Total Bleed Physical Damage",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    35,
+    60,
+    85,
+    110,
+    135
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.8
+    }
+   ],
+   "quote": "{{ap|35 to 135}} {{as|(+ 80% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriQ#TotalBleedDamage"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Minimum Bonus Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    42.5,
+    55,
+    67.5,
+    80
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|30 to 80}} {{as|(+ 40% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriQ#TotalMinDamageSecondCast"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Maximum Bonus Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    60,
+    85,
+    110,
+    135,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.4
+    }
+   ],
+   "quote": "{{ap|30*2 to 80*2}} {{as|(+ {{ap|40*3.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriQ#TotalMaxDamageSecondCast"
+   ],
+   "binNote": "TotalMaxDamageSecondCast = (BaseDamageSecondCast + SecondCastMaxADRatio=0.7 x bonus ad) * ExecuteMultiplier=2, which yields base 2x[30/42.5/55/67.5/80]=[60/85/110/135/160] and AD coefficient 0.7*2=1.4, matching the wiki numbers; ExecuteMultiplier and SecondCastMaxADRatio are only multiplicative factors within that calculation and carry no standalone number stated by this value."
+  },
+  {
+   "id": "q_9",
+   "meaning": "Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    45,
+    60,
+    75,
+    90,
+    105
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|45 to 105}} {{as|(+ 40% '''bonus''' AD)}}",
+   "bin": [
+    "NaafiriQ#TotalHealSecondCast"
+   ]
+  },
+  {
+   "id": "q_10",
+   "meaning": "Recast lockout time (earliest recast is possible)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "can be recast after {{fd|0.5}} seconds",
+   "bin": [
+    "NaafiriQ.RecastLockout"
+   ],
+   "binNote": "Wiki description states the recast becomes available after 0.5 seconds, but the bin's NaafiriQ.RecastLockout value is 0.75."
+  },
+  {
+   "id": "q_11",
+   "meaning": "Recast window (time within which recast is free)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "within 4 seconds at no additional cost",
+   "bin": [
+    "NaafiriQ.RecastWindow"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The recast can be used again for free within a 4 second window after the first cast, at no additional cost.",
+   "quote": "''Darkin Daggers'' can be recast after {{fd|0.5}} seconds and within 4 seconds at no additional cost.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the dagger hits a target that is already bleeding (i.e. a prior application from the first cast or a prior recast), it instead deals the remaining bleed damage all at once plus additional bonus damage, rather than applying a new bleed.",
+   "quote": "If the dagger hits a target that is already {{as|bleeding|buzzword3}}, they are instead {{ccs|dealt|physical}} the remaining {{as|bleed|buzzword3}} damage plus {{as|'''additional bonus''' physical damage|physical damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The additional bonus damage on a bleeding target scales with the target's missing health, up to a cap at 100% missing health.",
+   "quote": "with the '''base bonus''' damage increased by {{as|{{pp|key=%|key1=%|type=target's '''missing''' health|0 to 100 for 11|0 to 100|formula=1% per 1% of target's '''missing''' health, capped at 100% '''missing''' health}}|health}} and the ''scaling'' for the '''bonus''' damage increased by {{as|{{pp|key=%|key1=%|type=target's '''missing''' health|0 to 250 for 11|0 to 100|formula=2.5% per 1% of target's '''missing''' health, capped at 100% '''missing''' health}}|health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Naafiri only heals herself from this bonus damage if the target is a champion or a large monster (not applicable against a plain target dummy unless it counts as a champion).",
+   "quote": "If that target is also a {{tip|champion}} or large {{tip|monster}}, '''Naafiri''' {{tip|heal|heals}} herself.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The additional damage calculation uses the target's missing health before the remaining bleed damage is applied, meaning the bleed damage does not increase the missing-health scaling of the bonus hit that delivers it.",
+   "quote": "''Darkin Daggers'' calculates its additional damage based on missing health before applying the remaining bleed damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bleed's execute against minions considers both the initial hit and any prior bleed ticks when checking whether the target is under the execute threshold.",
+   "quote": "''Darkin Daggers' '' {{tip|execute}} against minions considers both the damage of the initial hit of the dagger and any bleed tick for putting the target under the threshold.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability's cooldown begins only after its effects/cast (including recast) resolve, not at the moment of the initial cast.",
+   "quote": "post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NaafiriQ.MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NaafiriQ.ExecuteMultiplier",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NaafiriQ.SecondCastMaxADRatio",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NaafiriQ#MinionExecuteThreshold",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

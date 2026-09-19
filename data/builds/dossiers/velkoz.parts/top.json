@@ -1,0 +1,127 @@
+{
+ "champion": "velkoz",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Deconstruction stacks (up to 3, 7s duration, refreshed by attacks/abilities) applied by every ability and on-hit attack; the 3rd stack consumes all stacks for a bonus true-damage burst"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's beam deals true damage instead of magic damage against a target that is 'Researched' (has/reached 3 Deconstruction stacks)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q auto-recasts to split into two perpendicular bolts; W has two separately-timed damage instances (initial rift opening + later collapse); R can be manually recast to end the channel early, otherwise ends automatically at max duration"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "R is a 0.2s-delay then up to 2.6s channel that can be steered and blocks other actions while active"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "R ticks damage every 0.2s for the duration of the channel"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "W"
+   ],
+   "note": "W stocks up to 2 independent charges, each costing its own mana; the ddragon/wiki 'static' field of 1.5s is the minimum time between casts while the wiki's 19-to-15s 'recharge' governs regaining a spent charge"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "E is a location-targeted burst with a cast-distance-dependent delay before it lands, on a flat cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (40-70 per Q/W/E cast, 100 for R) meaningfully cap how many casts, especially cheap-cooldown W, fit into a 15s fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Vel'Koz's mechanics -- Deconstruction stacking into a consumed true-damage burst, Q's automatic split recast, W's dual damage instances plus 2-charge stock system, and R's channelled DoT with a Researched-true-damage conditional switch -- are all expressible with existing primitives (target-stacks, recast-or-multipart, weapon-or-ammo-system, charge-or-channel, dot, conditional-damage, plain-cast, resource-budget). No bespoke logic is required."
+ },
+ "unsettled": [
+  {
+   "question": "Against a single stationary dummy, can Vel'Koz's manual/automatic Q recast (the split into two perpendicular bolts) ever land a second damage instance on the same target, or does the 'an enemy cannot be hit by multiple bolts' restriction prevent any double-hit from one Q cast regardless of split timing?",
+   "options": [
+    "The split bolts can never hit a target already struck by the primary bolt from the same cast, so each Q cast deals exactly one damage instance against a single dummy",
+    "If the recast is triggered manually before the primary bolt reaches the target, a split bolt could still reach and hit the same dummy, yielding a second damage instance per cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "An enemy cannot be hit by multiple bolts even when having blocked one with a {{tip|spell shield}}.",
+    "''Plasma Fission'' can be recast after {{fd|0.25}} seconds while the bolt is in flight, and does so automatically upon hitting an enemy or reaching maximum range."
+   ]
+  },
+  {
+   "question": "W's numbers sheet lists a flat cooldown of 1.5s at every rank (also shown on the wiki template as 'static = {{fd|1.5}}'), but the wiki template also lists a separate 'recharge' of 19 to 15s (by rank) to regenerate a spent stocked charge, with a max of 2 charges banked. Which value should the simulator use to determine how many W casts land in the 15s fight?",
+   "options": [
+    "Start with 2 charges banked, cast both back-to-back (1.5s apart, per the 'static' field), then wait the full recharge (~15-19s) before a 3rd cast is available -- W is effectively cast twice in a 15s fight",
+    "Treat the 1.5s 'static' value as W's real cooldown and ignore the charge-recharge mechanic, allowing near-continuous W casts limited only by mana",
+    "Treat the recharge value (15-19s) as the effective steady-state cooldown per charge, so at most 2-3 casts occur total"
+   ],
+   "impact": "high",
+   "quotes": [
+    "|static       = {{fd|1.5}}",
+    "|recharge     = {{ap|19 to 15}}",
+    "'''Vel'Koz''' periodically [[stock]]s a ''Void Rift'' charge, up to a maximum of 2."
+   ]
+  },
+  {
+   "question": "R applies a Deconstruction stack every 0.7s during its own channel. If this pushes the target to 3 stacks (Researched) partway through the channel, do the remaining ticks of that same R cast switch to true damage, or does the true-damage bonus only apply if the target was already Researched before R began channeling?",
+   "options": [
+    "The switch to true damage is checked per-tick, so ticks after the target reaches Researched status mid-channel deal true damage even if earlier ticks in the same cast dealt magic damage",
+    "The damage type for the whole R cast is locked in at channel start based on whether the target was already Researched, so a target that only reaches Researched status via R's own stacking still takes magic damage for that entire cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Applying 3 {{ai|Organic Deconstruction|Vel'Koz|''Deconstruction''}} stacks to an enemy {{tip|champion}} marks them as ''Researched'' for 7 seconds",
+    "The beam deals {{as|magic damage}} to enemies hit every {{fd|0.2}} seconds... {{ai|Researched|Vel'Koz|''Researched''}} enemies take {{as|true damage}} instead."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with E on the dummy (applies the first Deconstruction stack and deals its upfront damage after the cast-distance-dependent delay).",
+   "Follow immediately with Q (the primary bolt hits for a second Deconstruction stack and its damage); do not rely on the split recast landing extra damage against a single stationary target.",
+   "Cast W using both available charges back-to-back (each application's initial+collapse damage lands and applies stacks); the second W's hit should push the target to 3 Deconstruction stacks, triggering Organic Deconstruction's bonus true-damage burst.",
+   "Weave basic attacks into any gap between ability casts to keep refreshing Deconstruction stacks and add on-hit damage.",
+   "Cast R once available and channel it for its full duration on the dummy, steering to keep it centered; once the target is Researched (3 stacks), R's remaining ticks (and any it re-applies) deal true damage.",
+   "After R ends, resume Q -> E -> W on cooldown (respecting W's limited charge recharge and everyone's mana costs) to keep re-triggering the Deconstruction true-damage burst and Researched status for the rest of the 15s window.",
+   "Given R's 80-100s cooldown, expect only a single R cast within the 15s fight; sequence the rest of the kit around it rather than around repeated R casts."
+  ],
+  "questions": [
+   "Should R be cast as early as possible to front-load its long cooldown even though the target may not yet be Researched (so part of the channel deals magic, not true, damage), or should the rotation delay R until 3 Deconstruction stacks are already up so more of the channel deals true damage?",
+   "Does the simulator assume Vel'Koz starts the 15s fight with R already off cooldown, or must its long cooldown be respected from a fresh fight start (making it usable at most once)?",
+   "Should W's two charges be spent immediately at the start of the fight for a fast Researched trigger, or held/staggered to keep a charge banked for later re-triggering of Organic Deconstruction's true-damage burst?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

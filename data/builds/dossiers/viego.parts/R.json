@@ -1,0 +1,155 @@
+{
+ "name": "Heartbreaker",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "bonus physical damage to most wounded enemy champion based on missing health",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.12,
+      0.16,
+      0.2
+     ],
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.05
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|12 to 20}}% {{as|(+ 5% per 100 '''bonus''' AD)}} of target's '''missing''' health}}",
+   "bin": [
+    "ViegoR#TotalPercentHealth"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "physical damage dealt to all targets hit on arrival",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.2
+    }
+   ],
+   "quote": "{{as|120% AD}} {{as|physical damage}}, increased by {{critical damage|0 to 70|critScaling=true}}",
+   "bin": [
+    "ViegoR#TotalDamage"
+   ],
+   "binNote": "Formula also includes a multiplicative crit-chance/crit-damage term ((CritMod=0.7 x critChance)*(critDamage-1)) not expressible as a simple additive term; recorded as the base 120% AD ratio, crit scaling noted in mechanics."
+  },
+  {
+   "id": "r_3",
+   "meaning": "slow applied to the primary struck target",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.99,
+   "terms": [],
+   "quote": "{{tip|slow|slowing}} them by 99% for {{fd|0.25}} seconds",
+   "bin": [
+    "ViegoR.SlowPercent"
+   ]
+  },
+  {
+   "id": "r_3b",
+   "meaning": "duration of the slow applied to the primary struck target",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{tip|slow|slowing}} them by 99% for {{fd|0.25}} seconds",
+   "bin": [
+    "ViegoR.SlowDuration"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "cast time triggered upon striking an enemy champion, before the automatic attack command",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "'''Viego''' will enter a {{fd|0.25}}-second [[cast time]] if he strikes an enemy champion.",
+   "bin": [],
+   "binNote": "No bin row carries this post-strike cast-time value; the sheet's ViegoR.LockoutTime (1.5) does not match this 0.25 number, so this appears to be wiki-only tooltip text not represented in the bin data available."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Upon arrival, Viego applies on-hit effects to the most wounded enemy champion hit.",
+   "quote": "applying {{tip|on-hit}} effects",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "After the post-strike cast time, Viego automatically basic-attacks the struck champion, ignoring the player's prior movement input.",
+   "quote": "After this cast time, he will automatically receive an attack command against that enemy. Previous movement inputs from the player are ignored.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The strike to the primary champion is tagged as both basic damage and spell damage, so it triggers spell effects as well as on-hit/on-attack-relevant interactions; the damage to other enemies is area damage.",
+   "quote": "To the struck champion deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}; to all other enemies, deals {{tip|area damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The strike to the champion can be dodged and blocked, but not missed (from blind effects).",
+   "quote": "''Heartbreaker's'' strike to the champion can be {{tip|dodge|dodged}} and {{tip|block|blocked}}, but not {{tip|blind|missed}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Viego gains displacement immunity during the blink and cannot be deterred by crowd control while casting.",
+   "quote": "'''Viego''' gains {{tip|displacement immunity}} over the cast time, then {{tip|blink|blinks}} to the target location.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Other enemies hit besides the primary target are knocked back rather than taking the missing-health bonus damage or slow.",
+   "quote": "Other nearby enemies are {{tip|airborne|knocked back}} up to 400-units away based on proximity, though not through terrain.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ViegoR.LockoutTime",
+   "reason": "unknown"
+  },
+  {
+   "ref": "ViegoR.KnockbackBonusRange",
+   "reason": "utility"
+  },
+  {
+   "ref": "ViegoR.KnockbackSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "ViegoR.KnockbackGravity",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

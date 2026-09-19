@@ -1,0 +1,109 @@
+{
+ "champion": "lulu",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Pix fires 3 bolts (each 0.05 AP-scaled magic damage to the first target hit) on every Lulu basic attack; separate damage instances stacked on top of the basic attack."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Glitterlance fires two separately-calculated bolts (Lulu's full-value bolt and Pix's 50%-value bolt) from different origins, each its own damage instance against the same target."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q (both bolts) and enemy-cast E deal magic damage on cast/short delay, on cooldown, against the dummy which counts as an enemy champion."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Self-cast Whimsy is instant and grants 20-30% bonus attack speed for 3-4s, raising basic-attack (and therefore onhit-rider) throughput in the damage fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on Q/W/E/R meaningfully cap how many casts fit into the 15s window, especially at low levels/low mana items."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Ally/self-cast E grants a champion-only shield (2.5s) and R grants bonus health (275-575 +55% AP) for 7s; both add effective HP for the survival fight but deal no damage and are irrelevant to the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic that matters to the two fights maps onto an existing primitive: P is a straightforward onhit-rider, Q is a two-part plain-cast burst, W is a timed self attack-speed buff, E splits cleanly into a plain-cast damage part (enemy) and a defensive-only shield part (ally/self), R is a defensive-only bonus-health buff, and mana costs form a resource-budget constraint. Nothing requires logic (stacks, forms, ammo, conversions, execute thresholds, etc.) outside this list."
+ },
+ "unsettled": [
+  {
+   "question": "Does equipping on-hit items suppress Pix's onhit-rider bolts entirely, or only certain multi-hit on-hit effects, in the simulated damage-fight build?",
+   "options": [
+    "Pix's bolts fire independently of any on-hit item stat effects; only true multi-attack on-hit abilities/items like Runaan's Hurricane are excluded",
+    "Any equipped on-hit item suppresses Pix's bolts for that attack, so onhit-rider damage should be zeroed out whenever the item pool includes on-hit effects",
+    "Only multi-target/multi-attack on-hit items (Runaan's-style) suppress Pix; single-target on-hit stat items (Nashor's Tooth, Wit's End) still let Pix also fire"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Pix's'' bolts do not fire alongside abilities that apply {{tip|on-hit}} effects (e.g. {{ii|Runaan's Hurricane}})."
+   ]
+  },
+  {
+   "question": "When Help, Pix! is cast on the enemy dummy, does Pix leave Lulu (and thus disable her onhit-rider bolts) for the full 4-second duration, or does he return to her immediately after dealing the one-off E damage?",
+   "options": [
+    "Pix fully leaves Lulu for the whole 4s, so her basic attacks land with no onhit-rider bolts during that window",
+    "Pix returns to Lulu right after the single E damage instance, so onhit-rider uptime is effectively unaffected by casting E on the enemy"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Lulu''' sends ''{{ai|Pix, Faerie Companion|Lulu|Pix}}'' to the far side of the target enemy for 4 seconds, dealing {{as|magic damage}} and {{tip|true sight|revealing}} them for the same duration.",
+    "''Pix'' snaps back to '''Lulu''' if she is too far away."
+   ]
+  },
+  {
+   "question": "Does the simulator assume both of Glitterlance's bolts (Lulu's and Pix's) always land on the single stationary dummy, or should imperfect aim/positioning reduce Q to a single connecting bolt some of the time?",
+   "options": [
+    "Assume ideal aim: both bolts always hit the dummy, so Q always deals its full stated combined total per cast",
+    "Assume positioning is imperfect enough that only one bolt reliably connects, understating per-cast Q damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Depending on cursor position both bolts can either crossfire, fire in parallel, or in opposite directions."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "At fight start, self-cast Whimsy (instant, no cast time) for immediate bonus attack speed.",
+   "Cast Glitterlance on the dummy on cooldown (~7s) so both Lulu's and Pix's bolts connect.",
+   "Cast Help, Pix! on the dummy on cooldown (~8-10s) for its on-cast magic damage.",
+   "Auto-attack the dummy continuously between casts so Pix's onhit-rider bolts trigger on every basic attack, benefiting from Whimsy's attack-speed buff.",
+   "Recast Whimsy on self again when it comes off cooldown to refresh the attack-speed buff.",
+   "Do not cast Wild Growth in the damage fight; it deals no damage and only adds bonus health/slow, which are irrelevant to a solo-target kill-time ranking."
+  ],
+  "questions": [
+   "Should the mana budget realistically be modeled as limiting how often W/Q/E are all cast inside the 15s window, especially at early levels/low-mana builds?",
+   "If Q's two bolts do not both reliably hit a stationary single target due to aim/positioning, how should the simulator discount per-cast Q damage?",
+   "Is casting E on the dummy every cooldown actually optimal DPS priority, or would preserving mana/cooldown for more frequent Q casts and auto-attacks be better in this specific 1-target dummy scenario?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

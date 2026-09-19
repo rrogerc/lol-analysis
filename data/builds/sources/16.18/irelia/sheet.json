@@ -1,0 +1,656 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "IreliaPassive",
+    "key": "Characters/Irelia/Spells/IreliaPassiveAbility/IreliaPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "BuffDuration": 6,
+     "MaxStacks": 4,
+     "OnHitStructureMod": 0.5,
+     "OnHitBaseDamage": 10,
+     "OnHitPerLevel": 3
+    },
+    "calcs": {
+     "SingleStackAS": {
+      "expr": "byLevel(10..25)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        10.882353,
+        11.764706,
+        12.6470588,
+        13.52941176,
+        14.411765,
+        15.294118,
+        16.17647,
+        17.058823,
+        17.941177,
+        18.82353,
+        19.7058824,
+        20.588235,
+        21.470588,
+        22.352941,
+        23.235294,
+        24.117647,
+        25
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "OnHitBonus": {
+      "expr": "<{b22609db}> + 0.2xbonus ad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {b22609db}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "IreliaQ",
+    "key": "Characters/Irelia/Spells/IreliaQAbility/IreliaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 15,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       25,
+       45,
+       65,
+       85
+      ]
+     },
+     "DashSpeedBonus": 1400,
+     "HealTADCoefficient": {
+      "axis": "rank",
+      "v": [
+       0.09,
+       0.1,
+       0.11,
+       0.12,
+       0.13
+      ]
+     }
+    },
+    "calcs": {
+     "ChampionDamage": {
+      "expr": "BaseDamage=[5/25/45/65/85] + 0.8xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        25,
+        45,
+        65,
+        85
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MinionDamage": {
+      "expr": "BaseDamage=[5/25/45/65/85] + byLevelL[50/61/72/83/94/105/116/127/138/149/160/171/182/193/204/215/226/237] + 0.8xad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "HealAmount": {
+      "expr": "(HealTADCoefficient=[0.09/0.1/0.11/0.12/0.13])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.09,
+          0.1,
+          0.11,
+          0.12,
+          0.13
+         ]
+        },
+        "dataValue": "HealTADCoefficient"
+       }
+      ],
+      "refs": [
+       "HealTADCoefficient"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "IreliaW",
+    "key": "Characters/Irelia/Spells/IreliaWAbility/IreliaW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BasePhysicalDR": 50,
+     "MaxDuration": 1.5,
+     "MinDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "MaxDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       60,
+       90,
+       120,
+       150
+      ]
+     },
+     "MaxBonusRatio": 2,
+     "ChargeTimeForMax": 0.75,
+     "MRReductionAmount": 0.5
+    },
+    "calcs": {
+     "FinalPhysicalDR": {
+      "expr": "byLevel(40..70) + 0.08xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        41.764706,
+        43.52941,
+        45.294118,
+        47.058824,
+        48.82353,
+        50.588235,
+        52.35294,
+        54.117647,
+        55.882353,
+        57.64706,
+        59.411765,
+        61.17647,
+        62.941176,
+        64.70588,
+        66.47059,
+        68.23529,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.08
+       }
+      ],
+      "refs": []
+     },
+     "MinDamageCalc": {
+      "expr": "MinDamage=[10/20/30/40/50] + 0.4xad + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30,
+        40,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.4
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "MinDamage"
+      ]
+     },
+     "MaxDamageCalc": {
+      "expr": "MaxDamage=[30/60/90/120/150] + 1.2xad + 1.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        60,
+        90,
+        120,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.2
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "MaxDamage"
+      ]
+     },
+     "FinalMagicDR": {
+      "expr": "FinalPhysicalDR * MRReductionAmount=0.5",
+      "modifies": "FinalPhysicalDR",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        20.882353,
+        21.764705,
+        22.647059,
+        23.529412,
+        24.411765,
+        25.294117,
+        26.17647,
+        27.058823,
+        27.941177,
+        28.82353,
+        29.705883,
+        30.588235,
+        31.470588,
+        32.35294,
+        33.235295,
+        34.117645,
+        35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.04
+       }
+      ],
+      "refs": [
+       "MRReductionAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "IreliaE",
+    "key": "Characters/Irelia/Spells/IreliaEAbility/IreliaE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      14.5,
+      13,
+      11.5,
+      10
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "StunDuration": 0.75,
+     "RevTime": 0.35,
+     "BuffDuration": 3.5,
+     "CDBetweenCast": 0.25,
+     "MaxRange": 775,
+     "MinRange": 50,
+     "MarkDuration": 5,
+     "APRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/110/150/190/230] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "IreliaR",
+    "key": "Characters/Irelia/Spells/IreliaRAbility/IreliaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      125,
+      105,
+      85
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseMissileDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       200,
+       275
+      ]
+     },
+     "BaseZoneDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       200,
+       275
+      ]
+     },
+     "CCDuration": 1.5,
+     "SlowAmount": 90,
+     "MarkDuration": 5,
+     "ZoneDuration": 2.5,
+     "CooldownAmount": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       1,
+       1.5
+      ]
+     },
+     "APRatio": 1
+    },
+    "calcs": {
+     "MissileDamage": {
+      "expr": "BaseMissileDamage=[125/200/275] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        200,
+        275
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseMissileDamage"
+      ]
+     },
+     "ZoneDamage": {
+      "expr": "BaseZoneDamage=[125/200/275] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        200,
+        275
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseZoneDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "IreliaQ",
+  "W": "IreliaW",
+  "E": "IreliaE",
+  "R": "IreliaR",
+  "P": "IreliaPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Irelia",
+  "name": "Irelia",
+  "partype": "Mana",
+  "passive": "Ionian Fervor",
+  "spells": [
+   {
+    "id": "IreliaQ",
+    "name": "Bladesurge",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ]
+   },
+   {
+    "id": "IreliaW",
+    "name": "Defiant Dance",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "IreliaE",
+    "name": "Flawless Duet",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14.5,
+     13,
+     11.5,
+     10
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "IreliaR",
+    "name": "Vanguard's Edge",
+    "maxrank": 3,
+    "cooldown": [
+     125,
+     105,
+     85
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Ionian Fervor": {
+    "damagetype": "Magic",
+    "spelleffects": "Proc",
+    "targeting": "Passive",
+    "affects": "[[Self]]"
+   }
+  },
+  "Q": {
+   "Bladesurge": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "onhiteffects": "True",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Defiant Dance": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "{{dv|[[Auto-targeted|Auto]]|[[Direction-targeted|Direction]]}}",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Flawless Duet": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Vanguard's Edge": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

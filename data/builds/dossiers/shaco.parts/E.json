@@ -1,0 +1,212 @@
+{
+ "name": "Two-Shiv Poison",
+ "cooldown": {
+  "values": [
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "quote": "8"
+ },
+ "cost": {
+  "values": [
+   75,
+   75,
+   75,
+   75,
+   75
+  ],
+  "quote": "75",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_2",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    70,
+    95,
+    120,
+    145,
+    170
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.8
+    },
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|70 to 170}} {{as|(+ 80% '''bonus''' AD)}} {{as|(+ 60% AP)}}",
+   "bin": [
+    "TwoShivPoison#TotalDamage"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Increased Damage (target below 30% max health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    105,
+    142.5,
+    180,
+    217.5,
+    255
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.2
+    },
+    {
+     "stat": "ap",
+     "coef": 0.9
+    }
+   ],
+   "quote": "{{ap|70*1.5 to 170*1.5}} {{as|(+ {{ap|80*1.5}}% '''bonus''' AD)}} {{as|(+ {{ap|60*1.5}}% AP)}}",
+   "bin": [
+    "TwoShivPoison#TotalExecuteDamage"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Execute health threshold",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "'''below''' 30% of their '''maximum''' health",
+   "bin": [
+    "TwoShivPoison.ExecuteHealthThreshold"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Backstab bonus magic damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    15.0,
+    17.06,
+    19.12,
+    21.18,
+    23.24,
+    25.29,
+    27.35,
+    29.41,
+    31.47,
+    33.53,
+    35.59,
+    37.65,
+    39.71,
+    41.76,
+    43.82,
+    45.88,
+    47.94,
+    50.0
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{as|{{pp|15 + (50-15)/17*(x-1) for 20}}|magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}}",
+   "bin": [
+    "ShacoPassive#ShivDamage"
+   ],
+   "binNote": "This backstab bonus is implemented via the ShacoPassive spell's ShivDamage calculation (byLevel(15..50) + 0.1xap), not a row on the TwoShivPoison spell itself, though the wiki attributes it to Two-Shiv Poison's backstab bonus."
+  },
+  {
+   "id": "e_7",
+   "meaning": "Backstab bonus magic damage, increased (target below 30% max health)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    22.5,
+    25.59,
+    28.68,
+    31.77,
+    34.85,
+    37.94,
+    41.03,
+    44.12,
+    47.21,
+    50.29,
+    53.38,
+    56.47,
+    59.56,
+    62.65,
+    65.74,
+    68.82,
+    71.91,
+    75.0
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.15
+    }
+   ],
+   "quote": "increased to {{as|{{pp|15*1.5 + (50*1.5-15*1.5)/17*(x-1) for 20}}|magic damage}} {{as|(+ {{ap|10*1.5}}% AP)}} if the target is {{as|'''below''' 30% of their '''maximum''' health}}",
+   "bin": [
+    "ShacoPassive#ShivDamageExecute"
+   ],
+   "binNote": "Implemented via ShacoPassive's ShivDamageExecute = ShivDamage * 1.5, not a Two-Shiv Poison spell row."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "While Two-Shiv Poison is off cooldown, Shaco's basic attacks slow the target, but the slow itself does not change damage dealt or taken.",
+   "quote": "'''Shaco's''' basic attacks {{tip|slow}} enemies for 2 seconds while ''Two-Shiv Poison'' is not on cooldown.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The active dagger throw deals bonus increased magic damage if the target is below 30% of their maximum health.",
+   "quote": "deals {{as|magic damage}}, {{ccs|increased by 50%|magic}} if they are {{as|'''below''' 30% of their '''maximum''' health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the target is a backstabbed enemy, the dagger deals additional bonus magic damage, itself increased under the same low-health execute condition.",
+   "quote": "The dagger deals an additional {{as|{{pp|15 + (50-15)/17*(x-1) for 20}}|magic damage}} {{as|(+ 10% AP)}} {{as|'''bonus''' magic damage}}, increased to {{as|{{pp|15*1.5 + (50*1.5-15*1.5)/17*(x-1) for 20}}|magic damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Shaco reuses his last attack animation for the Two-Shiv Poison cast.",
+   "quote": "'''Shaco''' replicates the last attack animation he performed for ''Two-Shiv Poison's'' animation.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TwoShivPoison.SlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "TwoShivPoison.SlowDurationPassive",
+   "reason": "utility"
+  },
+  {
+   "ref": "TwoShivPoison.SlowDurationActive",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

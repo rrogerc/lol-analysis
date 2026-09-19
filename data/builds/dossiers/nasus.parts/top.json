@@ -1,0 +1,148 @@
+{
+ "champion": "nasus",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Siphoning Strike arms Nasus' next basic attack with bonus physical damage (base + AD + 100% of Q stacks) within a 10s window"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Casting Siphoning Strike resets Nasus' basic attack timer"
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's bonus damage scales with permanent stacks gained from kills (4 on any kill, 10 on champion/large minion/large monster); a stationary dummy fight never grants new stacks, so an assumed pre-fight stack count is required"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's flat bonus damage plus AD portion is multiplied by crit chance/damage, while the stack-based portion is added afterward unmultiplied per the bin formula"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Wither slows and (via attack-speed cripple) reduces the target's attack speed/output over 5s, ramping every second; relevant only if the target attacks back (survival fight), irrelevant to a passive damage-fight dummy"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spirit Fire's initial hit deals a fixed instant magic damage instance on a 0.25s delay after cast"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E: lingering Spirit Fire ground zone deals magic damage over its 5s duration (tick count/rate disputed). R: Fury of the Sands aura deals magic damage every 0.5s to nearby enemies for 15s"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spirit Fire reduces the target's armor by a percentage for the zone's duration (+1s lingering), increasing subsequent physical damage taken"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Fury of the Sands grants bonus health, armor and magic resist for 15s (health persists after duration ends per wiki note, but that only matters for survival scoring)"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "While Fury of the Sands is active, Siphoning Strike's cooldown is halved, letting Q (and thus empowered autos) recur far more often during the fight"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Fury of the Sands' aura damage per tick is a percentage of the target's maximum health (plus AP scaling), capped at 240 per second, rather than a flat/AD/AP-only number"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Soul Eater is level-scaling life steal; it heals Nasus off damage he deals but never reduces the dummy's effective health and the survival fight has Nasus as the one being attacked, so it is not read by either scored fight as modeled"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage- and survival-relevant mechanic (empowered auto, attack reset, permanent kill-stacks, crit interaction on part of Q's damage, W's target debuff, E's instant hit + lingering DoT + armor shred, R's timed resist/health buff, its percent-max-health aura DoT, and its Q cooldown halving) is expressible as a combination of listed primitives; no additional bespoke logic appears necessary."
+ },
+ "unsettled": [
+  {
+   "question": "How many permanent Siphoning Strike stacks should Nasus be assumed to have entering the 15s damage fight, since the stationary dummy never dies and Q's stack term (100% of stacks) is dominant scaling on live servers?",
+   "options": [
+    "0 stacks (pure baseline kit numbers)",
+    "A fixed 'typical' stack count for the assumed game stage (e.g., 20-50)",
+    "A stack count derived from an assumed number of minion/monster kills prior to the fight, left as a simulator input parameter"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does Spirit Fire's lingering zone tick 5 times over 5 seconds (description text says 'each second') or 10 times over 5 seconds at 0.5s intervals (implied by the tooltip's 'Total Magic Damage = 10x per-tick value')?",
+   "options": [
+    "5 ticks at 1s intervals, per-tick value as listed",
+    "10 ticks at 0.5s intervals with a halved effective per-tick value consistent with the total",
+    "Bin/wiki disagree and the live tick count must be checked against patch notes or in-game testing"
+   ],
+   "quotes": [
+    "dealing {{as|magic damage}} each second to enemies within",
+    "{{ap|10*10 to 34*10}} {{as|(+ 120% AP)}}"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "Because Siphoning Strike's base and stack damage are tagged as both basic (on-hit) damage and spell damage, does it trigger on-hit item/rune effects AND spell-effect item/rune effects on the same cast, effectively double-proccing some builds, or does the engine apply only one category per source?",
+   "options": [
+    "Q triggers both on-hit and spell-effect procs simultaneously as the wiki note implies",
+    "Q triggers only one category depending on the specific item/effect's own rules, with no universal double-proc",
+    "Ambiguous/undocumented for the simulator's purposes and must be decided case-by-case per item"
+   ],
+   "quotes": [
+    "Both ''Siphoning Strike's'' '''base''' damage and damage from stacks are treated as {{tip|basic damage}} but also trigger spell effects by also being tagged as {{tip|spell damage}}."
+   ],
+   "impact": "high"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Enter the fight with an assumed baseline Siphoning Strike stack count (per the unsettled stack-count question) already banked, since the dummy never dies to grant new stacks mid-fight.",
+   "At time 0, cast Fury of the Sands (R) if it is unlocked/off cooldown, to start its 0.5s-tick aura damage immediately, gain the attack-range/resist buffs, and halve Siphoning Strike's cooldown for the rest of the fight.",
+   "Immediately cast Spirit Fire (E) on the dummy's location for its instant initial hit and to start its 5s lingering DoT plus armor shred, maximizing the window during which auto-attacks and Q benefit from the shredded armor.",
+   "Auto-attack continuously; each time Siphoning Strike (Q) comes off cooldown, cast it right before the next auto-attack lands so the attack is empowered with bonus physical damage and the attack timer is reset, then resume auto-attacking.",
+   "Recast Spirit Fire (E) as soon as it comes off its 12s cooldown to reapply the armor shred and stack a second DoT/initial-hit instance before the fight ends.",
+   "Do not cast Wither (W) in the damage fight: its slow/cripple only affects a target's attack output and provides no direct or indirect damage bonus against a stationary, non-attacking dummy."
+  ],
+  "questions": [
+   "At what champion level and ability ranks (does R exist yet?) is the damage fight run, since the rotation and available cooldown-manipulation from R depend entirely on ultimate access?",
+   "What pre-fight Siphoning Strike stack count should be assumed, and is it meant to represent an early-, mid-, or late-game snapshot?",
+   "Can Q be cast and immediately followed by a basic attack with no extra delay (perfect weaving), or does the simulator model any input/animation lag between the Q cast and the empowered auto landing?",
+   "Should Spirit Fire's tick rate (5 vs 10 ticks) be resolved before computing DPS timing, given it changes how many discrete DoT damage events land within the 15s window?",
+   "Given the on-hit/spell-damage double-tag on Q, should item on-hit and spell-amp effects both apply to a single Siphoning Strike attack in the simulator's item-ranking logic?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

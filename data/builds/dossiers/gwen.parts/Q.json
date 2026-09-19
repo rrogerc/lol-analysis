@@ -1,0 +1,193 @@
+{
+ "name": "Snip Snip!",
+ "cooldown": {
+  "values": [
+   6.5,
+   5.75,
+   5,
+   4.25,
+   3.5
+  ],
+  "quote": "{{ap|6.5 to 3.5}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   40,
+   40,
+   40,
+   40
+  ],
+  "quote": "40",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Damage per Snip (edge, non-center)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    10,
+    14,
+    18,
+    22,
+    26
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|10 to 26}} {{as|(+ {{ap|5}}% AP)}}",
+   "bin": [
+    "GwenQ#MiniSwipeDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "A Thousand Cuts damage applied by the center of each snip (percent of target's maximum health)",
+   "role": "dot",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.01,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.006
+      }
+     ]
+    }
+   ],
+   "quote": "{{ai|A Thousand Cuts|Gwen|{{as|(+ {{#var:pd1}}% {{as|(+ {{fd|{{#var:pd2}}}}% per 100 AP)}} of the target's '''maximum''' health)}}}}",
+   "bin": [
+    "GwenP#PercentHealth1000Cuts",
+    "GwenP#{540bce84}"
+   ],
+   "binNote": "This is the passive A Thousand Cuts debuff's own damage formula (defined under GwenP, not GwenQ); the Q ability text just points to it. Its damage type is not stated anywhere in these sources."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Final Snip Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    85,
+    110,
+    135,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.35
+    }
+   ],
+   "quote": "{{ap|60 to 160}} {{as|(+ 35% AP)}}",
+   "bin": [
+    "GwenQ#FinalSwipeDamage"
+   ]
+  },
+  {
+   "id": "q_9",
+   "meaning": "Snippy stack duration (before refresh/expiry)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "generate a {{tip|stack}} of ''Snippy'' {{tip|on-hit}} for 6 seconds, stacking up to 4 times and refreshing on subsequent attacks",
+   "bin": [
+    "GwenQ.BuffDuration"
+   ]
+  },
+  {
+   "id": "q_10",
+   "meaning": "Fraction of each snip's center damage converted to true damage",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "converts 50% of the damage to {{ccs|{{sti|{{as|true damage}}}}|true}}",
+   "bin": [
+    "GwenQ.TrueDamageConversion"
+   ]
+  },
+  {
+   "id": "q_11",
+   "meaning": "Maximum Snippy stacks (bonus snips gained)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "stacking up to 4 times",
+   "bin": [],
+   "binNote": "No GwenQ or GwenP data row in this sheet carries the stack cap of 4; only the wiki text states it."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Gwen's basic attacks generate a stack of Snippy on-hit for 6 seconds, stacking up to 4 times and refreshing on subsequent attacks.",
+   "quote": "'''Gwen's''' {{tip|basic attacks}} generate a {{tip|stack}} of ''Snippy'' {{tip|on-hit}} for 6 seconds, stacking up to 4 times and refreshing on subsequent attacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Gwen snips at least twice in a cone over the cast time, with the final snip dealing increased damage; if she has any Snippy stacks she consumes them to snip an additional time for each.",
+   "quote": "'''Gwen''' snips at least twice with her scissors in a {{tt|cone|see notes}} in the target direction over the cast time, dealing {{as|magic damage}} per snip to all enemies within the area, with the final snip dealing increased damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The center of each snip converts 50% of that snip's damage to true damage, then applies A Thousand Cuts.",
+   "quote": "The center of each snip converts 50% of the damage to {{ccs|{{sti|{{as|true damage}}}}|true}}, then applies ''{{ai|A Thousand Cuts|Gwen}}''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Snip Snip! deals only 80% damage against minions and executes them on the first damage instance if they are below 20% health.",
+   "quote": "''Snip Snip!'' deals 80% damage against {{tip|minions}}, and executes them on the first damage instance if they are {{as|'''below''' 20% health}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks only one snip of the multi-hit ability, not the whole cast.",
+   "quote": "{{tip|Spell shield}} blocks only one snip.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "GwenQ.InitialArcLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "GwenQ.MiniDamageRatio",
+   "reason": "unknown"
+  },
+  {
+   "ref": "GwenQ.ExecuteBonus",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "GwenQ.MinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "GwenQ.ExecuteThreshold",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

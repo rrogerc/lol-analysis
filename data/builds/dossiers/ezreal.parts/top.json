@@ -1,0 +1,102 @@
+{
+ "champion": "ezreal",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Rising Spell Force: each ability hit grants a stack (6s duration, refreshes on new hits) of 10% bonus attack speed, capped at 5 stacks/50% AS."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mystic Shot, Arcane Shift, and Trueshot Barrage each deal a single fixed-formula damage instance on hit/on cooldown; against one stationary dummy every cast connects."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "Essence Flux places a single mark on the target (4s timeout) that is consumed by the next basic attack or ability against it, dealing a separate bonus magic damage instance on detonation."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Mystic Shot on hit reduces the current cooldowns of all of Ezreal's abilities (including itself) by 1.5s, letting Q be cast more often than its base cooldown suggests over the 15s window."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (28-40/50/70/100); spamming Q on cooldown plus W/E/R casts over 15s can plausibly exceed a realistic mana pool, so mana is a real constraint on cast frequency."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (flat scaling damage on Q/E/R, a target-borne mark on W consumed by the next attack/ability, a stacking self attack-speed buff on P, and CDR-on-hit for Q) is expressible with the closed primitive list; no bespoke logic beyond standard primitive semantics is required for the dummy fight."
+ },
+ "unsettled": [
+  {
+   "question": "Does Mystic Shot's 'reduce all abilities' current cooldowns by 1.5s' explicitly include Trueshot Barrage (R), or only the basic abilities (Q/W/E)?",
+   "options": [
+    "R's cooldown is included and gets shortened by repeated Q hits, potentially allowing a second R cast within the 15s window at high enough attack/cast speed",
+    "Only Q/W/E cooldowns are reduced; R is excluded or the effect is negligible for R in practice"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the {{sti|'''current''' cooldowns}} of '''Ezreal's''' abilities, including ''Mystic Shot's'', are reduced by {{fd|1.5}} seconds"
+   ]
+  },
+  {
+   "question": "When Essence Flux's mark is detonated by a basic attack, does the resulting bonus magic damage instance itself count as an on-hit/on-attack proc (triggering onhit item effects a second time on that attack) or is it pure non-triggering spell damage riding the attack?",
+   "options": [
+    "Detonation damage is bundled into the same on-hit event as the attack, so on-hit effects proc once total",
+    "Detonation damage is a separate spell-damage instance that does not itself proc on-hit effects",
+    "Detonation damage independently re-triggers on-hit-style effects as its own instance"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "His next {{tip|basic attack}}<!--on-hit? on-damage?--> or {{tip|ability}} against the target detonates the mark to deal them {{as|'''bonus''' magic damage}}."
+   ]
+  },
+  {
+   "question": "Mystic Shot is tagged as both basic (on-hit) damage and spell damage; when it detonates Essence Flux's mark, does that count as 'attack' or 'ability' for purposes of timing/ordering the two damage instances within the same frame, and could this let Q both proc its own on-hit effects and the W bonus damage as two fully independent instances on one cast?",
+   "options": [
+    "Q's hit and the W detonation are two separate damage instances, both benefiting from all relevant modifiers independently",
+    "The engine treats them as a single combined event for certain interactions (e.g., a single proc-damage trigger for items like Cheap Shot equivalents)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "''Mystic Shot'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast Trueshot Barrage (R) as an opener while cooldowns are all fresh, front-loading its large flat + ratio damage.",
+   "Cast Mystic Shot (Q) on cooldown throughout the fight: it has the lowest cooldown, generates a Rising Spell Force stack, and its on-hit CDR refund shortens the cooldowns of W, E, and (per the ability text) all of Ezreal's abilities, letting it and others be recast slightly faster than their base cooldown implies.",
+   "Cast Essence Flux (W) as soon as it is off cooldown to place its mark on the dummy, then let the very next basic attack (not another ability cast) detonate the mark, so the mark's bonus damage is 'free' and Q/E casts remain available for their own independent damage instances.",
+   "Cast Arcane Shift (E) on cooldown for its own magic damage tick; since there is only one target, its blink and 'nearest enemy' homing behavior always resolve onto the dummy with no positional ambiguity.",
+   "Auto-attack in every gap between ability casts to keep basic-attack damage flowing, to detonate the W mark, and to keep re-triggering/refreshing Rising Spell Force stacks so the 50% bonus attack-speed cap is reached and held as early and as continuously as possible.",
+   "Recast R the moment it comes off cooldown if that happens within the 15s window (likely only relevant at rank 3 with heavy cooldown reduction from repeated Q hits)."
+  ],
+  "questions": [
+   "At what level, rank distribution, and item build (crit/on-hit AD vs. burst AP) is this fight assumed to run, since that determines whether auto-attacks, Q spam, or W/E burst casting dominates the DPS priority?",
+   "Should R be held until later in the fight (after Rising Spell Force and cooldown-refund stacking) rather than opened with, if that materially increases the chance of a second R cast landing inside the 15s window?",
+   "Is there enough assumed mana (base pool plus any mana items/runes) to sustain Q on cooldown plus W/E/R casts for the full 15 seconds, or does the fight need to model Ezreal going OOM and skipping casts?",
+   "Does detonating Essence Flux's mark via an ability (instead of an auto-attack) change the total damage output in this simulator, or is it purely a mana-refund choice with no damage difference — confirming the auto-attack-detonation assumption is damage-optimal and not just mana-optimal?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

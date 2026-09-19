@@ -1,0 +1,647 @@
+{
+ "champion": "riven",
+ "abilities": {
+  "P": {
+   "name": "Runic Blade",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus physical damage on empowered basic attack (percent of AD)",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.3,
+        0.30882354,
+        0.31764707,
+        0.3264705959488364,
+        0.33529412,
+        0.34411765,
+        0.3529412,
+        0.3617647,
+        0.37058824,
+        0.37941176,
+        0.3882353,
+        0.3970588,
+        0.40588235,
+        0.41470588,
+        0.4235294040511636,
+        0.43235293,
+        0.44117646,
+        0.45
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|key=%|30 + (45-30)/17*(x-1) for 20}} AD}}",
+     "bin": [
+      "RivenPassive#TotalDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "additional bonus physical damage on empowered attack vs monsters",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 50,
+     "terms": [],
+     "quote": "{{as|50 '''additional bonus''' physical damage|physical damage}}",
+     "bin": [
+      "RivenPassive.MonsterBonusDamage"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "maximum Charge stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [
+      "RivenPassive.Charges"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "Charge stack duration before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "generate a {{tip|stack}} of ''Charge'' for 6 seconds, refreshing on subsequent casts",
+     "bin": [],
+     "binNote": "no bin DataValue carries the 6 second Charge duration"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ability casts grant a stack of Charge that basic attacks consume for bonus damage; attacks are empowered by consuming a stack, not applied automatically as an on-hit effect.",
+     "quote": "'''Riven's''' {{tip|basic attacks}}<!--not on-hit--> are empowered to each consume a stack to deal {{as|'''bonus''' physical damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Consuming a stack refreshes the Charge duration, and casting an ability also refreshes existing stacks' duration.",
+     "quote": "Runic Blade's duration also refreshes when Riven consumes a stack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage is affected by critical strike modifiers and applies life steal at 100% effectiveness.",
+     "quote": "The '''bonus''' damage is affected by {{tip|critical strike}} modifiers and {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}} at 100% effectiveness.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage against structures is reduced by 50%.",
+     "quote": "reduced to{{ft|50%|{{as|{{pp|key=%|(30 + (45-30)/17*(x-1))*0.5 for 20|formula=50% of non-structure damage}} AD}}}}against {{tip|structures}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not trigger against wards.",
+     "quote": "The empowered attack will not trigger against {{tip|wards}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RivenPassive.TowerRatio",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Broken Wings",
+   "cooldown": {
+    "values": [
+     13,
+     13,
+     13,
+     13,
+     13
+    ],
+    "quote": "{{tt|13|Starts after first cast}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      45,
+      75,
+      105,
+      135,
+      165
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8
+       ]
+      }
+     ],
+     "quote": "{{ap|45 to 165}} {{as|(+ {{ap|60 to 80}}% '''bonus''' AD)}}",
+     "bin": [
+      "RivenTriCleave#FirstSlashDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Riven can activate the ability three times before it goes on cooldown, with a static 0.3125s cooldown between casts, each cast dealing the same per-cast damage.",
+     "quote": "'''Riven''' can activate ''Broken Wings'' three times before the ability goes on cooldown, with a {{fd|0.3125}}-second {{tt|static cooldown|Unaffected by ability haste}} between casts",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Riven does not recast within 4 seconds of the previous cast, the ability goes on cooldown.",
+     "quote": "If '''Riven''' does not recast the ability within 4 seconds of the previous cast, it goes on cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each cast resets Riven's basic attack timer and orders her to basic attack the target of Broken Wings if there are any.",
+     "quote": "{{tip|Basic attack reset|resetting}} her basic attack timer, and ordering her to basic attack the target of ''Broken Wings'' if there are any",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each cast counts as a single ability activation for on-cast effects such as Spellblade.",
+     "quote": "Each cast counts as a single ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The third cast has a larger effect radius and briefly knocks back enemies hit.",
+     "quote": "'''Riven''' mimics the first cast's dash, but now slams her sword in a larger circle, briefly {{tip|airborne|knocking back}} enemies hit as well.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RivenTriCleave.ADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ki Burst",
+   "cooldown": {
+    "values": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "quote": "{{ap|11 to 7}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.2667,
+    "quote": "{{tt|{{fd|0.25}}|see notes}}",
+    "binNote": "Wiki text shows 0.25 but bin's live castTime is 0.2667; using the bin's value since it is the actual game value the wiki tooltip rounds/mislabels."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      65,
+      95,
+      125,
+      155,
+      185
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|65 to 185}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "RivenMartyr#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "stunning them for {{fd|0.75}} seconds",
+     "bin": [
+      "RivenMartyr.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ki Burst's damage and stun apply before the visible cast time finishes.",
+     "quote": "''Ki Burst's'' effects are applied before the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Riven cannot basic attack for a short time right after the cast time ends.",
+     "quote": "'''Riven''' is briefly unable to basic attack after the cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Valor",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      70,
+      95,
+      120,
+      145,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|70 to 170}} {{as|(+ 110% '''bonus''' AD)}}",
+     "bin": [
+      "RivenFeint#TotalShield"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "RivenFeint.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Riven can cast any of her abilities during the dash.",
+     "quote": "'''Riven''' can cast any of her abilities during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Q may be cast during W or R cast times if used at the end or briefly after the dash.",
+     "quote": "{{ai|Q|Riven}} may be cast during {{ai|W|Riven}} or {{ai|R|Riven}} cast times if they're used at the end or briefly after the dash.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RivenFeint.ShieldAmount",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "RivenFeint.BaseShieldAmount",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Blade of the Exile / Wind Slash",
+   "cooldown": {
+    "values": [
+     120,
+     90,
+     60
+    ],
+    "quote": "{{ap|120 to 60}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Minimum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|100 to 200}} {{as|(+ 55% '''bonus''' AD)}}",
+     "bin": [
+      "RivenFengShuiEngine#MinDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Maximum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      300,
+      450,
+      600
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.65
+      }
+     ],
+     "quote": "{{ap|100*3 to 200*3}} {{as|(+ {{ap|55*3}}% '''bonus''' AD)}}",
+     "bin": [
+      "RivenFengShuiEngine#MaxDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Wind Slash damage amplification from target's missing health (interpolates base damage from minimum to maximum), capped at 75% missing health",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 0,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 2.667
+      }
+     ],
+     "quote": "increased by {{as|{{pp|type= target's '''missing''' health|key=%|0 to 200 for 9|key1=%|0 to 75|formula=2.667% per 1% missing health. ''This is capped at 200% bonus damage at 75% missing health.''}}|health}}",
+     "bin": [],
+     "binNote": "No dedicated data value for the missing-health ratio; only MinBase/MaxBase and their AD ratios are stored, and the interpolation formula between them is presumably computed elsewhere (tooltip-only text)."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Bonus attack damage gained while empowered",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.2
+      }
+     ],
+     "quote": "gaining {{as|20% AD}} {{sti|ad|{{as|'''bonus''' attack damage}}}}",
+     "bin": [
+      "RivenFengShuiEngine.PercentBonusAD",
+      "RivenFengShuiEngine#BonusAD"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Duration of the empowered state",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 15,
+     "terms": [],
+     "quote": "'''Riven''' empowers her blade for 15 seconds",
+     "bin": [
+      "RivenFengShuiEngine.Duration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Delay before the empowerment bonuses (bonus AD, range, Wind Slash availability) take effect after cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "All bonuses are gained after {{fd|0.5}} seconds of the ability starting its cast.",
+     "bin": [],
+     "binNote": "Not present as a separate DataValue in the sheet; the bin's own cast time is 0.25s but the wiki notes bonuses apply after 0.5s, a possible discrepancy between cast animation and effect application."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bonus attack damage amount from Blade of the Exile is locked in at the moment of casting and does not update if bonus AD changes afterward.",
+     "quote": "The {{as|'''bonus''' attack damage}} amount is factored upon cast, and does not change.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Blade of the Exile's cooldown begins only after its effect (the 15-second empowerment) ends, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wind Slash's three missiles form a cone and each enemy can only be hit and damaged by one of the three missiles (no multi-hit stacking on a single target).",
+     "quote": "Each enemy can be damaged by only one missile.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Wind Slash counts as an ability activation, triggering on-cast effects like Spellblade.",
+     "quote": "''Wind Slash'' counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wind Slash's damage can be blocked by a spell shield.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RivenFengShuiEngine.TooltipAttackRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Ability casts grant a stack of Charge (cap 3, 6s duration, refreshed by casts and by consumption)"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks consume a Charge stack (when available) to deal bonus physical on-hit damage, crit-modified, applies lifesteal at 100%"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Up to 3 sequential activations of Broken Wings, each a separate damage instance, within a 4s window and 0.3125s static inter-cast gap"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Broken Wings cast resets Riven's basic attack timer and orders an attack on the target"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ki Burst deals a single instance of AoE physical damage on cast"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Valor deals no damage; only shield + dash, relevant to survival fight (shield) not the damage fight"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Blade of the Exile grants 15s of bonus AD (locked in at cast) and attack/ability range"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Wind Slash is a separately-timed follow-up cast available 0.5s into the Blade of the Exile buff, usable once per activation"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Wind Slash's damage interpolates between MinDamage and MaxDamage based on the target's missing health, capped at 75% missing health"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The Charge stack-and-consume mechanic (stacking-self-buff + onhit-rider), the multi-part Q, and Wind Slash's missing-health interpolation (conditional-damage) are all expressible with existing primitives; no additional bespoke logic is required."
+ },
+ "unsettled": [
+  {
+   "question": "Does each of Broken Wings' three sub-casts independently generate/refresh a Runic Blade Charge stack (since each is its own 'ability activation'), or does the whole three-cast sequence only count as generating stacks from its initial activation?",
+   "options": [
+    "Each of the 3 sub-casts is a separate Charge-generating event, allowing Q alone to fill the 3-stack cap and continuously refresh duration",
+    "Only the ability's overall activation grants/refreshes a stack, regardless of how many of the 3 sub-casts are used"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Riven's''' {{tip|ability}} casts generate a {{tip|stack}} of ''Charge'' for 6 seconds, refreshing on subsequent casts and stacking up to 3 times.",
+    "Each cast counts as a single ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive."
+   ]
+  },
+  {
+   "question": "What is the exact formula the bin uses to interpolate Wind Slash's damage between MinDamage and MaxDamage based on target missing health, since no bin DataValue for the ratio/interpolation exists (only tooltip text)?",
+   "options": [
+    "Linear scale: damage = Min + (Max-Min) * min(missingHealth%/0.75, 1)",
+    "Some other non-linear or per-rank-varying interpolation not captured by the wiki's flat 2.667%-per-1% description"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{as|{{pp|type= target's '''missing''' health|key=%|0 to 200 for 9|key1=%|0 to 75|formula=2.667% per 1% missing health. ''This is capped at 200% bonus damage at 75% missing health.''}}|health}}"
+   ]
+  },
+  {
+   "question": "Does Riven begin the damage fight with 0 Runic Blade Charge stacks (since none of her abilities have been cast yet), or should the simulation assume some pre-fight stacking from an assumed opener before the timer starts?",
+   "options": [
+    "0 stacks at t=0; first empowered attack only available after the first ability cast lands and its 6s window is active",
+    "Assume Riven enters combat with a pre-built stack (e.g. from casting an ability just before engage) so an empowered attack is available immediately"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "Does the forced basic attack that each Broken Wings cast triggers ('ordering her to basic attack the target') land as an immediate guaranteed hit, or is it subject to normal attack windup/queue timing that could delay or skip it within the 0.3125s static gap between Q casts?",
+   "options": [
+    "The forced attack fires and lands within each 0.3125s gap, effectively guaranteeing 3 extra attacks during the Q combo",
+    "The forced attack is just a standard attack command that follows normal windup and may not complete before the next Q cast, reducing attack count during the combo"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{tip|Basic attack reset|resetting}} her basic attack timer, and ordering her to basic attack the target of ''Broken Wings'' if there are any."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (Blade of the Exile) to start its 0.25s cast and 0.5s bonus-application delay as early as possible, since its 20% bonus AD, range, and Wind Slash access are locked in for the rest of the fight and the bonus AD amount is fixed at the moment of cast (best cast when bonus AD is already maximized by items).",
+   "Immediately chain all three casts of Q (Broken Wings), spaced by the 0.3125s static inter-cast cooldown, each dealing its physical damage, generating/refreshing a Runic Blade Charge stack, resetting the basic attack timer, and forcing an attack on the dummy.",
+   "Cast W (Ki Burst) as soon as it is off cooldown for its upfront AoE physical damage burst, and to keep Charge stacks topped up.",
+   "As soon as the R empowerment's 0.5s delay has passed, cast Wind Slash for its large single hit, timed as late as feasible in the fight to maximize the dummy's missing-health bonus (subject to the unsettled question above about whether waiting actually increases net damage).",
+   "Continuously auto-attack between and after ability casts; each basic attack consumes an available Runic Blade Charge stack for bonus on-hit physical damage (crit- and lifesteal-eligible), and each consumption refreshes the Charge duration.",
+   "Recast the full 3-part Q combo again once its 13s cooldown is available near the end of the 15s window for another burst of damage plus attack resets.",
+   "Do not cast E (Valor) in the damage fight: it deals no damage and only provides a shield/dash, which the damage fight does not use."
+  ],
+  "questions": [
+   "Should Wind Slash be cast early (guaranteed base+AD value) or delayed to exploit the missing-health scaling, given the interpolation formula is not settled and the dummy's health trajectory over the 15s fight depends on prior damage dealt?",
+   "Is it correct to assume Riven can cast R at the very start of the fight without losing damage uptime, given its 0.25s cast time plus 0.5s delay before bonuses (including Wind Slash access) apply?",
+   "Does the simulator model the forced basic attack from each Q sub-cast as landing reliably, and does it count as a separate attack for Runic Blade charge consumption on top of manually-issued auto-attacks?",
+   "Should the 3-part Q combo be front-loaded entirely before W/R, or interleaved with basic attacks between each of the three sub-casts to maximize Charge-consumption uptime?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

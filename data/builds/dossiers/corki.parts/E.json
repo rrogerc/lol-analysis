@@ -1,0 +1,151 @@
+{
+ "name": "Gatling Gun",
+ "cooldown": {
+  "values": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "quote": "12"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Physical Damage Per Tick",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    8.125,
+    11.25,
+    14.375,
+    17.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|80/16 to 280/16}} {{as|(+ {{ap|240/16}}% '''bonus''' AD)}}",
+   "bin": [
+    "GGun.BaseDamage",
+    "GGun.ADRatio"
+   ],
+   "binNote": "Bin gives total spray values (BaseDamage=[80/130/180/230/280], ADRatio=2.4x bonus AD); wiki's per-tick figures divide these by 16 ticks (TicksPerSecond=4 x SprayDuration=4), matching the per-tick numbers quoted."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Resistances Reduction Per Stack",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    3,
+    3.5,
+    4,
+    4.5,
+    5
+   ],
+   "terms": [],
+   "quote": "{{ap|3 to 5}}",
+   "bin": [
+    "GGun.ShredMax",
+    "GGun.ShredCap"
+   ],
+   "binNote": "ShredMax=[-12/-14/-16/-18/-20] is the total reduction at max (4) stacks; dividing by ShredCap=4 gives the per-stack reduction of 3 to 5 quoted by the wiki."
+  },
+  {
+   "id": "e_5",
+   "meaning": "Spray/channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "sprays bullets in a cone toward his facing direction for 4 seconds",
+   "bin": [
+    "GGun.SprayDuration"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "dealing {{as|physical damage}} every {{fd|0.25}} seconds to all enemies hit",
+   "bin": [
+    "GGun.TicksPerSecond"
+   ],
+   "binNote": "TicksPerSecond=4 corresponds to a 0.25s tick interval."
+  },
+  {
+   "id": "e_7",
+   "meaning": "Per-hit stack duration (refreshing)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "applying a {{tip|stack}} to them at the same tick rate for 2 seconds, refreshing with subsequent hits",
+   "bin": [
+    "GGun.ShredDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Gatling Gun deals damage and applies a stack to each enemy hit every 0.25 seconds for 4 seconds total.",
+   "quote": "sprays bullets in a cone toward his facing direction for 4 seconds, dealing {{as|physical damage}} every {{fd|0.25}} seconds to all enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each hit applies a stack that refreshes its own 2-second duration, stacking up to 4 times, and each stack reduces the target's armor and magic resistance.",
+   "quote": "applying a {{tip|stack}} to them at the same tick rate for 2 seconds, refreshing with subsequent hits and stacking up to 4 times",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The maximum resistance reduction (4 stacks) is only reached after 4 ticks (1 second) of continuous hits.",
+   "quote": "The maximum resistances reduction is applied after 4 ticks (1 second).",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts on cast, not on the end of the channel.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Corki turns to face the cursor on cast and instantly turns to face a target if given an Attack order while Gatling Gun is active, which changes the cone's direction mid-channel.",
+   "quote": "'''Corki''' will turn to face in the direction of the cursor upon casting ''Gatling Gun''. He will also instantly turn when issuing an Attack order on enemies while ''Gatling Gun'' is active.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's area of effect can hit enemies close to and behind Corki due to how it registers enemies' collision edge, which can affect who is hit in a single-target fight.",
+   "quote": "''Gatling Gun's'' area of effect can hit close by enemies next to and behind him, due to registering {{tip|er|enemies' edge}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

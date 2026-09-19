@@ -1,0 +1,103 @@
+{
+ "champion": "veigar",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Baleful Strike, Dark Matter, and Primordial Burst each deal magic damage on cast (Q immediate, W after a 1.2s impact delay, R via projectile) on their own cooldowns."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Phenomenal Evil Power: each enemy-champion hit by an ability grants 1 stack (+1 AP), a takedown grants 5 more; stacks are uncapped and never expire, so AP (and thus Q/W/R damage) ramps over the fight as abilities land on the dummy."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Dark Matter's cooldown is not the flat per-rank value (bin lists 0 for all ranks); it starts at a base of 8s and steps down by a factor of 0.9 each time 50 Phenomenal Evil stacks are accumulated, so W's cast frequency depends on how fast stacks build during the fight."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Primordial Burst's damage is amplified 1.5% per 1% of the target's missing health, capped at 66.66% missing health for a 2x (max) multiplier; against a full-health dummy this starts at minimum damage and ramps as the dummy is damaged."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "The 2x max-damage multiplier is only reached once the target is at or below one-third remaining health, functioning as a soft execute threshold worth timing R around."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Event Horizon deals no damage (damagetype is blank, spelleffects blank); its only effects are stun/knockdown, which a damage-only dummy fight never reads. It may still be worth casting purely to trigger a Phenomenal Evil stack (see unsettled)."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Q/W/R damage-on-cast, the passive's stack-based AP buff, W's stack-gated cooldown reduction, R's missing-health damage scaling/execute cap, and E's damage-free status are all expressible with existing primitives (plain-cast, stacking-self-buff, cooldown-manipulation, conditional-damage, execute-or-threshold, defensive-only). No unique engine logic is required beyond combining these."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting Event Horizon at a stationary dummy actually register as an ability 'hit' for Phenomenal Evil Power purposes, given the ability's stun/knockdown only trigger on units crossing the cage edge and a stationary dummy standing at the cage center may never cross it?",
+   "options": [
+    "The dummy is treated as hit/affected by the cast regardless of movement (per 'abilities do not have to deal damage nor affect their targets to grant a stack'), so E generates a passive stack every cast",
+    "The dummy never crosses the cage boundary and so is never 'hit', meaning E generates no stack and is pure dead time/mana cost in the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Veigar's''' abilities do not have to deal damage nor affect their targets to grant a stack.",
+    "Enemies that collide with the edges of the cage are {{tip|knockdown|knocked down}} and {{tip|stun|stunned}} for a duration."
+   ]
+  },
+  {
+   "question": "How exactly does Dark Matter's stack-gated cooldown formula (base 8s, x0.9 per 50-stack threshold) resolve within a single 15s fight where stacks are actively accumulating mid-cooldown — is the applicable cooldown for a given cast determined by stacks at the moment W was last cast, or does an in-progress cooldown get shortened retroactively the instant a 50-stack threshold is crossed?",
+   "options": [
+    "Cooldown length is fixed at the value implied by current stacks when W is cast, and does not change again until the ability is off cooldown",
+    "Cooldown updates live: crossing a 50-stack threshold mid-cooldown immediately shortens the remaining cooldown to match the new (lower) total cooldown"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{pp|type=[[File:Phenomenal_Evil_Power.png|20px|link=Veigar#Phenomenal_Evil_Power]] [[Veigar#Phenomenal_Evil_Power|Phenomenal Evil]] stacks|8*0.9^(x-1);...;0|0 to 900 for 19;...;∞|formula=8 * 0.9^N. ''N{{equals}}Number of times that 50 Phenomenal Evil stacks are earned.''}}"
+   ]
+  },
+  {
+   "question": "For ordinary ability-hit stacks (as opposed to kill-triggered stacks, which the wiki explicitly says apply 'on next game tick'), is there any similar tick delay before the +1 AP from a hit applies, which would matter for whether a spell's own hit can boost its own damage calculation or only later casts within the same 15s window?",
+   "options": [
+    "Hit-based stacks (and their AP) apply instantly/synchronously with the hit, so even later hits in the same frame/cast see the updated AP",
+    "Hit-based stacks apply with the same 'next game tick' delay described for kills, so AP updates only affect subsequent casts, not anything resolving in the same instant"
+   ],
+   "impact": "low",
+   "quotes": [
+    "The stacks are added immediately on enemy kill (on next game tick)."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Baleful Strike (Q) and Dark Matter (W) back to back (each has only a 0.25s cast time) to start generating Phenomenal Evil Power stacks and begin damaging the dummy.",
+   "Continue casting Q on its short cooldown (4-6s by rank) and W whenever it comes off cooldown (reduced over time as Phenomenal Evil stacks accumulate) to build burst damage and drive the dummy's health down as fast as possible.",
+   "Hold Primordial Burst (R) until the dummy's remaining health is at or below roughly one-third (i.e. missing health at or above the 66.66% cap), then cast it to land at the maximum 2x damage multiplier; given R's long cooldown (60-120s by rank), only one cast is realistically available in a 15s window, so timing it for the cap is a pure gain.",
+   "Fill all remaining time with Q on cooldown and W on cooldown; do not cast Event Horizon, since it deals no damage and its value (a possible passive stack) is unsettled and likely marginal compared to spending the cast time/mana on Q or W instead."
+  ],
+  "questions": [
+   "Is Event Horizon worth casting purely for the Phenomenal Evil stack (and its +1 AP) against a stationary dummy, or does it never actually register as a 'hit'?",
+   "At what specific stack counts (given expected cast frequency of Q/W/passive triggers over 15s) does Dark Matter's cooldown actually drop below its 8s base, and does that reduction apply retroactively mid-cooldown or only to the next cast?",
+   "Should R be delayed to hit the 66.66%-missing-health cap even if that means it lands later in the 15s window, or is casting it as early as possible (accepting a lower multiplier) better for total kill time given the simulator's fixed fight length?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

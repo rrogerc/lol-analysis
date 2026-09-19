@@ -1,0 +1,142 @@
+{
+ "champion": "kled",
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "P"
+   ],
+   "note": "Kled has a Mounted/Dismounted state with a split Kled+Skaarl health pool; Dismounted disables Q/E/R (Q is replaced by Pocket Pistol) and reduces basic attack damage to champions. In the damage fight (target never damages Kled) he should never dismount; the mechanic matters for the survival fight, where damage taken first depletes Skaarl's pool and dismount grants a brief invulnerability window and bonus resists."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Violent Tendencies periodically arms Kled's next basic attacks; while armed he gets bonus attack speed and the 4th attack is empowered."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "The 4th attack within the Violent Tendencies window deals additional physical damage as a separate damage instance applied before the attack's own damage."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "Violent Tendencies grants 150% bonus attack speed on the next 4 basic attacks within a 4s window."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Violent Tendencies' current cooldown (which starts only after the 4-attack window times out or is consumed) is reduced by 0.5s per on-hit attack, 1.5s against champions."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bear Trap on a Rope has an initial projectile hit, then a separate, larger tether-pull damage instance that triggers automatically ~1.75s later (not a player-initiated recast, but a second timed damage instance from one cast)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Jousting's first dash can be followed by a player-initiated recast dash (within a 0.5s-to-3s window) dealing the same damage formula again, each cast counting separately for on-cast effects."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Chaaaaaaaarge!!! locks Kled into an uninterruptible charge (casting/items disabled) until it collides with a target or ends, then performs a dash that also blocks actions."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "The collision damage is a % of the target's maximum health that ramps from a minimum to 3x that minimum based on charge time elapsed before the dash begins (capped at 4s of charge)."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's damage magnitude depends on how long Kled charges/travels before colliding with the target, which has no defined value in a stationary single-target dummy fight; a travel/charge-duration assumption must be made."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Skaarl absorbing damage before Kled, the dismount health threshold and invulnerability/lockout window, and the Dismounted resist bonus only affect damage taken and are read only in the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Kled's Mounted state uses a two-segment health pool (Kled + Skaarl, with Skaarl's health scaling by level and remount restoring only a level-scaled percentage of it) where incoming damage and healing/regen apply to Skaarl first and only overflow to Kled once Skaarl is full; execute effects while Mounted instead only dismount him. This split-pool, priority-ordered damage/heal routing with an execute-override rule is not expressible by any single closed-list primitive and matters heavily for the survival fight's effective-health calculation."
+ },
+ "unsettled": [
+  {
+   "question": "How much of Chaaaaaaaarge!!!'s charge-time damage ramp (minimum at 0s up to the cap at 4s of charge, an 8x jump in the %-max-HP coefficient) should be assumed to have elapsed before the dash collides with the single stationary target, since the dummy fight has no defined distance or movement?",
+   "options": [
+    "Assume near-instant collision (minimum/near-0% ramp damage)",
+    "Assume the charge reaches its ramp cap before colliding (near-maximum damage)",
+    "Assume some fixed mid-range travel distance/time chosen by the simulator"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{pp|type=charge time|key=%|label=Damage Increase|0 to 200 for 26|0 to 4|formula=8% increase per 0.16 seconds. ''This is capped at 4 seconds of time active.''}}"
+   ]
+  },
+  {
+   "question": "Does Bear Trap on a Rope's cooldown begin at the moment of cast, or is it delayed until the tether resolves/pulls (as is explicitly stated for Violent Tendencies and implied for Jousting)?",
+   "options": [
+    "Cooldown starts on cast (default, since the wiki gives no 'starts after' note for Q unlike W/E)",
+    "Cooldown starts only after the 1.75s tether resolves and the pull damage lands"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown     = {{ap|11 to 7}}",
+    "{{tt|{{ap|13 to 9}}|Starts after the attacks time out or are consumed}}"
+   ]
+  },
+  {
+   "question": "Should Jousting's recast (second dash) be assumed to always land successfully on the single target within its 0.5s-to-3s recast window, doubling E's damage every cycle, or should it be treated as unreliable/omitted in the dummy fight?",
+   "options": [
+    "Always recast for the full double-hit damage every E cycle",
+    "Only count the first dash's damage per cycle"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Jousting'' can be recast after {{fd|0.5}} seconds of the first dash ending while the target is marked.",
+    "marking them for 3 seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start Mounted (the dummy never damages Kled, so he never dismounts for the duration of the fight).",
+   "Cast Chaaaaaaaarge!!! (R) once as early as its charge/travel assumption allows, since its ~110-140s cooldown means only a single cast fits in the 15s window; its collision damage and long charge duration constrain when it can land.",
+   "Auto-attack continuously between ability casts to build and consume Violent Tendencies (W) charges; weave in the empowered 4th attack whenever the window is active, and let landed attacks shorten W's own cooldown.",
+   "Cast Bear Trap on a Rope (Q) on cooldown (7-11s depending on rank) for its immediate hit, then let its automatic tether-pull hit land ~1.75s later for the larger second damage instance.",
+   "Cast Jousting (E) on cooldown (9-13s depending on rank) and immediately recast it once the target is marked and the 0.5s minimum delay has passed, to land both dash-hit damage instances per cycle.",
+   "Prioritize keeping the auto-attack timer active at all times between ability casts to maximize both raw auto-attack and Violent Tendencies uptime."
+  ],
+  "questions": [
+   "What travel/charge-duration assumption does the simulator use for Chaaaaaaaarge!!! against a stationary dummy, and does it model the dash's collision timing at all?",
+   "Should R be cast at the very start of the fight for earliest uptime, or held to maximize its charge-time damage ramp, given the trade-off between ramp damage and total time available for other casts?",
+   "Does the simulator support Jousting's recast as a distinct, separately-timed follow-up hit within the same E cycle, or does it collapse E into a single damage instance per cooldown?",
+   "Is Kled assumed to remain Mounted for the entire 15s damage fight (since the target never fights back), making all Dismounted-state passive mechanics (attack penalty, resist bonus, ability lockouts) irrelevant to the damage fight and relevant only to the survival fight?",
+   "How should the priority order for casting R vs Q vs E be resolved when multiple come off cooldown near-simultaneously, given none of them share a resource cost to arbitrate priority?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

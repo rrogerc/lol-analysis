@@ -1,0 +1,684 @@
+{
+ "champion": "soraka",
+ "abilities": {
+  "P": {
+   "name": "Salvation",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus movement speed while facing low health allies",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.9,
+     "terms": [],
+     "quote": "90% '''bonus''' movement speed",
+     "bin": [
+      "Consecration_Self.MovementSpeed"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "ally health threshold to trigger the bonus",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "below 40% of their '''maximum''' health",
+     "bin": [
+      "Consecration_Self.HealthThreshold"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The effect only grants bonus movement speed while Soraka is facing the low-health ally, not unconditionally.",
+     "quote": "gains tremendous {{sti|ms|{{as|'''bonus''' movement speed}}}} while facing nearby allied {{tip|champions}} that are {{as|at low health}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Starcall",
+   "cooldown": {
+    "values": [
+     8,
+     7,
+     6,
+     5,
+     4
+    ],
+    "quote": "{{ap|8 to 4}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      85,
+      120,
+      155,
+      190,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|85 to 225}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "SorakaQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Total Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      75,
+      90,
+      105,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|60 to 120}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "SorakaQ#TotalHot",
+      "SorakaQ.BaseHoT",
+      "SorakaQ.HealAPRatio"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Heal per Tick",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      5,
+      6.25,
+      7.5,
+      8.75,
+      10
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.025
+      }
+     ],
+     "quote": "{{ap|60/12 to 120/12}} {{as|(+ {{ap|30/12}}% AP)}}",
+     "bin": [],
+     "binNote": "Derived by dividing the Total Heal (SorakaQ.BaseHoT / SorakaQ.HealAPRatio) by the 12 ticks stated in the notes; no separate per-tick data value exists in the bin."
+    },
+    {
+     "id": "q_4",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.225,
+      0.25,
+      0.275,
+      0.3
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 30}}%",
+     "bin": [
+      "SorakaQ.MoveSpeedHaste"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Rejuvenation heal-over-time duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{sbc|Rejuvenation}}: {{tip|Heal}} every {{fd|0.2}} seconds",
+     "bin": [
+      "SorakaQ.HotDuration"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Rejuvenation heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "{{tip|Heal}} every {{fd|0.2}} seconds",
+     "bin": [],
+     "binNote": "The bin has no explicit tick-interval data value; 0.2 is derived from the wiki's stated 12 ticks over the 2.5s HotDuration (2.5/12 ≈ 0.2083, rounded to 0.2 by the wiki)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Starcall lands after a delay based on distance, not instantly on cast.",
+     "quote": "grants sight of the area before landing after {{pp|type=target range|0.25 to 1 for 16|50 to 800}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting a spell shield still counts as a hit for granting Rejuvenation.",
+     "quote": "''Starcall'' counts as hitting even if it gets blocked by {{tip|spell shield}}, granting ''Rejuvenation''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Rejuvenation is only granted to Soraka if the cast hits at least one enemy champion.",
+     "quote": "If this hits at least one enemy {{tip|champion}}, star dust returns to '''Soraka''', granting her ''Rejuvenation'' for {{fd|2.5}} seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Rejuvenation's heal-over-time is split into 12 ticks with uneven weighting across the duration.",
+     "quote": "''Rejuvenation'' heals over 12 ticks, with the first 4 each healing for about 15% of the heal, the next 4 ticks for about {{fd|5.5}}% each, and the last 4 for about {{fd|4.5}}% each.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SorakaQ.MoveSpeedSlow",
+     "reason": "utility"
+    },
+    {
+     "ref": "SorakaQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SorakaQ.MoveSpeedDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Astral Infusion",
+   "cooldown": {
+    "values": [
+     6,
+     5,
+     4,
+     3,
+     2
+    ],
+    "quote": "{{ap|6 to 2}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{as|10%|health}}",
+    "resource": "{{as|'''maximum''' health}} + {{ap|40 to 60}} mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      90,
+      110,
+      130,
+      150,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|90 to 170}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "SorakaW#TotalHeal"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Health Cost Reduction",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      80,
+      85,
+      90,
+      95,
+      100
+     ],
+     "terms": [],
+     "quote": "{{ap|80 to 100}}%",
+     "bin": [
+      "SorakaW.PercentHealthCostRefund"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Reduced Health Cost when cast under Rejuvenation, as percent of maximum health",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      2,
+      1.5,
+      1,
+      0.5,
+      0
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|2 to 0}}% of '''maximum''' health}}",
+     "bin": [],
+     "binNote": "No direct data value states this; it is the derived remaining cost = PercentHealthCost (0.1) x (1 - PercentHealthCostRefund [0.8..1]) = [0.02,0.015,0.01,0.005,0], matching the wiki's 2 to 0%."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Health cost as percent of maximum health",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "{{as|10%|health}}",
+     "bin": [
+      "SorakaW.PercentHealthCost"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Minimum current health required to cast",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "cannot be cast if '''Soraka''' is below {{as|{{sti|5% of her '''maximum''' health}}}}",
+     "bin": [
+      "SorakaW.MinimumPercentHealth",
+      "SorakaW#MinimumHealth"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Astral Infusion heals the target allied champion by consuming a portion of Soraka's maximum health.",
+     "quote": "'''Soraka''' consumes a portion of {{as|her '''maximum''' health}} to {{tip|heal}} the target allied champion.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If cast while Soraka is under Starcall's Rejuvenation buff, the health cost is reduced by a percentage instead of the flat 10%.",
+     "quote": "If cast while under ''{{ai|Starcall|Soraka|Rejuvenation}}'', the {{as|health cost}} will be reduced by a percentage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Astral Infusion cannot reduce Soraka's health below 1.",
+     "quote": "''Astral Infusion'' will not reduce '''Soraka's''' health below {{as|1|hp}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spirit Visage on the target ally boosts the heal they receive; on Soraka it does not boost the heal Astral Infusion grants to allies (only boosts Starcall and Wish self-heals).",
+     "quote": "{{ii|Spirit Visage}} will only increase the health donated to allies if the target ally possesses it, although owning it ''will'' boost the heal that '''Soraka''' receives from {{ai|Starcall|Soraka}} and {{ai|Wish|Soraka}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Astral Infusion's effects occur before the cast time completes.",
+     "quote": "''Astral Infusion's'' effects occur before the cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Equinox",
+   "cooldown": {
+    "values": [
+     20,
+     19,
+     18,
+     17,
+     16
+    ],
+    "quote": "{{ap|20 to 16}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      95,
+      120,
+      145,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|70 to 170}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "SorakaE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 2}} seconds",
+     "bin": [
+      "SorakaE.RootDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "silence/persist duration before eruption",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "SorakaE.RootDelay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The zone deals damage on cast, then again when it erupts after persisting, for two separate damage instances that can both hit.",
+     "quote": "deals {{as|magic damage}} to enemy champions within at the time of cast. The zone then persists for {{fd|1.5}} seconds and {{tip|silence|silences}} enemies within.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The eruption deals the same damage a second time and roots enemies hit.",
+     "quote": "Afterwards, the zone erupts to deal the same damage to enemy champions within and {{tip|root}} them for a duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Equinox's silence is non-dispellable and is not blocked by spell shield, though the damage/root portions can still be blocked.",
+     "quote": "''Equinox's'' {{tip|silence}} is marked as non-dispellable, so it is not removed by most {{tip|cleanse|cleanses}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Wish",
+   "cooldown": {
+    "values": [
+     150,
+     135,
+     120
+    ],
+    "quote": "{{ap|150 to 120}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "SorakaR.BaseHeal",
+      "SorakaR#HealingCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Increased Heal (below 40% max health)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      225,
+      375,
+      525
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|150*1.5 to 350*1.5}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "SorakaR#AmpedHealing",
+      "SorakaR.HealingAmpForLowHealthAllies"
+     ],
+     "binNote": "HealingAmpForLowHealthAllies=0.5 is the 50% amplification multiplier applied to HealingCalc (1 + 0.5 = 1.5x), which is how the wiki's 1.5x/75% AP figures are derived; the row itself states 0.5 not 1.5 but AmpedHealing = HealingCalc * (1 + 0.5) matches the wiki's numbers."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Heals Soraka and all allied champions regardless of distance.",
+     "quote": "'''Soraka''' calls upon the stars, {{tip|heal|healing}} herself and all allied champions, increased by 50% on targets",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Healing is increased by 50% on allies below 40% of their maximum health.",
+     "quote": "increased by 50% on targets {{as|below 40% of their '''maximum''' health}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Effects occur before the cast time completes.",
+     "quote": "''Wish's'' effects occur before the cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Casting immediately upon respawning causes the heal to not be increased by AP, due to a bug.",
+     "quote": "casting ''Wish'' immediately upon respawning will cause its cooldown to be unaffected by ability haste, and the healing will not be increased by '''Soraka's''' {{as|ability power}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Starcall deals its magic damage once, on a delay after cast based on target distance (0.25 to 1s), on Q's cooldown"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Starcall's travel time before it lands (and thus deals damage) scales with the distance from Soraka to the target location (0.25s at 50 range to 1s at 800 range); the dummy fight must assume a cast distance"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Equinox's initial magic damage instance fires immediately on cast against enemies in the zone"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Equinox is a two-part ability: an instant damage instance on cast, then the zone erupts 1.5s later for a second, separately-timed instance of the same damage"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Mana costs (Q 45-65, E 70-90) against a base mana pool can constrain how many casts of the only two damaging abilities fit into the 15s window, especially before level 6+/blue buff/mana items"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Salvation (movement speed while facing a low-health ally), Astral Infusion (ally heal, costs Soraka's own health), and Wish (global self/ally heal) deal no damage and are never read by the damage fight; they only matter for the survival fight as self-sustain"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "W"
+   ],
+   "note": "Astral Infusion costs Soraka 10% of her maximum health (reduced if she has Rejuvenation from Starcall) in addition to mana; relevant to survival-fight self-sustain, not to damage output"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Soraka has only two damage-dealing abilities. Starcall (Q) is a single delayed hit on cooldown (plain-cast, with a distance-dependent travel time the fight must assume) and Equinox (E) is a two-part multipart ability (instant cast damage, then a same-size eruption damage instance ~1.5s later). Mana costs are modest but worth tracking as resource-budget. Everything else in the kit (passive, W, R) is a heal/mobility effect that a damage-only dummy fight never reads. No bespoke logic beyond the existing primitives is required."
+ },
+ "unsettled": [
+  {
+   "question": "What target distance should be assumed for Starcall's (Q) travel-time delay, since the delay scales linearly with distance from 0.25s at 50 range up to 1s at 800 range?",
+   "options": [
+    "Assume point-blank/minimum range (~0.25s delay, fastest damage application)",
+    "Assume max range 800 (~1s delay)",
+    "Assume a fixed 'typical' mid-range distance"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "grants sight of the area before landing after {{pp|type=target range|0.25 to 1 for 16|50 to 800}} seconds"
+   ]
+  },
+  {
+   "question": "Does Equinox's eruption (second damage instance) apply automatically to a target that was hit by the initial cast damage and remains stationary in the zone, i.e. is the bin's single SorakaE#TotalDamage calculation applied twice (matching the wiki's explicit '70*2 to 170*2' doubled total), or could conditions (e.g. spellshield on one instance only) cause only one instance to land?",
+   "options": [
+    "Both instances always land on a stationary dummy (total damage = 2x SorakaE#TotalDamage, per wiki's explicit doubling)",
+    "Only the guaranteed on-cast instance is certain; the eruption instance is conditional on the target remaining in the 260-radius zone for 1.5s"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{st|Total Magic Damage|{{ap|70*2 to 170*2}} {{as|(+ 80% AP)}}}}",
+    "Afterwards, the zone erupts to deal the same damage to enemy champions within and root them for a duration."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Equinox (E) as soon as it is off cooldown at the start of the fight, since its long cooldown (16-20s depending on rank) means it can typically only be cast once or twice in the 15s window; this lands its instant on-cast damage immediately and its eruption damage ~1.5s later.",
+   "Cast Starcall (Q) immediately after E, then recast Q every time it comes off cooldown for the remainder of the fight, since Q's short cooldown (4-8s depending on rank) allows several casts within 15s and it is Soraka's primary repeatable damage source.",
+   "Do not cast Astral Infusion (W) or Wish (R) during the damage fight; they deal zero damage and only cost mana/health that would otherwise fund Q casts.",
+   "Basic-attack the target between Q casts if no ability is available, though Soraka's low base AD makes this a minor damage contributor relative to Q and E."
+  ],
+  "questions": [
+   "At what champion level and ability ranks is the damage fight run, since Q's cooldown (4-8s) and cost (45-65) and E's cooldown (16-20s) vary by rank and materially change how many casts fit in 15s?",
+   "What target distance should be assumed for Starcall's travel delay (affects when Q's damage actually lands, and thus kill time, though not total damage)?",
+   "Is a second cast of Equinox (E) realistically achievable within 15s at low ranks (20s cooldown), or should the rotation assume only a single E cast for most of the simulated level range?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

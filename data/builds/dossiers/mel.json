@@ -1,0 +1,883 @@
+{
+ "champion": "mel",
+ "abilities": {
+  "P": {
+   "name": "Searing Brilliance",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "magic damage stored on the target by the first Overwhelm stack",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{pp|type=[[File:Golden Eclipse.png|20px|border]] Golden Eclipse's rank|50;60;70;80|0 to 3|color=magic damage}} {{as|(+ 10% AP)}}",
+     "bin": [
+      "MelR#PassiveFlatDamage"
+     ],
+     "binNote": "Wiki gives 4 values (50/60/70/80) for Golden Eclipse ranks 0-3, but MelR.BasePassiveFlatDamage only lists 3 values [60,70,80] for ranks 1-3; the rank-0 (before R is taken) value of 50 has no bin row."
+    },
+    {
+     "id": "p_2",
+     "meaning": "additional magic damage stored per Overwhelm stack",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      2,
+      3,
+      4,
+      5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0075
+      }
+     ],
+     "quote": "an additional {{pp|type=[[File:Golden Eclipse.png|20px|border]] Golden Eclipse's rank|2;3;4;5|0 to 3|color=magic damage}} {{as|(+ {{fd|0.75}}% AP)}} {{as|magic damage}}",
+     "bin": [
+      "MelR#PassiveStackDamage"
+     ],
+     "binNote": "Wiki gives 4 values (2/3/4/5) for Golden Eclipse ranks 0-3, but MelR.BasePassiveStackDamage only lists 3 values [3,4,5] for ranks 1-3; the rank-0 value of 2 has no bin row."
+    },
+    {
+     "id": "p_3",
+     "meaning": "magic damage per blazing projectile fired on the attack that consumes Searing Brilliance stacks",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      8,
+      9.294118,
+      10.588235,
+      11.882353,
+      13.176471,
+      14.47058824,
+      15.764706,
+      17.058823,
+      18.352941,
+      19.647059,
+      20.941177,
+      22.235294,
+      23.529412,
+      24.82353,
+      26.117647,
+      27.411765,
+      28.7058824,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.04
+      }
+     ],
+     "quote": "Each projectile deals {{as|{{pplevel|8 to 30}}|magic damage}} {{as|(+ 4% AP)}} {{as|magic damage}}",
+     "bin": [
+      "MelPassive#PassiveBonusMissileDamage"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "duration an Overwhelm stack lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Overwhelm'' for each instance of damage they deal to enemies for 5 seconds, refreshing on {{tt|subsequent damage instances|From her attacks/abilities}} and stacking infinitely",
+     "bin": [
+      "MelPassive.OverwhelmDuration"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "duration a Searing Brilliance (bonus missile) stack lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "'''Mel's''' ability casts each generate 3 stacks of ''Searing Brilliance'' for 5 seconds, refreshing on subsequent casts and stacking up to 9 times",
+     "bin": [
+      "MelPassive.BonusAttackDuration"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "Searing Brilliance stacks generated per ability cast",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "'''Mel's''' ability casts each generate 3 stacks of ''Searing Brilliance''",
+     "bin": [
+      "MelPassive.PassiveBonusMissiles"
+     ]
+    },
+    {
+     "id": "p_7",
+     "meaning": "maximum Searing Brilliance stacks (and thus maximum bonus projectiles on the next attack)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 9,
+     "terms": [],
+     "quote": "stacking up to 9 times",
+     "bin": [
+      "MelPassive.MaxPassiveBonusMissiles"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Mel's basic attacks and abilities apply an Overwhelm stack for every separate instance of damage they deal, so a multi-hit ability generates multiple stacks in one cast.",
+     "quote": "apply a {{tip|stack}} of ''Overwhelm'' for each instance of damage they deal to enemies for 5 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first Overwhelm stack applied stores both the flat first-stack damage and the per-stack bonus damage.",
+     "quote": "The first stack also benefits from the per-stack bonus stored damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If total stored post-mitigation Overwhelm damage exceeds the target's current health and shields, the next stack applied detonates all stored damage as a single burst.",
+     "quote": "If the total {{tt|post-mitigation damage|Damage calculated after modifiers}} stored exceeds the target's {{as|'''current''' health}} and {{tip|shields}}, the next stack applied against them will consume them all to deal the stored damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Overwhelm damage against minions is reduced to 50% (irrelevant to a champion-target dummy fight).",
+     "quote": "reduced{{ft|to 50%|to {{as|{{pp|type=[[File:Golden Eclipse.png|20px|border]] Golden Eclipse's rank|50*0.5;60*0.5;70*0.5;80*0.5|0 to 3}}|magic damage}} {{as|(+ {{ap|10*0.5}}% AP)}}}}against {{tip|minions}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Every ability cast generates 3 Searing Brilliance stacks, which refresh (not add) on subsequent casts, capping at 9.",
+     "quote": "'''Mel's''' ability casts each generate 3 stacks of ''Searing Brilliance'' for 5 seconds, refreshing on subsequent casts and stacking up to 9 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Mel's next basic attack after gaining Searing Brilliance stacks consumes all of them to fire that many extra magic-damage projectiles at the target, in addition to the normal attack.",
+     "quote": "Her next basic attack consumes all stacks of ''Searing Brilliance'' to additionally fire an equal number of blazing projectiles at the target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "On-hit effects (e.g. Guinsoo's Rageblade) do not apply Overwhelm stacks, but effects that inherit the origin basic attack (e.g. Runaan's Hurricane) do.",
+     "quote": "Effects that apply {{tip|on-hit|on-hits}} (e.g {{ii|Guinsoo's Rageblade}}) will not apply stacks.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Radiant Volley",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Initial Explosion Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "MelQ#InitialExplosionDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Magic Damage per Subsequent Explosion",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      7,
+      9,
+      11,
+      13
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|5 to 13}} {{as|(+ 5% AP)}}",
+     "bin": [
+      "MelQ#TotalExplosionDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Number of Bolts",
+     "role": "count",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      6,
+      7,
+      8,
+      9,
+      10
+     ],
+     "terms": [],
+     "quote": "{{ap|6 to 10}}",
+     "bin": [
+      "MelQ.ExplosionCount"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Time between first and last explosion (channel duration)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{tt|{{fd|0.5}} seconds|Time between first and last explosion}}",
+     "bin": [
+      "MelQ.ChannelDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spell shield only blocks a single explosion, not the whole barrage.",
+     "quote": "{{tip|Spell shield}} will only block a single explosion.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each bolt lands and explodes separately, dealing damage as an area effect to nearby enemies over the channel.",
+     "quote": "Each bolt explodes upon landing to deal {{as|magic damage}} to nearby enemies, with all explosions after the first dealing reduced damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MelQ.Spread",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MelQ.ExplosionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MelQ.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Rebuttal",
+   "cooldown": {
+    "values": [
+     38,
+     35,
+     33,
+     29,
+     26
+    ],
+    "quote": "{{ap|38 to 26}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     60,
+     40,
+     20,
+     0
+    ],
+    "quote": "{{ap|80 to 0}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      80,
+      110,
+      140,
+      170,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|80 to 200}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "MelW#ShieldAmount"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Replicated Projectile Magic Damage Modifier",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0005
+      }
+     ],
+     "quote": "{{ap|40 to 60}}% {{as|(+ 5% per 100 AP)}} of the original damage",
+     "bin": [
+      "MelW#DamagePercent"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Replicated Projectile Physical Damage Modifier",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      0.28,
+      0.315,
+      0.35,
+      0.385,
+      0.42
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.00035
+      }
+     ],
+     "quote": "{{ap|40*.7 to 60*.7}}% {{as|(+ {{ap|5*.7}}% per 100 AP)}} of the original damage",
+     "bin": [
+      "MelW#DamagePercent",
+      "MelW.PhysDamageMod"
+     ],
+     "binNote": "Physical modifier equals MelW#DamagePercent (base and its 0.0005 AP coefficient) scaled by (1 - PhysDamageMod) = 0.7, per the wiki's description that physical damage instances are reduced to 70% before conversion. Bin has no separate calculation combining these two rows."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Barrier / shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds, granting herself a {{tip|shield}} for the duration",
+     "bin": [
+      "MelW.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Mel forms a protective barrier around herself for 0.75 seconds, gaining a shield for the duration.",
+     "quote": "'''Mel''' forms a protective barrier around herself for {{fd|0.75}} seconds, granting herself a {{tip|shield}} for the duration",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "All hostile projectiles from enemy champions that collide with the barrier are destroyed and replicated by Mel toward or in the direction of the original source (or toward herself for healing projectiles).",
+     "quote": "all hostile {{tip|projectiles}} sourced from enemy {{tip|champions}} that collide with the barrier will be destroyed instantly before '''Mel''' fires the same projectiles as her own, either toward or in the direction of the {{tt|original sources|See notes}}, or {{tt|toward herself|See notes}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Replicated projectiles convert all their damage to magic damage, with physical damage instances reduced to 70% before conversion.",
+     "quote": "all of their damage is converted to {{as|magic damage}}, with {{as|physical damage}} instances being reduced to 70% before conversion",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage of the replicated missile scales only with Mel's own damage modifiers and magic penetration, not the original source's stats, even though other properties use the original source's attributes.",
+     "quote": "The damage of the missile only benefits from '''Mel's''' [[damage modifier]]s and [[magic penetration]], and not the original source's.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability has no cast time.",
+     "quote": "cast time    = none",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MelW.ShieldRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MelW.MoveSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "MelW.MoveSpeedDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Solar Snare",
+   "cooldown": {
+    "values": [
+     11,
+     10.5,
+     10,
+     9.5,
+     9
+    ],
+    "quote": "{{ap|11 to 9}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Orb Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      105,
+      150,
+      195,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|60 to 240}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "MelE#Damage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Field Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      2,
+      3.5,
+      5,
+      6.5,
+      8
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.01
+      }
+     ],
+     "quote": "{{ap|2 to 8}} {{as|(+ 1% AP)}}",
+     "bin": [
+      "MelE.BaseAreaDamage",
+      "MelE.AreaAPRatio",
+      "MelE.AreaTicksPerSecond"
+     ],
+     "binNote": "Bin's MelE#AreaDamagePerSecond (BaseAreaDamage[16..64] + 0.08xap) is a per-second rate; the wiki reports the per-tick amount, dividing by MelE.AreaTicksPerSecond=8 (16/8=2 ... 64/8=8, 0.08/8=0.01=1% AP), which matches this quote."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The orb deals a single instance of area damage on impact, separate from the lingering field's damage-over-time instances.",
+     "quote": "The initial impact of ''Solar Snare'' deals {{tip|area damage}}, while the lingering damage over time deals {{tip|persistent area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The field expands to its full radius only after a 0.5 second delay following the orb's impact.",
+     "quote": "The orb emanates a field of solar radiation that additionally expands after a {{fd|0.5}}-second delay.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The field damages and slows every 0.125 seconds, and continues to tick for 0.25 seconds after a target leaves the field.",
+     "quote": "Enemies within the field are dealt {{as|magic damage}} and {{tip|slow|slowed}} by 30% every {{fd|0.125}} seconds, lingering for {{fd|0.25}} seconds after exiting.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks the orb's root, not the field's damage.",
+     "quote": "{{tip|Spell shield}} will only block the orb ({{tip|root}} portion).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the orb and the field deal 50% damage against minions.",
+     "quote": "Both the orb and the field of ''Solar Snare'' deal {{#expr:{{#var:mmod}}*100}}% damage against {{tip|minions}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MelE.RootDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "MelE.AreaSlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "MelE.AreaSlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "MelE.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MelE.MaxAreaRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MelE.TimeToMaxRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MelE.DoTDuration",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Golden Eclipse",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{fd|0.75}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Increased Stored Damage (flat bonus to Overwhelm's stored damage)",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 30}}",
+     "bin": [
+      "MelR.BasePassiveFlatDamage"
+     ],
+     "binNote": "Wiki shows the increase as 10/20/30 across R's 3 ranks; the bin's MelR.BasePassiveFlatDamage is [60/70/80] (used in MelR#PassiveFlatDamage with +0.1xAP). These numbers do not match; the bin value may be the total stored flat damage while the wiki states only the increase over the base passive's own value, or the two disagree outright."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Stored Damage Increase per Stack",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      1,
+      2,
+      3
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 3}}",
+     "bin": [
+      "MelR.BasePassiveStackDamage"
+     ],
+     "binNote": "Wiki shows the per-stack increase as 1/2/3 across R's 3 ranks; the bin's MelR.BasePassiveStackDamage is [3/4/5] (used in MelR#PassiveStackDamage with +0.0075xAP). These numbers do not match; may be a total-vs-increase discrepancy or a genuine disagreement."
+    },
+    {
+     "id": "r_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      125,
+      200,
+      275
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "stacks",
+       "coef": [
+        4,
+        7,
+        10
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 1,
+         "coef": 0.04
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|125 to 275}} {{as|(+ 30% AP)}} (+ {{ap|4 to 10}} {{as|(+ 4% AP)}} per [[File:Searing Brilliance.png|20px|link=]] ''Overwhelm'' stack on the target)",
+     "bin": [
+      "MelR#UltFlatDamage",
+      "MelR#UltStackDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Golden Eclipse requires an enemy champion affected by Overwhelm to be castable.",
+     "quote": "An enemy champion affected by {{ai|Searing Brilliance|Mel|Overwhelm}} is required to cast this ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Golden Eclipse deals no damage against a target that is untargetable when it resolves.",
+     "quote": "''Golden Eclipse'' does not deal damage against enemies that are {{tip|untargetable}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Golden Eclipse can be cast even if all affected targets are untargetable.",
+     "quote": "''Golden Eclipse'' can be cast even if all affected targets are {{tip|untargetable}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If a target's Overwhelm stacks would expire during Golden Eclipse's cast time, their duration is extended to 0.75 seconds so the ultimate's damage still applies to them.",
+     "quote": "''Golden Eclipse'' sets the duration of ''{{ai|Searing Brilliance|Mel|Overwhelm}}'' stacks to {{fd|0.75}} seconds if they would run out during the cast time.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MelR.MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MelR.DisintegrateDelay",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Overwhelm stacks store magic damage on the target (P); Golden Eclipse's damage scales with the number of Overwhelm stacks currently on the target (R)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Searing Brilliance stacks (gained 3 per ability cast, refresh, cap at 9, expire after 5s) arm Mel's next basic attack."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mel's next basic attack after gaining Searing Brilliance stacks consumes all of them to fire that many extra magic-damage projectiles at the target."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Overwhelm's stored damage only detonates (bursts as a lump sum) once the accumulated post-mitigation stored damage would exceed the target's current health and shields."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q's initial explosion, E's orb impact, and R's blast each deal a base + AP-scaled damage instance on cast/impact."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q fires several bolts that each explode separately over a 0.5s channel; E's field ticks damage every 0.125s (reported per-tick at ~8 ticks/sec) after the orb lands."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on Q/W/E/R (W's cost falls to 0 at rank 5) can matter for how many casts fit in the 15s window."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Rebuttal's shield and bonus move speed only affect damage taken/survival; its projectile-reflection damage cannot trigger in the damage fight since a stationary target dummy never fires projectiles at Mel."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Overwhelm (Searing Brilliance passive) does not deal damage when a stack is applied; instead it adds to a stored-damage pool on the target that only bursts when a later stack's application would push the total post-mitigation stored damage above the target's *current* health and shields, at which point all stored damage releases at once (and the wiki flags a bug where 5 extra stacks are applied just before that consumption). Simulating this needs a running stored-damage ledger compared each hit against a shrinking health value and a delayed, conditional burst-release rule -- this is richer bookkeeping than target-stacks, execute-or-threshold, or conditional-damage alone can express, and their combination doesn't capture the 'burst happens on a *later* stack, not the one that crosses the line' timing."
+ },
+ "unsettled": [
+  {
+   "question": "Which of the two mismatched value sets for R's Overwhelm scaling bonus is live: the wiki's stated increase (10/20/30 flat, 1/2/3 per stack) or the bin's MelR.BasePassiveFlatDamage/BasePassiveStackDamage rows (60/70/80 flat, 3/4/5 per stack)?",
+   "options": [
+    "Wiki values (10/20/30 and 1/2/3) are the actual increase added on top of the base passive's own numbers",
+    "Bin values (60/70/80 and 3/4/5) are the live total passive stored-damage numbers once R is ranked",
+    "The two describe different things (total vs increase) and both are simultaneously correct once combined correctly"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|10 to 30}}",
+    "MelR.BasePassiveFlatDamage = [60/70/80]"
+   ]
+  },
+  {
+   "question": "When Overwhelm's stored damage would exceed the target's current health/shields, does the detonation happen on the very stack-application that crosses the threshold, or only on the next subsequent stack after that (per the literal wording 'the next stack applied ... will consume them all')?",
+   "options": [
+    "Detonates immediately on the hit that pushes stored damage over the threshold",
+    "Detonates one damage-instance later than the threshold-crossing hit, per the literal wiki wording",
+    "The 'bug' note (5 extra stacks applied just before consumption) means detonation timing/amount is unreliable and should be modeled as instant with a flat +5-stack bonus"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the total {{tt|post-mitigation damage|Damage calculated after modifiers}} stored exceeds the target's {{as|'''current''' health}} and {{tip|shields}}, the next stack applied against them will consume them all to deal the stored damage.",
+    "Just before ''Overwhelm'' stacks are consumed, targets have 5 additional stacks applied to them.{{bug}}"
+   ]
+  },
+  {
+   "question": "Do the bonus blazing projectiles fired by a Searing Brilliance-empowered basic attack each apply a separate Overwhelm stack (multiplying stack generation on that single attack), or does the whole empowered attack (base hit + all bonus projectiles) count as generating stacks only for the original attack's damage instance?",
+   "options": [
+    "Every bonus projectile is its own damage instance and applies its own Overwhelm stack, in addition to the base attack's stack",
+    "Only the base attack applies an Overwhelm stack; the bonus projectiles are a bundled on-hit-like effect that doesn't independently stack Overwhelm"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "apply a {{tip|stack}} of ''Overwhelm'' for each instance of damage they deal to enemies",
+    "Effects that apply {{tip|on-hit|on-hits}} (e.g {{ii|Guinsoo's Rageblade}}) will not apply stacks."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Auto-attack the dummy to open, applying the first Overwhelm stack immediately.",
+   "Cast Q (Radiant Volley) on the dummy: its several explosions land as separate damage instances (each stacking Overwhelm) and the cast grants 3 Searing Brilliance stacks.",
+   "Cast E (Solar Snare) on the dummy next: the orb impact plus the ticking field add more damage instances and refresh Searing Brilliance to its cap of 9 (3+3, since it was already at 3).",
+   "Weave a basic attack in as soon as Searing Brilliance stacks are up, consuming them to fire bonus magic-damage projectiles at the dummy.",
+   "Cast R (Golden Eclipse) as soon as it is off cooldown and the dummy is Overwhelm-affected (true from the opening auto-attack onward); its damage scales with the dummy's current Overwhelm stack count, so ideally fire it right after a big stack-building sequence (Q+E+auto).",
+   "Repeat Q on cooldown (10s down to 6s by rank), E on cooldown (11s down to 9s), and basic attacks between casts for the remaining ~15s window, keeping Overwhelm and Searing Brilliance topped up.",
+   "Do not cast W (Rebuttal) for damage purposes: its only offensive component requires reflecting an enemy champion's projectile, and the stationary target dummy never casts anything at Mel, so W would only cost mana for a shield/move-speed effect that a pure damage-race dummy fight never needs."
+  ],
+  "questions": [
+   "At what level and item/AP amount should the fight be run, given P's bonus-missile damage scales by champion level (not ability rank) while R's Overwhelm bonus scales by R's own rank -- do these need to be evaluated together at a fixed level/rank pairing (e.g. level 16, R rank 3)?",
+   "Should R be held back to maximize the Overwhelm stack count on the dummy for its per-stack bonus damage, or always cast on cooldown to also start its own long cooldown sooner, given the fight is only ~15s and R may only be castable once?",
+   "In a single-target dummy fight, do all of Radiant Volley's explosions reliably land on/near the dummy (given the 200-radius explosion vs 25-unit spread, distributed over a 250-unit combined area), or should the simulator assume some bolts might not connect against a single stationary hitbox?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

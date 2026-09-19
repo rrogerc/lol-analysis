@@ -1,0 +1,177 @@
+{
+ "name": "New Destiny",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "physical damage per pellet from basic attack",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1
+    }
+   ],
+   "quote": "{{as|{{pplevel|key=%|100*(0.6895 + 0.01765*x*(0.595 + 0.0225*(x-1)))}} AD}} {{as|physical damage}}",
+   "bin": [
+    "GravesPassive#SingleBulletDamage"
+   ],
+   "binNote": "Wiki gives the level-scaled AD ratio as a formula by champion level; bin computes it via an unresolved ByCharLevelFormulaCalculationPart, so exact numeric agreement cannot be confirmed."
+  },
+  {
+   "id": "p_2",
+   "meaning": "additional physical damage per subsequent pellet hitting same target",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.333
+    }
+   ],
+   "quote": "{{as|{{pplevel|key=%|100*(0.6895 + 0.01765*x*(0.595 + 0.0225*(x-1)))*0.33302}} AD}} {{as|'''additional''' physical damage|physical damage}}",
+   "bin": [
+    "GravesPassive#MultiBulletDamage"
+   ],
+   "binNote": "Bin ratio 0.333 vs wiki's more precise 0.33302; treated as the same value (rounding)."
+  },
+  {
+   "id": "p_3",
+   "meaning": "number of pellets per basic attack",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "{{as|4 pellets|buzzword2}}",
+   "bin": [],
+   "binNote": "Pellet count is not represented as a bin data value; derived from description text only."
+  },
+  {
+   "id": "p_4",
+   "meaning": "pellets per basic attack on critical strike",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "{{tip|Critical strikes}} spray {{as|6 pellets|buzzword2}}",
+   "bin": [],
+   "binNote": "Critical pellet count is not represented as a bin data value; derived from description text only."
+  },
+  {
+   "id": "p_5",
+   "meaning": "bonus critical damage multiplier applied per pellet on crit",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "critDamage",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{as|{{critical damage|50}}|critical damage}} increased damage,",
+   "bin": [
+    "GravesPassive#CritDamageMult"
+   ],
+   "binNote": null
+  },
+  {
+   "id": "p_6",
+   "meaning": "reload time for 2 shells (empty clip)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.08,
+   "terms": [],
+   "quote": "'''Graves''' takes {{fd|2.08}} seconds to reload 2 shells",
+   "bin": [],
+   "binNote": "Reload timing is not present as a data value in this slot's bin rows; likely lives in attack-speed-derived logic not shown here."
+  },
+  {
+   "id": "p_7",
+   "meaning": "reload time for 1 leftover shell",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.3,
+   "terms": [],
+   "quote": "{{fd|1.3}} seconds to reload 1 shell",
+   "bin": [],
+   "binNote": "Reload timing is not present as a data value in this slot's bin rows."
+  },
+  {
+   "id": "p_8",
+   "meaning": "idle time with 1 shell before reload begins",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.08,
+   "terms": [],
+   "quote": "He must idle with 1 shell for {{fd|2.08}} seconds before he starts reloading",
+   "bin": [],
+   "binNote": "Reload timing is not present as a data value in this slot's bin rows."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Only the first pellet to hit a target applies on-hit effects and lifesteal is applied by pellets in general.",
+   "quote": "Only the first {{as|pellet|buzzword2}} to hit each enemy applies {{tip|on-hit}} effects.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first pellet deals the highest (basic) damage while additional pellets deal reduced (default) damage.",
+   "quote": "Deals the highest damage out of all other pellets.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Pellets deal reduced damage to structures.",
+   "quote": "Pellets deal 25% reduced damage against {{tip|structures}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Graves cannot attack while all shells are expended and reloading.",
+   "quote": "'''Graves''' is {{tip|lockout|unable}} to declare basic attacks during the reload time if he has expended all {{as|shells|buzzword3}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Reload is cancelled if Graves reloads a shell via Quickdraw or expends a leftover shell.",
+   "quote": "is cancelled if '''Graves''' reloads a {{as|shell|buzzword3}} with ''{{ai|Quickdraw|Graves}}'' or expends a leftover {{as|shell|buzzword3}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Basic attack resets other than Quickdraw do not affect Graves' basic attack timer.",
+   "quote": "{{tip|basic attack reset|Basic attack resets}} other than {{ai|Quickdraw|Graves}} do not affect '''Graves'''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Non-champion enemies hit by more than one pellet are knocked back.",
+   "quote": "Non-champion units hit by more than one {{as|pellet|buzzword2}} are {{tip|airborne|knocked back}}, though not through terrain.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "GravesPassive.CritDamageRatio",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "GravesPassive.StructureDamageReduction",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "GravesPassive#{549cda4d}",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

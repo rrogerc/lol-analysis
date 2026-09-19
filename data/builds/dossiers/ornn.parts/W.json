@@ -1,0 +1,252 @@
+{
+ "name": "Bellows Breath",
+ "cooldown": {
+  "values": [
+   12,
+   11.5,
+   11,
+   10.5,
+   10
+  ],
+  "quote": "{{ap|12 to 10}}"
+ },
+ "cost": {
+  "values": [
+   45,
+   50,
+   55,
+   60,
+   65
+  ],
+  "quote": "{{ap|45 to 65}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Total Magic Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.12,
+      0.13,
+      0.14,
+      0.15,
+      0.16
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|12 to 16}}% of target's '''maximum''' health}}",
+   "bin": [
+    "OrnnW.MaxPercentHPPerTickTooltip"
+   ],
+   "binNote": "MaxPercentHPPerTickTooltip [12/13/14/15/16] states this directly as the total (5-tick) percent; PercentHPPerTick [0.024..0.032] is the per-tick fraction which sums to the same total (x5) and is used for w_2 instead."
+  },
+  {
+   "id": "w_2",
+   "meaning": "Magic Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.024,
+      0.026,
+      0.028,
+      0.03,
+      0.032
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|12/5 to 16/5}}% of target's '''maximum''' health}}",
+   "bin": [
+    "OrnnW.PercentHPPerTick"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Total Minimum/Minion Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    130,
+    180,
+    230,
+    280
+   ],
+   "terms": [],
+   "quote": "{{ap|80 to 280}}",
+   "bin": [
+    "OrnnW#TotalMinimumDamage"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Minimum/Minion Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    16,
+    26,
+    36,
+    46,
+    56
+   ],
+   "terms": [],
+   "quote": "{{ap|80/5 to 280/5}}",
+   "bin": [
+    "OrnnW.MinimumDamagePerTick"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Total Monster Damage Cap",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    260,
+    320,
+    380,
+    440,
+    500
+   ],
+   "terms": [],
+   "quote": "{{ap|260 to 500}}",
+   "bin": [
+    "OrnnW#TotalMonsterDamageCap"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Monster Damage Cap Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    52,
+    64,
+    76,
+    88,
+    100
+   ],
+   "terms": [],
+   "quote": "{{ap|260/5 to 500/5}}",
+   "bin": [
+    "OrnnW.MonsterDamagePerTickCap"
+   ]
+  },
+  {
+   "id": "w_7",
+   "meaning": "duration of the lunge and damage-dealing period",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{fd|0.75}} seconds",
+   "bin": [
+    "OrnnW.BreathDuration"
+   ]
+  },
+  {
+   "id": "w_8",
+   "meaning": "tick interval of the fire cone",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.15,
+   "terms": [],
+   "quote": "{{fd|0.15}} seconds to enemies hit",
+   "bin": [],
+   "binNote": "No bin row states the 0.15s interval directly; it is implied by BreathDuration=0.75 divided by NumberOfTicks=5, but no explicit interval field exists."
+  },
+  {
+   "id": "w_9",
+   "meaning": "Brittle duration applied by the final gout of flame",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "apply {{tip|Brittle}} for 3 seconds",
+   "bin": [
+    "OrnnW.BrittleDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Ornn deals magic damage every 0.15 seconds to enemies hit in the cone for the duration of the march.",
+   "quote": "he belches fire over a cone in front of him, dealing {{as|magic damage}} every {{fd|0.15}} seconds to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The final tick of damage reaches slightly farther and additionally applies Brittle for 3 seconds.",
+   "quote": "The final gout of flame can reach slightly farther and will apply {{tip|Brittle}} for 3 seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each tick has a minimum damage threshold below which it cannot fall, and this is also the flat damage dealt to minions.",
+   "quote": "''Bellows Breath'' has a minimum damage threshold, which is also the damage dealt to {{tip|minion|minions}}, and is capped against {{tip|monsters}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage against monsters is capped per tick.",
+   "quote": "''Bellows Breath'' has a minimum damage threshold, which is also the damage dealt to {{tip|minion|minions}}, and is capped against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Ornn is unable to act and immune to displacement for the full duration of the march.",
+   "quote": "Ornn {{tip|lunge|marches}} forward in the target direction over {{fd|0.75}} seconds, gaining {{tip|displacement immunity}} and becoming {{tip|lockout|unable to act}} for the duration.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "A spell shield will negate only the final instance of damage and prevents Brittle from being applied, while earlier ticks still land.",
+   "quote": "{{tip|Spell shield}} will negate the final instance of damage and prevents {{tip|Brittle}} from being applied.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "OrnnW.BaseDamageTooltip",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "OrnnW.RectangleWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "OrnnW.RectangleLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "OrnnW.MovementSpeedReduction",
+   "reason": "utility"
+  },
+  {
+   "ref": "OrnnW.FinalTickRectangleLength",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "OrnnW.NumberOfTicks",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,114 @@
+{
+ "champion": "shen",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Once the recalled Spirit Blade reaches Shen, his next 3 basic attacks within 8s deal bonus magic on-hit damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The empowered-attack bonus scales off the target's maximum health, and jumps to a higher (enhanced) tier if the Spirit Blade hit an enemy champion during its travel; against structures only the flat portion applies."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Whether the Spirit Blade's recall path actually overlaps the single target (needed to decide base vs. enhanced empowered-attack tier and the AS buff) depends on Shen's position relative to the target, which a stationary 1v1 dummy fight must assume one way or the other."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "50% bonus attack speed for 8s (AttackBuffDuration) if the Spirit Blade hit an enemy champion en route, granted alongside the enhanced empowered attacks."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shadow Dash deals a flat+bonus-HP-scaled physical damage instance to enemies it passes through, once per cast, on a fixed post-dash cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Energy costs (Q 140-100, W 40, E 150) constrain how often abilities can be recast in a 15s fight; Q and E hits also refund energy (E's refund fires at most once per cast)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shadow Dash's cooldown starts only after the dash ends (post-effect), not on cast, effectively lengthening its real cooldown relative to a naive on-cast timer."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Ki Barrier's self-shield (after any ability completes), Spirit's Refuge's attack-block zone, and Stand United's ally shield are all read only by the survival fight, never by the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Shen's damage-relevant kit is a resource-gated empowered-attack ability (Q) whose tier depends on a geometric hit-check during a projectile recall, plus a plain-cast dash nuke (E) with a post-effect cooldown and shared energy refunds, and purely defensive shields/blocks (P, W, R) that only matter for the survival fight. All of this is expressible with existing primitives once the Q hit-check assumption is settled; no unique stacking/resource/transform system requires bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "In the 1v1 damage fight, does the recalled Spirit Blade actually pass through/overlap the single target on each Q cast, thereby granting the enhanced (higher, description3) empowered-attack damage tier and the 50% bonus attack speed buff, or does it return to Shen without hitting anything (giving only the base description2 tier and no AS buff)?",
+   "options": [
+    "Assume the blade always overlaps the target (best case: enhanced tier + AS buff every Q cast)",
+    "Assume the blade never overlaps the target because it starts adjacent to Shen with no travel distance to intercept anything (worst case: base tier only, no AS buff)",
+    "Model it as a positioning choice the simulator must fix once per fight rather than per-cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the {{as|Spirit Blade|buzzword}} hits at least one enemy {{tip|champion}} during the travel, the attacks are further enhanced to deal {{ccs|{{as|'''increased bonus''' magic damage}}|magic}} and additionally grant '''Shen''' {{sti|as|{{as|50% '''bonus''' attack speed}}}}.",
+    "The {{as|Spirit Blade|buzzword}} spawns with '''Shen''', teleports closer to him if he gets too far away..."
+   ]
+  },
+  {
+   "question": "If Twilight Assault (Q) is recast while the previous cast's 3 empowered attacks have not all been consumed, does the new cast reset the counter to 3 (and overwrite the tier/AS buff), stack additively, or is the recast simply wasted until the charges are used up?",
+   "options": [
+    "New cast resets/overwrites to a fresh 3-attack window at the new tier",
+    "Charges add on top of remaining ones, up to some cap",
+    "Not addressed by either source; treat as reset since only one buff instance is described"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Once it arrives, '''Shen''' empowers his next 3 {{tip|basic attacks}} within 8 seconds to gain {{sti|range|75 '''bonus''' range}} and deal {{as|'''bonus''' magic damage}} {{tip|on-hit}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Auto-attack the target continuously throughout the 15s window; basic attacks (especially empowered ones) are Shen's primary damage source.",
+   "Cast Twilight Assault (Q) as the opener to arm the next 3 basic attacks with bonus magic on-hit damage.",
+   "Cast Shadow Dash (E) through the target as soon as available for its flat+bonus-HP physical damage hit and its energy refund; recast on cooldown thereafter (cooldown starts only once the dash ends).",
+   "Recast Twilight Assault every time it comes off cooldown, prioritizing keeping empowered charges up so as many basic attacks as possible land while armed.",
+   "If the enhanced (champion-hit) tier and its 50% attack speed buff are available, weight Q recasts to maximize uptime of that buff since it also increases the auto-attack rate.",
+   "Never cast Spirit's Refuge (W) or Stand United (R) in the damage fight: they deal no damage and only matter for survival.",
+   "Manage energy spending between Q (100-140) and E (150) so that neither ability is ever starved of energy for a full cast cycle across the 15s."
+  ],
+  "questions": [
+   "Does the Spirit Blade's recall in a stationary 1v1 dummy fight actually intercept the target, and if so, does it do so on every Q cast or only some?",
+   "What is Shen's energy pool and base regeneration at the simulated level, to know how many Q/E casts the 15s fight can actually sustain?",
+   "When Q is recast before its 3 empowered attacks are consumed, does it reset, stack, or is the extra cast simply idle?",
+   "Is auto-attacking between Q/E casts strictly correct, or should Shen delay auto-attacks to line them up precisely with Q's empowerment window for maximum empowered-attack count?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

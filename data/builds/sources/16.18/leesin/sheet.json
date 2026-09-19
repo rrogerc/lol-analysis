@@ -1,0 +1,538 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "LeeSinPassive",
+    "key": "Characters/LeeSin/Spells/LeeSinPassiveAbility/LeeSinPassive",
+    "dataValues": {
+     "PassiveAS": 40,
+     "FirstHitEnergyMult": 2
+    },
+    "calcs": {
+     "EnergyReturn": {
+      "expr": "byLevelL[10/10/10/10/10/10/15/15/15/15/15/15/20/20/20/20/20/20]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TTFirstHitEnergy": {
+      "expr": "EnergyReturn * FirstHitEnergyMult=2",
+      "modifies": "EnergyReturn",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "FirstHitEnergyMult"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "LeeSinQOne",
+    "key": "Characters/LeeSin/Spells/LeeSinQOneAbility/LeeSinQOne",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Q1BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "Q2BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "Q1ADRatio": 0.9,
+     "Q2ADRatio": 0.9,
+     "Q2MaxMissingHealthMod": 1,
+     "ReactivateTime": 3,
+     "CherryBonusHaste": 30,
+     "DashSpeed": 1350
+    },
+    "calcs": {
+     "InitialDamage": {
+      "expr": "Q1BaseDamage=[60/90/120/150/180] + (Q1ADRatio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "Q1ADRatio"
+       }
+      ],
+      "refs": [
+       "Q1ADRatio",
+       "Q1BaseDamage"
+      ]
+     },
+     "RecastDamage": {
+      "expr": "Q2BaseDamage=[60/90/120/150/180] + (Q2ADRatio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "Q2ADRatio"
+       }
+      ],
+      "refs": [
+       "Q2ADRatio",
+       "Q2BaseDamage"
+      ]
+     },
+     "EmpoweredDamage": {
+      "expr": "RecastDamage * 2",
+      "modifies": "RecastDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        180,
+        240,
+        300,
+        360
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.8,
+        "dataValue": "Q2ADRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "Q2ADRatio",
+       "Q2BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "LeeSinWOne",
+    "key": "Characters/LeeSin/Spells/LeeSinWOneAbility/LeeSinWOne",
+    "cooldown": 7,
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "LifestealAndSpellVamp": {
+      "axis": "rank",
+      "v": [
+       10,
+       14,
+       18,
+       22,
+       26
+      ]
+     },
+     "ShieldValue": {
+      "axis": "rank",
+      "v": [
+       60,
+       105,
+       150,
+       195,
+       240
+      ]
+     },
+     "ShieldDuration": 2,
+     "DashSpeed": 1350,
+     "W1ReactivateTime": 3,
+     "W1CooldownRecovered": 0.5,
+     "LifestealAndSpellVampTime": 4
+    },
+    "calcs": {
+     "ShieldAmount": {
+      "expr": "ShieldValue=[60/105/150/195/240] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        105,
+        150,
+        195,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "ShieldValue"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "LeeSinEOne",
+    "key": "Characters/LeeSin/Spells/LeeSinEOneAbility/LeeSinEOne",
+    "cooldown": 8,
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       35,
+       45,
+       55,
+       65,
+       75
+      ]
+     },
+     "E1Damage": {
+      "axis": "rank",
+      "v": [
+       35,
+       60,
+       85,
+       110,
+       135
+      ]
+     },
+     "ReactivateTime": 3,
+     "SlowDuration": 4
+    },
+    "calcs": {
+     "InitialDamage": {
+      "expr": "E1Damage=[35/60/85/110/135] + 0.9xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        60,
+        85,
+        110,
+        135
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "E1Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "LeeSinR",
+    "key": "Characters/LeeSin/Spells/LeeSinRAbility/LeeSinR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      85,
+      60
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       175,
+       400,
+       625
+      ]
+     },
+     "PercentHPCarryThrough": {
+      "axis": "rank",
+      "v": [
+       12,
+       15,
+       18
+      ]
+     },
+     "KickDistance": 800
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[175/400/625] + 2xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        175,
+        400,
+        625
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "LeeSinQOne",
+  "W": "LeeSinWOne",
+  "E": "LeeSinEOne",
+  "R": "LeeSinR",
+  "P": "LeeSinPassive"
+ },
+ "resource": {
+  "arType": 1,
+  "values": {
+   "{726ee5cd}": 200,
+   "{c4ab3550}": 10
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1046875
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "LeeSin",
+  "name": "Lee Sin",
+  "partype": "Energy",
+  "passive": "Flurry",
+  "spells": [
+   {
+    "id": "LeeSinQOne",
+    "name": "Sonic Wave / Resonating Strike",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "LeeSinWOne",
+    "name": "Safeguard / Iron Will",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "LeeSinEOne",
+    "name": "Tempest / Cripple",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "LeeSinR",
+    "name": "Dragon's Rage",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     85,
+     60
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Flurry": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Sonic Wave": {
+    "damagetype": "Physical",
+    "spelleffects": "Spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   },
+   "Resonating Strike": {
+    "damagetype": "Physical",
+    "spelleffects": "Spell",
+    "spellshield": "True",
+    "targeting": "Proximity",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "W": {
+   "Safeguard": {
+    "targeting": "Unit",
+    "costtype": "Energy"
+   },
+   "Iron Will": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Energy"
+   }
+  },
+  "E": {
+   "Tempest": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   },
+   "Cripple": {
+    "spellshield": "True",
+    "targeting": "Proximity",
+    "affects": "Enemies",
+    "costtype": "energy"
+   }
+  },
+  "R": {
+   "Dragon's Rage": {
+    "damagetype": "Physical",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

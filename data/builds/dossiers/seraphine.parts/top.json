@@ -1,0 +1,161 @@
+{
+ "champion": "seraphine",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "empowered attack fires all stacked Notes as separate on-hit magic damage instances"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "next basic attack is empowered while any Notes are active"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Notes stack up to 4 per unit (Seraphine included), each contributing one damage instance to the empowered attack; refresh on new casts"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Echo stacks up to 2 from ability casts, capped, consumed on next basic ability cast to trigger a free additional cast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "P"
+   ],
+   "note": "Echo-triggered additional cast is a separately timed second cast of the same ability at no cost after a short delay"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "High Note damage amplified up to 75% based on target's missing health"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "the max (missing-health-amplified) portion of High Note damage is treated as a cosmetic critical strike"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "AoE expands in rings over 0.4s and can only hit each target once; dummy fight must assume full/immediate hit"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Encore has a 0.5s cast before the wave fires, then a second 0.5s lockout period"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Encore's projectile resets travel distance on hitting a champion; in a single-target dummy fight this reset is moot but is a real mechanic against multiple targets"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs across all abilities constrain casts in the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Surround Sound (shield/heal/MS) is purely defensive/utility, read only in the survival fight if Seraphine is the tank"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Echo (stacking-self-buff + recast-or-multipart) and Note-stacking (target-stacks + onhit-rider/empowered-attack) combine two primitives each but both combinations are individually expressible; no unique mechanic falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "Does Echo's free additional cast of Q/E/R re-trigger the missing-health damage amp (Q) or re-fire as a full independent instance including all associated riders (e.g., does an Echoed Q get its own missing-health calc against the now-damaged dummy)?",
+   "options": [
+    "Echoed cast recalculates all conditional terms independently at its own resolution time",
+    "Echoed cast copies the same conditional state as the original cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The additional cast counts as a separate {{tip|cast instance}} for the purpose of e.g. {{ri|Electrocute}} or {{ri|Conqueror}}."
+   ]
+  },
+  {
+   "question": "Does the Echo-empowered second cast also grant a new Echo stack (i.e., can Echo stacks regenerate mid-fight from the Echoed cast itself), or does the Echoed cast not count toward Echo generation?",
+   "options": [
+    "Echoed cast also grants a stack of Echo, allowing faster re-accumulation",
+    "Only manually initiated casts grant Echo stacks; the Echoed cast does not generate a new stack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Seraphine's''' {{tip|ability|basic ability}} casts each generate a {{tip|stack}} of ''Echo'', stacking up to 2 times."
+   ]
+  },
+  {
+   "question": "In the single-target dummy fight, does the empowered auto-attack fire all stacked Notes (up to 4) as separate near-simultaneous magic damage instances every time Notes are active, or is it capped by how often Seraphine can refresh Notes via casts (since Notes require an ability cast to generate, not just attacking)?",
+   "options": [
+    "Notes are only present after an ability cast and decay after 6s, so the rotation must interleave casts with attacks to keep Notes active for onhit damage",
+    "Notes can be assumed always at max stacks for simplicity, maximizing onhit damage every attack"
+   ],
+   "impact": "high",
+   "quotes": [
+    "While any amount of ''Notes'' are active, '''Seraphine's''' next {{tip|basic attack}} is empowered..."
+   ]
+  },
+  {
+   "question": "Does the missing-health damage amp on High Note (Q) get evaluated against the dummy's health at the moment of impact (after Q's own base damage would apply) or before, and does it stack multiplicatively with the max-enhanced-damage cosmetic crit threshold cleanly for simulation purposes?",
+   "options": [
+    "Amp is evaluated on pre-hit current missing health, single damage instance with amp baked in",
+    "Amp and base are computed as two separate sequential effects (unclear ordering)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the damage is {{ccs|increased|magic}} by {{pp|...}}...capped at 75% '''missing''' health"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start with W (Surround Sound) or another ability cast to seed an Echo stack and grant Seraphine a Note (also useful if survival fight; for damage fight, prioritize damage abilities first).",
+   "Open with E (Beat Drop) to build Echo stack #1 and grant a Note, dealing magic damage on cast.",
+   "Follow with Q (High Note) to build Echo stack #2 (now at cap) and grant a second Note.",
+   "Cast R (Encore) if available: this consumes the 2 Echo stacks, causing Encore to cast twice in quick succession (0.01s delay) after its 0.5s cast time, doubling R's burst damage instance and granting more Notes.",
+   "Weave in basic attacks whenever Notes are active (from E/Q/R casts) so the empowered auto-attack fires all stacked Note damage instances at the dummy.",
+   "Recast E and Q on cooldown throughout the 15s window (E every ~11s, Q every ~6-8s depending on rank), each refreshing Notes and re-arming Echo.",
+   "Manage mana: total costs (Q 60-100, W 70-90, E 60, R 100) versus available mana pool likely limit how many full-cost casts fit in 15s; prioritize E and Q over W since W is defensive-only in the damage fight.",
+   "If R is on cooldown for most of the 15s window (base 160s at rank 1), the rotation is effectively Q/E on cooldown plus autos with Notes, with R used once at the start if available."
+  ],
+  "questions": [
+   "Should W ever be cast in the pure damage fight, given it produces no direct damage (only a self-shield) but does generate a Note and an Echo stack that empower the next ability/attack?",
+   "What champion level and mana pool is assumed for the 15s fight, and does mana realistically allow all of Q/W/E on cooldown plus attacks, or does resource-budget force skipping W?",
+   "Is R assumed off cooldown at the start of the 15s fight (i.e., is this a burst-opener scenario) or is R excluded as unavailable within a typical simulated window given its 120-160s cooldown?",
+   "How should the simulator treat the Echo double-cast for cooldown/cost purposes — does the second cast start its own instance of any on-cast riders (Notes, Echo generation) or is it purely a damage duplicate?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

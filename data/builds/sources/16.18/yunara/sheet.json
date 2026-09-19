@@ -1,0 +1,648 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "YunaraPassive",
+    "key": "Characters/Yunara/Spells/YunaraPassiveAbility/YunaraPassive",
+    "cooldown": 0,
+    "calcs": {
+     "Calc_Damage_Amp": {
+      "expr": "0.1 + 0.001xap",
+      "flat": 0.1,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.001
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "YunaraQ",
+    "key": "Characters/Yunara/Spells/YunaraQAbility/YunaraQ",
+    "cooldown": 0,
+    "cost": 30,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Resource_Max": 8,
+     "Resource_Champion": 2,
+     "Resource_Nonchampion": 1,
+     "Resource_Loss": 1,
+     "Resource_Loss_Interval": 0.5,
+     "Resource_Duration": 6,
+     "Buff_Duration": 5,
+     "Spread_Radius": 300,
+     "Spread_AD_Ratio": 0.3,
+     "Spread_Lifesteal_Efficacy": 1,
+     "Spread_Onhit_Efficacy": 0.3,
+     "Attack_Speed": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.3,
+       0.4,
+       0.5,
+       0.6
+      ]
+     },
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25
+      ]
+     },
+     "Damage_Passive": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25
+      ]
+     }
+    },
+    "calcs": {
+     "Calc_Passive_Damage": {
+      "expr": "Damage_Passive=[5/10/15/20/25] + 0.2xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        10,
+        15,
+        20,
+        25
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "Damage_Passive"
+      ]
+     },
+     "Calc_Attack_Speed": {
+      "expr": "Attack_Speed=[0.2/0.3/0.4/0.5/0.6]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "Attack_Speed"
+      ]
+     },
+     "Calc_Damage": {
+      "expr": "Damage=[5/10/15/20/25] + 0.2xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        10,
+        15,
+        20,
+        25
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     },
+     "Calc_Damage_Spread": {
+      "expr": "(Spread_AD_Ratio=0.3)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "Spread_AD_Ratio"
+       }
+      ],
+      "refs": [
+       "Spread_AD_Ratio"
+      ]
+     },
+     "Calc_Minion_Execute_Threshold": {
+      "expr": "0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "Calc_Minion_Execute_Amp": {
+      "expr": "2.5",
+      "flat": 2.5,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "YunaraW",
+    "key": "Characters/Yunara/Spells/YunaraWAbility/YunaraW",
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Cast_Time_Base": 0.45,
+     "Cast_Time_Min": 0.225,
+     "Cast_Time_Attack_Speed_Cap": 100,
+     "Cast_Time_Base_Empowered": 0.6,
+     "Cast_Time_Min_Empowered": 0.45,
+     "Cast_Time_Attack_Speed_Cap_Empowered": 100,
+     "Linger_Duration": 1,
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       55,
+       95,
+       135,
+       175,
+       215
+      ]
+     },
+     "ADRatio": 0.85,
+     "APRatio": 0.5,
+     "DPS_Modifier": 0.6,
+     "Slow_Duration": 1.5,
+     "Slow_Amount": 0.99,
+     "Minion_Execute_Tick_Count": 6
+    },
+    "calcs": {
+     "Calc_Damage_Initial": {
+      "expr": "Damage=[55/95/135/175/215] + (ADRatio=0.85)xbonus ad + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        95,
+        135,
+        175,
+        215
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.85,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "Damage"
+      ]
+     },
+     "Calc_Damage_Per_Second": {
+      "expr": "Calc_Damage_Initial * DPS_Modifier=0.6",
+      "modifies": "Calc_Damage_Initial",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        33,
+        57,
+        81,
+        105,
+        129
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.51,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "DPS_Modifier",
+       "Damage"
+      ]
+     },
+     "{669adf33}": {
+      "expr": "Calc_Damage_Initial * <{f3cbe7b2}>",
+      "modifies": "Calc_Damage_Initial",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "Calc_Slow": {
+      "expr": "Slow_Amount=0.99",
+      "flat": 0.99,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "Slow_Amount"
+      ]
+     },
+     "Calc_Minion_Damage_Mod": {
+      "expr": "byLevelL[0.5/0.5/0.5/0.5/0.5/0.5/0.5/0.5/0.75/0.75/0.75/0.75/1/1/1/1/1/1]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "E": [
+   {
+    "script": "YunaraE",
+    "key": "Characters/Yunara/Spells/YunaraEAbility/YunaraE",
+    "cooldown": 9,
+    "cost": 40,
+    "dataValues": {
+     "Buff_Duration": 1.5,
+     "Move_Speed": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "Move_Speed_Modifier": 1.5
+    },
+    "calcs": {
+     "Calc_Move_Speed": {
+      "expr": "Move_Speed=[0.3/0.35/0.4/0.45/0.5]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.3,
+        0.35,
+        0.4,
+        0.45,
+        0.5
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "Move_Speed"
+      ]
+     },
+     "Calc_Move_Speed_Enhanced": {
+      "expr": "Calc_Move_Speed * Move_Speed_Modifier=1.5",
+      "modifies": "Calc_Move_Speed",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.45,
+        0.525,
+        0.6,
+        0.675,
+        0.75
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "Move_Speed",
+       "Move_Speed_Modifier"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "YunaraR",
+    "key": "Characters/Yunara/Spells/YunaraRAbility/YunaraR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      90,
+      80
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Buff_Duration": 15,
+     "RW_Damage_Base": {
+      "axis": "rank",
+      "v": [
+       160,
+       320,
+       480
+      ]
+     },
+     "RW_ADRatio": 1.2,
+     "RW_APRatio": 0.75,
+     "RW_Slow_Duration": 1,
+     "RW_Slow_Amount": 0.99,
+     "RE_Dash_Speed": {
+      "axis": "rank",
+      "v": [
+       1350,
+       1500,
+       1650
+      ]
+     },
+     "RW_CDR": 0.8
+    },
+    "calcs": {
+     "Calc_RW_Damage": {
+      "expr": "RW_Damage_Base=[160/320/480] + (RW_ADRatio=1.2)xbonus ad + (RW_APRatio=0.75)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        160,
+        320,
+        480
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2,
+        "dataValue": "RW_ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "RW_APRatio"
+       }
+      ],
+      "refs": [
+       "RW_ADRatio",
+       "RW_APRatio",
+       "RW_Damage_Base"
+      ]
+     },
+     "Calc_RW_Slow_Amount": {
+      "expr": "RW_Slow_Amount=0.99",
+      "flat": 0.99,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "RW_Slow_Amount"
+      ]
+     },
+     "{42964db5}": {
+      "expr": "RE_Dash_Speed=[1350/1500/1650]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        1350,
+        1500,
+        1650
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "RE_Dash_Speed"
+      ]
+     },
+     "Calc_RW_Cooldown_Reduction": {
+      "expr": "RW_CDR=0.8",
+      "flat": 0.8,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "RW_CDR"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "YunaraQ",
+  "W": "YunaraW",
+  "E": "YunaraE",
+  "R": "YunaraR",
+  "P": "YunaraPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 275,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 1.5,
+   "{3a509002}": 0.15
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Yunara",
+  "name": "Yunara",
+  "partype": "Mana",
+  "passive": "Vow of the First Lands",
+  "spells": [
+   {
+    "id": "YunaraQ",
+    "name": "Cultivation of Spirit",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "YunaraW",
+    "name": "Arc of Judgment | Arc of Ruin",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "YunaraE",
+    "name": "Kanmei's Steps | Untouchable Shadow",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "YunaraR",
+    "name": "Transcend One's Self",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     90,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Vow of the First Lands": {
+    "damagetype": "magic",
+    "spelleffects": "proc",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Cultivation of Spirit": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "special",
+    "spellshield": "false",
+    "projectile": "true",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana + 8 Unleash Stacks"
+   }
+  },
+  "W": {
+   "Arc of Judgment": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   },
+   "Arc of Ruin": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Kanmei's Steps": {
+    "targeting": "auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   },
+   "Untouchable Shadow": {
+    "targeting": "Location",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "Transcend One's Self": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

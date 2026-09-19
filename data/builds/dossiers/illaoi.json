@@ -1,0 +1,913 @@
+{
+ "champion": "illaoi",
+ "abilities": {
+  "P": {
+   "name": "Prophet of an Elder God",
+   "cooldown": {
+    "values": [
+     18,
+     17.35,
+     16.71,
+     16.06,
+     15.41,
+     14.76,
+     14.12,
+     13.47,
+     12.82,
+     12.18,
+     11.53,
+     10.88,
+     10.24,
+     9.59,
+     8.94,
+     8.29,
+     7.65,
+     7
+    ],
+    "quote": "{{pplevel|18 to 7}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_slam_damage",
+     "meaning": "Tentacle slam physical damage to enemies struck",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      9,
+      19.06,
+      29.12,
+      39.18,
+      49.24,
+      59.29,
+      69.35,
+      79.41,
+      89.47,
+      99.53,
+      109.59,
+      119.65,
+      129.71,
+      139.76,
+      149.82,
+      159.88,
+      169.94,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      },
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{pplevel|9 to 180}} {{as|(+ 110% AD)}} {{as|(+ 40% AP)}} physical damage",
+     "bin": [],
+     "binNote": "IllaoiQ#TentacleDamageTotal = (byLevel(9..180) + TotalADRatio(1.1)xad + APRatio(0.4)xap) * 1 + TentacleDamageAmp[rank]; the by-level base literal 9..180 is embedded inline in the calculation string and is not exposed as its own named DataValue, so it cannot be cited as a bin row on its own - only the named DataValues TotalADRatio, APRatio and TentacleDamageAmp are addressable rows, and the wiki reports TentacleDamageAmp separately as a rank-based percent increase in the description text rather than folding it into the base 9-to-180 number, matching the wiki's presentation used here."
+    },
+    {
+     "id": "p_slam_amp",
+     "meaning": "Percent increase to Tentacle slam damage from Tentacle Smash rank",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.15,
+      0.2,
+      0.25,
+      0.3
+     ],
+     "terms": [],
+     "quote": "increased by {{pp|0;10 to 30|0 to 5 for 6|key=%|formula=100% + 10% at rank 1, then 5% per rank|type = [[File:Tentacle Smash.png|20px|link=]] Tentacle Smash's rank}}",
+     "bin": [
+      "IllaoiQ.TentacleDamageAmp"
+     ]
+    },
+    {
+     "id": "p_slam_reduction",
+     "meaning": "Per-slam damage reduction on a target hit repeatedly within a short window, capped",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.5,
+      0.75,
+      0.66
+     ],
+     "terms": [],
+     "quote": "Each enemy individually reduces the slam damage by 50% for every slam they were hit by in the last {{fd|0.66}} seconds, capped at 75% less damage.",
+     "bin": [],
+     "binNote": "No corresponding IllaoiQ/IllaoiPassive data value carries this 50%/75%/0.66s stacking-reduction mechanic; it appears to be tooltip/hardcoded logic not exposed as a bin data value."
+    },
+    {
+     "id": "p_heal",
+     "meaning": "Illaoi is healed for a percent of her missing health when a Tentacle hits at least one enemy champion",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [
+      {
+       "stat": "missingHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{as|5% of her '''missing''' health}}",
+     "bin": [
+      "IllaoiPassive.MissingHPPercentHeal"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "A Tentacle's slam is an area-of-effect instance dealing damage to all enemies struck simultaneously, not a single-target hit.",
+     "quote": "dealing {{as|{{pplevel|9 to 180}} {{as|(+ 110% AD)}} {{as|(+ 40% AP)}} physical damage|physical damage}} to all enemies struck",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Repeated slams on the same target within 0.66 seconds stack a damage reduction on that hit, up to a 75% cap, lowering the damage the tentacle deals to a heavily-hit target.",
+     "quote": "Each enemy individually reduces the slam damage by 50% for every slam they were hit by in the last {{fd|0.66}} seconds, capped at 75% less damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tentacles attack only when commanded by Illaoi's abilities; they do not attack on their own.",
+     "quote": "{{as|Tentacles|buzzword2}} are commanded to attack by '''Illaoi's''' {{tip|abilities}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The missing-health heal from a Tentacle hit only triggers if it hits at least one enemy champion (not on non-champion targets), and is a self-heal that does not change damage dealt.",
+     "quote": "'''Illaoi''' for {{as|5% of her '''missing''' health}} if it hits at least one enemy {{tip|champion}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Tentacle heal is applied after omnivamp is calculated.",
+     "quote": "The healing applies after {{tip|omnivamp}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "When multiple Tentacles hit simultaneously, the resulting heal is computed iteratively off updated missing health rather than as one flat sum, per hit count n.",
+     "quote": "the received healing is calculated iteratively based on the new amount of '''missing''' health, as per this formula: {{as|('''maximum''' health{{minus}}'''current''' health)}}{{times}}(1{{minus}}0.95<sup>n</sup>), with 'n' the number of {{as|Tentacle|buzzword2}} hits.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Newly spawned Tentacles are untargetable for 2 seconds before they can attack.",
+     "quote": "Tentacles fully spawn after a 2 second delay and are {{tip|untargetable}} in the meantime.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IllaoiPassive.TentacleDisabledLifetime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IllaoiPassive.SpawnRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IllaoiPassive.SpawnDensity",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IllaoiPassive.PassiveTentacleLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IllaoiPassive.PassiveTentacleWidth",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Tentacle Smash",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10|9|8|7|6}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40|45|50|55|60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{fd|0.75}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Tentacle damage amplification (Passive)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.15,
+      0.2,
+      0.25,
+      0.3
+     ],
+     "terms": [],
+     "quote": "{{ap|10|15|20|25|30}}%",
+     "bin": [
+      "IllaoiQ.TentacleDamageAmp"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Tentacle Smash active damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      },
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "'''Illaoi''' slams down a {{as|Tentacle|buzzword2}} in the target direction, dealing {{as|physical damage}}",
+     "bin": [
+      "IllaoiQ#TentacleDamageTotal"
+     ],
+     "binNote": "Wiki leveling table only shows the passive Damage Increase percentage; the active's base damage-by-level and AD/AP ratios (9-180 base scaling by champion level, 110% total AD, 40% AP, further amplified by TentacleDamageAmp) are not present in the wiki leveling table text and are taken from the bin calculation IllaoiQ#TentacleDamageTotal. The exact per-level base array (9..180) is not spelled out in the wiki template."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Tentacle Smash deals physical damage.",
+     "quote": "dealing {{as|physical damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Tentacle Smash is considered a Tentacle attack for Illaoi's damage reduction interactions, so using it at inappropriate times can reduce its own damage and following Tentacle attacks' damage.",
+     "quote": "Since ''Tentacle Smash'' is still considered a {{as|Tentacle|buzzword2}} for {{ais|I|Illaoi}} damage reduction, care should be taken around {{as|Tentacle|buzzword2}} attack sequences",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IllaoiQ.TentacleLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IllaoiQ.TentacleWidth",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Harsh Lesson",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "4"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Additional Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.03,
+        0.035,
+        0.04,
+        0.045,
+        0.05
+       ],
+       "coefScaling": [
+        {
+         "stat": "ad",
+         "per": 100,
+         "coef": 0.035
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|3 to 5}}% {{as|(+ {{fd|3.5}}% per 100 AD)}} of target's '''maximum''' health|health}}",
+     "bin": [
+      "IllaoiW#HealthPercentTotal"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Minimum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 60}}",
+     "bin": [
+      "IllaoiW.WMinDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "damage cap against non-champions",
+     "role": "other",
+     "damageType": "physical",
+     "by": "const",
+     "base": 300,
+     "terms": [],
+     "quote": "capped at 300 against non-champions",
+     "bin": [
+      "IllaoiW.MonsterDamageCap"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration the empowered attack buff lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "empowers her next {{tip|basic attack}} within 6 seconds",
+     "bin": [
+      "IllaoiW.BuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Harsh Lesson resets Illaoi's basic attack timer.",
+     "quote": "Harsh Lesson {{tip|basic attack reset|resets}} '''Illaoi's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional damage does not apply life steal but does apply spell vamp and Omnivamp.",
+     "quote": "The '''additional''' damage doesn't apply {{as|{{sti|life steal}}}} but it does apply {{tip|spell vamp}} and {{tip|Omnivamp}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Harsh Lesson commands nearby Tentacles to attack the target, adding their own damage instances.",
+     "quote": "commands all {{as|Tentacles|buzzword2}} in range to attack the target",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Harsh Lesson can be activated during Illaoi's other abilities.",
+     "quote": "Harsh Lesson can be activated during '''Illaoi's''' other abilities.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins after the effect resolves, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IllaoiW.HealthDamageADRatio",
+     "reason": null
+    },
+    {
+     "ref": "IllaoiW.CooldownDuringR",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IllaoiW.DashSpeedBonus",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Test of Spirit / Vessel",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|16 to 12}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     40,
+     45,
+     50,
+     55
+    ],
+    "quote": "{{ap|35 to 55}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Damage Transmission (echo percent of pre-mitigation damage taken by Spirit)",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.25,
+      0.3,
+      0.35,
+      0.4,
+      0.45
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.0008,
+       "coefScaling": [
+        {
+         "stat": "ad",
+         "per": 100,
+         "coef": 0.08
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|25 to 45}}% {{as|(+ 8% per 100 AD)}}",
+     "bin": [
+      "IllaoiE#EchoPercent"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Spirit tether duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "tethered to the {{as|Spirit|buzzword}} for {{tt|7 seconds|Timer starts when the target is hit}}",
+     "bin": [
+      "IllaoiE.SpiritDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Vessel debuff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "marking the target as a {{as|Vessel|buzzword3}} for 4 seconds",
+     "bin": [
+      "IllaoiE.VesselDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow amount when tether returns after Vessel severed",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 80% for {{fd|1.5}} seconds",
+     "bin": [
+      "IllaoiE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "slowing them by 80% for {{fd|1.5}} seconds once the tether returns",
+     "bin": [
+      "IllaoiE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Time between tentacle attacks on Vessel/Spirit",
+     "role": "interval",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      3.5,
+      3.5,
+      3.5,
+      3.5,
+      3.5,
+      3.5,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "terms": [],
+     "quote": "once every {{pp|4.5 to 3.5 for 3|1 to 13|formula=4-0.5 every 6 levels, with an up to 0.5-second delay. Cooldown starts upon starting the slam.}} seconds",
+     "bin": [
+      "IllaoiE#TimeBetweenVesselTentacleSlams"
+     ],
+     "binNote": "Wiki text says 4.5 to 3.5 but bin/formula and level table both show 4 to 3 (4-0.5 every 6 levels starting at 4); treating wiki '4.5' as a likely typo, using bin values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The Spirit echoes a portion of pre-mitigation damage it takes to the tethered target as the ability's damage; this is the only source of damage from this ability in a dummy fight.",
+     "quote": "echoes a portion of the {{tt|pre-mitigation damage|Damage calculated before modifiers}} received to the tethered champion",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Echoed damage type matches the damage type that hit the Spirit (physical/magic/true), not a fixed type.",
+     "quote": "damagetype   = {{dv|{{tip|Physical damage|Physical}}|{{tip|Magic damage|Magic}}|{{tip|True damage|True}}<br>(Echoed damage)}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Echoed damage is capped to the Spirit's current health, and modifiers apply in a specific (potentially inconsistent) order.",
+     "quote": "Echoed damage is calculated by taking the pre-mitigation damage against the {{as|Spirit|buzzword}}, applying ''Test of Spirit's'' damage modifier, and then capping it to the {{as|Spirit's|buzzword}} {{as|'''current''' health}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Transferred/echoed damage applies on-damage effects like damage amplifiers, Black Cleaver, Morellonomicon, etc., but does not doubly apply on-hit or on-spell effects to the Vessel.",
+     "quote": "Transferred damage will apply on-damage effects, such as damage amplifiers ... Transferred damage will not doubly apply on-hit or on-spell effects versus the target",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Illaoi cannot recast Test of Spirit until the current Spirit dies.",
+     "quote": "Test of Spirit cannot be cast again until the {{as|Spirit|buzzword}} dies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ability is unusable/locked out while the projectile travels and while pulling the Spirit.",
+     "quote": "'''Illaoi''' is {{tip|lockout|unable to act}} while firing the projectile and while the target's {{as|Spirit|buzzword}} is being pulled.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IllaoiE.GraceBeforeDormantAfterELand",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "IllaoiE.Density",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IllaoiE.SpiritLeashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "IllaoiE#{87aff6dd}",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Leap of Faith",
+   "cooldown": {
+    "values": [
+     120,
+     95,
+     70
+    ],
+    "quote": "{{ap|120 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "IllaoiR#DamageCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Tentacle duration after being summoned",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "a {{as|Tentacle|buzzword2}} is summoned for 8 seconds (up to a maximum of 6 summons)",
+     "bin": [
+      "IllaoiR.Duration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "max Tentacle summons",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "up to a maximum of 6 summons",
+     "bin": [],
+     "binNote": "no bin row found for the summon cap"
+    },
+    {
+     "id": "r_4",
+     "meaning": "tentacle attack windup/lockout while buffed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "will take {{fd|0.5}} seconds to make an attack; however they will then incur a lockout of {{fd|0.5}} seconds before being able to start a new attack",
+     "bin": [],
+     "binNote": "no matching bin row found for these timings"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Illaoi gains displacement immunity and leaps into the air for the cast time before dealing damage on landing.",
+     "quote": "gains {{tip|displacement immunity}} and leaps into the air for the cast time. She then slams her idol into the ground, dealing {{as|physical damage}} to nearby enemies.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "For the duration, Harsh Lesson's cooldown is halved.",
+     "quote": "''{{ais|Harsh Lesson|Illaoi}}'' {{sti|cooldown}} is halved",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shields block the ability's damage but do not prevent Tentacles from spawning.",
+     "quote": "{{tip|Spell shield|Spell shields}} will block the ability's damage but will not prevent '''''{{as|Tentacles|buzzword2}}''''' from spawning.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This buff does not affect the Tentacle attack from Tentacle Smash.",
+     "quote": "This does not affect the {{as|Tentacle|buzzword2}} attack from {{ai|Tentacle Smash|Illaoi}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "IllaoiR.BuffRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "R",
+    "E"
+   ],
+   "note": "Tentacles are separate entities that deal a large share of Illaoi's damage; they are spawned passively (P) and commanded to slam by Q/W/R, and separately auto-attack the Spirit/Vessel from E on their own timer."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P: each tentacle slam's damage on a given target is reduced 50% per slam that target was hit by in the last 0.66s, capped at 75% reduction (a target-state-dependent damage reduction). W: bonus damage is a percent of the target's current maximum health with a separate minimum-damage floor."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Harsh Lesson arms Illaoi's next basic attack (within 6s) with bonus %max-health physical damage and a dash/leap."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Harsh Lesson resets Illaoi's basic attack timer on cast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Test of Spirit is a two-phase ability: a tendril grab that spawns a Spirit clone which echoes damage for up to 7s, then (on the Spirit's death or tether break) a separate Vessel-mark phase that spawns periodic autonomous tentacle attacks; E cannot be recast until the current Spirit dies."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Vessel mark on the target causes it to continuously spawn/attract Tentacle attacks for its 4s duration."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "For R's 8s duration, Harsh Lesson's cooldown is halved and R-spawned Tentacles attack on a fixed faster windup/lockout cadence."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "R halves Harsh Lesson's cooldown for its duration."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 40-60, E 35-55, R 100 flat) plausibly gate how often these can be cast inside the 15s window, especially at low mana pools/levels."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "The kit's damage is dominated by a shared Tentacle-command system that no single primitive captures cleanly: multiple independently-spawned Tentacles (passive spawn on a level-based timer, up to 6 more from R) each carry their own per-target 0.66s stacking damage-reduction state, and are 'commanded' to slam by whichever of Q/W/R/E-Vessel is used, with R further changing their attack cadence (0.5s windup + 0.5s lockout) instead of the normal per-level interval. Separately, E's echo mechanic requires simulating a second health/armor/MR pool (the Spirit, cloned from the target's current stats) that must actually take damage before it dies, with the echoed damage capped to the Spirit's current health and calculated pre-mitigation-then-modified in a specific (and per the wiki, sometimes inconsistent) order. Both of these need bespoke stateful logic beyond a fixed list of primitives."
+ },
+ "unsettled": [
+  {
+   "question": "In a single-target dummy fight, what actually damages the E Spirit clone to trigger its echo, and how much echo damage results per fight? Does Illaoi's own Q/W tentacle slams and auto-attacks hit the Spirit (since it stands in front of her, near the target), or is the Spirit only damaged by the tentacles' own separate periodic autonomous attacks on it, or is some fixed 'burst it down fast' assumption intended?",
+   "options": [
+    "Model the Spirit as taking all of Illaoi's own outgoing damage during the 7s tether (Q slams, W bonus damage, autos) until it dies, then echo per-hit",
+    "Model the Spirit as only damaged by the level-based autonomous tentacle attacks described in E's own tooltip (independent of Q/W usage)",
+    "Assume the Spirit is killed near-instantly by the rotation's first hit(s) for simplicity, and only count one or two echo instances"
+   ],
+   "impact": "high",
+   "quotes": [
+    "echoes a portion of the {{tt|pre-mitigation damage|Damage calculated before modifiers}} received to the tethered champion",
+    "Each {{as|Tentacle|buzzword2}} autonomously attacks the closest {{as|Vessel|buzzword3}} or {{as|Spirit|buzzword}}, prioritizing the latter, once every {{pp|4.5 to 3.5 for 3|1 to 13}} seconds"
+   ]
+  },
+  {
+   "question": "Is Harsh Lesson's max-health-percent damage a floor combined with the minimum (i.e. damage = max(percent-health value, minimum)), or are the two values added, or does the minimum only apply in specific cases (e.g. against low-health targets or non-champions)?",
+   "options": [
+    "damage = max(percentHealth-based value, WMinDamage)",
+    "damage = percentHealth-based value, with WMinDamage only relevant against structures/monsters where percent-health would be 0 or tiny",
+    "damage = percentHealth-based value + WMinDamage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The attack deals {{as|'''additional''' physical damage|physical damage}}, with a minimum threshold, and capped at 300 against non-champions",
+    "IllaoiW.WMinDamage = [20/30/40/50/60]"
+   ]
+  },
+  {
+   "question": "During R's duration, do R-spawned Tentacles (and any other active Tentacles near Illaoi) all switch to the fixed 0.5s-windup/0.5s-lockout attack cadence described in R's tooltip, or does that cadence apply only to R-spawned Tentacles while other Tentacles keep the normal level-based interval from E/P?",
+   "options": [
+    "All active Tentacles near Illaoi adopt the R cadence for the duration",
+    "Only the Tentacles summoned by R itself use the R cadence; pre-existing Tentacles keep their normal interval"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "all {{as|Tentacles|buzzword2}} awakened by '''Illaoi''' are {{tip|untargetable}}, will not show their hitboxes, nor go dormant, and will take {{fd|0.5}} seconds to make an attack; however they will then incur a lockout of {{fd|0.5}} seconds before being able to start a new attack",
+    "This does not affect the {{as|Tentacle|buzzword2}} attack from {{ai|Tentacle Smash|Illaoi}}."
+   ]
+  },
+  {
+   "question": "For the per-target Tentacle slam damage reduction (50% per slam in last 0.66s, capped at 75%), should the simulator model only the straightforward stacking rule, or also the documented 'unexpected' bug where extending the reduction window via one slam can outweigh that slam's own damage contribution on a successive slam?",
+   "options": [
+    "Model only the stated straightforward rule (each slam reduces itself by 50% per recent slam, capped 75%)",
+    "Also model the documented bug interaction where the reduction window extension changes a later slam's damage disproportionately"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Each enemy individually reduces the slam damage by 50% for every slam they were hit by in the last {{fd|0.66}} seconds, capped at 75% less damage.",
+    "A slam that extends the damage reduction window to reduce the damage of a successive slam that would otherwise not have been reduced, can have its contribution of damage effectivelly negated or even outweighted by the window extension."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume a passive Tentacle is already up near the target terrain at the start of the fight (per the passive's spawn-radius/terrain rules), available to be commanded immediately.",
+   "Open with E (Test of Spirit) on the dummy to grab its Spirit, starting the echo-damage window and marking a Tentacle target.",
+   "As soon as E's cast/pull lockout ends, use W (Harsh Lesson) to arm and immediately fire the empowered attack: bonus %max-health physical damage, an attack-timer reset, and a command for nearby Tentacles (including the passive one) to slam.",
+   "Weave Q (Tentacle Smash) on cooldown between W casts and auto-attacks, spacing slams to avoid unnecessarily stacking the 0.66s same-target damage-reduction window on the same tentacle.",
+   "Continue auto-attacking on-cooldown between spell casts, re-casting W every time its 4s cooldown is up (each cast both resets the auto-attack timer and adds another empowered-attack + tentacle-slam damage instance).",
+   "Cast R (Leap of Faith) as soon as it is off cooldown for its own %bonus-AD damage, to summon extra Tentacles, and to halve W's cooldown for its 8s duration (letting W be woven even more frequently).",
+   "Once the E Spirit dies (from Illaoi's own damage or the autonomous tentacle attacks on it) and the Vessel/slow phase resolves, recast E again if it is off cooldown, to restart the echo-damage cycle for the remainder of the 15s window.",
+   "Prioritize keeping Q, W and auto-attacks on cooldown throughout; treat E and R as scheduled around their own cooldown/recast-gating rather than as fixed-interval spells."
+  ],
+  "questions": [
+   "At the level/CDR being simulated, is R actually expected to be off cooldown and available at all within the 15s window, or should the rotation assume it is not used in most test cases?",
+   "Should the dummy fight assume a Tentacle is already active at t=0 (terrain-dependent passive spawn), or should the first passive Tentacle be treated as unavailable until its level-based spawn timer (18-7s) elapses?",
+   "Given E cannot be recast until the Spirit dies, and the Spirit's effective 'health pool' is itself an unsettled bespoke mechanic, how quickly should the rotation assume the Spirit dies (affecting whether a second E cast fits inside 15s)?",
+   "Should Q be cast on cooldown regardless of Tentacle-slam-reduction stacking, or should its timing be deliberately offset from other Tentacle commands to maximize total tentacle damage output?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,1126 @@
+{
+ "champion": "ornn",
+ "abilities": {
+  "P": {
+   "name": "Living Forge / Master Craftsman",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_brittle_immobilize_damage",
+     "meaning": "bonus magic damage dealt when an immobilize/silence consumes Brittle",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      9.0,
+      9.5,
+      10.0,
+      10.5,
+      11.0,
+      11.5,
+      12.0,
+      12.5,
+      13.0,
+      13.5,
+      14.0,
+      14.5,
+      15.0,
+      15.5,
+      16.0,
+      16.5,
+      17.0,
+      17.0
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{pp|key=%|type='''Ornn's''' level|9 + (17-9)/17*(x-1) for 20}} of the target's '''maximum''' health",
+     "bin": [],
+     "binNote": "Wiki gives this scaling as a percent of target max health by Ornn's level (9% to 17%); no matching bin row is present in this sheet slice."
+    },
+    {
+     "id": "p_brittle_monster_cap",
+     "meaning": "cap on Brittle consumption bonus damage against monsters, scaling with Bellows Breath rank",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      260,
+      320,
+      380,
+      440,
+      500
+     ],
+     "terms": [],
+     "quote": "capped at {{pp|type=[[File:Bellows Breath.png|20px|border]] ''Bellows Breath's'' rank|200 to 500 for 6|0 to 5|formula=200 + 60 per rank of ''Bellows Breath''}} against {{tip|monsters}}",
+     "bin": [],
+     "binNote": "No monster damage cap value appears among the OrnnP data rows in this sheet."
+    },
+    {
+     "id": "p_cc_extension",
+     "meaning": "crowd control duration extension when Brittle is consumed",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "cause the crowd control to last 30% longer (if applicable)",
+     "bin": [],
+     "binNote": "Not present in this sheet slice; utility (CC), not scored in a dummy/survival fight anyway but kept for completeness."
+    },
+    {
+     "id": "p_knockback_duration",
+     "meaning": "duration of the on-hit knockback against Brittle targets",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "knock them back}} a short distance over {{tt|{{fd|0.4}} seconds|Estimated}}",
+     "bin": [],
+     "binNote": "Estimated value in wiki (tagged 'Estimated'); no corresponding bin row in this sheet."
+    },
+    {
+     "id": "p_forge_channel_duration",
+     "meaning": "duration of the Living Forge channel to purchase/upgrade items",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "causing him to {{tip|channel}} for 4 seconds",
+     "bin": [],
+     "binNote": "Not-in-a-dummy-fight: purchasing/upgrading items has no effect in either simulated fight."
+    },
+    {
+     "id": "p_stat_amp_base",
+     "meaning": "base percent increase to Ornn's bonus armor, MR, and health from all sources",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.1
+      },
+      {
+       "stat": "bonusMr",
+       "coef": 0.1
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "increases his {{sti|{{as|'''bonus''' armor}}}}, {{sti|{{as|'''bonus''' magic resistance}}}} and {{sti|{{as|'''bonus''' health}}}} by 10% from all sources",
+     "bin": [
+      "OrnnP.BaseStatAmp"
+     ]
+    },
+    {
+     "id": "p_stat_amp_per_upgrade",
+     "meaning": "additional percent stat amp per Legendary item upgraded to Masterwork (up to 5 upgrades)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.04,
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.04
+      },
+      {
+       "stat": "bonusMr",
+       "coef": 0.04
+      },
+      {
+       "stat": "bonusHp",
+       "coef": 0.04
+      }
+     ],
+     "quote": "further increased by 4% each time he upgrades a ''Legendary'' item into a {{sbc|Masterwork}} item, for a total increase of 30% to each stat after the maximum of 5 upgrades",
+     "bin": [
+      "OrnnP.AdditionalMythicStatAmp"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ornn's basic attacks on-hit against Brittle enemies knock them back; other allied/Ornn immobilize or silence effects instead consume Brittle for bonus magic damage and extended CC.",
+     "quote": "His {{tip|basic attacks}} {{tip|on-hit}} against enemies afflicted with ''Brittle'' are empowered to {{tip|airborne|knock them back}} a short distance",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Brittle is applied by hits from Bellows Breath (W) and Call of the Forge God (R).",
+     "quote": "'''Ornn''' applies {{tip|Brittle}} to enemies hit by ''{{ai|Bellows Breath|Ornn}}'' and ''{{ai|Call of the Forge God|Ornn}}''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A basic attack against a Brittle target ends the debuff on-hit even without the knockback landing, but this does not trigger the bonus damage from consumption unless the target is an epic monster.",
+     "quote": "'''Ornn's''' basic attacks against {{tip|Brittle}} enemies will end the duration of the debuff {{tip|on-hit}} prematurely even if the {{tip|airborne|knock back}} was not applied. This does not trigger the consumed effect that deals the bonus damage, unless the target was an epic {{tip|monster}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks both the knockback and the bonus damage from the empowered Brittle attack.",
+     "quote": "{{tip|Spell shield}} will block both the knock back and the bonus damage from '''Ornn's''' empowered {{tip|brittle}} attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Brittle-consumption bonus magic damage is credited to Ornn and scales with his magic penetration.",
+     "quote": "The {{as|'''bonus''' magic damage}} inflicted by ''Brittle'' is credited to '''Ornn''', and benefits from his {{sti|{{as|magic penetration}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Master Craftsman stat amplification applies to bonus armor, bonus magic resistance and bonus health from all sources, relevant to survival (damage taken).",
+     "quote": "'''Ornn''' increases his {{sti|{{as|'''bonus''' armor}}}}, {{sti|{{as|'''bonus''' magic resistance}}}} and {{sti|{{as|'''bonus''' health}}}} by 10% from all sources",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Living Forge channel to purchase or upgrade items is interrupted if Ornn takes damage from enemy champions or turrets, and is unrelated to dealing or taking combat damage otherwise.",
+     "quote": "The channel is {{tip|interrupt|interrupted}} if '''Ornn''' takes damage from enemy {{tip|champions}} or {{tip|turrets}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrnnP.MasterworkLevel",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.GameModeInteger",
+     "reason": "unknown"
+    },
+    {
+     "ref": "OrnnP.UpgradeTotalGoldValue",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeADEff",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeAPEff",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeHPEff",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeAREff",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeMREff",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeAHEff",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "OrnnP.UpgradeASEff",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Volcanic Rupture",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9|8.5|8|7.5|7}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ],
+    "quote": "45",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}",
+    "binNote": "Bin's OrnnQ castTime is 0.3, but the wiki template states cast time as {{fd|0.25}}; recording the wiki's stated value per instructions."
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      45,
+      70,
+      95,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|20 to 120}} {{as|(+ 110% AD)}}",
+     "bin": [
+      "OrnnQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "slow amount from fissure",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [],
+     "quote": "slows them by 40% for 2 seconds",
+     "bin": [
+      "OrnnQ.SlowAmount"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slows them by 40% for 2 seconds",
+     "bin": [
+      "OrnnQ.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "pillar terrain duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "linger as impassible terrain for 4 seconds",
+     "bin": [
+      "OrnnQ.PillarDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "delay before magma pillar erupts after fissure stops",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.125,
+     "terms": [],
+     "quote": "After a {{fd|1.125}}-second delay, a magma pillar then erupts at the location",
+     "bin": [],
+     "binNote": "No matching bin field found for this delay; not present in the OrnnQ data values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The fissure can damage additional targets beyond the first champion hit as it continues 200 units past them.",
+     "quote": "The fissure will move an 200 units beyond the first champion it hits, not exceeding the maximum range of the ability. It can still damage additional targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The magma pillar erupts after a 1.125-second delay from the fissure stopping, not instantly.",
+     "quote": "After a {{fd|1.125}}-second delay, a magma pillar then erupts at the location",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrnnQ.SlowAmount",
+     "reason": null
+    },
+    {
+     "ref": "OrnnQ.SlowDuration",
+     "reason": null
+    },
+    {
+     "ref": "OrnnQ.PillarDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Bellows Breath",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Total Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.12,
+        0.13,
+        0.14,
+        0.15,
+        0.16
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|12 to 16}}% of target's '''maximum''' health}}",
+     "bin": [
+      "OrnnW.MaxPercentHPPerTickTooltip"
+     ],
+     "binNote": "MaxPercentHPPerTickTooltip [12/13/14/15/16] states this directly as the total (5-tick) percent; PercentHPPerTick [0.024..0.032] is the per-tick fraction which sums to the same total (x5) and is used for w_2 instead."
+    },
+    {
+     "id": "w_2",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.024,
+        0.026,
+        0.028,
+        0.03,
+        0.032
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|12/5 to 16/5}}% of target's '''maximum''' health}}",
+     "bin": [
+      "OrnnW.PercentHPPerTick"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Total Minimum/Minion Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      130,
+      180,
+      230,
+      280
+     ],
+     "terms": [],
+     "quote": "{{ap|80 to 280}}",
+     "bin": [
+      "OrnnW#TotalMinimumDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Minimum/Minion Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      16,
+      26,
+      36,
+      46,
+      56
+     ],
+     "terms": [],
+     "quote": "{{ap|80/5 to 280/5}}",
+     "bin": [
+      "OrnnW.MinimumDamagePerTick"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Total Monster Damage Cap",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      260,
+      320,
+      380,
+      440,
+      500
+     ],
+     "terms": [],
+     "quote": "{{ap|260 to 500}}",
+     "bin": [
+      "OrnnW#TotalMonsterDamageCap"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Monster Damage Cap Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      52,
+      64,
+      76,
+      88,
+      100
+     ],
+     "terms": [],
+     "quote": "{{ap|260/5 to 500/5}}",
+     "bin": [
+      "OrnnW.MonsterDamagePerTickCap"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "duration of the lunge and damage-dealing period",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds",
+     "bin": [
+      "OrnnW.BreathDuration"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "tick interval of the fire cone",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "{{fd|0.15}} seconds to enemies hit",
+     "bin": [],
+     "binNote": "No bin row states the 0.15s interval directly; it is implied by BreathDuration=0.75 divided by NumberOfTicks=5, but no explicit interval field exists."
+    },
+    {
+     "id": "w_9",
+     "meaning": "Brittle duration applied by the final gout of flame",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "apply {{tip|Brittle}} for 3 seconds",
+     "bin": [
+      "OrnnW.BrittleDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ornn deals magic damage every 0.15 seconds to enemies hit in the cone for the duration of the march.",
+     "quote": "he belches fire over a cone in front of him, dealing {{as|magic damage}} every {{fd|0.15}} seconds to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The final tick of damage reaches slightly farther and additionally applies Brittle for 3 seconds.",
+     "quote": "The final gout of flame can reach slightly farther and will apply {{tip|Brittle}} for 3 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each tick has a minimum damage threshold below which it cannot fall, and this is also the flat damage dealt to minions.",
+     "quote": "''Bellows Breath'' has a minimum damage threshold, which is also the damage dealt to {{tip|minion|minions}}, and is capped against {{tip|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage against monsters is capped per tick.",
+     "quote": "''Bellows Breath'' has a minimum damage threshold, which is also the damage dealt to {{tip|minion|minions}}, and is capped against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Ornn is unable to act and immune to displacement for the full duration of the march.",
+     "quote": "Ornn {{tip|lunge|marches}} forward in the target direction over {{fd|0.75}} seconds, gaining {{tip|displacement immunity}} and becoming {{tip|lockout|unable to act}} for the duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A spell shield will negate only the final instance of damage and prevents Brittle from being applied, while earlier ticks still land.",
+     "quote": "{{tip|Spell shield}} will negate the final instance of damage and prevents {{tip|Brittle}} from being applied.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrnnW.BaseDamageTooltip",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "OrnnW.RectangleWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnW.RectangleLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnW.MovementSpeedReduction",
+     "reason": "utility"
+    },
+    {
+     "ref": "OrnnW.FinalTickRectangleLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnW.NumberOfTicks",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Searing Charge",
+   "cooldown": {
+    "values": [
+     14,
+     13.5,
+     13,
+     12.5,
+     12
+    ],
+    "quote": "{{ap|14 to 12}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     40,
+     45,
+     50,
+     55
+    ],
+    "quote": "{{ap|35 to 55}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      125,
+      170,
+      215,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.4
+      },
+      {
+       "stat": "bonusMr",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|80|125|170|215|260}} {{as|(+ 40% '''bonus''' armor)}} {{as|(+ 40% '''bonus''' magic resistance)}}",
+     "bin": [
+      "OrnnE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "shockwave knockup duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "knocks up and stuns nearby enemies for {{fd|1.25}} seconds",
+     "bin": [
+      "OrnnE.KnockupDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "post-dash lockout duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "'''''Ornn''' is {{tip|lockout|unable to act}} for {{fd|0.5}} seconds after the dash ends.''",
+     "bin": [],
+     "binNote": "No matching data value in the sheet's E slot; the sheet has no post-dash lockout field, this is wiki-only text."
+    },
+    {
+     "id": "e_4",
+     "meaning": "total stun duration on Brittle enemies without tenacity",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.625,
+     "terms": [],
+     "quote": "will be {{tip|stun|stunned}} for a total of {{fd|1.625}} seconds",
+     "bin": [],
+     "binNote": "No exact matching field; this equals RStunDuration(1)*OrnnR-side math is unrelated. Sheet has OrnnE.KnockupDuration=1.25 but not a separate 1.625s stun value, so this appears to be wiki-derived (base stun + Brittle bonus) rather than a direct bin row."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ornn deals damage to enemies he passes through during the dash, and again from a terrain-collision shockwave if they weren't already hit.",
+     "quote": "dealing {{as|physical damage}} to enemies he passes through and stopping upon colliding with terrain.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shockwave only deals damage to enemies who were not already hit by the charge itself, meaning a given target can only take one instance of this damage.",
+     "quote": "deals the same damage if they were not already hit by the charge",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shields can only block one instance of this ability's damage (charge or shockwave, not both).",
+     "quote": "{{tip|Spell shield|Spell shields}} may only block one instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ornn will not dash after the cast time if he is airborne or resurrecting.",
+     "quote": "'''Ornn''' will not {{tip|dash}} after the cast time if he is {{tip|airborne}} or {{tip|resurrection|resurrecting}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrnnE.DashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnE.ShockwaveRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnE.DashWallCheating",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnE.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnE.DashRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Call of the Forge God",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{ap|140|120|100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      125,
+      175,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|125|175|225}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "OrnnR#RDamageCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "OrnnR.RSlowPercentBasePreMath"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      250,
+      350,
+      450
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|250|350|450}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "OrnnR#RDamageCalc"
+     ],
+     "binNote": "This is the sum of the two passes (initial pass + recast pass), each computed by RDamageCalc; no separate bin row exists for the combined total."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Recast/elemental active window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{tt|{{fd|1.25}}|Includes the cast time}} seconds while the elemental is active",
+     "bin": [],
+     "binNote": "No bin row states this recast window duration; it is a wiki-only tooltip value not present as a named data field."
+    },
+    {
+     "id": "r_5",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "{{tip|slow|slows}} them for 2 seconds",
+     "bin": [
+      "OrnnR.RSlowDuration"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Stun duration on recast hit (first champion hit)",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|stun|stuns}} them for 1 second, reduced to {{fd|0.5}} seconds after the first enemy {{tip|champion}} hit",
+     "bin": [
+      "OrnnR.RStunDuration"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Reduced stun duration after first champion hit",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduced to {{fd|0.5}} seconds after the first enemy {{tip|champion}} hit",
+     "bin": [
+      "OrnnR#MinStun"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Brittle duration",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "applies {{tip|Brittle}} to targets for 3 seconds",
+     "bin": [
+      "OrnnR.BrittleDurationTOOLTIPONLY"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Total stun duration on Brittle enemies without tenacity",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 1.3,
+     "terms": [],
+     "quote": "{{tip|Brittle}} enemies without {{tip|Tenacity}} of their own will be {{tip|stun|stunned}} for a total of {{fd|1.3}} seconds",
+     "bin": [],
+     "binNote": "This is a derived/tooltip-only figure (base 1s stun plus Brittle's tenacity-loss effect extending CC duration); no bin row computes this combined total directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Cooldown starts only after the full sequence (recast/effect) resolves, not on initial cast.",
+     "quote": "cdstart       = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Both the initial pass and the recast pass deal the same base damage listed, each as an activation event.",
+     "quote": "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Despite being two separate activations, they count as the same cast instance for effects that key off casts.",
+     "quote": "Despite this, the effects of both casts count as the same {{tip|cast instance}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield can only block one of the two passes, so the other pass's damage still lands.",
+     "quote": "{{tip|Spell shield|Spell shields}} may only block one pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each enemy can only be hit once per pass (not multiple times), limiting damage instances per pass.",
+     "quote": "can affect enemies only once",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ornn is locked out of all actions during the recast dash and for 0.5s afterward, delaying his next action (relevant to attack/ability sequencing in the damage fight).",
+     "quote": "'''Ornn''' becomes locked out of all actions during the recast's dash and for {{fd|0.5}} seconds afterwards.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrnnR.RCastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnR.RMissileMaxSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnR.RMissileAccelerationBase",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "OrnnR.RStunReduction",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "On-cast/on-hit damage instances dealt on cooldown: Q fissure (physical, +110% AD), E charge pass and terrain shockwave (physical, +40% bonus armor +40% bonus MR), R's initial elemental pass and recast pass (magic, +20%/+40% AP)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bellows Breath deals 5 ticks of magic damage over its 0.75s march, each tick the greater of a flat minimum and a %-max-HP amount"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "W's 0.75s march, E's 0.35s cast + dash + trailing lockout, and R's recast dash + 0.5s trailing lockout all make Ornn unable to act while they resolve"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a mandatory-for-max-damage recast (second elemental pass) available after ~1.25s, with cooldown starting only post-effect (after the full sequence resolves)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W's final tick and each R pass apply Brittle (3s) to the target, a prerequisite state consumed by the passive's bonus-damage interaction"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "E",
+    "R"
+   ],
+   "note": "Master Craftsman/Temper: an immobilize or silence (Ornn's E knockup+stun or R knockup+stun) landing on a Brittle target consumes the debuff for bonus magic damage equal to a level-scaled % of the target's max HP"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Master Craftsman's 10%(+4% per Masterwork upgrade, up to 30%) increase to bonus armor, bonus magic resist and bonus health affects only damage taken (relevant to the survival fight, not the damage fight)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (45/45-65/35-55/100) can meaningfully cap how many casts fit in the 15s window on a low-mana build"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Ornn's kit is expressible as a combination of existing primitives (target-debuff placing Brittle + conditional-damage consuming it, dot for W, recast-or-multipart for R, charge-or-channel for the action-locking windows), but the Brittle chain crosses three abilities (W/R apply it, E/R's own CC consumes it) and needs to be modeled as shared debuff state rather than a single self-contained ability effect."
+ },
+ "unsettled": [
+  {
+   "question": "When Searing Charge (E) or Call of the Forge God (R) applies its knockup+stun to a target that is simultaneously being freshly given Brittle by that same hit, does it consume that just-applied Brittle for the passive's bonus magic damage, or does consumption only happen against Brittle that was already present from an earlier, separate hit?",
+   "options": [
+    "Self-consumption: any stun/knockup from E or R that also applies Brittle immediately consumes it for bonus damage on the same hit",
+    "No self-consumption: Brittle must already exist on the target (e.g. from a prior W or R hit) before a later immobilize/silence can consume it"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Ornn's''' and allies' {{tip|immobilize|immobilizing}} effects or {{tip|silence|silences}} against ''Brittle'' enemies will consume the debuff to deal {{as|'''bonus''' magic damage}}",
+    "''{{cai|Searing Charge|Ornn}}'' and ''{{ai|Call of the Forge God|Ornn}}'' each apply both airborne and stun simultaneously for the same duration for this reason."
+   ]
+  },
+  {
+   "question": "Searing Charge's shockwave (its second, larger damage instance) only fires if Ornn's dash 'collides with terrain'; the simulated fights have no terrain at all. Does E therefore only ever land its single charge-pass damage in a dummy/survival fight, or should the sim assume a wall exists at max dash range so the shockwave always triggers?",
+   "options": [
+    "No terrain ever exists, so E's shockwave never fires and only the charge-pass damage instance lands each cast",
+    "Assume Ornn always reaches max dash range and a wall/terrain boundary triggers the shockwave, dealing both damage instances each cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If '''Ornn''' collides with terrain during the charge, he creates a shockwave that {{tip|airborne|knocks up}} and {{tip|stuns}} nearby enemies"
+   ]
+  },
+  {
+   "question": "Q's cast time is given as 0.3 in the bin (OrnnQ castTime) but as {{fd|0.25}} in the wiki template. Which value is live for 16.18?",
+   "options": [
+    "0.3s (bin value)",
+    "0.25s (wiki-stated value)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.3",
+    "cast time    = {{fd|0.25}}"
+   ]
+  },
+  {
+   "question": "Bellows Breath's per-tick damage against a champion-type dummy: is it max(minimum-flat, %-max-HP), i.e. the minimum is purely a floor for low-HP/minion targets, or do the two apply under different, mutually exclusive conditions?",
+   "options": [
+    "Per tick, damage is the greater of the flat minimum and the %-max-HP amount (minimum acts as a floor against any target)",
+    "The %-max-HP formula only applies to champions and the flat minimum only ever applies to minions, with no floor comparison against champions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Bellows Breath'' has a minimum damage threshold, which is also the damage dealt to {{tip|minion|minions}}, and is capped against {{tip|monsters}}."
+   ]
+  },
+  {
+   "question": "R's second (recast) pass requires Ornn to dash into and collide with the still-moving elemental. Against a single stationary dummy, should the sim assume this recast always successfully connects for the full 'Total Magic Damage' (both passes), or could/should it sometimes only be modeled as the single first-pass hit?",
+   "options": [
+    "Always assume the recast connects, dealing both passes' damage each R cast",
+    "Model uncertainty/geometry and only count the guaranteed first pass unless a hit is otherwise assumed"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{sbc|Recast:}} '''Ornn''' {{tip|dash|dashes}} in the target direction, though not through terrain. If he collides with the elemental, he sends it stampeding in the same direction."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Volcanic Rupture) on the dummy for immediate physical damage.",
+   "Cast W (Bellows Breath) through the dummy so all 5 ticks land and the final tick applies Brittle.",
+   "Immediately follow with E (Searing Charge) dashing through the dummy so its stun lands while the target is Brittle, aiming to consume Brittle for the passive's bonus magic damage in addition to E's own charge/shockwave damage.",
+   "Cast R (Call of the Forge God) to send the elemental through the dummy for the first damage pass, slow, and a fresh Brittle application.",
+   "As soon as the ~1.25s window allows, recast R to dash into the elemental and send it back through the dummy for the second damage pass and its own stun.",
+   "Weave basic attacks on cooldown throughout; against a Brittle dummy these on-hit attacks knock it back rather than dealing bonus damage.",
+   "Repeat Q, W, E, R(+recast) in whatever order each ability comes off cooldown for the remainder of the 15s window, prioritizing keeping Brittle up so E's/R's stun can consume it."
+  ],
+  "questions": [
+   "Does Ornn's own E or R stun consume Brittle it applies on the same hit, or must Brittle already be present from an earlier ability - this changes whether E alone (without a prior W) ever procs the bonus damage?",
+   "With no terrain in the simulated fight, does E's shockwave ever trigger, and if not, is E's damage contribution just the single charge-pass hit for the whole fight?",
+   "Should the R recast be assumed to always successfully collide with the elemental against a stationary single target, granting the full two-pass damage every R cast?",
+   "Is it worth spending early casts on Q (no Brittle synergy) versus prioritizing getting W and R's Brittle up before E fires, given cooldown lengths (Q 9-7s, W 12-10s, E 14-12s, R 140-100s)?",
+   "For the survival-fight use of this dossier, what level and item state should be assumed for Master Craftsman's stat amp (10% base, higher if Masterwork upgrades are assumed)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

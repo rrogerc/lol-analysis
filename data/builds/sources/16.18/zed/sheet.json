@@ -1,0 +1,506 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ZedPassive",
+    "key": "Characters/Zed/Spells/ZedPassiveAbility/ZedPassive",
+    "dataValues": {
+     "CurrentHealthThreshold": 0.5,
+     "PerUnitCD": 10,
+     "MonsterDamageCap": 175,
+     "MonsterDamageMod": 0.75,
+     "ShenZedQuestKillCount": 2,
+     "ShenZedQuestBonus": 0.02
+    },
+    "calcs": {
+     "{6a1a62e9}": {
+      "expr": "byLevelL[0.05/0.05/0.05/0.05/0.05/0.05/0.075/0.075/0.075/0.075/0.075/0.075/0.075/0.075/0.075/0.075/0.1/0.1]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.1,
+        0.1
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "{ad3d785f}": {
+      "expr": "<{f3cbe7b2}> + ShenZedQuestBonus=0.02",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": [
+       "ShenZedQuestBonus"
+      ]
+     },
+     "MaxHPDamage": {
+      "expr": "{6a1a62e9} unless {\"mBuffName\": \"{ecbd8e2e}\", \"__type\": \"HasBuffCastRequirement\"} then {ad3d785f}",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "TotalDamage": {
+      "expr": "(<{f3cbe7b2}>)xmaxHp",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "FinalDamage": {
+      "expr": "None unless {\"mSubRequirements\": [{\"mInvertResult\": true, \"mBuffName\": \"{0f6b8c16}\", \"__type then TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "ZedQ",
+    "key": "Characters/Zed/Spells/ZedQAbility/ZedQ",
+    "cooldown": 6,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      75,
+      70,
+      65,
+      60,
+      55
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "BonusADRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + (BonusADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     },
+     "PassThroughDamage": {
+      "expr": "TotalDamage * 0.6",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        48,
+        72,
+        96,
+        120,
+        144
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ZedW",
+    "key": "Characters/Zed/Spells/ZedWAbility/ZedW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      19,
+      18,
+      17,
+      16
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      35,
+      30,
+      25,
+      20
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RecastRange": 2000,
+     "MimickRange": 25000,
+     "SwapTimeLimit": 5.25,
+     "EnergyRestoreDoubleHit": {
+      "axis": "rank",
+      "v": [
+       30,
+       35,
+       40,
+       45,
+       50
+      ]
+     },
+     "ShadowDuration": 5.25,
+     "ShadowDurationTooltip": 5
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ZedE",
+    "key": "Characters/Zed/Spells/ZedEAbility/ZedE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      5,
+      4.5,
+      4,
+      3.5,
+      3
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       92.5,
+       115,
+       137.5,
+       160
+      ]
+     },
+     "ADRatio": 0.7,
+     "MoveSpeedMod": {
+      "axis": "rank",
+      "v": [
+       -0.2,
+       -0.25,
+       -0.3,
+       -0.35,
+       -0.4
+      ]
+     },
+     "MoveSpeedModBonus": {
+      "axis": "rank",
+      "v": [
+       -0.3,
+       -0.375,
+       -0.45,
+       -0.525,
+       -0.6
+      ]
+     },
+     "SlowDuration": 1.5,
+     "ShadowHitCDR": 3,
+     "ZedRadius": 315,
+     "ShadowRadius": 290
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/92.5/115/137.5/160] + (ADRatio=0.7)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        92.5,
+        115,
+        137.5,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.7,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ZedR",
+    "key": "Characters/Zed/Spells/ZedRAbility/ZedR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      110,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RDamageAmp": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.4,
+       0.55
+      ]
+     },
+     "RReactivateCD": 0.5,
+     "RShadowDurationDisplayed": 7.5,
+     "RDeathMarkDuration": 3,
+     "RCanSwapBuffDuration": 7.5,
+     "RGhostedDuration": 4,
+     "RVisionDuration": 0.5
+    },
+    "calcs": {
+     "{43a019eb}": {
+      "expr": "RShadowDurationDisplayed=7.5 + 0.5",
+      "flat": 8,
+      "terms": [],
+      "refs": [
+       "RShadowDurationDisplayed"
+      ]
+     },
+     "RCalculatedDamage": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "ZedQ",
+  "W": "ZedW",
+  "E": "ZedE",
+  "R": "ZedR",
+  "P": "ZedPassive"
+ },
+ "resource": {
+  "arType": 1,
+  "values": {
+   "{726ee5cd}": 200,
+   "{c4ab3550}": 10
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1024055
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Zed",
+  "name": "Zed",
+  "partype": "Energy",
+  "passive": "Contempt for the Weak",
+  "spells": [
+   {
+    "id": "ZedQ",
+    "name": "Razor Shuriken",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "cost": [
+     75,
+     70,
+     65,
+     60,
+     55
+    ]
+   },
+   {
+    "id": "ZedW",
+    "name": "Living Shadow",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     19,
+     18,
+     17,
+     16
+    ],
+    "cost": [
+     40,
+     35,
+     30,
+     25,
+     20
+    ]
+   },
+   {
+    "id": "ZedE",
+    "name": "Shadow Slash",
+    "maxrank": 5,
+    "cooldown": [
+     5,
+     4.5,
+     4,
+     3.5,
+     3
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "ZedR",
+    "name": "Death Mark",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     110,
+     100
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Contempt for the Weak": {
+    "damagetype": "magic",
+    "spelleffects": "proc",
+    "onhiteffects": "Special",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Razor Shuriken": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "true",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "energy"
+   }
+  },
+  "W": {
+   "Living Shadow": {
+    "targeting": "{{dv|[[Location-targeted|Location]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self",
+    "costtype": "energy"
+   },
+   "Living Shadow 2": {
+    "targeting": "{{dv|[[Location-targeted|Location]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self",
+    "costtype": "energy"
+   }
+  },
+  "E": {
+   "Shadow Slash": {
+    "damagetype": "Physical",
+    "spelleffects": "aoe",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "energy"
+   }
+  },
+  "R": {
+   "Death Mark": {
+    "damagetype": "Physical",
+    "spelleffects": "Single target",
+    "spellshield": "Special",
+    "targeting": "{{dv|[[Unit-targeted|Unit]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self, Enemies"
+   },
+   "Death Mark 2": {
+    "damagetype": "Physical",
+    "spelleffects": "Single target",
+    "spellshield": "Special",
+    "targeting": "{{dv|[[Unit-targeted|Unit]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self, Enemies"
+   }
+  }
+ }
+}

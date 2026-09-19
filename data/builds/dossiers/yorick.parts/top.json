@@ -1,0 +1,142 @@
+{
+ "champion": "yorick",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Last Rites arms the next basic attack within 5s with bonus physical damage, 50 bonus range, and a self-heal"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Last Rites resets Yorick's basic attack timer on cast"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "R"
+   ],
+   "note": "Touch of the Maiden arms Yorick's next basic attack with bonus magic damage equal to a % of target max health (capped at 30)"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Mourning Mist deals its splash magic damage on a fixed 0.25s cast + travel time, on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Mourning Mist damage scales as % of target's current max health; Touch of the Maiden's bonus damage is also a % of target max health"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Cursed mark applies an armor-shred (13-25% of target's armor) for its duration, increasing damage taken from all sources including autos"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "Mist Walkers (raised from graves via Q's Awakening or E's Cursed mark) and the Maiden of the Mist (from R) are separate entities that auto-attack the target for extra damage"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a distinct summon phase and an optional later recast to release the Maiden; the recast has no damage benefit against a solo stationary target"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (20/70/50-70/100) could matter for how often E and R-adjacent casts happen inside 15s, though Q is cheap enough to spam on cooldown"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Yorick's damage output against a single always-alive dummy depends heavily on the grave/Mist Walker economy: graves are raised by Last Rites hitting an enemy champion (the dummy), consumed by Awakening or E's Cursed mark into Mist Walkers, and Mist Walkers (from passive) share a 4-unit cap with R's ghouls near the Maiden. None of the closed primitives model this shared cap, the rate at which a Cursed mark continually raises walkers from a fixed number of graves, or how many graves a single non-dying target actually generates over repeated Last Rites hits. In addition, Q's self-heal based on missing health has no matching primitive (heal/shield is not one of the listed categories), which matters for the survival fight since Yorick heals off his own attacks."
+ },
+ "unsettled": [
+  {
+   "question": "Does each Last Rites empowered attack that lands on the dummy raise a new grave, or does a grave only spawn once total against a target that never dies (since the note about '1 grave even if it kills them' implies dedupe against the same enemy)?",
+   "options": [
+    "Every Last Rites hit on the dummy raises a fresh grave (up to the 4-grave cap, replacing the furthest)",
+    "Only the first Last Rites hit on the dummy raises a grave; subsequent hits on the same still-alive target raise none"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Whenever '''Yorick''' uses ''{{ai|Last Rites|Yorick}}'' to score the killing blow on any enemy or damage an enemy {{tip|champion}} or large {{tip|monster}}, he raises a ''grave''",
+    "Damaging a large monster or champion with {{ai|Last Rites|Yorick}} will only spawn 1 grave, even if it kills them."
+   ]
+  },
+  {
+   "question": "While a target is Cursed (from E), does the 'continually raises a Mist Walker from each nearby grave' effect spawn one walker per grave once, or does it repeat/tick for the full 4-second mark duration (and if so, at what rate)?",
+   "options": [
+    "One-time consumption of all nearby graves into walkers when the curse is applied",
+    "Repeated raising at some tick rate for the full 4s Cursed duration, potentially exceeding available graves as they regenerate"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "continually raises a {{as|Mist Walker|mist}} from each nearby ''grave'', up to a maximum of 4"
+   ]
+  },
+  {
+   "question": "Do the Mist Walkers raised passively/via E share the same 4-unit active cap with the Mist Walkers/ghouls summoned by R near the Maiden, or are these two pools counted and capped independently?",
+   "options": [
+    "Single shared cap of 4 total Mist Walkers across both the passive pool and R's summons",
+    "R's initial ghouls near the Maiden are a separate pool from the passive's 4-cap near Yorick"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Up to 4 {{as|Mist Walkers|mist}} can be active at once near '''Yorick''' or near '''{{ui|Maiden of the Mist|The Maiden|nolink=true}}''', with the nearest one always being replaced by the newest upon raising one over the limit."
+   ]
+  },
+  {
+   "question": "Does Touch of the Maiden's on-hit bonus magic damage count as a basic attack's on-hit portion for the purposes of item on-hit effects, or as a separate spell-like proc?",
+   "options": [
+    "It is treated as on-hit damage bundled into the attack (triggers on-hit item effects normally)",
+    "It is a distinct proc that does not interact with on-hit item effects the way a normal attack does"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Yorick's''' next basic attack will consume the mark to deal {{as|'''bonus''' magic damage}} by a portion of the {{as|target's '''maximum''' health}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast R (Eulogy of the Isles) at the very start of the fight to summon the Maiden of the Mist and her Mist Walkers next to the dummy; because R's cooldown only starts after Yorick or the Maiden dies, this is effectively a one-time, fight-long pet investment and should never be recast to release her (releasing would stop her attacking the dummy).",
+   "Cast E (Mourning Mist) on the dummy as soon as it lands after R's summon delay, applying the max-health-based magic damage, the armor shred, and the Cursed mark so Mist Walkers leap onto and focus the target.",
+   "Weave Q (Last Rites) on cooldown: cast it, then land the empowered basic attack immediately (it resets the attack timer, so follow with a normal auto-attack right after) to maximize both the Q bonus damage and total auto-attack count.",
+   "Use Touch of the Maiden's empowered basic attack as soon as it becomes available (whenever the Maiden lands an attack marking the target), prioritizing it over a plain auto-attack.",
+   "Recast E every time it comes off cooldown to refresh the Cursed mark (re-applying armor shred and raising more Mist Walkers from any available graves) and deal its repeatable max-health damage.",
+   "Cast Awakening (Q's alternate action) whenever at least 3 graves are available and Last Rites is on cooldown, to add more Mist Walkers to the fight without giving up a Last Rites cast.",
+   "Auto-attack continuously between ability casts; do not use W (Dark Procession) since it deals no meaningful damage and its knockback/terrain is a CC effect that is ignored in this fight."
+  ],
+  "questions": [
+   "Against a single stationary dummy target, how many graves actually accumulate over 15s (see unsettled grave-spawn question), since that caps how much of the kit's pet damage (Mist Walkers) is realizable?",
+   "Does Awakening have its own cast time/animation that would delay the Q+auto-attack weave, or is it effectively free to slot in between other actions?",
+   "Do the Maiden and her initial Mist Walkers auto-attack the target autonomously and continuously without any player input needed, and at what effective attack speed/AD (per the bin's byLevel/ratio values)?",
+   "Is Yorick's mana pool at the assumed level/items sufficient to cast E on cooldown for the full 15s alongside Q, or does resource-budget force skipping some E casts?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

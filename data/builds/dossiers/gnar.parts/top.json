@@ -1,0 +1,185 @@
+{
+ "champion": "gnar",
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Gnar toggles between Mini Gnar and Mega Gnar kits (Boomerang Throw/Boulder Toss, Hyper/Wallop, Hop/Crunch), sharing one set of cooldowns across the swap; R itself only exists in Mega form."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Rage builds toward a 100 cap from dealing (and receiving) damage in ticks over 2s, decays after 13s out of combat, and forces the Mini->Mega transform at cap."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "Hyper: basic attacks on-hit and damaging ability hits apply a stack (3.5s, refreshes, caps at 2 or 3 per the bin/wiki conflict); the consuming stack fires bonus magic damage based on target max HP."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Boomerang Throw hits on the outgoing pass and again (50% damage) on the return pass; Crunch deals an impact hit then a separately-timed (0.25s delay) shockwave hit."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Catching the returning boomerang refunds 40% of total cooldown; picking up the thrown boulder refunds 70% of total cooldown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Hop (Mini) grants bonus attack speed for 6s on cast."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Hop's bonus attack speed buff interacts with attack-speed caps/conversion in a normal way but is explicitly listed as a rank-scaling %AS grant."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's return path depends on Gnar's movement at the apex (does it re-cross a stationary dummy at all); R's bonus wall-collision damage requires terrain, which the fight environment lacks."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Hyper's proc damage and both Hop/Crunch's leap damage scale off target/Gnar max health; R's alternate damage/CC applies only on terrain collision."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Baseline on-cast/fixed-delay damage instances for Boomerang/Boulder initial hit, Wallop, Hop/Crunch impact, and GNAR!'s base knockback damage."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Hyper stacks are applied by every on-hit basic attack, in addition to ability hits."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mega Gnar's large bonus health/armor/MR pool and its immunity to healing-reduction effects only matter for the survival fight, not damage dealt."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The Mini/Mega swap, Hyper's target-stack proc, Q's out-and-back multi-part damage, and Crunch's delayed second hit are all expressible with existing primitives (form-or-stance, target-stacks, recast-or-multipart). The main risk is the Rage-accumulation-to-transform timing, but that can be handled as a stacking-self-buff with an assumed accumulation rate rather than requiring new mechanic types."
+ },
+ "unsettled": [
+  {
+   "question": "How much Rage does Gnar actually generate per basic attack / per Boomerang Throw hit against a champion (dummy), and thus how many seconds into the 15s fight does he first reach 100 Rage and transform?",
+   "options": [
+    "Use the wiki's pp formula literally (base amount tied to some level breakpoint 1-11, ×0.25 for Q and ×0.5 for on-hit attacks) and derive a concrete per-hit Rage number",
+    "Assume a fixed number of autoattacks/Q casts (e.g. 'transforms roughly N seconds in') without deriving it from the formula",
+    "Treat transform timing as a rotation parameter to be tuned/assumed rather than computed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ci|Gnar|Mini Gnar}} generates {{pp|4;7;11|1 to 11}} ''{{ai|Rage Gene|Gnar|Rage}}'' over 2 seconds upon dealing or receiving damage, up to 100.",
+    "and grants ''Rage'' based on the first enemy hit."
+   ]
+  },
+  {
+   "question": "Does Crunch's shockwave hit the same single stationary dummy that was already hit by the initial impact, or does 'additional enemies' mean the shockwave only hits targets NOT already hit by the impact (so a lone dummy standing in the inner radius takes only one of the two hits)?",
+   "options": [
+    "Both the impact and the shockwave hit the dummy (two separate damage instances)",
+    "Only one of the two hits lands on a target already caught by the impact (dummy takes one instance)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Gnar''' {{tip|dash|leaps}} to the target location and deals {{as|physical damage}} to nearby enemies upon impact ... After a {{fd|0.25}}-second delay, '''Gnar''' sends out a shockwave, dealing the same damage to additional enemies in a larger radius."
+   ]
+  },
+  {
+   "question": "Is Hyper's Mini-Gnar stack cap 2 (bin: GnarW.MiniMaxStacks) or 3 (wiki text, stated twice)?",
+   "options": [
+    "Use bin value of 2 stacks to proc",
+    "Use wiki value of 3 stacks to proc"
+   ],
+   "impact": "high",
+   "quotes": [
+    "GnarW.MiniMaxStacks = 2",
+    "'''Gnar's''' {{tip|basic attacks}} {{tip|on-hit}} and {{tip|ability}} hits apply a {{tip|stack}} of ''Hyper'' to enemies for {{fd|3.5}} seconds, refreshing on subsequent applications and stacking up to 3 times.",
+    "The third stack against a target consumes them all to deal {{as|'''bonus''' magic damage}}"
+   ]
+  },
+  {
+   "question": "For Mega Q (Boulder Toss) damage, is the live 5-rank bin row GnarQ.MegaBaseDamage/GnarQ#MegaTotalDamage or the 6-rank GnarBigQ.MegaBaseDamage/GnarBigQ#MegaTotalDamage (which also carries a different 6-entry cooldown array)?",
+   "options": [
+    "GnarQ (5 ranks, matches wiki's {{ap|45 to 225}})",
+    "GnarBigQ (6 ranks, up to 270, with its own 6-entry cooldown array)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "GnarQ.MegaBaseDamage = [45/90/135/180/225]",
+    "GnarBigQ.MegaBaseDamage = [45/90/135/180/225/270]"
+   ]
+  },
+  {
+   "question": "In a stationary-dummy dummy fight, does Boomerang Throw's return pass actually re-cross and hit the dummy (a positional assumption), and can Gnar reposition to catch the boomerang/boulder for the cooldown refund without losing meaningful cast time?",
+   "options": [
+    "Assume the return pass always re-hits the dummy and Gnar always catches it for the CDR with no time cost",
+    "Assume the return pass/catch is unreliable or costs extra time against a stationary target and should not be assumed each cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The boomerang return direction is determined at the apex of its flight by '''Gnar's''' current position and which direction '''Gnar''' is heading at the time."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by auto-attacking the dummy and casting Boomerang Throw (Q) immediately, aiming it to also catch the return for the 40% cooldown refund.",
+   "Weave in Hop (E) whenever off cooldown, landing on/bouncing off the dummy for its damage and slow plus 6s bonus attack speed, then continue auto-attacking during the buff.",
+   "Continue auto-attacking and re-casting Q on cooldown; each Q cast against the dummy and each on-hit attack instantly adds Rage, accumulating toward the 100 Rage cap needed to transform.",
+   "Once Rage hits 100 (whenever that occurs, see unsettled question), cast the next available ability to trigger an instant transform into Mega Gnar rather than waiting out the 4s window.",
+   "As Mega Gnar, immediately use GNAR! (R) if available for its large upfront physical damage, then follow with Boulder Toss (Q) and Wallop (W) on cooldown, retrieving the boulder for its 70% cooldown refund when possible.",
+   "Use Crunch (E) on cooldown for its two-part impact + shockwave damage, weaving auto-attacks between ability cooldowns throughout Mega form.",
+   "If Mega form's 15s timer would outlast the fight, remain Mega Gnar for the rest of the ~15s window and simply cycle Q/W/E/R and auto-attacks on cooldown; do not plan for a second transform (15s tired period afterward makes a second Mini->Mega cycle impossible within the fight)."
+  ],
+  "questions": [
+   "How quickly does Rage actually accumulate from a rotation of Q casts and auto-attacks against a single champion-flagged dummy, i.e., at what point (if at all) within a 15s window does Gnar reach 100 Rage and transform?",
+   "Should the simulated rotation assume Gnar starts the fight already in (or about to enter) Mega Gnar form via a pre-fight setup, given the survival/damage fights are short and the natural Rage-to-100 buildup may consume much of the window?",
+   "Is it correct that R (GNAR!) is only usable in Mega form, and should it be front-loaded immediately upon transforming for maximum damage, or held to guarantee it lands before Mega form time runs out?",
+   "Given no terrain exists in either fight type, should GNAR!'s wall-collision bonus damage/stun ever be modeled, or is it always excluded?",
+   "Does catching the boomerang/boulder require Gnar to path back toward it, effectively costing movement time in a fight with a single stationary target, or can it be assumed free for simulation purposes?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

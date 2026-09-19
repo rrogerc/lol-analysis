@@ -1,0 +1,795 @@
+{
+ "champion": "graves",
+ "abilities": {
+  "P": {
+   "name": "New Destiny",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "physical damage per pellet from basic attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1
+      }
+     ],
+     "quote": "{{as|{{pplevel|key=%|100*(0.6895 + 0.01765*x*(0.595 + 0.0225*(x-1)))}} AD}} {{as|physical damage}}",
+     "bin": [
+      "GravesPassive#SingleBulletDamage"
+     ],
+     "binNote": "Wiki gives the level-scaled AD ratio as a formula by champion level; bin computes it via an unresolved ByCharLevelFormulaCalculationPart, so exact numeric agreement cannot be confirmed."
+    },
+    {
+     "id": "p_2",
+     "meaning": "additional physical damage per subsequent pellet hitting same target",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.333
+      }
+     ],
+     "quote": "{{as|{{pplevel|key=%|100*(0.6895 + 0.01765*x*(0.595 + 0.0225*(x-1)))*0.33302}} AD}} {{as|'''additional''' physical damage|physical damage}}",
+     "bin": [
+      "GravesPassive#MultiBulletDamage"
+     ],
+     "binNote": "Bin ratio 0.333 vs wiki's more precise 0.33302; treated as the same value (rounding)."
+    },
+    {
+     "id": "p_3",
+     "meaning": "number of pellets per basic attack",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "{{as|4 pellets|buzzword2}}",
+     "bin": [],
+     "binNote": "Pellet count is not represented as a bin data value; derived from description text only."
+    },
+    {
+     "id": "p_4",
+     "meaning": "pellets per basic attack on critical strike",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "{{tip|Critical strikes}} spray {{as|6 pellets|buzzword2}}",
+     "bin": [],
+     "binNote": "Critical pellet count is not represented as a bin data value; derived from description text only."
+    },
+    {
+     "id": "p_5",
+     "meaning": "bonus critical damage multiplier applied per pellet on crit",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critDamage",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|{{critical damage|50}}|critical damage}} increased damage,",
+     "bin": [
+      "GravesPassive#CritDamageMult"
+     ],
+     "binNote": null
+    },
+    {
+     "id": "p_6",
+     "meaning": "reload time for 2 shells (empty clip)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.08,
+     "terms": [],
+     "quote": "'''Graves''' takes {{fd|2.08}} seconds to reload 2 shells",
+     "bin": [],
+     "binNote": "Reload timing is not present as a data value in this slot's bin rows; likely lives in attack-speed-derived logic not shown here."
+    },
+    {
+     "id": "p_7",
+     "meaning": "reload time for 1 leftover shell",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.3,
+     "terms": [],
+     "quote": "{{fd|1.3}} seconds to reload 1 shell",
+     "bin": [],
+     "binNote": "Reload timing is not present as a data value in this slot's bin rows."
+    },
+    {
+     "id": "p_8",
+     "meaning": "idle time with 1 shell before reload begins",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.08,
+     "terms": [],
+     "quote": "He must idle with 1 shell for {{fd|2.08}} seconds before he starts reloading",
+     "bin": [],
+     "binNote": "Reload timing is not present as a data value in this slot's bin rows."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Only the first pellet to hit a target applies on-hit effects and lifesteal is applied by pellets in general.",
+     "quote": "Only the first {{as|pellet|buzzword2}} to hit each enemy applies {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first pellet deals the highest (basic) damage while additional pellets deal reduced (default) damage.",
+     "quote": "Deals the highest damage out of all other pellets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pellets deal reduced damage to structures.",
+     "quote": "Pellets deal 25% reduced damage against {{tip|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Graves cannot attack while all shells are expended and reloading.",
+     "quote": "'''Graves''' is {{tip|lockout|unable}} to declare basic attacks during the reload time if he has expended all {{as|shells|buzzword3}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reload is cancelled if Graves reloads a shell via Quickdraw or expends a leftover shell.",
+     "quote": "is cancelled if '''Graves''' reloads a {{as|shell|buzzword3}} with ''{{ai|Quickdraw|Graves}}'' or expends a leftover {{as|shell|buzzword3}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attack resets other than Quickdraw do not affect Graves' basic attack timer.",
+     "quote": "{{tip|basic attack reset|Basic attack resets}} other than {{ai|Quickdraw|Graves}} do not affect '''Graves'''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Non-champion enemies hit by more than one pellet are knocked back.",
+     "quote": "Non-champion units hit by more than one {{as|pellet|buzzword2}} are {{tip|airborne|knocked back}}, though not through terrain.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GravesPassive.CritDamageRatio",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "GravesPassive.StructureDamageReduction",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "GravesPassive#{549cda4d}",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "End of the Line",
+   "cooldown": {
+    "values": [
+     13,
+     11.25,
+     9.5,
+     7.75,
+     6
+    ],
+    "quote": "{{ap|13 to 6}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage (initial shell)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 55% '''bonus''' AD)}}",
+     "bin": [
+      "GravesQLineSpell#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Physical Damage (detonation)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      125,
+      170,
+      215,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.45,
+        0.6,
+        0.75,
+        0.9,
+        1.05
+       ]
+      }
+     ],
+     "quote": "{{ap|80 to 260}} {{as|(+ {{ap|45 to 105}}% '''bonus''' AD)}}",
+     "bin": [
+      "GravesQLineSpell#TotalDetonationDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies can only be hit once per pass of the shell.",
+     "quote": "Enemies can only be hit once per pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The powder trail detonates after 2 seconds, or after a 0.2s delay if it collides with terrain, dealing a separate damage instance.",
+     "quote": "After 2 seconds, or {{rutngt|0.2}} upon colliding with terrain, the round detonates to deal {{as|physical damage}} to enemies within a wide perpendicular area",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield can only block one instance of the ability's damage (the initial hit or the detonation, not both).",
+     "quote": "{{tip|Spell shield|Spell shields}} can only block one instance of the ability's damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GravesQLineSpell.TerrainCollisionDelay",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Smoke Screen",
+   "cooldown": {
+    "values": [
+     26,
+     24,
+     22,
+     20,
+     18
+    ],
+    "quote": "{{ap|26 to 18}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage on impact",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      110,
+      160,
+      210,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|60 to 260}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "GravesSmokeGrenade#ImpactDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "slow amount from impact",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 50,
+     "terms": [],
+     "quote": "slows them by 50%",
+     "bin": [
+      "GravesSmokeGrenade.SlowAmount"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}} seconds",
+     "bin": [
+      "GravesSmokeGrenade.SlowDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "smoke cloud duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "creates a cloud of smoke for 4 seconds",
+     "bin": [
+      "GravesSmokeGrenade.SmokeDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "nearsight reapplication tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "applies {{tip|nearsight}} of outside the area to all enemies within every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No bin row for this tick interval; not present among GravesSmokeGrenade's data values in the sheet, only stated in the wiki description text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spell shields block the impact damage and slow but do not mitigate the persistent smoke cloud area of effect.",
+     "quote": "Spell shields will block the instance of damage and slow, but will not mitigate the persistent area of effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The impact damage and slow are a single instance on landing; the cloud's nearsight effect is separate and persists afterward.",
+     "quote": "fires a smoke canister at the target location that upon impact deals magic damage to enemies within the area and slows them by 50%",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GravesSmokeGrenade.SmokeRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Quickdraw",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|16 to 12}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Armor per stack of True Grit",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      7,
+      10,
+      13,
+      16,
+      19
+     ],
+     "terms": [],
+     "quote": "{{ap|7 to 19}}",
+     "bin": [
+      "GravesMove.ArmorPerStack"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Bonus Magic Resistance per stack of True Grit",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3.5,
+      5,
+      6.5,
+      8,
+      9.5
+     ],
+     "terms": [],
+     "quote": "{{ap|7*0.5 to 19*0.5}}",
+     "bin": [
+      "GravesMove#MRGrant"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "True Grit stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "generating a {{tip|stack}} of ''True Grit'' for 4 seconds",
+     "bin": [
+      "GravesMove.BuffDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Maximum stacks of True Grit",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "stacking up to 8 times",
+     "bin": [
+      "GravesMove.MaxStacks"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Cooldown reduction per pellet hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduced by {{fd|0.5}} seconds for every {{as|pellet|buzzword2}} impacting an enemy",
+     "bin": [
+      "GravesMove.CooldownPerHit"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Quickdraw resets Graves' basic attack timer.",
+     "quote": "Quickdraw {{tip|basic attack reset|resets}} '''Graves''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Quickdraw's current cooldown is reduced per pellet that hits an enemy, allowing faster recasts (and thus more reload/attack speed uptime).",
+     "quote": "''Quickdraw's'' {{sti|'''current''' cooldown}} is reduced by {{fd|0.5}} seconds for every {{as|pellet|buzzword2}} impacting an enemy.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dashing toward an enemy champion grants 2 stacks of True Grit instead of 1.",
+     "quote": "Dashing towards an enemy {{tip|champion}} generates 2 stacks of ''True Grit''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Subsequent casts of Quickdraw and dealing damage to non-minions refresh the duration of True Grit stacks.",
+     "quote": "Subsequent casts of ''Quickdraw'' and damage versus non-{{tip|minions}} will refresh the duration of ''True Grit''.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GravesMove.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "GravesMove.DashMaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "GravesMove.DashMinDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "GravesMove.DashAngle",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Collateral Damage",
+   "cooldown": {
+    "values": [
+     100,
+     80,
+     60
+    ],
+    "quote": "{{ap|100 to 60}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      275,
+      425,
+      575
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|275 to 575}} {{as|(+ 150% '''bonus''' AD)}}",
+     "bin": [
+      "GravesChargeShot#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      200,
+      320,
+      440
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|200 to 440}} {{as|(+ 120% '''bonus''' AD)}}",
+     "bin": [
+      "GravesChargeShot#FalloffDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Graves fires a shell that deals damage to enemies hit along its path, then explodes on hitting a champion or reaching max range for reduced cone damage to additional enemies.",
+     "quote": "fires an explosive shell in the target direction that deals {{as|physical damage}} to enemies hit and causes him to {{tip|dash|recoil}} 400 units in the opposite direction.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shell applies single-target spell damage to the champion it hits, and separate area damage to targets in the explosion cone.",
+     "quote": "Applies {{tip|spell damage}} to the target hit by the shell (including to non-champions struck before exploding{{bug}}) and {{tip|area damage}} to targets within the explosion cone.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A target hit directly by the shell can take both the initial shell damage and the cone explosion damage if within range of the cone.",
+     "quote": "Upon hitting an enemy {{tip|champion}} or reaching the end of its range, the shell explodes in a cone to deal reduced damage to additional enemies.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "GravesChargeShot.RKnockbackDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks consume up to 2 shells, then reload; reload duration shortens with bonus attack speed and level, non-monotonically (worse between 150%-200% bonus AS)."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Each basic attack fires 4 pellets (6 on crit), each a separate physical damage instance; only the first pellet applies on-hit/lifesteal and takes the full ratio, later pellets deal ~0.333x that ratio."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Critical strikes change pellet count from 4 to 6 and apply a special per-pellet crit-damage multiplier rather than standard crit doubling."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Quickdraw resets Graves' basic attack timer on cast; other resets do not."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Quickdraw's current cooldown is reduced 0.5s per pellet that lands on an enemy, letting it be recast (and attack-reset) more often."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "True Grit: stacks (cap 8, 4s duration each) grant bonus armor and MR; relevant to Graves' damage taken in the survival fight."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q initial hit, W impact, and R shell/explosion each deal damage on cast or fixed delay, on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q has two separately timed damage parts (initial pass, then trail detonation ~2s later); R has a shell-hit part and a separate cone-explosion part."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (80/70-90/40/100) across four abilities materially cap how many casts fit in a 15s dummy fight."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's trail detonation is a wide perpendicular area and R's explosion is an anchored cone; against a single stationary dummy this collapses to a simple 'does it also hit the same target' assumption."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two pieces of Graves' passive are not expressible as plain instantiations of the primitives: (1) the base per-pellet AD ratio is computed in the bin via an unresolved ByCharLevelFormulaCalculationPart, so the exact numeric level curve must be taken from the wiki's formula rather than the bin, and (2) the shell reload timer's dependence on bonus attack speed is explicitly nonlinear and non-monotonic (worse between 150%-200% bonus AS, 'confirmed to be confusing' per the wiki itself), which the generic weapon-or-ammo-system primitive cannot correctly express without a bespoke reload-speed curve."
+ },
+ "unsettled": [
+  {
+   "question": "What is the exact numeric per-level AD ratio for a single pellet's base damage, given the bin's calculation part is unresolved?",
+   "options": [
+    "Use the wiki's explicit per-level formula: 100*(0.6895 + 0.01765*x*(0.595 + 0.0225*(x-1)))% AD",
+    "Treat the bin's unresolved ByCharLevelFormulaCalculationPart as authoritative and flag as unknown until resolved"
+   ],
+   "impact": "high",
+   "quotes": [
+    "GravesPassive#SingleBulletDamage = (<ByCharLevelFormulaCalculationPart>)xad",
+    "{{as|{{pplevel|key=%|100*(0.6895 + 0.01765*x*(0.595 + 0.0225*(x-1)))}} AD}} {{as|physical damage}}"
+   ]
+  },
+  {
+   "question": "How exactly does Graves' shell reload speed scale with bonus attack speed inside the simulator, given the wiki states the precise formula is unknown and behaves non-monotonically between 150% and 200% bonus AS?",
+   "options": [
+    "Model reload speed as directly tied to total attack speed via the capped formula implied by the notes (max reload speed pplevel curve)",
+    "Approximate reload time as the flat base values (2.08s/1.3s) unaffected by attack speed for simplicity",
+    "Model reload speed scaling linearly with bonus AS up to 150% only, ignoring the confusing 150-200% band"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Precise formula is unknown, but it is confirmed to be confusing.",
+    "Values of {{as|'''bonus''' attack speed}} between {{as|150%|attack speed}} and {{as|200%|attack speed}} have a negative effect on '''Graves' ''' reload speed."
+   ]
+  },
+  {
+   "question": "Against a single stationary dummy, does R's cone explosion also hit the same target that was already hit by the initial shell, or is the cone damage only for 'additional' enemies distinct from the one hit by the shell?",
+   "options": [
+    "The dummy takes both the initial shell damage (r_1) and the cone explosion damage (r_2) since it is the only target present",
+    "The dummy only takes the initial shell damage (r_1); the cone explosion is defined as hitting 'additional enemies' and does not re-hit the champion already struck"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon hitting an enemy {{tip|champion}} or reaching the end of its range, the shell explodes in a cone to deal reduced damage to additional enemies."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (End of the Line) on the dummy for its initial pass damage, then let the trail detonate ~2 seconds later for the second damage instance.",
+   "Auto-attack continuously whenever not casting, letting pellets land and cycling through the 2-shell magazine with its reload downtime.",
+   "Cast R (Collateral Damage) as soon as it is off cooldown for its large upfront physical damage.",
+   "Cast W (Smoke Screen) on the dummy when off cooldown and mana allows, for its magic damage impact.",
+   "Use E (Quickdraw) mainly to reset the basic attack timer and reduce its own cooldown from landed pellets, timing it to weave in extra attacks rather than for its own damage (Quickdraw itself deals none).",
+   "Re-cast Q on cooldown throughout the fight; if mana runs low, prioritize Q and basic attacks over W since Q has the shortest cooldown and strong AD scaling relative to cost.",
+   "Continue this Q/R/W/basic-attack cycle for the full ~15 seconds, keeping the shell magazine and mana pool as full as possible between casts."
+  ],
+  "questions": [
+   "Does the simulator model Graves' reload timer and its interaction with attack speed precisely enough to know his true attack cadence, or should reload be simplified to a fixed value for this fight?",
+   "Is it worth spending mana on E (Quickdraw) purely for the attack-reset and self cooldown-reduction benefit, or should E be skipped entirely in a pure damage-maximization rotation since it deals no direct damage?",
+   "At the assumed level/items for the damage fight, does Graves have enough mana to cast Q, W, and R on cooldown for the full 15 seconds, or does a resource shortfall force cutting W or E from the rotation?",
+   "For R, should the dummy be assumed positioned to take only the initial shell hit, only the cone explosion, or both, and does that change which rotation order (e.g., casting R at range vs. point-blank) is 'optimal'?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

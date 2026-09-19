@@ -1,0 +1,656 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "EvelynnPassive",
+    "key": "Characters/Evelynn/Spells/EvelynnPassiveAbility/EvelynnPassive",
+    "dataValues": {
+     "DemonShadeTimer": 4,
+     "StealthDropTimer": 1.5
+    },
+    "calcs": {
+     "HealingThresholdTOOLTIP": {
+      "expr": "byLevelL[250/270/290/310/330/350/370/390/410/430/450/470/490/510/530/550/570/590] + 2.5xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        250,
+        270,
+        290,
+        310,
+        330,
+        350,
+        370,
+        390,
+        410,
+        430,
+        450,
+        470,
+        490,
+        510,
+        530,
+        550,
+        570,
+        590
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 2.5
+       }
+      ],
+      "refs": []
+     },
+     "HealPerSecondTOOLTIP": {
+      "expr": "byLevel(15..150)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        22.941177,
+        30.882353,
+        38.82353,
+        46.764706,
+        54.705882,
+        62.64706,
+        70.588235,
+        78.52941,
+        86.47059,
+        94.411765,
+        102.35294,
+        110.29412,
+        118.23529,
+        126.17647,
+        134.11765,
+        142.05882,
+        150
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "EvelynnQ",
+    "key": "Characters/Evelynn/Spells/EvelynnQAbility/EvelynnQ",
+    "cooldown": 4,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MissileBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       35,
+       40,
+       45,
+       50
+      ]
+     },
+     "BonusDamageBase": {
+      "axis": "rank",
+      "v": [
+       15,
+       25,
+       35,
+       45,
+       55
+      ]
+     },
+     "CooldownRefund": 0.5,
+     "HateSpikeBaseDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       30,
+       35,
+       40,
+       45
+      ]
+     },
+     "BonusDamageAPRatio": 0.25,
+     "HateSpikeAPRatio": 0.25,
+     "QStackCount": 3,
+     "FakeCD": 4
+    },
+    "calcs": {
+     "MissileDamage": {
+      "expr": "HateSpikeBaseDamage=[25/30/35/40/45] + (HateSpikeAPRatio=0.25)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        30,
+        35,
+        40,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "HateSpikeAPRatio"
+       }
+      ],
+      "refs": [
+       "HateSpikeAPRatio",
+       "HateSpikeBaseDamage"
+      ]
+     },
+     "TotalBonusDamage": {
+      "expr": "BonusDamageBase=[15/25/35/45/55] + (BonusDamageAPRatio=0.25)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        25,
+        35,
+        45,
+        55
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "BonusDamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BonusDamageAPRatio",
+       "BonusDamageBase"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "EvelynnW",
+    "key": "Characters/Evelynn/Spells/EvelynnWAbility/EvelynnW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      14,
+      13,
+      12,
+      11
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "castTime": 0.15,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CharmDuration": {
+      "axis": "rank",
+      "v": [
+       1.25,
+       1.5,
+       1.75,
+       2,
+       2.25
+      ]
+     },
+     "MonsterCharm": {
+      "axis": "rank",
+      "v": [
+       3,
+       3.25,
+       3.5,
+       3.75,
+       4
+      ]
+     },
+     "MRShred": {
+      "axis": "rank",
+      "v": [
+       0.35,
+       0.375,
+       0.4,
+       0.425,
+       0.45
+      ]
+     },
+     "ShredDuration": 4,
+     "MonsterDamage": {
+      "axis": "rank",
+      "v": [
+       250,
+       300,
+       350,
+       400,
+       450
+      ]
+     },
+     "SlowAmount": 0.45,
+     "SlowDuration": 0.75,
+     "MonsterExtraCharm": 2,
+     "SlowDuringCharm": -0.45,
+     "ActualCD": {
+      "axis": "rank",
+      "v": [
+       15,
+       14,
+       13,
+       12,
+       11
+      ]
+     },
+     "BuffDuration": 5,
+     "NonCharmSlowDuration": 1.5
+    },
+    "calcs": {
+     "MonsterDamageTotalTOOLTIP": {
+      "expr": "MonsterDamage=[250/300/350/400/450] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        250,
+        300,
+        350,
+        400,
+        450
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "MonsterDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "EvelynnE",
+    "key": "Characters/Evelynn/Spells/EvelynnEAbility/EvelynnE",
+    "cooldown": 8,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "EmpoweredDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "BasePercentHealth": 3,
+     "EmpoweredPercentHealth": 4,
+     "MonsterCap": 450,
+     "SpeedAmount": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "SpeedDuration": 2,
+     "MoveSpeed": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "MSDuration": 2,
+     "MonsterDamageCamp": 450
+    },
+    "calcs": {
+     "PercentHealthBaseTOOLTIP": {
+      "expr": "(BasePercentHealth=3 + 0.015xap) * 0.01",
+      "flat": 0.03,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00015
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BasePercentHealth"
+      ]
+     },
+     "PercentHealthEmpoweredTOOLTIP": {
+      "expr": "(EmpoweredPercentHealth=4 + 0.025xap) * 0.01",
+      "flat": 0.04,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00025
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "EmpoweredPercentHealth"
+      ]
+     }
+    }
+   },
+   {
+    "script": "EvelynnE2",
+    "key": "Characters/Evelynn/Spells/EvelynnEAbility/EvelynnE2",
+    "cooldown": 8,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "castTime": 0.15,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MoveSpeed": 0.3
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "EvelynnR",
+    "key": "Characters/Evelynn/Spells/EvelynnRAbility/EvelynnR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CritMultiplier": 2.4,
+     "PassiveReset": 1.25,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       250,
+       375
+      ]
+     },
+     "CritBonus": 1.4,
+     "CritTreshold": 0.3
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[125/250/375] + 0.75xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        250,
+        375
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "CritDamage": {
+      "expr": "Damage * CritMultiplier=2.4",
+      "modifies": "Damage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        600,
+        900
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.8
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "CritMultiplier"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "EvelynnQ",
+  "W": "EvelynnW",
+  "E": "EvelynnE",
+  "R": "EvelynnR",
+  "P": "EvelynnPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 315,
+   "{6216bf7b}": 42,
+   "{c4ab3550}": 1.622,
+   "{3a509002}": 0.12
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Evelynn",
+  "name": "Evelynn",
+  "partype": "Mana",
+  "passive": "Demon Shade",
+  "spells": [
+   {
+    "id": "EvelynnQ",
+    "name": "Hate Spike",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "EvelynnW",
+    "name": "Allure",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "EvelynnE",
+    "name": "Whiplash",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "EvelynnR",
+    "name": "Last Caress",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Demon Shade": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Hate Spike": {
+    "damagetype": "Magic",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Proximity-targeted|Proximity]]}}",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Allure": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "Special",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana",
+    "occurrence": "On-hit"
+   }
+  },
+  "E": {
+   "Whiplash": {
+    "damagetype": "Magic",
+    "spelleffects": "Spell",
+    "onhiteffects": "True",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Empowered Whiplash": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "onhiteffects": "Special",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Last Caress": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies / Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

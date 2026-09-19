@@ -1,0 +1,221 @@
+{
+ "champion": "locke",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Silver Stake: every basic attack deals bonus magic on-hit damage (base by level + 10% AP)."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Silver Stake's on-hit damage scales up with the target's missing health, doubling (to +20% AP) at 70%+ missing health."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Ritual Nails missile deals magic damage on cast (and on each recast)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Up to two free recasts within 4s of the first cast, each an identical missile hit, with a fixed 0.5s inter-cast delay."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Nail hits apply stacking Soul Nails (up to 3, 4s refreshing duration) on the target; consumed by Locke's next damaging basic attack or by Ashen Pursuit's empowered dash."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Consuming Soul Nails stacks deals bonus magic damage that scales non-linearly with stack count (1/2/3 stacks, with per-stack multipliers 1x/1.2x/1.4x applied to the base+AP formula)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Any Ritual Nails recast left unused when the window ends refunds a percentage of the ability's cooldown and mana cost."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (and W's added health cost) that can constrain how often each ability is cast within the 15s fight."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Soul Ignition grants bonus attack speed (40-70% by level, scaled with AP indirectly via the level-gated values) for its 6s duration, boosting basic-attack and on-hit throughput."
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "W"
+   ],
+   "note": "Soul Ignition continuously drains Locke's current health (0.5% current HP per 0.25s) for its duration, on top of its mana cost."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Ashen Pursuit arms Locke's next basic-attack command within 4s to become an empowered dash that deals bonus dash damage and applies on-hit effects to the primary target."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Ashen Pursuit's blink itself deals magic damage to enemies near the landing point on cast."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Purgatory's totem fires nails dealing magic damage to nearby enemies after a landing delay."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Purgatory's nails mark hit champions for 5s (refreshed by successful executions), which is the condition gating the execute."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "Marked targets below a % max-health threshold (10-12% by rank, +0.5% per Sealed Champion stack) are executed for true (raw) damage separate from the nail's magic damage."
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "R"
+   ],
+   "note": "Permanent Sealed Champion stacks (gained by collecting the totem after a successful execution) raise the execute threshold by 0.5%/stack and cut current cooldown by 20% of total per soul; a damage-fight simulation must assume a stack count (0 is the conservative baseline absent prior kills)."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Soul Ignition (W)'s grey-health system is the champion's main survival-fight lever and the closed primitive list has no shield/banked-heal entry to express it: while active, Locke banks 100% of post-mitigation champion damage taken (capped, +100% AP) plus a separate missing-health/AP/elapsed-duration bonus (up to 40-200 +20% AP), then converts the entire bank into a heal on recast (manual after 0.5s, or automatic at 6s). Modeling this in the survival fight requires bespoke logic to track banked grey health from incoming hits over the active window and apply it as a delayed lump-sum heal, rather than any primitive from the list (timed-self-buff/self-damage-or-health-cost only cover the AS buff and the health-cost side, not the incoming-damage-to-heal conversion)."
+ },
+ "unsettled": [
+  {
+   "question": "Which W (Soul Ignition) cooldown array is live: the ddragon/bin array [20/18/16/14/12] or the wiki's stated [18/17/16/15/14]?",
+   "options": [
+    "Use bin values [20,18,16,14,12]",
+    "Use wiki values [18,17,16,15,14]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: [20/18/16/14/12]",
+    "|cooldown     = {{ap|18 to 14}}"
+   ]
+  },
+  {
+   "question": "Ashen Pursuit (E)'s effective cast time before the blink resolves: is it the bin's castTime (0.175s, matching the wiki's separate 'queue time' field) or the wiki infobox's 'cast time' of 0.5s?",
+   "options": [
+    "0.175s (bin castTime / wiki queue time)",
+    "0.5s (wiki infobox cast time)",
+    "Both apply in sequence (0.175s cast lock, then a further 0.5s before the blink lands)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "castTime: 0.175",
+    "|cast time    = {{fd|0.5}}",
+    "|queue time   = {{fd|0.175}}"
+   ]
+  },
+  {
+   "question": "Purgatory (R)'s cast time: bin lists 0.25s but the wiki infobox lists 0.5s (which may instead describe the totem's travel/queue time to the target location).",
+   "options": [
+    "0.25s cast time, 0.5s separate totem travel time (both apply)",
+    "0.5s is the actual cast lock and 0.25s refers to something else (e.g. an internal field not meaning cast time)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.25",
+    "|cast time    = {{fd|0.5}}",
+    "|queue time   = {{fd|0.5}}"
+   ]
+  },
+  {
+   "question": "Silver Stake (P)'s missing-health scaling: does the bonus cap and plateau at 70% target missing health (as the wiki's pp formula states) or does it continue scaling toward 100% missing health, given the bin's own formula only shows base+0.1xAP with an unresolved lookup <{ee18a47b}> for the missing-health multiplier?",
+   "options": [
+    "Caps at 70% missing health per the wiki's explicit formula",
+    "Continues scaling linearly to 100% missing health as the pp range '0 to 100' suggests",
+    "Unresolved bin function differs from both wiki readings"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{pp|key=%|type=target's '''missing''' health|0 to 100|0 to 70 by 5|key1=%|formula=7.14% for every 5% target's missing health, with the maximum at 70% target's missing health|color=health}}",
+    "LockePassive#MinOnHitDamage = <{ee18a47b}> + 0.1xap"
+   ]
+  },
+  {
+   "question": "Purgatory (R)'s execute check: when the totem's nail damage itself brings a marked target below the execute threshold, does the true-damage execution trigger immediately as part of the same instance, or only on a later health check while the mark persists?",
+   "options": [
+    "Execute check happens instantly alongside/after the nail damage in the same resolution",
+    "Execute is only evaluated on a separate subsequent tick/check while marked, independent of the triggering hit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Marked enemies are {{tip|execute|executed}} below a portion of their {{as|health}}.",
+    "Applies {{tip|area damage}} with the nail and deals {{tip|raw damage}} to executed targets."
+   ]
+  },
+  {
+   "question": "What Sealed Champion stack count should the damage fight assume for R's execute threshold (+0.5%/stack) and cooldown math, given stacks are permanent and earned outside the simulated fight?",
+   "options": [
+    "Assume 0 stacks (fresh totem, no prior kills)",
+    "Assume some non-zero baseline reflecting a mid-game Locke with several prior executions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "for each soul sealed it will both reduce ''Purgatory's'' {{sti|'''current''' cooldown}} by 20% of its '''total''' cooldown and grant him a permanent {{as|Sealed Champion|buzzword}} stack."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Ritual Nails) on the dummy, then immediately fire both free recasts (0.5s apart) to land all three nail hits and stack Soul Nails to 3 before the 4s window closes.",
+   "Weave continuous basic attacks throughout the fight to trigger Silver Stake's on-hit passive on every attack.",
+   "Cast E (Ashen Pursuit) to blink onto/near the dummy for its blink damage, then let the empowered dash resolve on the next attack command, landing the dash damage, applying on-hit, and consuming the banked Soul Nails stacks for their bonus damage.",
+   "Cast W (Soul Ignition) for its attack-speed buff to raise auto-attack/on-hit throughput for its 6s duration, accepting the health cost since the fight is damage-focused and the eventual recast heal is irrelevant to a damage-fight target dummy.",
+   "Cast R (Purgatory) as soon as available, ideally once the dummy's health has been brought below the execute threshold by prior damage, to add the true-damage execution on top of the totem's magic damage.",
+   "Repeat the Q 3-cast cycle (respecting its 10-6s base cooldown by rank) and re-cast E on cooldown for the remainder of the ~15s window, continuing to weave basic attacks and re-triggering the Soul Nails consume/E-dash combo each time stacks are available.",
+   "Avoid letting a Q recast window lapse with unused recasts mid-fight, since that only refunds partial cooldown/cost rather than dealing the missed instance's damage."
+  ],
+  "questions": [
+   "Does the simulator apply Ashen Pursuit's empowered dash and Soul Nails stack-consumption bonus on the very next basic attack instantly, or does it wait for Locke's attack windup/timer, changing the optimal cast order between E and auto-attacks?",
+   "Is casting W (Soul Ignition) actually worth it in the pure damage fight given its DPS contribution is only the attack-speed buff (no direct damage or damage amp), against its mana and health cost eating into casts of Q/E/R?",
+   "Should R be cast on cooldown as soon as available for guaranteed damage, or deliberately delayed until the target is provably below the execute threshold to secure the true-damage bonus, within a single ~15s window where R may only be castable once or twice?",
+   "For the Soul Nails stack-consumption bonus, is it optimal to always wait for all 3 stacks before consuming via E/auto-attack, or does consuming at 1-2 stacks earlier (to avoid stacks expiring) yield more total damage over 15 seconds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

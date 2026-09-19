@@ -1,0 +1,284 @@
+{
+ "name": "Subject: Disaster / Devastating Fire / Severing Bolt / Molten Fissure",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": {
+  "values": [
+   80,
+   90,
+   100,
+   110,
+   120
+  ],
+  "quote": "{{ap|80 to 120}}",
+  "resource": "{{tt|mana|consumes upon using a basic ability}}"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Devastating Fire (QQ) magic damage, with bonus based on target's maximum health",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    50,
+    80,
+    110,
+    140,
+    170
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.8
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07
+     ]
+    }
+   ],
+   "quote": "{{ap|50 to 170}} {{as|(+ 80% AP)}} {{as|(+ {{ap|3 to 7}}% of target's '''maximum''' health)}}",
+   "bin": [
+    "HweiQQ#Damage",
+    "HweiQQ.BonusDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Severing Bolt (QW) magic damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    85,
+    110,
+    135,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|60 to 160}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "HweiQW#Damage"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Severing Bolt maximum damage multiplier applied to isolated/immobilized targets, scaling with the target's missing health",
+   "role": "target-debuff",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    2,
+    2.375,
+    2.75,
+    3.125,
+    3.5
+   ],
+   "terms": [],
+   "quote": "{{ap|2.0*100 to 3.5*100}}%",
+   "bin": [
+    "HweiQW.BonusDamageMult"
+   ],
+   "binNote": "Multiplier itself; the wiki's per-health-threshold scaling table (missing-health interpolation) is not represented in the bin beyond this rank-based multiplier constant."
+  },
+  {
+   "id": "q_5",
+   "meaning": "Molten Fissure (QE) explosion magic damage (per explosion, up to 7 explosions)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    35,
+    50,
+    65,
+    80
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|20 to 80}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "HweiQE#Damage",
+    "HweiQE.BaseDamage"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Molten Fissure lava fissure magic damage per tick (every 0.25s while standing in a fissure)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    5,
+    8.75,
+    12.5,
+    16.25,
+    20
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.06
+    }
+   ],
+   "quote": "{{ap|50/10 to 200/10}} {{as|(+ {{ap|60/10}}% AP)}}",
+   "bin": [
+    "HweiQE#DamagePerSecond",
+    "HweiQE.BaseDPS"
+   ],
+   "binNote": "Bin gives DamagePerSecond (base+0.24xAP); wiki derives per-tick value by dividing by 10 (0.25s tick over the 2.5s duration), matching 0.24/4=0.06 AP ratio."
+  },
+  {
+   "id": "q_fissure_duration",
+   "meaning": "Lava fissure duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "A fissure lasts for {{fd|2.5}} seconds",
+   "bin": [
+    "HweiQE.Duration"
+   ]
+  },
+  {
+   "id": "q_fissure_interval",
+   "meaning": "Lava fissure tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "dealing {{as|magic damage}} every {{fd|0.25}} seconds",
+   "bin": [
+    "HweiQE.DamageDuration"
+   ],
+   "binNote": "Bin's DamageDuration=0.5 does not match wiki's stated 0.25s tick interval; reporting the wiki's value as stated."
+  },
+  {
+   "id": "q_explosion_delay",
+   "meaning": "Molten Fissure delay before eruptions begin and interval between explosions",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    0.6,
+    0.2
+   ],
+   "terms": [],
+   "quote": "After {{tt|{{fd|0.6}} seconds|From start of cast time}}, the path erupts into volcanic explosions every {{tt|{{fd|0.2}} seconds|Estimated}}",
+   "bin": [],
+   "binNote": "HweiQE has no 'Delay' data value in the sheet (only BaseDamage, BaseDPS, Duration, Radius, SlowPercent, DamageDuration, MinionDamageRatio, JungleDamageRatio are listed); neither the 0.6s initial delay nor the 0.2s inter-explosion interval (wiki itself marks it 'Estimated') corresponds to any named bin row."
+  },
+  {
+   "id": "q_bolt_delay",
+   "meaning": "Severing Bolt delay from cast to strike",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "strike at the target location after {{tt|1 second|From start of cast time}}",
+   "bin": [
+    "HweiQW.Delay"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Devastating Fire explodes on hitting the first enemy or at max range, dealing damage to all enemies near the explosion (not just the one it hit).",
+   "quote": "explodes upon colliding with the first enemy or reaching maximum range, dealing {{as|magic damage}} to all nearby enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Severing Bolt's damage only lands after a 1-second delay from the start of the cast, not instantly on cast.",
+   "quote": "calls upon a lightning bolt to strike at the target location after {{tt|1 second|From start of cast time}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Severing Bolt deals bonus damage based on the target's missing health if it hits only one enemy or hits immobilized enemies (a solo target dummy counts as isolated, so the bonus applies).",
+   "quote": "If ''Severing Bolt'' hits only one enemy or {{tip|immobilize|immobilized}} enemies, it deals {{ccs|increased|magic}} damage based on the {{tt|{{as|target's '''missing''' health}}|See notes}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Molten Fissure fires 7 separate explosion shockwaves, each of which can only hit a given enemy once (separate damage instances), plus a persistent lava fissure damage-over-time zone.",
+   "quote": "for a total of 7 explosions. Each explosion creates a shockwave that deals {{as|magic damage}} to nearby enemies.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Molten Fissure shockwaves can only hit each enemy once per explosion.",
+   "quote": "The shockwaves can only hit each enemy once.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks a Molten Fissure explosion instance but does not block the subsequent persistent lava fissure damage.",
+   "quote": "{{tip|Spell shield}} will block an explosion but not the persistent lava damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Molten Fissure applies area damage for the explosions and persistent area damage for the lava, meaning enemies standing in multiple fissures can be damaged by each simultaneously.",
+   "quote": "Enemies may be damaged by multiple fissures at once.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Toggling into or between the mood's sub-abilities does not count as an ability activation for on-cast effects, and Hwei exits the mood upon casting any of QQ/QW/QE.",
+   "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "HweiQ.Tooltip_QQBaseDamage",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "HweiQ.Tooltip_QQBonusDamage",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "HweiQ.Tooltip_QWBaseDamage",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "HweiQ.Tooltip_QWBonusDamageMult",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "HweiQ.Tooltip_QEBaseDamage",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "HweiQ.Tooltip_QEBaseDPS",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

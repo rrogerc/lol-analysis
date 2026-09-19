@@ -1,0 +1,724 @@
+{
+ "champion": "blitzcrank",
+ "abilities": {
+  "P": {
+   "name": "Mana Barrier / Mana Barrier 2",
+   "cooldown": {
+    "values": [
+     90
+    ],
+    "quote": "{{tt|90|Starts immediately when the shield is gained}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "shield health threshold trigger",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "damaged to {{as|{{sti|health|30% '''maximum''' health}}}}",
+     "bin": [
+      "ManaBarrierIcon.HealthThreshold"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "shield amount as percent of maximum mana",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxMana",
+       "coef": 0.35
+      }
+     ],
+     "quote": "generates a {{tip|shield}} equal to {{sti|mana|{{as|35% of '''maximum''' mana}}}}",
+     "bin": [
+      "ManaBarrierIcon#ShieldAmount",
+      "ManaBarrierIcon.ManaPercent"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "lasting for up to 10 seconds",
+     "bin": [
+      "ManaBarrierIcon.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield absorbs only the portion of incoming damage that would drop health below the 30% threshold, not the full hit.",
+     "quote": "The shield will absorb the portion of incoming damage that would reduce health past 30%.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The 90-second cooldown starts as soon as the shield is granted, not when it breaks or expires.",
+     "quote": "{{tt|90|Starts immediately when the shield is gained}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ManaBarrierIcon.ManaRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Rocket Grab",
+   "cooldown": {
+    "values": [
+     20,
+     19,
+     18,
+     17,
+     16
+    ],
+    "quote": "{{ap|20 to 16}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      110,
+      160,
+      210,
+      260,
+      310
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|110 to 310}} {{as|(+ 120% AP)}}",
+     "bin": [
+      "RocketGrab#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.65,
+     "terms": [],
+     "quote": "{{tip|stun|stunning}} them for {{fd|0.65 seconds}}",
+     "bin": [],
+     "binNote": "not present as a separate data value in this sheet's Q slot"
+    },
+    {
+     "id": "q_3",
+     "meaning": "post-hit lockout duration for Blitzcrank",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "unable to move or attack while Rocket Grab is in flight and for {{tt|{{fd|0.25}}|Estimated}} seconds after it hits an enemy",
+     "bin": [],
+     "binNote": "not a data value in this sheet's Q slot; matches cast time value elsewhere"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rocket Grab stuns the first enemy hit and pulls them toward Blitzcrank, revealing them during the pull.",
+     "quote": "stunning them for {{fd|0.65 seconds}}, and {{tip|airborne|pulling}} them towards '''Blitzcrank''', during which they are {{tip|standard sight|revealed}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Blitzcrank automatically basic attacks the target once it arrives, providing a free attack (and on-hit effects) after the grab lands.",
+     "quote": "'''Blitzcrank''' will be ordered to {{tip|basic attack}} the target once the target arrives.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target dies to Rocket Grab's damage, they are not pulled, meaning the follow-up auto-attack would not occur.",
+     "quote": "If the target dies to ''Rocket Grab's'' damage, they will not be pulled.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RocketGrab.LolipopLength",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Overdrive",
+   "cooldown": {
+    "values": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "quote": "15"
+   },
+   "cost": {
+    "values": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ],
+    "quote": "75",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      40,
+      50,
+      60,
+      70
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 70}}%",
+     "bin": [
+      "Overdrive.AttackSpeedMod"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Initial Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|60 to 80}}%",
+     "bin": [
+      "Overdrive.MoveSpeedMod"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the attack speed / movement speed buff",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "gaining {{sti|{{as|'''bonus''' attack speed}}}} for 5 seconds",
+     "bin": [
+      "Overdrive.Duration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "self-slow when Overdrive ends",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "'''Blitzcrank''' is {{tip|slow|slowed}} by 30% for {{fd|1.5}} seconds",
+     "bin": [
+      "Overdrive.MoveSpeedModReduction"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "duration of the self-slow",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{tip|slow|slowed}} by 30% for {{fd|1.5}} seconds",
+     "bin": [
+      "Overdrive.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Overdrive grants bonus attack speed for its duration, increasing damage output during the buff.",
+     "quote": "gaining {{sti|{{as|'''bonus''' attack speed}}}} for 5 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The movement speed decays over time and is not itself relevant to damage dealt or taken.",
+     "quote": "{{sti|ms|{{as|'''bonus''' movement speed}}}} that decays to 10% over the first {{fd|2.9}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "When Overdrive ends, Blitzcrank is self-slowed, which is a mobility effect only.",
+     "quote": "'''Blitzcrank''' is {{tip|slow|slowed}} by 30% for {{fd|1.5}} seconds",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Overdrive.MoveSpeedModMin",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "Overdrive.MoveSpeedModMinTime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "Overdrive.PercentHealthDamage",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Power Fist",
+   "cooldown": {
+    "values": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "quote": "{{ap|7 to 5}}"
+   },
+   "cost": {
+    "values": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ],
+    "quote": "25",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "bonus physical damage on empowered attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      },
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{as|100% AD}} {{as|(+ 25% AP)}} {{as|'''bonus''' physical damage}}",
+     "bin": [
+      "PowerFist#TotalDamage"
+     ],
+     "binNote": "Wiki states bonus damage of 100% AD + 25% AP. PowerFist#TotalDamage in the bin computes 2xad + 0.25xap (i.e. the ap coefficient of 0.25 matches, but the ad term is 2.0, not 1.0 - likely the bin's total including the base attack's own AD, whereas the wiki figure is only the 'bonus' on top of the normal attack). A second unused calc {a9d6b924} = 1.75xad + 1.25xap does not match either. Reporting the wiki's 1.0/0.25 numbers as stated, flagging the ad discrepancy."
+    },
+    {
+     "id": "e_2",
+     "meaning": "duration the empowered attack buff lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "empowers their next {{tip|basic attack}} within 5 seconds",
+     "bin": [],
+     "binNote": "No data value in the PowerFist bin section corresponds to this 5 second buff-expiry window; only CCDuration (knockup) and the damage calcs are present, so this duration is wiki-text only."
+    },
+    {
+     "id": "e_3",
+     "meaning": "knock up duration on target",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|airborne|knock up}} the target for 1 second",
+     "bin": [
+      "PowerFist.CCDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Power Fist empowers the next basic attack within 5 seconds, giving it an uncancellable windup, doubling total damage via bonus physical damage, and knocking up the target.",
+     "quote": "'''Blitzcrank''' empowers their next {{tip|basic attack}} within 5 seconds to have an {{tip|uncancellable windup}}, deal {{as|100% AD}} {{as|(+ 25% AP)}} {{as|'''bonus''' physical damage}} and {{tip|airborne|knock up}} the target for 1 second",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This bonus damage is affected by critical strike modifiers.",
+     "quote": "This damage is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Power Fist deals basic damage but is also tagged as spell damage, triggering spell effects, including from the basic attack itself.",
+     "quote": "''Power Fist'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Power Fist resets Blitzcrank's basic attack timer.",
+     "quote": "''Power Fist {{tip|basic attack reset|resets}} '''Blitzcrank's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown starts only after the empowered attack resolves.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield prevents both the knockup and all the damage, including the basic attack's own damage.",
+     "quote": "{{tip|Spell shield}} prevents the {{tip|airborne|knockup}} and the damage, including the damage of the basic attack itself.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack still lands even if the target becomes untargetable during the windup.",
+     "quote": "The enhanced attack will still complete and hit the target even if they become {{tip|untargetable}} during the {{tip|attack windup|attack's windup}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against structures the knockup does not trigger but the Power Fist buff is not consumed, letting the bonus damage be reapplied repeatedly.",
+     "quote": "The ''Power Fist'' buff does not get consumed if the knockup doesn't trigger, allowing '''Blitzcrank''' to repeatedly attack structures for bonus damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Static Field",
+   "cooldown": {
+    "values": [
+     60,
+     40,
+     20
+    ],
+    "quote": "{{ap|60 to 20}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Passive lightning bolt magic damage per stack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      100,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.3,
+        0.4,
+        0.5
+       ]
+      },
+      {
+       "stat": "maxMana",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ {{ap|30 to 50}}% AP)}} {{as|(+ 2% '''maximum''' mana)}}",
+     "bin": [
+      "StaticField#PassiveDamage"
+     ],
+     "binNote": "PassiveDamage's calc uses a literal 0.02 coefficient for max mana, matching the wiki's 2%; the separate data value PassiveManaRatio=0.05 is not read by this calculation and is listed unused."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Active detonation magic damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      275,
+      400,
+      525
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|275 to 525}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "StaticField#ActiveDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Time between passive stack detonations (zap interval)",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "one stack is consumed every 1 second to strike them with lightning",
+     "bin": [
+      "StaticField.ZapCountdown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While Static Field is off cooldown, Blitzcrank's basic attacks apply a stack to the target on-hit, which does not require the attack to deal damage.",
+     "quote": "Blitzcrank's attacks do not have to deal damage to apply the mark.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "One stack is consumed every 1 second dealing magic damage to the target, as a separate spell damage instance.",
+     "quote": "one stack is consumed every 1 second to strike them with lightning, dealing {{as|magic damage}} each time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The lightning bolt ticks are spell damage while the active detonation is area damage.",
+     "quote": "The lightning bolts deal {{tip|spell damage}} while the static field applies {{tip|area damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active detonation destroys shields on all nearby enemies (except monsters) before dealing damage, even if blocked by a spell shield.",
+     "quote": "Even if ''Static Field'' is blocked by a {{tip|spell shield}}, it will still destroy any existing damage {{tip|shield|shields}} on the target.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "StaticField.ActiveRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "StaticField.SilenceDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "StaticField.PassiveManaRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Rocket Grab hits on cast/short delay for magic damage; Static Field active detonation deals magic damage on cast"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Power Fist's empowered auto resets Blitzcrank's basic attack timer"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Power Fist arms the next basic attack with bonus physical damage and treats it as spell damage for item procs"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Overdrive grants bonus attack speed for 5s, directly raising DPS"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "R"
+   ],
+   "note": "Static Field passive applies a stack per basic attack while off cooldown; one stack detonates per second dealing magic damage"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "The per-second stack detonation behaves like a ticking damage effect on the target while stacks persist"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All 4 abilities cost mana (100/75/25/100); mana is finite over the 15s fight and constrains cast frequency, especially with W+Q+R being expensive"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Power Fist's cooldown starts post-effect (after the empowered attack resolves), effectively lengthening real time between casts vs on-cast starts"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mana Barrier is a self-shield triggered at low health; irrelevant to the damage fight where Blitzcrank is the attacker vs a non-retaliating dummy, but relevant to the survival fight where it delays Blitzcrank's death"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (Q burst, W attack-speed buff, E empowered-attack-with-reset, R stacking on-hit ticks plus a plain-cast burst) map onto existing primitives; no unique interaction requires bespoke logic."
+ },
+ "unsettled": [
+  {
+   "question": "In Power Fist's bonus damage formula, is the AD coefficient 100% (per wiki leveling text) or 200% (per the bin's PowerFist#TotalDamage = 2xad + 0.25xap)?",
+   "options": [
+    "Use wiki's 100% AD + 25% AP as the bonus (bin's 2xad may represent total including base attack's own AD)",
+    "Use bin's 2xad + 0.25xap literally as the bonus on top of the normal attack",
+    "Treat bin's 2xad as the correct 'bonus' term and wiki text as imprecise/rounded"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|100% AD}} {{as|(+ 25% AP)}} {{as|'''bonus''' physical damage}}",
+    "PowerFist#TotalDamage = 2xad + 0.25xap"
+   ]
+  },
+  {
+   "question": "Does Rocket Grab's automatic follow-up basic attack (ordered once the target arrives) happen within the 15s dummy fight window and should it be simulated as a guaranteed extra auto-attack per Q cast?",
+   "options": [
+    "Always include one free auto-attack immediately after each landed Q pull",
+    "Only include it if the target survives to be pulled in (per 'if the target dies to Rocket Grab's damage, they will not be pulled')",
+    "Exclude it since the pull/attack-order behavior is closer to a positional/AI mechanic than a guaranteed damage tick"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Blitzcrank''' will be ordered to {{tip|basic attack}} the target once the target arrives.",
+    "If the target dies to ''Rocket Grab's'' damage, they will not be pulled."
+   ]
+  },
+  {
+   "question": "Does Static Field's passive stack-and-detonate mechanic require the target to be attacked repeatedly to maintain stacks, or does a single stack simply tick once per second until consumed — i.e., how many stacks can be 'banked' at once against a stationary target being auto-attacked continuously?",
+   "options": [
+    "Each basic attack applies exactly one stack, consumed 1/sec, so stacks can accumulate faster than they drain if attack speed is high, banking multiple pending zaps",
+    "Only one stack can exist on the target at a time (refreshed, not stacked), so extra attacks during the 1s window are wasted",
+    "Assume no capacity limit is stated by sources and treat it as an open modeling question for the simulator"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Blitzcrank's''' {{tip|basic attacks}} apply a {{tip|stack}} to the target {{tip|on-hit}}. While the target is afflicted, one stack is consumed every 1 second to strike them with lightning"
+   ]
+  },
+  {
+   "question": "Is the Static Field active detonation (R active-cast) usable in the same 15s window as its passive stacking (both draw from the same R), and does casting the active reset/consume passive stacks or affect the passive's own cooldown independent of rank-based cooldown?",
+   "options": [
+    "Passive stacking is always available whenever R active is off cooldown; casting active just adds its own burst and puts R on cooldown, pausing passive stacking during that time",
+    "The passive and active are fully independent tracks and both can be active simultaneously with no interaction",
+    "Not enough information; treat as unsettled since the sources describe them together as 'Static Field' without clarifying interaction on cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{sbc|Passive:}} While ''Static Field'' is not on cooldown, '''Blitzcrank's''' {{tip|basic attacks}} apply a {{tip|stack}}",
+    "{{sbc|Active:}} '''Blitzcrank''' detonates a static field..."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Rocket Grab (Q) on the dummy for immediate magic burst damage and the guaranteed follow-up auto-attack.",
+   "Immediately cast Overdrive (W) to gain bonus attack speed for the fight's core damage window.",
+   "Weave in Power Fist (E) on cooldown, always letting it land as the very next auto-attack for its doubled/bonus physical damage and to trigger an attack-reset.",
+   "Auto-attack continuously between E casts to build Static Field (R) stacks and to benefit from Overdrive's attack speed.",
+   "Cast Static Field (R) active once available (post-cooldown/rank) for its magic burst, ideally when mana allows without starving Q/E casts.",
+   "Recast Rocket Grab (Q) again on cooldown for another magic burst.",
+   "Recast Overdrive (W) when it comes off cooldown to maintain the attack-speed window for the remainder of the fight.",
+   "Continue weaving Power Fist on cooldown and auto-attacking to keep Static Field stacks ticking until the 15s window ends."
+  ],
+  "questions": [
+   "Given four abilities all costing mana (Q100/W75/E25/R100) at early levels, what mana pool and regen should be assumed so the simulator knows how many full rotations are actually sustainable in 15s?",
+   "Should the simulator model the Q's forced follow-up auto-attack as attack-reset-relevant (i.e., does it interact with Power Fist's own reset or Static Field stacking) or treat it as a normal attack?",
+   "At what point does R's cooldown (60/40/20s by rank) make it unavailable during a single 15s fight at low ranks — should the rotation assume max rank R for a fair damage comparison, or model rank-appropriate availability?",
+   "Is Power Fist's cdstart = post-effect meaningful within 15s (i.e., does the attack windup + reset meaningfully delay E's next availability compared to treating it as on-cast)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

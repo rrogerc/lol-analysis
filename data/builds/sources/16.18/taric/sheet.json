@@ -1,0 +1,475 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TaricPassive",
+    "key": "Characters/Taric/Spells/TaricPassiveAbility/TaricPassive",
+    "dataValues": {
+     "Duration": 5,
+     "BaseDamageMultiplierForModesBalance": 1,
+     "ArmorDamageValue": 0.15
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "(byLevel(25..93))*(BaseDamageMultiplierForModesBalance=1) + (ArmorDamageValue=0.15)xbonus armor?",
+      "flat": {
+       "axis": "level",
+       "v": [
+        25,
+        29,
+        33,
+        37,
+        41,
+        45,
+        49,
+        53,
+        57,
+        61,
+        65,
+        69,
+        73,
+        77,
+        81,
+        85,
+        89,
+        93
+       ]
+      },
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "bonus",
+        "coef": 0.15,
+        "dataValue": "ArmorDamageValue"
+       }
+      ],
+      "refs": [
+       "ArmorDamageValue",
+       "BaseDamageMultiplierForModesBalance"
+      ]
+     },
+     "CDR": {
+      "expr": "1 + 1 + (<CooldownMultiplierCalculationPart>)*(-1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "TaricQ",
+    "key": "Characters/Taric/Spells/TaricQAbility/TaricQ",
+    "cooldown": 3,
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Recharge": 15,
+     "HealingPerStackBase": 25,
+     "HealingAPRatio": 0.15,
+     "HealingHPRatio": 0.01,
+     "BaseHealMax": {
+      "axis": "rank",
+      "v": [
+       25,
+       50,
+       75,
+       100,
+       125
+      ]
+     },
+     "MaxCharges": {
+      "axis": "rank",
+      "v": [
+       1,
+       2,
+       3,
+       4,
+       5
+      ]
+     }
+    },
+    "calcs": {
+     "StackCooldown": {
+      "expr": "Recharge=15",
+      "flat": 15,
+      "terms": [],
+      "refs": [
+       "Recharge"
+      ]
+     },
+     "HealingPerStack": {
+      "expr": "HealingPerStackBase=25 + (HealingAPRatio=0.15)xap + (HealingHPRatio=0.01)xmaxHp",
+      "flat": 25,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "HealingAPRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.01,
+        "dataValue": "HealingHPRatio"
+       }
+      ],
+      "refs": [
+       "HealingAPRatio",
+       "HealingHPRatio",
+       "HealingPerStackBase"
+      ]
+     },
+     "MaxStackHealing": {
+      "expr": "(HealingPerStackBase=25 + (HealingAPRatio=0.15)xap + (HealingHPRatio=0.01)xmaxHp) * MaxCharges=[1/2/3/4/5]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        50,
+        75,
+        100,
+        125
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.15,
+          0.3,
+          0.45,
+          0.6,
+          0.75
+         ]
+        },
+        "dataValue": "HealingAPRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.01,
+          0.02,
+          0.03,
+          0.04,
+          0.05
+         ]
+        },
+        "dataValue": "HealingHPRatio"
+       }
+      ],
+      "refs": [
+       "HealingAPRatio",
+       "HealingHPRatio",
+       "HealingPerStackBase",
+       "MaxCharges"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "TaricW",
+    "key": "Characters/Taric/Spells/TaricWAbility/TaricW",
+    "cooldown": 15,
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ArmorBonusPercentage": {
+      "axis": "rank",
+      "v": [
+       0.06,
+       0.07,
+       0.08,
+       0.09,
+       0.1
+      ]
+     },
+     "ShieldHPRatio": {
+      "axis": "rank",
+      "v": [
+       7,
+       8,
+       9,
+       10,
+       11
+      ]
+     },
+     "ShieldDuration": 2.5,
+     "LeashBreakWarningRange": 1000,
+     "LeashBreakActualRange": 1300
+    },
+    "calcs": {
+     "BonusArmor": {
+      "expr": "(ArmorBonusPercentage=[0.06/0.07/0.08/0.09/0.1])xarmor?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.06,
+          0.07,
+          0.08,
+          0.09,
+          0.1
+         ]
+        },
+        "dataValue": "ArmorBonusPercentage"
+       }
+      ],
+      "refs": [
+       "ArmorBonusPercentage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TaricE",
+    "key": "Characters/Taric/Spells/TaricEAbility/TaricE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       130,
+       170,
+       210,
+       250
+      ]
+     },
+     "StunDuration": 1.5,
+     "ChargeDuration": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[90/130/170/210/250] + 0.5xap + 0.5xbonus armor?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        130,
+        170,
+        210,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       },
+       {
+        "stat": "armor?",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "TaricR",
+    "key": "Characters/Taric/Spells/TaricRAbility/TaricR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      180,
+      150,
+      120
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "InitialDelay": 2.5,
+     "InvulnDuration": 2.5
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "TaricQ",
+  "W": "TaricW",
+  "E": "TaricE",
+  "R": "TaricR",
+  "P": "TaricPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 60,
+   "{c4ab3550}": 1.7,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.12
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Taric",
+  "name": "Taric",
+  "partype": "Mana",
+  "passive": "Bravado",
+  "spells": [
+   {
+    "id": "TaricQ",
+    "name": "Starlight's Touch",
+    "maxrank": 5,
+    "cooldown": [
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "TaricW",
+    "name": "Bastion",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "TaricE",
+    "name": "Dazzle",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "TaricR",
+    "name": "Cosmic Radiance",
+    "maxrank": 3,
+    "cooldown": [
+     180,
+     150,
+     120
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Bravado": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Starlight's Touch": {
+    "targeting": "Auto",
+    "affects": "Allies",
+    "costtype": "Mana + all charges"
+   }
+  },
+  "W": {
+   "Bastion": {
+    "targeting": "Unit",
+    "affects": "Self, Allies",
+    "costtype": "Mana"
+   },
+   "Bastion 2": {
+    "targeting": "Unit",
+    "affects": "Self, Allies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Dazzle": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Cosmic Radiance": {
+    "targeting": "Auto",
+    "affects": "Allies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

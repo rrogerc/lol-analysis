@@ -1,0 +1,110 @@
+{
+ "champion": "leblanc",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Sigil orb, Distortion impact, Ethereal Chains initial hit, and each Mimic variant's primary damage all resolve on cast/impact on a normal cooldown"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Sigil of Malice applies a 3.5s mark on the target; the next damaging ability against that target consumes it for a second, equal-damage instance. Mimic: Sigil of Malice reproduces this orb+mark structure with its own (doubled) values, and per the wiki notes Q and Mimic: Sigil can detonate each other's marks"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Ethereal Chains has an initial hit plus a delayed (1.5s later) fracture hit if the tether isn't broken; Mimic: Ethereal Chains mirrors this two-part timing with doubled fracture damage"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Mana costs (50/50-100/50) against Leblanc's mana pool can meaningfully cap cast frequency over a 15s fight, especially W scaling up to 100 at rank 5"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Mimic's 'copy the last-used basic ability with modified numbers' behavior is a rotation-level branch (which spell was last cast), not a new damage mechanic: each branch (Mimic: Sigil, Mimic: Distortion, Mimic: Ethereal Chains) reduces to the same plain-cast / target-stacks / recast-or-multipart primitives already used by Q, W, and E, just with R's own base/ratio values. The simulator can implement R as 'recast the most recently cast of Q/W/E's primitive shape using R's numbers.'"
+ },
+ "unsettled": [
+  {
+   "question": "When Mimic: Sigil of Malice (R) is cast, does it immediately deal both the orb damage AND the doubled mark-consumption damage in one burst, or does it apply a mark like normal Q that only pays out if a later damaging ability consumes it?",
+   "options": [
+    "Mimic: Sigil always resolves both the orb hit and the doubled 'mark consumption' hit together as a single guaranteed two-part burst on cast",
+    "Mimic: Sigil only deals the orb damage on cast and places a mark; the doubled damage only triggers if LeBlanc's next damaging ability (or an already-marked target) consumes it, exactly like base Q"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{sbc|Mimic: Sigil of Malice:}} The orb deals modified damage, while the mark consumption deals double that amount.",
+    "leveling2    = {{st|Orb Magic Damage|{{ap|70 to 230}} {{as|(+ 40% AP)}}|Mark Magic Damage|{{ap|70*2 to 230*2}} {{as|(+ 80% AP)}}|Total Magic Damage|{{ap|70*3 to 230*3}} {{as|(+ 120% AP)}}}}"
+   ]
+  },
+  {
+   "question": "If LeBlanc casts Q (marking the target) and then casts R while Mimic defaults to Mimic: Sigil of Malice, does R's orb also consume/detonate the pre-existing Q mark on top of its own orb+mark payout, since the wiki states Sigil and Mimic: Sigil 'can detonate each other's marks'?",
+   "options": [
+    "Yes — casting Mimic: Sigil against an already-Q-marked target consumes the existing Q mark as an extra damage instance in addition to Mimic: Sigil's own orb/mark payout",
+    "No — 'can detonate each other's marks' only describes cross-compatibility (either ability's follow-up cast can consume either mark type), not a stacked double-consumption on the same cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Sigil of Malice'' and {{ai|Mimic: Sigil of Malice|LeBlanc}} can detonate each other's marks."
+   ]
+  },
+  {
+   "question": "Does Mimic: Ethereal Chains' fracture (doubled) damage require the full 1.5s tether to elapse uninterrupted (as with base E), or is it guaranteed/instant like the wiki's combined 'Total Magic Damage' row implies?",
+   "options": [
+    "Same timing as base E: application damage on hit, fracture damage only after the tether survives 1.5s",
+    "Mimic: Ethereal Chains resolves both hits together without the 1.5s wait"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{sbc|Mimic: Ethereal Chains:}} The tether's application deals modified damage, while its fracturing deals double that amount.",
+    "leveling4    = {{st|Application Magic Damage|{{ap|70 to 230}} {{as|(+ 40% AP)}}|Fracture Magic Damage|{{ap|70*2 to 230*2}} {{as|(+ 85% AP)}}|Total Magic Damage|...}}"
+   ]
+  },
+  {
+   "question": "Against a single stationary dummy that never breaks line of sight or moves, does the base E tether always survive to fracture (guaranteeing both E damage instances every cast), or should the simulator model any chance/rule of the tether breaking?",
+   "options": [
+    "Tether always survives against a stationary, non-moving dummy target, so both E instances always land",
+    "Some other rule (e.g. range-based break) could prevent the fracture even against a stationary target"
+   ],
+   "impact": "low",
+   "quotes": [
+    "If the tether is not broken by the end of its duration, it fractures to deal {{as|magic damage}} to the target and {{tip|root}} them for {{fd|1.5}} seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Sigil of Malice) on the dummy to deal the orb's initial magic damage and apply the 3.5s mark.",
+   "Immediately follow with E (Ethereal Chains) so its initial hit is the 'next damaging ability' that consumes Q's mark for the second Q damage instance, plus E's own initial damage.",
+   "Hold position through the 1.5s tether window (stationary dummy cannot break it) to collect E's delayed fracture damage.",
+   "Cast W (Distortion) onto the dummy for its impact AoE damage as soon as it is off cooldown.",
+   "Use R (Mimic) to recast whichever of Q/W/E was most recently cast for a bonus damage instance (prefer recasting immediately after Q or E to interact with marks/tethers, pending the unsettled Mimic-mark-stacking question).",
+   "Re-cast Q on its 6s cooldown as the primary filler between W/E cooldowns, letting each subsequent damaging ability consume the fresh mark.",
+   "Fill any remaining time with auto-attacks on the dummy while spells are on cooldown.",
+   "Repeat the Q → (W or E) → mark-consumption loop for the rest of the 15s window, keeping W and E on cooldown as soon as they're available."
+  ],
+  "questions": [
+   "Should R (Mimic) be cast right after Q (for a possible immediate Mimic: Sigil double-mark burst) or right after E (for a guaranteed two-part Mimic: Ethereal Chains), given the unresolved mark-stacking and instant-vs-delayed questions above?",
+   "In the 15s fight, is it worth pausing 1.5s to let Ethereal Chains fracture, or does the DPS-optimal line skip waiting and instead keep firing Q/W on cooldown, sacrificing the fracture damage on some casts?",
+   "Does the simulator want LeBlanc's auto-attacks included as filler at all, given her weak base AD and no on-hit effects, or should all idle time instead be spent walking up for the next skillshot (not applicable here since there is no positioning cost against a fixed dummy)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

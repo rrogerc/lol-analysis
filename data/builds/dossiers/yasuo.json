@@ -1,0 +1,711 @@
+{
+ "champion": "yasuo",
+ "abilities": {
+  "P": {
+   "name": "Way of the Wanderer",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_shield",
+     "meaning": "shield strength when Flow is consumed",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      125,
+      145.1,
+      166.2,
+      188.3,
+      211.4,
+      235.4,
+      260.4,
+      286.4,
+      313.4,
+      341.3,
+      370.2,
+      400.1,
+      431.0,
+      462.9,
+      495.7,
+      529.5,
+      564.3,
+      600
+     ],
+     "terms": [],
+     "quote": "{{pp|{{#var:b1}}+(({{#var:b18}}-{{#var:b1}})/17*(x-1)*(0.7025+0.0175*(x-1))) for 20}}",
+     "bin": [
+      "YasuoPassive#ShieldValue"
+     ],
+     "binNote": "Wiki computes the shield with a nonlinear per-level formula (quadratic acceleration term 0.7025+0.0175*(x-1)) that back-calculates to the values listed here; the bin's YasuoPassive#ShieldValue instead appears to be a plain linear interpolation from 125 at level 1 to 600 at level 18 (step ~27.94/level, e.g. 152.9 at level 2 vs the wiki's 145.1). The endpoints (125, 600) agree but the intermediate levels do not; using the wiki's stated formula here."
+    },
+    {
+     "id": "p_shield_duration",
+     "meaning": "duration the shield lasts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "grant himself a {{tip|shield}} for ... that lasts for 1 second",
+     "bin": [],
+     "binNote": "No bin row for the 1 second shield lifetime; it is only stated in the description text."
+    },
+    {
+     "id": "p_critdmgmod",
+     "meaning": "Yasuo's critical strikes deal only a reduced percentage of normal crit damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 95,
+     "terms": [],
+     "quote": "{{fd|{{#expr:{{ccd|Yasuo|crit_mod}}*100}}}}% of the {{sti|{{as|critical damage}}}} champions usually have",
+     "bin": [
+      "YasuoPassive.CritDamageMod"
+     ],
+     "binNote": "Bin stores this as a 0.95 multiplier (CritDamageMod); wiki expresses the same value as 95%."
+    },
+    {
+     "id": "p_critexcess",
+     "meaning": "bonus AD gained per 1% critical strike chance in excess of 100%",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{as|1% critical strike chance}} in excess of {{as|100%|critical strike chance}} is converted into {{sti|{{as|{{fd|0.5}} '''bonus''' attack damage}}}}",
+     "bin": [
+      "YasuoPassive.YasuoCritToAD"
+     ],
+     "binNote": "Bin stores YasuoCritToAD as 50, which is the wiki's 0.5 bonus AD scaled by 100 (per 100% excess crit rather than per 1%)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Yasuo's total critical strike chance is doubled from all other sources.",
+     "quote": "'''Yasuo's''' {{as|{{sti|'''total''' critical strike chance}}}} is doubled from all other sources.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yasuo gains the shield before the triggering damage instance resolves, so it mitigates the hit that triggered it.",
+     "quote": "'''Yasuo''' gains the shield before the damage instance; the shield will mitigate the damage that triggered it.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield only triggers upon reaching 100 Flow stacks and then taking damage from an enemy champion or monster, consuming all stacks.",
+     "quote": "upon taking damage from an enemy {{tip|champion}} or {{tip|monster}}, '''Yasuo''' consumes all {{tip|Flow}} to grant himself a {{tip|shield}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YasuoPassive.CritChanceMultiplier",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Steel Tempest / Steel Tempest 2 / Steel Tempest 3",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "{{as|{{pp|type='''bonus''' attack speed|4 to 1.48 for 8;4/3|key1=%|0 to 105;1000/9|formula=4*(1-(0.01 per 1.67% '''bonus''' attack speed)). ''This is capped at 67% reduction at 111.1% '''bonus''' attack speed.''}}|attack speed}}",
+    "binNote": "Bin gives a flat 4s cooldown at every rank (YasuoQ1Wrapper.Cooldown=4). The wiki's cooldown template is not a per-rank leveling array but a formula reducing the base 4s cooldown by bonus attack speed (down to 1.48s at 111.1% bonus AS); the base value (4) matches the bin."
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.35,
+    "quote": "0.35;0.33;0.297;0.264;0.231;0.198;0.175",
+    "binNote": "No cast time field appears in the sheet's Q rows; the 0.35s base thrust cast time (reduced by bonus attack speed, capped at 50% reduction) is wiki-only."
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      45,
+      70,
+      95,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.05
+      }
+     ],
+     "quote": "{{ap|20 to 120}} {{as|(+ 105% AD)}}",
+     "bin": [
+      "YasuoQ1Wrapper#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Critical Strike Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      45,
+      70,
+      95,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.05
+      }
+     ],
+     "quote": "{{ap|20 to 120}} {{as|(+ {{as|{{critical damage|{{ccd|Yasuo|crit_base}}*1.05|105|mod={{ccd|Yasuo|crit_mod}}}}|critical damage}} AD)|ad}}",
+     "bin": [
+      "YasuoQ1Wrapper#TotalDamageCrit"
+     ],
+     "binNote": "TotalDamageCrit multiplies the AD-ratio portion (105% AD) by the champion's current critDamage multiplier; this schema's single stat+coef term cannot express that multiplicative combination, see mechanics."
+    },
+    {
+     "id": "q_gathering_storm",
+     "meaning": "Gathering Storm stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "generates a {{tip|stack}} of ''Gathering Storm'' for 6 seconds, stacking up to 2 times and refreshing on subsequent hits",
+     "bin": [
+      "YasuoQ1Wrapper.GatheringStormDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Steel Tempest applies basic damage (on-hit/on-attack effects) only to the first (closest) enemy hit; secondary enemies take area damage and only they receive spell effects.",
+     "quote": "''Steel Tempest'' applies {{tip|basic damage}} to the first (closest) enemy hit and {{tip|area damage}} to secondary enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Life steal heals based on damage dealt to the first target hit; spell vamp only heals from damage to secondary targets at 33% effectiveness.",
+     "quote": "{{as|{{sti|Life steal}}}} will heal based on the damage dealt to the first target hit.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Steel Tempest rolls its critical strikes individually against each enemy hit.",
+     "quote": "''Steel Tempest'' rolls its {{tip|critical strike|critical strikes}} individually against each enemy hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 2 Gathering Storm stacks, the next Steel Tempest cast consumes them to become an empowered whirlwind dealing the same damage (with knockup) to enemies in the direction, rather than a thrust.",
+     "quote": "At 2 stacks, the next ''Steel Tempest'' cast consumes them all to become empowered with a new effect.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Critical Strike Damage multiplies the AD-ratio portion of the base damage by Yasuo's crit damage multiplier, rather than critting the whole ability value.",
+     "quote": "{{as|(+ {{as|{{critical damage|{{ccd|Yasuo|crit_base}}*1.05|105|mod={{ccd|Yasuo|crit_mod}}}}|critical damage}} AD)|ad}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Steel Tempest during Sweeping Blade removes its cast time but locks out basic attacks for 0.5 seconds after the dash ends.",
+     "quote": "''Steel Tempest's'' cast time is not incurred when it is cast this way, but '''Yasuo''' will become {{tip|lockout|unable}} to declare basic attacks for {{fd|0.5}} seconds after the dash ends.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Yasuo is affected by disarming crowd control during the cast time, the thrust fails to hit but the cooldown is reset to 0.1 seconds.",
+     "quote": "the {{sti|cooldown}} of the ability is reset to {{fd|0.1}} seconds",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YasuoQ1Wrapper.StabRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoQ1Wrapper.TornadoRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoQ1Wrapper.StabWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoQ1Wrapper.SpinWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoQ1Wrapper.KnockUpDurationTOOLTIPONLY",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Wind Wall",
+   "cooldown": {
+    "values": [
+     25,
+     23,
+     21,
+     19,
+     17
+    ],
+    "quote": "{{ap|25 to 17}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.013,
+    "quote": "{{fd|0.013}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Wall lifetime",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "raises a wall of wind in the target direction for 4 seconds",
+     "bin": [
+      "YasuoW.WallLife"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Wind Wall destroys all hostile non-turret projectiles that collide with it, blocking their damage.",
+     "quote": "destroys all hostile non-{{tip|turret}} {{tip|projectile|projectiles}} that collide with it",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Wind Wall begins blocking projectiles immediately on cast, before it is fully formed.",
+     "quote": "''Wind Wall'' starts blocking projectiles on-cast (despite not being fully formed).",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Yasuo can move during Wind Wall's cast time.",
+     "quote": "'''Yasuo''' can move during ''Wind Wall's'' cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YasuoW.Width",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoW.TravelRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoW.BubbleRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoW.Thickness",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Sweeping Blade",
+   "cooldown": {
+    "values": [
+     0.5,
+     0.4,
+     0.3,
+     0.2,
+     0.1
+    ],
+    "quote": "{{tt|{{ap|0.5 to 0.1}}|Starts after the dash ends}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      85,
+      100,
+      115,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.2
+      },
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|70 to 130}} {{as|(+ 20% '''bonus''' AD)}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "YasuoE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Damage per Stack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      17.5,
+      21.25,
+      25,
+      28.75,
+      32.5
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.05
+      },
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|70*0.25 to 130*0.25}} {{as|(+ {{ap|20*0.25}}% '''bonus''' AD)}} {{as|(+ {{ap|60*0.25}}% AP)}}",
+     "bin": [
+      "YasuoE#BonusDamagePerStack"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Total Combined Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      140,
+      170,
+      200,
+      230,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      },
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|70*2 to 130*2}} {{as|(+ {{ap|20*2}}% '''bonus''' AD)}} {{as|(+ {{ap|60*2}}% AP)}}",
+     "bin": [],
+     "binNote": "This is a wiki-computed sum of e_1 (base hit) plus one stack of e_2 (25% bonus), not a separate bin calculation; no dedicated row exists."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sweeping Blade generates a stack of Ride the Wind for 5 seconds, refreshing on subsequent hits, stacking up to 4 times, and each stack increases Sweeping Blade's damage by 25%.",
+     "quote": "generates a stack of ''Ride the Wind'' for 5 seconds, which refreshes on subsequent hits and stacks up to 4 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sweeping Blade cannot be cast on the same target again for a per-target cooldown, starting upon starting the dash.",
+     "quote": "{{tt|{{ap|10 to 6}}|Starts upon starting the dash}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's own cooldown starts after the dash ends, not at cast.",
+     "quote": "Starts after the dash ends",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yasuo becomes ghosted for 2 seconds on cast, refreshing on subsequent casts (defensive, not damage).",
+     "quote": "becomes {{tip|ghosted}} for 2 seconds, refreshing on subsequent casts",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Deals damage to the target upon impact of the dash, i.e. it is a single melee-range hit on arrival, not on cast.",
+     "quote": "Upon impact, he deals {{as|magic damage}} to the target",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YasuoE.MaxStacks",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YasuoE.StackDuration",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "YasuoE.PerTargetCooldown",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "YasuoE.BaseDashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Last Breath",
+   "cooldown": {
+    "values": [
+     70,
+     50,
+     30
+    ],
+    "quote": "{{ap|70 to 30}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      200,
+      350,
+      500
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|200|350|500}} {{as|(+ 150% '''bonus''' AD)}}",
+     "bin": [
+      "YasuoR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "duration of bonus-armor penetration on crits",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 15,
+     "terms": [],
+     "quote": "For the next 15 seconds, the damage dealt by '''Yasuo's''' {{tip|critical strikes}} ignores {{sti|lethality|{{as|60% of the target's '''bonus''' armor}}}}.",
+     "bin": [
+      "YasuoR.RBuffDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "bonus armor penetration on crits",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "ignores {{sti|lethality|{{as|60% of the target's '''bonus''' armor}}}}",
+     "bin": [
+      "YasuoR.RPercentArmorPen"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The percentage bonus armor ignorance stacks additively with sources of percentage armor penetration.",
+     "quote": "The percentage {{as|'''bonus''' armor}} ignorance stacks additively with sources of {{as|percentage armor penetration}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yasuo gains the bonus armor ignorance on-cast, before the damage is dealt.",
+     "quote": "'''Yasuo''' gains the {{as|'''bonus''' armor}} ignorance on-cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage and forced movement removal both apply only when the airborne effect ends, not on cast.",
+     "quote": "''Last Breath'' applies its damage and removes any forced movement{{bug|2}} on the targets when it ends",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield does not prevent the cast or the knock up and damage, though it is still consumed.",
+     "quote": "{{tip|Spell shield}} will not prevent ''Last Breath'' from being cast and the target will be knocked up and dealt the damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Yasuo is locked out of all actions (attack, move, cast, items, consume, spells) while performing Last Breath.",
+     "quote": "'''Yasuo''' is {{tip|lockout|locked out}} of performing actions.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "YasuoR.RKnockupDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "YasuoR.RRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "YasuoR.RCastSearchRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "Yasuo's total critical strike chance is doubled from all other sources and his crits deal only 95% of normal crit damage; Steel Tempest and Last Breath's crit-affecting damage can crit; Steel Tempest's crit multiplier applies only to its AD-ratio term, not its flat base damage (see unsettled)."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every 1% total critical strike chance in excess of 100% converts into 0.5 bonus AD."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "For 15s after Last Breath, Yasuo's critical strikes ignore 60% of the target's bonus armor (stacks additively with other percent armor pen)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Steel Tempest builds Gathering Storm (max 2 stacks, 6s each, refreshing on hit) which empowers the next Q into a whirlwind; Sweeping Blade builds Ride the Wind (max 4 stacks, 5s each) adding +25% E damage per stack, up to +100% at max stacks."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "At 2 Gathering Storm stacks the next Steel Tempest cast is consumed to become an empowered whirlwind instead of a thrust; against a single target both variants deal the same base+ratio (and crit) damage."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Steel Tempest's cooldown (base 4s) and thrust cast time (base 0.35s) both shrink with Yasuo's bonus attack speed per the wiki's static/custominfo formulas; the bin only lists a flat per-rank 4s cooldown."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Base on-cast/on-impact damage instances: Q's thrust/whirlwind, E's impact damage, R's knockup-resolution damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Way of the Wanderer's Flow shield (125-600 by level, lasting 1s) triggers once 100 Flow stacks are reached and Yasuo takes champion/monster damage; relevant only when Yasuo is the survival-fight target, not to damage dealt."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two mechanics fall outside the closed primitive list's expected shape. (1) Steel Tempest's crit formula (TotalDamageCrit = BaseDamage + (ADRatio x critDamage) x ad) applies the crit multiplier only to the AD-ratio term, not to the flat base damage, unlike the usual whole-instance crit scaling a generic crit-interaction primitive would assume; combined with Yasuo's doubled crit chance, 0.95 crit-damage multiplier, and excess-crit-to-AD conversion, the layered crit math needs bespoke computation rather than a single multiplier. (2) Last Breath's cast requirement (a nearby airborne enemy champion from a genuinely 'enemy' source, excluding self/ally-applied displacement per the wiki notes) creates an open question about whether Yasuo can even cast R off his own Q-whirlwind knockup in a 1v1 dummy fight with no third-party CC; resolving whether R is castable at all, and when, needs bespoke rotation logic rather than a generic plain-cast/target-debuff treatment."
+ },
+ "unsettled": [
+  {
+   "question": "Can Yasuo cast Last Breath (R) on the dummy using his own Steel Tempest whirlwind knock-up, or does R require an airborne source other than Yasuo himself, making R uncastable in a 1v1 fight with no other champion's CC?",
+   "options": [
+    "Yasuo's own Q-whirlwind knockup on the enemy counts as an enemy-applied airborne source (from the target's perspective) and satisfies R's cast requirement, matching the known live-game Q3->R combo",
+    "The wiki's note that self/ally-applied displacements do not qualify excludes Yasuo's own knockup, so R cannot be cast in a pure 1v1 fight without an external CC source"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Last Breath'' requires the target to be affected by {{tip|airborne}} from an {{tt|enemy source|from the target's perspective}}",
+    "Self-applied or allied-applied {{tip|airborne|displacements}} do not allow ''Last Breath'' to target the champion. Those applied by the ''neutral'' team (e.g. {{uis|Dragon}} initial knock back) '''can''' be targeted."
+   ]
+  },
+  {
+   "question": "Is Steel Tempest's crit-damage scaling truly limited to only the AD-ratio portion of its damage (per the bin's explicit formula), or should the whole Q damage instance (base + ratio) be scaled by the crit multiplier as the wiki's single leveling line for 'Critical Strike Damage' might suggest?",
+   "options": [
+    "Only the 105% AD-ratio term is multiplied by crit damage; the flat base damage never benefits from crits, per YasuoQ1Wrapper#TotalDamageCrit = BaseDamage + (ADRatio x critDamage) x ad",
+    "The entire Q damage value (base + AD ratio) is scaled uniformly by the crit multiplier when it crits"
+   ],
+   "impact": "high",
+   "quotes": [
+    "YasuoQ1Wrapper#TotalDamageCrit = BaseDamage=[20/45/70/95/120] + ((ADRatio=1.05)xcritDamage)xad"
+   ]
+  },
+  {
+   "question": "Does Sweeping Blade's per-target cooldown (6-10s by rank, starting on dash-start) gate how often E can be recast on the single dummy target, effectively overriding the much shorter 0.5-0.1s ability cooldown in this fight?",
+   "options": [
+    "Yes: against a lone target E can only be recast once the per-target cooldown (6-10s) expires, so E contributes far less frequently than its raw cooldown implies",
+    "No: the per-target cooldown is a niche anti-stacking rule not meant to bind a single-target dummy simulation, so E should be modeled at its raw 0.5-0.1s cooldown"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{tt|{{ap|10 to 6}}|Starts upon starting the dash}}"
+   ]
+  },
+  {
+   "question": "Do the damage-fight and survival-fight environments let Yasuo move enough to generate Flow stacks (needed for his passive shield), or is he treated as effectively stationary like the dummy so Flow never completes?",
+   "options": [
+    "Yasuo is assumed to move (attack-moving, dashing with E) enough over the ~15s window to reach 100 Flow stacks and gain the shield at least once",
+    "Yasuo, like the dummy, is treated as stationary aside from ability casts, so Flow accumulation is negligible and the shield essentially never triggers within the fight"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Yasuo''' generates a {{tip|stack}} of {{tip|Flow}} for every {{pp|{{#var:f1}} to {{#var:f13}} for 3|1 to 13}} units he travels by any means."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Steel Tempest (Q) on the dummy to start Gathering Storm stacking and apply its on-hit/on-attack effects.",
+   "Auto-attack the dummy continuously, weaving attacks between ability casts and letting Q's on-hit effects and any crit-derived bonus AD apply.",
+   "Cast Sweeping Blade (E) toward the dummy once available to deal its magic damage and build a Ride the Wind stack, respecting its per-target cooldown before recasting it on the same target.",
+   "Recast Steel Tempest (Q) every time its (attack-speed-reduced) cooldown is up; every second hit consumes 2 Gathering Storm stacks to fire the empowered whirlwind instead of the thrust, dealing the same damage against the single target.",
+   "If Last Breath (R) is castable against the dummy (pending the airborne-source ruling), cast it immediately after a Q-whirlwind knockup for its large burst damage and to open the 15s bonus-armor-penetration window on Yasuo's crits, then keep auto-attacking/critting to benefit from that debuff.",
+   "Repeat the Q-on-cooldown / auto-attack / periodic-E loop, using R again if its 30-70s cooldown (rank-dependent) comes back up within the fight window, for the remainder of the ~15s fight."
+  ],
+  "questions": [
+   "Is Last Breath actually castable in this 1v1 dummy scenario given the airborne-source ambiguity, and if not, should R be dropped from the rotation entirely?",
+   "What gear/attack-speed assumption should be used to compute Steel Tempest's reduced cooldown and cast time, since these scale continuously with bonus attack speed rather than by discrete ability rank?",
+   "How should Sweeping Blade's per-target cooldown be handled against a single dummy target: is E cast once as an opener, or repeatedly at its 6-10s per-target cadence throughout the fight?",
+   "Should the rotation prioritize weaving basic attacks between every Q cast (to benefit from on-hit effects) over minimizing ability-cast downtime, or does Q's cast time make pure ability-priority higher DPS?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

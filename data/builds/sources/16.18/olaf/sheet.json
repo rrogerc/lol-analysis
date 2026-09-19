@@ -1,0 +1,590 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "OlafBerzerkerRage",
+    "key": "Characters/Olaf/Spells/OlafBerzerkerRageAbility/OlafBerzerkerRage",
+    "cooldown": 0,
+    "dataValues": {
+     "AttackSpeedPerMissingHPPerc": 0.009,
+     "MaxStatsThreshold": 0.3
+    },
+    "calcs": {
+     "MaxAttackSpeed": {
+      "expr": "byLevel(0.5..1)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.5,
+        0.5294118,
+        0.5588235,
+        0.5882353,
+        0.61764706,
+        0.64705882,
+        0.6764706,
+        0.7058824,
+        0.7352941,
+        0.7647059,
+        0.7941176,
+        0.8235294,
+        0.85294118,
+        0.88235294,
+        0.9117647,
+        0.9411765,
+        0.9705882,
+        1
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "MaxLifeSteal": {
+      "expr": "byLevel(0.08..0.25)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.08,
+        0.08999999831704532,
+        0.1,
+        0.11,
+        0.12,
+        0.13,
+        0.14,
+        0.15,
+        0.16,
+        0.17,
+        0.17999999926370733,
+        0.19,
+        0.2,
+        0.21,
+        0.22,
+        0.23,
+        0.24,
+        0.25
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "OlafAxeThrowCast",
+    "key": "Characters/Olaf/Spells/OlafAxeThrowCastAbility/OlafAxeThrowCast",
+    "cooldown": 9,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinimumRange": 425,
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "ShredAmount": 0.2,
+     "DebuffDuration": 4,
+     "MinimumCooldown": 2.5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       120,
+       170,
+       220,
+       270
+      ]
+     },
+     "MonsterDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       45,
+       70,
+       95,
+       120
+      ]
+     },
+     "MaxSlowDuration": 3,
+     "MinSlowDuration": 1,
+     "MaxSlowDistance": 800,
+     "MinSlowDistance": 400
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/120/170/220/270] + 1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        120,
+        170,
+        220,
+        270
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TooltipCDRefund": {
+      "expr": "(MinimumCooldown=2.5) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "MinimumCooldown"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "OlafFrenziedStrikes",
+    "key": "Characters/Olaf/Spells/OlafFrenziedStrikesAbility/OlafFrenziedStrikes",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Attackspeed": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.5,
+       0.6,
+       0.7,
+       0.8
+      ]
+     },
+     "Duration": 5,
+     "ShieldPercMissingHP": 0.175,
+     "ShieldDuration": 2.5,
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       10,
+       40,
+       70,
+       100,
+       130
+      ]
+     },
+     "ThresholdForMax": 0.3
+    },
+    "calcs": {
+     "ShieldCalc": {
+      "expr": "BaseShield=[10/40/70/100/130] + ((ShieldPercMissingHP=0.175)xmaxHp)xstat16?",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BaseShield",
+       "ShieldPercMissingHP"
+      ]
+     },
+     "MaxShieldCalc": {
+      "expr": "BaseShield=[10/40/70/100/130] + ((ShieldPercMissingHP=0.175)*(1 + (-1)*(ThresholdForMax=0.3)))xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        40,
+        70,
+        100,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.1225
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldPercMissingHP",
+       "ThresholdForMax"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "OlafRecklessStrike",
+    "key": "Characters/Olaf/Spells/OlafRecklessStrikeAbility/OlafRecklessStrike",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10,
+      9,
+      8,
+      7
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Cast_Time_Base": 0.25,
+     "Cast_Time_Min": 0.175,
+     "Cast_Time_Attack_Speed_Cap": 125,
+     "ADRatio": 0.5,
+     "BaseHealthCost": {
+      "axis": "rank",
+      "v": [
+       28,
+       46,
+       64,
+       82,
+       100
+      ]
+     },
+     "HealthCostADRatio": 0.2,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       115,
+       160,
+       205,
+       250
+      ]
+     },
+     "HealthCostPercent": 0.4,
+     "MonsterRefresh": 2,
+     "ChampionRefresh": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/115/160/205/250] + 0.5xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        115,
+        160,
+        205,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{fcf1daee}": {
+      "expr": "BaseHealthCost=[28/46/64/82/100] + (HealthCostADRatio=0.2)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        28,
+        46,
+        64,
+        82,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "HealthCostADRatio"
+       }
+      ],
+      "refs": [
+       "BaseHealthCost",
+       "HealthCostADRatio"
+      ]
+     },
+     "HealthCostCalc": {
+      "expr": "TotalDamage * HealthCostPercent=0.4",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        28,
+        46,
+        64,
+        82,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "HealthCostPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "OlafRagnarok",
+    "key": "Characters/Olaf/Spells/OlafRagnarokAbility/OlafRagnarok",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      90,
+      80
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Resists": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20
+      ]
+     },
+     "Duration": 3,
+     "FlatAD": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30
+      ]
+     },
+     "PercentTotalADAmp": 0.25,
+     "HasteDuration": 1,
+     "Haste": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.45,
+       0.7
+      ]
+     },
+     "DurationExtension": 2.5
+    },
+    "calcs": {
+     "AD": {
+      "expr": "FlatAD=[10/20/30] + (PercentTotalADAmp=0.25)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "PercentTotalADAmp"
+       }
+      ],
+      "refs": [
+       "FlatAD",
+       "PercentTotalADAmp"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "OlafAxeThrowCast",
+  "W": "OlafFrenziedStrikes",
+  "E": "OlafRecklessStrike",
+  "R": "OlafRagnarok",
+  "P": "OlafBerzerkerRage"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 316,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.5,
+   "{3a509002}": 0.12
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.065625
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Olaf",
+  "name": "Olaf",
+  "partype": "Mana",
+  "passive": "Berserker Rage",
+  "spells": [
+   {
+    "id": "OlafAxeThrowCast",
+    "name": "Undertow",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "OlafFrenziedStrikes",
+    "name": "Tough It Out",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "OlafRecklessStrike",
+    "name": "Reckless Swing",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "OlafRagnarok",
+    "name": "Ragnarok",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     90,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Berserker Rage": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Undertow": {
+    "damagetype": "Physical",
+    "spelleffects": "Aoe",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Tough It Out": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Reckless Swing": {
+    "damagetype": "True",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "{{as|Health}}"
+   }
+  },
+  "R": {
+   "Ragnarok": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "mana"
+   }
+  }
+ }
+}

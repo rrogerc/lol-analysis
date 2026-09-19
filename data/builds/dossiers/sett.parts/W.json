@@ -1,0 +1,227 @@
+{
+ "name": "Haymaker",
+ "cooldown": {
+  "values": [
+   18,
+   16.5,
+   15,
+   13.5,
+   12
+  ],
+  "quote": "{{ap|18 to 12}}"
+ },
+ "cost": {
+  "values": [
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "quote": "100%",
+  "resource": "'''current''' grit"
+ },
+ "castTime": {
+  "value": 0.75,
+  "quote": "{{fd|0.75}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    80,
+    100,
+    120,
+    140,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "other",
+     "coef": 0.25,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.25
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|80 to 160}} (+ 25% {{as|(+ 25% per 100 '''bonus''' AD)}} of expended ''Grit'')",
+   "bin": [
+    "SettW#DamageCalc",
+    "SettW#DamageConversion"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Grit shield decay start delay",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "decaying in strength over the duration after {{fd|0.75}} seconds",
+   "bin": [
+    "SettW.ShieldDecayDelay"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Shield total duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "grant himself a {{tip|shield}} at the start of the cast time that is equal to the expended ''Grit'' for 3 seconds",
+   "bin": [
+    "SettW.ShieldMaxDuration"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Grit shield conversion (percent of stored Grit converted to shield)",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "consumes all of his stored ''Grit'' to grant himself a {{tip|shield}}... equal to the expended ''Grit''",
+   "bin": [
+    "SettW.ShieldConversion"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Grit cap as percent of maximum health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "up to a cap of {{as|50% of his '''maximum''' health}}",
+   "bin": [
+    "SettW.StoredHealth"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Passive: Grit stored as percent of post-mitigation damage taken",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "stores 100% of {{tt|post-mitigation damage...}} taken as ''Grit''",
+   "bin": [
+    "SettW.DamageStored"
+   ]
+  },
+  {
+   "id": "w_7",
+   "meaning": "Grit decay rate per second (after 4 second delay)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "Each instance of stored ''Grit'' decays in value by 30% every second after 4 seconds.",
+   "bin": [
+    "SettW.ResourceDecayRate"
+   ]
+  },
+  {
+   "id": "w_8",
+   "meaning": "Grit decay delay before it starts decaying",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "decays in value by 30% every second after 4 seconds",
+   "bin": [
+    "SettW.AdrenalineStorageWindow"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Enemies hit in the middle line take true damage instead of physical damage.",
+   "quote": "those hit in a line in the middle are dealt {{ccs|{{sti|{{as|true damage}}}}|true}} instead.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The damage dealt scales with the amount of Grit expended, which is consumed at the start of the cast time.",
+   "quote": "he immediately consumes all of his stored ''Grit'' to grant himself a {{tip|shield}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Sett does not store Grit from damage mitigated by shields.",
+   "quote": "'''Sett''' does not store ''Grit'' from damage that was mitigated by {{tip|shield|shields}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The blast and damage occur only after the cast time ends.",
+   "quote": "After the cast time, he unleashes a massive blast in an area in the target direction, dealing {{as|physical damage}} to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The shield is granted at the start of the cast time and decays after 0.75 seconds.",
+   "quote": "The shield is granted at the start of the cast time and will decay afterwards.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SettW.DamageAmp",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "SettW.Duration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettW.MovementSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "SettW.MSDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "SettW.GreyHealthDuration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettW.LockTime",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SettW.DamageConversionBase",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SettW.EnrageDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SettW.EnrageHealingMult",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SettW.EnrageADMult",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SettW.EnrageArmorPen",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

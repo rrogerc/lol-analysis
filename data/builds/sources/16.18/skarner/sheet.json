@@ -1,0 +1,567 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SkarnerPassive",
+    "key": "Characters/Skarner/Spells/SkarnerPassiveAbility/SkarnerPassive",
+    "dataValues": {
+     "StacksToTriggerPassive": 3,
+     "Duration": 4,
+     "TickFrequency": 0.5
+    },
+    "calcs": {
+     "PercentHealthDamage": {
+      "expr": "(byLevel(5..9)) * 0.01",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.05,
+        0.0523529412,
+        0.05470588,
+        0.057058824,
+        0.059411765000000005,
+        0.061764706,
+        0.06411765,
+        0.06647059,
+        0.06882353,
+        0.07117647,
+        0.07352941,
+        0.07588235,
+        0.07823529,
+        0.08058824,
+        0.08294118,
+        0.08529412,
+        0.08764706,
+        0.09
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "DamageMonsterCap": {
+      "expr": "byLevel(100..300)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        100,
+        111.76471,
+        123.52941,
+        135.29412,
+        147.05882,
+        158.82353,
+        170.58824,
+        182.35294,
+        194.11765,
+        205.88235,
+        217.64706,
+        229.41176,
+        241.17647,
+        252.94118,
+        264.70588,
+        276.47059,
+        288.2353,
+        300
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SkarnerQ",
+    "key": "Characters/Skarner/Spells/SkarnerQAbility/SkarnerQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      6.75,
+      5.5,
+      4.25,
+      3
+     ]
+    },
+    "cost": 30,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RockHoldDuration": 5,
+     "AttackRadius": 300,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "MaxHPPercent": 0.11,
+     "SlowDuration": 1,
+     "SlowPercent": 0.4,
+     "MonsterDamageCap": {
+      "axis": "rank",
+      "v": [
+       150,
+       200,
+       250,
+       300,
+       350
+      ]
+     },
+     "AttackRange": 25,
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "BonusHealthRatio": 0.03,
+     "ADRatio": 0.9,
+     "TurretDamageMod": 1
+    },
+    "calcs": {
+     "AbilityDamage": {
+      "expr": "BaseDamage=[10/20/30/40/50] + (ADRatio=0.9)xbonus ad + (BonusHealthRatio=0.03)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30,
+        40,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.03,
+        "dataValue": "BonusHealthRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage",
+       "BonusHealthRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SkarnerW",
+    "key": "Characters/Skarner/Spells/SkarnerWAbility/SkarnerW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       70,
+       90,
+       110,
+       130
+      ]
+     },
+     "DamageAPRatio": 0.8,
+     "InitialShieldRatio": 0.08,
+     "ShieldDuration": 2.5,
+     "SlowEffect": -0.2,
+     "SlowDuration": 1
+    },
+    "calcs": {
+     "InitialShield": {
+      "expr": "(InitialShieldRatio=0.08)xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.08,
+        "dataValue": "InitialShieldRatio"
+       }
+      ],
+      "refs": [
+       "InitialShieldRatio"
+      ]
+     },
+     "Damage": {
+      "expr": "BaseDamage=[50/70/90/110/130] + (DamageAPRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        70,
+        90,
+        110,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SkarnerE",
+    "key": "Characters/Skarner/Spells/SkarnerEAbility/SkarnerE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      21,
+      20,
+      19,
+      18
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "dataValues": {
+     "ChargeDuration": 2.75,
+     "InitialSpeed": 150,
+     "Acceleration": 100,
+     "MaximumSpeed": 950,
+     "GrabHitboxRadius": 160,
+     "GrabHitboxOffset": 90,
+     "WallRevealRadius": 650,
+     "WallWarningRadius": 1750,
+     "GrabbedMoveSpeedBonus": 200,
+     "MinGrabbedSpeed": 650,
+     "DistancePostGrab": 675,
+     "StunDuration": 1.1,
+     "PinBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       60,
+       90,
+       120,
+       150
+      ]
+     },
+     "ADRatio": 1.2,
+     "PinDamageRatio": 0.06,
+     "VictimOffsetIncrease": 200,
+     "RefundPercent": 0.65,
+     "MinimumQRenew": 1.5,
+     "InitialHitboxRadius": 160,
+     "InitialHitboxOffset": 90,
+     "SecondHitboxDelay": 0.3,
+     "SecondHitboxRadius": 100,
+     "SecondHitboxOffset": 150,
+     "FinalHitboxDelay": 0.4
+    },
+    "calcs": {
+     "PinDamage": {
+      "expr": "PinBaseDamage=[30/60/90/120/150] + (ADRatio=1.2)xbonus ad + (PinDamageRatio=0.06)xmaxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        60,
+        90,
+        120,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.06,
+        "dataValue": "PinDamageRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "PinBaseDamage",
+       "PinDamageRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SkarnerR",
+    "key": "Characters/Skarner/Spells/SkarnerRAbility/SkarnerR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      105,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BackwardOffset": 50,
+     "HitboxStartHalfWidth": 175,
+     "HitboxEndHalfWidth": 100,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "Duration": 1.5,
+     "HoldDistance": 300,
+     "SpeedBoostAmount": 0.4,
+     "SpeedBoostDuration": 1.5,
+     "DropDistance": 200
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[150/250/350] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SkarnerQ",
+  "W": "SkarnerW",
+  "E": "SkarnerE",
+  "R": "SkarnerR",
+  "P": "SkarnerPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 320,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.44,
+   "{3a509002}": 0.15
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Skarner",
+  "name": "Skarner",
+  "partype": "Mana",
+  "passive": "Threads of Vibration",
+  "spells": [
+   {
+    "id": "SkarnerQ",
+    "name": "Shattered Earth / Upheaval",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     6.75,
+     5.5,
+     4.25,
+     3
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "SkarnerW",
+    "name": "Seismic Bastion",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "SkarnerE",
+    "name": "Ixtal's Impact",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "SkarnerR",
+    "name": "Impale",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     105,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Threads of Vibration": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "spellshield": "special",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Shattered Earth": {
+    "damagetype": "Physical",
+    "spelleffects": "proc",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   },
+   "Upheaval": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Seismic Bastion": {
+    "damagetype": "Magical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Ixtal's Impact": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "targeting": "Direction",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Impale": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

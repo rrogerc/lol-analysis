@@ -1,0 +1,794 @@
+{
+ "champion": "kogmaw",
+ "abilities": {
+  "P": {
+   "name": "Icathian Surprise",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "explosion true damage on death",
+     "role": "damage",
+     "damageType": "true",
+     "by": "level",
+     "base": [
+      140,
+      172,
+      204,
+      236,
+      268,
+      300,
+      332,
+      364,
+      396,
+      428,
+      460,
+      492,
+      524,
+      556,
+      588,
+      620,
+      635,
+      650
+     ],
+     "terms": [],
+     "quote": "{{as|{{pplevel|140 to 650}} true damage}}",
+     "bin": [
+      "KogMawIcathianSurpriseReady#PassiveDamage"
+     ],
+     "binNote": "wiki's pplevel interpolation (140 to 650, presumably steps of 30 with two half-steps at the end) differs from the bin's byLevel array (140,170,200,...,650, steps of 30 throughout); disagreement in intermediate levels (e.g. lvl17: wiki 635 vs bin 620), reporting wiki's stated number per instructions"
+    },
+    {
+     "id": "p_2",
+     "meaning": "zombie state duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "'''Kog'Maw''' enters a {{tip|zombie state}} for 4 seconds",
+     "bin": [
+      "KogMawIcathianSurpriseReady.TooltipPassiveDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "starting bonus movement speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "gaining {{sti|ms|{{as|10% '''bonus''' movement speed}}}}",
+     "bin": [],
+     "binNote": "no bin row for starting MS value found; TooltipPassiveMS=0.5 likely represents a different rate field, not directly matching 10%"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Kog'Maw becomes invulnerable, untargetable, and CC-immune during the zombie state but cannot act.",
+     "quote": "becomes {{tip|invulnerability|invulnerable}}, {{tip|untargetable}}, and {{tip|cc-immune|immune to crowd control}}, but is also rendered unable to declare {{tip|basic attacks}}, cast {{tip|abilities}}, use [[summoner spell]]s, and [[active ability items|activate items]]",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The explosion deals true damage to nearby enemies at the end of the duration, not on death.",
+     "quote": "At the end of the duration, he explodes to deal {{sti|true damage|{{as|{{pplevel|140 to 650}} true damage}}}} to nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion has an area of effect radius of 400.",
+     "quote": "{{tip|cr|icononly = true}} 400",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KogMawIcathianSurpriseReady.TooltipPassiveMS",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Caustic Spittle",
+   "cooldown": {
+    "values": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "quote": "7"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "Basic attack timer"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25
+     ],
+     "terms": [],
+     "quote": "{{ap|5 to 25}}%",
+     "bin": [
+      "KogMawQ.AttackSpeed"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      125,
+      170,
+      215,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|80 to 260}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "KogMawQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Resistances Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      16,
+      20,
+      24,
+      28,
+      32
+     ],
+     "terms": [],
+     "quote": "{{ap|16 to 32}}%",
+     "bin": [
+      "KogMawQ.ShredAmount"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Resistances Reduction duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "KogMawQ.ShredDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Caustic Spittle deals magic damage to the first enemy hit and reduces their armor and magic resistance for 4 seconds.",
+     "quote": "deals {{as|magic damage}} to the first enemy hit and reduces their {{sti|armor penetration|{{as|armor}}}} and {{sti|magic penetration|{{as|magic resistance}}}} for 4 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Kog'Maw passively gains bonus attack speed while this ability is unlocked.",
+     "quote": "'''Kog'Maw''' gains {{sti|{{as|'''bonus''' attack speed}}}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Bio-Arcane Barrage",
+   "cooldown": {
+    "values": [
+     17,
+     17,
+     17,
+     17,
+     17
+    ],
+    "quote": "17"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_2",
+     "meaning": "Bonus Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      3,
+      3.75,
+      4.5,
+      5.25,
+      6
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.03,
+        0.0375,
+        0.045,
+        0.0525,
+        0.06
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.015
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|3 to 6}}% {{as|(+ {{fd|1.5}}% per 100 AP)}} of target's '''maximum''' health}}",
+     "bin": [
+      "KogMawBioArcaneBarrage#TotalHealthDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Duration of empowered attacks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "for the next 8 seconds",
+     "bin": [
+      "KogMawBioArcaneBarrage.Duration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Damage cap against minions and monsters",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 100,
+     "terms": [],
+     "quote": "capped at 100 against {{tip|minion|minions}} and {{tip|monster|monsters}}",
+     "bin": [
+      "KogMawBioArcaneBarrage.MonsterDamageCap"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bonus damage applies on-hit with basic attacks, not as a separate spell cast.",
+     "quote": "empowers his [[basic attack]]s for the next 8 seconds to gain {{sti|range|'''bonus''' attack range}} and deal {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage does not apply against structures.",
+     "quote": "The attacks do not deal the '''bonus''' damage against [[structures]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown begins when the ability is cast, not when the duration ends.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KogMawBioArcaneBarrage.MaxHealthDamage",
+     "reason": null
+    },
+    {
+     "ref": "KogMawBioArcaneBarrage.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "KogMawBioArcaneBarrage.Range",
+     "reason": "utility"
+    },
+    {
+     "ref": "KogMawBioArcaneBarrage.Duration",
+     "reason": null
+    },
+    {
+     "ref": "KogMawBioArcaneBarrage.MonsterDamageCap",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Void Ooze",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     40,
+     55,
+     70,
+     85,
+     100
+    ],
+    "quote": "{{ap|40 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "KogMawVoidOoze#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration of the ooze field left behind",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "A field of ooze is created in its wake for 3 seconds",
+     "bin": [
+      "KogMawVoidOoze.TrailDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "tick interval of the ooze field's slow",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "slowing enemies within the area every {{fd|0.25}} seconds",
+     "bin": [
+      "KogMawVoidOoze.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability is a skillshot projectile that deals magic damage to enemies it hits, then leaves an ooze field behind that slows.",
+     "quote": "Kog'Maw spews a gob of ooze in the target direction that deals {{as|magic damage}} to enemies hit.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KogMawVoidOoze.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "KogMawVoidOoze.SlowAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Living Artillery",
+   "cooldown": {
+    "values": [
+     2,
+     1.5,
+     1
+    ],
+    "quote": "{{ap|2 to 1}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40
+    ],
+    "quote": "{{pp|type=stacks|40 to 400 for 10|0 to 9}}",
+    "resource": "mana",
+    "binNote": "Base cost is 40 mana at all ranks (KogMawLivingArtillery.BaseCost); the wiki's quoted 40 to 400 range is the stack-based surcharge (+40 mana per stack, up to 9 stacks, cap 400), not a per-rank value."
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Minimum Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      140,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.75
+      },
+      {
+       "stat": "ap",
+       "coef": [
+        0.35,
+        0.4,
+        0.45
+       ]
+      }
+     ],
+     "quote": "{{ap|100 to 180}} {{as|(+ 75% '''bonus''' AD)}} {{as|(+ {{ap|35 to 45}}% AP)}}",
+     "bin": [
+      "KogMawLivingArtillery#BaseDamageCalc"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "damage amplification based on target's missing health, capped at 60% missing health",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 0.8333
+      }
+     ],
+     "quote": "{{as|{{pp|type=target's '''missing''' health|key=%|0 to 50 for 11|key1=%|0 to 60|formula=0.833% per 1% of target's '''missing''' health. ''This is capped at 50% increase at 60% '''missing''' health.''}}|health}}",
+     "bin": [
+      "KogMawLivingArtillery.TooltipMissingHealthDamageAmp"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "damage is doubled instead if the target is below 40% maximum health",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      2
+     ],
+     "terms": [],
+     "quote": "or instead by {{ccs|100%|magic}} if the target is below {{as|40% '''maximum''' health}}",
+     "bin": [
+      "KogMawLivingArtillery.FinalDamageMult"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "stack cap for Living Artillery",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 9,
+     "terms": [],
+     "quote": "refreshing on subsequent casts and stacking up to 9 times",
+     "bin": [],
+     "binNote": "No bin row names the stack cap directly; it is only inferable from ManaCostCap=400 divided by the 40-mana-per-stack surcharge (BaseCost)."
+    },
+    {
+     "id": "r_6",
+     "meaning": "duration of a Living Artillery stack before it expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "'''Kog'Maw''' then generates a {{tip|stack}} of ''Living Artillery'' for 8 seconds",
+     "bin": [
+      "KogMawLivingArtillery.ManaCostDuration"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "mana cost increase per stack of Living Artillery",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [],
+     "quote": "''Living Artillery's'' {{sti|{{as|mana cost}}}} is increased by {{as|40|mana}}",
+     "bin": [
+      "KogMawLivingArtillery.BaseCost"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The acid globule drops and deals damage 0.6 seconds after cast, not instantly.",
+     "quote": "spits a globule of acid into the air that drops to the target location after {{fd|0.6}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage scales up to a 50% bonus at 60% missing health, but is replaced entirely by a flat 100% (double) bonus if the target is below 40% maximum health, rather than the two bonuses stacking.",
+     "quote": "or instead by {{ccs|100%|magic}} if the target is below {{as|40% '''maximum''' health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each cast refreshes the Living Artillery stack duration and adds a stack, up to 9, each stack permanently raising the ability's mana cost until it expires.",
+     "quote": "'''Kog'Maw''' then generates a {{tip|stack}} of ''Living Artillery'' for 8 seconds, refreshing on subsequent casts and stacking up to 9 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Living Artillery can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KogMawLivingArtillery.Range",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "KogMawLivingArtillery.ManaCostCap",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KogMawLivingArtillery.VisionDebuffDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "KogMawLivingArtillery.MaxExtraCost",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "KogMawLivingArtillery.VisionRadius",
+     "reason": "utility"
+    },
+    {
+     "ref": "KogMawLivingArtillery.MidDamageMult",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bio-Arcane Barrage empowers basic attacks with bonus magic damage based on target max health for 8s duration"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "next 8s of basic attacks gain range and the on-hit magic damage rider"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Caustic Spittle's passive grants Kog'Maw bonus attack speed continuously (unlocked, not activated)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q shreds target's armor and magic resistance for 4s"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Void Ooze leaves a ground field for 3s that ticks a slow every 0.25s (no damage tick, but treated as ticking zone for slow only; no repeat damage)"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q and E deal damage on a fixed short delay after cast, on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Living Artillery is cast repeatedly (fast cooldown) as a separately-timed damage instance each time, not a true recast chain but multiple discrete casts"
+  },
+  {
+   "id": "ramping-per-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "each R cast adds a mana-cost-increasing stack (up to 9), raising cost per subsequent cast"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Living Artillery stacks (cost surcharge) accumulate with cap 9 and refresh/expire on an 8s timer"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all abilities, especially R's ramping cost, meaningfully limit casts within 15s"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R damage scales with target's missing health (up to +50% at 60% missing) or is doubled outright below 40% max health"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a 0.6s travel/delay before impact, distinct fixed delay per cast"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "the 40% max-health threshold triggering doubled damage is a threshold-based damage step"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Icathian Surprise zombie-state invulnerability/movement speed is defensive/irrelevant to a damage-dealing dummy fight; only the on-death explosion could matter but requires Kog'Maw to die, which a damage fight (dummy doesn't fight back) never triggers"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All mechanics that matter for the damage fight (onhit rider, empowered attacks, target debuffs, ramping mana cost with stacks, missing-health/threshold conditional damage on R, self attack-speed buff) are expressible with the closed list of primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Does Void Ooze's ground trail deal any repeat damage, or only apply the slow (no additional damage ticks)?",
+   "options": [
+    "The trail only slows and deals no further damage (matches both sources: only a single upfront hit is described as dealing damage)",
+    "The trail secretly deals damage per tick (unconfirmed, no bin/wiki damage value exists for it)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "A field of ooze is created in its wake for 3 seconds, {{tip|slow|slowing}} enemies within the area every {{fd|0.25}} seconds."
+   ]
+  },
+  {
+   "question": "Does Living Artillery's missing-health damage amplification (up to +50%) and the 40%-max-health double (+100%) stack additively/multiplicatively, or does the flat double simply override the missing-health scaling entirely when triggered?",
+   "options": [
+    "The 100% bonus below 40% max health completely replaces the missing-health scaling (mechanics note states 'instead')",
+    "The two amplifications could combine (e.g., missing-health bonus applies up to the threshold, then switches) -- not explicitly ruled out by wording alone"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Living Artillery's damage is increased by {{as|{{pp|...}}|health}}, or instead by {{ccs|100%|magic}} if the target is below {{as|40% '''maximum''' health}}."
+   ]
+  },
+  {
+   "question": "For a full-duration 15s dummy fight, how many R stacks (mana surcharge) does the simulator assume Kog'Maw has built up when computing sustained cast rate — starting from 0 stacks, or already capped at 9?",
+   "options": [
+    "Start at 0 stacks and ramp up over the fight (realistic opener)",
+    "Assume steady-state / capped 9 stacks throughout for a 'sustained DPS' comparison"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Kog'Maw''' then generates a {{tip|stack}} of ''Living Artillery'' for 8 seconds, refreshing on subsequent casts and stacking up to 9 times.",
+    "For each stack, ''Living Artillery's'' {{sti|{{as|mana cost}}}} is increased by {{as|40|mana}}."
+   ]
+  },
+  {
+   "question": "Does Bio-Arcane Barrage's bonus on-hit damage apply on every basic attack during its 8s window, or is it capped to a limited number of attacks (e.g. one empowered attack) as 'empowers his basic attacks' could be read either way?",
+   "options": [
+    "Applies to every basic attack landed during the full 8s duration (matches 'for the next 8 seconds' wording, standard reading)",
+    "Only empowers a limited number of attacks (not supported by sources, but flagged since 'empowered-attack' primitive usually implies a single/limited arming)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "empowers his [[basic attack]]s for the next 8 seconds to gain {{sti|range|'''bonus''' attack range}} and deal {{as|'''bonus''' magic damage}} {{tip|on-hit}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-cast: activate Bio-Arcane Barrage (W) immediately to arm basic attacks with the max-health on-hit magic damage for its 8s window.",
+   "Open with Void Ooze (E) on cooldown for its upfront magic damage plus the armor/magic-resist shred setup (via Q) to maximize follow-up damage.",
+   "Cast Caustic Spittle (Q) on cooldown to apply the resistance shred and take advantage of its own attack-speed passive that is always active once ranked.",
+   "Auto-attack continuously between casts (basic attack timer applies to Q), benefiting from W's on-hit damage and Q's attack-speed passive.",
+   "Cast Living Artillery (R) on cooldown as mana allows, prioritizing casts before the stacking mana surcharge (ramping-per-cast) makes further casts unaffordable; re-cast W when its 17s cooldown comes up again mid-fight.",
+   "Re-apply E and Q on cooldown throughout the 15s window, weaving them between auto-attacks to keep the resistance shred active continuously on the dummy."
+  ],
+  "questions": [
+   "Should R be cast as fast as its 1-2s cooldown allows (spamming until mana runs out), or held back to avoid stacking cost so high that mana is exhausted before the fight ends?",
+   "Is mana treated as effectively unlimited for this simulated dummy fight (i.e., does the simulator assume max mana/mana regen items), or is realistic base mana pool assumed, which would materially cap R casts given its ramping cost?",
+   "Does the target dummy's health ever drop below the 40% and 60% missing-health thresholds during the fight, which would change which R damage tier applies over the course of the 15s (relevant since damage ranks in the sim are based on kill time against varying dummy health)?",
+   "Should the rotation prioritize W's on-hit rider (scales with target max HP, best against high-HP dummy) over spamming R, or is R generally the higher DPS component to prioritize?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

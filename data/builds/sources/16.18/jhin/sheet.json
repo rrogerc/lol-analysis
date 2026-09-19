@@ -1,0 +1,642 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "JhinPassive",
+    "key": "Characters/Jhin/Spells/JhinPassiveAbility/JhinPassive",
+    "dataValues": {
+     "MaxAmmo": 4,
+     "ReloadTime": 2.5,
+     "HasteDuration": 2,
+     "OutOfCombatTimeBeforeReload": 8,
+     "FourthShotDamageMult": 1.5,
+     "CritReductionPercent": 0.25,
+     "BaseAttackSpeed": 0.625,
+     "PercentAttackSpeedPerLevel": 0.03,
+     "CritMoveSpeedPercentASRatio": 0.44
+    },
+    "calcs": {
+     "FourthShotExecutePercent": {
+      "expr": "byLevelL[0.15/0.15/0.15/0.15/0.15/0.2/0.2/0.2/0.2/0.2/0.25/0.25/0.25/0.25/0.25/0.25/0.25/0.25]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "TotalADPercent": {
+      "expr": "byLevelL[0.04/0.05/0.06/0.07/0.08/0.09/0.1/0.11/0.12/0.14/0.16/0.2/0.24/0.28/0.32/0.36/0.4/0.44] + 0.35xcritChance + 0.3xbonus attackWindup?",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.04,
+        0.04999999888241291,
+        0.06,
+        0.07,
+        0.08,
+        0.08999999798834324,
+        0.09999999776482582,
+        0.11,
+        0.12,
+        0.14,
+        0.16,
+        0.19999999552965164,
+        0.24,
+        0.28,
+        0.32,
+        0.35999999,
+        0.39999999,
+        0.44
+       ]
+      },
+      "terms": [
+       {
+        "stat": "critChance",
+        "scope": "total",
+        "coef": 0.35
+       },
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 0.3
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "CritMoveSpeedPercent": {
+      "expr": "0.14 + (CritMoveSpeedPercentASRatio=0.44)xbonus attackWindup?",
+      "flat": 0.14,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 0.44,
+        "dataValue": "CritMoveSpeedPercentASRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "CritMoveSpeedPercentASRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "JhinQ",
+    "key": "Characters/Jhin/Spells/JhinQAbility/JhinQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6.5,
+      6,
+      5.5,
+      5
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       44,
+       69,
+       94,
+       119,
+       144
+      ]
+     },
+     "ADRatio": {
+      "axis": "rank",
+      "v": [
+       0.44,
+       0.515,
+       0.59,
+       0.665,
+       0.74
+      ]
+     },
+     "PercentAmpOnKill": 0.35,
+     "NumberOfBounces": 3,
+     "BounceRange": 450
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[44/69/94/119/144] + (ADRatio=[0.44/0.515/0.59/0.665/0.74])xad + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        44,
+        69,
+        94,
+        119,
+        144
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.44,
+          0.515,
+          0.59,
+          0.665,
+          0.74
+         ]
+        },
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "TooltipMaxTargetsHit": {
+      "expr": "1 + 3",
+      "flat": 4,
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "JhinW",
+    "key": "Characters/Jhin/Spells/JhinWAbility/JhinW",
+    "cooldown": 12,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       105,
+       140,
+       175,
+       210
+      ]
+     },
+     "RootDuration": {
+      "axis": "rank",
+      "v": [
+       1.25,
+       1.5,
+       1.75,
+       2,
+       2.25
+      ]
+     },
+     "MinionMod": 0.75,
+     "SpottingDuration": 4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/105/140/175/210] + 0.5xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        105,
+        140,
+        175,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "JhinE",
+    "key": "Characters/Jhin/Spells/JhinEAbility/JhinE",
+    "cooldown": 2,
+    "cost": 30,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AmmoRechargeRateBaseTooltip": {
+      "axis": "rank",
+      "v": [
+       24,
+       21.5,
+       19,
+       16.5,
+       14
+      ]
+     },
+     "TrapSlowAmount": 0.35,
+     "ReducedDamagePercent": 0.65,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       80,
+       140,
+       200,
+       260
+      ]
+     },
+     "TrapDuration": 3,
+     "TrapAoERadius": 260,
+     "TrapTriggerRadius": 160,
+     "TrapDetonationTime": 2,
+     "TrapRevealDuration": 4,
+     "TrapArmTime": 0.75
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/80/140/200/260] + 1.2xad + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        80,
+        140,
+        200,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.2
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "AmmoRechargeRateTooltip": {
+      "expr": "AmmoRechargeRateBaseTooltip=[24/21.5/19/16.5/14] + (1xcooldownReduction?)*(AmmoRechargeRateBaseTooltip=[24/21.5/19/16.5/14])",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        24,
+        21.5,
+        19,
+        16.5,
+        14
+       ]
+      },
+      "terms": [
+       {
+        "stat": "cooldownReduction?",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          24,
+          21.5,
+          19,
+          16.5,
+          14
+         ]
+        }
+       }
+      ],
+      "refs": [
+       "AmmoRechargeRateBaseTooltip"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "JhinR",
+    "key": "Characters/Jhin/Spells/JhinRAbility/JhinR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      105,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       64,
+       128,
+       192
+      ]
+     },
+     "FourthShotMultiplier": 2,
+     "SlowPercent": 0.8,
+     "SlowDuration": 0.5,
+     "PercentMissingAmp": 3,
+     "MInimumDelayBetweenShots": 1,
+     "ADRatio": 0.25
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "Damage=[64/128/192] + (ADRatio=0.25)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        64,
+        128,
+        192
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "Damage"
+      ]
+     },
+     "MaxIncreaseCalc": {
+      "expr": "DamageCalc * 1 + PercentMissingAmp=3",
+      "modifies": "DamageCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        256,
+        512,
+        768
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "Damage",
+       "PercentMissingAmp"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "JhinQ",
+  "W": "JhinW",
+  "E": "JhinE",
+  "R": "JhinR",
+  "P": "JhinPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Jhin",
+  "name": "Jhin",
+  "partype": "Mana",
+  "passive": "Whisper",
+  "spells": [
+   {
+    "id": "JhinQ",
+    "name": "Dancing Grenade",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6.5,
+     6,
+     5.5,
+     5
+    ],
+    "cost": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ]
+   },
+   {
+    "id": "JhinW",
+    "name": "Deadly Flourish",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "JhinE",
+    "name": "Captive Audience",
+    "maxrank": 5,
+    "cooldown": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "JhinR",
+    "name": "Curtain Call",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     105,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Whisper": {
+    "damagetype": "Physical",
+    "spelleffects": "Proc",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Dancing Grenade": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Deadly Flourish": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Caught Out": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Captive Audience": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "Special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana + 1 Charge"
+   }
+  },
+  "R": {
+   "Curtain Call": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Curtain Call 2": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Curtain Call 3": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

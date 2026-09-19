@@ -1,0 +1,203 @@
+{
+ "name": "Thunderclap",
+ "cooldown": {
+  "values": [
+   10,
+   9.5,
+   9,
+   8.5,
+   8
+  ],
+  "quote": "{{ap|10 to 8}}"
+ },
+ "cost": {
+  "values": [
+   30,
+   35,
+   40,
+   45,
+   50
+  ],
+  "quote": "{{ap|30 to 50}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "None"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Bonus Armor",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    10,
+    15,
+    20,
+    25,
+    30
+   ],
+   "terms": [],
+   "quote": "{{as|{{ap|10 to 30}}% armor}}",
+   "bin": [
+    "Obduracy.BonusArmorPassive"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Increased Bonus Armor",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    30,
+    45,
+    60,
+    75,
+    90
+   ],
+   "terms": [],
+   "quote": "{{as|{{ap|10*3 to 30*3}}% armor}}",
+   "bin": [
+    "Obduracy.BonusArmorPassive",
+    "Obduracy.BonusArmorPassiveMultiplier"
+   ],
+   "binNote": "No single bin row states 30/45/60/75/90 directly; it is the product of Obduracy.BonusArmorPassive=[0.1,0.15,0.2,0.25,0.3] and Obduracy.BonusArmorPassiveMultiplier=3, matching the tooltip-only calculation Obduracy#{71941255}."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Additional Physical Damage (empowered attack, on-hit)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    40,
+    50,
+    60,
+    70
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    },
+    {
+     "stat": "armor",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|30 to 70}} {{as|(+ {{#var:WApS1}}% AP)}} {{as|(+ {{#var:WRmrS1}}% armor)}}",
+   "bin": [
+    "Obduracy#TotalBonusDamage"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Physical Damage (cone splash from empowered basic attacks)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    15,
+    25,
+    35,
+    45,
+    55
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    },
+    {
+     "stat": "armor",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|15 to 55}} {{as|(+ {{#var:WApS2}}% AP)}} {{as|(+ {{#var:WRmrS2}}% armor)}}",
+   "bin": [
+    "Obduracy#ThunderclapSplash"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Window during which Malphite's next basic attack is empowered",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "empowers his next basic attack within 6 seconds",
+   "bin": [],
+   "binNote": "The bin's Obduracy.ThunderclapBuffDuration = 5 matches the description3 5-second cone-splash window, not this 6-second empowered-attack window; no bin field for the 6-second value was found."
+  },
+  {
+   "id": "w_6",
+   "meaning": "Duration of the on-hit cone splash effect",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "basic attacks {{tip|on-hit}} for the next 5 seconds are empowered",
+   "bin": [
+    "Obduracy.ThunderclapBuffDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The empowered basic attack's main-target hit does not apply life steal, while the cone deals separate area damage without applying spell effects (on-hit/on-attack effects).",
+   "quote": "The main target is dealt {{tip|basic damage}}, though without {{tip|applies lifesteal|applying life steal}}, while the cone deals {{tip|area damage|area}} non-{{tip|proc damage|proc}} damage without applying {{tip|spell effects}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Thunderclap's empowered attack resets Malphite's basic attack timer.",
+   "quote": "''Thunderclap {{tip|basic attack reset|resets}} '''Malphite's''' basic attack timer.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cone does not deal its damage separately if the target has left the area of effect when the attack lands, and does not benefit from Spear of Shojin's damage amp.",
+   "quote": "The cone does not benefit from {{iis|Spear of Shojin}} damage amp.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Thunderclap deals increased (180%) damage against monsters, which does not apply in a champion-dummy fight.",
+   "quote": "''Thunderclap'' deals 180% damage against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The empowered attack cannot have its windup canceled by new movement or attack commands, or by casting Unstoppable Force.",
+   "quote": "''Cannot'' have its {{tip|attack windup|windup}} canceled by new movement or attack commands, or casting {{ai|Unstoppable Force|Malphite}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Thunderclap's cooldown starts on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The passive bonus armor is tripled while Granite Shield is active, which reduces damage taken rather than dealt.",
+   "quote": "'''Malphite''' gains {{sti|armor|{{as|'''bonus''' armor}}}}, tripled while ''{{ai|Granite Shield|Malphite}}'' is active.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "Obduracy.ThunderclapSlowDamage",
+   "reason": "unknown"
+  },
+  {
+   "ref": "Obduracy.ThunderClapSplashRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "Obduracy.MonsterDamageMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

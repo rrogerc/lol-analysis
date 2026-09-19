@@ -1,0 +1,105 @@
+{
+ "champion": "bard",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Meep charges consumed on-attack deal bonus magic damage (base 30 +6 per 5 Chimes collected, +40% AP) on top of the basic attack"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Meeps regenerate on an ~8s cooldown (faster with more Chimes) up to a cap, limiting how many onhit procs are available inside the 15s window"
+  },
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P"
+   ],
+   "note": "Meep flat damage bonus and the 5/15/35-Chime splash unlocks depend on a Chime count accumulated over the whole game; the dummy fight needs an assumed Chime count as an input"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Cosmic Binding fires a flat+AP magic damage bolt on cast, usable on cooldown against the dummy"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Caretaker's Shrine heals + speeds up whoever triggers it (ally or self); never deals damage to the dummy, only relevant if Bard is healing himself in the survival fight"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "A placed shrine gathers power over 5s between minimum and maximum heal before it is consumed, gating how strong a self-heal is if triggered early vs. late"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shrine casts are limited to 2 stocked charges recharging every 18s, capping how many heals/casts are available in a 15s fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Bard's only damage-fight-relevant offense (Traveler's Call meeps) scales with a Chime count that accumulates over the whole match from a random map-wide spawn system, not from anything that happens inside the 15s fight itself, and it unlocks qualitatively different behavior (slow at 5, splash at 15, wider splash at 35). No primitive captures 'pick an assumed external stack count that also gates unlocked behavior tiers.' Separately, Caretaker's Shrine's usefulness as self-sustain in the survival fight depends on a 5s power-charge curve between a stated minimum and maximum heal plus a 2-charge/18s-recharge ammo system layered on top of a per-cast mana cost that doesn't apply to charge use — this combination of charge-or-channel + weapon-or-ammo-system with a continuous power curve needs explicit bespoke handling rather than a single primitive."
+ },
+ "unsettled": [
+  {
+   "question": "What Chime count should be assumed as already collected when the damage/survival fight starts, since it changes Traveler's Call's flat meep damage bonus, whether the 5-Chime slow and 15/35-Chime splash are active, and the meep spawn cooldown?",
+   "options": [
+    "0 Chimes (fresh game state)",
+    "A fixed mid-game assumption (e.g. enough for the 15-Chime splash tier) tied to the champion's simulated level/items",
+    "Ignore Chime scaling entirely and use only the base 30 damage + 0.4 AP"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "How many Meeps can Bard have banked at the start of the fight, and what is the true cap — the wiki's own progression (1 to 9 scaling with Chimes) or the bin's unrelated MaxPacks=3 (which the P part flagged as not matching any P-scoped bin value)?",
+   "options": [
+    "Use the wiki's stated 1-to-9 cap at an assumed Chime tier",
+    "Use bin MaxPacks=3 as the true cap regardless of Chimes",
+    "Treat starting Meep count as 0 and only count Meeps generated during the 15s via the 8s spawn timer"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Bard''' can have up to {{pp|type = number of Chimes|1 to 9 for 9|0;10;30;50;65;80;90;95;100}} {{as|Meeps|buzzword3}} at a time.",
+    "BardW.MaxPacks = 3"
+   ]
+  },
+  {
+   "question": "In the survival fight, should Bard ever self-cast Caretaker's Shrine for sustain, and if so does he trigger it immediately (minimum heal) or wait out the 5s charge for the maximum heal, given he also has only 2 stocked charges on an 18s recharge?",
+   "options": [
+    "Always trigger immediately for the minimum heal to maximize heals-per-second",
+    "Wait the full 5s each time for the maximum heal value",
+    "Only cast it opportunistically once per fight since 15s barely covers one full charge-up plus recast delay"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with an auto-attack if a Meep charge is already available, to bank its onhit magic damage immediately.",
+   "Cast Cosmic Binding (Q) on cooldown throughout the fight for its flat+AP magic damage burst.",
+   "Continue basic-attacking on-cooldown between Q casts so that regenerated Meep charges are consumed as soon as they come off their spawn timer.",
+   "Do not cast Caretaker's Shrine (W), Magical Journey (E), or Tempered Fate (R) against the dummy: W only heals/speeds an ally or self and deals no damage, E is a terrain traversal tool, and R's stasis/stun deals 0 proc damage."
+  ],
+  "questions": [
+   "What starting Chime/Meep state should be assumed at the start of the 15s damage fight (see unsettled questions above), since it directly sets the onhit damage per attack?",
+   "Does the Meep-empowered onhit damage benefit from crit chance/on-hit item effects the same as a normal basic attack, or is it a separate non-crittable proc?",
+   "In the survival fight, is Bard ever the attacker whose full rotation is being simulated against a tanky target, or is he only ever the survival-fight defender (in which case his own Q/auto rotation here is irrelevant and only W's self-heal matters)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

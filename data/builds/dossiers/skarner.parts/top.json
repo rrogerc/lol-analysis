@@ -1,0 +1,196 @@
+{
+ "champion": "skarner",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "basic attacks on-hit, plus Q/W/R landed hits, apply Quaking stacks"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Quaking stacks 1-3 on target, refresh on reapplication, 4s duration"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "at 3 stacks, target takes max-health magic damage over 4s in 0.5s ticks, capped vs monsters"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Shattered Earth arms next 3 basic attacks with bonus physical damage + attack speed + range"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "casting Shattered Earth resets the basic attack timer"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "3rd empowered attack (or Upheaval) deals extra max-health damage and slows"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "bonus attack speed while Shattered Earth is armed"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Upheaval is Shattered Earth's alternate-cast/recast that ends it early, dealing the final-hit damage"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Shattered Earth's cooldown restarts on each empowered-attack landing / on Upheaval cast"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Seismic Bastion and Impale deal damage on a fixed cast-time delay, on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's final-hit and Upheaval damage includes a target-max-health component, capped vs monsters"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Ixtal's Impact is a channelled charge; Impale has a cast-time windup that blocks other actions"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's wall-slam damage only triggers if a grabbed target collides with terrain - a positional condition the dummy fight cannot naturally produce"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all four active abilities may limit casts in a 15s fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "the shield component of Seismic Bastion only matters for the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Ixtal's Impact (E) only deals damage if a grabbed target collides with terrain, which is a positional/geometric condition (dummy is stationary, no walls specified) that none of the closed-list primitives directly resolve into a deterministic damage-fight behavior; also Q's three-part empowered-attack sequence with a distinct final-hit formula and an alternate end-cast (Upheaval) that shares state with Q is more layered than a single primitive captures cleanly (empowered-attack + nth-hit-or-cast + recast-or-multipart + cooldown-manipulation combined)."
+ },
+ "unsettled": [
+  {
+   "question": "In the 15s stationary-dummy fight, can Ixtal's Impact (E) ever land its wall-stun damage, since it requires dragging a grabbed target into terrain?",
+   "options": [
+    "Assume no terrain is available and E's damage never triggers (E is cast only for other effects, or skipped)",
+    "Assume the dummy fight artificially places a wall so E's damage always lands",
+    "Treat E as unusable/omit it from the rotation entirely since the fight has 'no terrain' per the rules"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If '''Skarner's''' attached target collides with terrain, the charge ends, detaching them from him, dealing {{as|physical damage}}, {{tip|stun|stunning}} them for {{fd|1.1}} seconds"
+   ]
+  },
+  {
+   "question": "Do the two non-final empowered attacks of Shattered Earth (hits 1-2) proc on-hit/on-attack item effects and Quaking stacks the same as normal basic attacks, or are they excluded because they are 'proc damage'?",
+   "options": [
+    "They apply Quaking and on-hit effects normally, just with bonus damage added",
+    "Being classified as proc damage, they are excluded from some on-hit interactions (unclear which)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The empowered attacks lack spell effects as they deal {{tip|proc damage}}, which does not match with how empowered attacks supposed to behave in general."
+   ]
+  },
+  {
+   "question": "Does each of the three empowered Shattered Earth attacks (and Upheaval) count as a separate application that refreshes/stacks Quaking (P) independently, or do the first two hits and the final AoE component count as one combined instance for stacking purposes?",
+   "options": [
+    "Each landed empowered attack (including the final AoE splash) is a separate Quaking application",
+    "Only the primary target hit per attack applies a stack; the AoE splash to surrounding enemies does not stack Quaking"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "apply a {{tip|stack}} of ''Quaking'' to enemies hit for 4 seconds"
+   ]
+  },
+  {
+   "question": "Does casting Impale while Shattered Earth is active (auto-casting Upheaval) consume/interact with Shattered Earth's own cooldown-refresh-on-hit mechanic, or does it use Impale's own cooldown timing independently?",
+   "options": [
+    "Upheaval-via-Impale still triggers Shattered Earth's cooldown-refresh rule since it's still 'casting Upheaval'",
+    "It behaves purely as part of Impale's cast, not restarting Q's cooldown the normal way"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Skarner''' {{tt|automatically casts|Without incurring Upheaval's cast time}} {{ai|Upheaval|Skarner}} in the direction of Impale's cast"
+   ]
+  },
+  {
+   "question": "Is E.RefundPercent (0.65 in bin) the actual cooldown reduction on landing the wall-stun, or is the wiki's stated 35% reduction correct (i.e., are these inverted/different values)?",
+   "options": [
+    "Bin value 0.65 means 65% cooldown refunded (contradicts wiki's 35%)",
+    "Wiki's 35% is correct and the bin field represents something else (e.g. 65% of remaining CD refunded reduces total CD by a different %)",
+    "Both are correct under different framings (65% refund vs 35% reduction being two ways of stating overlapping but distinct effects)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "reducing ''Ixtal's Impact's'' {{sti|cooldown}} by 35%",
+    "SkarnerE.RefundPercent = 0.65"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-cast Shattered Earth (Q) to arm the next 3 basic attacks and reset the attack timer.",
+   "Auto-attack the dummy three times to consume the empowered attacks, landing the final (3rd) hit for the bonus max-health damage and applying/refreshing Quaking stacks each hit.",
+   "Cast Seismic Bastion (W) on cooldown for its magic damage burst (its shield is irrelevant in the damage fight).",
+   "Recast Shattered Earth (Q) as soon as it comes off cooldown (further reduced by the empowered-attack cooldown-restart mechanic) and repeat the 3-attack empowered sequence.",
+   "Weave normal basic attacks between Q cycles to keep stacking Quaking to 3 stacks and keep the P damage-over-time ticking continuously.",
+   "Cast Impale (R) once available (after cast-time windup) for its flat+AP magic damage burst; if timed while Shattered Earth is active, this auto-fires Upheaval as well for extra Q-final-hit damage.",
+   "Omit Ixtal's Impact (E) from the core loop, or treat it purely as a plain-cast for its direct pin damage if the human ruling allows an assumed-wall-collision variant; otherwise skip it since the stationary dummy fight has no terrain to trigger its damage."
+  ],
+  "questions": [
+   "Should E be included in the damage-fight rotation at all, given its damage requires a terrain collision that a stationary dummy fight cannot naturally produce?",
+   "Is the optimal loop to always land all 3 Q empowered attacks before recasting Q, or does weaving R/Impale's auto-Upheaval into an active Q sequence (ending it early) yield more DPS?",
+   "At what attack-speed threshold (if any within realistic itemization) does Shattered Earth's attack-reset actually start costing time per the wiki's noted ~271% bonus AS crossover, and should the rotation account for that in high-AS damage builds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

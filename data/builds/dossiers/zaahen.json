@@ -1,0 +1,1137 @@
+{
+ "champion": "zaahen",
+ "abilities": {
+  "P": {
+   "name": "Cultivation of War / Determination",
+   "cooldown": {
+    "values": [
+     300,
+     300,
+     300,
+     300,
+     300,
+     240,
+     240,
+     240,
+     240,
+     240,
+     180,
+     180,
+     180,
+     180,
+     180,
+     120,
+     120,
+     120
+    ],
+    "quote": "{{pp|300 to 120 for 4|1 to 16|label=cooldown}}",
+    "binNote": "This is the revive's static cooldown (ZaahenPassive#ReviveCooldownCalc), by champion level; matches bin exactly."
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_stack_duration",
+     "meaning": "duration a Determination stack lasts before beginning to fall off",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "lasting for 5 seconds",
+     "bin": [
+      "ZaahenPassive.FallOffDuration"
+     ]
+    },
+    {
+     "id": "p_max_stacks",
+     "meaning": "maximum Determination stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 12,
+     "terms": [],
+     "quote": "stacking up to 12 times",
+     "bin": [
+      "ZaahenPassive.MaxStacks"
+     ]
+    },
+    {
+     "id": "p_bonus_ad_per_stack",
+     "meaning": "bonus AD gained per stack of Determination, as a % of bonus AD",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      1.5,
+      1.576470588,
+      1.652941176,
+      1.729411765,
+      1.805882353,
+      1.882352941,
+      1.958823529,
+      2.035294118,
+      2.111764706,
+      2.188235294,
+      2.264705882,
+      2.341176471,
+      2.417647059,
+      2.494117647,
+      2.570588235,
+      2.647058824,
+      2.723529412,
+      2.8
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        1.5,
+        1.576470588,
+        1.652941176,
+        1.729411765,
+        1.805882353,
+        1.882352941,
+        1.958823529,
+        2.035294118,
+        2.111764706,
+        2.188235294,
+        2.264705882,
+        2.341176471,
+        2.417647059,
+        2.494117647,
+        2.570588235,
+        2.647058824,
+        2.723529412,
+        2.8
+       ]
+      }
+     ],
+     "quote": "'''bonus''' attack damage}}}} equal to {{as|{{pp|1.5 + (2.8-1.5)/17*(x-1) for 20|key=%}} AD}}",
+     "bin": [
+      "ZaahenPassive.PBonusADMin",
+      "ZaahenPassive.PBonusADMax",
+      "ZaahenPassive#PercentBonusADCalc"
+     ],
+     "binNote": "PBonusADMin=0.015 and PBonusADMax=0.028 bound the wiki's 1.5% to 2.8% range at level 1 and 18 respectively; the calculation ZaahenPassive#PercentBonusADCalc that would give the exact per-level interpolation is an unresolved calculation part ({ee18a47b}) in the sheet, so the linear interpolation formula is taken from the wiki text instead."
+    },
+    {
+     "id": "p_revive_duration",
+     "meaning": "duration of the resurrection (invulnerable/untargetable/unable to act) state",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "enters {{tip|resurrection}} for 4 seconds",
+     "bin": [
+      "ZaahenPassive.ReviveDuration"
+     ]
+    },
+    {
+     "id": "p_revive_tick_interval",
+     "meaning": "interval between resurrection health-restoration ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.125,
+     "terms": [],
+     "quote": "every {{fd|0.125}} seconds",
+     "bin": [
+      "ZaahenPassive.NumberOfTicks",
+      "ZaahenPassive.ReviveDuration"
+     ],
+     "binNote": "0.125 = ReviveDuration(4) / NumberOfTicks(32); no direct data value stores 0.125 itself."
+    },
+    {
+     "id": "p_revive_heal_percent",
+     "meaning": "total % of maximum health restored over the resurrection duration",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.45,
+      0.45,
+      0.45,
+      0.45,
+      0.45,
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.75,
+      0.75,
+      0.75
+     ],
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.45,
+        0.45,
+        0.45,
+        0.45,
+        0.45,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.75,
+        0.75,
+        0.75
+       ]
+      }
+     ],
+     "quote": "{{pp|30 to 75 for|1;6;11;16|key=%}} of his '''maximum''' health",
+     "bin": [
+      "ZaahenPassive.ReviveLevel1Value",
+      "ZaahenPassive.ReviveAdditionalBonusAtThisLevel",
+      "ZaahenPassive#RevivePercentCalc"
+     ],
+     "binNote": "30% base (ReviveLevel1Value) plus 15% (ReviveAdditionalBonusAtThisLevel) added at levels 6/11/16 reproduces the wiki's 30/45/60/75% by-level values; the calculation ZaahenPassive#RevivePercentCalc that would combine these is an unresolved calculation part ({4ce08984}) in the sheet, and RevivePercent=0.6 does not match any of these numbers directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "A stack of Determination is generated for each enemy champion damaged by Zaahen's basic attacks and abilities, refreshing the fall-off duration.",
+     "quote": "generates a {{tip|stack}} of ''Determination'' for each enemy {{tip|champion}} damaged by his {{tip|basic attacks}} and {{tip|abilities}}, lasting for 5 seconds, refreshing on subsequent triggers",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Determination stacks are generated per damage instance per champion damaged, so multi-hit abilities can generate multiple stacks.",
+     "quote": "''Determination'' stacks are generated per damage instance per champion damaged with '''Zaahen's''' attacks and abilities.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus AD from stacks scales dynamically with Zaahen's current total AD.",
+     "quote": "The bonus attack damage granted by ''Determination'' stacks will update dynamically with '''Zaahen's''' total attack damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At maximum (12) stacks, the per-stack bonus AD doubles.",
+     "quote": "At maximum stacks, '''Zaahen''' becomes filled with ''Determination'', causing him to double the bonus",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Invulnerability prevents stack generation because no damage is dealt.",
+     "quote": "{{tip|Invulnerable|Invulnerability}} will prevent stacks from being generated, as no damage is dealt.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During the resurrection, Zaahen is invulnerable, untargetable and unable to act, and his current health is forcibly overridden to match the restoration percentage each tick, preventing other healing from applying.",
+     "quote": "becoming {{tip|invulnerable}}, {{tip|untargetable}}, and {{tip|lockout|unable to act}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZaahenPassive.PercentBonusAD",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ZaahenPassive.RevivePercent",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ZaahenPassive.MaxStacksMultiplier",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "The Darkin Glaive / The Darkin Glaive 2",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ],
+    "quote": "25",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Total Physical Damage (first cast, both strikes combined)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      15,
+      30,
+      45,
+      60,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      },
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.2,
+        0.25,
+        0.3,
+        0.35,
+        0.4
+       ]
+      }
+     ],
+     "quote": "{{ap|15 to 75}} {{as|(+ 100% AD)}} {{as|(+ {{ap|{{#var:q_bad1}} to {{#var:q_bad5}}}}% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenQ#InitialDamage"
+     ],
+     "binNote": "ZaahenQ#InitialDamage = Q1BaseDamage + QCoeff x bonus AD only; it contains no full-AD (100% AD) term. The wiki's total states an additional (+100% AD) component that the bin's InitialDamage calculation does not carry. This may reflect a base-attack-damage component folded in separately from the ability calculation (i.e. the underlying basic attack's own AD damage) rather than an ability-side ratio; flagging as a disagreement between the wiki's stated total and the named bin calculation."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Physical Damage per Hit (first cast, each of the two strikes, half of total)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      7.5,
+      15,
+      22.5,
+      30,
+      37.5
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.5
+      },
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.1,
+        0.125,
+        0.15,
+        0.175,
+        0.2
+       ]
+      }
+     ],
+     "quote": "{{ap|15/2 to 75/2}} {{as|(+ {{ap|100/2}}% AD)}} {{as|(+ {{ap|20/2 to 40/2}}% '''bonus''' AD)}}",
+     "bin": [],
+     "binNote": "No bin row states the per-hit split directly; it is simply half of q_1's total (see q_1 for the bin-named total and its own disagreement note regarding the 100% AD component)."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Champion Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.05,
+        0.06,
+        0.07,
+        0.08,
+        0.09
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|5 to 9}}% of his '''maximum''' health}}",
+     "bin": [
+      "ZaahenQ.HealPercent"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Non-Champion Healing (minions/monsters, 50% of champion heal)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.025,
+        0.03,
+        0.035,
+        0.04,
+        0.045
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|5*0.5 to 9*0.5}}% of his '''maximum''' health}}",
+     "bin": [
+      "ZaahenQ.HealPercent",
+      "ZaahenQ.MinionHealPercent"
+     ],
+     "binNote": "No single bin row states this combined percentage; it is the product of ZaahenQ.HealPercent ([0.05,0.06,0.07,0.08,0.09]) and ZaahenQ.MinionHealPercent (0.5), matching the wiki's stated halved values."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Bonus Physical Damage (recast)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      60,
+      90,
+      120,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.2,
+        0.25,
+        0.3,
+        0.35,
+        0.4
+       ]
+      }
+     ],
+     "quote": "{{ap|30 to 150}} {{as|(+ {{ap|20 to 40}}% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenQ#SecondHitDamage"
+     ]
+    },
+    {
+     "id": "q_recastwindow",
+     "meaning": "Time after the empowered attack lands within which the recast can be used (and time within which the initial empowered attack must be triggered)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "can be recast within the next 4 seconds at no additional cost",
+     "bin": [
+      "ZaahenQ.RecastWindow"
+     ]
+    },
+    {
+     "id": "q_recastdelay",
+     "meaning": "Delay after the empowered attack before the recast becomes available",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "After {{fd|1.5}} seconds of using the empowered attack, ''The Darkin Glaive'' can be recast",
+     "bin": [
+      "ZaahenQ.TimeBetweenAttacks"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Both the first cast and the recast reset Zaahen's basic attack timer.",
+     "quote": "Both casts of The Darkin Glaive {{tip|basic attack reset|reset}} '''Zaahen's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first cast's double strike counts as a single basic attack (one windup) that deals two damage instances, not two attacks.",
+     "quote": "Does not cause '''Zaahen''' to attack twice.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The two strikes of the first cast roll a critical strike only once, applying the same crit outcome to both hits.",
+     "quote": "Rolls {{tip|critical strike}} once for both strikes.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each strike (both casts) applies on-hit effects separately.",
+     "quote": "Each strike applies {{tip|on-hit}} effects",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only one on-attack trigger occurs despite two strikes, so effects like Lethal Tempo/Hail of Blades only trigger once per empowered attack.",
+     "quote": "Effects that trigger on-attack or interact with the attack windup will only trigger once and thus do not interact with ''The Darkin Glaive''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack has an uncancellable windup and gains bonus range, but no separate cast time before the attack fires.",
+     "quote": "empowers his next {{tip|basic attack}} within 4 seconds to have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The heal is granted only when the target was a champion, minion, or monster (not wards, plants, or structures), and applies on-attack so is not prevented by parry.",
+     "quote": "Since the healing is granted on-attack, parrying effects will not prevent '''Zaahen''' from gaining the heal.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown does not begin until after the full effect (including the recast window) completes.",
+     "quote": "post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is tagged as basic damage and spell damage, allowing it to trigger spell effects.",
+     "quote": "''The Darkin Glaive's'' damage is tagged as {{tip|basic damage}} and {{tip|spell damage}}, which allows it to trigger {{tip|spell effects}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZaahenQ.KnockUpDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZaahenQ.QBonusRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenQ.MonsterDamagePercent",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Dreaded Return",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|14 to 12}}",
+    "binNote": "Wiki quote reads 14 to 12 but the bin's cooldown array is [16/15/14/13/12]; recording the wiki's stated leveling values here per the wiki template while noting the bin disagrees by 2s at ranks 1-2."
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Initial Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenW#InitialDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Subsequent Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      50,
+      70,
+      90,
+      110
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|30 to 110}} {{as|(+ 30% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenW#SecondaryDamage"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "stun duration on max-range hit",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{tip|stun|stunned}} for {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "Stun duration (0.25s) is stated only in the description text via {{fd|0.25}}; not a separate rank-based bin row."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The glaive extends and deals damage to enemies hit along the way (initial), then a second physical damage instance occurs upon reaching maximum range along with stun and pull.",
+     "quote": "extends his glaive in the target direction, dealing {{as|physical damage}} to enemies hit. Upon reaching maximum range, all enemies hit are dealt {{as|physical damage}}, {{tip|stun|stunned}} for {{fd|0.25}} seconds, and {{tip|airborne|pulled}} 225 units toward '''Zaahen'''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks both damage instances, and can block the second pass individually.",
+     "quote": "{{tip|Spell shield}} will block both passes, as well as the second one individually if circumstances permit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Intercepting the initial projectile instantly triggers the pull (and presumably the secondary effects) at that point.",
+     "quote": "{{tip|projectile|Intercepting}} the initial projectile will instantly trigger ''Dreaded Return's'' pull.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Zaahen is dead by the time the missile reaches maximum range, the max-range damage, stun, and pull do not occur.",
+     "quote": "The damage, stun, and pull from hitting the target do not occur if '''Zaahen''' is {{tip|death|dead}} by the time the missile reaches maximum range.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZaahenW.MaximumPullDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZaahenW.PullSpeed",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Aureate Rush",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenE#BaseDamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Increased Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 75% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenE#BonusDamageCalc"
+     ],
+     "binNote": "BonusDamageCalc = BaseDamageCalc * SweetSpotDamageMod(1.5), i.e. (40..120 + 0.5xbonusAD)*1.5 = 60..180 + 0.75xbonusAD, matching the wiki's separate leveling row."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Bonus Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|4 to 6}}% of the target's '''maximum''' health}}",
+     "bin": [
+      "ZaahenE.PercentHPDamage"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Bonus physical damage against monsters",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 50,
+     "terms": [],
+     "quote": "''Aureate Rush'' deals {{as|50 '''bonus''' physical damage}} against monsters.",
+     "bin": [
+      "ZaahenE.MonsterDamageBonus"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Damage is dealt on arrival at the dash's destination, not on cast.",
+     "quote": "Upon arrival, he flourishes his glaive to deal {{as|physical damage}} to nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the dash is interrupted, the flourish damage fails to occur.",
+     "quote": "If the dash is interrupted, '''Zaahen''' will fail to deal damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The physical and magic damage components are two separate instances, physical applied first in the same tick; if the physical damage kills, the magic damage does not apply.",
+     "quote": "The mixed damage is applied in two instances, and the {{as|physical damage}} will be dealt first within the same game tick.\n** If the {{as|physical damage}} finishes off the unit, the {{as|magic damage}} will not be dealt against it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The outer-edge magic damage against monsters is capped at 400.",
+     "quote": "with the latter capped at 400 against {{tip|monsters}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZaahenE.DashDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenE.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenE.MaximumRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenE.MinimumRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenE.MonsterDamageCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZaahenE.DamageBonusBase",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Grim Deliverance",
+   "cooldown": {
+    "values": [
+     110,
+     95,
+     80
+    ],
+    "quote": "{{ap|110 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Armor Penetration",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.1,
+      0.2,
+      0.3
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 30}}%",
+     "bin": [
+      "ZaahenR.ArmorPen"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      250,
+      400,
+      550
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.0
+      }
+     ],
+     "quote": "{{ap|250 to 550}} {{as|(+ 200% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenR#DamageEndCalc"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Healing per Champion hit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      82.5,
+      132,
+      181.5
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.66
+      }
+     ],
+     "quote": "{{ap|250*0.33 to 550*0.33}} {{as|(+ {{ap|200*0.33}}% '''bonus''' AD)}}",
+     "bin": [
+      "ZaahenR.HealPercent",
+      "ZaahenR.EndDamage",
+      "ZaahenR.BonusADDamageRatio"
+     ],
+     "binNote": "No bin row stores 82.5/132/181.5 or 0.66 directly; the wiki's heal numbers are the wiki-computed product of ZaahenR.EndDamage x ZaahenR.HealPercent (250*0.33=82.5 etc.) and ZaahenR.BonusADDamageRatio x ZaahenR.HealPercent (2*0.33=0.66), matching the notes' claim that the heal equals 33% of the damage numbers rather than an independent bin calculation."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Zaahen gains crowd control immunity during the cast time, then dashes into the air with displacement immunity to the target location.",
+     "quote": "gains {{tip|cc-immune|crowd control immunity}} over the cast time, then {{tip|dash|launches}} with {{tip|displacement immunity}} into the air to the target location",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "He slams the ground after a 0.6-second delay following the dash, dealing damage to nearby enemies at that point (not on cast).",
+     "quote": "slams his glaive down after a {{fd|0.6}}-second delay, unleashing a shockwave that deals {{as|physical damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Zaahen heals for each champion hit by the shockwave, separate from the enemy-facing damage.",
+     "quote": "heals him for each {{tip|champion}} hit",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal is calculated from the damage numbers directly, not the damage actually dealt (e.g. reduced by resistances).",
+     "quote": "The healing per champion is equal to 33% of the damage numbers, '''not''' the damage dealt.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Zaahen is unable to act and gains 50% damage reduction from the start of the cast time, retained through the delay and briefly after the slam.",
+     "quote": "'''Zaahen''' is {{tip|lockout|unable to act}} and gains 50% [[damage reduction]] from the start of the cast time",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A spell shield will block the damage of Grim Deliverance but not the heal.",
+     "quote": "{{tip|Spell shield}} will block the damage but not the heal.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZaahenR.DashMaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenR.DashMinDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenR.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenR.AoESize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZaahenR.DamageReduction",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Determination: stacks (cap 12, 5s falloff, refreshed on any champion-damage instance) grant bonus AD as % of current bonus AD, doubling at max stacks; feeds all of Zaahen's AD-scaling damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "At max stacks, lethal damage instead triggers a 4s invulnerable/untargetable resurrection that restores a %maxHP heal in ticks; relevant only to the survival fight."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q1 arms the next basic attack to strike twice for modified physical damage + self-heal; Q2 (recast) arms the next basic attack for bonus physical damage + knockup."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Recast available 1.5s-5.5s after the first empowered attack lands, at no extra mana cost; cooldown starts post-effect (after this window resolves)."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Both the first cast and the recast reset Zaahen's basic attack timer on landing."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q1's two strikes roll a critical strike once and apply the same outcome to both hits."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W deals an initial physical-damage pass along its path, then a separately-timed second physical damage instance (plus stun/pull) upon reaching max range."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Damage occurs on arrival at the dash destination (not on cast); fails entirely if the dash is interrupted."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Enemies hit by the outer edge of E take 50% increased physical damage plus a separate %maxHP magic-damage instance; inner-radius hits only get base physical damage — a dummy fight must assume which zone is hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's AoE physical damage and self-heal-per-champion-hit occur on a fixed 0.6s delayed slam after the dash/cast."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's passive component grants permanent (rank-scaling, not duration-limited) armor penetration once R is ranked, amplifying all of Zaahen's physical damage."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "50% damage reduction and CC immunity from the start of R's cast time through the slam and briefly after; relevant only to the survival fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (25/50/40/100, all flat across ranks) may cap how many casts fit in the 15s fight depending on mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Zaahen's kit maps onto the closed primitive list: a stacking self-buff passive with a defensive revive branch, a multi-part empowered-attack/recast Q with attack resets and shared-crit rolls, a two-part W, a positional E, and a delayed-slam R with a permanent armor-pen buff and defensive damage reduction. No mechanic requires logic outside these primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Does Q's first-cast total damage include a separate 100% base-AD ratio on top of the bonus-AD ratio (per the wiki's leveling table), or is the bin's ZaahenQ#InitialDamage (base + bonus-AD ratio only) the complete ability-side formula, with the 100% AD term actually coming from the underlying basic attack itself rather than an ability ratio?",
+   "options": [
+    "Total Q1 damage = base + 100% AD + scaling% bonus AD, as stated in the wiki leveling table",
+    "Ability-side damage is only base + scaling% bonus AD (ZaahenQ#InitialDamage); the '100% AD' in the wiki total is just the normal basic attack's own AD damage riding along, not an additive ability term"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|15 to 75}} {{as|(+ 100% AD)}} {{as|(+ {{ap|{{#var:q_bad1}} to {{#var:q_bad5}}}}% '''bonus''' AD)}}",
+    "ZaahenQ#InitialDamage = Q1BaseDamage=[15/30/45/60/75] + (QCoeff=[0.2/0.25/0.3/0.35/0.4])xbonus ad"
+   ]
+  },
+  {
+   "question": "What is the exact per-level formula for Determination's bonus-AD-per-stack percentage? The bin's ZaahenPassive#PercentBonusADCalc calculation is unresolved, and PBonusADMin/PBonusADMax (0.015/0.028) only bound the wiki's stated 1.5%-2.8% range without confirming the interpolation shape.",
+   "options": [
+    "Wiki's stated linear interpolation (1.5% at level 1 to 2.8% at level 18) is exact",
+    "The true per-level curve differs from linear interpolation and is unknown until the bin calculation resolves"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "At what Determination stack count should the damage fight start Zaahen (this materially changes his effective bonus AD and thus every AD-scaling ability/auto-attack throughout the 15s)?",
+   "options": [
+    "Start at 0 stacks and build toward the 12-stack cap by attacking the dummy during the fight",
+    "Start at maximum (12) stacks, assuming pre-fight stacking against a lane opponent/minions is allowed",
+    "Start at some partial stack count representing typical mid-fight state"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Which W cooldown values are live: the wiki's stated leveling (14s to 12s) or the bin's cooldown array (16/15/14/13/12s), which disagree at ranks 1-2?",
+   "options": [
+    "Wiki's 14-to-12s progression is correct",
+    "Bin's 16/15/14/13/12s array is correct"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "Q's cooldown starts 'post-effect'. Does that mean the cooldown only begins after the full 4-second recast window elapses (i.e. roughly 5.5s after the initial attack lands, whether or not the recast is used), or does it begin immediately once the recast is actually used (or immediately if the recast window is skipped)?",
+   "options": [
+    "Cooldown always starts only after the recast window fully expires or is consumed, regardless of when the player recasts",
+    "Cooldown starts as soon as the recast is used (or immediately if the player chooses not to use the empowered attack at all)"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Should the damage fight assume Zaahen's E always lands on the AoE's outer edge (triggering the +50% physical and bonus %maxHP magic damage), or a plain inner-radius hit (base damage only), given a stationary single-target dummy?",
+   "options": [
+    "Assume outer-edge hit for maximum damage output",
+    "Assume inner-radius/base-only hit as the conservative default"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "What is the exact per-level revive heal-percent formula for the passive's resurrection (relevant to the survival fight): the bin's ZaahenPassive#RevivePercentCalc is unresolved and the RevivePercent constant (0.6) matches neither the wiki's stepped 30/45/60/75% values nor an obvious blend of ReviveLevel1Value/ReviveAdditionalBonusAtThisLevel?",
+   "options": [
+    "Wiki's stepped values (30% base, +15% at levels 6/11/16, capping at 75%) are correct",
+    "The bin's flat RevivePercent=0.6 (60%) constant applies uniformly regardless of level"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (The Darkin Glaive) to arm the empowered attack, then immediately basic-attack the dummy to trigger the double-strike (bonus physical damage, self-heal, two potential Determination stacks, and an attack-timer reset).",
+   "Weave E (Aureate Rush) on cooldown, dashing so the flourish's outer-edge zone covers the dummy for the increased physical + bonus magic damage.",
+   "Weave W (Dreaded Return) on cooldown at max range so both the initial pass and the max-range secondary damage connect on the dummy.",
+   "Within the 1.5-4s window after the Q1 attack lands, recast Q on the next basic attack for the knockup bonus-damage strike (also resets the attack timer), before the recast window expires.",
+   "Cast R (Grim Deliverance) as soon as it is off cooldown for its high AoE physical damage and self-heal; its passive armor penetration is already active continuously once ranked, amplifying every physical hit for the rest of the fight.",
+   "Keep auto-attacking between ability casts throughout the 15s both for baseline AD damage and to keep re-arming/recasting Q and refreshing Determination stacks toward the 12-stack cap.",
+   "Repeat the E -> auto-attack(s) -> W -> auto-attack(s) loop, weaving Q's cast/recast and R whenever off cooldown, prioritizing whichever ability is available to minimize idle time, respecting mana costs (25/50/40/100)."
+  ],
+  "questions": [
+   "Does the simulator assume Zaahen starts the 15s fight at 0, partial, or maximum (12) Determination stacks?",
+   "Should Q's recast be used immediately at the 1.5s mark, or held later within the 4s window to fit more auto-attacks first, and how does that interact with the 'post-effect' cooldown start?",
+   "Is E's outer-edge sweet-spot damage achievable/assumed against a single stationary target dummy, or should inner-radius damage be the default?",
+   "What champion level and ability ranks (especially R rank, which gates armor penetration and ultimate damage) should the damage fight assume for this rotation?",
+   "Is Zaahen's mana pool at the assumed level/items sufficient to sustain this full rotation for 15s, or does mana starvation force dropping some casts (e.g. skipping E or W in later loops)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

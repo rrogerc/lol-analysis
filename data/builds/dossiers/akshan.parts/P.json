@@ -1,0 +1,223 @@
+{
+ "name": "Dirty Fighting",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "second shot on-hit physical damage (percent AD)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{as|50% AD}} {{as|physical damage}}, increased to {{as|100% AD}} against {{tip|minions}}",
+   "bin": [
+    "AkshanPassive.SecondAutoADRatio",
+    "AkshanPassive#SecondAutoDamage"
+   ]
+  },
+  {
+   "id": "p_2",
+   "meaning": "bonus magic damage dealt when a target reaches 3 stacks of Dirty Fighting",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    15,
+    15,
+    15,
+    15,
+    15,
+    40,
+    40,
+    40,
+    40,
+    40,
+    80,
+    80,
+    80,
+    80,
+    80,
+    150,
+    150,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{pp|15;40;80;150|1;6;11;16}}|magic damage}} {{as|(+ 60% AP)}}",
+   "bin": [
+    "AkshanPassive#PassiveProcDamage",
+    "AkshanPassive.APRatio"
+   ]
+  },
+  {
+   "id": "p_3",
+   "meaning": "shield amount gained when the 3-stack bonus damage is dealt to a champion",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    40,
+    50.16,
+    60.82,
+    71.98,
+    83.63,
+    95.76,
+    108.39,
+    121.53,
+    135.13,
+    149.27,
+    163.91,
+    179.02,
+    194.6,
+    210.66,
+    227.19,
+    244.3,
+    261.9,
+    280
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.35
+    }
+   ],
+   "quote": "{{pplevel|40+(240/17)*(x-1)*(0.7025+0.0175*(x-1))}} {{as|(+ 35% '''bonus''' AD)}}",
+   "bin": [
+    "AkshanPassive#TotalShieldAmount",
+    "AkshanPassive.ShieldBADRatio"
+   ],
+   "binNote": "Wiki gives its own by-level formula (40+(240/17)*(x-1)*(0.7025+0.0175*(x-1))) which does not exactly match the bin's AkshanPassive#TotalShieldAmount flat byLevel array (e.g. level 2: wiki 50.16 vs bin 54.12); both start at 40 and end at 280 but diverge at intermediate levels. Reporting the wiki's stated number per its own quoted formula."
+  },
+  {
+   "id": "p_4",
+   "meaning": "duration the shield persists",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "{{tip|shield}} for 2 seconds",
+   "bin": [
+    "AkshanPassive.ShieldDuration"
+   ]
+  },
+  {
+   "id": "p_5",
+   "meaning": "duration a stack of Dirty Fighting persists before expiring",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "to enemies for 5 seconds, refreshing on subsequent applications",
+   "bin": [
+    "AkshanPassive.DebuffDuration"
+   ],
+   "binNote": "Wiki text states the stack lasts 5 seconds, but the bin's AkshanPassive.DebuffDuration is 4.5."
+  },
+  {
+   "id": "p_6",
+   "meaning": "number of stacks required to trigger the bonus damage/shield",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times",
+   "bin": [
+    "AkshanPassive.MaxStacks"
+   ]
+  },
+  {
+   "id": "p_7",
+   "meaning": "static cooldown before the shield can be granted again, starting when the previous shield is destroyed or expires",
+   "role": "other",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    12,
+    12,
+    12,
+    12,
+    12,
+    8,
+    8,
+    8,
+    8,
+    8,
+    4,
+    4,
+    4
+   ],
+   "terms": [],
+   "quote": "{{pp|16 to 4 for 4|1;6;11;16}}",
+   "bin": [
+    "AkshanPassive#PassiveCooldown"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The second shot applies on-hit effects, triggers on-attack effects, and is affected by critical strike modifiers, and crits independently from the first shot.",
+   "quote": "The additional shot applies {{tip|on-hit}} effects, triggers {{tip|on-attack}} effects, and is affected by {{tip|critical strike}} modifiers.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first shot deals basic attack damage while the second shot's extra damage is proc damage, meaning they interact differently with modifiers that distinguish basic vs proc damage.",
+   "quote": "Applies {{tip|basic damage}} for the second shot and {{tip|proc damage}} for the bonus damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The second shot starts the attack windup cooldown (basic attack reset) when it is fired, not when the first shot is fired.",
+   "quote": "Starts the attack windup's cooldown after it is used, rather than when the first shot is.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Stacks of Dirty Fighting are applied by basic attacks (on-hit) and ability hits, and refresh their duration on each new application rather than stacking duration independently.",
+   "quote": "'''Akshan's''' basic attacks {{tip|on-hit}} and {{tip|ability}} hits apply a {{tip|stack}} of ''Dirty Fighting'' to enemies for 5 seconds, refreshing on subsequent applications and stacking up to 3 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Reaching the third stack consumes all stacks at once to deal the bonus magic damage; the shield is only granted if the target hit was a champion.",
+   "quote": "The third stack against a target consumes them all to deal them {{as|{{pp|15;40;80;150|1;6;11;16}}|magic damage}} {{as|(+ 60% AP)}} {{as|'''bonus''' magic damage}}; if the target is a {{tip|champion}}, '''Akshan''' will also gain a {{pplevel|40+(240/17)*(x-1)*(0.7025+0.0175*(x-1))}} {{as|(+ 35% '''bonus''' AD)}} {{tip|shield}} for 2 seconds.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "This ability's damage is calculated based on Akshan's current stats at the moment it lands and changes dynamically (not locked in on cast).",
+   "quote": "This ability's damage is calculated based on the caster's current stats and changes dynamically.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AkshanPassive.HasteDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "AkshanPassive.SecondAutoFlexedAttackRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AkshanPassive.SecondAutoCritRatio",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

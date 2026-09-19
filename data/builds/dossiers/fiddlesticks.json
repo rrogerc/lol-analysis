@@ -1,0 +1,876 @@
+{
+ "champion": "fiddlesticks",
+ "abilities": {
+  "P": {
+   "name": "A Harmless Scarecrow",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "Fiddlesticks can impersonate an Effigy by standing still and not acting nor being acted upon, hiding its health bar.",
+     "quote": "'''Fiddlesticks''' can pretend to be an ''Effigy'' by standing still and not acting nor being acted upon for 2 seconds, during which it hides its [[health bar]]",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The impersonation is interrupted if Fiddlesticks moves, is affected by crowd control, is hit by an ability, takes damage, declares an attack, casts an ability or summoner spell, uses an item's active effect, potion, or consumable, or begins channeling.",
+     "quote": "Attempting to impersonate an ''Effigy'', or maintaining the impersonation, will be interrupted if '''Fiddlesticks''':",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "From level 6 onward, placing an Effigy also summons a Sweeper Drone at the location for 6 seconds.",
+     "quote": "From {{stil|experience|level}} 6 onward, placing an {{tip|Effigy}} also summons a {{tip|Sweeper Drone}} at the location for 6 seconds.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Terrify",
+   "cooldown": {
+    "values": [
+     15,
+     14.5,
+     14,
+     13.5,
+     13
+    ],
+    "quote": "{{ap|15 to 13}}"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Fear Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.2,
+      1.4,
+      1.6,
+      1.8,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1.2 to 2}} seconds",
+     "bin": [
+      "FiddleSticksQ.FearDuration"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": [
+        0.04,
+        0.045,
+        0.05,
+        0.055,
+        0.06
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.03
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|4 to 6}}% {{as|(+ 3% per 100 AP)}} of target's '''current''' health}}",
+     "bin": [
+      "FiddleSticksQ.MaxHealthDamage",
+      "FiddleSticksQ#TotalPercentHealthDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Minimum Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 120}}",
+     "bin": [
+      "FiddleSticksQ.MinimumDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Increased Magic Damage (against recently feared targets)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": [
+        0.08,
+        0.09,
+        0.1,
+        0.11,
+        0.12
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.06
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|4*2 to 6*2}}% {{as|(+ {{ap|3*2}}% per 100 AP)}} of target's '''current''' health}}",
+     "bin": [
+      "FiddleSticksQ#TotalPercentHealthDamageFeared"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Increased Minimum Damage (against recently feared targets)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [],
+     "quote": "{{ap|40*2 to 120*2}}",
+     "bin": [],
+     "binNote": "The wiki states the minimum damage threshold is doubled against recently-feared targets, but no bin calculation doubles FiddleSticksQ.MinimumDamage; only the percent-health damage calc (TotalPercentHealthDamageFeared) is explicitly doubled in the bin."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The crow arrives (and damage/fear applies) at the end of the cast time, not on cast.",
+     "quote": "arrives after {{tt|{{fd|0.35}} seconds|Fixed travel time from the start of the cast time}}, dealing {{as|magic damage}} and {{tip|fear|fearing}} them for a duration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Terrify still deals its damage even if Fiddlesticks dies or loses sight of the target during the cast time.",
+     "quote": "''Terrify'' will still cast and affect the target even if '''Fiddlesticks''' dies or loses {{tip|sight}} of them during the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target was recently feared by Fiddlesticks, Terrify deals double damage and has a doubled minimum damage threshold instead of normal.",
+     "quote": "If the target has recently been feared by '''Fiddlesticks''', ''Terrify'' will instead deal {{ccs|double damage|magic}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Terrify's damage is capped at 400 against monsters.",
+     "quote": "''Terrify'' has a minimum damage threshold and is capped at 400 against {{tip|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive fear only applies while Fiddlesticks is out of combat and unseen, or impersonating an effigy; this does not change damage numbers but gates the doubled-damage/fear mechanic.",
+     "quote": "While '''Fiddlesticks''' has been [[combat status|out of combat]] for at least {{tt|{{fd|2.25}} seconds|Estimated}} and is not {{tip|sight|visible}} to the enemy team, or is impersonating an ''{{ai|A Harmless Scarecrow|Fiddlesticks|Effigy}}'', its damaging ability will additionally {{tip|fear}} targets hit for a duration.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Bountiful Harvest",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Damage per second",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|120/2 to 360/2}} {{as|(+ {{fd|{{#expr:90/2}}}}% AP)}}",
+     "bin": [
+      "FiddleSticksW.DamagePerSecond",
+      "FiddleSticksW#DrainDamageCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Damage per Instance",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      15,
+      22.5,
+      30,
+      37.5,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1125
+      }
+     ],
+     "quote": "{{ap|120/{{#var:total_ticks}} to 360/{{#var:total_ticks}}}} {{as|(+ {{fd|{{#expr:90/{{#var:total_ticks}}}}}}% AP)}}",
+     "bin": [],
+     "binNote": "Wiki's per-instance number is DamagePerSecond/TicksPerSecond (60/4=15, etc.) and the AP coefficient is 0.45/4=0.1125; no bin row states the per-tick number directly, only the DPS (FiddleSticksW.DamagePerSecond) and tick rate (FiddleSticksW.TicksPerSecond) it is derived from."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Last Tick of Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      15,
+      22.5,
+      30,
+      37.5,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.1125
+      },
+      {
+       "stat": "targetMissingHp",
+       "coef": [
+        0.12,
+        0.145,
+        0.17,
+        0.195,
+        0.22
+       ]
+      }
+     ],
+     "quote": "{{ap|120/{{#var:total_ticks}} to 360/{{#var:total_ticks}}}} {{as|(+ {{fd|{{#expr:90/{{#var:total_ticks}}}}}}% AP)}} {{as|(+ {{ap|12 to 22}}% of target's '''missing''' health)}}",
+     "bin": [
+      "FiddleSticksW.PercentForTooltip"
+     ],
+     "binNote": "The flat/AP part (15/22.5/.../45 base, 0.1125 AP coef) is derived as DamagePerSecond/TicksPerSecond and not directly stated by any bin row (see w_2); only the missing-health percentage (PercentForTooltip) is directly named in the bin."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      120,
+      180,
+      240,
+      300,
+      360
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      },
+      {
+       "stat": "targetMissingHp",
+       "coef": [
+        0.12,
+        0.145,
+        0.17,
+        0.195,
+        0.22
+       ]
+      }
+     ],
+     "quote": "{{ap|120 to 360}} {{as|(+ 90% AP)}} {{as|(+ {{ap|12 to 22}}% of target's '''missing''' health)}}",
+     "bin": [
+      "FiddleSticksW.PercentForTooltip"
+     ],
+     "binNote": "Total base/AP (120-360, 0.9 AP) equals DamagePerSecond * DrainDuration (e.g. 60*2=120, 0.45*2=0.9), a derived tooltip total not itself a bin row; only the missing-health percentage (PercentForTooltip) is directly named in the bin."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Champion Heal Portion",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      32.5,
+      40,
+      47.5,
+      55
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 55}}%",
+     "bin": [
+      "FiddleSticksW.VampPercentage"
+     ]
+    },
+    {
+     "id": "w_9",
+     "meaning": "Channel duration (drain duration)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "channels for up to {{#var:channel_duration}} seconds",
+     "bin": [
+      "FiddleSticksW.DrainDuration"
+     ]
+    },
+    {
+     "id": "w_10",
+     "meaning": "Tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "dealt {{as|magic damage}} every {{fd|{{#var:channel_tickrate}}}} seconds",
+     "bin": [
+      "FiddleSticksW.TicksPerSecond"
+     ],
+     "binNote": "Bin stores tick rate as TicksPerSecond=4 (i.e. 1/4=0.25s interval) rather than a direct interval value."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Fiddlesticks forms tethers to nearby enemies over the cast time before the damage channel begins.",
+     "quote": "forms a {{tip|tether}} between itself and each nearby enemy over the cast time, then {{tip|channel|channels}} for up to {{#var:channel_duration}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The final tick of the channel deals bonus damage based on the target's missing health, capped at 400 against monsters.",
+     "quote": "The final tick at the end of the channel deals additional {{as|magic damage}}, capped at 400 against {{tip|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Fiddlesticks heals itself for a portion of the pre-mitigation damage dealt by the channel.",
+     "quote": "'''Fiddlesticks''' {{tip|heals}} itself for a portion of the {{tt|pre-mitigation damage|Damage dealt before modifiers}} dealt",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the channel completes without being interrupted, 60% of the current cooldown is refunded.",
+     "quote": "If the channel was not {{tt|interrupted|e.g. by Fiddlesticks or crowd control effects}}, 60% of the {{sti|'''current''' cooldown}} is refunded.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks the initial tether application but does not stop the damage of a tether already applied.",
+     "quote": "{{tip|Spell shield}} will block the tether's application but not the damage of one already applied.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FiddleSticksW.DrainLeashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "FiddleSticksW.PercentMultiplier",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "FiddleSticksW.MonsterDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "FiddleSticksW.MonsterHealingMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "FiddleSticksW.MinionDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "FiddleSticksW.MinionHealingMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "FiddleSticksW.MonsterMaxDamage",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Reap",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.4,
+    "quote": "{{fd|0.4}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "FiddleSticksE#Damage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "FiddleSticksE.SlowAmount"
+     ],
+     "binNote": "Wiki states magnitude as a positive percent (30 to 50); bin stores the same magnitudes as negative multipliers (-0.3 to -0.5), a sign convention for reducing move speed, not a numeric disagreement."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Silence duration on enemies hit in center",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{fd|1.25}} seconds",
+     "bin": [
+      "FiddleSticksE.SilenceDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies hit in the center of the area are also silenced.",
+     "quote": "Enemies hit in the center of the area are also {{tip|silence|silenced}} for {{fd|1.25}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reap can be blocked by spell shields.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FiddleSticksE.EmpoweredSlowAmount",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "FiddleSticksE.CastRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Crowstorm",
+   "cooldown": {
+    "values": [
+     140,
+     110,
+     80
+    ],
+    "quote": "{{ap|140 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      37.5,
+      62.5,
+      87.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.125
+      }
+     ],
+     "quote": "{{ap|150*0.25 to 350*0.25}} {{as|(+ {{fd|12.5}}% AP)}}",
+     "bin": [
+      "FiddleSticksR#DamageDone"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Total Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      750,
+      1250,
+      1750
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 2.5
+      }
+     ],
+     "quote": "{{ap|150*5 to 350*5}} {{as|(+ 250% AP)}}",
+     "bin": [
+      "FiddleSticksR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_duration",
+     "meaning": "Duration crows persist, dealing damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "flying wildly around it for 5 seconds",
+     "bin": [
+      "FiddleSticksR.Duration"
+     ]
+    },
+    {
+     "id": "r_tick_interval",
+     "meaning": "Tick interval of the damage",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "The bin has no explicit tick-interval field; 0.25 is only implicit in FiddleSticksR#DamageDone's *0.25 multiplier applied to the per-second DamagePerSecond/APRatio terms, which is a damage calculation, not a stated interval value."
+    },
+    {
+     "id": "r_channel_time",
+     "meaning": "Channel time before blinking and dealing damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{tip|channel|channels}} for {{fd|1.5}} seconds",
+     "bin": [
+      "FiddleSticksR.ChannelTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Fiddlesticks channels before blinking to the target location; the channel is not interrupted by roots.",
+     "quote": "{{tip|Root|Roots}} do not {{tip|interrupt}} the ability despite being a [[Channel#Movement Channels|movement channel]].",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Fiddlesticks will always blink to the intended location even if its position changes during the channel, so long as the channel isn't interrupted.",
+     "quote": "'''Fiddlesticks''' will always {{tip|blink}} to its intended location even if its position changes during the {{tip|channel}} without being interrupted",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Damage begins only after the channel completes and Fiddlesticks blinks in, dealing damage every 0.25s for 5 seconds to nearby enemies.",
+     "quote": "then {{tip|blink|blinks}} to the target location upon completion with a murder of crows flying wildly around it for 5 seconds, dealing {{as|magic damage}} every {{fd|0.25}} seconds to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The channel is interrupted by death, silence, or being grounded.",
+     "quote": "interrupts=death, silence, ground",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown starts on cast (i.e., at channel start, not after the channel completes).",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "FiddleSticksR.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "FiddleSticksR.DamagePerSecond",
+     "reason": null
+    },
+    {
+     "ref": "FiddleSticksR#APRatioFullDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "FiddleSticksR#APRatioTick",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "FiddleSticksR#{d0d3db7f}",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q and E deal damage on a fixed delay/cast time then go on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q double-damages a recently-feared target based on current HP; W's last tick scales with target's missing HP"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W channel ticks 4x/sec for 2s; R ticks every 0.25s for 5s after the channel completes"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W tethers then channels up to 2s dealing damage; R channels 1.5s (no damage) before blinking and starting its damage-dealing duration"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "an uninterrupted W channel refunds 60% of its current cooldown"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs scale with rank and could gate casts across the 15s window at low mana pools"
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Terrify's passive (unseen/out-of-combat/effigy) governs whether the opening cast fears and doubles damage; a dummy fight must assume an initial state"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q and W's bonus components scale off target's current/missing health rather than flat damage"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's self-heal from drain damage never matters in the damage fight but matters in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit is expressible with existing primitives: plain-cast damage for Q/E, dot/channel for W and R, a conditional-damage doubling mechanic for Q against recently-feared targets, cooldown-manipulation for W's refund, and a stealth-or-opener gate for the passive fear/double-damage interaction."
+ },
+ "unsettled": [
+  {
+   "question": "Does the dummy in the damage fight count as 'recently feared' for Q's double-damage/doubled-minimum after being feared once (e.g., by an earlier Q, R, or the passive), and can this be chained repeatedly within the 15s window?",
+   "options": [
+    "Fiddlesticks can only ever get one feared-target double-damage Q per fight since only R or the passive-empowered W/E can fear before Q is off cooldown",
+    "Any prior fear (from Q's own passive-fear on a prior cast, R, or empowered W/E) sets up the next Q to double-damage, and this can be re-applied whenever the fear-immunity timer (equal to Q's cooldown) lines up with Q coming off cooldown",
+    "The simulator should just assume Q never gets the doubled-damage bonus in a simple stationary-dummy fight since it requires a prior fear application, which itself requires the passive's unseen/out-of-combat gate"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target has recently been feared by '''Fiddlesticks''', ''Terrify'' will instead deal {{ccs|double damage|magic}}.",
+    "Targets feared by '''Fiddlesticks''' by any means cannot be affected by it again for a duration equal to ''Terrify's'' cooldown."
+   ]
+  },
+  {
+   "question": "Does Fiddlesticks start the 15s damage fight already satisfying Terrify's passive condition (unseen/out-of-combat), so that the opening ability (Q, W, or R) applies fear and, for Q, gets rank-doubled damage on top of the passive's separate 2x from a subsequent Q?",
+   "options": [
+    "Assume the passive condition is active at the start of the fight (Fiddlesticks opens from stealth/unseen), so the first damaging ability fears its target",
+    "Assume the passive condition is not active (a stationary target dummy fight starts in combat/visible), so no ability fears on opening and Q's feared-target bonus never triggers",
+    "Treat it as champion-specific ambiguous and let the simulator pick a fixed convention across all champions with stealth openers"
+   ],
+   "impact": "high",
+   "quotes": [
+    "While '''Fiddlesticks''' has been [[combat status|out of combat]] for at least {{tt|{{fd|2.25}} seconds|Estimated}} and is not {{tip|sight|visible}} to the enemy team, or is impersonating an ''{{ai|A Harmless Scarecrow|Fiddlesticks|Effigy}}'', its damaging ability will additionally {{tip|fear}} targets hit for a duration."
+   ]
+  },
+  {
+   "question": "Does R's cooldown start on cast (i.e., during the 1.5s channel) or only once the channel completes and damage begins, and does R's 1.5s channel block Fiddlesticks from casting Q/W/E during that time in the rotation?",
+   "options": [
+    "Cooldown starts at the moment R is cast (as stated: cdstart = on-cast), and the 1.5s channel fully blocks other actions, delaying the next cast by 1.5s",
+    "Cooldown effectively starts when damage begins (channel completion), treating the listed cooldown as starting from cast for bookkeeping only but functionally the same because casting is blocked throughout"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = on-cast",
+    "'''Fiddlesticks''' {{tip|channel|channels}} for {{fd|1.5}} seconds, then {{tip|blink|blinks}} to the target location"
+   ]
+  },
+  {
+   "question": "In a single-target dummy fight, does W's channel actually connect to the dummy given its Proximity targeting and tether/leash range, or must the simulator simply assume it always tethers and channels the full 2s uninterrupted?",
+   "options": [
+    "Assume W always successfully tethers the single dummy target and channels for the full 2s, dealing all 8 ticks including the final missing-health tick",
+    "Treat W's connection to a single target as a positional-assumption requiring explicit sim convention (e.g., must be within 725 range and stay there)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Fiddlesticks''' forms a {{tip|tether}} between itself and each nearby enemy over the cast time, then {{tip|channel|channels}} for up to {{#var:channel_duration}} seconds"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Terrify (Q) on the dummy, assuming the pre-fight stealth/out-of-combat state is active so this first Q fears the target (fear itself doesn't matter for damage, but sets up the fear-immunity window relevant to a later Q if it lines up)",
+   "Immediately follow with Bountiful Harvest (W): let the tether form during its 0.25s cast time, then channel the full 2s uninterrupted against the stationary dummy, taking all ticks including the enhanced final tick",
+   "Cast Reap (E) on the dummy whenever off cooldown, positioning so the dummy is hit by the center of the slash (silence has no damage fight impact but center-hit is the intended max-value use)",
+   "Cast Crowstorm (R) once available: channel 1.5s, blink onto the dummy, and let all 20 ticks (5s at 0.25s intervals) land on the stationary target",
+   "Repeat Q, W, E on cooldown (respecting mana cost/resource-budget) for the remainder of the 15s, weaving them in as each comes off cooldown to maximize total damage output",
+   "If mana becomes the binding constraint, prioritize casting Q and W (mana efficient/health-scaling and armor/MR% ignoring nothing here) before E, since E's damage is comparatively lower value at high AP relative to its cost"
+  ],
+  "questions": [
+   "Does the simulator's stationary target dummy count as 'unseen'/out of combat for Terrify's passive at fight start, and does it remain visible thereafter (blocking any further passive fear triggers) once combat begins?",
+   "Should the rotation assume R is taken at level 6 and available for at least one cast within the 15s window, or does the simulated level/kit availability vary and require a rotation without R for lower levels?",
+   "Is there a canonical ordering convention (e.g., always open with ultimate if available) that the simulator expects, or is 'maximize total damage over 15s via correct cooldown weaving' the sole criterion?",
+   "Given W's cast time (0.25s) plus channel (2s) plus E's cast time (0.4s) plus R's channel (1.5s), do these serialized commitments actually all fit and interleave within roughly 15s once cooldowns and animation locks are accounted for, or does the simulator handle time budgeting separately from this proposal?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

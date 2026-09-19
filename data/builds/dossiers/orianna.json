@@ -1,0 +1,669 @@
+{
+ "champion": "orianna",
+ "abilities": {
+  "P": {
+   "name": "Clockwork Windup / Clockwork Winding",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_base",
+     "meaning": "bonus on-hit magic damage from basic attacks at 0 stacks",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10,
+      12.353,
+      14.706,
+      17.059,
+      19.412,
+      21.765,
+      24.118,
+      26.471,
+      28.824,
+      31.176,
+      33.529,
+      35.882,
+      38.235,
+      40.588,
+      42.941,
+      45.294,
+      47.647,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{pp|10 + (50-10)/17*(x-1) for 20|color=magic damage}} {{as|(+ 15% AP)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+     "bin": [
+      "OriannaP#TotalDamage"
+     ]
+    },
+    {
+     "id": "p_stackmult",
+     "meaning": "damage increase per stack of Clockwork Winding",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "increased by{{ft|15%|",
+     "bin": [
+      "OriannaP.StackMult",
+      "OriannaP#StackDamage"
+     ]
+    },
+    {
+     "id": "p_stackcap",
+     "meaning": "maximum stacks of Clockwork Winding",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "stacking up to 2 times",
+     "bin": [
+      "OriannaP.StackCount"
+     ]
+    },
+    {
+     "id": "p_stackduration",
+     "meaning": "duration each stack of Clockwork Winding lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "generate a {{tip|stack}} of ''Clockwork Winding'' for 4 seconds",
+     "bin": [
+      "OriannaP.StackDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks generate a stack of Clockwork Winding, refreshing the duration on subsequent attacks and capping at 2 stacks; all stacks are lost when Orianna attacks a different enemy.",
+     "quote": "'''Orianna's''' basic attacks generate a {{tip|stack}} of ''Clockwork Winding'' for 4 seconds, refreshing on subsequent attacks and stacking up to 2 times. All stacks are lost when attacking a new enemy.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The on-hit bonus magic damage from Clockwork Winding does not apply against structures.",
+     "quote": "The attacks do not deal the '''bonus''' damage against {{tip|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting any ability puts a brief 0.01-second global cooldown on all of Orianna's other abilities.",
+     "quote": "''The Ball'' incurs a {{sti|cd|{{fd|0.01}}-second}} global cooldown on all of her abilities when she casts any ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When the Ball snaps back to Orianna it puts a 0.75-second cooldown on Command: Shockwave.",
+     "quote": "''The Ball''... snaps back to her if she moves too far away from it, which incurs a {{sti|cd|{{fd|0.75}}-second}} cooldown on ''{{ai|Command: Shockwave|Orianna}}''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Runaan's Hurricane's extra bolts reset Clockwork Winding's stacks because they count as hitting a different target on-hit.",
+     "quote": "{{iis|Runaan's Hurricane}} extra bolts will cause ''Clockwork Winding'' to reset its stacks, as she hits targets other than her latest one {{tip|on-hit}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Command: Attack",
+   "cooldown": {
+    "values": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "quote": "{{ap|7 to 3}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     35,
+     35,
+     35,
+     35
+    ],
+    "quote": "35",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "None"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 55% AP)}}",
+     "bin": [
+      "OrianaIzunaCommand#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      42,
+      63,
+      84,
+      105,
+      126
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.385
+      }
+     ],
+     "quote": "{{ap|60*0.7 to 180*0.7}} {{as|(+ {{ap|55*0.7}}% AP)}}",
+     "bin": [
+      "OrianaIzunaCommand.BaseDamage",
+      "OrianaIzunaCommand.ReducedDamagePercent"
+     ],
+     "binNote": "The bin has no calculation row that multiplies TotalDamageTooltip by ReducedDamagePercent (30%, i.e. the wiki's 70% multiplier is 1-0.30); the wiki's reduced-damage numbers (60*0.7=42 etc., 55%*0.7=38.5% AP) are derived from BaseDamage and ReducedDamagePercent but no bin calculation states this product directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The Ball deals damage to enemies it passes through in flight and again to nearby enemies upon arrival, with damage beyond the first target hit reduced to 70%.",
+     "quote": "dealing {{as|magic damage}} to enemies it passes through and nearby enemies upon arrival, reduced to 70% against those hit beyond the first",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrianaIzunaCommand.MinimumDamagePercent",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Command: Dissonance",
+   "cooldown": {
+    "values": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "quote": "7"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "OrianaDissonanceCommand#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "field duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "electric field that last 3 seconds",
+     "bin": [
+      "OrianaDissonanceCommand.FieldDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "slow/haste decay duration after leaving field",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "decaying over 2 seconds after leaving",
+     "bin": [
+      "OrianaDissonanceCommand.SlowAndHasteDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The pulse deals damage immediately to nearby enemies and separately leaves a field that applies slow/haste on entry.",
+     "quote": "emit an electric pulse that deals {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Movement speed and slow amounts are not part of damage dealt or taken in a dummy fight.",
+     "quote": "{{st|Movement Speed Modifier|{{ap|20 to 40}}%}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrianaDissonanceCommand.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "OrianaDissonanceCommand.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "OrianaDissonanceCommand.HasteAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Command: Protect",
+   "cooldown": {
+    "values": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "quote": "9"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Resistances",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      6,
+      12,
+      18,
+      24,
+      30
+     ],
+     "terms": [],
+     "quote": "{{ap|6 to 30}}",
+     "bin": [
+      "OrianaRedactCommand.DefenseBonus"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "OrianaRedactCommand#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      55,
+      90,
+      125,
+      160,
+      195
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|55 to 195}} {{as|(+ 45% AP)}}",
+     "bin": [
+      "OrianaRedactCommand#TotalShieldTooltip"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Shield Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}}",
+     "bin": [
+      "OrianaRedactCommand.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The Ball deals magic damage to enemies it passes through while flying to the target, and shields the target upon arrival.",
+     "quote": "dealing {{as|magic damage}} to enemies it passes through and granting the target a {{tip|shield}} for {{fd|2.5}} seconds upon arrival",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus resistances are granted to whichever unit The Ball is attached to, even without a fresh cast.",
+     "quote": "Orianna gains ''Command: Protect's'' bonus resistances whenever ''The Ball'' is attached to her (even if she didn't self-cast).",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Orianna cannot cast her other abilities while The Ball is in flight to the target.",
+     "quote": "'''Orianna''' cannot cast her other abilities while the ''The Ball'' is moving to the target with ''Command: Protect''.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrianaRedactCommand.BaseDamage",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Command: Shockwave",
+   "cooldown": {
+    "values": [
+     110,
+     95,
+     80
+    ],
+    "quote": "{{ap|110 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      225,
+      350,
+      475
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|225 to 475}} {{as|(+ 110% AP)}}",
+     "bin": [
+      "OrianaDetonateCommand#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds",
+     "bin": [
+      "OrianaDetonateCommand.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shockwave stuns nearby enemies and pulls them inward over a set distance.",
+     "quote": "deals {{as|magic damage}} to nearby enemies, {{tip|stun|stuns}} them for {{fd|0.75}} seconds, and {{tip|airborne|pulls}} them over 325 units",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability casts from wherever the champion is at the end of the cast time, not at cast start, even beyond max tether range.",
+     "quote": "''Command: Shockwave'' will cast from wherever the unit the ''The Ball'' is attached to is at the end of the cast time, even if the unit exceeds max tether range.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Displacement immunity does not prevent the stun from being applied.",
+     "quote": "{{tip|Displacement immunity}} will not resist the application of the {{tip|stun}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "OrianaDetonateCommand.AoERadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Each ability deals its magic damage on cast (Q pass-through/arrival, W pulse, E pass-through, R shockwave), usable on cooldown against the dummy"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Clockwork Winding adds flat+AP-scaling bonus magic damage on top of every basic attack"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Clockwork Winding stacks up to 2 from attacks, each stack adding +15% to the on-hit bonus damage, 4s duration refreshed on hit, lost only on target-switch (irrelevant vs one dummy)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The Ball can deal a first full-damage hit to enemies it passes through, then a separate arrival-impact hit to nearby enemies at 70% damage"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Whether the Ball's flight path from Orianna to the cast location/target actually passes over the single dummy (giving Q a pass-through hit, or E a pass-through hit en route to a self-cast) depends on assumed cast geometry"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "0.5s cast time before the shockwave lands, during which Orianna cannot act; damage is delivered at cast-time end"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 35, W 60-80, E 60, R 100) against Orianna's mana pool can cap how many casts fit in the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Command: Protect's shield strength/duration and the passive bonus armor/MR from the attached Ball never matter to the damage fight but govern how long Orianna survives in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant behavior (flat+AP scaling casts, an on-hit rider with a small stack cap, a two-part Q hit, a channel-like R cast time, mana gating, and E's purely defensive kit half) is expressible with existing primitives. The remaining difficulty is not new logic but which geometric/targeting assumption applies to a single stationary dummy, which is captured as unsettled questions rather than a missing primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Command: Attack (Q) hit the single dummy twice per cast (once as the Ball flies through it, once more on arrival splash), applying the 70%-reduced damage to the second hit, or does it land on/adjacent to the dummy and only hit once?",
+   "options": [
+    "Q always registers as two separate damage instances on the same target when cast on/through it (full damage + 70% reduced damage)",
+    "Q only ever produces one damage instance against a single target dummy (the flight-through and arrival-splash are mutually exclusive in this geometry)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|magic damage}} to enemies it passes through and nearby enemies upon arrival, reduced to 70% against those hit beyond the first"
+   ]
+  },
+  {
+   "question": "When Command: Protect (E) is self-cast with no allies present and the Ball is already attached to Orianna, does it still deal its 'passes through' damage component to the dummy, or does it deal zero damage because the Ball never travels (and the note says a cast onto a target already attached doesn't even trigger the global cooldown)?",
+   "options": [
+    "E deals its full pass-through damage to the dummy every cast regardless of travel distance",
+    "E deals no damage on self-cast when the Ball is already attached to Orianna, since there is no flight path to pass through the dummy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''The Ball''' will not incur its global cooldown from a ''{{ai|Command: Protect|Orianna}}'' cast that is used on a target already attached to it."
+   ]
+  },
+  {
+   "question": "Should the 15s damage-fight rotation open with Command: Shockwave (R) for early burst, or hold it for a later cast, given that in a real fight R is normally saved for its stun/pull but those have no value against a dummy?",
+   "options": [
+    "Cast R at first availability purely to maximize casts-per-15s and front-load damage",
+    "Cast R last since its 0.5s cast time and long cooldown make timing within the window matter for total number of R casts, not just order"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight already autoattacking the dummy so Clockwork Winding stacks begin accruing immediately.",
+   "Cast Command: Attack (Q) on the dummy as soon as possible for its damage, then recast on cooldown throughout the fight (cooldown 7→3s by rank).",
+   "Cast Command: Dissonance (W) on cooldown (7s) whenever available, since it is an auto-targeted pulse requiring no travel time.",
+   "Cast Command: Protect (E) on self on cooldown (9s) for its damage component, assuming it still hits the dummy on each cast.",
+   "Cast Command: Shockwave (R) as soon as it is off cooldown for its large flat+AP damage burst.",
+   "Between ability casts, continue autoattacking the dummy to keep 2 stacks of Clockwork Winding active, maximizing the on-hit bonus magic damage per swing.",
+   "Repeat Q > W > E on cooldown, inserting R whenever it becomes available, for the full 15 seconds, prioritizing not clipping autoattacks."
+  ],
+  "questions": [
+   "Is Orianna assumed to start the fight with the Ball already attached to her (default resting state), or already cast out onto the dummy's position?",
+   "In the survival fight, should Command: Protect always be kept up (shield + bonus resists) as the primary defensive primitive, or is the passive armor/MR from a stationary Ball attachment always active regardless of casts?",
+   "Does the 0.01s global ability cooldown from any cast meaningfully constrain how tightly Q/W/E/R can be sequenced back-to-back in a 15s simulation, or is it negligible and should be ignored?",
+   "Should mana be assumed effectively unlimited (typical late-game itemization) for this fight, or does the simulator want the mana costs enforced against a specific mana pool at the given level/items?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

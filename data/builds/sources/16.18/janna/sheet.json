@@ -1,0 +1,662 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "TailwindSelf",
+    "key": "Characters/Janna/Spells/TailwindSelfAbility/TailwindSelf",
+    "dataValues": {
+     "MSPercentAlly": 0.06,
+     "MSBonusMagicDamage": 0.3
+    },
+    "calcs": {
+     "MSToOnHitConversionRate": {
+      "expr": "MSBonusMagicDamage=0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "MSBonusMagicDamage"
+      ]
+     },
+     "BonusDamage": {
+      "expr": "(MSBonusMagicDamage=0.3)xbonus stat7?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "bonus",
+        "coef": 0.3,
+        "dataValue": "MSBonusMagicDamage"
+       }
+      ],
+      "refs": [
+       "MSBonusMagicDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "HowlingGale",
+    "key": "Characters/Janna/Spells/HowlingGaleAbility/HowlingGale",
+    "cooldown": 14,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      90,
+      95,
+      100,
+      105,
+      110
+     ]
+    },
+    "dataValues": {
+     "MissileTravelTime": 1.25,
+     "MinionMod": 1,
+     "BaseRange": 1100,
+     "MinDamage": {
+      "axis": "rank",
+      "v": [
+       55,
+       90,
+       125,
+       160,
+       195
+      ]
+     },
+     "MinimumRatio": 0.5,
+     "BonusDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "BonusRatio": 0.1,
+     "ChargeDistancePercent": 20,
+     "BaseKnockup": 0.5,
+     "ChargeKnockup": 0.25,
+     "MaxDuration": 3
+    },
+    "calcs": {
+     "MinimumDamage": {
+      "expr": "MinDamage=[55/90/125/160/195] + (MinimumRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        90,
+        125,
+        160,
+        195
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "MinimumRatio"
+       }
+      ],
+      "refs": [
+       "MinDamage",
+       "MinimumRatio"
+      ]
+     },
+     "ExtraDamagePerSecondCharged": {
+      "expr": "BonusDamage=[10/15/20/25/30] + (BonusRatio=0.1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        15,
+        20,
+        25,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "BonusRatio"
+       }
+      ],
+      "refs": [
+       "BonusDamage",
+       "BonusRatio"
+      ]
+     },
+     "MaxDamage": {
+      "expr": "MinDamage=[55/90/125/160/195] + (MinimumRatio=0.5)xap + (MaxDuration=3)*(BonusDamage=[10/15/20/25/30] + (BonusRatio=0.1)xap)",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        90,
+        125,
+        160,
+        195
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "MinimumRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "BonusRatio"
+       }
+      ],
+      "refs": [
+       "BonusDamage",
+       "BonusRatio",
+       "MaxDuration",
+       "MinDamage",
+       "MinimumRatio"
+      ]
+     },
+     "MaxKnockup": {
+      "expr": "BaseKnockup=0.5 + (MaxDuration=3)*(ChargeKnockup=0.25)",
+      "flat": 1.25,
+      "terms": [],
+      "refs": [
+       "BaseKnockup",
+       "ChargeKnockup",
+       "MaxDuration"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SowTheWind",
+    "key": "Characters/Janna/Spells/SowTheWindAbility/SowTheWind",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.245,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MSPercent": {
+      "axis": "rank",
+      "v": [
+       0.06,
+       0.07,
+       0.08,
+       0.09,
+       0.1
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       55,
+       85,
+       115,
+       145,
+       175
+      ]
+     },
+     "APRatio": 0.5,
+     "SlowDuration": 2,
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       20,
+       24,
+       28,
+       32,
+       36
+      ]
+     },
+     "MSAPRatio": 0.0002,
+     "SlowAPRatio": 0.06
+    },
+    "calcs": {
+     "TotalMS": {
+      "expr": "MSPercent=[0.06/0.07/0.08/0.09/0.1] + (MSAPRatio=0.0002)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.06,
+        0.07,
+        0.08,
+        0.09,
+        0.1
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0002,
+        "dataValue": "MSAPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "MSAPRatio",
+       "MSPercent"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[55/85/115/145/175] + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        85,
+        115,
+        145,
+        175
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalSlow": {
+      "expr": "(SlowPercent=[20/24/28/32/36] + (SlowAPRatio=0.06)xap) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.2,
+        0.24,
+        0.28,
+        0.32,
+        0.36
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0006,
+        "dataValue": "SlowAPRatio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "SlowAPRatio",
+       "SlowPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "EyeOfTheStorm",
+    "key": "Characters/Janna/Spells/EyeOfTheStormAbility/EyeOfTheStorm",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ECDRefundforCC": 0.2,
+     "EmpowerDuration": 5,
+     "DecayGracePeriod": 4,
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "ShieldAPRatio": 0.55,
+     "BonusAD": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "ADAPRatio": 0.1,
+     "ShieldDuration": 4
+    },
+    "calcs": {
+     "TotalShield": {
+      "expr": "BaseShield=[80/120/160/200/240] + (ShieldAPRatio=0.55)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldAPRatio"
+      ]
+     },
+     "TotalAD": {
+      "expr": "BonusAD=[10/15/20/25/30] + (ADAPRatio=0.1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        15,
+        20,
+        25,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "ADAPRatio"
+       }
+      ],
+      "refs": [
+       "ADAPRatio",
+       "BonusAD"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ReapTheWhirlwind",
+    "key": "Characters/Janna/Spells/ReapTheWhirlwindAbility/ReapTheWhirlwind",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      130,
+      115,
+      100
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.001,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HealBasePerSecond": {
+      "axis": "rank",
+      "v": [
+       100,
+       150,
+       200
+      ]
+     },
+     "Duration": 3,
+     "Range": 700,
+     "MaxKnockback": 875,
+     "KnockbackBaseRange": 875,
+     "KnockbackSpeed": 1200,
+     "KnockbackGravity": 10,
+     "KnockbackDuration": 0.5
+    },
+    "calcs": {
+     "HealPerSecond": {
+      "expr": "HealBasePerSecond=[100/150/200] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        150,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "HealBasePerSecond"
+      ]
+     },
+     "TotalHeal": {
+      "expr": "HealPerSecond * Duration=3",
+      "modifies": "HealPerSecond",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        450,
+        600
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "Duration",
+       "HealBasePerSecond"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "HowlingGale",
+  "W": "SowTheWind",
+  "E": "EyeOfTheStorm",
+  "R": "ReapTheWhirlwind",
+  "P": "TailwindSelf"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 360,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 2.3,
+   "{3a509002}": 0.08
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Janna",
+  "name": "Janna",
+  "partype": "Mana",
+  "passive": "Tailwind",
+  "spells": [
+   {
+    "id": "HowlingGale",
+    "name": "Howling Gale",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     90,
+     95,
+     100,
+     105,
+     110
+    ]
+   },
+   {
+    "id": "SowTheWind",
+    "name": "Zephyr",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "EyeOfTheStorm",
+    "name": "Eye Of The Storm",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "ReapTheWhirlwind",
+    "name": "Monsoon",
+    "maxrank": 3,
+    "cooldown": [
+     130,
+     115,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Tailwind": {
+    "spelleffects": "proc",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Howling Gale": {
+    "damagetype": "magic",
+    "spelleffects": "area of effect",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Zephyr": {
+    "damagetype": "magic",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Eye of the Storm": {
+    "targeting": "Unit",
+    "affects": "Allies, Allied turrets, Self",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Monsoon": {
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies, Allies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

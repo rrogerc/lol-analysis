@@ -1,0 +1,160 @@
+{
+ "champion": "jayce",
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R"
+   ],
+   "note": "Transform swaps between Cannon Stance (ranged, Q=Shock Blast, W=Hyper Charge) and Hammer Stance (melee, Q=To the Skies!, W=Lightning Field, E=Thundering Blow/Acceleration Gate), each granting a distinct empowered next-basic-attack effect."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Hyper Charge (Cannon W) arms Jayce's next 3 basic attacks with bonus modified physical damage; Transform (R) arms Jayce's next basic attack with bonus magic damage (Hammer Stance) or an armor/MR shred (Cannon Stance), consumed on next hit."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Hyper Charge resets Jayce's basic attack timer on cast."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Hyper Charge grants 360% bonus attack speed for its duration; Hammer Stance grants bonus armor and magic resist for the duration Jayce stays in that stance (relevant to the survival fight)."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Lightning Field (Hammer W) deals magic damage every second for 4 seconds to enemies around Jayce."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cannon Stance's empowered attack reduces the target's armor and magic resistance for 5 seconds, increasing subsequent damage taken."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Thundering Blow (Hammer E) deals magic damage scaling off the target's maximum health (capped vs. monsters, irrelevant to a champion dummy)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Shock Blast's damage is multiplied 1.4x if the bolt passes through Jayce's own Acceleration Gate (E) — a two-ability interaction, not a self-contained recast."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Shock Blast is an AoE projectile that detonates on hit or at max range; whether/how reliably it threads Acceleration Gate for the supercharge is a geometry assumption the dummy fight has to make."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Mana costs on Shock Blast/To the Skies!, Lightning Field/Hyper Charge, and Thundering Blow can gate how often each is cast within 15s absent Lightning Field's on-hit mana restore."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "To the Skies!/Shock Blast deal damage on arrival/detonation on cooldown; Thundering Blow deals damage at the end of its cast time on cooldown."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The stance swap, empowered attacks, DoT zone, resist shred, %max-health damage, and the Shock Blast/Acceleration Gate supercharge interaction are all expressible with existing primitives (form-or-stance, empowered-attack, dot, target-debuff, conditional-damage, recast-or-multipart, positional-assumption)."
+ },
+ "unsettled": [
+  {
+   "question": "What cooldown applies to Shock Blast (the ranged Cannon-Stance version of Q)?",
+   "options": [
+    "The ddragon top-level Q array [16, 14, 12, 10, 8, 6] shared with To the Skies!",
+    "The flat 8-second cooldown given specifically in the sheet's 'other JayceShockBlast' section and the wiki's Shock Blast template"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: 8",
+    "|cooldown     = 8"
+   ]
+  },
+  {
+   "question": "Is Hyper Charge's empowered-attack window 3.6 seconds (bin) or 4 seconds (wiki description)?",
+   "options": [
+    "JayceHyperCharge.Duration = 3.6",
+    "Wiki description: 'empowers his next 3 basic attacks within 4 seconds'"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "JayceHyperCharge.Duration = 3.6",
+    "empowers his next 3 [[basic attack]]s within {{fd|4}} seconds"
+   ]
+  },
+  {
+   "question": "For the dummy damage fight, should Shock Blast be assumed to always pass through Jayce's own Acceleration Gate (getting the 1.4x supercharge) or never/only some of the time, given the gate is a separate 16s-cooldown, 4s-duration cast that Jayce must physically stand near?",
+   "options": [
+    "Always supercharged (best case, use the 1.82x-AD/1.4x-base row every cast)",
+    "Never supercharged (base Shock Blast row only)",
+    "Duty-cycle limited by Acceleration Gate's cooldown/duration relative to Shock Blast's own cooldown"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the bolt passes through ''{{ai|Acceleration Gate|Jayce}}'', it becomes supercharged: increasing its {{ccs|damage by 40%|physical}}"
+   ]
+  },
+  {
+   "question": "When Jayce switches stances while a Transform empowered-attack (Cannon shred or Hammer bonus damage) is still unconsumed, does the switch apply that pending effect, or just discard it unused?",
+   "options": [
+    "Switching stances consumes and applies the pending empowered-attack effect",
+    "Switching stances consumes (discards) the pending effect with no damage/debuff applied"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Both ''Transform'' on-hit effects have no set duration and will only be consumed when ''Jayce'' either lands a basic attack or switches stances."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open in Cannon Stance (transform if not already there) and drop Acceleration Gate at Jayce's own feet.",
+   "Cast Shock Blast through the gate for the supercharged damage instance.",
+   "Basic-attack to consume the Cannon Stance empowered attack (armor/MR shred) on the target.",
+   "Cast Hyper Charge and basic-attack continuously through its 3-attack, high-attack-speed window, benefiting from the attack reset.",
+   "Recast Shock Blast on cooldown, routing it through Acceleration Gate again whenever the gate is still up, and re-cast Acceleration Gate as soon as it's off cooldown.",
+   "Transform to Hammer Stance when Cannon abilities are on cooldown: basic-attack to land the Transform's bonus magic damage, cast Thundering Blow for the max-health magic damage, cast To the Skies! for the AoE physical slam, and cast Lightning Field for its DoT.",
+   "Transform back to Cannon Stance and repeat the Gate/Shock Blast/Hyper Charge sequence for the remainder of the 15 s window, prioritizing whichever ability is off cooldown."
+  ],
+  "questions": [
+   "Does Jayce start the fight in Hammer Stance or Cannon Stance by default, and can the simulator choose freely?",
+   "Is frequent stance-swapping (to fish for Transform's on-hit bonus and the 30 movement-speed/ghost proc) actually worth the lost uptime versus just staying in Cannon Stance and auto-attacking/Shock Blasting for the whole fight?",
+   "Given Acceleration Gate only lasts 4s and Shock Blast's own cooldown may be as low as 8s (see unsettled cooldown question), how many of the ~15s fight's Shock Blasts can realistically be supercharged?",
+   "Does Thundering Blow's 0.4s post-cast lockout on Q/Shock Blast meaningfully change optimal cast order, or is it negligible next to Q's own cooldown?",
+   "Should Lightning Field (Hammer W, a stationary DoT zone) be treated as worth casting during a brief Hammer-Stance detour, or does its short duration make swapping into Hammer purely for E/Q/W actually lose net DPS versus staying ranged?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

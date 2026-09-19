@@ -1,0 +1,151 @@
+{
+ "champion": "evelynn",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Hate Spike's dart marks the target for 4s; Evelynn's next 3 basic attacks (on-hit) or abilities against the marked target deal bonus magic damage (15-55 +25% AP per instance, up to 3 instances)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Hate Spike can be recast up to 3 times at no mana cost (barrage interval ~0.5s) while the original cast is on cooldown; each recast is a separate line-AoE magic damage instance hitting the dummy."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "When Allure's mark is consumed after maturing 2.5s+, the target (champion) suffers 35-45% magic resistance reduction for 4s, amplifying all subsequent magic damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "Allure's on-hit expunge is only empowered (MR shred applied) if the mark was held on the target for at least 2.5 seconds before being consumed by an attack/ability."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Whiplash and Empowered Whiplash deal magic damage scaling off the target's current maximum health (base 60-180/80-240 + 3%/4% max HP, +0.015%/0.025% per AP)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Gaining Demon Shade resets Whiplash's cooldown to 0 and empowers the next cast into Empowered Whiplash."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "E"
+   ],
+   "note": "Evelynn is out of combat (Demon Shade active) before the fight begins per the 4s no-stealth-break timer, so her opening Whiplash cast is the Empowered version; subsequent casts during continuous engagement are not."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "Last Caress deals 240% of its base+AP damage against enemies below 30% of their maximum health, otherwise base damage."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 40-60, W 60-100, E 40-60, R 100 flat) meaningfully cap how many W/R casts and sustained Q/E usage fit inside the 15s window given Evelynn's mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Q's mark-empowered attacks and free recasts, W's maturity-gated MR shred, E's %max-health scaling with a Demon-Shade-triggered empowered opener, R's sub-30%-health damage multiplier, and mana costs) maps cleanly onto existing primitives; no unique logic outside the closed list is required."
+ },
+ "unsettled": [
+  {
+   "question": "Is Last Caress's 240% bonus damage against low-health targets implemented as a true critical strike (affected by crit-damage-amplifying items/runes like Infinity Edge) or as a flat conditional multiplier unaffected by crit modifiers?",
+   "options": [
+    "It is a genuine crit (interacts with bonus crit damage sources)",
+    "It is a flat 240% multiplier unrelated to the crit system despite the internal naming"
+   ],
+   "impact": "high",
+   "quotes": [
+    "EvelynnR.CritMultiplier = 2.4",
+    "EvelynnR.CritBonus = 1.4",
+    "EvelynnR.CritTreshold = 0.3",
+    "EvelynnR#CritDamage = Damage * CritMultiplier=2.4",
+    "''Last Caress'' is empowered to deal {{ccs|240% damage|magic}} against enemies below {{as|{{sti|health|30% of their '''maximum''' health}}}}."
+   ]
+  },
+  {
+   "question": "What is Hate Spike's actual cast/recast cadence: initial cast time 0.25s (bin) or 0.3s (wiki), and is the 0.5s recast interval (wiki custominfo) or 4s (bin EvelynnQ.FakeCD) the real value governing recast timing?",
+   "options": [
+    "Use bin's 0.25s cast / recast governed by some other bin value",
+    "Use wiki's 0.3s initial cast and 0.5s barrage interval between recasts"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.25",
+    "{{dv|{{tt|{{fd|0.3}}|Initial cast}}|{{tt|None|Recast}}}}",
+    "customlabel  = {{tt|Barrage Cooldown|Cooldown between each spike cast, affected by ability haste}}|custominfo   = {{fd|0.5}}",
+    "EvelynnQ.FakeCD = 4"
+   ]
+  },
+  {
+   "question": "Is Allure's cast time 0.15s (bin EvelynnW.castTime) or 0.25s (wiki cast time field)?",
+   "options": [
+    "0.15s per bin",
+    "0.25s per wiki"
+   ],
+   "impact": "low",
+   "quotes": [
+    "castTime: 0.15",
+    "|cast time    = {{fd|0.25}}"
+   ]
+  },
+  {
+   "question": "Does the simulated damage fight begin with Evelynn out of combat (Demon Shade active), so her first Whiplash cast is automatically the Empowered version, or does the fight start already 'in combat' with no free empowered opener?",
+   "options": [
+    "Fight opens with Demon Shade up, granting one free Empowered Whiplash at the start",
+    "Fight starts in-combat / no assumed pre-fight stealth bonus, first E is the plain version"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{sbc|Innate:}} While [[Combat status|out of combat]], {{ci|Evelynn}} gains ''Demon Shade''.",
+    "Gaining ''{{ai|Demon Shade|Evelynn}}'' resets ''Whiplash's'' {{sti|cooldown}} and ''{{ai|Empowered Whiplash|Evelynn|empowers}}'' its next cast."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Evelynn enters the fight out of combat with Demon Shade active (pre-fight stealth), so her opening ability is treated as coming off an empowered state.",
+   "Cast W (Allure) on the target first to start its 5s mark timer, since the empowered consume requires holding the mark for 2.5s.",
+   "Cast E (Whiplash), which is the free Empowered Whiplash granted by Demon Shade, for a large opening burst of %-max-health magic damage plus on-hit effects.",
+   "Cast Q (Hate Spike) to mark the target, then immediately chain its up to 3 free recasts (each a separate magic-damage instance) before the barrage window closes.",
+   "Basic-attack the target between ability cooldowns so the 3 Q-empowered attacks (bonus magic damage per hit) and W's empowered trigger land as soon as available.",
+   "As soon as roughly 2.5s have passed since casting W, land a basic attack or ability on the target to consume the matured mark, applying the magic resistance shred for the rest of the fight.",
+   "Recast E again once its normal 8s cooldown is up (now un-empowered, since Demon Shade will not re-trigger while continuously engaged) for more %-health magic damage.",
+   "Recast Q on its 4s cooldown (plus recasts) repeatedly through the fight window to keep stacking magic damage and empowered on-hit procs.",
+   "Hold R (Last Caress) until the target's health is below 30% max health if that will occur within the 15s window, to get the 240% damage multiplier; otherwise cast it as soon as available given its long cooldown likely allows only one use in the fight.",
+   "Recast W again if it comes off cooldown before the fight ends, to refresh the magic resistance shred window."
+  ],
+  "questions": [
+   "Does the simulator model Evelynn as starting the damage fight out of combat (Demon Shade active), granting the free opening Empowered Whiplash, or does she start already engaged with no such bonus?",
+   "Within the ~15s fight against a single target, does the target's health realistically drop below 30% (triggering R's empowered damage) before R would be cast anyway, or should R simply be fired on cooldown regardless of the threshold?",
+   "Should Hate Spike's 3 free recasts be fired back-to-back immediately after the initial cast, or is it better DPS to space them to keep a mark active on the target for on-hit bonus damage timing?",
+   "Does landing a basic attack to consume Allure's mark need to occur at or after the exact 2.5s maturity mark to count as empowered, or does the simulator treat any post-cast hit as empowered once 2.5s have elapsed in real time regardless of attack-timing granularity?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,889 @@
+{
+ "champion": "lillia",
+ "abilities": {
+  "P": {
+   "name": "Dream-Laden Bough",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_dot_percent",
+     "meaning": "Dream Dust total damage as percent of target's maximum health, scaling with AP",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.05,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.0125
+        }
+       ]
+      }
+     ],
+     "quote": "5% {{as|(+ {{fd|1.25}}% per 100 AP)}} of the target's '''maximum''' health",
+     "bin": [
+      "LilliaP#DotPercentTotal"
+     ]
+    },
+    {
+     "id": "p_duration",
+     "meaning": "Dream Dust duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "over 3 seconds",
+     "bin": [
+      "LilliaP.Duration"
+     ]
+    },
+    {
+     "id": "p_ticks",
+     "meaning": "number of Dream Dust damage/heal ticks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds over 3 seconds",
+     "bin": [
+      "LilliaP.DotTicks"
+     ]
+    },
+    {
+     "id": "p_interval",
+     "meaning": "interval between Dream Dust ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "0.5s interval is not a separate bin data value; it is implied by Duration=3 / DotTicks=6, neither of which is itself an interval field."
+    },
+    {
+     "id": "p_heal_champion",
+     "meaning": "total self-heal over Dream Dust duration against champions",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      6,
+      9.56,
+      13.29,
+      17.19,
+      21.27,
+      25.52,
+      29.94,
+      34.54,
+      39.3,
+      44.24,
+      49.36,
+      54.65,
+      60.11,
+      65.74,
+      71.54,
+      77.51,
+      83.66,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{pplevel|6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1))|color=heal}} {{as|(+ 30% AP)}} against {{tip|champions}}",
+     "bin": [
+      "LilliaP#ChampionHealTT"
+     ],
+     "binNote": "The wiki's pplevel formula 6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1)) is quadratic in level and does not match the bin's LilliaP#ChampionHeal byLevel(1..15) curve (which multiplied by DotTicks=6 gives a linearly-interpolated 6..90 progression, e.g. level 10 = 55.41 vs wiki's 49.36). The two sources disagree on the level curve shape; flat values here follow the wiki's stated formula, not the bin's byLevel array."
+    },
+    {
+     "id": "p_multiheal_mod",
+     "meaning": "healing effectiveness reduction per additional target afflicted beyond the first",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "reduced to 15% effectiveness for each target afflicted beyond the first",
+     "bin": [
+      "LilliaP.MultiHealMod"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "All of Lillia's abilities apply Dream Dust to enemies they hit, which deals damage over time and heals her simultaneously.",
+     "quote": "'''Lillia's''' {{tip|abilities}} apply ''Dream Dust'' to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lilting Lullaby's sleep application does not apply Dream Dust, but the damage it triggers does.",
+     "quote": "{{ais|Lilting Lullaby|Lillia}} application does not apply ''Dream Dust'', but its triggering damage does.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dream Dust is applied even if the ability's damage is prevented by a shield or invulnerability, but not if the ability itself is prevented (e.g. by spell shield).",
+     "quote": "''Dream Dust'' is applied even if the target takes no damage from an ability, e.g. by being {{tip|shield|shielded}} or {{tip|invulnerability|invulnerable}}, but not when the ability hit is prevented in the first place (e.g. {{tip|spell shield}})",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Dream-Laden Bough's damage is persistent, indirect damage, and applies spell effects (i.e. on-hit-adjacent effects) as it ticks.",
+     "quote": "''Dream-Laden Bough'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lillia can only be healed by Dream Dust against one monster at a time.",
+     "quote": "She may only heal against 1 monster at a time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LilliaP.MonsterHealingPercent",
+     "reason": "unknown"
+    },
+    {
+     "ref": "LilliaP.ChampionHealingPercent",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "LilliaP.LargeMonsterHealMod",
+     "reason": "unknown"
+    },
+    {
+     "ref": "LilliaP.SmallMonsterHealMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Blooming Blows / Prance",
+   "cooldown": {
+    "values": [
+     6,
+     5.5,
+     5,
+     4.5,
+     4
+    ],
+    "quote": "{{ap|6 to 4}}"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Movement Speed per Stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0003
+      }
+     ],
+     "quote": "{{ap|3 to 7}}% {{as|(+ 3% per 100 AP)}}",
+     "bin": [
+      "LilliaQ.PranceBonusPerStack",
+      "LilliaQ#PranceSpeed"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      45,
+      55,
+      65,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|35 to 75}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "LilliaQ.FlatDamageBase",
+      "LilliaQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_9",
+     "meaning": "Bonus true damage to enemies hit within the outer edge",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      35,
+      45,
+      55,
+      65,
+      75
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "Enemies hit within the outer edge of the area additionally take the same amount as {{sti|{{as|'''bonus''' true damage}}}}",
+     "bin": [
+      "LilliaQ.FlatDamageTrue",
+      "LilliaQ#BonusTrueDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Prance stacks are generated whenever any Lillia ability hits at least one enemy, refresh on subsequent hits, and cap at 4 stacks; stacks expire one at a time after the duration ends.",
+     "quote": "generates a {{tip|stack}} of ''Prance'' for {{fd|6.5}} seconds, refreshing on subsequent hits and stacking up to 4 times. Stacks expire one by one every {{fd|1.5}} seconds when the duration ends.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Lillia can move during the Q cast time, so casting it does not stop her movement.",
+     "quote": "'''Lillia''' can move during Blooming Blows' cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shields cannot block the Prance stack Lillia gains from casting Q.",
+     "quote": "{{tip|Spell shield}} will not prevent '''Lillia''' from gaining a ''Prance'' stack.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Enemies caught in the outer ring of the swing take both the magic damage and an equal amount of bonus true damage, i.e. up to double damage at the edge of the radius.",
+     "quote": "Enemies hit within the outer edge of the area additionally take the same amount as {{sti|{{as|'''bonus''' true damage}}}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LilliaQ.MinimumRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaQ.MaximumRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaQ.MinionDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LilliaQ.PranceDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LilliaQ.PranceMaxStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LilliaQ.PranceFalloffTime",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Watch Out! Eep!",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{tt|None|Dash starts immediately before a 0.25 cast time, but actual delay is 0.6 to 0.75 seconds}}",
+    "binNote": "Wiki lists cast time as 'None' but notes an actual delay of 0.6 to 0.75 seconds before impact; the bin's MaximumCastTime=0.75 matches the upper bound, used here since it caps the pre-impact delay."
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      100,
+      120,
+      140,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|80 to 160}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "LilliaW#FlatDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Increased Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      240,
+      300,
+      360,
+      420,
+      480
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.05
+      }
+     ],
+     "quote": "{{ap|80*3 to 160*3}} {{as|(+ 105% AP)}}",
+     "bin": [
+      "LilliaW#FlatDamageSweetSpot"
+     ],
+     "binNote": "FlatDamageSweetSpot = FlatDamage x SweetSpotBonus=3, which equals base*3 and ap-coef*3 (0.35*3=1.05), matching the wiki's stated numbers exactly."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Minion Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.175
+      }
+     ],
+     "quote": "{{ap|80*0.5 to 160*0.5}} {{as|(+ {{fd|17.5}}% AP)}}",
+     "bin": [
+      "LilliaW.MinionDamageMod"
+     ],
+     "binNote": "Minion damage is FlatDamage x MinionDamageMod=0.5; no separate calc row exists, derived from FlatDamageBase and MinionDamageMod."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Increased Minion Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      120,
+      150,
+      180,
+      210,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.525
+      }
+     ],
+     "quote": "{{ap|80*0.5*3 to 160*0.5*3}} {{as|(+ {{fd|52.5}}% AP)}}",
+     "bin": [
+      "LilliaW.MinionDamageMod",
+      "LilliaW#FlatDamageSweetSpot"
+     ],
+     "binNote": "Derived as FlatDamageSweetSpot x MinionDamageMod=0.5; no dedicated calc row exists."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Lillia dashes toward the target area and smashes her censer, dealing magic damage to enemies hit, with increased damage to those within the epicenter.",
+     "quote": "dashes toward the target area and smashes her censer, dealing {{as|magic damage}} to enemies hit. Enemies hit within the epicenter are dealt {{ccs|increased damage|magic}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability deals only 50% damage to minions.",
+     "quote": "''Watch Out! Eep!'' deals 50% damage to {{tip|minions}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cast time is listed as none, but the dash and cast combine for an actual delay of 0.6 to 0.75 seconds before impact regardless of movement.",
+     "quote": "Dash starts immediately before a 0.25 cast time, but actual delay is 0.6 to 0.75 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lillia cannot move before the strike goes off at 0.767 seconds, regardless of dash duration.",
+     "quote": "cannot move before the strike goes off at {{fd|0.767}} seconds, regardless",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LilliaW.MaximumDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.MaxSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.MinimumDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.LandingOffset",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.MinimumCastTime",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.MaximumCastTime",
+     "reason": "utility"
+    },
+    {
+     "ref": "LilliaW.MinimumRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.SweetSpotRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaW.AnimRangeCutoff",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Swirlseed",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.4,
+    "quote": "{{fd|0.4}}",
+    "binNote": "Bin's LilliaE castTime is 0.35, disagreeing with the wiki's stated 0.4; wiki's value is reported."
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "LilliaE#ImpactDamageTotal"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "slowing them by 40% for 3 seconds",
+     "bin": [
+      "LilliaE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "slowing them by 40% for 3 seconds",
+     "bin": [
+      "LilliaE.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The seed detonates on hitting an enemy or terrain, dealing damage in a cone to enemies near the impact.",
+     "quote": "the seed detonates upon hitting an enemy or terrain while on the ground, dealing {{as|magic damage}} to enemies in a cone",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shields do not stop the seed from detonating and striking nearby targets.",
+     "quote": "{{tip|Spell shield}} does not prevent the seed from detonating thus striking nearby targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Projectile-destroying effects can make the rolling seed detonate early upon collision, dealing 0 damage to the target that destroyed it and not triggering the cone AoE.",
+     "quote": "If {{cai|Unbreakable|Braum}} blocks the initial projectile, it is destroyed and deals 0 damage to him, as well as not triggering the cone-shaped area of effect.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LilliaE.BounceRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaE.ImpactRangeCheck",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaE.HitboxWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaE.HitboxLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaE.AnimCutoffRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LilliaE.APRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Lilting Lullaby",
+   "cooldown": {
+    "values": [
+     150,
+     130,
+     110
+    ],
+    "quote": "{{ap|150 to 110}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.4,
+    "quote": "{{fd|0.4}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "wake-up magic damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|100 to 200}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "LilliaR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "drowsy duration before sleep",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "renders them {{tip|drowsy}} for {{fd|1.5}} seconds",
+     "bin": [
+      "LilliaR.DrowsyDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "sleep duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "they fall {{tip|asleep}} for 2 seconds",
+     "bin": [
+      "LilliaR.SleepDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "missile travel time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "arrives after {{fd|0.3}} seconds",
+     "bin": [],
+     "binNote": "No bin data value or calculation carries this fixed travel time; the sheet has no missile-speed/travel-time field for LilliaR."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Requires an enemy champion already affected by Dream-Laden Bough (Dream Dust) to cast.",
+     "quote": "An enemy champion affected by {{ai|Dream-Laden Bough|Lillia|Dream Dust}} is required to cast this ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus magic damage triggers only on the next non-persistent damage instance the sleeping target takes from a champion, large monster, or turret, consuming the debuff.",
+     "quote": "The next instance of non-{{tip|persistent damage|persistent}} damage that a {{tip|sleep|sleeping}} target takes from {{tip|champions}}, large {{tip|monsters}} or {{tip|turrets}} consumes the debuff to deal {{as|'''additional''' magic damage|magic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The extra damage is attributed to Lillia and scales with her magic penetration.",
+     "quote": "The additional {{as|magic damage}} dealt is accredited to '''Lillia''' and benefits from her {{sti|{{as|magic penetration}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield does not prevent falling asleep or block the wake-up damage, but does block the drowsy application.",
+     "quote": "{{tip|Spell shield}} will not prevent falling {{tip|sleep|asleep}} nor block the wake-up damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Lillia can move during the cast time of Lilting Lullaby.",
+     "quote": "'''Lillia''' can move during Lilting Lullaby's cast time.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The lullaby's initial slow on drowsy targets is 10%.",
+     "quote": "{{tip|slow|slowing}} them by 10%",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LilliaR.ImpactDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LilliaR.InitialSlow",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Q, W, E deal damage on cast or after a fixed cast/travel delay on their own cooldowns; R's own missile deals no self-damage but arms the wake-up bonus (see conditional-damage)."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Dream-Laden Bough: any Lillia ability that hits an enemy applies 'Dream Dust', a 3s/6-tick DoT dealing 5% (+1.25%/100AP) of the target's max HP total, capped vs monsters. Triggered by Q/W/E hits and by R's wake-up damage (R's sleep application itself does not apply it)."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q deals bonus true damage equal to its magic damage only to targets caught within the outer ring (225-485 range) of the swing; W deals 3x damage to targets caught in a 65-radius epicenter sweet spot. The dummy fight must assume whether the target is standing in these zones for every cast."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R puts an enemy champion drowsy (1.5s) then asleep (2s, after a 0.3s missile travel); the next non-persistent damage instance a sleeping target takes from a champion/large monster/turret consumes the debuff for bonus magic damage (100-200 + 40% AP). Requires the target to already be marked by Dream Dust to cast R at all, and requires a follow-up qualifying hit to land while asleep to realize the bonus."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 65, W 50, E 70, R 50) with no listed mana-restore mechanic on the kit; over a 15s fight with no items/runes assumed, mana could cap the number of casts, especially with W/Q on short (4-14s) cooldowns and E fixed at 12s."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant mechanics (base ability damage, an ability-triggered percent-max-HP DoT shared across all four abilities, positional bonus-damage zones on Q and W, and R's 'next hit while asleep' bonus damage) are all expressible as combinations of plain-cast, dot, positional-assumption, and conditional-damage primitives; no unique stat-conversion, form-change, ammo, or pet logic is needed for the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "When Dream Dust is already active on the target and a second Lillia ability hits it, does the new hit simply refresh the existing 3s/6-tick DoT (one DoT instance total), or does it start a fully independent second DoT instance that stacks/ticks alongside the first?",
+   "options": [
+    "Refresh only: re-applying Dream Dust resets the 3s timer but there is still only one DoT running at a time",
+    "Stacking: each ability hit creates its own independent 3s/6-tick DoT instance, so overlapping casts multiply total Dream Dust damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Lillia's''' {{tip|abilities}} apply ''Dream Dust'' to enemies hit"
+   ]
+  },
+  {
+   "question": "Lillia's Dream Dust self-heal-per-level curve disagrees between the bin's LilliaP#ChampionHeal byLevel(1..15) array (times 6 ticks) and the wiki's stated pplevel quadratic formula (6..90) — which curve is authoritative for computing sustain in the survival fight?",
+   "options": [
+    "Use the bin's byLevel(1..15) array x 6 ticks",
+    "Use the wiki's stated pplevel formula 6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1))"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pplevel|6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1))|color=heal}} {{as|(+ 30% AP)}} against {{tip|champions}}"
+   ]
+  },
+  {
+   "question": "W's effective delay before impact disagrees between sources: the bin's LilliaW.MaximumCastTime is 0.75s flat, while the wiki states cast time as 'None' with an actual pre-impact delay of 0.6 to 0.75s depending on dash distance (rounded to the next game tick, up to 0.767s). Which value should gate how often W can deal damage in the 15s window relative to its cooldown?",
+   "options": [
+    "Treat W as always taking the maximum 0.75s (or 0.767s per the note) delay before impact",
+    "Treat W's delay as variable (0.6-0.75s) depending on assumed cast distance to the stationary dummy"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Dash starts immediately before a 0.25 cast time, but actual delay is 0.6 to 0.75 seconds",
+    "cannot move before the strike goes off at {{fd|0.767}} seconds, regardless"
+   ]
+  },
+  {
+   "question": "E's cast time disagrees between the bin (LilliaE castTime = 0.35) and the wiki (0.4) — which is the live value for pacing E's casts in the rotation?",
+   "options": [
+    "Use the bin's 0.35s",
+    "Use the wiki's 0.4s"
+   ],
+   "impact": "low",
+   "quotes": [
+    "cast time    = {{fd|0.4}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with E (Swirlseed) at 0.4s cast to land the first Dream Dust application on the dummy and begin its DoT.",
+   "Immediately follow with Q (Blooming Blows), positioning so the dummy is caught in the outer ring for both the magic and bonus true damage, refreshing/stacking Dream Dust.",
+   "Cast W (Watch Out! Eep!) aiming for the epicenter sweet spot for 3x damage, again applying/refreshing Dream Dust.",
+   "Once the dummy carries a Dream Dust mark, cast R (Lilting Lullaby); it has 0.4s cast + 0.3s travel + 1.5s drowsy before the dummy falls asleep (~2.2s after R is cast).",
+   "During R's drowsy window, keep recasting Q on its short cooldown (4-6s) and weave basic attacks; time a qualifying non-persistent hit (an autoattack or another ability cast) to land the instant the sleep debuff is live, so it consumes the debuff for R's bonus magic damage.",
+   "For the remainder of the 15s window, recast Q every time it comes off cooldown (highest priority, cheapest, shortest CD), fire E every 12s, W every 10-14s, and fill any gaps with basic attacks, tracking mana against the ~235 mana used per Q+W+E+R cycle.",
+   "R itself will not come off cooldown again inside 15s (110-150s CD), so it is cast once, as early as its prerequisite (a Dream Dust mark) allows."
+  ],
+  "questions": [
+   "Does the simulator model Lillia performing basic attacks between ability casts in the damage fight, or is the rotation ability-casts-only? This changes whether R's wake-up bonus is best consumed by an autoattack or by weaving another ability cast into the ~2.2s drowsy window.",
+   "Should R be cast as early as possible (as soon as a Dream Dust mark exists, likely right after the opening E) to maximize the number of 15s-window ticks that benefit from its bonus damage, or held to guarantee no drowsy time is wasted while other cooldowns are down?",
+   "When multiple Dream Dust instances would be active/refreshing simultaneously (see unsettled question on stacking), does the optimal rotation change to spacing out casts (to avoid wasted overlap) versus stacking them as fast as possible?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

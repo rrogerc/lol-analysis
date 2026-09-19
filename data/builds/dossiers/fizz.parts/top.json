@@ -1,0 +1,143 @@
+{
+ "champion": "fizz",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Urchin Strike dash deals magic + 100% AD physical damage on landing if target still in range"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Playful/Trickster splash magic damage lands after the dash/balance/hop sequence resolves"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Playful (dash, balance ~0.75s, hop ~0.5s then splash) can be canceled early into Trickster (dash + immediate smaller splash), two separately timed resolution paths for the same base damage"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Chum the Waters lure lands then the shark erupts for magic damage 2s later"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "the lure's travel distance before landing/attaching determines the Guppy/Chomper/Gigalodon damage tier (1.0x/1.25x/1.5x of the small-fish formula)"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "passive bleed applies on every basic attack hit, dealing DoT magic damage"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "passive bleed ticks every 0.5s over 3s, refreshing (not stacking) on subsequent hits"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "active arms the next basic attack with bonus magic damage plus a 5s on-hit buff window if the target survives"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "the empowered attack resets Fizz's basic attack timer"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "killing the target with the empowered attack refunds the mana cost and cuts the cooldown to 1s"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (50 flat Q; 30-70 W; 75-95 E; 100 R) can meaningfully cap how often each ability is cast inside a 15s window without mana items/regen"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Nimble Fighter's flat + %AP pre-mitigation damage reduction (capped 50%, higher vs monsters) only matters for damage taken, i.e. the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (dash-cast physical+magic hit, on-hit bleed DoT, empowered-attack with attack reset and kill-refund cooldown, a cancelable multi-part dash ability, and a travel-distance-gated projectile payload) map onto existing primitives; nothing requires logic outside the closed list for the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "What travel distance should Chum the Waters be assumed to fly before landing/attaching in the dummy fight, since it directly sets the Guppy (1.0x)/Chomper (1.25x)/Gigalodon (1.5x) damage tier and the swing is large (e.g. rank 3: 420 to 630 base)?",
+   "options": [
+    "Assume max range (>910 units) so it always attaches as a Gigalodon for maximum damage",
+    "Assume it is cast at/near the dummy (short travel) so it lands as a Guppy, the conservative default",
+    "Assume some fixed mid-range distance (Chomper tier) as a neutral default"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does the automatic basic attack Fizz is ordered into immediately after Urchin Strike count as an extra scheduled attack in the rotation (triggering the W passive bleed, on-hit effects, and consuming the W empowered-attack buff if active), or is it just flavor text with no separate timing impact on the simulated attack sequence?",
+   "options": [
+    "It is a real forced attack that fires right after the dash and should be scheduled as such, potentially consuming an active W empower",
+    "It only auto-issues an attack command if the player wasn't already attacking, so in an optimized sim it never adds an extra attack beyond the normal auto-attack cadence"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "When Seastone Trident's active is triggered on a basic attack, does that same attack also apply/refresh the W passive bleed DoT (i.e., do both the active bonus damage and the passive bleed proc on one attack), or does the active override/replace the passive proc for that hit?",
+   "options": [
+    "Both the active bonus damage and the passive bleed apply on the same empowered attack",
+    "The empowered attack only deals the active's bonus damage and does not also refresh/apply the passive bleed"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start at max rank on all abilities with full mana against the stationary dummy in melee/dash range.",
+   "Open with Q (Urchin Strike) to dash in, dealing magic + 100% AD physical damage on arrival.",
+   "During the Q dash, weave in R (Chum the Waters) toward the dummy so its 2s fuse starts as early as possible.",
+   "Immediately after the dash resolves, cast W (Seastone Trident) to arm the next basic attack.",
+   "Auto-attack to consume the W empower, dealing bonus magic damage, resetting the attack timer, and applying the passive bleed.",
+   "Cast E (Playful) and cancel it into Trickster as soon as it becomes available (~0.15s in) for the same splash damage but a faster resolution, letting its post-effect cooldown start sooner.",
+   "Fill all remaining time with basic attacks to keep the passive bleed refreshed and to consume any active on-hit buff window from W.",
+   "Recast Q, W, E/Trickster, and R on cooldown for the rest of the 15s window in that priority order (shortest cooldown first), interleaving auto-attacks between casts.",
+   "Track mana against the 15s window (Q 50, W 30-70, E 75-95, R 100) and fall back to auto-attacks plus lowest-cost Q/W if mana would otherwise run out."
+  ],
+  "questions": [
+   "Should Chum the Waters always be held for maximum travel distance/tier, or cast on cooldown regardless of resulting shark size?",
+   "Is canceling Playful into Trickster always correct for a pure damage race, since the damage is identical but the cooldown starts sooner, or is there a reason (e.g. testing full Playful's extra hop-off time) to sometimes let it resolve fully?",
+   "Does the forced post-Urchin-Strike basic attack add a genuinely extra attack to the DPS sequence, and if so, does it consume an already-armed W empower or a fresh one from a same-instant W cast?",
+   "In the damage fight, is Fizz assumed to already be in melee auto-attack range of the dummy for the whole 15s, or does travel time to/from Q and E dash targets eat into the attack uptime?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

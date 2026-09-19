@@ -1,0 +1,116 @@
+{
+ "champion": "ziggs",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Short Fuse periodically arms Ziggs's next basic attack with bonus magic damage (increased vs structures, not the dummy); cooldown starts on-attack."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Casting Q, W, E, or R reduces Short Fuse's remaining cooldown by a level-scaled flat amount (4-6s), granted at the start of the ability's cast time."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Bouncing Bomb and Mega Inferno Bomb deal a single AoE magic damage instance on landing/explosion, on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Satchel Charge is thrown (initial cast, mana cost, counts as an ability activation) then recast (or auto-detonates after 4s) to deal its magic damage; recast is a separate timed part."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q: whether the bomb's single explosion lands with the dummy in radius; E: how many of the 11 scattered mines make contact with a single stationary point target (drives how much of the 40%-subsequent-mine reduction applies); R: whether the dummy is assumed inside the 250-radius epicenter (full damage) or the outer ring (65% damage)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-70, W 80, E 70-110, R 100) constrain how many casts of each ability fit inside the ~15s fight given champion mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (Short Fuse's empowered-attack proc and per-cast cooldown refresh, Q/R's plain AoE landing damage, W's throw-then-recast structure, E's multi-mine field with diminishing subsequent-hit damage, R's epicenter/outer-ring falloff) is expressible as a combination of existing primitives; nothing requires bespoke engine logic beyond standard primitive composition plus the geometry assumptions already flagged as unsettled."
+ },
+ "unsettled": [
+  {
+   "question": "How many of Hexplosive Minefield's 11 mines can realistically detonate on a single stationary point target, given each mine only explodes on contact within its own 135-unit trigger radius and the mines are spread over an inner ring (3 mines) and outer ring (8 mines, ~335 unit total spread)?",
+   "options": [
+    "Only 1 mine ever contacts the target (full damage once, no reduced-damage mines)",
+    "The 3 inner-ring mines all contact the target if centered on it (1 full + 2 reduced-damage hits)",
+    "All 11 mines are assumed to contact the target (1 full + 10 reduced-damage hits, matching the wiki's stated 'Maximum Total Magic Damage' leveling row)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The mine cluster is built of 2 rings, with 3 mines in the inner ring (radius pending for test) and 8 mines on the other ring (200 radius), all equally spaced.",
+    "An enemy takes 40% damage from subsequent mines.",
+    "Maximum Total Magic Damage|{{ap|30*(1+0.4*10) to 190*(1+0.4*10)}}"
+   ]
+  },
+  {
+   "question": "Does Satchel Charge's recast (manual detonation) have its own cast time/animation lock that delays the next action, or is it effectively instantaneous relative to the 0.25s cast time of the initial throw?",
+   "options": [
+    "Recast is instant (no additional delay before Ziggs can act/cast again)",
+    "Recast shares the same 0.25s cast time as the initial throw",
+    "Recast has its own unlisted animation delay not captured by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cast time    = {{fd|0.25}}",
+    "''Satchel Charge'' can be recast within the duration, and does so automatically afterwards."
+   ]
+  },
+  {
+   "question": "Is there a floor on Short Fuse's cooldown reduction from casting abilities (e.g., cannot go below 0 / cannot make the passive proc more than once per some minimum interval), given a rotation that casts Q (4-6s cooldown) rapidly could otherwise stack multiple seconds of CDR per second?",
+   "options": [
+    "No floor beyond 0s remaining cooldown; rapid Q casts can make Short Fuse available almost immediately",
+    "There is an unstated minimum interval between Short Fuse procs not captured by either source"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The cooldown reduction is granted at the start of the abilities' cast time.",
+    "{{sti|cooldown}} is reduced by {{pp|4 to 6 for 3|1 to 13}} seconds whenever '''Ziggs''' casts an {{tip|ability}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Bouncing Bomb) aimed so its explosion lands on the dummy, both for damage and to trigger Short Fuse's cooldown reduction.",
+   "Follow immediately with E (Hexplosive Minefield) centered on the dummy to land as many mines' damage as the positional assumption allows.",
+   "Cast W (Satchel Charge) onto the dummy, then recast it immediately (rather than waiting out the 4s auto-detonate) to deal its damage sooner.",
+   "Cast R (Mega Inferno Bomb) aimed so the dummy sits inside the epicenter for full (non-reduced) damage.",
+   "Weave basic attacks between every cast so that whenever Short Fuse comes off cooldown its empowered bonus damage lands as soon as possible.",
+   "Recast Q on cooldown (lowest cooldown ability, 4-6s) for the remainder of the 15s window, interleaving E and another W cast if their cooldowns (16s / 12-20s) come up in time.",
+   "Cast R a second time only if its cooldown (70-120s) has actually elapsed within the 15s window (unlikely except at very high rank with haste)."
+  ],
+  "questions": [
+   "Should basic attacks be modeled at all in the damage fight, or is only the ability-cast sequence scored (this changes whether Short Fuse's empowered-attack primitive matters)?",
+   "At what champion level and ability ranks is the rotation evaluated, since Short Fuse's per-cast CDR tier (4/5/6s) and all base damages scale with level/rank?",
+   "For Q, is the dummy assumed to be hit on the first bounce (fastest, closest) or should travel time to a farther bounce be modeled, and does that materially change the 15s cast count?",
+   "What positional assumption should be locked in for E's mine-hit-count, since it swings E's total damage contribution the most of any ability?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

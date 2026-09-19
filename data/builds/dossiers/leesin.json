@@ -1,0 +1,783 @@
+{
+ "champion": "leesin",
+ "abilities": {
+  "P": {
+   "name": "Flurry",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus attack speed on next 2 attacks",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "{{as|40% '''bonus''' attack speed}}",
+     "bin": [
+      "LeeSinPassive.PassiveAS"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "energy restored by first empowered attack",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40
+     ],
+     "terms": [],
+     "quote": "{{pp|20 to 40 for 3|1 to 13}} energy}}",
+     "bin": [
+      "LeeSinPassive#TTFirstHitEnergy"
+     ],
+     "binNote": "TTFirstHitEnergy = EnergyReturn(10/15/20) * FirstHitEnergyMult(2) = 20/30/40, matching the wiki's byLevel progression at levels 1/7/13"
+    },
+    {
+     "id": "p_3",
+     "meaning": "energy restored by second empowered attack",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "terms": [],
+     "quote": "{{pp|10 to 20 for 3|1 to 13}} energy}}",
+     "bin": [
+      "LeeSinPassive#EnergyReturn"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "duration attacks remain empowered after casting an ability",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "within 3 seconds",
+     "bin": [
+      "LeeSinQOne.ReactivateTime",
+      "LeeSinWOne.W1ReactivateTime",
+      "LeeSinEOne.ReactivateTime"
+     ],
+     "binNote": "The passive's own slot has no data value for this 3s window; the bin's only 3-second constants are each ability's own recast/reactivate timer, which is a plausible but unconfirmed match rather than a direct reference for the passive's duration."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Only the next 2 basic attacks after casting an ability are empowered, and only if they land within 3 seconds on-hit.",
+     "quote": "his next 2 {{tip|basic attacks}} within a short time gain {{sti|attack speed|{{as|'''bonus''' attack speed}}}} and restore {{sti|{{as|energy}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second empowered attack restores half the energy of the first.",
+     "quote": "the second attack restores{{ft|{{as|{{pp|10 to 20 for 3|1 to 13}} energy}}.|half of the previous amount.}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LeeSinPassive.FirstHitEnergyMult",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Sonic Wave / Resonating Strike",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{tt|{{ap|10 to 6}}|Starts on first cast}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 90% '''bonus''' AD)}}",
+     "bin": [
+      "LeeSinQOne#InitialDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Minimum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      90,
+      120,
+      150,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|60 to 180}} {{as|(+ 90% '''bonus''' AD)}}",
+     "bin": [
+      "LeeSinQOne#RecastDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Maximum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      120,
+      180,
+      240,
+      300,
+      360
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.8
+      }
+     ],
+     "quote": "{{ap|60*2 to 180*2}} {{as|(+ {{ap|90*2}}% '''bonus''' AD)}}",
+     "bin": [
+      "LeeSinQOne#EmpoweredDamage"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "duration of the mark allowing Resonating Strike to be cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "marks them for 3 seconds",
+     "bin": [
+      "LeeSinQOne.ReactivateTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Resonating Strike's damage scales with the target's missing health, from 0% to 100% bonus (i.e. up to double damage) as missing health goes from 0% to 100%.",
+     "quote": "increased by {{pp|key=%|type=target's '''missing''' health|0 to 100 for 11|0 to 100|key1=%|formula=1% per 1% of target's '''missing''' health|color=health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Resonating Strike can only be cast on the target marked by Sonic Wave, and only while that target is nearby, consuming the mark on arrival.",
+     "quote": "dashes to the nearby enemy marked by ''{{ai|Sonic Wave|Lee Sin}}''. Upon arrival, he consumes the mark and deals {{as|physical damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sonic Wave's cooldown starts on the initial cast, not after the Resonating Strike recast.",
+     "quote": "{{tt|{{ap|10 to 6}}|Starts on first cast}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage from Resonating Strike can be negated if the target blinks away during the dash.",
+     "quote": "The damage dealt by ''Resonating Strike'' can be negated if the target {{tip|blink|blinks}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Resonating Strike costs less than Sonic Wave.",
+     "quote": "cost         = 25",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LeeSinQOne.Q2MaxMissingHealthMod",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "LeeSinQOne.CherryBonusHaste",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "LeeSinQOne.DashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Safeguard / Iron Will",
+   "cooldown": {
+    "values": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "quote": "{{tt|7|Starts on first cast}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      105,
+      150,
+      195,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|60 to 240}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "LeeSinWOne#ShieldAmount"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Omnivamp",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      14,
+      18,
+      22,
+      26
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 26}}%",
+     "bin": [
+      "LeeSinWOne.LifestealAndSpellVamp"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Shield Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "gain a {{tip|shield}} for 2 seconds",
+     "bin": [
+      "LeeSinWOne.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Omnivamp duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "gains {{as|{{sti|omnivamp}}}} for 4 seconds",
+     "bin": [
+      "LeeSinWOne.LifestealAndSpellVampTime"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Time window to cast Iron Will after Safeguard",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "can cast ''{{ai|Iron Will|Lee Sin}}'' within the next 3 seconds",
+     "bin": [
+      "LeeSinWOne.W1ReactivateTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Safeguard's cooldown starts on first cast (the dash), not on the Iron Will reactivation.",
+     "quote": "{{tt|7|Starts on first cast}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target is a champion upon arrival, both the ally and Lee Sin gain a shield; if the target is a minion or ward, Lee Sin shields only himself.",
+     "quote": "If the target is a {{tip|minion}} or {{tip|ward}}, '''Lee Sin''' also shields himself.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield is not granted if the dash is interrupted.",
+     "quote": "''Safeguard'' will not grant its {{tip|shield}} if the dash is interrupted.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Iron Will grants Lee Sin omnivamp (lifesteal and spell vamp), affecting damage-fight self-sustain via healing from any damage dealt.",
+     "quote": "'''Lee Sin''' gains {{as|{{sti|omnivamp}}}} for 4 seconds.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LeeSinWOne.DashSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "LeeSinWOne.W1CooldownRecovered",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Tempest / Cripple",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "{{tt|8|Starts on first cast}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      60,
+      85,
+      110,
+      135
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|35 to 135}} {{as|(+ 90% AD)}}",
+     "bin": [
+      "LeeSinEOne#InitialDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      35,
+      45,
+      55,
+      65,
+      75
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 75}}%",
+     "bin": [
+      "LeeSinEOne.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration marked/slow lasts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "marking them for 4 seconds",
+     "bin": [
+      "LeeSinEOne.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "time window to cast Cripple after Tempest hits",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "cast ''{{ai|Cripple|Lee Sin}}'' within the next 3 seconds",
+     "bin": [
+      "LeeSinEOne.ReactivateTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Tempest's cooldown starts on first cast, not on the Cripple recast.",
+     "quote": "{{tt|8|Starts on first cast}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cripple requires a nearby enemy marked by Tempest to be castable.",
+     "quote": "A nearby marked enemy is required to cast this ability.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cripple's slow decays in strength over its 4-second duration.",
+     "quote": "decaying in strength over 4 seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Tempest deals magic damage to nearby enemies on cast; only Tempest deals damage in this E, Cripple does not.",
+     "quote": "'''Lee Sin''' smashes the ground beneath him, dealing {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LeeSinEOne.ReactivateTime",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Dragon's Rage",
+   "cooldown": {
+    "values": [
+     110,
+     85,
+     60
+    ],
+    "quote": "{{ap|110 to 60}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      175,
+      400,
+      625
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.0
+      }
+     ],
+     "quote": "{{ap|175 to 625}} {{as|(+ 200% '''bonus''' AD)}}",
+     "bin": [
+      "LeeSinR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Collision Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      175,
+      400,
+      625
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.0
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.12,
+        0.15,
+        0.18
+       ]
+      }
+     ],
+     "quote": "{{ap|175 to 625}} {{as|(+ 200% '''bonus''' AD)}} {{as|(+ {{ap|12 to 18}}% of primary target's '''bonus''' health)}}",
+     "bin": [
+      "LeeSinR#Damage",
+      "LeeSinR.PercentHPCarryThrough"
+     ],
+     "binNote": "Wiki says the collision bonus scales with primary target's bonus health; the bin field is named PercentHPCarryThrough with no explicit stat qualifier, and the base collision damage uses the same LeeSinR#Damage calculation as the primary hit. Mapped targetMaxHp as an approximation of 'bonus health' since the checker's stat list has no bonusHp-of-target term for this context (used targetMaxHp with binNote flagging the wiki explicitly says 'bonus health', not max health)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Lee Sin roots the target over the cast time, then kicks them, dealing damage and knocking them back, rendering them airborne for 1 second.",
+     "quote": "roots the target enemy champion over the cast time, then roundhouse kicks them to deal {{as|physical damage}} and {{tip|airborne|knock them back}} {{tt|up to 800 units|see notes}} {{tt|over {{fd|0.8}} seconds|Estimated}}, rendering them {{tip|airborne}} for 1 second",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Enemies that collide with the airborne displaced target take the same damage plus a bonus based on the primary target's bonus health, and are also knocked up.",
+     "quote": "Enemies that collide with the displaced enemy while it is {{tip|airborne}} take the same damage plus {{as|'''bonus''' physical damage}} and are {{tip|airborne|knocked up}} for 1 second",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the ability kills the primary target, it still knocks the corpse back, which can collide with and damage other enemies.",
+     "quote": "If ''Dragon's Rage'' kills the primary target, it will still knock them back, causing the target's corpse to be displaced and collide with enemies it passes through.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "LeeSinR.KickDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Flurry: after any ability cast, Lee Sin's next 2 basic attacks gain 40% bonus attack speed and restore energy (20/10 by level tier), arming a fresh window every time he casts Q, W, E or R."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Sonic Wave: fixed physical damage (base + 0.9 bonus AD) to the first (only) enemy hit on cast, and marks it."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Resonating Strike is a separately-costed recast of Q, castable within 3s of Sonic Wave landing, dealing its own base+0.9 bonus AD damage scaled by missing health."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Resonating Strike's damage is increased up to +100% based on the dummy's missing health % at the moment it lands."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tempest: fixed magic damage (base + 0.9 AD) to nearby enemies (the single dummy) on cast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Cripple is the recastable second half of E, castable within 3s of Tempest hitting; it deals no damage (slow only), so it does not add to the damage fight beyond arming the recast window/Flurry."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Safeguard grants a self-shield and Iron Will grants self-omnivamp; neither deals damage to the target dummy, though the omnivamp affects Lee Sin's effective healing/survival."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Cripple's slow is crowd control with no damage component; it does not change damage dealt or taken."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Dragon's Rage: fixed physical damage (base + 2x bonus AD) to the single targeted enemy on cast; the extra collision damage requires a second enemy to knock the target into, which cannot occur in a 1v1 dummy fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Q, W and E (and their recasts) are energy-gated (50 per main cast, plausibly 25 more per recast); Lee Sin's total energy pool and regen limit how often he can chain Q/E casts across the 15s window."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every scoring effect (Q's two-part damage with missing-health scaling, E's damage-only first half, R's flat physical burst, Flurry's recurring empowered-attack window, and W's purely defensive shield/omnivamp) maps onto existing primitives; R's collision bonus is simply inapplicable in a single-target dummy fight rather than needing new logic."
+ },
+ "unsettled": [
+  {
+   "question": "Do the recast halves of Q, W and E (Resonating Strike, Iron Will, Cripple) cost their own energy on top of the initial cast's 50, or is the bin's single 'cost' array (50 per rank) for the whole ability slot the total cost, with the recast free?",
+   "options": [
+    "Each recast costs its own energy as the wiki states (Resonating Strike 25, Iron Will 25, Cripple 25), for a total of 75 energy per full Q/W/E combo",
+    "The bin's single per-slot cost (50) is definitive and the recast is free, so a full Q, W or E combo costs only 50 energy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cost         = 25\n|costtype     = Energy",
+    "LeeSinQOne cooldown: [10/9/8/7/6] cost: 50"
+   ]
+  },
+  {
+   "question": "Does every individual cast in a two-part ability (e.g. both Sonic Wave and the Resonating Strike recast, or both Tempest and the Cripple recast) independently re-trigger Flurry's empowered-attack window and energy return, or does only the initial half-cast (Sonic Wave, Tempest, Safeguard, R) trigger it while the recast does not?",
+   "options": [
+    "Every cast, including recasts like Resonating Strike and Cripple, is itself an 'ability cast' and independently arms/refreshes Flurry",
+    "Only the primary ability activation triggers Flurry; recasts (Resonating Strike, Iron Will, Cripple) are considered part of the same activation and do not retrigger it"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After casting an {{tip|ability}}, '''Lee Sin's''' next 2 {{tip|basic attacks}} ... gain ... attack speed and restore ... energy"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Sonic Wave (Q) on the dummy to deal its physical damage and mark it, arming Flurry.",
+   "Weave in the two Flurry-empowered basic attacks immediately after the cast to benefit from bonus attack speed and energy return.",
+   "Recast Resonating Strike (Q2) as soon as it lands (within its 3s window) to dash in and deal missing-health-scaled physical damage, maximized by the damage already dealt from Q1 and prior attacks.",
+   "Cast Tempest (E) for its magic damage and to arm another Flurry window; skip casting Cripple since it deals no damage and only costs energy/time.",
+   "Cast Dragon's Rage (R) the moment it comes off cooldown for a large flat physical burst (no cost, and its collision bonus cannot trigger against a single dummy anyway).",
+   "Do not cast Safeguard or Iron Will (W): neither damages the dummy, so casting it only burns energy and a global cooldown window that could otherwise fuel Q/E.",
+   "For the remainder of the 15s window, recast Sonic Wave -> Resonating Strike and Tempest on cooldown, weaving basic attacks (especially the two post-cast empowered ones) between casts, throttled by available energy.",
+   "Recast Dragon's Rage again if its (60-110s) cooldown somehow allows within the 15s window (it generally will not after the opener)."
+  ],
+  "questions": [
+   "Is Lee Sin's energy pool and regen (with the passive's partial refunds) actually sufficient to sustain permanent Q+E(+recast) spam for the full 15s, or will he run energy-dry and need attack-only phases?",
+   "Should Resonating Strike be delayed until the dummy has taken more damage (to maximize its missing-health scaling), or is casting it immediately after Sonic Wave optimal given the 3s window and cooldown-starts-on-first-cast rule?",
+   "Is it ever worth spending energy on Cripple purely to preserve the Flurry/recast cadence, or is it strictly energy-negative in a pure damage race?",
+   "How much of the 15s does the Sonic Wave dash/cast-time and Resonating Strike travel time actually consume, and does that materially cut into the number of auto-attack windows available?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

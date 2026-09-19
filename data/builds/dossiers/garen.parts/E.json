@@ -1,0 +1,216 @@
+{
+ "name": "Judgment / Judgment 2",
+ "cooldown": {
+  "values": [
+   9,
+   8.25,
+   7.5,
+   6.75,
+   6
+  ],
+  "quote": "{{ap|9 to 6}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Physical Damage Per Spin (base tick damage)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    4,
+    7,
+    10,
+    13,
+    16
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.4,
+      0.43,
+      0.46,
+      0.49,
+      0.52
+     ]
+    }
+   ],
+   "quote": "{{ap|4 to 16}} {{as|(+ {{ap|40 to 52}}% AD)}}",
+   "bin": [
+    "GarenE.BaseDamagePerTick",
+    "GarenE.ADRatioPerTick",
+    "GarenE#TotalDamage"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Damage Per Spin against the nearest enemy hit (the only target in a dummy fight is always the nearest) - equals base tick damage multiplied by 1.25",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    8.75,
+    12.5,
+    16.25,
+    20
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.5,
+      0.5375,
+      0.575,
+      0.6125,
+      0.65
+     ]
+    }
+   ],
+   "quote": "{{ap|4*1.25 to 16*1.25}} {{as|(+ {{ap|40*1.25 to 52*1.25}}% AD)}}",
+   "bin": [
+    "GarenE.BaseDamagePerTick",
+    "GarenE.ADRatioPerTick",
+    "GarenE.NearestEnemyBonus",
+    "GarenE#TotalDamage"
+   ],
+   "binNote": "No bin row states 5/8.75/... or the 1.25x AD coefficients directly. The wiki computes this by multiplying GarenE#TotalDamage's base and AD-ratio components by the near-bonus multiplier (1 + GarenE.NearestEnemyBonus = 1.25), i.e. 4*1.25=5, 0.4*1.25=0.5, etc. These derived numbers are not present as standalone bin values; they are reconstructed from BaseDamagePerTick x 1.25 and ADRatioPerTick x 1.25 per the wiki's own {{#var:near}}=1.25 formula."
+  },
+  {
+   "id": "e_ticks",
+   "meaning": "Number of spins (damage ticks), base + bonus from bonus attack speed",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 7,
+   "terms": [
+    {
+     "stat": "bonusAttackSpeed",
+     "coef": 4
+    }
+   ],
+   "quote": "'''Garen''' rapidly spins his sword around himself {{#var:spin_b}} (+ 1 per {{tt|{{as|{{#var:spin_as}}% '''bonus''' attack speed}}",
+   "bin": [
+    "GarenE.NumTicks",
+    "GarenE.ASPerTick",
+    "GarenE#NumberOfStrikes"
+   ],
+   "binNote": "GarenE.ASPerTick=0.25 is the bonus-AS fraction required per extra spin (1 extra spin per 25% bonus AS); the stated coef 4 = 1/0.25 expresses this as 'extra spins per 100% bonus AS' for the fight sim's convenience, not a separate bin row."
+  },
+  {
+   "id": "e_duration",
+   "meaning": "Total duration over which all spins occur (sets tick interval = duration / numTicks)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "times over 3 seconds",
+   "bin": [
+    "GarenE.Duration"
+   ]
+  },
+  {
+   "id": "e_shred",
+   "meaning": "Armor reduction inflicted on champions hit 6 times",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds",
+   "bin": [
+    "GarenE.ShredAmount"
+   ]
+  },
+  {
+   "id": "e_shred_duration",
+   "meaning": "Duration of the armor reduction debuff",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "{{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds",
+   "bin": [
+    "GarenE.ShredDuration"
+   ]
+  },
+  {
+   "id": "e_shred_stacks",
+   "meaning": "Number of spin-hits needed to apply/refresh the armor reduction",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "Enemy champions hit 6 times by ''Judgment'' are inflicted with {{sti|armor penetration|{{as|25% armor reduction}}}}",
+   "bin": [
+    "GarenE.StacksToShred"
+   ]
+  },
+  {
+   "id": "e_critmod",
+   "meaning": "Critical strike damage bonus applied per spin when Garen crits",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "{{#vardefine:crit|0.3}}",
+   "bin": [
+    "GarenE.CritMod"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Each spin deals damage simultaneously to all enemies within its range when the spin is completed.",
+   "quote": "Each spin deals damage simultaneously to all enemies within its range when the spin is completed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Judgment can be recast after 1 second while active, and does so automatically after it ends, meaning it cannot be extended past its base duration.",
+   "quote": "''Judgment'' can be recast after 1 second while active, and does so automatically after it ends.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Armor reduction is applied on the 6th hit, then refreshes every 6th hit thereafter (7th, 13th, ...).",
+   "quote": "Enemy champions hit 6 times by ''Judgment'' are inflicted with {{sti|armor penetration|{{as|25% armor reduction}}}} for 6 seconds, with the duration refreshing upon the 7th hit and every 6th hit thereafter.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Judgment's extra-spin scaling only counts bonus attack speed from items and level growth, not other bonus attack speed sources (e.g. buffs) - relevant for determining tick count from a given build.",
+   "quote": "''Judgment'' only scales with {{as|'''bonus''' attack speed}} from items and growth (per level).",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The visible spin animation is capped at 200% bonus attack speed, but the number of damage ticks keeps scaling beyond that cap.",
+   "quote": "The spin animation is capped at {{as|{{tt|200%|Once per 0.2 seconds, 15 spins total}} '''bonus''' attack speed}}, but the amount of ticks will keep on scaling.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Garen cannot use basic attacks while spinning.",
+   "quote": "becoming {{tip|lockout|unable}} to declare basic attacks but gaining {{tip|ghosting}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown starts only after the spin sequence ends, not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Manually deactivating Judgment early does not count as an ability activation for on-cast effects (e.g. Spellblade), which matters for item interactions in a build fight.",
+   "quote": "Deactivating the ability manually does not count as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

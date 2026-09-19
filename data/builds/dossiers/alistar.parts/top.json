@@ -1,0 +1,136 @@
+{
+ "champion": "alistar",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Pulverize deals magic AoE damage on cast, cooldown-gated, blockable by spell shield"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Headbutt deals magic damage on arrival if the target is still within 400 units; in a stationary dummy fight this condition is trivially met"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Trample deals persistent tick damage to nearby enemies every 0.5s over a 5s duration"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Each tick that damages a champion grants Alistar a Trample stack, capped at 5, that lasts for the ability's remaining duration"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "At 5 Trample stacks, Alistar's next basic-attack on-hit (within a stated window) consumes the stacks to deal bonus magic damage and stun"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs of 50-100 per cast against cooldowns of 10-14s (Q/W/E) and 80-120s (R) could matter for a low-mana Alistar early, though usually not binding by late game"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Triumphant Roar's self-heal (5% max HP at 7 stacks) reduces net damage taken; unread by the damage-only fight but relevant to the survival fight"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "Unbreakable Will's 55-75% incoming damage reduction and CC cleanse only matter to the survival fight; it deals no damage itself"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Alistar's offensive kit reduces cleanly to two plain-cast magic-damage abilities (Q, W) and a ticking DoT (E) that also builds up to 5 self-stacks arming one empowered basic attack. Those map onto plain-cast + dot + stacking-self-buff + empowered-attack without needing custom logic. P's heal and R's damage reduction are pure defensive-only effects that a damage fight never reads and a survival fight reads as heal/damage-reduction, both expressible with existing categories."
+ },
+ "unsettled": [
+  {
+   "question": "Does Trample's 5-stack empowered on-hit bonus damage (magic, described as 'proc damage') behave like normal on-hit magic damage that can be modified by AD-based on-hit riders/crit, or is it a fixed proc that never crits and is excluded from on-hit item interactions beyond Guinsoo's Phantom Hit?",
+   "options": [
+    "Treated as ordinary on-hit damage, benefits from crit/on-hit amps like other magic on-hit procs",
+    "Fixed proc damage instance that never crits and only interacts with on-hit systems as explicitly noted (e.g. Rageblade Phantom Hit)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Trample'' deals {{tip|persistent area damage}} damage around '''Alistar''', while the bonus damage on the resulting attack is {{tip|proc damage}}.",
+    "The bonus damage and stun can be applied by {{iis|Guinsoo's Rageblade}} Phantom Hit if the triggering attack did not."
+   ]
+  },
+  {
+   "question": "Is the window to land the empowered attack after reaching 5 Trample stacks 6 seconds (per wiki) or 5 seconds (per the bin's FullChargeDuration value), and do these two numbers actually describe the same thing?",
+   "options": [
+    "6 seconds is correct and FullChargeDuration is an unrelated/stale bin field",
+    "5 seconds (FullChargeDuration) is the live value and the wiki's '6 seconds' is outdated or describes something else"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Alistar's''' next {{tip|basic attack}} {{tip|on-hit}} against a {{tip|champion}} within 6 seconds ends ''Trample's'' effects",
+    "AlistarE.FullChargeDuration = 5"
+   ]
+  },
+  {
+   "question": "Should the optimal damage rotation buffer Pulverize during Headbutt's dash for the reduced 0.15s cast time, or is casting Pulverize normally (0.25s) simpler and equally fast against a stationary, already-adjacent dummy where the dash covers near-zero distance?",
+   "options": [
+    "Buffer Q during W's dash for the reduced cast time regardless of distance",
+    "Cast Q and W independently since dash distance to an adjacent dummy is negligible, making the buffer's time savings marginal or irrelevant"
+   ],
+   "impact": "low",
+   "quotes": [
+    "''Pulverize'' can be buffered during {{ai|Headbutt|Alistar}} to cast with reduced cast time when the dash ends."
+   ]
+  },
+  {
+   "question": "How many discrete ticks does Trample actually deal (its total damage split how many ways), given the bin provides only a duration and a total-damage value with no explicit tick-count field?",
+   "options": [
+    "10 ticks of TrampleDamage/10 every 0.5s over 5s (as the wiki's derived per-tick figure implies)",
+    "Some other tick count/interval that still sums to the stated total over 5s"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Alistar''' tramples the ground around him every {{fd|0.5}} seconds over 5 seconds",
+    "{{st|Magic Damage Per Tick|{{ap|80/10 to 200/10}} {{as|(+ {{ap|70/10}}% AP)}}|Total Magic Damage|{{ap|80 to 200}} {{as|(+ 70% AP)}}}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Trample (E) to become ghosted and start its persistent ticking magic damage and stack generation, since it has no cast time and should be running for as much of the 15s window as possible.",
+   "Auto-attack the dummy continuously throughout the fight; Trample's ticks will land automatically while Alistar is within range.",
+   "Cast Pulverize (Q) for its upfront AoE magic damage as soon as it is available.",
+   "Cast Headbutt (W) at point-blank range against the dummy for its magic damage; since the dummy is stationary and already close, the dash covers negligible distance and does not meaningfully delay follow-up actions.",
+   "As soon as Trample reaches 5 stacks, land the next basic attack to consume the stacks for the bonus magic damage and stun (stun is irrelevant to damage but the bonus damage is not).",
+   "Recast Q and W on cooldown, interleaved with continued auto-attacking, for the remainder of the 15s window.",
+   "Recast Trample (E) again as soon as its cooldown allows, to keep the DoT and stack-building cycle going for a second (partial) cycle within the 15s fight.",
+   "Do not use Unbreakable Will (R): it provides only damage reduction and CC cleanse, neither of which increases damage against a passive dummy."
+  ],
+  "questions": [
+   "Should Headbutt be modeled as instant (already in range, no travel time) in the damage fight, or should its dash time (even if near-zero) be counted against the 15s window?",
+   "Does the simulator allow Trample's persistent tick damage to occur every 0.5s uninterrupted while Alistar is also auto-attacking and casting other abilities, or do casts interrupt the tick timer?",
+   "Is it correct to exclude Unbreakable Will entirely from the damage-fight rotation, given it deals no damage and its cast time would only cost DPS uptime?",
+   "In the DPS-ranking damage fight, should Alistar recast Trample a second time within the 15s window (its ~10-14s cooldown allows roughly one full recast), or does the first cast's tail (ticks near the 5s mark) overlap awkwardly with a recast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

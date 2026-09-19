@@ -1,0 +1,542 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "RapidReload",
+    "key": "Characters/Corki/Spells/RapidReloadAbility/RapidReload",
+    "dataValues": {
+     "AttackConversion": 0.2,
+     "InitialCD": 10,
+     "PackageDuration": 45,
+     "BonusMS": 0.4,
+     "SubsequentCD": 5
+    },
+    "calcs": {
+     "BasicAttackTOOLTIP": {
+      "expr": "(AttackConversion=0.2)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "AttackConversion"
+       }
+      ],
+      "refs": [
+       "AttackConversion"
+      ]
+     },
+     "CriticalStrikeTOOLTIP": {
+      "expr": "BasicAttackTOOLTIP * 1xcritDamage",
+      "modifies": "BasicAttackTOOLTIP",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "PhosphorusBomb",
+    "key": "Characters/Corki/Spells/PhosphorusBombAbility/PhosphorusBomb",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8.5,
+      8,
+      7.5,
+      7
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       105,
+       150,
+       195,
+       240
+      ]
+     },
+     "RevealDuration": 6,
+     "ADRatio": 1.25,
+     "APRatio": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/105/150/195/240] + (ADRatio=1.25)xbonus ad + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        105,
+        150,
+        195,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.25,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "CarpetBomb",
+    "key": "Characters/Corki/Spells/CarpetBombAbility/CarpetBomb",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      20,
+      18,
+      16,
+      14,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      80,
+      85,
+      90,
+      95,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       225,
+       300,
+       375,
+       450
+      ]
+     },
+     "APRatio": 1.5,
+     "TrailDuration": 2.5,
+     "TicksPerSecond": 2,
+     "MaximumTicks": 5,
+     "DamageRadius": 200,
+     "DashSpeedBase": 650,
+     "DashSpeedRatio": 1,
+     "MinimumRange": 300,
+     "MaximumRange": 600,
+     "ADRatio": 2
+    },
+    "calcs": {
+     "MaximumDamage": {
+      "expr": "BaseDamage=[150/225/300/375/450] + (APRatio=1.5)xap + (ADRatio=2)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        225,
+        300,
+        375,
+        450
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5,
+        "dataValue": "APRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "DashSpeed": {
+      "expr": "DashSpeedBase=650 + (DashSpeedRatio=1)xstat7?",
+      "flat": 650,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "DashSpeedRatio"
+       }
+      ],
+      "refs": [
+       "DashSpeedBase",
+       "DashSpeedRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "GGun",
+    "key": "Characters/Corki/Spells/GGunAbility/GGun",
+    "cooldown": 12,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       130,
+       180,
+       230,
+       280
+      ]
+     },
+     "ADRatio": 2.4,
+     "SprayDuration": 4,
+     "TicksPerSecond": 4,
+     "ShredMax": {
+      "axis": "rank",
+      "v": [
+       -12,
+       -14,
+       -16,
+       -18,
+       -20
+      ]
+     },
+     "ShredCap": 4,
+     "ShredDuration": 2
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/130/180/230/280] + (ADRatio=2.4)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        130,
+        180,
+        230,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.4,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "MissileBarrage",
+    "key": "Characters/Corki/Spells/MissileBarrageAbility/MissileBarrage",
+    "cooldown": 2,
+    "cost": 35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       90,
+       170,
+       250
+      ]
+     },
+     "ADRatio": 0.85,
+     "RBaseMissileRadius": 200,
+     "RBigOneMissileRadius": 300,
+     "RBigOneMultiplier": 2,
+     "CDReductionOnHit": 2,
+     "MaxAmmoTOOLTIP": 4,
+     "AmmoWhenLearned": 2
+    },
+    "calcs": {
+     "RSmallMissileDamage": {
+      "expr": "BaseDamage=[90/170/250] + (ADRatio=0.85)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        90,
+        170,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.85,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "RBigMissileDamage": {
+      "expr": "RSmallMissileDamage * RBigOneMultiplier=2",
+      "modifies": "RSmallMissileDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        180,
+        340,
+        500
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.7,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage",
+       "RBigOneMultiplier"
+      ]
+     },
+     "AttackRefund": {
+      "expr": "(1 + 2xcritChance) * CDReductionOnHit=2",
+      "flat": 2,
+      "terms": [
+       {
+        "stat": "critChance",
+        "scope": "total",
+        "coef": 4
+       }
+      ],
+      "refs": [
+       "CDReductionOnHit"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "PhosphorusBomb",
+  "W": "CarpetBomb",
+  "E": "GGun",
+  "R": "MissileBarrage",
+  "P": "RapidReload"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.48,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Corki",
+  "name": "Corki",
+  "partype": "Mana",
+  "passive": "Hextech Munitions",
+  "spells": [
+   {
+    "id": "PhosphorusBomb",
+    "name": "Phosphorus Bomb",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "CarpetBomb",
+    "name": "Valkyrie",
+    "maxrank": 5,
+    "cooldown": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "cost": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ]
+   },
+   {
+    "id": "GGun",
+    "name": "Gatling Gun",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "MissileBarrage",
+    "name": "Missile Barrage",
+    "maxrank": 3,
+    "cooldown": [
+     2,
+     2,
+     2
+    ],
+    "cost": [
+     35,
+     35,
+     35
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Hextech Munitions": {
+    "damagetype": "Physical True",
+    "spelleffects": "basic",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Phosphorus Bomb": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Valkyrie": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Gatling Gun": {
+    "damagetype": "physical",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "projectile": "False",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Missile Barrage": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana + 1 Ammo"
+   },
+   "Big One": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana + 1 Ammo"
+   }
+  }
+ }
+}

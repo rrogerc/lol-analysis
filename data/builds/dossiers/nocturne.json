@@ -1,0 +1,829 @@
+{
+ "champion": "nocturne",
+ "abilities": {
+  "P": {
+   "name": "Umbra Blades",
+   "cooldown": {
+    "values": [
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_damage_nocrit",
+     "meaning": "physical damage to primary target (non-crit)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.2
+      }
+     ],
+     "quote": "dealing {{as|120% AD}} {{as|physical damage}} to the target and nearby enemies",
+     "bin": [
+      "NocturneP#TotalDamageNoCrit"
+     ]
+    },
+    {
+     "id": "p_damage_crit",
+     "meaning": "physical damage to primary target when critically striking (before total critical damage multiplier)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{as|110% AD}}{{times}}{{sti|{{as|'''total''' critical damage}}}}",
+     "bin": [
+      "NocturneP#TotalDamageCrit"
+     ]
+    },
+    {
+     "id": "p_heal",
+     "meaning": "self heal per enemy hit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{pp|13 + (30-13)/17*(x-1) for 20|color=heal}} {{as|(+ 30% AP)}} per enemy hit",
+     "bin": [
+      "NocturneP#TotalHealing",
+      "NocturneP.HealLevel1Value",
+      "NocturneP.HealLevel18Value"
+     ],
+     "binNote": "Wiki's level-scaling formula (13 + (30-13)/17*(x-1)) yields 30 at level 18, but the bin's NocturneP.HealLevel18Value is 32; the flat term of NocturneP#TotalHealing is an unresolved reference so its endpoint cannot be confirmed from the sheet alone."
+    },
+    {
+     "id": "p_aa_cdr_base",
+     "meaning": "cooldown reduction on Umbra Blades granted per basic attack against non-champion/monster targets",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "Basic attacks reduce ''Umbra Blades' '' {{sti|cooldown}} by 1 second",
+     "bin": [
+      "NocturneP.AACDR"
+     ]
+    },
+    {
+     "id": "p_aa_cdr_champ_monster",
+     "meaning": "cooldown reduction on Umbra Blades granted per basic attack against enemy champions and monsters",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "increased to 3 against enemy {{tip|champions}} and {{tip|monsters}}",
+     "bin": [
+      "NocturneP.AAChampMonsterCDR"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Umbra Blades periodically empowers Nocturne's next basic attack to slash in a circle, dealing increased physical damage to the target and nearby enemies and healing him per enemy hit.",
+     "quote": "Periodically, '''Nocturne''' empowers his next {{tip|basic attack}} to slash in a circle, dealing {{as|120% AD}} {{as|physical damage}} to the target and nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary target of the empowered attack is dealt basic damage while secondary targets in the slash are dealt proc damage.",
+     "quote": "The primary target of the enhanced attack is dealt {{tip|basic damage}} while the secondary targets of the slash are dealt {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Umbra Blades can critically strike against the primary target, changing its damage to 110% AD multiplied by Nocturne's total critical damage.",
+     "quote": "modifying the {{as|physical damage}} dealt to{{ft|{{as|{{critical damage|{{ccd|Nocturne|crit_base}}|100|mod=1.1}} AD.|AD}}|{{as|110% AD}}{{times}}{{sti|{{as|'''total''' critical damage}}}}.}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against minions, Umbra Blades' damage to secondary targets and healing are reduced by 50%, and it applies on-hit effects to all targets at 100% effectiveness.",
+     "quote": "Against {{tip|minions}}, ''Umbra Blades' '' damage to secondary targets and healing are reduced by 50% and it applies {{tip|on-hit}} effects to all targets{{bug|2}} at 100% effectiveness.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Basic attacks reduce Umbra Blades' cooldown by 1 second, increased to 3 seconds against enemy champions and monsters.",
+     "quote": "Basic attacks reduce ''Umbra Blades' '' {{sti|cooldown}} by 1 second, increased to 3 against enemy {{tip|champions}} and {{tip|monsters}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Parry effects only block the damage dealt to the primary target of Umbra Blades.",
+     "quote": "Parry effects will only block the damage dealt to the primary target.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The empowered attack will not trigger against structures nor wards.",
+     "quote": "The empowered attack will not trigger against {{tip|structures}} nor {{tip|wards}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NocturneP.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "NocturneP.DamageMinionMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "NocturneP.HealMinionMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Duskbringer",
+   "cooldown": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "8"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      65,
+      105,
+      145,
+      185,
+      225
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.85
+      }
+     ],
+     "quote": "{{ap|65 to 225}} {{as|(+ 85% '''bonus''' AD)}}",
+     "bin": [
+      "NocturneDuskbringer#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      15,
+      25,
+      35,
+      45,
+      55
+     ],
+     "terms": [],
+     "quote": "{{ap|15 to 55}}",
+     "bin": [
+      "NocturneDuskbringer.BonusTrailAD"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Dusk Trail duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "''Dusk Trails'' last 5 seconds",
+     "bin": [
+      "NocturneDuskbringer.TrailDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Duskbringer's damage is not increased by the bonus AD gained from its own trail on chain-cast.",
+     "quote": "''Duskbringer's'' damage is not increased by the {{as|'''bonus''' AD}} gained from its trail, meaning that casting it again while on the trail from the last cast will not result in higher damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the damage.",
+     "quote": "{{tip|Spell shield}} will block the damage and also prevents the ''Dusk Trail'' from following the target.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NocturneDuskbringer.MoveSpeed",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Shroud of Darkness",
+   "cooldown": {
+    "values": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "quote": "{{ap|20 to 12}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "NocturneShroudofDarkness.ActiveAS"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Enhanced Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0
+     ],
+     "terms": [],
+     "quote": "{{ap|30*2 to 50*2}}%",
+     "bin": [
+      "NocturneShroudofDarkness.ActiveAS"
+     ],
+     "binNote": "Doubled from ActiveAS by the ability's effect; no separate bin row holds the doubled value."
+    },
+    {
+     "id": "w_3",
+     "meaning": "Spell shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "NocturneShroudofDarkness.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Enhanced bonus attack speed duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "doubled for 5 seconds",
+     "bin": [
+      "NocturneShroudofDarkness.DoubleASDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The active grants a spell shield that blocks the next hostile ability/effect for its duration.",
+     "quote": "'''Nocturne''' gains a {{tip|spell shield}} for {{fd|1.5}} seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Blocking a hostile effect doubles the bonus attack speed for a further duration, giving increased damage output.",
+     "quote": "Upon successfully blocking a hostile effect, ''Shroud of Darkness' ''{{as|'''bonus''' attack speed}} is doubled for 5 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive bonus attack speed is always active regardless of the shield being up.",
+     "quote": "{{sbc|Passive:}} '''Nocturne''' gains {{sti|{{as|'''bonus''' attack speed}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If active when recasting Paranoia to dash, the shield's duration is refreshed periodically during the dash.",
+     "quote": "If ''Shroud of Darkness'' is active when '''Nocturne''' re-casts ''{{ai|Paranoia|Nocturne}}'' to dash to a target, its duration is refreshed every {{fd|0.25 seconds}} during the dash.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NocturneShroudofDarkness.PassiveAS",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Unspeakable Horror",
+   "cooldown": {
+    "values": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "quote": "{{ap|15 to 11}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Total Magic Damage",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      125,
+      170,
+      215,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|80 to 260}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "NocturneUnspeakableHorror#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      31.25,
+      42.5,
+      53.75,
+      65
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|80/4 to 260/4}} {{as|(+ {{ap|100/4}}% AP)}}",
+     "bin": [
+      "NocturneUnspeakableHorror#TotalDamage"
+     ],
+     "binNote": "Derived from the total (DamageToDeal + 1x AP) divided by 4 ticks; the bin has no separate per-tick data row."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Disable Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25
+     ],
+     "terms": [],
+     "quote": "{{ap|1.25 to 2.25}} seconds",
+     "bin": [
+      "NocturneUnspeakableHorror.CCDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "tether duration before fear triggers",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "forming a {{tip|tether}} between himself and the target for 2 seconds",
+     "bin": [
+      "NocturneUnspeakableHorror.LeashDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "the target takes {{as|magic damage}} every {{fd|0.5}} seconds over the duration",
+     "bin": [],
+     "binNote": "No bin row states the 0.5s tick interval directly; it is inferred from the wiki's 4-tick breakdown of the 2-second LeashDuration."
+    },
+    {
+     "id": "e_6",
+     "meaning": "fear slow amount",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 90,
+     "terms": [],
+     "quote": "being {{tip|slow|slowed}} by 90%",
+     "bin": [],
+     "binNote": "No bin data value carries the 90% slow amount; TooltipFearMS=0.9 is the passive movement speed bonus, not this slow."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Unspeakable Horror deals persistent damage over its tether duration, tagged indirect damage, and applies spell effects (on-hit) each tick.",
+     "quote": "''Unspeakable Horror'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks the tether's application, but not the damage/aftereffects of a tether already applied.",
+     "quote": "{{tip|Spell shield}} will block the tether's application but not the damage and aftereffects of one already applied.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the tether is not broken by the end of its 2-second duration, the target is feared and slowed by 90%.",
+     "quote": "If the tether is not broken by the end of its duration, the target is {{tip|fear|feared}} for a duration while being {{tip|slow|slowed}} by 90%.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Passively, Nocturne gains bonus movement speed while facing nearby feared targets within a 180° angle.",
+     "quote": "Feared enemies in a {{tip|cr|icononly = true}} 180° total angle within '''Nocturne's''' facing direction will trigger ''Unspeakable Horror's'' passive.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NocturneUnspeakableHorror.TooltipFearMS",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "NocturneUnspeakableHorror.LeashBreakRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Paranoia",
+   "cooldown": {
+    "values": [
+     140,
+     115,
+     90
+    ],
+    "quote": "{{tt|{{ap|140 to 90}}|Starts after recast times out or is used}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      275,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|150|275|400}} {{as|(+ 120% '''bonus''' AD)}}",
+     "bin": [
+      "NocturneParanoia#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "nearsight duration (can recast during this window)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "nearsighting them for 6 seconds, during which their {{tip|sight}} radius is reduced",
+     "bin": [
+      "NocturneParanoia.ParanoiaDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "delay before recast is available",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "He can recast ''Paranoia'' for the same duration after {{fd|0.25}} seconds.",
+     "bin": [],
+     "binNote": "No bin row for this recast-availability delay; the sheet's NocturneParanoia entries list only ParanoiaDuration, TrackDistance, BaseDamage and DashSpeed, none of which carry this 0.25s value."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The recast is a dash to the target enemy champion that deals the physical damage upon arrival, not on cast.",
+     "quote": "'''Nocturne''' {{tip|dash|dashes}} with {{tip|displacement immunity}} to the target enemy champion, dealing {{as|physical damage}} upon arrival.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Nocturne can cast any of his abilities and item actives during the recast dash, allowing other damage sources to land during it.",
+     "quote": "'''Nocturne''' can cast any of his [[champion ability|abilities]] and [[Active_ability_items|item actives]] during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The dash has displacement immunity and cannot be deterred by crowd control, but this does not affect damage output timing beyond ensuring the dash completes.",
+     "quote": "The dash cannot be deterred by {{tip|crowd control}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown only starts after the recast window times out or the recast is used, not on initial cast.",
+     "quote": "Starts after recast times out or is used",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Nocturne tracks the target if they change location with no maximum tracking distance, so the dash will always connect.",
+     "quote": "'''Nocturne''' will track the target if they change locations.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NocturneParanoia.TrackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "NocturneParanoia.DashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Umbra Blades empowers next basic attack every 12s (reduced by attacks) for 120% AD physical damage to primary target plus proc damage to nearby enemies, with a self-heal"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "basic attacks reduce Umbra Blades' cooldown by 1s (3s vs champions/monsters)"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Umbra Blades' primary-target hit can crit, changing its coefficient to 110% AD x total crit damage"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Duskbringer deals base+85% bonus AD physical damage on a short delay/travel, on cooldown"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's Dusk Trail grants bonus AD and move speed for 5s while standing on it; W passively grants bonus AS, doubled for 5s after blocking with the active shield"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shroud of Darkness spell shield block itself is a defensive proc irrelevant to the damage-only dummy fight, though its AS payoff is not"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Unspeakable Horror ticks magic damage every 0.5s over a 2s tether"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Paranoia is cast then recast as a dash that deals physical damage on arrival; cooldown starts only after recast/timeout"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all four abilities may gate casts across the 15s fight depending on mana pool/regen"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (empowered on-hit passive with crit and cooldown refund, plain-cast projectile with a separate self-buff, DoT tether, recast dash) map onto existing primitives."
+ },
+ "unsettled": [
+  {
+   "question": "What is Umbra Blades' passive base cooldown-trigger interval within the 15s fight (i.e., does it fire purely off the 12s internal cooldown reduced by on-hit CDR, or is there a minimum attack-count gate)?",
+   "options": [
+    "Fires every 12s minus AA-CDR reductions (effectively can fire much faster than 12s given repeated attacks)",
+    "Fires on a fixed 12s timer regardless of attacks, with CDR only mattering between activations"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Basic attacks reduce ''Umbra Blades' '' {{sti|cooldown}} by 1 second, increased to 3 against enemy {{tip|champions}} and {{tip|monsters}}."
+   ]
+  },
+  {
+   "question": "Does Umbra Blades' primary-target damage replace the normal basic attack damage on that swing, or is it added on top of the normal basic attack?",
+   "options": [
+    "Umbra Blades replaces/enhances that single basic attack (attack damage becomes 120% AD instead of 100% AD)",
+    "Umbra Blades damage is separate bonus damage added alongside the normal basic attack damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|120% AD}} {{as|physical damage}} to the target and nearby enemies"
+   ]
+  },
+  {
+   "question": "Does casting Duskbringer while already standing on a Dusk Trail (from a prior Q) still gain the movement/AD buff refresh, and can Nocturne chain-cast Q for repeated buff uptime within the 8s cooldown, given the sources only clarify the damage does not scale?",
+   "options": [
+    "Trail buff refreshes/reapplies on each Q cast regardless of prior trail state, giving near-permanent bonus AD/MS at max rank (8s cooldown vs 5s trail)",
+    "Only the initial cast that creates a trail (e.g., off self-move or after champion hit) grants the buff; re-casting doesn't meaningfully change uptime"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "It is observed from seasons ago that this is intentionally hard-coded into the ability to avoid the projectile increasing its own damage. This feature is somewhat deprecated as it also limits chain-casting ''Duskbringer''."
+   ]
+  },
+  {
+   "question": "Is the bin's Paranoia (NocturneParanoia) or Paranoia2 (NocturneParanoia2, cooldown 150/125/100) the live row used in-game, since both share identical damage but differ in cooldown from each other and from the wiki's stated cooldown (140/115/90)?",
+   "options": [
+    "NocturneParanoia is live (cooldown matches wiki 140/115/90)",
+    "NocturneParanoia2 is live (cooldown 150/125/100, differs from wiki)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown: [140/115/90]",
+    "cooldown: [150/125/100]",
+    "cooldown     = {{tt|{{ap|140 to 90}}|Starts after recast times out or is used}}"
+   ]
+  },
+  {
+   "question": "During Paranoia's recast dash, can Nocturne's other abilities (Q/E/W) and basic attacks land normally without interruption, and does the dash itself introduce any delay that eats into the 15s fight window before the R damage lands?",
+   "options": [
+    "Dash is near-instant (1800 dash speed) so R recast damage effectively lands almost immediately when target is in range, other actions can be freely interleaved",
+    "Dash travel time is meaningfully long at typical engagement ranges, delaying R's damage and briefly blocking attack windows"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Nocturne''' can cast any of his [[champion ability|abilities]], [[summoner spell|summoner spells]]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Duskbringer) on the dummy to deal upfront physical damage and, if it counts as hitting an enemy champion equivalent, establish the Dusk Trail bonus AD/MS buff.",
+   "Immediately follow with E (Unspeakable Horror) to attach the tether and start its DoT ticking every 0.5s over 2s.",
+   "Weave in basic attacks throughout, since they reduce Umbra Blades' (P) cooldown (3s per hit vs a champion-tagged target) and each empowered attack deals bonus physical damage that can crit.",
+   "Use W (Shroud of Darkness) primarily for the passive bonus attack speed uptime; its active spell shield has no target to block in a dummy fight, so cast it early only if the sim credits the passive AS regardless, or refrain if it consumes a GCD-equivalent without benefit.",
+   "Cast R (Paranoia) as early as possible against the dummy (treated as an enemy champion) and recast promptly to trigger the dash-arrival physical damage, weaving in other abilities/attacks during the dash.",
+   "Re-cast Q on cooldown (every 8s) and E on cooldown (~11-15s depending on rank) for their damage, continuing to auto-attack between casts to maximize Umbra Blades procs and uptime of Q's bonus AD trail."
+  ],
+  "questions": [
+   "Does the dummy fight simulator apply Umbra Blades' passive purely on its internal cooldown timer, or does it require a minimum number of qualifying basic attacks to fire, and how should its cooldown reduction from attacks be modeled turn-by-turn?",
+   "In a single-target dummy fight, does Paranoia's recast (R) require the target to be within TrackDistance/target range from the moment of initial cast, and is the dash-arrival damage delayed by travel time or effectively instant given the short engagement range assumed?",
+   "Should W be cast for its passive attack speed value even though its active spell-shield component is never useful against a passive dummy, or does the simulator only grant W's passive bonus once the ability is leveled without needing to actively recast it?",
+   "Does chain-casting Duskbringer (Q) every 8s meaningfully refresh/extend the Dusk Trail bonus AD/MS buff uptime, or is uptime capped at roughly 5s per cast with a 3s gap where the buff lapses?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

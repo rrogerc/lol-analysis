@@ -1,0 +1,173 @@
+{
+ "champion": "aurelionsol",
+ "primitives": [
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P",
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Permanent Stardust stacks (Cosmic Creator) scale Q's per-target-max-HP bonus damage, E's execution threshold, and unlock R's upgraded Skies Descend form at 75 stacks; the sim must assume a starting stack count for the 15s fight."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's beam ticks damage every 0.125s to the primary target (50% to secondary targets) while channeled; E's black hole ticks damage every 0.25s over its 5s duration."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Breath of Light is a channel (up to 3.25s at ranks 1-4, effectively unlimited at rank 5 or during Astral Flight) that is interrupted by attacking, moving, or hard-casting."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q layers a separately-timed per-second burst on top of its continuous beam tick and auto-recasts at max channel duration; The Skies Descend has a separately timed impact and an expanding 3s shockwave, with targets hit by the impact excluded from the shockwave."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Astral Flight fully resets Breath of Light's cooldown (and removes its max duration/cost pacing) on cast, and refunds 90% of its own cooldown on a takedown."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "While channeling Breath of Light during Astral Flight's dash, Q's non-burst flat damage is increased by 108-112%."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "E"
+   ],
+   "note": "Enemies within the center of Singularity's black hole are executed below 5% (+Stardust scaling) of their maximum health."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Breath of Light's per-full-second burst deals bonus damage scaling with the target's maximum health, in addition to its flat+AP component."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Breath of Light incurs an ongoing mana-per-second cost starting 1.25s into the channel, on top of E's and R's flat 90/100 mana costs, which can meaningfully constrain casts across a 15s fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Aurelion Sol's damage output depends on a live-updating Stardust stack counter that simultaneously feeds three different formulas (Q's true-damage-vs-max-HP burst, E's execution threshold, and R's Falling Star->Skies Descend transform at exactly 75 stacks) while itself growing from the very abilities being simulated in the fight. Q also runs two independently-timed damage processes at once (a continuous 0.125s beam tick and a 1s-interval burst that resets if the burn lapses), and W can reset/extend that channel mid-fight and multiplicatively buff only its non-burst portion. Modeling this correctly needs bespoke state-tracking beyond a static combination of the listed primitives, not just tagging which primitives apply."
+ },
+ "unsettled": [
+  {
+   "question": "Is Breath of Light's health-ratio burst bonus (p_qbonus / q_7's target-max-HP term) true damage or magic damage against the dummy?",
+   "options": [
+    "True damage, per the bin field/function names (QMaxHealthTrueDamagePerStack, BurstBonusTrueDamageToChamps)",
+    "Magic damage, per the wiki's ability-wide 'magic damage' framing and damagetype flag"
+   ],
+   "impact": "high",
+   "quotes": [
+    "AurelionSolPassive.QMaxHealthTrueDamagePerStack",
+    "'''Aurelion Sol''' {{tip|channel|charges}} for up to {{fd|3.25}} seconds to exhale a beam of starfire ... dealing {{as|magic damage}}",
+    "Bursts deal {{as|'''bonus''' magic damage}} based on the {{as|target's '''maximum''' health}}."
+   ]
+  },
+  {
+   "question": "What starting Stardust stack count should the damage fight assume, since it changes Q's true-damage bonus, E's execution threshold, and whether R is cast as base Falling Star or the empowered Skies Descend (unlocked at 75 stacks)?",
+   "options": [
+    "0 stacks (fresh game state)",
+    "75+ stacks (Skies Descend already unlocked, as would be typical by the point a build/level is being tested)",
+    "Some other fixed assumed value"
+   ],
+   "impact": "high",
+   "quotes": [
+    "gathering {{as|75 Stardust}} causes the next cast of ''Falling Star'' to transform into ''{{ai|The Skies Descend|Aurelion Sol}}''"
+   ]
+  },
+  {
+   "question": "Does Breath of Light's automatic recast at the end of its max channel duration (ranks 1-4, ~3.25s) cause any gap in beam damage, or is it seamless?",
+   "options": [
+    "Seamless continuation with zero downtime",
+    "A brief gap (queue/cast time) before the beam resumes, reducing effective DPS",
+    "The primary-target burn timer/burst progress resets to zero on each auto-recast, losing partial burst credit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Breath of Light'' can be recast within the duration, and does so automatically afterwards.",
+    "It falls off and resets to zero if a target is not hit within 1 second of no longer being afflicted by the burn."
+   ]
+  },
+  {
+   "question": "Which execution-threshold constants actually govern Singularity's execute: E's own BaseExecutionThreshold/ExecutionGrowthPerBreakpoint, or the Passive's identically-named fields (which include an unresolved additional bin term {f3cbe7b2})?",
+   "options": [
+    "E's own fields (5 + 0.026x stacks) as used in AurelionSolE#CurrentExecutionThreshold",
+    "The Passive's fields plus the unresolved {f3cbe7b2} term, giving a different (possibly higher) threshold"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "AurelionSolPassive#ExecuteHealthThreshold = ((BaseExecutionThreshold=5)*(0.01) + (<{f3cbe7b2}>)*(0.01))xmaxHp",
+    "! unresolved calculation part {f3cbe7b2}",
+    "AurelionSolE#CurrentExecutionThreshold = BaseExecutionThreshold=5 + (ExecutionGrowthPerBreakpoint=0.026)xbuffStacks"
+   ]
+  },
+  {
+   "question": "Does Astral Flight's Breath of Light damage buff (108-112%) apply only to the flat per-second/beam-tick damage as its 'non-burst' wording states, or does it also affect the burst's flat component, and is it multiplicative on top of AP ratios?",
+   "options": [
+    "Applies only to the flat per-second tick damage (DamagePerSecond base, not its AP ratio or the burst)",
+    "Applies to all of Q's flat damage components including the burst's flat base",
+    "Applies multiplicatively to the whole per-second damage instance including its AP scaling"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''{{ai|Breath of Light|Aurelion Sol}}'' has no cooldown and maximum channel duration and its non-burst flat damage is increased",
+    "{{st|{{ai|Breath of Light|Aurelion Sol}} Flat Damage Modifier|{{ap|108 to 112}}%}}"
+   ]
+  },
+  {
+   "question": "Does casting Singularity (E) or Falling Star (R) while channeling Breath of Light (Q) outside of an active Astral Flight interrupt the Q channel, or can they be cast concurrently?",
+   "options": [
+    "Casting E/R interrupts and ends the Q channel (per the general channel interrupt table)",
+    "E/R can be cast without interrupting Q, since the explicit interrupt-on-cast rule is only described for casting them during Astral Flight's dash"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ct|channel|attack=interrupts|cast=interrupts|move=interrupts|items=interrupts,true,,false|spells=true,interrupts,false,interrupts,interrupts}}",
+    "{{ais|Breath of Light|Aurelion Sol}} channel will be interrupted if Astral Flight ends or {{ai|Singularity|Aurelion Sol}} or {{ai|Falling Star|Aurelion Sol}} / {{ai|The Skies Descend|Aurelion Sol}} is cast during the flight, but the ability will automatically be cast afterwards."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting R (Falling Star, or The Skies Descend if the assumed Stardust count has it unlocked) on the dummy first, since its long cooldown (100-120s) means it only fires once in the 15s window and its impact has a 1.25-2s travel delay.",
+   "Immediately begin channeling Q (Breath of Light) on the dummy and hold the channel as long as possible to maximize both the continuous beam tick damage and the once-per-second burst bonus.",
+   "Cast E (Singularity) on the dummy as soon as it is available (12s cooldown, mana permitting) to add its own DPS tick and execute threshold pressure, accepting that this may interrupt the ongoing Q channel.",
+   "Immediately re-open the Q channel after E resolves and keep it running.",
+   "Use W (Astral Flight) toward/through the dummy partway through the fight to instantly reset Q's cooldown/duration and gain the 108-112% flat damage buff on Q while flying, then let Q auto-continue at the buffed rate.",
+   "Recast E again near the end of the 15s window if its cooldown and mana allow a second cast.",
+   "Keep Q channeling continuously in every remaining gap, since its cooldown is only 3 seconds and it is the primary sustained damage source."
+  ],
+  "questions": [
+   "Does casting E or R actually interrupt an active Q channel outside of Astral Flight, and if so, is it worth pausing Q's DPS to fit them in, or should Q's channel be protected as the priority?",
+   "Should Astral Flight be used purely as a Q-cooldown/damage-buff tool in a stationary dummy fight, or does its dash mechanic (fixed range, must travel through/past the dummy) impose a positional constraint that reduces its practical uptime against a single stationary target?",
+   "Given mana costs (Q's per-second drain plus E's 90 and R's 100 flat costs), what mana pool/regen should be assumed at the tested level/items to know how many E and Q-channel-refresh cycles are actually affordable in 15 seconds?",
+   "Is it correct to assume the dummy is hit as a 'champion' for Q's true-damage-vs-max-HP term and Stardust generation, or does a dummy target count as a non-champion for these champion-only bonuses?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

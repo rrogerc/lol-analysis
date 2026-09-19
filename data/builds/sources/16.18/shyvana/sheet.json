@@ -1,0 +1,935 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ShyvanaPassive",
+    "key": "Characters/Shyvana/Spells/ShyvanaPassiveAbility/ShyvanaPassive",
+    "dataValues": {
+     "BonusArmor": 0.3,
+     "BonusMagicResist": 0.3,
+     "PassiveScale": 0.3,
+     "Stacks_Per_Epic_Monster": 3,
+     "Stacks_Per_Champion": 3,
+     "Stacks_Per_Buff_Monster": 1,
+     "Stacks_Per_Large_Monster": 1
+    },
+    "calcs": {
+     "Calc_Bonus_Armor": {
+      "expr": "(BonusArmor=0.3)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({bba88b2a})",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "BonusArmor"
+       }
+      ],
+      "refs": [
+       "BonusArmor"
+      ]
+     },
+     "Calc_Bonus_MR": {
+      "expr": "(BonusMagicResist=0.3)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({bba88b2a})",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "BonusMagicResist"
+       }
+      ],
+      "refs": [
+       "BonusMagicResist"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ShyvanaQ",
+    "key": "Characters/Shyvana/Spells/ShyvanaQAbility/ShyvanaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "dataValues": {
+     "EnhanceDuration": 6,
+     "RecastDuration": 4,
+     "LockoutDuration": 1.5,
+     "Q1Length": 450,
+     "Q2Radius": 275,
+     "Cooldown_Reduction": 0.5,
+     "Max_Health_Damage": 0.01,
+     "Max_Health_AD_Ratio": 0.00011,
+     "Base_Damage": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "Damage_AD_Ratio": 1.1,
+     "Bonus_Attack_Range": 50,
+     "Damage_Monster_Bonus": 10
+    },
+    "calcs": {
+     "Calc_Max_Health_Damage": {
+      "expr": "Max_Health_Damage=0.01 + (Max_Health_AD_Ratio=0.00011)xbonus ad",
+      "flat": 0.01,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.00011,
+        "dataValue": "Max_Health_AD_Ratio"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "Max_Health_AD_Ratio",
+       "Max_Health_Damage"
+      ]
+     },
+     "Calc_Damage": {
+      "expr": "BASE_DAMAGE + (Damage_AD_Ratio=1.1)xad + 0.3xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BASE_DAMAGE",
+       "Damage_AD_Ratio"
+      ]
+     },
+     "Calc_Dragon_Form_Damage": {
+      "expr": "Calc_Damage * 1.5",
+      "modifies": "Calc_Damage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BASE_DAMAGE",
+       "Damage_AD_Ratio"
+      ]
+     },
+     "Calc_Max_Health_Monster_Minimum": {
+      "expr": "10",
+      "flat": 10,
+      "terms": [],
+      "refs": []
+     },
+     "Calc_Max_Health_Monster_Maximum": {
+      "expr": "200",
+      "flat": 200,
+      "terms": [],
+      "refs": []
+     },
+     "Calc_Monster_Bonus": {
+      "expr": "Damage_Monster_Bonus=10",
+      "flat": 10,
+      "terms": [],
+      "refs": [
+       "Damage_Monster_Bonus"
+      ]
+     },
+     "{aee2a1e8}": {
+      "expr": "1",
+      "flat": 1,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value BASE_DAMAGE"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "ShyvanaW",
+    "key": "Characters/Shyvana/Spells/ShyvanaWAbility/ShyvanaW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12.25,
+      11.5,
+      10.75,
+      10
+     ]
+    },
+    "dataValues": {
+     "Duration": 2.5,
+     "Radius": 350,
+     "Shield": {
+      "axis": "rank",
+      "v": [
+       60,
+       80,
+       100,
+       120,
+       140
+      ]
+     },
+     "Shield_Radius": 600,
+     "BaseMoveSpeed": 0.25,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       100,
+       120,
+       140,
+       160
+      ]
+     },
+     "MissingHealthHealMultiplier": 2,
+     "MoveSpeedAmpTowardsEnemies": 1.75,
+     "ShieldMaxHealth": 0.12
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[80/100/120/140/160] + 0.65xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        100,
+        120,
+        140,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.65
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MoveSpeed": {
+      "expr": "BaseMoveSpeed=0.25",
+      "flat": 0.25,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseMoveSpeed"
+      ]
+     },
+     "Calc_Shield": {
+      "expr": "Shield=[60/80/100/120/140] + (ShieldMaxHealth=0.12)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        80,
+        100,
+        120,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.12,
+        "dataValue": "ShieldMaxHealth"
+       }
+      ],
+      "refs": [
+       "Shield",
+       "ShieldMaxHealth"
+      ]
+     },
+     "Calc_Shield_Per_Nearby_Champion": {
+      "expr": "Calc_Shield * 0.3",
+      "modifies": "Calc_Shield",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        18,
+        24,
+        30,
+        36,
+        42
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.036,
+        "dataValue": "ShieldMaxHealth"
+       }
+      ],
+      "refs": [
+       "Shield",
+       "ShieldMaxHealth"
+      ]
+     },
+     "Calc_Heal_Min": {
+      "expr": "byLevel(75..200) + 0.1xbonus ad + 0.05xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        75,
+        82.35294,
+        89.70588,
+        97.05882,
+        104.411765,
+        111.76471,
+        119.117647,
+        126.47059,
+        133.82353,
+        141.17647,
+        148.529412,
+        155.88235,
+        163.23529,
+        170.58824,
+        177.94118,
+        185.29412,
+        192.64706,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": []
+     },
+     "Calc_Heal_Max": {
+      "expr": "Calc_Heal_Min * MissingHealthHealMultiplier=2",
+      "modifies": "Calc_Heal_Min",
+      "flat": {
+       "axis": "level",
+       "v": [
+        150,
+        164.70588,
+        179.41176,
+        194.11764,
+        208.82353,
+        223.52942,
+        238.23529,
+        252.94118,
+        267.64706,
+        282.35294,
+        297.058824,
+        311.7647,
+        326.47058,
+        341.17648,
+        355.88236,
+        370.58824,
+        385.29412,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "MissingHealthHealMultiplier"
+      ]
+     },
+     "MoveSpeedTowardsEnemies": {
+      "expr": "MoveSpeed * MoveSpeedAmpTowardsEnemies=1.75",
+      "modifies": "MoveSpeed",
+      "flat": 0.4375,
+      "terms": [],
+      "refs": [
+       "BaseMoveSpeed",
+       "MoveSpeedAmpTowardsEnemies"
+      ]
+     },
+     "Calc_Missing_Health_Heal": {
+      "expr": "byLevel(0.04..0.08)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.04,
+        0.04235294,
+        0.04470588135368684,
+        0.04705882,
+        0.04941176360144335,
+        0.0517647047253216,
+        0.054117645849199855,
+        0.05647058697307811,
+        0.05882353,
+        0.06117646922083462,
+        0.06352941,
+        0.06588235146859113,
+        0.06823529,
+        0.07058823,
+        0.07294117484022589,
+        0.07529411596410415,
+        0.07764706,
+        0.08
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "Calc_Base_Heal": {
+      "expr": "byLevel(60..100)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        60,
+        62.35294,
+        64.70588,
+        67.05882,
+        69.411765,
+        71.76471,
+        74.117647,
+        76.47059,
+        78.82353,
+        81.17647,
+        83.52941,
+        85.882353,
+        88.23529,
+        90.588235,
+        92.94118,
+        95.29412,
+        97.64706,
+        100
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ShyvanaE",
+    "key": "Characters/Shyvana/Spells/ShyvanaEAbility/ShyvanaE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       65,
+       80,
+       95,
+       110
+      ]
+     },
+     "BaseDamagePerSecond": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "GroundLingerDuration": 2,
+     "GroundRadius": 150,
+     "TrailRadius": 75,
+     "SlowDuration": 2,
+     "SlowAmount": 0.3,
+     "DragonGroundRadius": 300,
+     "DragonTrailRadius": 100,
+     "DragonCastRangeScale": 0.4,
+     "RepeatExplosionDelay": 0.25,
+     "DamageAPRatio": {
+      "axis": "rank",
+      "v": [
+       0.6,
+       0.65,
+       0.7,
+       0.75,
+       0.8
+      ]
+     },
+     "MaxHealthDamage": 0.05,
+     "DamageDragonMod": 1.25
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[50/65/80/95/110] + (DamageAPRatio=[0.6/0.65/0.7/0.75/0.8])xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        65,
+        80,
+        95,
+        110
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8
+         ]
+        },
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageAPRatio"
+      ]
+     },
+     "DamagePerSecond": {
+      "expr": "byLevelL[15/15/15/15/15/15/15/15/15/15/20/20/20/20/20/25/25/25] + 0.05xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        20,
+        20,
+        20,
+        20,
+        20,
+        25,
+        25,
+        25
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": []
+     },
+     "Calc_Multihit_Efficacy": {
+      "expr": "0.4",
+      "flat": 0.4,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "Calc_Dragon_Damage": {
+      "expr": "Damage * 1.25",
+      "modifies": "Damage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        62.5,
+        81.25,
+        100,
+        118.75,
+        137.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.75,
+          0.8125,
+          0.875,
+          0.9375,
+          1
+         ]
+        },
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageAPRatio"
+      ]
+     },
+     "Calc_Slow": {
+      "expr": "SlowAmount=0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "SlowAmount"
+      ]
+     },
+     "Calc_Slow_Dragon": {
+      "expr": "Calc_Slow * 1",
+      "modifies": "Calc_Slow",
+      "flat": 0.3,
+      "terms": [],
+      "refs": [
+       "SlowAmount"
+      ]
+     },
+     "Calc_Max_Health_Damage": {
+      "expr": "MaxHealthDamage=0.05",
+      "flat": 0.05,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "MaxHealthDamage"
+      ]
+     },
+     "Calc_Max_Health_Dragon_Damage": {
+      "expr": "Calc_Max_Health_Damage * DamageDragonMod=1.25",
+      "modifies": "Calc_Max_Health_Damage",
+      "flat": 0.0625,
+      "terms": [],
+      "refs": [
+       "DamageDragonMod",
+       "MaxHealthDamage"
+      ]
+     },
+     "Calc_Max_Health_Monster_Minimum": {
+      "expr": "0",
+      "flat": 0,
+      "terms": [],
+      "refs": []
+     },
+     "Calc_Max_Health_Monster_Maximum": {
+      "expr": "200",
+      "flat": 200,
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ShyvanaR",
+    "key": "Characters/Shyvana/Spells/ShyvanaRAbility/ShyvanaR",
+    "cooldown": 0,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinCastRange": 400,
+     "JumpDelay": 0.15,
+     "JumpDampening": 70,
+     "JumpGravity": 25,
+     "JumpForwardMultiplier": 100,
+     "Width": 225,
+     "FuryGain": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       0.75,
+       1
+      ]
+     },
+     "FuryDrainPerSecond": 6.66666,
+     "Fury_Generation": 1.25,
+     "FuryDragonFormMult": 3,
+     "Fury_AoE_Efficacy": 0.25,
+     "FearDuration": 0.75,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "BonusHealth": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "SizeScaling": {
+      "axis": "rank",
+      "v": [
+       0.05,
+       0.125,
+       0.2
+      ]
+     },
+     "BonusAttackRange": {
+      "axis": "rank",
+      "v": [
+       25,
+       50,
+       75
+      ]
+     },
+     "FuryGainPerUltHaste": 0.01
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[150/250/350] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "Calc_Bonus_Health": {
+      "expr": "BonusHealth=[150/250/350]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "BonusHealth"
+      ]
+     },
+     "{57d26a55}": {
+      "expr": "1050",
+      "flat": 1050,
+      "terms": [],
+      "refs": []
+     },
+     "TT_Fury_Mult": {
+      "expr": "FuryDragonFormMult=3 + -1",
+      "flat": 2,
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "FuryDragonFormMult"
+      ]
+     },
+     "TT_Fury_AoE_Penalty": {
+      "expr": "1 + (-1)*(Fury_AoE_Efficacy=0.25)",
+      "flat": 0.75,
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "Fury_AoE_Efficacy"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "ShyvanaQ",
+  "W": "ShyvanaW",
+  "E": "ShyvanaE",
+  "R": "ShyvanaR",
+  "P": "ShyvanaPassive"
+ },
+ "resource": {
+  "arType": 5,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Shyvana",
+  "name": "Shyvana",
+  "partype": "Fury",
+  "passive": "Scalemail",
+  "spells": [
+   {
+    "id": "ShyvanaQ",
+    "name": "Emberstrike",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ShyvanaW",
+    "name": "Inferno Aegis",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12.25,
+     11.5,
+     10.75,
+     10
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ShyvanaE",
+    "name": "Molten Burst",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ShyvanaR",
+    "name": "Dragon's Descent",
+    "maxrank": 3,
+    "cooldown": [
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Scalemail": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Emberstrike": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "occurrence": "On-hit"
+   },
+   "Emberstrike 2": {},
+   "Emberstrike 3": {}
+  },
+  "W": {
+   "Inferno Aegis": {
+    "damagetype": "magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies"
+   },
+   "Inferno Aegis 2": {}
+  },
+  "E": {
+   "Molten Burst": {
+    "damagetype": "magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "[[Direction-targeted|Direction]] / [[Location-targeted|Location]]",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Dragon's Descent": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies, Self",
+    "costtype": "{{as|Dragon Fury}} every {{fd|0.5}} seconds"
+   }
+  }
+ }
+}

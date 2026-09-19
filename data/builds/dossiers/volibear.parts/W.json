@@ -1,0 +1,195 @@
+{
+ "name": "Frenzied Maul",
+ "cooldown": {
+  "values": [
+   5,
+   5,
+   5,
+   5,
+   5
+  ],
+  "quote": "5"
+ },
+ "cost": {
+  "values": [
+   20,
+   25,
+   30,
+   35,
+   40
+  ],
+  "quote": "{{ap|20 to 40}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    30,
+    55,
+    80,
+    105
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.06
+    }
+   ],
+   "quote": "{{ap|5 to 105}} {{as|(+ 110% AD)}} {{as|(+ 6% of his '''bonus''' health)}}",
+   "bin": [
+    "VolibearW#TotalDamage"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    20,
+    35,
+    50,
+    65,
+    80
+   ],
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": [
+      0.08,
+      0.11,
+      0.14,
+      0.17,
+      0.2
+     ]
+    }
+   ],
+   "quote": "{{ap|20 to 80}} {{as|(+ {{ap|8 to 20}}% of his '''missing''' health)}}",
+   "bin": [
+    "VolibearW.BaseHeal",
+    "VolibearW#PercentMissingHealthHealingRatio"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Minion Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    10,
+    17.5,
+    25,
+    32.5,
+    40
+   ],
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": [
+      0.04,
+      0.055,
+      0.07,
+      0.085,
+      0.1
+     ]
+    }
+   ],
+   "quote": "{{ap|20*0.5 to 80*0.5}} {{as|(+ {{ap|8*0.5 to 20*0.5}}% of his '''missing''' health)}}",
+   "bin": [
+    "VolibearW.BaseHeal",
+    "VolibearW.MinionAndMonsterMod",
+    "VolibearW#PercentMissingHealthHealingRatio"
+   ],
+   "binNote": "No bin row stores the halved values directly; they are the product of VolibearW.BaseHeal / VolibearW#PercentMissingHealthHealingRatio (both listed) times VolibearW.MinionAndMonsterMod=0.5, matching the wiki's explicit '*0.5' notation."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Wounded bite increased damage multiplier",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": 0.5,
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.0025
+    }
+   ],
+   "quote": "{{ccs|50% {{as|(+ 25% per 100 '''bonus''' AD) increased damage|physical}}",
+   "bin": [
+    "VolibearW.W2DamageMultiplier",
+    "VolibearW.W2BonusADDamageMultiplier",
+    "VolibearW#EmpoweredDamage"
+   ],
+   "binNote": "Bin stores this as a multiplier on total damage: W2DamageMultiplier=1.5 (i.e. total damage x1.5, equivalent to the wiki's stated +50% increase over the base hit) plus W2BonusADDamageMultiplier=0.0025 per point of bonus AD (equivalent to the wiki's +25% per 100 bonus AD, since 0.0025*100=0.25). The wiki's additive framing (base 0.5 + per-bonusAD term) is a restatement of the bin's multiplicative EmpoweredDamage formula, not a separate number."
+  },
+  {
+   "id": "w_5",
+   "meaning": "Wounded mark duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 8,
+   "terms": [],
+   "quote": "mark the target ''Wounded'' for 8 seconds",
+   "bin": [
+    "VolibearW.MarkDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "After casting, Volibear is ordered to basic attack the target, which triggers the on-hit/bite portion.",
+   "quote": "'''Volibear''' will be ordered to [[basic attack]] the target after casting ''Frenzied Maul''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The initial strike deals basic damage but is also tagged as spell damage, so it triggers on-hit effects and spell-damage interactions.",
+   "quote": "''Frenzied Maul'' deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bite's heal still applies even if the bite's damage is blocked by spell shield.",
+   "quote": "''Frenzied Maul's'' bite {{tip|heals}} even if it is blocked by {{tip|spell shield}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The initial strike can be dodged or blocked but cannot miss if Volibear is blinded; the Wounded mark fails to apply only if the strike is dodged.",
+   "quote": "''Frenzied Maul's'' strike can be {{tip|dodged}} and {{tip|blocked}}, but it cannot miss if '''Volibear''' is {{tip|blind|blinded}}. The ''Wound'' mark does not apply if {{tip|dodge|dodged}}, but will otherwise do so regardless.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bite can be blocked (Volibear still heals) but deals no damage or heal if the bite is dodged; the bite cannot miss if Volibear is blinded.",
+   "quote": "The bite can be {{tip|blocked}} but '''Volibear''' still heals. It does not heal nor deal damage if the bite is {{tip|dodge|dodged}}. The bite cannot miss if '''Volibear''' is {{tip|blind|blinded}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bite only deals its bonus damage and heal if the target is still Wounded once the cast time completes; if the mark expires first, the bite animation plays with no bonus damage or heal.",
+   "quote": "''Frenzied Maul'' deals bonus damage and heals if the target is still ''Wounded'' after the cast time. If the mark wears off before the cast time completes, the ability's animation will appear as if the bite was applied but there is no bonus damage or heal.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Frenzied Maul's damage applies life steal.",
+   "quote": "''Frenzied Maul'' {{tip|applies life steal|applies}} {{as|{{sti|life steal}}}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [],
+ "filledBy": "sonnet"
+}

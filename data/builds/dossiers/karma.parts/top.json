@@ -1,0 +1,103 @@
+{
+ "champion": "karma",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Inner Flame/Soulflare impact damage and Focused Resolve initial damage each fire on a fixed (0.25s) cast-time delay, then go on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Soulflare adds a second, separately-timed damage instance (field rupture after a 1.5s delay) on top of the impact hit; Focused Resolve deals its damage again as a delayed aftereffect if the 2s tether is not broken"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "Gathering Fire (P) shortens Mantra's current cooldown by 4s per enemy champion hit by a Karma damaging ability (Q's two instances, and W's two instances, each count separately), letting Mantra recharge faster the more the dummy is hit"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Mana costs (40-80 on Q, 50-70 on W, 60-80 on E) are meaningful relative to Karma's mana pool and can limit how many casts fit in the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "W"
+   ],
+   "note": "Inspire/Defiance shield and Renewal's self-heal only matter for damage-taken/survival, never read by the damage-only dummy fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Mantra (R) is a zero-cost, on-cast-cooldown-start buff that arms the NEXT BASIC ABILITY (not basic attack) cast within 8 seconds with a different bonus effect depending on which slot is cast: bonus magic damage split across two instances if spent on Q, a longer root plus a self-heal (no damage) if spent on W, or bonus shield (no damage) if spent on E. None of the closed-list primitives model 'the next ability cast, whichever it is, gets a slot-dependent bonus effect'; empowered-attack/nth-hit-or-cast are built around basic attacks, and weapon-or-ammo-system assumes stacking ammo rather than a single decaying charge that can be aimed at any of three different spells with three different effect types. The simulator needs bespoke logic: hold one Mantra charge, decay it after 8s if unused, and apply its Q-specific bonus-damage terms (RQImpactDamage, RQFieldDamage) only when the charge is consumed on Q."
+ },
+ "unsettled": [
+  {
+   "question": "Does KarmaMantra#RWHealAmount ((17 + 0.01xAP) * 0.01) actually scale with Mantra's rank, or is it a flat 17%(+1%/100AP) missing-health heal at every Mantra rank?",
+   "options": [
+    "Flat formula regardless of Mantra rank, as the single bin formula (no rank bracket) suggests",
+    "Scales by rank the way other Mantra bonuses do (per the wiki's general 'Renewal scales with Mantra rank' claim), with per-rank base values that neither source tabulates numerically"
+   ],
+   "impact": "low",
+   "quotes": [
+    "KarmaMantra#RWHealAmount (percent) = (RWBaseHeal=17 + (RWHealRatio=0.01)xap) * 0.01",
+    "''Renewal'' scales with ''{{ais|Mantra|Karma}}'' rank."
+   ]
+  },
+  {
+   "question": "Is Mantra's 8-second empowerment window (how long the 'next ability empowered' buff lasts before expiring unused) a value the sim should trust from the wiki text alone, given no bin field carries this timer?",
+   "options": [
+    "Treat 8 seconds (wiki-only) as authoritative",
+    "Treat it as unconfirmed/unsourced from the bin and flag it as an assumption in the rotation model"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Karma''' empowers her next basic ability within 8 seconds for an additional effect."
+   ]
+  },
+  {
+   "question": "When a Mantra-empowered Soulflare and a plain Inner Flame both hit the single dummy, does Gathering Fire count each of Soulflare's two damage instances (impact + field) as a separate 'hit' for its own 4s Mantra-CDR tick (i.e. 8s total per Soulflare cast), or does one champion hit only ever grant a single 4s reduction per ability cast regardless of how many damage instances it produces?",
+   "options": [
+    "Each damage instance (impact, field) grants its own 4s reduction, matching the wiki's explicit 'if 5 enemy champions are hit by both instances of damage' cap of 4*10=40s math",
+    "Only one 4s reduction per ability cast per champion, and the 'both instances' wording refers only to counting across 5 champions, not doubling on a single target"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{ai|Inner Flame|Karma}} / {{ai|Soulflare|Karma}} reduces {{ais|Mantra|Karma}} cooldown per champion hit by either damage instance (up to a maximum total reduction of {{ap|4*10}} seconds if 5 enemy champions are hit by both instances of damage)."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Before or at the start of the fight, cast Mantra (R) to arm the empowerment (it costs no mana, so casting it early wastes nothing).",
+   "Immediately cast Q (consuming the Mantra charge to fire Soulflare) into the dummy: this lands the base impact damage plus the Mantra impact bonus, then the field ruptures ~1.5s later for the field bonus damage.",
+   "Cast W (Focused Resolve) on the dummy for its initial damage; hold the tether uninterrupted so its aftereffect damage fires automatically ~2s later.",
+   "Recast Q on cooldown (down to 5s at max rank) as the primary repeated damage source for the rest of the fight.",
+   "Recast W every time it comes off cooldown (12s, does not reduce with rank) to add its two-instance damage again.",
+   "Recast Mantra the instant it comes off cooldown (it shortens further from Gathering Fire's per-hit CDR) and always spend the resulting charge on the next Q cast, never on W or E, since only Q's Mantra bonus deals damage.",
+   "Do not cast E in the damage fight (Inspire/Defiance deals no damage and is a mana cost with no offensive return against a stationary target)."
+  ],
+  "questions": [
+   "Should Mantra be reserved strictly for Q every time, or is there ever a reason to let a charge expire unused (e.g., to guarantee W's root/heal utility) that the sim should still model even though it doesn't add damage?",
+   "Given Karma's relatively low base mana pool and the costs on Q/W/E, what level/item mana assumptions should the sim use to decide how many casts of each ability actually fit in the 15s window before Karma runs out of mana?",
+   "Does the sim need to account for Mantra's cooldown starting on cast (cdstart = on-cast) when deciding exactly how early to first cast R relative to the first Q, or is 'cast R then immediately Q' always optimal regardless of timing details?",
+   "Should Focused Resolve's aftereffect (second damage tick ~2s after cast) be scheduled as a fixed delayed event in the kill-time calculation, given the tether is guaranteed to complete against a stationary, non-fleeing dummy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

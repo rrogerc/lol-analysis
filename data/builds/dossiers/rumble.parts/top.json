@@ -1,0 +1,106 @@
+{
+ "champion": "rumble",
+ "primitives": [
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Flamespitter ticks every 0.25s for 3s (scorch debuff, refreshed/extra instance on first hit); The Equalizer's fire field ticks every 0.25s, Burning refreshes while in area, capped at 5s/20 ticks."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Electro Harpoon applies a % magic resistance reduction to the first enemy hit, stacking additively up to 2 stacks (4s duration each), increasing damage of all subsequent Rumble magic damage sources on that target."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Electro Harpoon is stocked as a charge (up to 2), recharging every 6s independent of the 0.5s ability cooldown; Rumble starts the fight with at least one charge already stocked."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "While Overheated, basic attacks gain bonus on-hit magic damage (level-scaled + 25% AP + 4% target max HP, capped vs monsters only)."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "While Overheated (a forced 4s state triggered automatically at 150 Heat), Rumble gains level-scaled bonus attack speed."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Each Q/W/E cast generates/costs 20 Heat; Heat decays 10/s after 4s (2s for R) without a cast; reaching 150 Heat forces Overheat (abilities disabled) for 4s, so Heat effectively gates how often Q/W/E can be cast inside the 15s window."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "At >=50 Heat ('Danger Zone'), Q/W/E effects (including Q and E damage, and E's MR shred/slow) are empowered by +50%; this is a threshold state driven by the shared Heat resource rather than a literal per-cast stack, modeled here as the closest-fitting primitive."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Rumble's Heat meter is a single shared resource across Q/W/E (and indirectly R via a shorter no-cast decay window) that (1) costs 20 per Q/W/E cast, (2) decays only after a no-cast grace period, (3) crosses a 50-Heat threshold that empowers Q/W/E damage and E's debuffs by 50% (Danger Zone), and (4) forces a mandatory 4s 'Overheated' state at 150 Heat that disables all of Q/W/E/R casting while granting an automatic onhit damage+attack-speed buff. This state machine (accumulate -> threshold buff -> forced lockout state with its own onhit/AS buff -> decay back to 0) spans multiple abilities and gates their availability in a way no single closed-list primitive captures; it needs bespoke Heat-tracking logic layered on top of the listed primitives (resource-budget + stacking-self-buff + timed-self-buff/onhit-rider) to reproduce correctly."
+ },
+ "unsettled": [
+  {
+   "question": "Does Flamespitter's 'extra debuff instance on first application' (the 0.1s-delayed duplicate tick when the scorch debuff is newly applied rather than refreshed) add damage beyond the normal 12 ticks over the 3s duration, or is it already counted within that tick total?",
+   "options": [
+    "It is an additional 13th tick of damage on first application against a fresh target",
+    "It is already included in/coincides with the normal 0.25s tick cadence and adds no extra damage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "When ''Flamespitter's'' debuff is applied instead of refreshed, the target is dealt one additional instance of the debuff at the same time as the application. This is done by delaying the actual debuff by {{fd|0.1}} seconds.",
+    "RumbleFlameThrower.TotalTicks = 12"
+   ]
+  },
+  {
+   "question": "Does The Equalizer's listed 'cast time: None (starts after the spell is cast, 0.5833s)' mean Rumble is free to act (cast other abilities/attack) during that 0.5833s deployment window, or does it functionally block him like a cast time?",
+   "options": [
+    "No cast time; Rumble can immediately act after issuing R while rockets deploy over the next 0.75s",
+    "The 0.5833s figure functions as an effective pre-damage delay/channel that constrains when Rumble's next action can land"
+   ],
+   "impact": "low",
+   "quotes": [
+    "|cast time    = {{dv|None|{{tt|{{fd|0.5833}}|Starts after the spell is cast}}}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by firing both stocked Electro Harpoon charges (E) at the target to apply the MR shred/slow debuff stacks (up to 2) as early as possible, since it amplifies all subsequent magic damage sources for its 4s duration.",
+   "Immediately follow with Flamespitter (Q) to begin its 3s ticking cone damage on the target.",
+   "Weave basic attacks between ability casts throughout the fight for onhit passive procs (relevant mainly if/when Overheated).",
+   "Cast Scrap Shield (W) opportunistically purely to generate Heat toward the 50-Heat Danger Zone threshold (it has no offensive value itself against a stationary dummy), timed so Heat crosses 50 before the next Q/E cast to get the +50% damage empowerment.",
+   "Re-cast Q and E on their cooldowns (Q: 6-10s scaling by rank; E: 0.5s ability cooldown gated by the 6s charge recharge) to keep the flamethrower and harpoon damage flowing while staying in Danger Zone as much as possible without deliberately overshooting into forced Overheat.",
+   "Cast The Equalizer (R) on cooldown as soon as it is available (likely only once in the 15s window given its 80-130s cooldown), landing all six rockets on the target for its 4.5s burning field.",
+   "If Heat is forced into Overheat regardless of play (e.g., from stacking too many casts in quick succession), continue auto-attacking during the forced ability lockout to benefit from the onhit magic damage and attack speed buff until Heat decays back to 0 and abilities are available again."
+  ],
+  "questions": [
+   "Should the rotation deliberately trigger and exploit the forced Overheat state (extra onhit damage + attack speed for 4s) as a damage cooldown, or is it strictly better DPS to manage Heat and stay just under 150 to keep casting Q/W/E uninterrupted?",
+   "Given W deals no direct damage or debuff, should it still be included in the optimal damage-fight rotation solely to push Heat into Danger Zone for Q/E's +50% empowerment, or should the simulator treat W as out of scope entirely?",
+   "What is the ideal cadence/order of Q, W, and E casts to maximize total time spent at Heat>=50 (Danger Zone) across the 15s window without prematurely forcing Overheat?",
+   "Is a single R cast (given its long cooldown relative to the 15s fight) best used immediately at the start for maximum uptime, or held briefly to land after E's shred debuff is already applied?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

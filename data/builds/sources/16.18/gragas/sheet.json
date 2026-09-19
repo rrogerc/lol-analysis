@@ -1,0 +1,559 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "GragasPassive",
+    "key": "Characters/Gragas/Spells/GragasPassiveAbility/GragasPassive",
+    "cooldown": 12,
+    "dataValues": {
+     "HealRatio": 0.055,
+     "Level1Value": 12,
+     "AdditionalBonusAtThisLevel": -2
+    },
+    "calcs": {
+     "HealAmount": {
+      "expr": "(HealRatio=0.055)xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.055,
+        "dataValue": "HealRatio"
+       }
+      ],
+      "refs": [
+       "HealRatio"
+      ]
+     },
+     "HealCooldown": {
+      "expr": "<{4ce08984}>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {4ce08984}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "GragasQ",
+    "key": "Characters/Gragas/Spells/GragasQAbility/GragasQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 80,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       40,
+       45,
+       50,
+       55,
+       60
+      ]
+     },
+     "SlowDuration": 2,
+     "BarrelMaxDuration": 4,
+     "BarrelCookMaxTime": 2,
+     "BarrelCookMaxAmp": 150,
+     "MinionDamageMod": 70
+    },
+    "calcs": {
+     "MinDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MaxDamage": {
+      "expr": "MinDamage * 1.5",
+      "modifies": "MinDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        120,
+        180,
+        240,
+        300,
+        360
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.2
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "GragasQToggle",
+    "key": "Characters/Gragas/Spells/GragasQAbility/GragasQToggle",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     }
+    },
+    "calcs": {
+     "MinDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "GragasW",
+    "key": "Characters/Gragas/Spells/GragasWAbility/GragasW",
+    "cooldown": 5,
+    "cost": 30,
+    "castTime": 0.001,
+    "dataValues": {
+     "AttackRangeBuff": 50,
+     "MaxHPPercentDamage": 7,
+     "BaseDamageReduction": {
+      "axis": "rank",
+      "v": [
+       10,
+       14,
+       18,
+       22,
+       26
+      ]
+     },
+     "DamageReductionAP": 0.04,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       50,
+       80,
+       110,
+       140
+      ]
+     },
+     "BaseDamageAP": 0.7,
+     "MonsterDamageCap": 300,
+     "DefenseDuration": 2.5,
+     "AttackDuration": 5,
+     "TurretDamageMod": 0.5
+    },
+    "calcs": {
+     "DamageReduction": {
+      "expr": "(BaseDamageReduction=[10/14/18/22/26] + (DamageReductionAP=0.04)xap) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.1,
+        0.14,
+        0.18,
+        0.22,
+        0.26
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0004,
+        "dataValue": "DamageReductionAP"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseDamageReduction",
+       "DamageReductionAP"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/50/80/110/140] + (BaseDamageAP=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        50,
+        80,
+        110,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "BaseDamageAP"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BaseDamageAP"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "GragasE",
+    "key": "Characters/Gragas/Spells/GragasEAbility/GragasE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13.5,
+      13,
+      12.5,
+      12
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       125,
+       170,
+       215,
+       260
+      ]
+     },
+     "APRatio": 0.6,
+     "CooldownRefund": 0.4,
+     "StunDuration": 1,
+     "DashSpeed": 900,
+     "HitboxArea": 180,
+     "ForwardHitbox": 40
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/125/170/215/260] + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        125,
+        170,
+        215,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "GragasR",
+    "key": "Characters/Gragas/Spells/GragasRAbility/GragasR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      85,
+      70
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "APRatio": 0.8,
+     "KnockbackDistance": 900
+    },
+    "calcs": {
+     "DamageDone": {
+      "expr": "BaseDamage=[200/300/400] + (APRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "GragasQ",
+  "W": "GragasW",
+  "E": "GragasE",
+  "R": "GragasR",
+  "P": "GragasPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 400,
+   "{6216bf7b}": 47,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.05
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Gragas",
+  "name": "Gragas",
+  "partype": "Mana",
+  "passive": "Happy Hour",
+  "spells": [
+   {
+    "id": "GragasQ",
+    "name": "Barrel Roll",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   {
+    "id": "GragasW",
+    "name": "Drunken Rage",
+    "maxrank": 5,
+    "cooldown": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "GragasE",
+    "name": "Body Slam",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13.5,
+     13,
+     12.5,
+     12
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "GragasR",
+    "name": "Explosive Cask",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     85,
+     70
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Happy Hour": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Barrel Roll": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "[[Location-targeted|Location]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Barrel Roll 2": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "[[Location-targeted|Location]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Drunken Rage": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   },
+   "Drunken Rage 2": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Body Slam": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Explosive Cask": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

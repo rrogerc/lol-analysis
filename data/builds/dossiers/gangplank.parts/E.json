@@ -1,0 +1,243 @@
+{
+ "name": "Powder Keg",
+ "cooldown": {
+  "values": [
+   0.5,
+   0.5,
+   0.5,
+   0.5,
+   0.5
+  ],
+  "quote": "{{fd|0.5}}",
+  "binNote": "This is the delay between chained keg explosions, not a spell cooldown; recharge governs new-keg charges instead."
+ },
+ "cost": {
+  "values": [
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "quote": "1",
+  "resource": "charge"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Maximum charges",
+   "role": "count",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    3,
+    3,
+    4,
+    4,
+    5
+   ],
+   "terms": [],
+   "quote": "{{ap|3|3|4|4|5}}",
+   "bin": [
+    "GangplankE.MaxBarrels"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 80}}%",
+   "bin": [
+    "GangplankE.BarrelSlow",
+    "GangplankE#FinalSlowAmount"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Bonus Champion Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    75,
+    95,
+    115,
+    135,
+    155
+   ],
+   "terms": [],
+   "quote": "{{ap|75 to 155}}",
+   "bin": [
+    "GangplankE.BonusDamageToChampions"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "keg starting health / hits to destroy",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "The keg starts with {{as|3 health}}",
+   "bin": [],
+   "binNote": "No sheet row carries the keg's own hit points; not exposed as a DataValue in the sheet."
+  },
+  {
+   "id": "e_5",
+   "meaning": "keg lifetime before it despawns",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 25,
+   "terms": [],
+   "quote": "that lasts for 25 seconds",
+   "bin": [
+    "GangplankE.BarrelDuration"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "decay tick interval by Gangplank's level",
+   "role": "interval",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "terms": [],
+   "quote": "loses {{as|1|health}} every {{pp|2;1;0.5|1;7;13}} seconds",
+   "bin": [
+    "GangplankE#BarrelDecayTime"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "slow duration on explosion",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "dealt the triggering {{tt|{{as|attack's damage}}|see notes}} and {{tip|slow|slowed}} for 2 seconds",
+   "bin": [
+    "GangplankE.DebuffDuration"
+   ]
+  },
+  {
+   "id": "e_8",
+   "meaning": "armor penetration on explosion damage",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 40,
+   "terms": [],
+   "quote": "ignores {{sti|armor penetration|{{as|40% of the target's armor}}}}",
+   "bin": [
+    "GangplankE.BarrelArmorPenetration"
+   ]
+  },
+  {
+   "id": "e_9",
+   "meaning": "delay between chained explosions",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "{{rutngt|0.3}}-delay between explosions",
+   "bin": [
+    "GangplankE.CooldownBetweenBarrels"
+   ],
+   "binNote": "Wiki text says the chain delay is 0.3s, while the bin's GangplankE.CooldownBetweenBarrels row (also shown as the ability's cooldown/recharge=0.5) reads 0.5; treated as the same mechanic but the values disagree."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The explosion deals the triggering attack's damage (the basic attack or Parrrley shot that destroyed the keg) to nearby enemies, not a fixed spell damage value.",
+   "quote": "it will explode to deal the {{as|attack's damage|pdamage}} to nearby enemies and {{tip|slow}} them",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only an attack from Gangplank himself destroys and detonates the keg; an enemy destroying it simply dismantles it safely with no explosion.",
+   "quote": "If an enemy destroys a ''Powder Keg'', it is safely dismantled.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bonus physical damage to champions and armor penetration only apply against champion targets, on top of the triggering attack's damage.",
+   "quote": "Against an enemy {{tip|champion}}, the explosion additionally deals {{as|'''bonus''' physical damage}} and ignores a {{sti|armor penetration|{{as|portion of their armor}}}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A keg explosion can chain-trigger nearby connected kegs to also explode, each hitting an enemy once per chain.",
+   "quote": "The explosion will cause nearby ''Powder Kegs'' to also explode.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The triggering attack can critically strike, causing the explosion to deal the attack's critical damage instead.",
+   "quote": "The triggering attack on the keg can {{tip|critically strike}}, causing the explosion to deal the attack's critical damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The triggering attack's damage used for the explosion can include Parrrley's base damage and Spellblade, but on-hit proc damage against the keg itself is reduced to zero and does not add to the explosion.",
+   "quote": "Attacks against ''Powder Kegs'' will apply {{tip|on-hit}} effects (such as {{iis|Tiamat}} {{nie|Cleave}}), but {{tip|proc damage}} against the keg itself is reduced to 0.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage modifiers apply to damage dealt by kegs but not to damage dealt to kegs (i.e. the 1 damage per hit that reduces keg health).",
+   "quote": "[[Damage modifier]]s are applied to the damage dealt '''by''' kegs, but not to the damage dealt '''to''' kegs.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Slow, bonus champion damage, and keg health decay speed are locked in based on Gangplank's rank/level when the keg is placed, not when it explodes.",
+   "quote": "The {{tip|slow}}, {{as|'''bonus''' physical damage}} to champions, and keg {{as|health}} decay speed are determined when the keg is placed.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "GangplankE.BarrelBaseDecay",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "GangplankE.BarrelEnemyGoldBounty",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "GangplankE.MinionDamagePercentage",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

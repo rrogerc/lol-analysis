@@ -1,0 +1,185 @@
+{
+ "name": "Last Rites / Awakening",
+ "cooldown": {
+  "values": [
+   6,
+   5.5,
+   5,
+   4.5,
+   4
+  ],
+  "quote": "{{ap|6 to 4}}"
+ },
+ "cost": {
+  "values": [
+   20,
+   20,
+   20,
+   20,
+   20
+  ],
+  "quote": "20",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Bonus Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    50,
+    70,
+    90,
+    110
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|30 to 110}} {{as|(+ 50% AD)}}",
+   "bin": [
+    "YorickQ#BonusDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    23,
+    26,
+    29,
+    32,
+    35,
+    38,
+    43,
+    48,
+    53,
+    58,
+    63,
+    68
+   ],
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": [
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+     ]
+    }
+   ],
+   "quote": "{{pp|8+2*x for 6; then +3*x for 6; then +5*x for 8|formula = 8 + 2 per level until 6, then + 3 per level until 12, then + 5 per level}} {{as|(+ {{ap|6 to 10}}% of his '''missing''' health)}}",
+   "bin": [
+    "YorickQ#QHeal",
+    "YorickQ.MissingHealthRatio"
+   ],
+   "binNote": "Base heal is by champion level (18 values, YorickQ#QHeal); the missing-health ratio scales by ability rank (5 values, YorickQ.MissingHealthRatio, stated as 6-10 in bin vs 6 to 10% in wiki, same number)."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Non-Champion Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10.5,
+    12,
+    13.5,
+    15,
+    16.5,
+    18,
+    20.5,
+    23,
+    25.5,
+    28,
+    30.5,
+    33
+   ],
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": [
+      0.03,
+      0.035,
+      0.04,
+      0.045,
+      0.05
+     ]
+    }
+   ],
+   "quote": "{{pp|8/2+2/2*x for 6; then +3/2*x for 6; then +5/2*x for 8|formula = 4 + 1 per level until 6, then + 1.5 per level until 12, then + 2.5 per level}} {{as|(+ {{ap|6*0.5 to 10*0.5}}% of his '''missing''' health)}}",
+   "bin": [
+    "YorickQ.HealReduction"
+   ],
+   "binNote": "Derived as the base Heal (YorickQ#QHeal) and its ratio (YorickQ.MissingHealthRatio) each halved via YorickQ.HealReduction=50 against non-champions; no separate bin row carries these halved numbers directly."
+  },
+  {
+   "id": "q_4",
+   "meaning": "duration of the empowered-attack buff window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "within 5 seconds",
+   "bin": [
+    "YorickQ.BuffDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The empowered attack gains an uncancellable windup and 50 bonus range in addition to the damage and heal.",
+   "quote": "gain {{sti|range|50 '''bonus''' range}}, deal {{as|'''bonus''' physical damage}}, and {{tip|heal}} him",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Last Rites resets Yorick's basic attack timer.",
+   "quote": "Last Rites {{tip|basic attack reset|resets}} '''Yorick's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts only after the empowered attack lands (post-effect).",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The heal is reduced by 50% when Yorick's target is not a champion, as reflected in the separate Non-Champion Heal value.",
+   "quote": "The heal is reduced by 50% against non-champions.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "YorickQ.CherryGhoulPassiveSpawnRate",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,837 @@
+{
+ "champion": "milio",
+ "abilities": {
+  "P": {
+   "name": "Fired Up!",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_burst",
+     "meaning": "bonus magic damage on the enchanted attack/ability hit, based on enchanted ally's AD",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.07,
+        0.07,
+        0.07,
+        0.07,
+        0.07,
+        0.11,
+        0.11,
+        0.11,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|7;11;15|1;6;9|key=%}} of enchanted target's AD}} {{ccs|{{as|'''bonus''' magic damage}}|magic}}",
+     "bin": [
+      "MilioPassive#ADBurstRatio"
+     ]
+    },
+    {
+     "id": "p_burn_total",
+     "meaning": "total burn damage over 1.5s, split into ticks",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10,
+      12.35,
+      14.71,
+      17.06,
+      19.41,
+      21.76,
+      24.12,
+      26.47,
+      28.82,
+      31.18,
+      33.53,
+      35.88,
+      38.24,
+      40.59,
+      42.94,
+      45.29,
+      47.65,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{as|{{pplevel|10 to 50}}|magic damage}} {{as|(+ 20% of '''Milio's''' AP)}} {{as|magic damage}}",
+     "bin": [
+      "MilioPassive.BaseDamageStart",
+      "MilioPassive.BaseDamageEnd",
+      "MilioPassive#BurnDamage"
+     ],
+     "binNote": "BurnDamage's flat part is an unresolved constant {ee18a47b} in the sheet; the wiki's 10-to-50 by-level values (BaseDamageStart/BaseDamageEnd) are assumed to be that interpolated constant, and the 0.2xap ratio matches the wiki's 20% AP."
+    },
+    {
+     "id": "p_burn_duration",
+     "meaning": "duration over which the burn tick damage is dealt",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "over {{fd|1.5}} seconds",
+     "bin": [
+      "MilioPassive.BurnDuration"
+     ]
+    },
+    {
+     "id": "p_burn_tick_interval",
+     "meaning": "interval between burn damage ticks",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No explicit tick-interval data value on the sheet; derived from the wiki's per-tick formula footnote which divides the total by intervals of 0.25s."
+    },
+    {
+     "id": "p_enchant_duration",
+     "meaning": "duration of the Fired Up! enchantment before it expires unused",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "grant an enchantment for 4 seconds",
+     "bin": [],
+     "binNote": "No matching data value found on the passive's sheet entry for the 4-second enchantment window."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The enchantment triggers on the next basic attack or ability hit against an enemy after being granted, dealing the burst damage immediately followed by the burn DoT.",
+     "quote": "causes the next {{tip|basic attack}}<!--not on-hit--> or ability hit against enemies to deal {{as|{{pp|7;11;15|1;6;9|key=%}} of enchanted target's AD}} {{ccs|{{as|'''bonus''' magic damage}}|magic}} and apply a burn",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reapplying the enchantment before it triggers only refreshes its duration, it does not stack multiple triggers.",
+     "quote": "Subsequent applications of ''Fired Up!'' only refresh the duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield cannot block the effect when it is delivered by a basic attack.",
+     "quote": "{{tip|Spell shield}} will not block the effect if applied by a basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "When triggered by an ally's hit, the damage is tagged as proc damage.",
+     "quote": "When the damage is triggered by allies, it is additionally tagged as {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MilioPassive.MaxMonsterDamage",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Ultra Mega Fire Kick",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      140,
+      200,
+      260,
+      320
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|80 to 320}} {{as|(+ 120% AP)}}",
+     "bin": [
+      "MilioQ#Damage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0005
+      }
+     ],
+     "quote": "{{ap|40 to 60}}% {{as|(+ 5% per 100 AP)}}",
+     "bin": [
+      "MilioQ#SlowAmountPercent"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "MilioQ.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Stun/knockback duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "stuns the first enemy it hits over 1 second",
+     "bin": [
+      "MilioQ.FallTime"
+     ],
+     "binNote": "Wiki states the stun/knockback lasts 1 second, but the bin's MilioQ.FallTime is 0.8. This is a disagreement between the sources; the wiki's number is stated here."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Mana cost refund on champion hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "refunds 50% of its {{sti|{{as|mana cost}}}} if it hits at least one champion",
+     "bin": [
+      "MilioQ.RefundRatio"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Cast delay before fireball fires",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "After a {{fd|0.25}}-second delay",
+     "bin": [],
+     "binNote": "The sheet's Q entry lists a standalone 'castTime: 0.25' line (not a MilioQ.* data value or calculation) that matches this delay; the wiki itself lists 'cast time = none' for the ability's cast time field, treating this 0.25s as a separate pre-cast delay rather than a cast time."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Milio cannot cast other abilities during the ability's delay, delaying the actual cast.",
+     "quote": "'''''Milio''' cannot cast other abilities during Ultra Mega Fire Kick's delay.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion damage only lands after the fireball hits and bounces, not on cast.",
+     "quote": "Upon collision, the ball bounces once in the {{tt|same|parallel to original cast direction}} direction from the target's location, granting sight of the area before exploding in the same radius after a brief delay",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Against non-champions the knockback and explosion are larger, which does not change damage numbers.",
+     "quote": "If the primary target is a non-champion, the ball knocks back further and creates a larger explosion.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "This ability can be blocked by spell shields.",
+     "quote": "spellshield = true",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MilioQ.SlowAmount",
+     "reason": null
+    },
+    {
+     "ref": "MilioQ.FallDamage",
+     "reason": null
+    },
+    {
+     "ref": "MilioQ.FallRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MilioQ.KnockbackDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "MilioQ.KnockbackMinionDistance",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MilioQ.ImpactAdjustment",
+     "reason": "unknown"
+    },
+    {
+     "ref": "MilioQ.ExtraVisionDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "MilioQ.MinionFallRadius",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MilioQ.MinionFallTime",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Cozy Campfire / Cozy Campfire 2",
+   "cooldown": {
+    "values": [
+     29,
+     27,
+     25,
+     23,
+     21
+    ],
+    "quote": "{{ap|29 to 21}}"
+   },
+   "cost": {
+    "values": [
+     90,
+     100,
+     110,
+     120,
+     130
+    ],
+    "quote": "{{ap|90 to 130}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{dv|{{tt|{{fd|0.25}}|Initial cast}}|{{tt|None|Recast}}}}"
+   },
+   "values": [
+    {
+     "id": "w_3",
+     "meaning": "Total Heal over the zone's duration",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      70,
+      90,
+      110,
+      130,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|70 to 150}} {{as|(+ 15% AP)}}",
+     "bin": [
+      "MilioW#HealingOverTime"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Fuemigo zone duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "for 6 seconds that follows the nearest allied champion",
+     "bin": [
+      "MilioW.ZoneDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{rutngt|0.25}}",
+     "bin": [
+      "MilioW.HealFrequencySeconds"
+     ],
+     "binNote": "Wiki tooltip states heal ticks every 0.25s (25 ticks over 6s: 70/25 to 150/25 per tick), while MilioW.HealFrequencySeconds = 3 in the bin; these disagree and the wiki text is used here since it directly describes the tick rate and matches the per-tick math shown in the leveling table."
+    },
+    {
+     "id": "w_6",
+     "meaning": "Recast static cooldown",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "placing the recast on a {{sti|cd|{{fd|0.5}}}}-second {{tt|static|Unaffected by ability haste}} cooldown",
+     "bin": [],
+     "binNote": "No dedicated bin data value found for the recast's own cooldown; the wiki states it separately from the main W cooldown and from MilioW.DecayDelay-type fields, so it is recorded without a bin source."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Cooldown begins only after the ability's effect resolves, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Only allied champions near the fuemigo receive the heal and attack range bonus, and the range bonus persists even if they leave the zone.",
+     "quote": "The {{sti|attack range}} increase lingers on allies for the entire duration of ''Cozy Campfire'', even if they leave the zone.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Milio himself counts as an allied champion and can receive Cozy Campfire's heal and range bonus.",
+     "quote": "'''''Milio''' counts as an allied champion for this ability.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Casting or recasting Cozy Campfire can grant Milio's Fired Up! passive buff, at most once every 3 seconds.",
+     "quote": "Cozy Campfire may grant {{ai|Fired Up!|Milio}} upon being summoned and at most once every 3 seconds thereafter.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be recast within the duration to move the fuemigo to a target ally, on its own static 0.5s cooldown unaffected by ability haste.",
+     "quote": "placing the recast on a {{sti|cd|{{fd|0.5}}}}-second {{tt|static|Unaffected by ability haste}} cooldown",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MilioW.Radius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MilioW.RangePctIncrease",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Warm Hugs",
+   "cooldown": {
+    "values": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "quote": "{{fd|0.5}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      45,
+      75,
+      105,
+      135,
+      165
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|45 to 165}} {{as|(+ 45% AP)}}",
+     "bin": [
+      "MilioE#ShieldCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.12,
+      0.14,
+      0.16,
+      0.18,
+      0.2
+     ],
+     "terms": [],
+     "quote": "{{ap|12 to 20}}%",
+     "bin": [
+      "MilioE.MoveSpeedAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration of the shield and bonus movement speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "MilioE.MoveSpeedDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Warm Hugs grants a shield and bonus movement speed to Milio or a targeted ally.",
+     "quote": "envelops himself or the target allied champion in protective flames, granting the target a {{tip|shield}} and {{sti|{{as|'''bonus''' movement speed}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's effects can stack up to 2 times, and charges are stocked periodically up to a maximum of 2 uses.",
+     "quote": "''Warm Hugs' effects can stack up to 2 times.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Milio periodically stocks a Warm Hugs charge, up to a maximum of 2, similar to an ammo/charge system rather than a standard cooldown.",
+     "quote": "'''Milio''' periodically [[stock]]s a ''Warm Hugs'' charge, up to a maximum of 2.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MilioE.DecayDelay",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Breath of Life",
+   "cooldown": {
+    "values": [
+     160,
+     145,
+     130
+    ],
+    "quote": "{{ap|160 to 130}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "MilioR#HealCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Tenacity granted",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.65,
+     "terms": [],
+     "quote": "granting them 65% {{tip|tenacity}} for 3 seconds",
+     "bin": [
+      "MilioR.TenacityAmount"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Tenacity duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "granting them 65% {{tip|tenacity}} for 3 seconds",
+     "bin": [
+      "MilioR.TenacityDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Ability lockout after casting Breath of Life",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "cannot cast his other abilities for {{fd|0.75}} seconds after Breath of Life's activation",
+     "bin": [],
+     "binNote": "wiki-only value; no matching bin data value found (castTime field is 0.713, a different number for the cast animation, not this lockout)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Breath of Life heals and cleanses himself and nearby allied champions of non-airborne crowd control.",
+     "quote": "'''Milio''' explodes in soothing flames, {{tip|heal|healing}} and {{tip|cleanse|cleansing}} himself and nearby allied champions of non-{{tip|airborne}} {{tip|crowd control}}, and granting them 65% {{tip|tenacity}} for 3 seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Milio cannot cast his other abilities for a short time after activating this ability.",
+     "quote": "'''Milio''' cannot cast his other abilities for {{fd|0.75}} seconds after Breath of Life's activation",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Breath of Life cannot be cast while Milio is under cast-inhibiting crowd control.",
+     "quote": "Breath of Life cannot be used while affected by {{tip|cast-inhibiting crowd control}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability affects untargetable units.",
+     "quote": "''Breath of Life'' affects {{tip|untargetable}} units.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MilioR.HealFXDelay",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Fireball explosion deals its magic damage on a fixed post-cast delay, on a 10s cooldown"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Milio cannot cast other abilities during Q's 0.25s pre-fire delay, blocking action during that window"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q has separately timed parts: initial fireball hit (stun/knockback, no damage), a bounce, then a delayed explosion that deals the actual damage"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Fired Up! enchantment arms the enchanted unit's next basic attack or ability hit to deal bonus burst damage (% of enchanted target's AD)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Fired Up!'s burst is immediately followed by a burn DoT (10-50 by level + 20% AP) ticking every 0.25s over 1.5s"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on all four abilities can meaningfully constrain how often Milio casts within a 15s fight"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Warm Hugs is a 2-charge ammo system (recharge 17s to 13s by rank) rather than a simple cooldown, gating how often Milio can self-cast it to proc Fired Up!"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Heal-over-time (W), shield+move speed (E), and heal+tenacity+cleanse (R) never read in the damage-dealt/damage-taken sense the dummy fight uses, aside from W/E/R's role in triggering the Fired Up! passive"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant behavior (Q's delayed multi-part fireball, and Fired Up!'s empowered-attack + burn dot) is expressible with existing primitives. The main complexity is that Fired Up! is granted by Milio's own W/E/R hitting himself rather than by a dedicated proc ability, which is a targeting detail rather than a new mechanic type."
+ },
+ "unsettled": [
+  {
+   "question": "Do Milio's self-targeted casts of W, E, and R actually grant himself the Fired Up! enchantment (as the passive text implies by saying his abilities 'hit' himself), or is self-enchantment limited to a subset of these, or does it require some other condition not stated?",
+   "options": [
+    "Any of W/E/R landing on Milio himself grants him Fired Up!, same as landing on an ally",
+    "Only some of W/E/R count as an 'ability hit' on himself for this purpose (e.g. only the ones described as directly affecting him, unclear which)",
+    "Self-targeting does not count as a 'hit' for Fired Up! purposes at all, and only Q or basic attacks against enemies can proc/consume it in a 1v1 fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Milio's''' {{tip|ability}} hits on himself and allied {{tip|champions}} grant an enchantment for 4 seconds"
+   ]
+  },
+  {
+   "question": "The Fired Up! burn's flat per-level base damage is an unresolved bin constant {ee18a47b}; the wiki's stated 10-to-50-by-level values are assumed to be the resolved values. Is that assumption correct, or does the live bin constant differ from the wiki's displayed numbers?",
+   "options": [
+    "The wiki's 10 to 50 (by level) values are exactly the resolved {ee18a47b} constant",
+    "The bin's real resolved value differs from the wiki's displayed by-level numbers"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pplevel|10 to 50}}|magic damage}}",
+    "MilioPassive#BurnDamage = <{ee18a47b}> + 0.2xap"
+   ]
+  },
+  {
+   "question": "When Fired Up! is consumed by Q, does it trigger on Q's first impact (the stun hit, which deals no direct damage) or only on the delayed explosion hit? This changes whether the burst/burn timing aligns with Q's cast or with its explosion delay.",
+   "options": [
+    "Fired Up! procs on Q's initial impact (the stun), independent of whether the explosion later lands",
+    "Fired Up! procs only on Q's explosion damage instance",
+    "Fired Up! can proc on either hit, whichever lands first"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "which causes the next {{tip|basic attack}}<!--not on-hit--> or ability hit against enemies to deal {{as|{{pp|7;11;15|1;6;9|key=%}} of enchanted target's AD}} {{ccs|{{as|'''bonus''' magic damage}}|magic}} and apply a burn"
+   ]
+  },
+  {
+   "question": "Does W's periodic Fired Up! grant (at most once every 3 seconds while its zone is up) actually retrigger multiple times across a single 6-second cast if Milio stays near it, or does it only grant once per cast regardless of the 3-second wording?",
+   "options": [
+    "W can grant Fired Up! up to twice per single 6s cast (on summon, then again ~3s later)",
+    "W only grants Fired Up! once per cast, and the 3-second text refers to a cooldown against overlapping casts, not a mid-duration retrigger"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Cozy Campfire may grant {{ai|Fired Up!|Milio}} upon being summoned and at most once every 3 seconds thereafter."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by self-casting E (Warm Hugs) on Milio to grant himself the Fired Up! enchantment immediately (no cast time).",
+   "Immediately follow with a basic attack on the dummy to consume the enchantment, dealing the AD-based burst plus the 1.5s burn DoT.",
+   "Cast Q (Ultra Mega Fire Kick) toward the dummy; wait out its 0.25s pre-fire delay (during which no other ability can be cast), then let the explosion land for its magic damage.",
+   "Cast W (Cozy Campfire) targeted on Milio/near himself to place the zone; this may also grant Fired Up!, so follow it with another basic attack or the next available Q to consume it.",
+   "Use E's second charge on Milio as soon as it's available to re-grant Fired Up!, again consuming it via basic attack.",
+   "Repeat: basic attack continuously between cooldowns, weave Q every 10s, and re-cast E/W whenever a charge/cooldown is up to keep re-triggering Fired Up!.",
+   "Do not cast R (Breath of Life) for damage purposes since it only heals/cleanses/grants tenacity and briefly locks out other casts for 0.75s, which would only cost damage uptime in this fight."
+  ],
+  "questions": [
+   "Does self-casting E/W actually enchant Milio himself with Fired Up! in a 1v1 fight with no other allies present, or does the passive require an ally other than Milio to be nearby?",
+   "How many times can Fired Up! realistically be triggered in 15 seconds given E's 2-charge/recharge system and W's cooldown, and should the rotation prioritize E-into-attack over casting Q on cooldown?",
+   "Is Milio expected to auto-attack between Q casts as his primary continuous damage source, or is the simulator only interested in ability damage (in which case autoattack-based Fired Up! consumption may not be modeled)?",
+   "Should R ever be cast in the damage fight (e.g. to avoid wasting mana that could otherwise be spent, or because some interaction grants it Fired Up! relevance), or is it correctly excluded entirely?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

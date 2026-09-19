@@ -1,0 +1,128 @@
+{
+ "champion": "maokai",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Bramble Smash (on a 0.3s cast + 0.075s lockout), Twisted Advance (on dash arrival) and Nature's Grasp (initial bramble contact) each deal a fixed base+AP damage instance on cast/arrival, on cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 40, W 60, E 60-80, R 100) against Maokai's mana pool can cap how many casts fit into the 15s window alongside cooldowns."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Nature's Grasp fires 5 separate bramble instances (each made of 4 trailing missiles) that independently halt and deal their own damage+root when they collide with an enemy champion; against one stationary target this could mean several damage instances from a single R cast."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "E"
+   ],
+   "note": "Sapling Toss's cast only launches a destructible projectile; the actual Sapling entity lands, sits/chases, and only deals E's damage when it detonates on contact or expiry, so the damage lands on a delay separate from the cast."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "An empowered (brush-placed) Sapling attaches up to two ticking instances to the struck target that re-explode every 0.75s; note this variant requires brush, which does not exist in the terrain-less simulated fight, so it is likely inert here."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P"
+   ],
+   "note": "Casting any ability, landing E on a champion/epic monster, or being struck by an enemy ability reduces Sap Magic's own cooldown by 4s (1.5s vs large monsters); this only affects P's internal cooldown, not other abilities, and does not itself deal damage."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Periodically arms Maokai's next basic attack with an uncancellable windup that heals him; the heal only fires while he is below 95% max HP."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "P"
+   ],
+   "note": "When the empowered attack from Sap Magic does trigger, it resets Maokai's basic attack timer."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Sap Magic's payoff is a self-heal (scaling % of max HP) gated behind being under 95% max HP; in the single-target damage fight Maokai's HP never drops (the dummy never attacks back), so the passive should never actually proc there, and its only real relevance is to the survival fight."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Whether a Sapling thrown directly at the stationary dummy detonates essentially immediately (landing inside its collision/detection radius) or incurs its full detection/chase window before dealing damage is a geometry assumption the dummy fight must make."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (fixed on-cast/on-arrival hits for Q/W/R, R's multi-instance brambles, E's delayed pet-style detonation and optional DoT, P's inert-in-damage-fight heal/reset/self-CDR, and mana/cooldown gating) maps onto existing primitives. The remaining doubts are about which reading of ambiguous wiki/bin text to simulate, not about missing mechanics the primitive list can't express."
+ },
+ "unsettled": [
+  {
+   "question": "Does each of Nature's Grasp's 5 separate brambles independently hit and damage the single target, or does the wall effectively stop after the first bramble reaches it (limiting R to one damage instance against a lone target)?",
+   "options": [
+    "Each of the 5 brambles deals its own MaokaiR#TotalDamage + root instance to the target, so R can hit one target up to 5 times",
+    "Only the first bramble to reach the champion actually connects and the subsequent trailing brambles are blocked/stopped by the already-rooted target or terrain interaction, so R deals only one damage instance"
+   ],
+   "impact": "high",
+   "quotes": [
+    "summons a colossal wall of five thorny brambles that slowly advances in the target direction, accelerating over time, each stopping when they collide with an enemy {{tip|champion}}",
+    "The brambles are made up of 4 {{tip|projectile|missiles}} each which trail 100 units behind one another. The front missile carries the visual effect. When colliding with a champion, all missiles of one bramble are destroyed simultaneously."
+   ]
+  },
+  {
+   "question": "How much delay elapses between casting Sapling Toss at the stationary dummy and the Sapling's damage actually landing: does it detonate essentially on arrival (treating the dummy as always within its detection/collision radius), or does it always run through its stated growth/detection/chase timing before exploding?",
+   "options": [
+    "The Sapling lands directly on/adjacent to the stationary dummy and detonates almost immediately (well under 1s after the 0.25s cast time)",
+    "The Sapling always incurs its full detection and/or chase sequence (up to a further ~2.5s) before it collides and explodes, meaningfully delaying E's damage within the 15s window"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Once landed, the ''Sapling'' grants {{tip|sight}} of its surroundings and remains stationary for 30 seconds or until it reacts to the first nearby visible enemy, chasing them for up to {{fd|2.5}} seconds. The ''Sapling'' explodes upon colliding with an enemy or when it expires"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Maokai starts the fight already within melee/cast range of the stationary dummy at his simulated level and build.",
+   "Cast Nature's Grasp (R) as early as possible, since its cooldown (90-130s) means it can realistically only be cast once in the 15s window and its damage should be captured immediately.",
+   "Cast Twisted Advance (W) next for its damage instance (its dash/untargetable/root have no effect on a stationary dummy fight).",
+   "Cast Sapling Toss (E) directly onto the dummy's position so its Sapling detonates with minimal delay.",
+   "Cast Bramble Smash (Q) on cooldown; because it has by far the lowest cooldown (5-7s) and its cost is flat 40 mana, loop it as many times as the 15s window and mana allow (roughly 2-3 casts).",
+   "Fill all remaining time between ability casts with basic attacks on the dummy.",
+   "Recast W and/or E a second time near the end of the window if their cooldowns (10-14s for W, 14-18s for E at higher ranks) have come back up in time.",
+   "Do not deliberately try to proc Sap Magic (P): since the dummy never damages Maokai, his HP stays at/above 95% max HP for the whole fight, so the passive's heal/attack-reset should not fire in the damage-only fight."
+  ],
+  "questions": [
+   "At what champion level and ability ranks (in particular, is R available at rank 1-3) should the damage-fight rotation be simulated, since this changes cooldowns, cast counts, and whether R is usable at all?",
+   "Is Maokai assumed to start the 15s window already in melee range of the dummy, or does travel time to close distance (via W's dash or on foot) eat into the simulated window?",
+   "Should basic attacks between ability casts be modeled explicitly as part of the rotation, or does the simulator handle auto-attack weaving as a separate baseline outside the 'rotation' proposal?",
+   "Given Sap Magic should stay inert while Maokai is at full/near-full HP, is it safe to exclude it entirely from the damage-fight rotation, or could some other assumed pre-fight state (e.g., starting below 95% HP) make it relevant?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

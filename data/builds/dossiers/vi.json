@@ -1,0 +1,934 @@
+{
+ "champion": "vi",
+ "abilities": {
+  "P": {
+   "name": "Blast Shield",
+   "cooldown": {
+    "values": [
+     16,
+     15.5,
+     15,
+     14.5,
+     14,
+     13.5,
+     13,
+     12.5,
+     12,
+     11.5,
+     11,
+     10.5,
+     10,
+     9.5,
+     9,
+     8.5,
+     8,
+     7.5
+    ],
+    "quote": "{{pp|16 to 12 for 9|formula=16.5 - 0.5 * level, capped at level 9}}"
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "shield strength as percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.12
+      }
+     ],
+     "quote": "grants her a {{tip|shield}} equal to {{as|12% of her '''maximum''' health}} for 3 seconds",
+     "bin": [
+      "ViPassive#TotalShield"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "for 3 seconds",
+     "bin": [
+      "ViPassive.ShieldDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "cooldown reduction when Denting Blows is consumed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "''Blast Shield's'' {{sti|cooldown}} is reduced by 4 seconds each time ''{{ai|Denting Blows|Vi}}'' is consumed.",
+     "bin": [
+      "ViPassive.CDReductionOn3Hit"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The shield is granted on the next ability that hits, not immediately when the passive comes off cooldown.",
+     "quote": "Periodically, '''Vi's''' next {{tip|ability}} hit grants her a {{tip|shield}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Vault Breaker triggers Blast Shield even when blocked by a spell shield.",
+     "quote": "''{{ai|Vault Breaker|Vi}}'' will trigger ''Blast Shield'' even if it's blocked by a {{tip|spell shield}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cease and Desist does not trigger Blast Shield when blocked by a spell shield.",
+     "quote": "''{{ai|Cease and Desist|Vi}}'' will not.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Denting Blows does not activate Blast Shield.",
+     "quote": "''{{ai|Denting Blows|Vi}}'' will not activate ''Blast Shield''.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Vault Breaker",
+   "cooldown": {
+    "values": [
+     12,
+     10.5,
+     9,
+     7.5,
+     6
+    ],
+    "quote": "{{ap|12 to 6}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Minimum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      40,
+      60,
+      80,
+      100,
+      120
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|40 to 120}} {{as|(+ 60% '''bonus''' AD)}}",
+     "bin": [
+      "ViQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Maximum Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200,
+      250,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|40*2.5 to 120*2.5}} {{as|(+ {{ap|60*2.5}}% '''bonus''' AD)}}",
+     "bin": [
+      "ViQ#MaxDamageTooltip"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "maximum charge time to reach max range/speed/damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "over the first {{fd|1.25}} seconds of the channel",
+     "bin": [],
+     "binNote": "No bin row exists for the 1.25s damage-scaling cap; the closest bin field, ViQ.ChargeDuration = 6, is a different (larger) number covering the full charge-to-auto-cancel window (see q_7), not this damage-scaling window."
+    },
+    {
+     "id": "q_4",
+     "meaning": "knockback duration on hit champion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|airborne|knocking them back}} over {{fd|0.75}} seconds",
+     "bin": [
+      "ViQ.KnockbackDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "mana refund percent on cancel or interrupt",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{as|50% of the mana cost}} is refunded",
+     "bin": [
+      "ViQ.ManaRefundPercent"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "cooldown when interrupted mid-charge",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "placed on a {{sti|cd|3-second cooldown}}",
+     "bin": [
+      "ViQ.CanceledRefundTime"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "maximum charge duration before auto-cancel",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for up to 4 seconds to increase ''Vault Breaker's'' {{sti|range}}, speed, and damage",
+     "bin": [
+      "ViQ.ChargeDuration"
+     ],
+     "binNote": "Wiki text says charge is up to 4 seconds while ViQ.ChargeDuration = 6; discrepancy between wiki's 4s max charge and bin's ChargeDuration=6 is unresolved."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Vault Breaker is a channel that must be recast to deal damage; damage scales with charge time up to 1.25 seconds.",
+     "quote": "increased by {{pp|type=channel time|key=%|0 to 150 for 11|0 to 1.25|round1=3|formula=15% per 0.125 seconds. ''This is capped at 1.25 seconds.''}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the charge completes without recast, the ability is cancelled, half the mana is refunded, and it goes on full cooldown.",
+     "quote": "If the charge completes without reactivation, ''Vault Breaker'' is cancelled, {{sti|mana|{{as|50% of the mana cost}}}} is refunded, and it is placed on {{sti|cd|full cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If interrupted while charging, half the mana is refunded and it goes on a short 3-second cooldown instead of full cooldown.",
+     "quote": "If the charge is {{tip|interrupt|interrupted}}, {{sti|mana|{{as|50% of the mana cost}}}} is refunded and it is placed on a {{sti|cd|3-second cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the dash/recast effect resolves, not on initial cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vi stops upon hitting an enemy champion and knocks them back, so only the first champion hit is struck by the dash (others in path are non-champions pulled toward her).",
+     "quote": "She stops upon hitting an enemy {{tip|champion}}, {{tip|airborne|knocking them back}} over {{fd|0.75}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vi is slowed by 15% while channeling, but this does not affect damage output in a stationary fight.",
+     "quote": "charges while being {{tip|slow|slowed}} by 15%",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Stuck targets are briefly immune to being hit again by Vault Breaker from the same caster.",
+     "quote": "Stuck targets (including those that block ''Vault Breaker'' with a {{tip|spell shield}}) are briefly immune to being affected again by ''Vault Breaker'' from this player, for about {{fd|1.25}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Relentless Force and Cease and Desist can be cast during the dash.",
+     "quote": "''{{ai|Relentless Force|Vi}} and {{ai|Cease and Desist|Vi}} can be cast during the dash.''",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViQ.MaxDamageMult",
+     "reason": null
+    },
+    {
+     "ref": "ViQ.MinionDamageMult",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ViQ.MinDashRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViQ.ExtraDashRangeAtMaxCharge",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViQ.DashWallCheating",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViQ.ADRatio",
+     "reason": null
+    },
+    {
+     "ref": "ViQ.SelfSlow",
+     "reason": "utility"
+    },
+    {
+     "ref": "ViQ.VFXChargeDuration",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Denting Blows / Denting Blows 2",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.035,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.035
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|4 to 8}}% {{as|(+ {{fd|3.5}}% per 100 '''bonus''' AD)}} of target's '''maximum''' health}}",
+     "bin": [
+      "ViW#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "ViW.AttackSpeed"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "damage cap against non-champions",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 300,
+     "terms": [],
+     "quote": "capped at 300 against non-champions",
+     "bin": [
+      "ViW.MonsterDamageCap"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "armor reduction inflicted on third stack",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 20,
+     "terms": [],
+     "quote": "inflict {{sti|armor penetration|{{as|20% armor reduction}}}} for 4 seconds",
+     "bin": [
+      "ViW.ShredAmount"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "duration of armor reduction and bonus attack speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "ViW.SharedBuffsDuration",
+      "ViW.MarkerBuffDuration"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "stack count needed to trigger effect",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times. The third stack consumes them all",
+     "bin": [
+      "ViW.StacksBeforeEffect"
+     ],
+     "binNote": "Wiki says the stack cap/trigger is 3 (\"stacking up to 3 times. The third stack consumes them all\"), while ViW.StacksBeforeEffect = 2. This likely means 2 prior stacks must exist before the triggering (3rd) hit applies the effect - a framing difference (stacks-before-effect vs total-stacks-to-trigger), not a numeric contradiction the checker can reconcile. Recording the wiki's stated number of 3 per instructions not to alter it to match the bin."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks on-hit and Vault Breaker apply a stack of Denting Blows, refreshing duration on subsequent applications up to 3 stacks.",
+     "quote": "'''Vi's''' {{tip|basic attacks}} {{tip|on-hit}} and ''{{ai|Vault Breaker|Vi}}'' apply a {{tip|stack}} of ''Denting Blows'' to enemies hit for 4 seconds, refreshing on subsequent applications and stacking up to 3 times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The third stack consumes all stacks to deal bonus physical damage and apply armor reduction.",
+     "quote": "The third stack consumes them all to deal {{as|'''bonus''' physical damage}}, capped at 300 against non-champions, and inflict {{sti|armor penetration|{{as|20% armor reduction}}}} for 4 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The armor penetration applies after the triggering damage instance.",
+     "quote": "The armor penetration will apply after the triggering damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The triggering attack applies other on-hit effects and can critically strike, but the bonus damage itself cannot crit or lifesteal.",
+     "quote": "The enhanced attack applies other {{tip|on-hit}} effects and can both {{tip|critical strike|critically strike}} as normal as well as apply {{sti|life steal|link=true}} (the bonus damage cannot do either).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Denting Blows can be blocked but cannot be dodged nor missed while Vi is blinded.",
+     "quote": "''Denting Blows'' can be {{tip|blocked}} but cannot be {{tip|dodged}} nor missed while '''Vi''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The attacks do not affect structures or wards.",
+     "quote": "The attacks do not affect {{tip|structures}} nor {{tip|wards}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "After consuming Denting Blows, Vi gains bonus attack speed which refreshes on subsequent triggers.",
+     "quote": "After consuming ''Denting Blows'', '''Vi''' gains {{sti|as|{{as|'''bonus''' attack speed}}}} for 4 seconds, which refreshes on subsequent triggers.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Relentless Force / Relentless Force 2",
+   "cooldown": {
+    "values": [
+     12,
+     10.5,
+     9,
+     7.5,
+     6
+    ],
+    "quote": "{{ap|12 to 8}}",
+    "binNote": "Wiki recharge quote (12 to 8) does not match bin/ddragon cooldown values [12, 10.5, 9, 7.5, 6]; using bin/ddragon values as they match the displayed rank-5 stub more closely elsewhere, but note the wiki text literally reads 12 to 8."
+   },
+   "cost": {
+    "values": [
+     26,
+     32,
+     38,
+     44,
+     50
+    ],
+    "quote": "{{ap|26 to 50}}",
+    "resource": "mana + 1 charge"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      30,
+      50,
+      70,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      },
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|10 to 90}} {{as|(+ {{#expr:1.1*100}}% AD)}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ViE#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      30,
+      50,
+      70,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.1
+      },
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|10 to 90}} {{as|(+ {{#expr:1.1*100}}% AD)}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ViE#TotalDamageTooltip"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "critical damage bonus multiplier against the primary target",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critDamage",
+       "coef": 1.0
+      }
+     ],
+     "quote": "can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Vi|crit_base}}|100|base=100}}|critical damage}} {{as|AD}} {{as|'''bonus''' physical damage}} against the primary target",
+     "bin": [
+      "ViE#{36ebd3cf}"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "duration the empowered attack is available before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "empowers her next basic attack within 6 seconds",
+     "bin": [
+      "ViE.AttackBuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Relentless Force applies to the primary target as spell damage with basic-attack-required effects, and to secondary targets as area damage.",
+     "quote": "Applies {{tip|spell damage}} to the primary target, applies {{tip|basic damage}} required effects on the primary target, and applies {{tip|area damage}} to secondary targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack resets Vi's basic attack timer.",
+     "quote": "Relentless Force {{tip|basic attack reset|resets}} '''Vi's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks damage to secondary targets, but not to the primary target.",
+     "quote": "{{tip|Spell shield}} will block damage to secondary targets, but not to the primary target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the effect completes (recharges as a stocked charge).",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Relentless Force only applies a stack of Denting Blows to the primary target.",
+     "quote": "''Relentless Force'' will only apply a stack of {{ai|Denting Blows|Vi}} to the primary target.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViE.BonusRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViE.StaticCooldown",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Cease and Desist",
+   "cooldown": {
+    "values": [
+     140,
+     115,
+     90
+    ],
+    "quote": "{{ap|140 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 90% '''bonus''' AD)}}",
+     "bin": [
+      "ViR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "knock up (airborne) duration on the final target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.3,
+     "terms": [],
+     "quote": "{{tip|airborne|knocking them up}} for {{fd|1.3}} seconds",
+     "bin": [
+      "ViR.RStunDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "delay into the grab before damage is dealt",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "dealing {{as|physical damage}} after {{fd|0.75}} seconds into the grab duration",
+     "bin": [],
+     "binNote": "No bin data value for this timing exists in the sheet; the 0.75s delay is only stated in the wiki description text, distinct numerically from SecondaryTargetStunDuration which happens to share the value."
+    },
+    {
+     "id": "r_4",
+     "meaning": "secondary target knockback distance",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 350,
+     "terms": [],
+     "quote": "{{tip|airborne|knocked aside}} by 350 units over {{fd|0.25}} seconds",
+     "bin": [
+      "ViR.SecondaryTargetKnockbackDistance"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "secondary target stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|stun|stunned}} for {{fd|0.75}} seconds",
+     "bin": [
+      "ViR.SecondaryTargetStunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies Vi dashes through take the same damage as the primary target and are stunned, as a separate instance for each target hit.",
+     "quote": "Enemies she dashes through are dealt the same damage, {{tip|airborne|knocked aside}} by 350 units over {{fd|0.25}} seconds, and {{tip|stun|stunned}} for {{fd|0.75}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Secondary targets cannot be hit again by the dash for about 4 seconds after being affected.",
+     "quote": "Secondary targets will be affected as soon as they come into contact with '''Vi''', and cannot be affected by this again for ~4 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target becomes untargetable during the dash, Vi ends the dash and can apply airborne without dealing damage.",
+     "quote": "If '''Vi''' enters grabbing range, she will apply the {{tip|airborne}} effect but not deal any damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast, not on hit or landing.",
+     "quote": "on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vault Breaker (Q) is disabled while Cease and Desist is dashing, but Relentless Force (E) remains usable.",
+     "quote": "{{ai|Relentless Force|Vi}} is usable. {{ai|Vault Breaker|Vi}} is disabled.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ViR.RBaseSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ViR.SecondaryTargetDamageMultiplier",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ViR.SecondaryTargetKnockbackDuration",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Blast Shield grants Vi a self-shield (12% max HP) on her next ability hit; it reduces damage taken in the survival fight but never appears in the damage-fight math."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Vault Breaker is charged for up to 1.25s (scaling range/speed/damage) within a longer hold window, blocking most other actions while charging."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Vault Breaker's active cast only arms the charge; the recast performs the actual dash and damage instance."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q costs 50-90 mana with a 6-12s cooldown; E costs mana plus a stocked charge, both meaningfully limit casts across a 15s fight."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Basic attacks (and Vault Breaker) apply Denting Blows stacks that build toward bonus on-hit damage."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "Denting Blows stacks (up to 3, refreshing on reapplication, 4s duration) live on the target and are consumed together."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "The 3rd stack-applying hit consumes all stacks to deal the bonus %max-HP damage and apply the armor shred/attack-speed buff."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming Denting Blows inflicts 20% armor reduction on the target for 4 seconds."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming Denting Blows grants Vi 30-50% bonus attack speed for 4 seconds, refreshing on subsequent triggers."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Force arms Vi's next basic attack (within 6s) with bonus modified physical damage and bonus range."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "The empowered attack from Relentless Force resets Vi's basic attack timer."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Force's empowered attack can critically strike against the primary target for bonus physical damage; secondary targets take the same damage without counting as crits."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Force stocks up to 2 charges that recharge independently (12-8s per wiki recharge; bin cooldown field shows a static 1s), each consuming 1 charge + mana per use."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cease and Desist deals its primary damage after a fixed cast time plus dash/grab delay, on a long cooldown."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Vi's kit maps cleanly onto the closed primitive list: a charge-then-recast dash (Q), a stacking on-hit debuff/nuke that also grants a timed attack-speed buff (W), a charge-based empowered attack with an attack reset and crit interaction on an ammo-like recharge system (E), and a single long-cooldown gap-closer/stun that deals delayed damage (R). No mechanic here (proc math, resource gating, on-hit interactions) falls outside what those primitives can express."
+ },
+ "unsettled": [
+  {
+   "question": "What is Relentless Force's true recharge time per rank: the wiki's stated '12 to 8' seconds, or the bin's cooldown field, which lists a flat 1 second (matching ViE.StaticCooldown = 1) rather than a per-rank array?",
+   "options": [
+    "Use the wiki-stated recharge of 12 to 8 seconds per rank (the bin's cooldown=1 is a placeholder for a charge-based ability, not the real recharge)",
+    "Use the bin's flat 1-second cooldown value literally"
+   ],
+   "impact": "high",
+   "quotes": [
+    "|recharge     = {{ap|12 to 8}}",
+    "ddragon E Relentless Force: maxrank 5, cooldown [1, 1, 1, 1, 1], cost [26, 32, 38, 44, 50]",
+    "ViE.StaticCooldown = 1"
+   ]
+  },
+  {
+   "question": "How long can Vault Breaker's charge be held before it auto-cancels: the wiki's 'up to 4 seconds', or the bin's ViQ.ChargeDuration = 6?",
+   "options": [
+    "Charge auto-cancels at 4s per wiki text",
+    "Charge auto-cancels at 6s per bin ChargeDuration",
+    "4s is a display/tooltip rounding and the real cap is 6s (or vice versa)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Vi''' {{tip|channel|charges}} while being {{tip|slow|slowed}} by 15% for up to 4 seconds to increase ''Vault Breaker's'' {{sti|range}}, speed, and damage over the first {{fd|1.25}} seconds of the channel.",
+    "ViQ.ChargeDuration = 6"
+   ]
+  },
+  {
+   "question": "Denting Blows: does ViW.StacksBeforeEffect = 2 mean the triggering hit is the 3rd application (matching the wiki's 'third stack consumes them all'), or does it change how many total attacks are needed to proc the effect?",
+   "options": [
+    "3 total stack-applying hits are needed to trigger, as the wiki states (StacksBeforeEffect=2 just counts prior stacks)",
+    "Only 2 stack-applying hits are needed to trigger per the bin value"
+   ],
+   "impact": "low",
+   "quotes": [
+    "stacking up to 3 times. The third stack consumes them all to deal",
+    "ViW.StacksBeforeEffect = 2"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Cease and Desist (R) on the target for its upfront burst, since it has the longest cooldown and should be used as early as possible to maximize the number of casts available in future fights (and simply for max total damage in this one).",
+   "Immediately follow with Relentless Force (E) to arm and land an empowered, crit-capable basic attack that also resets the auto-attack timer, applying a Denting Blows stack.",
+   "Weave in Vault Breaker (Q): charge it to the full 1.25s damage/range cap, then recast to land the maximized-multiplier dash hit, applying a Denting Blows stack; accept the attack-time lost while channeling since the target cannot punish it.",
+   "Auto-attack continuously between E and Q casts, using each attack (and Q/E hits) to build Denting Blows stacks; on the 3rd stack-consuming hit, benefit from the bonus %max-HP physical damage, armor shred, and the following attack-speed buff.",
+   "Recast Relentless Force again as soon as a charge is available (it stocks up to 2), always prioritizing landing it as an attack reset to avoid wasting basic-attack windup time.",
+   "Repeat Q charge-and-dash on cooldown, timing it so the channel does not overlap with an about-to-consume 3rd Denting Blows stack (attack during the channel is blocked, so land the proc just before charging)."
+  ],
+  "questions": [
+   "Is charging Vault Breaker to the full 1.25s always worth the lost auto-attack/E time in a 15s stationary fight, or does the sim expect a faster minimum-charge Q to preserve attack uptime?",
+   "Should Cease and Desist be assumed to land instantly (target already within 300 units) for the dummy fight, or does its cast time + dash travel time need to be modeled before the R damage lands?",
+   "With R's long cooldown (140-90s), should the rotation assume only one R cast total in the 15s fight, and does the sim's level/duration assumptions ever allow a second cast?",
+   "Does landing Relentless Force on the primary (and only) dummy target always also apply a Denting Blows stack, confirming E counts toward the on-hit stack cycle alongside basic attacks and Q?",
+   "What is Relentless Force's real recharge time in the 15s fight given the bin/wiki conflict noted above, since it directly determines how many E casts (and attack resets) are available?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

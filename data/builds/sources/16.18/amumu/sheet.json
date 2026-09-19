@@ -1,0 +1,457 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AmumuP",
+    "key": "Characters/Amumu/Spells/AmumuPAbility/AmumuP",
+    "cooldown": 0,
+    "dataValues": {
+     "DebuffDuration": 3,
+     "DamageAmp": 0.1
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "BandageToss",
+    "key": "Characters/Amumu/Spells/BandageTossAbility/BandageToss",
+    "cooldown": 3,
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       95,
+       120,
+       145,
+       170
+      ]
+     },
+     "StunDuration": 1,
+     "DashSpeed": 1800
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/95/120/145/170] + 0.85xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        95,
+        120,
+        145,
+        170
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.85
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "AuraofDespair",
+    "key": "Characters/Amumu/Spells/AuraofDespairAbility/AuraofDespair",
+    "cooldown": 1,
+    "cost": 8,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": 10,
+     "HealthDamage": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.25,
+       1.5,
+       1.75,
+       2
+      ]
+     },
+     "APRatio": 0.005
+    },
+    "calcs": {
+     "{c8e45bc3}": {
+      "expr": "(BaseDamage=10) * 0.5",
+      "flat": 5,
+      "terms": [],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TotalHealthDamage": {
+      "expr": "HealthDamage=[1/1.25/1.5/1.75/2] + (APRatio=0.005)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        1,
+        1.25,
+        1.5,
+        1.75,
+        2
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.005,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "HealthDamage"
+      ]
+     },
+     "{8a96509c}": {
+      "expr": "TotalHealthDamage * 0.005",
+      "modifies": "TotalHealthDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.005,
+        0.00625,
+        0.0075,
+        0.00875,
+        0.01
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 2.5e-05,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "HealthDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "Tantrum",
+    "key": "Characters/Amumu/Spells/TantrumAbility/Tantrum",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": 35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "FlatDamageReductionMax": 0.5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       65,
+       95,
+       125,
+       155,
+       185
+      ]
+     },
+     "BaseDamageReduction": {
+      "axis": "rank",
+      "v": [
+       5,
+       7,
+       9,
+       11,
+       13
+      ]
+     },
+     "CDROnHit": 0.75,
+     "PassiveScaling": 0.03
+    },
+    "calcs": {
+     "DamageReduction": {
+      "expr": "BaseDamageReduction=[5/7/9/11/13] + 0.03xbonus armor? + 0.03xbonus moveSpeed?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        7,
+        9,
+        11,
+        13
+       ]
+      },
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "bonus",
+        "coef": 0.03
+       },
+       {
+        "stat": "moveSpeed?",
+        "scope": "bonus",
+        "coef": 0.03
+       }
+      ],
+      "refs": [
+       "BaseDamageReduction"
+      ]
+     },
+     "TantrumDamage": {
+      "expr": "BaseDamage=[65/95/125/155/185] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        95,
+        125,
+        155,
+        185
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "CurseoftheSadMummy",
+    "key": "Characters/Amumu/Spells/CurseoftheSadMummyAbility/CurseoftheSadMummy",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      150,
+      125,
+      100
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      100,
+      150,
+      200
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "RDuration": 1.5,
+     "RCoefficient": 0.8
+    },
+    "calcs": {
+     "RCalculatedDamage": {
+      "expr": "RDamage=[200/300/400] + (RCoefficient=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "RCoefficient"
+       }
+      ],
+      "refs": [
+       "RCoefficient",
+       "RDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "BandageToss",
+  "W": "AuraofDespair",
+  "E": "Tantrum",
+  "R": "CurseoftheSadMummy",
+  "P": "AmumuP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 285,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.48,
+   "{3a509002}": 0.11
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.06615646
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Amumu",
+  "name": "Amumu",
+  "partype": "Mana",
+  "passive": "Cursed Touch",
+  "spells": [
+   {
+    "id": "BandageToss",
+    "name": "Bandage Toss",
+    "maxrank": 5,
+    "cooldown": [
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "AuraofDespair",
+    "name": "Despair",
+    "maxrank": 5,
+    "cooldown": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "cost": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ]
+   },
+   {
+    "id": "Tantrum",
+    "name": "Tantrum",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     35,
+     35,
+     35,
+     35,
+     35
+    ]
+   },
+   {
+    "id": "CurseoftheSadMummy",
+    "name": "Curse of the Sad Mummy",
+    "maxrank": 3,
+    "cooldown": [
+     150,
+     125,
+     100
+    ],
+    "cost": [
+     100,
+     150,
+     200
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Cursed Touch": {
+    "damagetype": "True",
+    "spelleffects": "proc",
+    "spellshield": "special",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Bandage Toss": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "special",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Despair": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana per second"
+   }
+  },
+  "E": {
+   "Tantrum": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Curse of the Sad Mummy": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

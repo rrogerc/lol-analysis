@@ -1,0 +1,273 @@
+{
+ "name": "Chilling Scream",
+ "cooldown": {
+  "values": [
+   16,
+   16,
+   16,
+   16,
+   16
+  ],
+  "quote": "16"
+ },
+ "cost": {
+  "values": [
+   0.05,
+   0.05,
+   0.05,
+   0.05,
+   0.05
+  ],
+  "quote": "{{as|5%|health}}",
+  "resource": "{{as|'''current''' health}}",
+  "binNote": "Bin lists this constant as BriarP.CurrentHealthPercentCost=0.05 (filed under the passive slot in the sheet) rather than under BriarE; no separate E-slot row exists for it."
+ },
+ "castTime": {
+  "value": 0.15,
+  "quote": "{{tt|{{fd|0.15}}|Recast time}}",
+  "binNote": "Wiki gives two distinct cast times: None for the initial cast (charging starts immediately) and 0.15 for the recast; the bin has no cast-time field at all for this slot, so this recast time cannot be validated against the bin. The initial-cast component is null/none."
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Heal Per Tick",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": [
+      0.025,
+      0.02875,
+      0.0325,
+      0.03625,
+      0.04
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|10/4 to 16/4}}% '''maximum''' health}}",
+   "bin": [
+    "BriarE.HealHPPercent"
+   ],
+   "binNote": "Per-tick value is the wiki's own division of HealHPPercent by 4 (ticks every 0.25s over up to 1s); the sheet has no separate per-tick data row."
+  },
+  {
+   "id": "e_2",
+   "meaning": "Maximum Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": [
+      0.1,
+      0.115,
+      0.13,
+      0.145,
+      0.16
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|10 to 16}}% '''maximum''' health}}",
+   "bin": [
+    "BriarE.HealHPPercent",
+    "BriarE#PercentMaxHPHeal"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Maximum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    115,
+    150,
+    185,
+    220
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.0
+    },
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|80 to 220}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "BriarE.MaxBaseDamage",
+    "BriarE#Damage"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    2,
+    2.875,
+    3.75,
+    4.625,
+    5.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.025
+    },
+    {
+     "stat": "ap",
+     "coef": 0.025
+    }
+   ],
+   "quote": "{{ap|80*0.025 to 220*0.025}} {{as|(+ {{ap|100*0.025}}% '''bonus''' AD)}} {{as|(+ {{ap|100*0.025}}% AP)}}",
+   "bin": [],
+   "binNote": "The 2.5% minimum is a wiki-side scaling of BriarE#Damage/BriarE.MaxBaseDamage with no dedicated bin row of its own."
+  },
+  {
+   "id": "e_5",
+   "meaning": "Bonus Magic Damage on wall collision",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    140,
+    215,
+    290,
+    365,
+    440
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 2.4
+    },
+    {
+     "stat": "ap",
+     "coef": 2.4
+    }
+   ],
+   "quote": "{{ap|140 to 440}} {{as|(+ 240% '''bonus''' AD)}} {{as|(+ 240% AP)}}",
+   "bin": [
+    "BriarE.WallHitBaseDamage",
+    "BriarE#WallHitDamage"
+   ]
+  },
+  {
+   "id": "e_7",
+   "meaning": "Damage reduction while channeling",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.35,
+   "terms": [],
+   "quote": "gains 35% damage reduction and {{tip|heal|heals}} herself",
+   "bin": [
+    "BriarE.DRPercent"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Chilling Scream's damage and range grow the longer it is charged, up to 1 second, at which point it deals maximum damage and range.",
+   "quote": "charging for up to 1 second, during which she increases ''Chilling Scream's'' damage and range",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During the charge, damage increases from its minimum every 0.025 seconds.",
+   "quote": "''Chilling Scream'' increases its damage by its minimum every {{fd|0.025}} seconds over the duration.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The charge cannot be interrupted by crowd control, so the full-duration charge (and its damage reduction/heal) is always reachable barring death.",
+   "quote": "''Chilling Scream's'' charge cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "While charging, Briar gains 35% damage reduction, lowering damage taken.",
+   "quote": "gains 35% damage reduction and {{tip|heal|heals}} herself every {{fd|0.25}} seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Briar heals herself every 0.25 seconds while charging.",
+   "quote": "heals herself every {{fd|0.25}} seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability recasts (releases the scream) automatically at the end of the charge if not recast manually beforehand.",
+   "quote": "''Chilling Scream'' can be recast within the duration, and does so automatically afterwards.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only a full-duration (1 second) charge produces the knockback and wall-collision bonus damage; a shorter charge only deals the scaled damage and slow.",
+   "quote": "If ''Chilling Scream'' was charged for its full duration, enemies hit are also {{tip|airborne|knocked back}} 575 units.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown begins only after the recast/effect resolves, not at the initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "BriarE.MinMissileRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.MaxMissileRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.Width",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.RectangleDistanceBehindCaster",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.RectangleDistanceInFrontOfCaster",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.RKnockupHeight",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.RKnockupDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "BriarE.RKnockTowardsSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.WallStunDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "BriarE.KnockbackDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarE.SlowPercent",
+   "reason": "utility"
+  },
+  {
+   "ref": "BriarE.SlowDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

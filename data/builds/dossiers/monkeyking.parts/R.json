@@ -1,0 +1,192 @@
+{
+ "name": "Cyclone",
+ "cooldown": {
+  "values": [
+   130,
+   110,
+   90
+  ],
+  "quote": "{{ap|130 to 90}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Physical Damage Per Tick",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.01,
+      0.015,
+      0.02
+     ]
+    },
+    {
+     "stat": "ad",
+     "coef": 0.34375
+    }
+   ],
+   "quote": "{{as|{{ap|8/8 to 16/8}}% of target's '''maximum''' health}} {{as|(+ {{ap|275/8}}% AD)}}",
+   "bin": [
+    "MonkeyKingSpinToWin.BasePercentMaxHPDmgPerSec",
+    "MonkeyKingSpinToWin.ADRatioPerSecond",
+    "MonkeyKingSpinToWin.SecondsPerTick"
+   ],
+   "binNote": "Bin stores per-second rates (BasePercentMaxHPDmgPerSec=[0.04,0.06,0.08], ADRatioPerSecond=1.375); the wiki's per-tick numbers equal those rates multiplied by SecondsPerTick=0.25 (0.04*0.25=0.01, 1.375*0.25=0.34375), matching the tick-rate the wiki quotes as '.../8'."
+  },
+  {
+   "id": "r_1b",
+   "meaning": "Total Physical Damage per full cast (8 ticks, i.e. one 2-second spin)",
+   "role": "dot",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.08,
+      0.12,
+      0.16
+     ]
+    },
+    {
+     "stat": "ad",
+     "coef": 2.75
+    }
+   ],
+   "quote": "{{as|{{ap|8 to 16}}% of target's '''maximum''' health}} {{as|(+ 275% AD)}}",
+   "bin": [
+    "MonkeyKingSpinToWin.BasePercentMaxHPDmgPerSec",
+    "MonkeyKingSpinToWin.ADRatioPerSecond",
+    "MonkeyKingSpinToWin.SpinDuration",
+    "MonkeyKingSpinToWin#DamagePerSecondTotal",
+    "MonkeyKingSpinToWin#{26c20668}"
+   ],
+   "binNote": "This is a derived per-cast total, not a distinct bin row. #DamagePerSecondTotal (ADRatioPerSecond=1.375 x ad) and #{26c20668} (BasePercentMaxHPDmgPerSec=[0.04,0.06,0.08]) are explicitly per-second rates; multiplying each by SpinDuration=2 (the length of one 2-second spin, matching r_4) gives the wiki's per-cast totals: 0.04*2=0.08 ... 0.08*2=0.16 for the max-HP term, and 1.375*2=2.75 for the AD term. The bin's own #TotalDamageTT/#PercentHPDamageTT calculations perform this same multiplication but are marked tooltip-only, so this value restates their math using the underlying per-second rows instead."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Spin duration per cast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "spins his staff around for up to 2 seconds",
+   "bin": [
+    "MonkeyKingSpinToWin.SpinDuration"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "Tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "deals {{as|physical damage}} every {{fd|0.25}} seconds to enemies hit",
+   "bin": [
+    "MonkeyKingSpinToWin.SecondsPerTick"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "Recast window after first cast ends",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 8,
+   "terms": [],
+   "quote": "he can cast ''Cyclone'' a second time within 8 seconds of the first cast",
+   "bin": [
+    "MonkeyKingSpinToWin.RecastWindow"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Delay before recast is allowed",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "After 1 second, he can cast ''Cyclone'' a second time",
+   "bin": [
+    "MonkeyKingSpinToWin.LockoutTimeBetweenCasts"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Cyclone deals damage as repeated periodic ticks against every enemy hit, each tick a separate damage instance.",
+   "quote": "The staff deals {{as|physical damage}} every {{fd|0.25}} seconds to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cyclone recasts automatically after the first cast ends (or on another ability cast), effectively doubling total duration/damage if allowed to continue.",
+   "quote": "does so automatically afterwards or by casting another {{tip|ability}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting a basic ability always interrupts Cyclone, cutting its damage window short.",
+   "quote": "Casting a basic ability will always interrupt '''Wukong's''' ''Cyclone''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks one instance (one tick) of Cyclone's damage.",
+   "quote": "{{tip|Spell shield}} will block one instance of damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cyclone's damage against monsters is capped per second, but this does not apply against champions.",
+   "quote": "''Cyclone's'' damage is capped at {{pp|200 to 600 for 3|6;11;16}} per second against {{tip|monsters}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MonkeyKingSpinToWin.KnockupDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "MonkeyKingSpinToWin.MoveSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "MonkeyKingSpinToWin#MonsterCap",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "MonkeyKingSpinToWin#TotalDamageTT",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "MonkeyKingSpinToWin#PercentHPDamageTT",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "MonkeyKingSpinToWin#MonsterCapTT",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

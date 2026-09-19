@@ -1,0 +1,195 @@
+{
+ "name": "Junkyard Titan / Junkyard Titan 2 / Junkyard Titan 3",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_heat_decay_rate",
+   "meaning": "Heat lost per second once decay starts",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "decays by {{tip|Heat|10 Heat}} per second after not using any basic ability within 4 seconds",
+   "bin": [
+    "RumbleHeatSystem.HeatDecayPerS"
+   ],
+   "binNote": "Bin stores the decay as -10 (a per-second delta applied to Heat); the wiki states the same rate as a positive magnitude of 10 Heat/s lost. Same number, opposite sign convention."
+  },
+  {
+   "id": "p_danger_zone_threshold",
+   "meaning": "Heat required to enter Danger Zone (empowers basic abilities)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 50,
+   "terms": [],
+   "quote": "mech enters the ''Danger Zone'' when at or above {{tip|Heat|50 Heat}}",
+   "bin": [
+    "RumbleHeatSystem.DangerZoneHeat"
+   ]
+  },
+  {
+   "id": "p_overheat_threshold",
+   "meaning": "Heat at which Rumble becomes Overheated (abilities disabled, on-hit empowered)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 150,
+   "terms": [],
+   "quote": "becomes ''Overheated'' while at {{tip|Heat|150 Heat}}",
+   "bin": [
+    "RumbleHeatSystem.OverheatingHeat"
+   ]
+  },
+  {
+   "id": "p_overheat_duration",
+   "meaning": "Duration Overheated status lasts (abilities disabled) while Heat decays to 0",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "disabling his {{tip|abilities}} as his {{tip|Heat}} decays back down to 0 over 4 seconds",
+   "bin": [
+    "RumbleHeatSystem.OverheatDuration"
+   ]
+  },
+  {
+   "id": "p_overheat_bonus_as",
+   "meaning": "Bonus attack speed gained while Overheated",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.5,
+    0.5470588,
+    0.59411764,
+    0.64117646,
+    0.6882353,
+    0.7352941,
+    0.7823529,
+    0.82941175,
+    0.87647057,
+    0.9235294,
+    0.9705882,
+    1.017647,
+    1.0647058,
+    1.1117647,
+    1.1588235,
+    1.2058823,
+    1.2529411,
+    1.3
+   ],
+   "terms": [],
+   "quote": "{{as|{{pp|50+((130-50)/17)*(x-1)*(0.7025+0.0175*(x-1)) for 20|key=%}} '''bonus''' attack speed}}",
+   "bin": [
+    "RumbleHeatSystem#OverheatAS"
+   ]
+  },
+  {
+   "id": "p_overheat_onhit_damage",
+   "meaning": "Bonus on-hit magic damage while Overheated",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    5,
+    7.059,
+    9.118,
+    11.176,
+    13.235,
+    15.294,
+    17.353,
+    19.412,
+    21.471,
+    23.529,
+    25.588,
+    27.647,
+    29.706,
+    31.765,
+    33.824,
+    35.882,
+    37.941,
+    40
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.04
+    }
+   ],
+   "quote": "deal {{pp|5 + (40-5)/17*(x-1) for 20|color=magic damage}} {{as|(+ 25% AP)}} {{as|(+ 4% of the target's '''maximum''' health)}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+   "bin": [
+    "RumbleHeatSystem#TotalBaseDamage",
+    "RumbleHeatSystem.OverheatPercBonusDamage"
+   ]
+  },
+  {
+   "id": "p_overheat_onhit_monster_cap",
+   "meaning": "Cap on the target-max-health-ratio portion of the Overheated on-hit damage against monsters",
+   "role": "other",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    65,
+    68.6,
+    72.375,
+    76.325,
+    80.45,
+    84.75,
+    89.225,
+    93.875,
+    98.7,
+    103.7,
+    108.875,
+    114.225,
+    119.75,
+    125.45,
+    131.325,
+    137.375,
+    143.6,
+    150
+   ],
+   "terms": [],
+   "quote": "The damage based on the target's health ratio is capped at {{pp|65+((150-65)/17)*(x-1)*(0.7025+0.0175*(x-1)) for 20}} against {{tip|monsters}}",
+   "bin": [],
+   "binNote": "No RumbleHeatSystem data value carries this 65-to-150 monster cap; the only monster-cap-like row on this class, RumbleHeatSystem.MonsterCap, is a flat 80 (a different, unrelated cap), and RumbleFlameThrower#MonsterCap (65 to 300 by level) belongs to Q's own monster cap, not the passive's. Not matched in the sheet; reported as a gap rather than resolved by guessing."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic ability casts generate Heat, which decays only after 4 seconds without a basic ability cast (or 2 seconds without casting R).",
+   "quote": "'''Rumble's''' {{tip|ability|basic ability}} casts generate {{tip|Heat}}, which decays by {{tip|Heat|10 Heat}} per second after not using any basic ability within 4 seconds or ''{{ai|The Equalizer|Rumble}}'' within 2 seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While Overheated, all of Rumble's basic abilities (Q/W/E/R) are disabled for the duration.",
+   "quote": "'''Rumble's''' mech becomes ''Overheated'', disabling his {{tip|abilities}} as his {{tip|Heat}} decays back down to 0 over 4 seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The Overheated bonus on-hit damage and attack speed do not apply against structures.",
+   "quote": "The attacks do not deal the '''bonus''' damage against {{tip|structures}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Danger Zone (>=50 Heat) empowers Rumble's basic abilities (Q/W/E), a separate state from Overheated.",
+   "quote": "'''Rumble's''' mech enters the ''Danger Zone'', empowering his basic abilities.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "RumbleHeatSystem.MonsterCap",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

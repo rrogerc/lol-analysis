@@ -1,0 +1,243 @@
+{
+ "name": "Consume",
+ "cooldown": {
+  "values": [
+   13,
+   12,
+   11,
+   10,
+   9
+  ],
+  "quote": "{{ap|13 to 9}}"
+ },
+ "cost": {
+  "values": [
+   60,
+   60,
+   60,
+   60,
+   60
+  ],
+  "quote": "60",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.3,
+  "quote": "{{fd|0.3}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Non-Champion True Damage",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "terms": [],
+   "quote": "{{ap|400 to 1200}}",
+   "bin": [
+    "NunuQ.MonsterMinionDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Base Non-Champion Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    65,
+    95,
+    125,
+    155,
+    185
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.9
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{ap|65 to 185}} {{as|(+ 90% AP)}} {{as|(+ 10% '''bonus''' health)}}",
+   "bin": [
+    "NunuQ#MonsterHealing"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Empowered Non-Champion Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    97.5,
+    142.5,
+    187.5,
+    232.5,
+    277.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.35
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|65*{{#var:q_mod}} to 185*{{#var:q_mod}}}} {{as|(+ {{ap|90*{{#var:q_mod}}}}% AP)}} {{as|(+ {{ap|10*{{#var:q_mod}}}}% '''bonus''' health)}}",
+   "bin": [],
+   "binNote": "the bin has no separate 1.5x low-health empowerment multiplier for NunuQ healing; q_mod=1.5 exists only in the wiki template"
+  },
+  {
+   "id": "q_4",
+   "meaning": "Champion Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    100,
+    140,
+    180,
+    220
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.65
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|60 to 220}} {{as|(+ 65% AP)}} {{as|(+ 5% '''bonus''' health)}}",
+   "bin": [
+    "NunuQ#TotalChampionDamage"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Base Champion Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    39,
+    57,
+    75,
+    93,
+    111
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.54
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.06
+    }
+   ],
+   "quote": "{{ap|65*{{#var:q_min}} to 185*{{#var:q_min}}}} {{as|(+ {{ap|90*{{#var:q_min}}}}% AP)}} {{as|(+ {{ap|10*{{#var:q_min}}}}% '''bonus''' health)}}",
+   "bin": [
+    "NunuQ#ChampionHealing"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Empowered Champion Heal",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    58.5,
+    85.5,
+    112.5,
+    139.5,
+    166.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.81
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.09
+    }
+   ],
+   "quote": "{{ap|65*{{#var:q_min}}*{{#var:q_mod}} to 185*{{#var:q_min}}*{{#var:q_mod}}}} {{as|(+ {{ap|90*{{#var:q_min}}*{{#var:q_mod}}}}% AP)}} {{as|(+ {{ap|10*{{#var:q_min}}*{{#var:q_mod}}}}% '''bonus''' health)}}",
+   "bin": [],
+   "binNote": "no bin row applies the 1.5x low-health empowerment on top of ChampionHealing; only present in wiki template math"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The heal is increased while below 50% maximum health.",
+   "quote": "The heal is increased by {{ap|({{#var:q_mod}}-1)*100}}% while he is {{as|below 50% '''maximum''' health}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Against minions and monsters he deals true damage; against champions he deals magic damage and the heal is reduced to 60%.",
+   "quote": "Against {{tip|champions}}, he deals {{as|magic damage}} and the heal is reduced to {{ap|{{#var:q_min}}*100}}%.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shields block both the damage and the heal.",
+   "quote": "Spell shields will block the damage and the heal.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NunuQ.ChampionHealingScalar",
+   "reason": null
+  },
+  {
+   "ref": "NunuQ.LowHealthThreshhold",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuQ.LowHealthHealingScalar",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuQ.BonusMaxHPDamage",
+   "reason": null
+  },
+  {
+   "ref": "NunuQ.ChampDamageAPRatio",
+   "reason": null
+  },
+  {
+   "ref": "NunuQ.MonsterHealingAPRatio",
+   "reason": null
+  },
+  {
+   "ref": "NunuQ.PercentageOfBonusHP",
+   "reason": null
+  },
+  {
+   "ref": "NunuQ.BaseHealing",
+   "reason": null
+  },
+  {
+   "ref": "NunuQ.ChampionDamage",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

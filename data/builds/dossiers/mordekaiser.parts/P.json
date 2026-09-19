@@ -1,0 +1,205 @@
+{
+ "name": "Darkness Rise",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_onhit",
+   "meaning": "bonus magic damage on basic attacks",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "basic attacks are empowered to deal {{as|40% AP}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+   "bin": [
+    "MordekaiserPassive.PercentAPAddedToAutos"
+   ]
+  },
+  {
+   "id": "p_stackduration",
+   "meaning": "stack duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "lasting for 4 seconds, refreshing on subsequent triggers, and stacking up to 3 times",
+   "bin": [
+    "MordekaiserPassive.CombatTrackingDuration"
+   ]
+  },
+  {
+   "id": "p_stackcap",
+   "meaning": "stacks to trigger Darkness Rise",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times. At 3 stacks, he gains ''Darkness Rise''",
+   "bin": [
+    "MordekaiserPassive.MaximumStacks"
+   ]
+  },
+  {
+   "id": "p_aura",
+   "meaning": "aura magic damage per second to nearby enemies",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.01,
+      0.012352941,
+      0.014705882,
+      0.017058823,
+      0.0194117647,
+      0.021764706,
+      0.024117647,
+      0.026470588,
+      0.028823529,
+      0.031176471,
+      0.033529412,
+      0.035882353,
+      0.038235294,
+      0.040588235,
+      0.042941176,
+      0.04529412,
+      0.0476470588,
+      0.05
+     ]
+    }
+   ],
+   "quote": "{{as|5|magic damage}} {{as|(+ 30% AP)}} {{as|(+ {{pplevel|key=%|1 to 5}} of target's '''maximum''' health)}} {{as|magic damage}} every second",
+   "bin": [
+    "MordekaiserPassive#AuraDamagePerStack",
+    "MordekaiserPassive#PercentHealthForAura"
+   ],
+   "binNote": "MordekaiserPassive#PercentHealthForAura is a byLevel(1..5) calculation (percent, 18 values), not a per-rank value; the wiki's pplevel table matches this level scaling, so the targetMaxHp term is recorded by champion level rather than by ability rank."
+  },
+  {
+   "id": "p_auramonstercap",
+   "meaning": "aura damage per second cap against monsters",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180,
+    190,
+    200,
+    200
+   ],
+   "terms": [],
+   "quote": "the damage is capped at{{ft|{{pplevel|40 to 200}} per second.",
+   "bin": [
+    "MordekaiserPassive#MaxAuraMonsterDamage"
+   ],
+   "binNote": "sheet gives byLevel(40..200), wiki pplevel range matches; treated as level-scaled 1-18 (exact interpolation unverified)"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Darkness Rise's on-hit bonus damage is a separate proc-damage instance from the basic attack, while the aura is persistent area damage.",
+   "quote": "''Darkness Rise'' deals {{tip|persistent area damage}} damage around '''Mordekaiser''', while the bonus damage on his basic attacks is {{tip|proc damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The on-hit bonus damage does not apply to structures.",
+   "quote": "''Darkness Rise's'' bonus damage {{tip|on-hit}} is not applied against {{tip|structures}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Abilities generate a stack on hit even if they deal no damage (e.g. against invulnerable targets or spell shields).",
+   "quote": "'''Mordekaiser''' will still generate ''Darkness Rise'' stacks from hitting his abilities even if they deal no damage, such as if the target is {{tip|invulnerable}} or blocks an ability with a {{tip|spell shield}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Basic attacks do not generate a stack if the attack is dodged, blocked, or missed while blinded.",
+   "quote": "Basic attacks do not generate a stack if their damage event does not happen due to the target being {{tip|invulnerable}}, or the attack being {{tip|dodge|dodged}}, {{tip|block|blocked}}, or missed while '''Mordekaiser''' is {{tip|blind|blinded}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Darkness Rise's aura damage alone does not refresh the Darkness Rise buff duration.",
+   "quote": "''Darkness Rise's'' area damage alone does not refresh ''Darkness Rise's'' buff.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MordekaiserPassive.FuryForQHit",
+   "reason": "utility"
+  },
+  {
+   "ref": "MordekaiserPassive.FuryForAutoHit",
+   "reason": "utility"
+  },
+  {
+   "ref": "MordekaiserPassive.FuryForEHit",
+   "reason": "utility"
+  },
+  {
+   "ref": "MordekaiserPassive.MovementSpeed",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "MordekaiserPassive.DoTRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "MordekaiserPassive#BonusAPAuto",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "MordekaiserPassive#PassiveMovementSpeed (percent)",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

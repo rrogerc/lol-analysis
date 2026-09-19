@@ -1,0 +1,680 @@
+{
+ "champion": "vayne",
+ "abilities": {
+  "P": {
+   "name": "Night Hunter",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus movement speed while facing a nearby visible enemy champion",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "gains {{sti|ms|{{as|30 '''bonus''' movement speed}}}} while facing a nearby {{tip|sight|visible}} enemy",
+     "bin": [
+      "VaynePassive.MovementSpeed"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive is a self-only movement speed buff, not a damage effect, so it does not affect a stationary-dummy damage fight.",
+     "quote": "gains {{sti|ms|{{as|30 '''bonus''' movement speed}}}} while facing a nearby {{tip|sight|visible}} enemy {{tip|champion}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The bonus movement speed increases to 90 while Vayne is under the effects of Final Hour (R).",
+     "quote": "increased to {{as|90|ms}} while under the effects of ''{{ai|Final Hour|Vayne}}''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The buff requires facing a nearby enemy champion that is visible (in sight), and lingers 2 seconds after losing sight.",
+     "quote": "The '''bonus''' movement speed persists for 2 seconds after '''Vayne''' loses {{tip|sight}} of an enemy champion.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VaynePassive.Range",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Tumble",
+   "cooldown": {
+    "values": [
+     6,
+     5,
+     4,
+     3,
+     2
+    ],
+    "quote": "{{ap|6 to 2}}"
+   },
+   "cost": {
+    "values": [
+     46,
+     42,
+     38,
+     34,
+     30
+    ],
+    "quote": "{{ap|46 to 30}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.75,
+        0.85,
+        0.95,
+        1.05,
+        1.15
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|{{ap|75 to 115}}% AD}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "VayneTumble#ADRatioBonus",
+      "VayneTumble.TotalADRatio",
+      "VayneTumble.APRatio"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "duration during which next attack is empowered",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "empowers her next {{tip|basic attack}} within 3 seconds",
+     "bin": [
+      "VayneTumble.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Tumble resets Vayne's basic attack timer.",
+     "quote": "Tumble {{tip|basic attack reset|resets}} '''Vayne's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack has an uncancellable windup, but Vayne cannot attack until the dash animation completes.",
+     "quote": "empowers her next {{tip|basic attack}} within 3 seconds to have an {{tip|uncancellable windup}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The basic attack portion of Tumble's damage is tagged as basic damage and spell damage, while the bonus damage is tagged as spell damage only.",
+     "quote": "The basic attack portion of ''Tumble's'' damage is tagged as {{tip|basic damage}} and {{tip|spell damage}}, while the bonus damage is tagged as {{tip|spell damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the dash effect resolves, not on cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VayneTumble.TotalADRatio",
+     "reason": null
+    },
+    {
+     "ref": "VayneTumble.Duration",
+     "reason": null
+    },
+    {
+     "ref": "VayneTumble.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Silver Bolts",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.04,
+        0.055,
+        0.07,
+        0.085,
+        0.1
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|4 to 10}}% of target's '''maximum''' health}}",
+     "bin": [
+      "VayneSilveredBolts#TotalDamage",
+      "VayneSilveredBolts.MaxHealthRatio"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Minimum Bonus Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      40,
+      55,
+      70,
+      85,
+      100
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 100}}",
+     "bin": [
+      "VayneSilveredBolts.DamageFloor"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Monster Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      140,
+      155,
+      170,
+      185,
+      200
+     ],
+     "terms": [],
+     "quote": "{{ap|140 to 200}}",
+     "bin": [
+      "VayneSilveredBolts.DamageVsMonsters"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Stack duration before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3.5,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Silver Bolts'' for {{fd|3.5}} seconds",
+     "bin": [
+      "VayneSilveredBolts.DebuffDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Stacks required to consume and deal bonus damage",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "No data value in the bin encodes the stack cap; it is implicit in the design (three named stack fields / on-hit consumption logic not exposed as a DataValue) and only appears in the wiki description."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks on-hit and Condemn apply a stack of Silver Bolts; the third stack consumes all three to deal the bonus true damage.",
+     "quote": "'''Vayne's''' {{tip|basic attacks}} {{tip|on-hit}} and ''{{ai|Condemn|Vayne}}'' apply a {{tip|stack}} of ''Silver Bolts'' for {{fd|3.5}} seconds, refreshing on subsequent applications, expiring upon attacking a new enemy, and stacking up to 3 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stacks expire upon attacking a new enemy, but are irrelevant in a single-target dummy fight since there is no target switching.",
+     "quote": "expiring upon attacking a new enemy",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Silver Bolts deals reduced/modified true damage against monsters instead of the max-health-based damage; not applicable against a champion-flagged dummy.",
+     "quote": "''Silver Bolts'' deals modified damage against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Silver Bolts has no cooldown of its own; it is a passive proc from basic attacks and Condemn, not a separately cast/cooldown-gated ability.",
+     "quote": "{{sbc|Passive:}} '''Vayne's''' {{tip|basic attacks}} {{tip|on-hit}} and ''{{ai|Condemn|Vayne}}'' apply a {{tip|stack}} of ''Silver Bolts''",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VayneSilveredBolts.DamageVsMonsters",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Condemn",
+   "cooldown": {
+    "values": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "quote": "{{ap|20 to 12}}"
+   },
+   "cost": {
+    "values": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ],
+    "quote": "90",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      85,
+      120,
+      155,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|50 to 190}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "VayneCondemn.Damage",
+      "VayneCondemn#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Bonus Physical Damage (on terrain collision)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      42.5,
+      60,
+      77.5,
+      95
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|50*1.5 to 190*1.5}} {{as|(+ 75% '''bonus''' AD)}}",
+     "bin": [
+      "VayneCondemn.StunDamage",
+      "VayneCondemn.Damage",
+      "VayneCondemn#EmpoweredDamageTT"
+     ],
+     "binNote": "The bin does not store this bonus as a separate flat/ratio pair; instead VayneCondemn.StunDamage=1.5 is a multiplier applied to the full TotalDamage (base+0.5xbonusAD) via EmpoweredDamageTT = TotalDamage*1.5, i.e. the terrain-collision hit replaces the base hit with 1.5x its damage rather than adding a distinct extra instance. The wiki instead presents this as an additional 'bonus' component (50%*1.5 base, 25% bonusAD extra ratio) on top of the base hit so total = base hit + bonus hit = TotalDamage*2.5. The values here are the wiki's stated bonus-only numbers (0.5x base, 0.25 bonusAD coef), derived as 1.5x-1x of the base formula; the bin encodes the same total via a single multiplier rather than an additive bonus term."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Stun duration on terrain collision",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "become {{tip|stun|stunned}} for {{ap|1.5}} seconds",
+     "bin": [
+      "VayneCondemn.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Condemn fires a projectile that knocks the target back; damage and the airborne effect apply on hit, not on cast.",
+     "quote": "fires a heavy bolt at the target enemy that deals {{as|physical damage}} and {{tip|airborne|knocks them back}} 475 units, though not through terrain.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the knocked-back target collides with terrain, it takes additional bonus physical damage on top of the base hit damage and is stunned; this requires terrain to be present.",
+     "quote": "If the target collides with [[terrain]], they take {{ccs|{{as|'''bonus''' physical damage}}|physical}} and become {{tip|stun|stunned}} for {{ap|1.5}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The knockback direction (and thus whether the target reaches terrain) is determined at the end of the cast time, not at the moment of cast.",
+     "quote": "Condemn's'' {{tip|airborne|displacement}} direction is determined at the end of the cast time.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VayneCondemn.KnockbackDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Final Hour",
+   "cooldown": {
+    "values": [
+     100,
+     85,
+     70
+    ],
+    "quote": "{{ap|100 to 70}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Effect Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      8,
+      10,
+      12
+     ],
+     "terms": [],
+     "quote": "{{ap|8 to 12}} seconds",
+     "bin": [
+      "VayneInquisition.BaseDuration"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      35,
+      50,
+      65
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 65 3}}",
+     "bin": [
+      "VayneInquisition.BonusAttackDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Tumble Cooldown Reduction",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.4,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "VayneInquisition.TumbleCDReduction"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Duration extension on takedown within 3 seconds of damaging",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "extend ''Final Hour's'' duration by 4 seconds, up to its original duration",
+     "bin": [
+      "VayneInquisition.DurationToAdd"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Final Hour grants bonus attack damage for its duration, which is a flat self-buff usable for the whole fight window.",
+     "quote": "gaining {{sti|{{as|attack damage}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The 4-second duration extension requires damaging the target and then scoring a takedown within 3 seconds of that damage; it does not apply against a target that cannot be killed.",
+     "quote": "Scoring an enemy champion {{tip|takedown}} within 3 seconds of damaging them will extend ''Final Hour's'' duration by 4 seconds, up to its original duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Final Hour has no cast time and its cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacking breaks the stealth granted by empowered Tumble at the start of the attack windup, but does not by itself end Final Hour.",
+     "quote": "Using a basic attack breaks the stealth at the start of the attack windup.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VayneInquisition.TumbleStealthDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VayneInquisition.MovementSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VayneInquisition.DamagedMarkerDuration",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Tumble arms next basic attack within 3s to deal bonus physical damage and reset attack timer"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Tumble resets the basic attack timer, but the dash animation delays the actual next swing"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Silver Bolts stacks are applied by on-hit attacks and Condemn"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "3 stacks (each refreshing on reapplication, 3.5s duration) consumed on the 3rd to deal bonus true damage based on target max HP, min floor"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Condemn deals physical damage on hit after a 0.25s cast/travel delay, on a mana-gated cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Condemn's bonus damage + stun only trigger if the knocked-back target collides with terrain, which a dummy fight does not have unless assumed"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Final Hour grants flat bonus AD for its duration"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "Final Hour reduces Tumble's cooldown by 30-50% for its duration"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q/E/R) may limit casts inside a 15s fight depending on build"
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "R"
+   ],
+   "note": "Empowered Tumble under Final Hour grants 1s stealth; irrelevant to a damage-only dummy fight but the pre-fight R decision matters for buff uptime"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Night Hunter is pure movement speed, never read by a damage sim"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanical piece (Tumble empowered-attack/reset, Silver Bolts on-hit stacking true damage, Condemn plain-cast physical damage with a terrain-conditional bonus, Final Hour timed self-buff plus cooldown manipulation, Night Hunter as pure defensive movement) maps onto existing primitives. The only open item is how to treat Condemn's terrain-collision bonus damage given the dummy fight has no terrain, which is an unsettled question, not a missing primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Condemn's terrain-collision bonus damage (stun + extra physical damage, doubling the hit to ~2.5x total) ever trigger in a stationary-dummy fight with no terrain behind the target?",
+   "options": [
+    "Never triggers: dummy fight has no terrain, so Condemn only ever deals its base Damage (VayneCondemn.Damage + 0.5x bonus AD)",
+    "Simulator should assume terrain is present behind the dummy (a common competitive setup) so Condemn always lands the terrain bonus, dealing the full 2.5x/150% bonus AD total"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target collides with [[terrain]], they take {{ccs|{{as|'''bonus''' physical damage}}|physical}} and become {{tip|stun|stunned}} for {{ap|1.5}} seconds."
+   ]
+  },
+  {
+   "question": "Does Tumble's bonus damage (on the empowered next attack) count as a separate damage instance from the basic attack it rides on, for the purposes of applying Silver Bolts on-hit stacking and any on-hit item effects?",
+   "options": [
+    "Single combined attack event: the empowered attack (base AD + Tumble bonus) counts as one on-hit application, adding one Silver Bolts stack",
+    "Two separate instances: the basic-attack-tagged portion and the spell-damage-tagged bonus portion are distinct, potentially each triggering separate on-hit/on-cast interactions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The basic attack portion of ''Tumble's'' damage is tagged as {{tip|basic damage}} and {{tip|spell damage}}, while the bonus damage is tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "Does casting Condemn (which also applies a Silver Bolts stack) count toward Silver Bolts' 3-stack threshold as its own instance separate from on-hit attacks, and can it itself consume/trigger the true-damage proc if it is the 3rd application?",
+   "options": [
+    "Condemn applies a stack like any other application (refresh/increment) and can trigger the proc as the 3rd stack, dealing bonus true damage on top of Condemn's own hit",
+    "Condemn only applies a stack but never itself triggers/consumes the proc; the proc only fires on the 3rd basic attack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Vayne's''' {{tip|basic attacks}} {{tip|on-hit}} and ''{{ai|Condemn|Vayne}}'' apply a {{tip|stack}} of ''Silver Bolts'' for {{fd|3.5}} seconds, refreshing on subsequent applications, expiring upon attacking a new enemy, and stacking up to 3 times."
+   ]
+  },
+  {
+   "question": "Should Final Hour (R) be assumed pre-cast (already active/opener) or cast during the 15s window, given its long cooldown (70-100s) and cost, affecting how many seconds of the AD buff and Tumble CDR are actually available?",
+   "options": [
+    "Cast R at the very start of the fight, consuming cast time/none but immediately granting buffs for the rest of the 15s",
+    "Treat R as already active before the timer starts (a pre-fight opener), so the full buff duration and CDR apply throughout"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = on-cast"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Final Hour (R) for the bonus AD self-buff and Tumble cooldown reduction, since it has no cast time and immediately boosts subsequent attacks and Q casts.",
+   "Cast Tumble (Q) as the first ability to arm the next basic attack with bonus physical damage and reset the attack timer; then follow with basic attacks.",
+   "Weave Tumble again whenever its (Final Hour-reduced) cooldown is up, using it to reset the attack timer and add another empowered-attack instance, since it also applies a Silver Bolts stack via the resulting attack.",
+   "Auto-attack continuously between Q casts; every 3rd on-hit application (from attacks and/or Condemn) consumes Silver Bolts stacks for bonus true damage based on target max HP.",
+   "Cast Condemn (E) on cooldown when it does not interrupt the auto-attack/Tumble rhythm, both for its own physical damage and to feed a Silver Bolts stack.",
+   "Prioritize mana-cost management (Q/E/R all cost mana) so casts are not blocked mid-fight; if mana runs low, favor basic attacks (free) and Tumble resets over Condemn."
+  ],
+  "questions": [
+   "Should Final Hour be treated as pre-active before the timer starts, or must its cast (and mana cost) be counted inside the 15s window?",
+   "Is there terrain behind the dummy for Condemn's collision bonus, or should the sim assume open ground with only the base Condemn hit?",
+   "Given Tumble's cooldown (2-6s, further reduced under R) versus its animation-locked next-attack delay, how many Tumble casts realistically fit in 15s without wasting basic-attack uptime?",
+   "Does the simulator model Condemn's 0.25s cast time and travel time as attack-timer-blocking, affecting how tightly it can be weaved between autos?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

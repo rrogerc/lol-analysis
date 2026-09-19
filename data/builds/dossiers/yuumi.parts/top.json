@@ -1,0 +1,97 @@
+{
+ "champion": "yuumi",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Prowling Projectile deals its TotalMissileDamage on hit; since no ally exists in the fight, Yuumi is never attached, so it never reaches the channeled/accelerated damage tier or the Best Friend on-hit bonus."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-75, E 80-120, R 100) against Yuumi's modest mana pool can limit how many casts land inside the 15s window."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Zoomies grants Yuumi (unattached, since no ally exists to redirect it to) bonus attack speed for 3s, raising her basic-attack DPS; its shield only matters for damage taken (survival fight), not the damage fight."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Final Chapter channels for up to 3.5s; per the wiki's channel-interaction table, Prowling Projectile is disabled (locked out) for that duration."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Final Chapter fires 5 separately-timed wave hits roughly 0.75s apart within one cast, not a single damage instance."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Waves after the first that hit the same target deal only 25% of the base per-wave damage, so R's total depends on how many of the 5 waves actually connect with the dummy."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Yuumi's damage-relevant kit reduces to a narrow subset once the fight rules are applied literally: her passive (Feline Friendship) and W (You and Me!) are entirely built around having an allied Anchor, which does not exist in either fight (no allies). With no ally, Q never channels/accelerates and never gets the Best Friend on-hit bonus, so it is a plain-cast. R is a channelled, 5-part, self-damage-decaying ability that recast-or-multipart plus conditional-damage capture directly. E is a simple timed self-buff (attack speed) once redirected to herself. No logic outside the closed primitive list is needed to express this."
+ },
+ "unsettled": [
+  {
+   "question": "Should the damage-fight simulator treat Yuumi as permanently attached to a phantom ally (so that Prowling Projectile reaches its channeled/accelerated damage tier and Best Friend on-hit bonus applies), or strictly as unattached the whole fight since the fight rules state there are no allies?",
+   "options": [
+    "Strict reading: no allies exist, so Yuumi is always unattached and Q only ever deals its base (non-empowered) missile damage with no on-hit bonus",
+    "Simulator assumes a permanent phantom Anchor so Q's channeled/accelerated damage (up to 355+30%AP vs 235+20%AP) and Best Friend on-hit magic damage apply every cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Yuumi''' {{tip|channels}} briefly to steer the missile, after which it accelerates to deal increased damage and apply a stronger slow to champions.",
+    "Always applies the stronger {{tip|slow}} and grants her ''Best Friend'' bonus on-hit damage for a few seconds."
+   ]
+  },
+  {
+   "question": "Do all 5 of Final Chapter's waves actually connect with a single stationary target dummy, or does the moving-wave geometry mean fewer waves land?",
+   "options": [
+    "All 5 waves hit the stationary dummy every cast (full damage on wave 1, 25% on waves 2-5)",
+    "Only the first wave is guaranteed to hit; subsequent wave connections depend on positioning/travel mechanics the dossier does not fully specify for a stationary dummy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Yuumi''' and '''{{ui|Book of Thresholds|Book|nolink=true}}''' {{tip|channel}} for up to {{fd|3.5}} seconds ... to launch 5 magical waves in the target direction.",
+    "The VFX will follow '''Yuumi's''' location, but the actual hitbox of each wave won't."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Zoomies (E) on Yuumi herself for bonus attack speed (no ally exists to redirect it to), boosting basic-attack DPS for the rest of the fight.",
+   "Cast Prowling Projectile (Q) on cooldown (6.5s) at its base, unattached damage, since no ally exists to trigger the channeled/accelerated tier.",
+   "Cast Final Chapter (R) once, ideally early since its cooldown (100-120s) means only one cast fits in the 15s window; during its up-to-3.5s channel, Q is locked out per the channel-interaction table, so pause Q casts during this window.",
+   "Resume casting Q on cooldown as soon as R's channel ends.",
+   "Continue autoattacking the dummy between ability casts to add base AD damage, refreshed by E's attack-speed buff.",
+   "Recast Zoomies (E) again if it comes off cooldown (10s) before the fight ends, to maintain the attack-speed buff.",
+   "Do not use You and Me! (W): it has no valid target since no allies exist in either fight."
+  ],
+  "questions": [
+   "Should the sim treat Yuumi as attached to a phantom ally for the whole fight (enabling Q's channeled/Best Friend tiers), or strictly unattached per the no-allies fight rule?",
+   "Does the damage fight count Yuumi's basic attacks at all, given her very low base AD, or is the intended rotation ability-only?",
+   "Should Final Chapter be cast immediately at the start of the 15s window (to guarantee it lands inside the fight) or delayed until Q/E are already looping, given only one R cast fits regardless?",
+   "How many of Final Chapter's 5 waves are assumed to hit a stationary single-target dummy, given the ability's directional/geometric hit mechanics?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

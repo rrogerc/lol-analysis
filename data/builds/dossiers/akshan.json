@@ -1,0 +1,1281 @@
+{
+ "champion": "akshan",
+ "abilities": {
+  "P": {
+   "name": "Dirty Fighting",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "second shot on-hit physical damage (percent AD)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|50% AD}} {{as|physical damage}}, increased to {{as|100% AD}} against {{tip|minions}}",
+     "bin": [
+      "AkshanPassive.SecondAutoADRatio",
+      "AkshanPassive#SecondAutoDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus magic damage dealt when a target reaches 3 stacks of Dirty Fighting",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      15,
+      15,
+      15,
+      15,
+      15,
+      40,
+      40,
+      40,
+      40,
+      40,
+      80,
+      80,
+      80,
+      80,
+      80,
+      150,
+      150,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{pp|15;40;80;150|1;6;11;16}}|magic damage}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "AkshanPassive#PassiveProcDamage",
+      "AkshanPassive.APRatio"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "shield amount gained when the 3-stack bonus damage is dealt to a champion",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      40,
+      50.16,
+      60.82,
+      71.98,
+      83.63,
+      95.76,
+      108.39,
+      121.53,
+      135.13,
+      149.27,
+      163.91,
+      179.02,
+      194.6,
+      210.66,
+      227.19,
+      244.3,
+      261.9,
+      280
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{pplevel|40+(240/17)*(x-1)*(0.7025+0.0175*(x-1))}} {{as|(+ 35% '''bonus''' AD)}}",
+     "bin": [
+      "AkshanPassive#TotalShieldAmount",
+      "AkshanPassive.ShieldBADRatio"
+     ],
+     "binNote": "Wiki gives its own by-level formula (40+(240/17)*(x-1)*(0.7025+0.0175*(x-1))) which does not exactly match the bin's AkshanPassive#TotalShieldAmount flat byLevel array (e.g. level 2: wiki 50.16 vs bin 54.12); both start at 40 and end at 280 but diverge at intermediate levels. Reporting the wiki's stated number per its own quoted formula."
+    },
+    {
+     "id": "p_4",
+     "meaning": "duration the shield persists",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "{{tip|shield}} for 2 seconds",
+     "bin": [
+      "AkshanPassive.ShieldDuration"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "duration a stack of Dirty Fighting persists before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "to enemies for 5 seconds, refreshing on subsequent applications",
+     "bin": [
+      "AkshanPassive.DebuffDuration"
+     ],
+     "binNote": "Wiki text states the stack lasts 5 seconds, but the bin's AkshanPassive.DebuffDuration is 4.5."
+    },
+    {
+     "id": "p_6",
+     "meaning": "number of stacks required to trigger the bonus damage/shield",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [
+      "AkshanPassive.MaxStacks"
+     ]
+    },
+    {
+     "id": "p_7",
+     "meaning": "static cooldown before the shield can be granted again, starting when the previous shield is destroyed or expires",
+     "role": "other",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      16,
+      16,
+      16,
+      16,
+      16,
+      12,
+      12,
+      12,
+      12,
+      12,
+      8,
+      8,
+      8,
+      8,
+      8,
+      4,
+      4,
+      4
+     ],
+     "terms": [],
+     "quote": "{{pp|16 to 4 for 4|1;6;11;16}}",
+     "bin": [
+      "AkshanPassive#PassiveCooldown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The second shot applies on-hit effects, triggers on-attack effects, and is affected by critical strike modifiers, and crits independently from the first shot.",
+     "quote": "The additional shot applies {{tip|on-hit}} effects, triggers {{tip|on-attack}} effects, and is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The first shot deals basic attack damage while the second shot's extra damage is proc damage, meaning they interact differently with modifiers that distinguish basic vs proc damage.",
+     "quote": "Applies {{tip|basic damage}} for the second shot and {{tip|proc damage}} for the bonus damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second shot starts the attack windup cooldown (basic attack reset) when it is fired, not when the first shot is fired.",
+     "quote": "Starts the attack windup's cooldown after it is used, rather than when the first shot is.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stacks of Dirty Fighting are applied by basic attacks (on-hit) and ability hits, and refresh their duration on each new application rather than stacking duration independently.",
+     "quote": "'''Akshan's''' basic attacks {{tip|on-hit}} and {{tip|ability}} hits apply a {{tip|stack}} of ''Dirty Fighting'' to enemies for 5 seconds, refreshing on subsequent applications and stacking up to 3 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Reaching the third stack consumes all stacks at once to deal the bonus magic damage; the shield is only granted if the target hit was a champion.",
+     "quote": "The third stack against a target consumes them all to deal them {{as|{{pp|15;40;80;150|1;6;11;16}}|magic damage}} {{as|(+ 60% AP)}} {{as|'''bonus''' magic damage}}; if the target is a {{tip|champion}}, '''Akshan''' will also gain a {{pplevel|40+(240/17)*(x-1)*(0.7025+0.0175*(x-1))}} {{as|(+ 35% '''bonus''' AD)}} {{tip|shield}} for 2 seconds.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "This ability's damage is calculated based on Akshan's current stats at the moment it lands and changes dynamically (not locked in on cast).",
+     "quote": "This ability's damage is calculated based on the caster's current stats and changes dynamically.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AkshanPassive.HasteDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "AkshanPassive.SecondAutoFlexedAttackRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanPassive.SecondAutoCritRatio",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Avengerang",
+   "cooldown": {
+    "values": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "quote": "{{tt|{{ap|9 to 5}}|Starts after the boomerang returns}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      45,
+      75,
+      105,
+      135,
+      165
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|45 to 165}} {{as|(+ 70% '''bonus''' AD)}}",
+     "bin": [
+      "AkshanQ#FinalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Total Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      90,
+      150,
+      210,
+      270,
+      330
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.4
+      }
+     ],
+     "quote": "{{ap|45*2 to 165*2}} {{as|(+ {{ap|70*2}}% '''bonus''' AD)}}",
+     "bin": [],
+     "binNote": "The wiki's 'Total' row is simply twice AkshanQ#FinalDamage (outgoing + return pass), not a separate bin row; the bin only defines the single-pass FinalDamage calculation."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Non-Champion Damage",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 80}}%",
+     "bin": [
+      "AkshanQ.SecondaryTargetDamage"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "bonus movement speed on champion hit",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0005
+      }
+     ],
+     "quote": "{{sti|ms|{{as|20%|ms}}}} {{as|(+ 5% per 100 AP)}} {{as|'''bonus''' movement speed}} that decays over 1 second",
+     "bin": [
+      "AkshanQ#TotalHaste"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "movement speed buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "that decays over 1 second",
+     "bin": [
+      "AkshanQ.HasteDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies can be hit only once per pass of the boomerang (outgoing and return are separate passes).",
+     "quote": "Enemies can be hit only once per pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The boomerang homes back to Akshan after passing its original range and not hitting a target in the last 500 units, dealing a second, separate instance of damage.",
+     "quote": "Once the boomerang has passed its original range and has not hit a target in the last 500 units of travelling, it homes back to '''Akshan''' and applies the same effects to enemies hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage is calculated based on the caster's current stats at the moment of the hit, not at cast time.",
+     "quote": "This ability's damage is calculated based on the caster's current stats and changes dynamically.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield only blocks one of the two hits (outgoing or return), not both.",
+     "quote": "{{tip|Spell shield}} will only block a single hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Non-champion targets (e.g. a dummy) take reduced damage.",
+     "quote": "''Avengerang'' deals reduced damage against non-champions.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts only after the boomerang returns to Akshan, not on cast.",
+     "quote": "Starts after the boomerang returns",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AkshanQ.ExtensionDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanQ.RevealDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Going Rogue",
+   "cooldown": {
+    "values": [
+     18,
+     14,
+     10,
+     6,
+     2
+    ],
+    "quote": "{{ap|18 to 2}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     30,
+     20,
+     10,
+     0
+    ],
+    "quote": "{{ap|40 to 0}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      80,
+      90,
+      100,
+      110,
+      120
+     ],
+     "terms": [],
+     "quote": "{{ap|80 to 120}}",
+     "bin": [
+      "AkshanW.MSValue"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "duration a killer is marked as a Scoundrel",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "as ''Scoundrels'' for 60 seconds",
+     "bin": [
+      "AkshanW.VengeanceDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "window after damaging a Scoundrel within which a takedown still grants the bounty",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "within 3 seconds of damaging them",
+     "bin": [
+      "AkshanW.RecentlyDamagedWindow"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "delay before allies are resurrected",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "resurrects all {{tip|death|dead}} allied champions that they have slain after 1 second",
+     "bin": [
+      "AkshanW.DeathTimer"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "bonus mana regeneration while active toward a Scoundrel",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.12,
+     "terms": [],
+     "quote": "{{as|12% of his '''missing''' mana}}",
+     "bin": [
+      "AkshanW.MissingManaRegen"
+     ],
+     "binNote": "mana regen does not change damage dealt or taken in a dummy fight"
+    },
+    {
+     "id": "w_6",
+     "meaning": "camouflage duration away from terrain/brush, and recast delay",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "for 2 seconds otherwise",
+     "bin": [
+      "AkshanW.WallGracePeriod"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "delay before Going Rogue can be recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "can be recast after 1 second",
+     "bin": [],
+     "binNote": "no data value found for this recast delay; distinct from WallGracePeriod=2 used for the non-terrain duration"
+    },
+    {
+     "id": "w_8",
+     "meaning": "bonus gold on Scoundrel takedown",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 100,
+     "terms": [],
+     "quote": "he receives an additional {{g|100}}",
+     "bin": [
+      "AkshanW.GoldReward"
+     ],
+     "binNote": "gold does not affect either fight"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Attacking or casting abilities ends Going Rogue immediately.",
+     "quote": "Attacking or casting abilities ends ''Going Rogue'' immediately.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Using a basic attack breaks the stealth at the start of the attack windup, meaning the buffs end before the attack lands.",
+     "quote": "Using a basic attack breaks the stealth at the start of the attack windup.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Akshan can move during Going Rogue's cast time.",
+     "quote": "'''''Akshan''' can move during Going Rogue's cast time.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Scoundrels refresh their mark duration on subsequent kills and lose the mark when they die by any means.",
+     "quote": "''Scoundrels'' refresh their mark duration on subsequent kills, and will have their mark removed when they die by any means.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Claiming a Scoundrel's bounty removes the marks of all other enemies.",
+     "quote": "When '''Akshan''' claims a ''Scoundrel's'' bounty he removes the marks of all other enemies.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AkshanW.PassiveSecondAutoRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AkshanW.VFXTrailSpeed",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "AkshanW.PassiveWallRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanW.StealthDetectionRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanW.GameModeInteger",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AkshanW.ReviveHealthPercent",
+     "reason": "defensive"
+    },
+    {
+     "ref": "AkshanW.ShredValue",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Heroic Swing / Heroic Swing 2",
+   "cooldown": {
+    "values": [
+     18,
+     16.5,
+     15,
+     13.5,
+     12
+    ],
+    "quote": "{{ap|18 to 12}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage per Shot",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      8,
+      16,
+      24,
+      32,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.25
+      },
+      {
+       "stat": "bonusAttackSpeed",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|8 to 40}} {{as|(+ 25% AD)}} {{times}} {{as|(1 + {{fd|0.3}} per 100% '''bonus''' attack speed)}}",
+     "bin": [
+      "AkshanE#DamageToDeal"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Physical Damage per Shot",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      8,
+      16,
+      24,
+      32,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.25
+      },
+      {
+       "stat": "bonusAttackSpeed",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|8 to 40}} {{as|(+ 25% AD)}} {{times}} {{as|(1 + {{fd|0.3}} per 100% '''bonus''' attack speed)}}",
+     "bin": [
+      "AkshanE#DamageToDeal"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "shot interval while swinging",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "he fires at the nearest {{tip|sight|visible}} enemy every {{rutngt|0.2}}",
+     "bin": [
+      "AkshanE.AttackFrequency"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "on-hit damage effectiveness during the swing",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "with on-hit damage reduced to 25% effectiveness",
+     "bin": [
+      "AkshanE.OnHitDamageReduction"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "critical damage modifier on shots",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critDamage",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{sti|{{as|50% '''bonus''' critical damage}}}}",
+     "bin": [
+      "AkshanE.CritDamageMod",
+      "AkshanE#CriticalCalc"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "cooldown after scoring a takedown while active",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduces ''Heroic Swing's'' {{sti|'''current''' cooldown}} to {{fd|0.5}} seconds",
+     "bin": [
+      "AkshanE.ResetCooldownToSet"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "delay required before third cast can be used after second cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "can use the third cast only after {{fd|0.5}} seconds of the second cast",
+     "bin": [
+      "AkshanE.E3LockoutDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Each shot fired during the swing is a separate cast instance that applies on-hit effects.",
+     "quote": "Each shot is a separate {{tip|cast instance}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability applies on-hit effects with each shot.",
+     "quote": "''Heroic Swing'' applies {{tip|on-hit}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shots can critically strike and apply life steal.",
+     "quote": "The shots can {{tip|critically strike}} for{{ft|{{as|{{critical damage|150|50}}|critical damage}} damage|{{sti|{{as|50% '''bonus''' critical damage}}}}}}and {{tip|applies life steal|apply}} {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Akshan immediately fires one shot at the start of the swing and a final shot while dismounting.",
+     "quote": "'''Akshan''' immediately fires one shot at the beginning of his swing and a final shot while dismounting from the swing.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks only a single shot from this ability.",
+     "quote": "{{tip|Spell shield}} will only block a single shot.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability does not apply on-attack effects but does trigger Navori Flickerblade's Transcendence.",
+     "quote": "Despite this ability not applying {{tip|on-attack}} effects, it does apply {{iis|Navori Flickerblade}} {{nie|Transcendence}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts only after the ability's effect (all casts) completes.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage is calculated based on Akshan's current stats and updates dynamically as the swing progresses.",
+     "quote": "This ability's damage is calculated based on the caster's current stats and changes dynamically.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The attack speed scaling on shot damage includes Akshan's innate bonus attack speed growth.",
+     "quote": "The attack speed scaling on the damage of the attacks includes the bonus attack speed gained from '''Akshan's''' innate attack speed growth.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AkshanE.TimeToCastE2",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanE.AnchorLifetime",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanE.MinJumpbackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanE.EdgeToEdgeCollisionRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanE.DistanceShiftTowardsWall",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AkshanE.SpinDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AkshanE#{36ebd3cf}",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Comeuppance",
+   "cooldown": {
+    "values": [
+     100,
+     85,
+     70
+    ],
+    "quote": "{{ap|100 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Maximum Bullets Stored",
+     "role": "count",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      5,
+      6,
+      7
+     ],
+     "terms": [],
+     "quote": "{{ap|5 to 7}}",
+     "bin": [
+      "AkshanR.NumberOfBullets"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Bullet Storing Interval Time",
+     "role": "interval",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.625,
+      0.5,
+      0.4167
+     ],
+     "terms": [],
+     "quote": "{{ap|2.5/4 to 2.5/6|round=4}} seconds",
+     "bin": [
+      "AkshanR.ChannelDuration",
+      "AkshanR.NumberOfBullets"
+     ],
+     "binNote": "Not a direct data value; derived as ChannelDuration / (NumberOfBullets - 1) (2.5/4 at rank1 with 5 bullets, 2.5/6 at rank3 with 7 bullets)."
+    },
+    {
+     "id": "r_3",
+     "meaning": "Minimum Physical Damage per Bullet",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      35,
+      45
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|25 to 45}} {{as|(+ 15% AD)}}<!--\n-->",
+     "bin": [
+      "AkshanR.BonusDamage",
+      "AkshanR.ADRatio",
+      "AkshanR#DamagePerBulletWithCrit"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Maximum Physical Damage per Bullet",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      75,
+      105,
+      135
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|25*3 to 45*3}} {{as|(+ {{ap|15*3}}% AD)}}<!--\n-->",
+     "bin": [
+      "AkshanR.BonusDamage",
+      "AkshanR.ADRatio",
+      "AkshanR.MaxIncrease"
+     ],
+     "binNote": "Not a direct data value; equals (BonusDamage + ADRatio x bonus AD) x MaxIncrease=3, i.e. the per-bullet minimum tripled by the crit multiplier cap; AkshanR#MaxDamagePerBullet reads these same rows via DamagePerBulletWithCrit x MaxIncrease."
+    },
+    {
+     "id": "r_5",
+     "meaning": "Minimum Charged Physical Damage (all bullets, no crit/missing-hp)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      125,
+      210,
+      315
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        0.75,
+        0.9,
+        1.05
+       ]
+      }
+     ],
+     "quote": "{{ap|5*25|6*35|7*45}} {{as|(+ {{ap|15*5 to 15*7}}% AD)}}<!--\n-->",
+     "bin": [
+      "AkshanR.BonusDamage",
+      "AkshanR.ADRatio",
+      "AkshanR.NumberOfBullets"
+     ],
+     "binNote": "Not a single bin row; equals BonusDamage x NumberOfBullets plus ADRatio x AD x NumberOfBullets, i.e. NumberOfBullets copies of the minimum per-bullet damage."
+    },
+    {
+     "id": "r_6",
+     "meaning": "Damage to target on 67% missing hp (all bullets, tripled)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      375,
+      630,
+      945
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": [
+        2.25,
+        2.7,
+        3.15
+       ]
+      }
+     ],
+     "quote": "{{ap|3*5*25|3*6*35|3*7*45}} {{as|(+ {{ap|3*5*15 to 3*7*15}}% AD)}}<!--\n-->",
+     "bin": [
+      "AkshanR.BonusDamage",
+      "AkshanR.ADRatio",
+      "AkshanR.NumberOfBullets",
+      "AkshanR.MaxIncrease"
+     ],
+     "binNote": "Wiki labels this as damage at '67% missing hp' but the numbers are exactly 3x the r_5 total (i.e. the fully-scaled maximum from AkshanR.MaxIncrease=3), not the true value at 67% missing health under the stated 2%-per-1% formula (which would give a 2.34x multiplier, not 3x); recorded as the wiki states it."
+    },
+    {
+     "id": "r_7",
+     "meaning": "Critical damage scaling factor added to bullet damage per point of crit chance",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "critChance",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{critical damage|0 to 30|critScaling=true}}",
+     "bin": [
+      "AkshanR.CritDamageMod",
+      "AkshanR#DamagePerBulletWithCrit"
+     ],
+     "binNote": "CritDamageMod (0.3) is multiplied by critChance and by (critDamage - 1) per the bin calculation; wiki quotes the resulting 0-30% range at 100% crit chance and default crit damage."
+    },
+    {
+     "id": "r_8",
+     "meaning": "Cooldown applied if the channel is cancelled",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "5-second",
+     "bin": [
+      "AkshanR.GraceCooldown"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Minimum time before the recast becomes available during the channel",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}}",
+     "bin": [
+      "AkshanR.MinimumChannelDuration"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "Channel duration before automatic recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "{{fd|2.5}} seconds",
+     "bin": [
+      "AkshanR.ChannelDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Akshan channels for 2.5 seconds, gradually storing bullets, before the recast fires them; the recast happens automatically after the channel ends.",
+     "quote": "begins {{tip|channel|channeling}} for {{fd|2.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be recast early, 0.5 seconds into the channel, or fires automatically once the channel completes.",
+     "quote": "can be recast after {{fd|0.5}} seconds during the channel, and does so automatically afterwards",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the channel is cancelled (before any bullets fire), the ability goes on a flat 5-second cooldown instead of its normal cooldown.",
+     "quote": "is placed on a {{sti|cd|5-second}} cooldown if the channel is cancelled",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bullet damage scales up with the target's missing health at 2% bonus damage per 1% missing health, capped at 100% missing health (a 200% increase).",
+     "quote": "2% per 1% of target's '''missing''' health, capped at 100% '''missing''' health",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each bullet applies life steal to Akshan and executes (instantly kills) minions.",
+     "quote": "Each bullet's damage {{tip|applies life steal|applies}} {{as|{{sti|life steal}}}} and {{tip|execute|executes}} {{tip|minions}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield does not prevent the lock-on/channel and only blocks a single bullet, not the whole volley.",
+     "quote": "will not prevent the lock-on and will only block a single bullet",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The channel (and thus the whole cast) is cancelled if the target becomes untargetable or dies during the channel.",
+     "quote": "will cancel if the target becomes {{tip|untargetable}} or {{tip|death|dies}} during the channel",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage is calculated dynamically off Akshan's current stats (AD, crit) rather than locked in at cast time.",
+     "quote": "This ability's damage is calculated based on the caster's current stats and changes dynamically.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During the channel, Q and W cannot be cast, but E remains usable.",
+     "quote": "{{ai|Q|Akshan}} and {{ai|W|Akshan}} are disabled. {{ai|E|Akshan}} is usable.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The channel refreshes the duration of the passive's Dirty Fighting stacks on the target every 0.25 seconds.",
+     "quote": "''Comeuppance'' refreshes the duration of ''{{ai|Dirty Fighting|Akshan}}'' stacks on the target every {{fd|0.25}} seconds.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AkshanR.CastTimePerBullet",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "every basic attack fires a delayed second shot dealing 50% AD physical (100% vs minions), crits independently, applies on-hit"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Dirty Fighting stacks (cap 3, 5s duration/4.5s per bin) applied by autos (incl. second shot) and ability hits"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "P's magic proc damage + shield only fire on the 3rd stack; R's bullet damage scales up to +200% with target's missing health"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "E",
+    "R"
+   ],
+   "note": "P second shot crits at full value independently of the first shot; E swing shots crit at only 50% bonus crit damage; R bullets add crit-chance-scaled bonus damage per the bin formula"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "outgoing boomerang throw deals base+0.7 bonus AD physical damage to the first pass"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's homing return pass needs an assumed travel path that re-hits the stationary target for a second instance; E's hook/swing fundamentally needs nearby terrain and its stop-on-collision behavior is geometry-dependent"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "each E swing shot's damage is multiplied by (1 + 0.3 per 100% bonus attack speed)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E is a fixed 3-part sequence (hook, swing with repeating 0.2s shots, dash+final shot); R is a 2.5s channel followed by a separate recast that fires all stored bullets"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "R"
+   ],
+   "note": "R stores up to 5-7 bullets (by rank) over the channel, all released together on recast"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "2.5s channel (recastable after 0.5s) during which Q and W are disabled but E remains usable"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant mechanics (onhit second shot, stacking proc damage, boomerang two-pass hit, attack-speed-scaled swing shots, crit interactions, channel+volley ultimate) map onto the closed primitive list; the terrain-dependent parts of E are handled via the positional-assumption primitive rather than needing new logic, though the assumption itself is flagged as unsettled."
+ },
+ "unsettled": [
+  {
+   "question": "Heroic Swing's first cast requires embedding a hook in terrain to function at all, but the simulated dummy fight has no terrain, allies, or minions. Can Akshan use E in this fight, and if so how?",
+   "options": [
+    "Assume a wall is always available near the target, so E can be cast fully (hook attaches, swing engages, third cast fires) as normal",
+    "Treat E as uncastable in this arena and exclude it from the rotation entirely",
+    "Allow only the parts of E that don't require terrain (e.g. treat it as unusable) or substitute a fixed number of shots as a stand-in"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Akshan''' fires a hook in the target direction that embeds in the first [[terrain]] hit, and enters {{tt|preparation|See notes}} for up to {{fd|2.125}} seconds."
+   ]
+  },
+  {
+   "question": "Does Avengerang's homing return pass reliably hit the single stationary dummy target for a second, separate damage instance, or should only the outgoing throw be counted given the fight has no other geometry to route the return through?",
+   "options": [
+    "Assume the return pass always re-hits the dummy, so each Q cast deals two full damage instances (outgoing + return)",
+    "Assume only the outgoing throw hits and the return misses (no second target in its path back), so each Q cast deals one damage instance",
+    "Model it probabilistically or via an assumed engagement distance that sometimes yields both hits"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Once the boomerang has passed its original range and has not hit a target in the last 500 units of travelling, it homes back to '''Akshan''' and applies the same effects to enemies hit."
+   ]
+  },
+  {
+   "question": "During Heroic Swing's second cast, Akshan fires every 0.2s at the nearest visible enemy until he collides with an enemy champion or terrain. Against a single stationary dummy that Akshan is engaging in melee/attack range, how many 0.2s shots should be simulated before the swing ends?",
+   "options": [
+    "Assume the swing ends almost immediately after 1-2 shots because Akshan collides with the dummy quickly",
+    "Assume a fixed short swing duration (e.g. 1-2 seconds) yielding a handful of shots as a reasonable mid-range engagement",
+    "Assume the swing persists for its full theoretical duration (bounded only by the wall/anchor lifetime) for maximum shot count"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Akshan''' {{tip|dash|swings}} around the terrain in either a clockwise or counterclockwise direction based on the position of the cursor relative to his {{tt|facing direction|See notes}}, stopping upon colliding with an enemy champion or terrain."
+   ]
+  },
+  {
+   "question": "Does the second shot from Dirty Fighting (which itself is on-hit) apply its own separate stack of Dirty Fighting, so that a single basic-attack action can add two stacks toward the 3-stack proc, or does only the primary attack apply a stack?",
+   "options": [
+    "Both the primary attack and the second shot each independently apply a stack (2 stacks per full attack cycle)",
+    "Only the primary attack applies a stack; the second shot's on-hit application does not separately count toward Dirty Fighting stacks",
+    "Ambiguous from the sources; needs testing"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Akshan's''' basic attacks {{tip|on-hit}} and {{tip|ability}} hits apply a {{tip|stack}} of ''Dirty Fighting'' to enemies for 5 seconds",
+    "The additional shot applies {{tip|on-hit}} effects, triggers {{tip|on-attack}} effects, and is affected by {{tip|critical strike}} modifiers."
+   ]
+  },
+  {
+   "question": "Comeuppance's per-bullet crit bonus is written in the bin as a continuous function of critChance (DamagePerBulletWithCrit scales by CritDamageMod x critChance x (critDamage-1)) rather than a per-bullet random crit roll. Should the simulator apply this as a deterministic partial bonus to every bullet, or roll each bullet for an independent binary crit?",
+   "options": [
+    "Apply the bin's formula deterministically to every bullet (expected-value style, no variance)",
+    "Roll each bullet independently for a full crit based on crit chance, with no damage on non-crit bullets beyond base",
+    "Treat them as equivalent in expectation and use whichever the simulator's engine already does for other champions' similar formulas"
+   ],
+   "impact": "low",
+   "quotes": [
+    "AkshanR#DamagePerBulletWithCrit = (BonusDamage=[25/35/45] + (ADRatio=0.15)xad) * 1 + ((CritDamageMod=0.3)xcritChance)*(1xcritDamage + -1)"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by auto-attacking the dummy immediately to start building Dirty Fighting stacks and triggering the passive's delayed second shot on every attack.",
+   "Cast Avengerang (Q) as soon as possible and again on cooldown throughout the fight, since it is Akshan's highest-uptime source of bonus AD-scaled physical damage.",
+   "If E is deemed castable in this arena (see terrain unsettled question), fire Heroic Swing's first cast toward the assumed nearby terrain, immediately follow with the second cast to begin the repeating 0.2s shots at the dummy, and use the third cast promptly to land the final shot and free up the ability for its next cooldown.",
+   "Continue weaving basic attacks between Q and E casts at every opportunity so the on-hit second shot and Dirty Fighting stacks are never wasted.",
+   "Cast Comeuppance (R) once available; channel to its full 2.5s duration before recasting so all available bullets (5-7 by rank) are stored and fired together at the dummy for maximum missing-health-scaled burst, since its long cooldown likely allows only one use in the 15s window.",
+   "Keep attacking and recasting Q/E on cooldown for the remainder of the 15 seconds; do not use W, since it deals no damage and only offers mobility/utility that the fight rules say to ignore."
+  ],
+  "questions": [
+   "Is E meant to be usable at all in a terrain-free dummy fight, and if so, what wall distance/geometry should be assumed for the hook and swing?",
+   "Should R's channel be maximized to store all bullets before firing, or is it better (for kill-time ranking) to recast early with fewer bullets given the fight's short 15s window and R's very long cooldown?",
+   "Does Avengerang's return pass reliably re-hit the target in a stationary 1v1 engagement, doubling its effective damage per cast?",
+   "How many effective 0.2s shots should Heroic Swing's second cast be assumed to land against a single stationary target before the swing terminates on collision?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

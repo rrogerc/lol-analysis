@@ -1,0 +1,152 @@
+{
+ "champion": "qiyana",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Royal Privilege adds flat+AD/AP physical damage as a separate instance on the next attack or ability hit against a target, gated by a per-target internal cooldown"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "While holding an Element, basic attacks on-hit and basic abilities deal bonus magic damage (8-40 +45%AP+20%bonusAD)"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "While holding an Element, Qiyana gains bonus attack speed (15-35%) and bonus attack range; lasts as long as the Element is held"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Edge of Ixtal / Elemental Wrath deals a flat+0.9 bonus AD physical hit on cast, on a 7s cooldown"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Elemental Wrath consuming the Terrain (Rock) element deals 60% bonus damage against a target below 50% max health"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Gathering an Element with Terrashape (W) resets Edge of Ixtal's cooldown and upgrades it into Elemental Wrath"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Audacity deals flat+0.5 bonus AD physical damage on arrival of the dash"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Qiyana is auto-ordered to attack Audacity's target the instant the dash completes"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Audacity only deals damage if the target is within 250 range at the end of the dash, not the full 650 cast range"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Supreme Display of Talent's shockwave deals flat+1.25 bonus AD +10% target max HP physical damage, but only fires where the windblast passes River/Brush or reaches Terrain borders"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's damage includes a 10% of target's max-health component (capped against monsters)"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's entire damage/stun payload is delivered only by a shockwave triggered by nearby River/Brush/Terrain geometry; with no terrain in the dummy fight the shockwave (and thus all of R's damage) may never trigger"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Qiyana's damage is gated by a three-way mutually-exclusive Element state (Brush/River/Terrain) held via Terrashape (W), which determines Q's bonus effect (stealth+MS / root+slow / execute-style bonus damage), and resets Q's cooldown when refreshed. The fight description says fights have no terrain, but Qiyana spawns holding the Terrain element by default and re-gathering any element normally requires nearby brush/river/terrain geometry the arena would lack. This produces a state machine (one guaranteed 'free' enchanted Q at the start, then permanently vanilla Q afterward, and an R that structurally cannot deal damage without terrain to trigger its shockwave) that the closed primitive list can express piecewise but not as a single primitive; it needs bespoke sequencing/gating logic to decide what Elemental Wrath's bonus and R's shockwave actually resolve to in a terrain-less dummy fight."
+ },
+ "unsettled": [
+  {
+   "question": "What is Royal Privilege's actual per-target internal cooldown: the bin's QiyanaPassive#ICD (14 at all levels) or the wiki template's ontargetcdstatic=25?",
+   "options": [
+    "14 seconds (bin ICD row)",
+    "25 seconds (wiki ontargetcdstatic)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "QiyanaPassive#ICD = byLevel(14..14)",
+    "ontargetcdstatic= 25",
+    "This effect cannot occur on the same target more than once every few seconds."
+   ]
+  },
+  {
+   "question": "Since the simulated fights contain no terrain, and R's damage/stun is delivered only by a shockwave that must pass through River/Brush or reach Terrain borders, does R deal any damage at all in the simulated dummy/survival fights?",
+   "options": [
+    "R deals zero damage (no terrain exists for the shockwave to trigger against)",
+    "The simulator should assume a piece of terrain is reachable/adjacent so R's shockwave always fires",
+    "Only the starting default Terrain-element interactions (via Q) matter and R should simply be excluded from the damage rotation"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The windblast creates a cascading shockwave across any River or Brush it passes through, as well as around the borders of Terrain it reaches, dealing physical damage to enemies hit",
+    "The windblast needs only to reach near terrain to trigger the terrain shockwave."
+   ]
+  },
+  {
+   "question": "After Qiyana consumes her starting Terrain element on the first Elemental Wrath cast, can she ever regather an Element (and thus recast Elemental Wrath / benefit from W's on-hit magic damage, attack speed, and Q cooldown reset) again during the fight, given the arena has no brush/river/terrain?",
+   "options": [
+    "No further Elements are ever available; all subsequent Q casts are the unenchanted Edge of Ixtal and W's passive/active never re-trigger after the first Element is spent",
+    "The simulator should assume some terrain/brush/river feature is always reachable so Qiyana can keep regathering Elements throughout the fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Once ''Terrashape'' has been learned, '''Qiyana''' is automatically given the {{cci|Terrashape Rock.png}} {{sbc|{{as|Terrain}}}} element upon [[Death|respawning]].",
+    "''A target Element is required to cast this ability''."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Qiyana begins the fight holding the default post-respawn Terrain (Rock) Element.",
+   "Open by casting Elemental Wrath (Q) to consume the Rock element, dealing its base physical hit (plus the 60% Terrain bonus only if the target is already below 50% max health, otherwise just the base Elemental Wrath value).",
+   "Cast Audacity (E) on cooldown throughout the fight for its flat+0.5 bonus AD physical hit; it also forces an immediate basic attack on arrival, which benefits from any active on-hit riders.",
+   "Weave basic attacks between ability casts whenever off cooldown/off cast-time, since attacks carry Royal Privilege's proc (subject to its per-target internal cooldown) and, while an Element is held, W's bonus on-hit magic damage and attack speed.",
+   "Recast Edge of Ixtal (Q) on cooldown for its base physical line damage; after the starting Rock element is spent and cannot be regathered (no terrain in the arena), treat all further Q casts as the unenchanted, non-Terrain version.",
+   "Cast Supreme Display of Talent (R) once available on cooldown as a formality, but its expected damage contribution is 0 in a terrain-less arena since its shockwave (the only damage-dealing part) cannot trigger without River/Brush/Terrain geometry.",
+   "Do not spend a cast on Terrashape (W) purely as an active beyond the implicit starting Element, since there is no terrain/brush/river to gather from and the active itself deals no damage.",
+   "Repeat E and Q on cooldown with attacks filling the gaps for the remainder of the ~15 s window."
+  ],
+  "questions": [
+   "Should the simulator assume the arena contains at least one reachable terrain/brush/river feature so that W's active, R's shockwave, and repeated Elemental Wrath casts remain usable, or should Qiyana's kit be modeled strictly as 'one free Element at the start, nothing more'?",
+   "If R is expected to deal zero damage under the strict no-terrain reading, should it be omitted from the rotation and cooldown entirely rather than cast on cooldown for no effect?",
+   "Is the correct Royal Privilege ICD 14s or 25s, since that changes whether it procs once or twice inside a 15 s fight?",
+   "Since the target is a single stationary dummy, does Royal Privilege's per-target ICD get reset by Terrashape's 'gathering an Element with a different buzzword' clause if only one Element (starting Rock) is ever held, or is that reset clause simply inapplicable here?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,606 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "KaylePassive",
+    "key": "Characters/Kayle/Spells/KaylePassiveAbility/KaylePassive",
+    "cooldown": 0,
+    "dataValues": {
+     "LevelForPassiveRank0": 1,
+     "LevelForPassiveRank1": 6,
+     "LevelForPassiveRank2": 11,
+     "LevelForPassiveRank3": 16,
+     "UpgradedAttackRange": 525,
+     "FinalAttackRange": 625,
+     "MSTowardsEnemy": 0.1,
+     "MSTowardsEnemyRadius": 2000,
+     "EnrageMaxStacks": 5,
+     "EnrageDuration": 5,
+     "EnrageASPerStack": 6,
+     "PassiveWaveAPRatio": 0.25,
+     "PassiveWaveBonusADRatio": 0.1
+    },
+    "calcs": {
+     "EnrageTotalASPerStack": {
+      "expr": "EnrageASPerStack=6",
+      "flat": 6,
+      "terms": [],
+      "refs": [
+       "EnrageASPerStack"
+      ]
+     },
+     "PassiveWaveDamage": {
+      "expr": "byLevelL[20/20/20/20/20/20/20/20/20/20/20/23/26/29/32/35/38/41] + (PassiveWaveAPRatio=0.25)xap + (PassiveWaveBonusADRatio=0.1)xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        23,
+        26,
+        29,
+        32,
+        35,
+        38,
+        41
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "PassiveWaveAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1,
+        "dataValue": "PassiveWaveBonusADRatio"
+       }
+      ],
+      "refs": [
+       "PassiveWaveAPRatio",
+       "PassiveWaveBonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "KayleQ",
+    "key": "Characters/Kayle/Spells/KayleQAbility/KayleQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ManaRefundPercent": 0.5,
+     "CastDelay": 0.25,
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       25,
+       30,
+       35,
+       40,
+       45
+      ]
+     },
+     "SlowDuration": 2,
+     "ShredPercent": 15,
+     "ShredDuration": 4,
+     "ExplosionLeftRightDist": 150,
+     "ExplosionLeftRightWidth": 125,
+     "ExplosionForwardDist": 400,
+     "ExplosionBackwardDist": 100,
+     "ExplosionForwardBackWidth": 90,
+     "ExplosionCenterAoERadius": 100,
+     "ExplosionForwardOffset": 100
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[60/90/120/150/180] + 0.5xap + 0.6xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "KayleW",
+    "key": "Characters/Kayle/Spells/KayleWAbility/KayleW",
+    "cooldown": 15,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Heal": {
+      "axis": "rank",
+      "v": [
+       55,
+       80,
+       105,
+       130,
+       155
+      ]
+     },
+     "Haste": {
+      "axis": "rank",
+      "v": [
+       0.24,
+       0.28,
+       0.32,
+       0.36,
+       0.4
+      ]
+     },
+     "HasteDuration": 2
+    },
+    "calcs": {
+     "TotalHeal": {
+      "expr": "Heal=[55/80/105/130/155] + 0.25xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        80,
+        105,
+        130,
+        155
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25
+       }
+      ],
+      "refs": [
+       "Heal"
+      ]
+     },
+     "TotalHaste": {
+      "expr": "Haste=[0.24/0.28/0.32/0.36/0.4] + 0.0008xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.24,
+        0.28,
+        0.32,
+        0.36,
+        0.4
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0008
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "Haste"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "KayleE",
+    "key": "Characters/Kayle/Spells/KayleEAbility/KayleE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PassiveDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       20,
+       25,
+       30,
+       35
+      ]
+     },
+     "ActiveExecutePercent": {
+      "axis": "rank",
+      "v": [
+       8,
+       8.5,
+       9,
+       9.5,
+       10
+      ]
+     },
+     "MaxExecuteVsMonsters": 400,
+     "ExplosionRadius": 350,
+     "BuffDuration": 5,
+     "PassiveAPRatio": 0.2,
+     "PassiveBonusADRatio": 0.1
+    },
+    "calcs": {
+     "{266027bf}": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "EPassiveTotalDamage": {
+      "expr": "PassiveDamage=[15/20/25/30/35] + (PassiveAPRatio=0.2)xap + (PassiveBonusADRatio=0.1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        20,
+        25,
+        30,
+        35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "PassiveAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1,
+        "dataValue": "PassiveBonusADRatio"
+       }
+      ],
+      "refs": [
+       "PassiveAPRatio",
+       "PassiveBonusADRatio",
+       "PassiveDamage"
+      ]
+     },
+     "ActiveTotalExecuteDamage": {
+      "expr": "(ActiveExecutePercent=[8/8.5/9/9.5/10] + 0.015xap) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.08,
+        0.085,
+        0.09,
+        0.095,
+        0.1
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00015
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ActiveExecutePercent"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "KayleR",
+    "key": "Characters/Kayle/Spells/KayleRAbility/KayleR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      120,
+      80
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      100,
+      50,
+      0
+     ]
+    },
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "InvulnDuration": 2.5,
+     "AoERadius": {
+      "axis": "rank",
+      "v": [
+       675,
+       675,
+       775
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[200/300/400] + 0.7xap + 1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "KayleQ",
+  "W": "KayleW",
+  "E": "KayleE",
+  "R": "KayleR",
+  "P": "KaylePassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 330,
+   "{6216bf7b}": 50,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Kayle",
+  "name": "Kayle",
+  "partype": "Mana",
+  "passive": "Divine Ascent",
+  "spells": [
+   {
+    "id": "KayleQ",
+    "name": "Radiant Blast",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "KayleW",
+    "name": "Celestial Blessing",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "KayleE",
+    "name": "Starfire Spellblade",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KayleR",
+    "name": "Divine Judgment",
+    "maxrank": 3,
+    "cooldown": [
+     160,
+     120,
+     80
+    ],
+    "cost": [
+     100,
+     50,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Divine Ascent": {
+    "damagetype": "magic",
+    "spelleffects": "AoE",
+    "projectile": "special",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   },
+   "Divine Ascent 2": {
+    "damagetype": "magic",
+    "spelleffects": "AoE",
+    "projectile": "special",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Radiant Blast": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Celestial Blessing": {
+    "targeting": "[[Unit-targeted|Unit]] / [[Auto-targeted|Auto]]",
+    "affects": "Self, Allies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Starfire Spellblade": {
+    "damagetype": "Magic",
+    "spelleffects": "Special",
+    "onhiteffects": "True",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   }
+  },
+  "R": {
+   "Divine Judgment": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Allies, Self",
+    "costtype": "mana"
+   }
+  }
+ }
+}

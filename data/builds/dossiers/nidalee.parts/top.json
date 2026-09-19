@@ -1,0 +1,172 @@
+{
+ "champion": "nidalee",
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R",
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Aspect of the Cougar swaps Nidalee between Human Form (Javelin Toss/Bushwhack/Primal Surge, ranged) and Cougar Form (Takedown/Pounce/Swipe, melee); Q/W/E's active abilities and their damage are entirely different depending on form."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Javelin Toss (Q, Human), Pounce impact damage (W, Cougar), and Swipe (E, Cougar) deal on-cast/on-arrival damage on cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown (Cougar Q) empowers Nidalee's next basic attack with bonus magic damage."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown's attack resets Nidalee's basic attack timer, allowing an extra auto immediately after."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown's damage is amplified continuously based on the target's missing health (up to +75%/+100%/+125%/+175% at rank, i.e. TakedownDamageAmp)."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "P"
+   ],
+   "note": "Hunted mark (applied by Javelin Toss/Bushwhack hits) increases Takedown's damage by 30% while it lasts."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Pounce's current cooldown is reduced to a minimum on a Cougar-Form kill or its Hunt bonus; in Human Form landing a Hunted mark resets Aspect of the Cougar's own cooldown, enabling rapid form-swap loops."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Takedown's empowered attack can critically strike; the bonus crit damage (as AD) is converted to bonus magic damage and is not itself amplified by Takedown's missing-health modifier."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Primal Surge grants 30-70% bonus attack speed for 7s when cast on self, persisting through a form swap into Cougar Form."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bushwhack traps tick magic damage every second for 4s once sprung; usability against a stationary dummy target is uncertain (see unsettled)."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Human Form Q/W/E cost mana (Cougar Form's Q/W/E cost 0); mana can meaningfully cap how often Javelin Toss/Bushwhack/Primal Surge are recast in a 15s fight."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Javelin Toss's damage scales up to +225% based on the travel distance from Nidalee's cast-end position to the target, requiring an assumed cast range against the stationary dummy."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The whole kit -- the Human/Cougar ability swap, Takedown's empower/reset/missing-health scaling, Hunted's damage amp, Pounce/R cooldown resets, Primal Surge's AS buff, Bushwhack's DoT, the crit conversion, and Javelin Toss's range scaling -- maps onto existing primitives (form-or-stance, empowered-attack, attack-reset, conditional-damage, target-debuff, cooldown-manipulation, timed-self-buff, dot, crit-interaction, positional-assumption, resource-budget) without needing logic the closed list can't express."
+ },
+ "unsettled": [
+  {
+   "question": "What travel distance should Javelin Toss be assumed to have when cast at a stationary dummy in the damage fight, since its damage scales from 0% at short range up to 225% at 1300+ range and the amp is measured from Nidalee's end-of-cast position?",
+   "options": [
+    "Always cast at max range (1300) against the dummy for the full +225% bonus",
+    "Cast at whatever range the fight places Nidalee relative to the dummy (could be point-blank, near 0% bonus)",
+    "Use the 525-range Range Threshold as a baseline assumption"
+   ],
+   "impact": "high",
+   "quotes": [
+    "increased by {{pp|type=distance traveled|key=%|0 to 225 for 6|525 to 1300}}",
+    "The damage amplification is based on the distance from '''Nidalee's''' location at the ''end'' of the cast time to the struck target's center at the time of collision."
+   ]
+  },
+  {
+   "question": "Can a Bushwhack trap deal its DoT damage to a stationary dummy at all, given the trap must be sprung by contact with an enemy and the dummy never moves onto it?",
+   "options": [
+    "A trap placed directly at/under the dummy's location counts as immediate contact once armed, so it triggers normally",
+    "The dummy never triggers a trap since it does not walk into it, making Bushwhack's damage unusable in the damage fight",
+    "Trigger radius (150) around a stationary dummy standing on the cast location counts as contact"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The trap will spring upon contact with an enemy, dealing {{as|magic damage}} every second over 4 seconds.",
+    "collision radius= {{tip|cr|icononly = true}} {{tt|150|Detection radius}}"
+   ]
+  },
+  {
+   "question": "Takedown's attack deals basic damage but is also tagged as spell damage ('also being tagged as spell damage'); which classification governs on-hit/on-cast item and rune triggers in the simulator?",
+   "options": [
+    "Treated as a basic attack for on-hit effects (e.g. on-hit riders, Spellblade consumption) since it is a basic attack",
+    "Treated as a spell cast for on-cast effects since it is tagged as spell damage",
+    "Both apply simultaneously"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Takedown's'' attack deals {{tip|basic damage}}, but also triggers spell effects by also being tagged as {{tip|spell damage}}."
+   ]
+  },
+  {
+   "question": "What numeric critical-strike damage multiplier does Takedown's bonus magic damage use ({{ccd|Nidalee|crit_base}} is not resolved to a number by either source)?",
+   "options": [
+    "The standard 200% crit multiplier (100% bonus) like a normal attack",
+    "A Nidalee-specific crit_base value different from the champion-generic default",
+    "Takedown's crit bonus should be treated as unknown/excluded until the crit_base constant is found"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Takedown'' can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Nidalee|crit_base}}|100|base = 100}}|critical damage}} {{as|AD}} {{as|'''bonus''' magic damage}}."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Max Q (Javelin Toss/Takedown) first, then R, then E, then W, since Bushwhack has little to no use against a stationary target and Primal Surge's damage-relevant part is only its attack-speed buff.",
+   "Open by casting Primal Surge (E) on self for the attack-speed buff before attacking, to widen the DPS window early.",
+   "In Human Form, cast Javelin Toss at maximum travel distance against the dummy for the largest distance-based damage bonus and to apply the Hunted mark.",
+   "Immediately cast Aspect of the Cougar (R) to swap into Cougar Form; the Hunted mark just applied resets R's cooldown so this costs no delay.",
+   "In Cougar Form, use the empowered first Takedown against the Hunted dummy for its missing-health-scaled nuke, then Pounce, then Swipe on their cooldowns, auto-attacking between casts and letting Takedown's reset chain extra autos.",
+   "Swap back to Human Form (R) to recast Javelin Toss once its 6s cooldown is up, reapplying Hunted and again resetting R's cooldown, then repeat the Human-poke / Cougar-combo cycle for the remaining fight duration.",
+   "Skip Bushwhack entirely unless a trap cast at the dummy's exact location is confirmed to trigger its DoT."
+  ],
+  "questions": [
+   "Does swapping forms interrupt an in-progress basic attack windup, and does it reset the attack timer the same way Takedown does, affecting how tightly the swap loop can weave in autos?",
+   "Is repeatedly cycling Human Javelin Toss into Cougar combo (to keep resetting R's cooldown and re-empowering Takedown/Pounce via fresh Hunted marks) actually higher DPS than simply staying in Cougar Form and auto-attacking/Swiping/Pouncing continuously, given Javelin Toss's cast time and mana cost?",
+   "Should Primal Surge be recast every 12s cooldown for AS uptime, or is casting it once at the start (given its 7s duration) sufficient, considering its mana cost competes with Javelin Toss/Bushwhack casts?",
+   "Does the Hunted-empowered first cast of Takedown and Pounce apply independently per re-entry into Cougar Form, or only once per fight/per unique Hunted application, which changes how much value the swap loop provides on later cycles?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

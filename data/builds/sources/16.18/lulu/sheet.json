@@ -1,0 +1,562 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "LuluPassive",
+    "key": "Characters/Lulu/Spells/LuluPassiveAbility/LuluPassive",
+    "dataValues": {
+     "NumberOfBolts": 3,
+     "APRatioPerHit": 0.05
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "byLevel(5..39) + (APRatioPerHit=0.05)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        5,
+        7,
+        9,
+        11,
+        13,
+        15,
+        17,
+        19,
+        21,
+        23,
+        25,
+        27,
+        29,
+        31,
+        33,
+        35,
+        37,
+        39
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05,
+        "dataValue": "APRatioPerHit"
+       }
+      ],
+      "refs": [
+       "APRatioPerHit"
+      ]
+     },
+     "CombinedDamage": {
+      "expr": "TotalDamage * NumberOfBolts=3",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        21,
+        27,
+        33,
+        39,
+        45,
+        51,
+        57,
+        63,
+        69,
+        75,
+        81,
+        87,
+        93,
+        99,
+        105,
+        111,
+        117
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "APRatioPerHit"
+       }
+      ],
+      "refs": [
+       "APRatioPerHit",
+       "NumberOfBolts"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "LuluQ",
+    "key": "Characters/Lulu/Spells/LuluQAbility/LuluQ",
+    "cooldown": 7,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinionMod": 0.7,
+     "DoubleHitBonus": 0.5,
+     "APRatio": 0.5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       95,
+       130,
+       165,
+       200
+      ]
+     },
+     "SlowAmount": -0.8,
+     "SlowDuration": 2,
+     "SlowDecayTicks": 8
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/95/130/165/200] + (APRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        95,
+        130,
+        165,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "BonusMissileDamage": {
+      "expr": "(BaseDamage=[60/95/130/165/200] + (APRatio=0.5)xap) * DoubleHitBonus=0.5",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        47.5,
+        65,
+        82.5,
+        100
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "DoubleHitBonus"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "LuluW",
+    "key": "Characters/Lulu/Spells/LuluWAbility/LuluW",
+    "cooldown": 18,
+    "cost": 65,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseMS": 0.25,
+     "CCDuration": {
+      "axis": "rank",
+      "v": [
+       1.2,
+       1.4,
+       1.6,
+       1.8,
+       2
+      ]
+     },
+     "SlowAmount": -60,
+     "MSDuration": {
+      "axis": "rank",
+      "v": [
+       3,
+       3.25,
+       3.5,
+       3.75,
+       4
+      ]
+     },
+     "AmountToMultiplyCoefficient2ByForPurposesOfCalculatingMovementSpeed": 0.01,
+     "ASBonus": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.225,
+       0.25,
+       0.275,
+       0.3
+      ]
+     }
+    },
+    "calcs": {
+     "TotalMS": {
+      "expr": "BaseMS=0.25 + 0.0005xap",
+      "flat": 0.25,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0005
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "BaseMS"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "LuluE",
+    "key": "Characters/Lulu/Spells/LuluEAbility/LuluE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9.5,
+      9,
+      8.5,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      65,
+      70,
+      75,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "DamageAPRatio": 0.5,
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "ShieldAPRatio": 0.5,
+     "ShieldDuration": 2.5,
+     "PixOnAllyDuration": 6,
+     "PixOnEnemyDuration": 4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/110/150/190/230] + (DamageAPRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "DamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageAPRatio"
+      ]
+     },
+     "TotalShield": {
+      "expr": "BaseShield=[70/110/150/190/230] + (ShieldAPRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "LuluR",
+    "key": "Characters/Lulu/Spells/LuluRAbility/LuluR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BonusHealth": {
+      "axis": "rank",
+      "v": [
+       275,
+       425,
+       575
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60
+      ]
+     },
+     "BuffDuration": 7,
+     "AoERadius": 400,
+     "KnockbackDuration": 1,
+     "KnockbackDistance": 275
+    },
+    "calcs": {
+     "TotalBonusHealth": {
+      "expr": "BonusHealth=[275/425/575] + 0.55xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        275,
+        425,
+        575
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55
+       }
+      ],
+      "refs": [
+       "BonusHealth"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "LuluQ",
+  "W": "LuluW",
+  "E": "LuluE",
+  "R": "LuluR",
+  "P": "LuluPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 55,
+   "{c4ab3550}": 2.2,
+   "{3a509002}": 0.12
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1125
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Lulu",
+  "name": "Lulu",
+  "partype": "Mana",
+  "passive": "Pix, Faerie Companion",
+  "spells": [
+   {
+    "id": "LuluQ",
+    "name": "Glitterlance",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "LuluW",
+    "name": "Whimsy",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     18,
+     18,
+     18,
+     18
+    ],
+    "cost": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ]
+   },
+   {
+    "id": "LuluE",
+    "name": "Help, Pix!",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "cost": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ]
+   },
+   {
+    "id": "LuluR",
+    "name": "Wild Growth",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Pix, Faerie Companion": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Glitterlance": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Whimsy": {
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies / Allies / Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Help, Pix!": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "special",
+    "projectile": "False",
+    "targeting": "Unit",
+    "affects": "Enemies / Allies / Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Wild Growth": {
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Allies / Self, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

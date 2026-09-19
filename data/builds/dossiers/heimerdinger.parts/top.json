@@ -1,0 +1,106 @@
+{
+ "champion": "heimerdinger",
+ "primitives": [
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "Q"
+   ],
+   "note": "H-28G Evolution Turret / H-28Q Apex Turret is a deployed pet that independently attacks a nearby target with its own rapid-fire hit and a separately-charging beam hit; its damage stacks scale off Heimerdinger's current AP/level continuously."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Turret Kit charges (max 3, 1 kit per cast, ~20s recharge modified by ability haste) gate how many turrets Heimerdinger can deploy/redeploy inside the 15s window."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "W fires 5 separately-resolved rocket hits per cast (initial + 4 lesser-damage subsequent hits on the same target), or 4 waves of 5 (20 hits, tiered lesser-damage) once upgraded by R; E's R-upgraded Lightning Grenade bounces 3 times but only damages a champion once per cast."
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "R (UPGRADE!!!, 3 ranks) permanently transforms one basic ability per rank into an evolved form (Apex Turret / Rocket Swarm / Lightning Grenade) with different damage numbers and mechanics; which abilities are evolved depends on player choice and R rank."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 20 + a kit, W 50-90, E 85, R 100 on toggle) constrain how many casts fit in the 15s fight; empowered (R-upgraded) casts are free of mana cost."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "The turret (Q) is a persistent pet with two independent, differently-scaling attack types (basic rapid-fire and a beam that charges up over time and receives partial/full charge grants from W and E landing on champions), up to three turrets can be alive at once, and a turret-kit ammo economy governs redeployment; the R-upgraded Apex Turret additionally expires after a fixed 8s and must be refreshed. None of this (a multi-instance pet with an internal charge-meter fed by sibling abilities) is captured by a single primitive; it needs bespoke turret-state simulation layered on top of pet-or-summon and weapon-or-ammo-system."
+ },
+ "unsettled": [
+  {
+   "question": "For the 15s damage fight, is Heimerdinger assumed to have already spent his R charges to permanently upgrade Q/W/E before the fight starts (so Apex Turret/Rocket Swarm/Lightning Grenade are active from t=0), or must R be cast during the fight window to unlock each upgrade (costing an action, 100 mana, and the ~3s recast delay)?",
+   "options": [
+    "R upgrades are pre-applied as a fight-opening state (all evolved forms available immediately)",
+    "R must be toggled and consumed in-fight before an evolved ability can be cast, spending time/mana in the 15s window"
+   ],
+   "impact": "high",
+   "quotes": [
+    "These empowered abilities have the same {{sti|cooldowns}} as their basic forms, deal modified damage, and do not have a {{sti|{{as|mana}}}} cost.",
+    "'''Heimerdinger''' deploys a ''H-28Q Apex Turret'' at the target location, which lasts for 8 seconds."
+   ]
+  },
+  {
+   "question": "How fast does the turret's beam attack charge up 'over time' on its own (absent bonus charge from W/E landing on a champion)? Neither the bin (unresolved calc parts f0517331 / 8109ae7b) nor the wiki states a numeric base charge rate, which determines how often the turret's much-higher-damage beam fires versus its regular rapid-fire hits during the fight.",
+   "options": [
+    "Beam charges on a fixed per-second timer independent of W/E procs",
+    "Beam only ever charges from W/E hits landing on the dummy (20%/hit from W, 100% from E)",
+    "Beam charges from both a base passive rate and bonus grants from W/E"
+   ],
+   "impact": "high",
+   "quotes": [
+    "a secondary beam attack that charges up over time, which deals {{as|magic damage}} to enemies hit",
+    "HeimerdingerQ#{f0517331} = byLevelL[0/0/0/0/0/5/5/10/10/15/20/25/30/40/50/60/70/80]"
+   ]
+  },
+  {
+   "question": "What is the turret's own basic (rapid-fire) attack interval/attack speed? Neither source gives an explicit attack-speed or cooldown value for the turret's regular shot, only its per-hit damage.",
+   "options": [
+    "Assume a canonical historical value from prior patch data outside these sources",
+    "Treat the turret as firing at a fixed simulator-assumed rate (e.g. 1 attack/sec) absent better data"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The ''H-28G Evolution Turret's'' stats update every second to reflect rank ups, level ups, and changes in '''Heimerdinger's''' ability power."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume R is already at rank 3 with Q, W, and E all pre-upgraded (Apex Turret, Rocket Swarm, Lightning Grenade active) before the 15s fight begins.",
+   "Opening: deploy all 3 available turret kits as Apex Turrets adjacent to the dummy (3x Q) to start their beam-charge and rapid-fire damage immediately.",
+   "Immediately follow with W (Rocket Swarm, 4 waves of 5 rockets) and then E (Lightning Grenade) on the dummy to grant the turrets beam charge (20% per rocket hit, full charge from the grenade) and add burst magic damage.",
+   "Recast W and E on cooldown for the rest of the fight (W 7-11s depending on rank, E 11s), each cast also topping up turret beam charge.",
+   "Recast Q whenever a turret kit charge is available and/or an Apex Turret is about to expire at its 8s duration, to keep 3 turrets active as continuously as possible.",
+   "Do not use any mobility, CC, or vision effects; treat the passive movement speed bonus as irrelevant to the stationary dummy fight."
+  ],
+  "questions": [
+   "Should basic attacks be woven in as filler damage even though no auto-attack data is given in these sources, or is Heimerdinger assumed to never auto-attack in this fight?",
+   "Given only 3 R ranks total, which of Q/W/E should be assumed upgraded if the fight is simulated at a level below 16-18 (i.e., R not yet maxed) — is a partial-upgrade state (e.g. only Q and W upgraded) the intended assumption at lower levels?",
+   "Should all 3 turret kit charges be spent immediately on 3 turrets, or should one be held in reserve to redeploy a fresh Apex Turret exactly as an earlier one's 8s duration expires, to maximize turret uptime over the 15s window?",
+   "Does turret beam damage from multiple simultaneously active turrets stack (i.e., do 3 turrets each independently charge and fire beams), multiplying the ambiguous per-turret beam charge rate by 3?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,866 @@
+{
+ "champion": "trundle",
+ "abilities": {
+  "P": {
+   "name": "King's Tribute",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "heal as percent of dead enemy's maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.018,
+      0.0202,
+      0.0224,
+      0.0245,
+      0.0267,
+      0.0289,
+      0.0311,
+      0.0332,
+      0.0354,
+      0.0376,
+      0.0398,
+      0.0419,
+      0.0441,
+      0.0463,
+      0.0485,
+      0.0506,
+      0.0528,
+      0.055
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.018,
+        0.0202,
+        0.0224,
+        0.0245,
+        0.0267,
+        0.0289,
+        0.0311,
+        0.0332,
+        0.0354,
+        0.0376,
+        0.0398,
+        0.0419,
+        0.0441,
+        0.0463,
+        0.0485,
+        0.0506,
+        0.0528,
+        0.055
+       ]
+      }
+     ],
+     "quote": "{{pp|key=%|1.8 + (5.5-1.8)/17*(x-1) for 20}} of their '''maximum''' health",
+     "bin": [
+      "TrundleDiseaseOverseer#RegenPercent"
+     ],
+     "binNote": "Wiki's per-level values are the linear formula 1.8+(5.5-1.8)/17*(x-1) rounded to 4 significant digits; the bin's raw floats (e.g. 0.02017647 vs wiki's 0.0202) are the same underlying linear progression from 0.018 to 0.055 but carry more decimal precision. Reporting the wiki's rounded numbers as stated in its leveling text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The heal triggers when a nearby enemy dies, not when Trundle deals the killing blow.",
+     "quote": "Whenever a nearby enemy dies, '''Trundle''' {{tip|heal|heals}} himself",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The passive does not trigger from enemy structures being destroyed.",
+     "quote": "''King's Tribute'' does not trigger when an enemy structure is destroyed.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Chomp",
+   "cooldown": {
+    "values": [
+     3.5,
+     3.5,
+     3.5,
+     3.5,
+     3.5
+    ],
+    "quote": "{{fd|3.5}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      30,
+      50,
+      70,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55
+       ]
+      }
+     ],
+     "quote": "{{ap|10 to 90}} {{as|(+ {{ap|15 to 55}}% AD)}}",
+     "bin": [
+      "TrundleTrollSmash.BonusDamage",
+      "TrundleTrollSmash#TotalDamage"
+     ],
+     "binNote": "The wiki states only the bonus 15%-55% AD ratio (on top of the attack's own normal AD damage). TrundleTrollSmash#TotalDamage / ADScaling instead carries 1.15-1.55 (i.e. 100% AD + the same 15-55% bonus), because the calculation apparently folds the base attack's AD damage into this instance's total rather than treating them as separate damage sources. Stating the wiki's 0.15-0.55 bonus ratio here since that's what the tooltip describes as this ability's added damage."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}",
+     "bin": [
+      "TrundleTrollSmash.BonusAD"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Attack Damage Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      12.5,
+      15,
+      17.5,
+      20
+     ],
+     "terms": [],
+     "quote": "{{ap|20/2 to 40/2}}",
+     "bin": [
+      "TrundleTrollSmash.SappedAD"
+     ],
+     "binNote": "SappedAD stores the reduction as a negative subtraction (-10 to -20); the wiki states the magnitude of the reduction as a positive number, which is the same value with the sign convention of 'reduce by'."
+    },
+    {
+     "id": "q_4",
+     "meaning": "duration of the buff/debuff after empowered attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "gains {{sti|{{as|'''bonus''' attack damage}}}} for 5 seconds",
+     "bin": [
+      "TrundleTrollSmash.SapDebuffDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "window to use empowered attack before it expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "empowers his next {{tip|basic attack}} within 7 seconds",
+     "bin": [
+      "TrundleTrollSmash.PrepDuration"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "slow amount applied to the target",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{tip|slow}} the target by 75% for {{fd|0.1}} seconds",
+     "bin": [
+      "TrundleTrollSmash.SlowAmount"
+     ]
+    },
+    {
+     "id": "q_7",
+     "meaning": "duration of the slow",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "for {{fd|0.1}} seconds",
+     "bin": [
+      "TrundleTrollSmash.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Chomp empowers the next basic attack, gives it an uncancellable windup, and applies bonus physical damage and a slow on hit.",
+     "quote": "empowers his next {{tip|basic attack}} within 7 seconds to have an {{tip|uncancellable windup}}, gain {{sti|25 '''bonus''' range}}, deal {{as|'''bonus''' physical damage}} and {{tip|slow}} the target by 75% for {{fd|0.1}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Trundle gains the bonus AD even if the empowered attack is dodged, blocked, missed while blinded, or blocked by spell shield.",
+     "quote": "''Chomp'' will still incur the {{sti|{{as|attack damage}}}} increase for '''Trundle''' even if the attack is {{tip|dodged}}, {{tip|blocked}}, missed while he is {{tip|blind|blinded}}, or it is blocked by {{tip|spell shield}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks the attack damage reduction and slow, not the bonus damage/bonus AD to Trundle.",
+     "quote": "{{tip|Spell shield}} will only block the attack damage reduction and {{tip|slow}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The target's bonus AD cannot be reduced below 0 by the debuff; total AD is still reduced accordingly.",
+     "quote": "If the attack damage reduction would reduce the target's {{as|'''bonus''' attack damage}} below {{as|0|ad}}, the target's {{as|'''base''' attack damage}} value is unaffected, but their {{as|'''total''' attack damage}} will still be reduced.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Chomp resets Trundle's basic attack timer.",
+     "quote": "''Chomp {{tip|basic attack reset|resets}} '''Trundle's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts after the empowered attack lands (post-effect), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TrundleTrollSmash.TooltipQADRatio",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "TrundleTrollSmash.BonusRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TrundleTrollSmash.ADScaling",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Frozen Domain",
+   "cooldown": {
+    "values": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "quote": "{{ap|18 to 14}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.5,
+      0.7,
+      0.9,
+      1.1
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 110}}%",
+     "bin": [
+      "trundledesecrate.ASBonus"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.28,
+      0.36,
+      0.44,
+      0.52
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 52}}%",
+     "bin": [
+      "trundledesecrate.MSBonus"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the ice field",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "coats the target location in ice for 8 seconds",
+     "bin": [
+      "trundledesecrate.Duration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "increased healing received while standing in the field",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "25% increased {{tip|healing}} from all sources",
+     "bin": [
+      "trundledesecrate.HealingBonus"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The attack speed, movement speed and healing bonus only apply while Trundle stands within the iced area.",
+     "quote": "While he is within the area, he gains {{sti|{{as|'''bonus''' attack speed}}}}, {{sti|ms|{{as|'''bonus''' movement speed}}}}, and 25% increased {{tip|healing}} from all sources.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "trundledesecrate.DomainArea",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Pillar of Ice",
+   "cooldown": {
+    "values": [
+     21,
+     19.5,
+     18,
+     16.5,
+     15
+    ],
+    "quote": "{{ap|21 to 15}}"
+   },
+   "cost": {
+    "values": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ],
+    "quote": "75",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      34,
+      38,
+      42,
+      46,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|34 to 50}}%",
+     "bin": [
+      "TrundleCircle.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Pillar duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "for 6 seconds",
+     "bin": [
+      "TrundleCircle.PillarDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The pillar acts as terrain, blocking movement, and knocks back units hit up to 225 units from its center.",
+     "quote": "erects a pillar of ice at the target location for 6 seconds, which knocks back units hit up to 225 units from its center. The pillar acts as terrain",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Pillar of Ice deals 0 true damage as a proc, so it can trigger on-hit-like effects without contributing damage.",
+     "quote": "triggers effects such as drawing turret aggro, Sudden Impact and applying Elixir of Sorcery by dealing 0 proc true damage",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TrundleCircle.SlowRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TrundleCircle.KnockbackRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TrundleCircle.AllyDisplacementRange",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TrundleCircle.EnemyDisplacementRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TrundleCircle.EnemyDisplacementSpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TrundleCircle.EnemyDisplacementGravity",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Subjugate",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_3",
+     "meaning": "Initial Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.1,
+        0.125,
+        0.15
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.01
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|20/2 to 30/2}}% {{as|(+ 1% per 100 AP)}} of the target's '''maximum''' health|health}}",
+     "bin": [
+      "TrundlePain.PercentHPDamage",
+      "TrundlePain.PercentOfDamageAndShredUpfront",
+      "TrundlePain.PercentHPDamageAPRatio"
+     ],
+     "binNote": "No bin row states the upfront half directly; it is TrundlePain.PercentHPDamage (and its AP ratio) multiplied by PercentOfDamageAndShredUpfront=0.5, matching the wiki's 20/2 to 30/2%."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Magic Damage Per Second",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.025,
+        0.03125,
+        0.0375
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.0025
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|20/8 to 30/8}}% {{as|(+ {{fd|0.25}}% per 100 AP)}} of the target's '''maximum''' health|health}}",
+     "bin": [
+      "TrundlePain.PercentHPDamage",
+      "TrundlePain.PercentOfDamageAndShredUpfront",
+      "TrundlePain.DurationOfDrainForTooltip",
+      "TrundlePain.PercentHPDamageAPRatio"
+     ],
+     "binNote": "No bin row states the per-second value directly; it is the remaining half of PercentHPDamage (and its AP ratio) divided across DurationOfDrainForTooltip=4 seconds, matching the wiki's 20/8 to 30/8%."
+    },
+    {
+     "id": "r_5",
+     "meaning": "Initial Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.1,
+        0.125,
+        0.15
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.01
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|20/2 to 30/2}}% {{as|(+ 1% per 100 AP)}} of the target's '''maximum''' health|health}}",
+     "bin": [
+      "TrundlePain.PercentHPDamage",
+      "TrundlePain.PercentOfDamageAndShredUpfront",
+      "TrundlePain.PercentHPDamageAPRatio"
+     ],
+     "binNote": "Same upfront-half derivation as the initial damage value: healing equals the damage dealt."
+    },
+    {
+     "id": "r_6",
+     "meaning": "Healing Per Second",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.025,
+        0.03125,
+        0.0375
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.0025
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|20/8 to 30/8}}% {{as|(+ {{fd|0.25}}% per 100 AP)}} of the target's '''maximum''' health|health}}",
+     "bin": [
+      "TrundlePain.PercentHPDamage",
+      "TrundlePain.PercentOfDamageAndShredUpfront",
+      "TrundlePain.DurationOfDrainForTooltip",
+      "TrundlePain.PercentHPDamageAPRatio"
+     ],
+     "binNote": "Same per-second derivation as the damage-per-second value: healing per second equals damage per second."
+    },
+    {
+     "id": "r_7",
+     "meaning": "Armor and magic resist reduced from the target (and gained by Trundle)",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "reduces 40% of their '''current''' {{sti|armor penetration|{{as|armor}}}} and {{sti|magic penetration|{{as|magic resistance}}}}",
+     "bin": [
+      "TrundlePain.ArmorMRShred"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Number of drain ticks after the initial cast",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "the other half is applied every second over the next 4 seconds",
+     "bin": [
+      "TrundlePain.NumberOfTicks",
+      "TrundlePain.DurationOfDrainForTooltip"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Duration the resistance reduction lingers after the drain ends",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "The resistances reduction on the target will linger for 4 seconds after the drain has ended.",
+     "bin": [
+      "TrundlePain.ShredDuration",
+      "TrundlePain.DurationOfDrainForTooltip"
+     ],
+     "binNote": "ShredDuration=8 covers the 4s drain plus 4s lingering; the wiki states the lingering portion as a separate 4 seconds."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Half of the total damage, healing and resistance reduction is applied instantly on cast; the other half is applied in ticks every second over the next 4 seconds.",
+     "quote": "Half of the drain's '''total''' damage, healing, and resistances reduction is applied on-cast, while the other half is applied every second over the next 4 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability snapshots the target's maximum health, total armor, and total magic resist at cast; the remaining drain ticks use these snapshotted values even if the target's stats change afterward.",
+     "quote": "''Subjugate'' will snapshot the values of the target's '''current''' {{as|'''maximum''' health}}, {{as|'''total''' armor}}, and {{as|'''total''' magic resistance}} as soon as it completes its cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The healing Trundle receives is equal to the damage dealt, applied on the same schedule (half instant, half over ticks).",
+     "quote": "dealing {{as|magic damage}} and {{tip|heal|healing}} himself for the same amount",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Trundle gains the resistances reduced from the target as bonus armor and magic resist for himself, for as long as they remain reduced (including during the lingering period).",
+     "quote": "'''Trundle''' will gain the reduced resistances of the target for himself for as long as they remain reduced, including while they are lingering after the drain.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The resistance reduction is gradual: 20% is applied on-cast and an additional 5% per tick over 4 ticks, totaling 40% reduction by the end of the drain.",
+     "quote": "The target's resistances will be further reduced by 5% per drain tick, up to 20% by the end of the drain (totaling to 40% reduction from the initial 20% reduction on-cast).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The debuff (and its damage/resistance-reduction ticks) persists even if the target dies.",
+     "quote": "The debuff on the target also ''persists through death''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown begins on cast, not on effect end.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TrundlePain.ActualDurationOfDrainBuff",
+     "reason": "unknown"
+    },
+    {
+     "ref": "TrundlePain.ScaleModelAmount",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Chomp arms the next basic attack within 7s to deal bonus physical damage and slow"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Casting Chomp resets Trundle's basic attack timer"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q grants bonus AD for 5s after the empowered attack lands; W grants bonus attack speed (+ movement speed, + 25% healing received) for 8s while standing in the zone; R grants Trundle bonus armor/MR mirroring the target's shred for up to 8s"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q reduces the target's bonus AD by half of Trundle's gain for 5s (relevant only if target attacks back, i.e. survival fight); R shreds the target's current armor/MR by up to 40%, increasing damage dealt to the target in the damage fight"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Subjugate applies half its total damage on-cast and the rest as ticks over the following seconds"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Subjugate's damage and healing scale off the target's snapshotted maximum health"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "King's Tribute heals Trundle only when a nearby enemy dies, irrelevant to a stationary dummy that only dies once at kill time and never attacks back; Subjugate's self-heal (equal to its damage dealt) likewise only affects damage Trundle takes/survives, not damage dealt, so it is only read in the survival fight, never in the damage fight"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (20/40/75/100) against Trundle's base mana pool may cap how often Q especially can be recast inside a 15s fight, particularly at low levels/no mana items"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Subjugate's (R) armor/MR shred is not a flat target-debuff for its duration: it ramps in discrete steps (20% applied on-cast, then +5% per tick up to 40% by the end of the drain), and Trundle's own mirrored bonus-resist gain tracks that same ramping value rather than a fixed amount. The closed primitive list has 'target-debuff' (implicitly a fixed value for a duration) and 'ramping-per-cast' (stacks across separate casts), but nothing for a value that ramps tick-by-tick within a single cast's duration while simultaneously mirroring onto the caster. Simulating R's damage-to-target interaction (does the shred at tick N apply before or after that tick's own damage calculation) and the self-resist gain needs bespoke step logic rather than a primitive parameterization."
+ },
+ "unsettled": [
+  {
+   "question": "For Chomp's (Q) bonus physical damage, is the damage instance the wiki's stated 15%-55% bonus AD (on top of the attack's own normal AD damage, i.e. two separate damage line items) or the bin's ADScaling of 1.15-1.55x AD as one folded total-damage instance replacing the base attack's AD component?",
+   "options": [
+    "Treat as separate: base auto-attack damage (100% AD) + Chomp's bonus (10-90 + 15-55% AD) as two instances",
+    "Treat as one folded instance: Chomp's attack deals BonusDamage + 115%-155% AD total, replacing the base attack's own AD portion"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|10 to 90}} {{as|(+ {{ap|15 to 55}}% AD)}}",
+    "TrundleTrollSmash#TotalDamage = BonusDamage=[10/30/50/70/90] + (ADScaling=[1.15/1.25/1.35/1.45/1.55])xad"
+   ]
+  },
+  {
+   "question": "Does each tick of Subjugate's drain (the on-cast application and each of the 4 subsequent ticks) separately re-trigger on-hit/on-cast item and rune damage procs (e.g. Liandry's, Riftmaker, spellblade-type effects), or only the initial on-cast application counts as a triggering spell-hit?",
+   "options": [
+    "Every tick (5 total applications) independently triggers spell-hit-based item/rune effects",
+    "Only the initial on-cast application triggers spell-hit-based effects; the DoT ticks are passive damage that doesn't re-trigger them"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Subjugate'' deals {{tip|persistent damage}}, additionally tagged as {{tip|indirect damage}}, and applies {{tip|spell effects}}.",
+    "the other half is applied every second over the next 4 seconds"
+   ]
+  },
+  {
+   "question": "Does Subjugate's drain actually last 4 ticks over 4 seconds (as the wiki description states) or 5 seconds as the bin's ActualDurationOfDrainBuff=5 implies, which would add an extra tick's worth of damage/healing/shred not accounted for in the wiki's leveling numbers?",
+   "options": [
+    "4 ticks over 4 seconds as described (bin's 5s buff duration is just a slightly padded internal buff window with no extra damage tick)",
+    "5 ticks/5 seconds of effective drain, meaning total damage split across 5 applications instead of the wiki's implied split of on-cast + 4"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the other half is applied every second over the next 4 seconds",
+    "TrundlePain.ActualDurationOfDrainBuff = 5",
+    "TrundlePain.NumberOfTicks = 4"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast Subjugate (R) on the target immediately at the start of the fight, since it is a long-cooldown %max-health drain and starting it earliest maximizes the number of drain ticks that land inside the 15-second window.",
+   "Cast Chomp (Q) right after, arming the next basic attack; this also resets Trundle's attack timer, letting an attack come out immediately.",
+   "Auto-attack to consume the empowered Chomp attack for its bonus physical damage and the follow-up bonus-AD buff.",
+   "Cast Frozen Domain (W) under Trundle (it has no cast time) to pick up bonus attack speed for the rest of the fight window it covers.",
+   "Continue basic-attacking continuously at the buffed attack speed, weaving Chomp back in exactly on cooldown (3.5s) each time, since each cast both deals bonus damage and resets the attack timer for an effectively higher attack rate.",
+   "Do not cast Pillar of Ice (E); it deals no direct damage and its knockback/slow are crowd control with no offensive value against a stationary, non-reacting dummy.",
+   "Recast Frozen Domain (W) again if its cooldown comes back up before the fight ends, to keep the attack-speed buff active as much as possible.",
+   "Do not expect a second cast of Subjugate (R); its cooldown (80-120s) far exceeds the 15-second fight."
+  ],
+  "questions": [
+   "What level, ability ranks, and item build is being simulated? This determines Trundle's mana pool (whether Q can actually be recast every 3.5s without running dry), his cooldown reduction on R/Q, and his AP (which scales R's damage/healing ratio and the mirrored resist steal).",
+   "Should Pillar of Ice (E) ever be cast purely to proc a 'deals 0 true damage but counts as a spell hit' interaction with an equipped item/rune, even though it contributes zero damage itself?",
+   "Is the intended cast order for the opener R-into-Q-into-attack, or should Q be cast first (to have the empowered attack land during R's cast time / snapshot window) — does the sequencing affect which stats get snapshotted by R?",
+   "In the survival fight where Trundle is the tanky target, should the rotation instead prioritize casting Q on the attacking enemy champion (for the AD-reduction target-debuff) and standing in W's zone for the healing-received buff, rather than the damage-maximizing sequence above?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

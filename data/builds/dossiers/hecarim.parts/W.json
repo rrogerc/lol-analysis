@@ -1,0 +1,206 @@
+{
+ "name": "Spirit of Dread",
+ "cooldown": {
+  "values": [
+   14,
+   14,
+   14,
+   14,
+   14
+  ],
+  "quote": "14"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    20,
+    30,
+    40,
+    50,
+    60
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|20 to 60}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "HecarimW.Damage",
+    "HecarimW.APRatio"
+   ],
+   "binNote": "Per-tick value is not stored directly; it equals HecarimW.Damage/4 and APRatio/4, consistent with the wiki's 4 ticks over the 4s duration (see w_8 for the tick-count discrepancy with HecarimW.TickTime)."
+  },
+  {
+   "id": "w_2",
+   "meaning": "Total Magic Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    120,
+    160,
+    200,
+    240
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.8
+    }
+   ],
+   "quote": "{{ap|20*4 to 60*4}} {{as|(+ {{ap|20*4}}% AP)}}",
+   "bin": [
+    "HecarimW#TotalDamage"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Bonus Resistances",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    5,
+    10,
+    15,
+    20,
+    25
+   ],
+   "terms": [],
+   "quote": "{{ap|5 to 25}}",
+   "bin": [
+    "HecarimW.ResistAmount"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Capped Healing",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    120,
+    150,
+    180,
+    210,
+    240
+   ],
+   "terms": [],
+   "quote": "{{ap|120 to 240}}",
+   "bin": [
+    "HecarimW.MinionHealCap"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "percent of post-mitigation damage dealt to enemies in area healed to Hecarim",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 25,
+   "terms": [],
+   "quote": "healed for 25% of the {{tt|post-mitigation damage|Damage calculated after modifiers}} dealt to enemies within the area from all sources",
+   "bin": [
+    "HecarimW.DamageLeechPerc"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "healing percent for damage dealt by allies (halved)",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 12.5,
+   "terms": [],
+   "quote": "halved to {{ap|25/2}}% for damage dealt by allies",
+   "bin": [
+    "HecarimW.NonSelfLeechRatio"
+   ],
+   "binNote": "NonSelfLeechRatio (0.5) multiplies DamageLeechPerc (25) to give 12.5, matching the wiki's 25/2%."
+  },
+  {
+   "id": "w_7",
+   "meaning": "duration of the active buff/aura",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "surrounds himself with the Spirit of Dread for 4 seconds",
+   "bin": [
+    "HecarimW.BuffDuration"
+   ]
+  },
+  {
+   "id": "w_8",
+   "meaning": "tick interval of the damage-over-time",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "dealing {{as|magic damage}} every second to nearby enemies",
+   "bin": [
+    "HecarimW.TickTime"
+   ],
+   "binNote": "The wiki describes damage ticking 'every second' (4 ticks over 4s, matching Total = Per-tick*4), but the bin's HecarimW.TickTime is 0.5s (8 ticks), which would double the per-tick total if used literally. Reporting the wiki's stated interval; the discrepancy is unresolved."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "While active, Hecarim gains bonus armor and bonus magic resistance for the duration.",
+   "quote": "'''Hecarim''' gains {{sti|{{as|'''bonus''' armor}}}} and {{sti|{{as|'''bonus''' magic resistance}}}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Hecarim is healed for a portion of post-mitigation damage dealt to enemies in the area by any source, not just himself.",
+   "quote": "healed for 25% of the {{tt|post-mitigation damage|Damage calculated after modifiers}} dealt to enemies within the area from all sources",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Healing from damage dealt by allies is halved compared to damage Hecarim deals himself.",
+   "quote": "halved to {{ap|25/2}}% for damage dealt by allies",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The healing gained against minions and monsters is capped regardless of how many are hit.",
+   "quote": "The healing cap against minions accounts for every single one regardless of how many are present and/or affected by ''Spirit of Dread'' at the time of cast.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability's cooldown begins when it is cast, not when the effect ends.",
+   "quote": "cdstart     = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "HecarimW.HealBonusADRatio",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

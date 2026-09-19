@@ -1,0 +1,157 @@
+{
+ "champion": "xinzhao",
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Determination: every 3rd on-hit-generating action (basic attack on-hit, or W's first slash hit / thrust) consumes 3 stacks to deal bonus physical damage and heal Xin Zhao; separate counters for the damage-stack and heal-stack systems, both capped at 3."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q arms the next 3 basic attacks (within 5s, refreshed on each hit) to deal bonus physical damage; the 3rd also knocks up."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Q-empowered attack resets Xin Zhao's basic attack timer."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each Q-empowered attack reduces the current cooldowns of Xin Zhao's other abilities (W, E, R) by 1 second."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W is 4 separate slash damage instances (first on cast, next 3 every 0.05s) followed by a separately-timed thrust instance; each is its own damage event."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's thrust damage is amplified by 0.333x Xin Zhao's critical strike chance; the thrust itself does not crit but scales off the stat."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "E grants Xin Zhao bonus attack speed for 5 seconds after the dash."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's bonus attack speed itself scales with AP and with Xin Zhao's own bonus attack speed from non-buff sources (item/rune AS), a nonlinear self-referential conversion."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's damage includes a flat term plus a term equal to 15% of the target's current health, in addition to AD/AP ratios."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E and R deal their damage on a fixed near-instant timing on cast (E on-dash-connect, R at end of 0.35s cast time), then go on cooldown."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's 4s invulnerability against far-away enemy champions and the knockback/stun on non-Challenged targets are never read by a damage-only dummy fight; relevant only to the survival fight, and even there only against ranged/poke sources, which a single enemy champion rotation may or may not trigger."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's mechanics -- Determination's dual on-hit/on-attack stack-and-consume proc, Q's empowered-attack window with attack resets and cooldown refunds, W's multi-instance slash+thrust with crit-chance-scaled thrust, E's self-referential AS conversion, and R's current-health-scaling nuke -- are each expressible with one or two primitives from the closed list. No mechanic (e.g. no stance change, no pet, no ammo system, no execute threshold) falls outside the list."
+ },
+ "unsettled": [
+  {
+   "question": "What is the exact formula for how Xin Zhao's own bonus attack speed (from items/runes) increases E's bonus AS gain -- the bin's XinZhaoE.PermanentASToASRatio=5 and the wiki's '+1% AS per 5% bonus AS from non-buff sources' do not obviously match up (a ratio of 5 vs. an implied per-unit ratio of 0.2), so it is unclear which reading (or a different one) is correct.",
+   "options": [
+    "Use the wiki's literal 1% E-AS gain per 5% of Xin Zhao's existing non-buff bonus AS (coefficient 0.2 per unit)",
+    "Use the bin's PermanentASToASRatio=5 directly as the coefficient on bonus AS",
+    "Some other transform of the bin value (e.g. 5 is expressed in different units, such as per 100% rather than per 1%)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|(+ 1% per 5% '''bonus''' attack speed from non-buff sources)|as}}",
+    "XinZhaoE.PermanentASToASRatio = 5"
+   ]
+  },
+  {
+   "question": "What is W's true cast time -- the wiki template states 0.5s but the bin's castTime field for W is 0.6 -- since this affects how long W blocks other actions and how quickly it can be looped with autos in the 15s fight.",
+   "options": [
+    "Use the wiki's 0.5s cast time (matches the described 0.15s slash window + remaining cast time structure)",
+    "Use the bin's 0.6 castTime value",
+    "The two represent different things (e.g. wiki cast time excludes a fixed queue/animation buffer the bin includes) and both are partially correct"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cast time    = {{fd|0.5}}",
+    "castTime: 0.6"
+   ]
+  },
+  {
+   "question": "When W's first slash and its thrust each independently generate a Determination stack in the same cast, and this pushes the damage-stack counter to 3 mid-cast (e.g. slash was the 2nd stack, thrust is the 3rd), does the bonus damage/heal proc trigger immediately after the thrust lands (essentially simultaneous with W's own damage), or is there a resolution-order/timing rule the sources don't state?",
+   "options": [
+    "Proc triggers instantly on the thrust connecting, stacking as separate near-simultaneous damage in the same frame as W's damage",
+    "Proc has some engine-level queuing delay not documented by either source",
+    "Not distinguishable for a dummy-fight DPS total either way, since both land within the same GCD-less cast"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Only the initial slash of {{ai|Wind Becomes Lightning|Xin Zhao}} can generate a ''Determination'' stack.",
+    "The third stack {{tt|consumes them|See notes for consumption details}} all to deal ... bonus physical damage"
+   ]
+  },
+  {
+   "question": "Q's cooldown is flagged 'cdstart = post-effect' -- if the third empowered attack is not landed within the 5s window in a real fight (not an issue against a stationary dummy that Xin Zhao keeps attacking, but relevant to how the simulator should model Q's effective cooldown timer), does the cooldown start counting from the last attack landed, from the end of the 5s window regardless, or only once all 3 attacks connect?",
+   "options": [
+    "Cooldown starts once the 3rd empowered attack connects (or the window fully expires, whichever first)",
+    "Cooldown starts immediately on cast, and 'post-effect' just means after the cast-time-less immediate empowerment applies",
+    "Ambiguous / not stated precisely enough to model without assuming the dummy fight always lands all 3 attacks, in which case this doesn't matter"
+   ],
+   "impact": "low",
+   "quotes": [
+    "cdstart      = post-effect"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Wind Becomes Lightning (W) at max range/on the dummy for the 4-slash + thrust burst, Determination stack progress, and the lifesteal-based self-heal.",
+   "Immediately follow with Audacious Charge (E) to add the magic-damage burst and pick up the 5s bonus attack speed window.",
+   "Cast Three Talon Strike (Q) as soon as available (it has no cast time and doesn't interrupt attacking) to arm the next 3 basic attacks, refresh attack timer on each empowered hit, and shave 1s off W/E/R cooldowns per hit.",
+   "Weave in Crescent Guard (R) for its flat + %current-health physical burst as soon as it is off cooldown (best used early while the dummy is near full health, since the %current-health term is largest then).",
+   "Auto-attack on-hit continuously between ability casts, letting basic attacks feed both Determination's damage-stack and heal-stack counters and benefit from Q's attack resets.",
+   "Recast W, E, and Q on cooldown for the remainder of the 15s window in roughly W > Q > E priority (W and Q have the shortest cooldowns and highest weighted damage-per-cooldown-second; use R the moment it comes back up)."
+  ],
+  "questions": [
+   "Is R (Crescent Guard) worth delaying past its first availability to line up with Determination's 3rd stack proc for burst stacking, or is casting it on cooldown always correct for total damage over 15s?",
+   "Given Q's cooldown reduction on other abilities scales with number of empowered attacks landed, should Q be cast as early and often as possible even at the cost of slightly delaying W/E casts, to compound the CDR across the fight?",
+   "Does the E attack-speed buff's uncertain scaling (see unsettled AS-conversion question) change whether prioritizing early E casts for the AS window is worth it relative to front-loading W/R burst?",
+   "In a 15s dummy fight is there ever a reason to hold Q's 3rd (knock-up) attack rather than just cycling all 3 as fast as possible, given the target never retaliates or repositions?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

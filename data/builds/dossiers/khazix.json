@@ -1,0 +1,702 @@
+{
+ "champion": "khazix",
+ "abilities": {
+  "P": {
+   "name": "Unseen Threat",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage on empowered attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      17,
+      24,
+      31,
+      38,
+      45,
+      52,
+      59,
+      66,
+      74,
+      82,
+      90,
+      98,
+      106,
+      114,
+      122,
+      130,
+      133,
+      136
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{pplevel|17 to 136|color=magic damage}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "KhazixPassive.BonusADRatio"
+     ],
+     "binNote": "Bin's flat portion is an unresolved ByCharLevelFormulaCalculationPart; wiki gives the level-by-level base values 17 to 136 directly, ratio 0.5 matches BonusADRatio."
+    },
+    {
+     "id": "p_2",
+     "meaning": "slow amount from Unseen Threat attack",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "slow them by 25% for 2 seconds",
+     "bin": [
+      "KhazixPassive.SlowAmount"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "slow duration from Unseen Threat attack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slow them by 25% for 2 seconds",
+     "bin": [
+      "KhazixPassive.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Kha'Zix gains Unseen Threat whenever the enemy loses sight of him or he activates Void Assault.",
+     "quote": "'''Kha'Zix''' gains ''Unseen Threat'' whenever the enemy loses {{tip|sight}} of him or he activates ''{{ai|Void Assault|Kha'Zix}}''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage is dealt only on Kha'Zix's next basic attack against an enemy champion.",
+     "quote": "empowers his next {{tip|basic attack}} against an enemy champion to deal",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The attack's on-hit damage and bonus spell damage are grouped as a single cast instance, so it does not trigger two Electrocute stacks.",
+     "quote": "Both the attack's damage and bonus spell damage are grouped under the same {{tip|cast instance}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Void Assault grants Unseen Threat even if Kha'Zix never becomes unseen, e.g. under true sight.",
+     "quote": "{{ai|Void Assault|Kha'Zix}} grants ''Unseen Threat'' even if '''Kha'Zix''' never becomes unseen (e.g. affected by {{tip|true sight}}).",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KhazixPassive.IsolationRange",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Taste Their Fear / Evolved Reaper Claws",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "cooldown     = 4"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "cost         = 20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      105,
+      130,
+      155,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.05
+      }
+     ],
+     "quote": "{{ap|80 to 180}} {{as|(+ 105% '''bonus''' AD)}}",
+     "bin": [
+      "KhazixQ#BaseDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Isolated Target Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      168,
+      220.5,
+      273,
+      325.5,
+      378
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 2.205
+      }
+     ],
+     "quote": "{{ap|80*2.1 to 180*2.1}} {{as|(+ {{ap|105*2.1}}% '''bonus''' AD)}}",
+     "bin": [
+      "KhazixQ#IsoDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Evolved: cooldown reduction against Isolated targets",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.45,
+     "terms": [],
+     "quote": "If the target is {{as|Isolated|buzzword}}, the {{sti|cooldown}} is reduced by 45%.",
+     "bin": [
+      "KhazixQ.EvolutionIsolationCDRPercentage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Isolation for Taste Their Fear is checked at the end of cast, meaning the target must still be Isolated when the ability lands for the bonus damage to apply.",
+     "quote": "For ''Taste Their Fear'', the end of cast.{{bug}} This means that if the target is no longer {{as|Isolated|buzzword}} when the ability hits them, ''Taste Their Fear'' will not apply the respective bonuses.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Isolated Reaper Claws (evolved) checks Isolation at the start of cast instead of the end.",
+     "quote": "For ''{{ai|Evolved Reaper Claws|Kha'Zix}}'', the start of cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An enemy is considered Isolated if not near an ally, defined as champions, pets, minions and outer turrets (monsters count as allies to other monsters); this determines whether the increased damage tier applies.",
+     "quote": "'''Kha'Zix''' considers any enemy unit to be {{as|Isolated|buzzword}} if they are not nearby to one of their allies.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Void Spike / Evolved Spike Racks",
+   "cooldown": {
+    "values": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "quote": "9"
+   },
+   "cost": {
+    "values": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ],
+    "quote": "{{ap|55 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      75,
+      105,
+      135,
+      165,
+      195
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|75 to 195}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "KhazixW#BaseDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      55,
+      75,
+      95,
+      115,
+      135
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|55 to 135}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "KhazixW#HealAmount"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bolt explodes on hitting an enemy, dealing damage to nearby enemies within the explosion radius.",
+     "quote": "fires a bolt of spikes in the target direction that explodes upon hitting an enemy, dealing {{as|physical damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Kha'Zix heals only if he himself is within the explosion radius when it detonates.",
+     "quote": "'''Kha'Zix''' {{tip|heals}} himself if he is within the explosion.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "When evolved, the ability fires three clusters, but hitting the same target with multiple clusters does not deal extra damage or grant extra healing.",
+     "quote": "Multiple explosions do not deal additional damage against the same target nor provide '''Kha'Zix''' with extra healing.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The spell can be blocked by a spell shield.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cast time ends before the effect (missile fires) begins, per the standard cast-time-end effect timing.",
+     "quote": "{{Effect at cast time end}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KhazixW.SlowPercentage",
+     "reason": "utility"
+    },
+    {
+     "ref": "KhazixW.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "KhazixW.IsolatedSlowPercentage",
+     "reason": "utility"
+    },
+    {
+     "ref": "KhazixW.IsolatedSlowDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Leap / Evolved Wings",
+   "cooldown": {
+    "values": [
+     20,
+     18,
+     16,
+     14,
+     12
+    ],
+    "quote": "{{ap|20 to 12}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      65,
+      100,
+      135,
+      170,
+      205
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|65 to 205}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [
+      "KhazixE#TotalDamage",
+      "KhazixE.BaseDamage",
+      "KhazixE.ADRatio"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Leap deals damage to nearby enemies upon landing, in an area.",
+     "quote": "leaps to the target location, dealing {{as|physical damage}} to nearby enemies upon landing",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Taste Their Fear (Q) can be cast during the dash.",
+     "quote": "''{{ai|Taste Their Fear|Kha'Zix}} can be cast during the dash.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Evolved Wings gives Leap increased cast range and resets its cooldown on scoring a champion takedown.",
+     "quote": "''Leap'' gains 200 '''bonus''' cast range, and the {{sti|cooldown}} resets upon scoring a champion {{tip|takedown}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KhazixE.EvolvedLeapRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Void Assault / Evolved Adaptive Cloaking",
+   "cooldown": {
+    "values": [
+     100,
+     85,
+     70
+    ],
+    "quote": "{{ap|100 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_stealth_duration",
+     "meaning": "invisibility duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{ap|1.25}} seconds",
+     "bin": [
+      "KhazixR.StealthDuration"
+     ]
+    },
+    {
+     "id": "r_movespeed",
+     "meaning": "bonus movement speed while invisible",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "40% '''bonus''' movement speed",
+     "bin": [
+      "KhazixR.BonusMovementSpeedPercent"
+     ]
+    },
+    {
+     "id": "r_recast_window",
+     "meaning": "time window after leaving invisibility during which R can be recast for free",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 12,
+     "terms": [],
+     "quote": "for the next 12 seconds, ''Void Assault'' can be recast at no additional cost",
+     "bin": [
+      "KhazixR.RecastWindow"
+     ]
+    },
+    {
+     "id": "r_recast_delay",
+     "meaning": "delay after leaving invisibility before recast becomes available",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "After 2 seconds of leaving {{tip|invisibility}}",
+     "bin": [
+      "KhazixR.RecastCD"
+     ]
+    },
+    {
+     "id": "r_evolved_stealth_duration",
+     "meaning": "evolved invisibility duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "The {{tip|invisibility}} now lasts 2 seconds",
+     "bin": [
+      "KhazixR.EvolvedStealthDuration"
+     ]
+    },
+    {
+     "id": "r_evolve_cast_time",
+     "meaning": "cast time entered when evolving an ability",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "Evolving an ability causes him to enter a 2-second [[cast time]]",
+     "bin": [],
+     "binNote": "No bin field found for the evolution cast time; only the base/evolved cast time and recast-CD constants are named in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Void Assault grants invisibility and can be cast a second time after breaking invisibility, at no additional cost.",
+     "quote": "Upon breaking invisibility, ''Void Assault'' can be cast a second time at no additional cost.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Evolved Void Assault allows up to 3 total casts (initial cast plus two recasts) instead of 2.",
+     "quote": "The {{tip|invisibility}} now lasts 2 seconds, and ''Void Assault'' can be recast twice.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A recast mimics the effects of the first cast (re-stealths and grants the movement speed buff again).",
+     "quote": "'''Kha'Zix''' mimics the first cast's effects.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Using a basic attack breaks stealth at the end of the attack windup, not on cast.",
+     "quote": "Using a {{tip|basic attack}} {{tip|breaks stealth}} at the end of the attack windup.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Each cast of Void Assault counts as an ability activation for on-cast effects (e.g. Spellblade).",
+     "quote": "Each cast counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown starts on cast, not on the recast window ending.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "KhazixR.EvolutionsAvailable",
+     "reason": "utility"
+    },
+    {
+     "ref": "KhazixR.NumberOfCasts",
+     "reason": "utility"
+    },
+    {
+     "ref": "KhazixR.EvolvedNumberOfCasts",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "Unseen Threat arms Kha'Zix's next basic attack vs. a champion with bonus magic damage + slow; granted by vision loss or by activating R (Void Assault)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Taste Their Fear, Void Spike and Leap each deal a fixed on-cast/on-landing physical damage instance on cooldown."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Taste Their Fear (and Evolved Reaper Claws) deals 2.1x damage if the target is Isolated (no allies nearby); isolation is checked at end of cast for base Q, start of cast for evolved."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Evolved Reaper Claws reduces Q's cooldown by 45% when the target is Isolated."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Void Assault can be cast, then recast for free (once base, twice evolved) within a 12s window that opens 2s after leaving stealth; each cast/recast re-grants Unseen Threat and the movement-speed buff."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "R"
+   ],
+   "note": "R grants invisibility + bonus move speed and always grants Unseen Threat on cast, independent of actual vision state; a natural opener to guarantee the first empowered attack."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs on Q (20), W (55-75), E (50), R (100) can meaningfully cap casts across a 15s window depending on mana pool/regen."
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Each of Q/W/E has a permanently different evolved form (Reaper Claws / Spike Racks / Wings) selectable via R ranks, changing damage-relevant behavior (Q's isolation CDR; W's extra clusters but capped single-target damage)."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Void Spike's self-heal (55-135 + 50% AP) only matters for the survival fight, contingent on Kha'Zix being within the explosion radius."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (empowered next-attack, isolation-conditional damage, evolution-swapped forms, free R recast, resource costs) maps onto existing primitives; nothing requires novel logic beyond them."
+ },
+ "unsettled": [
+  {
+   "question": "Should the single stationary dummy target be treated as 'Isolated' for Taste Their Fear's 2.1x damage tier and Evolved Reaper Claws' cooldown reduction?",
+   "options": [
+    "Yes — Isolation is defined only by absence of nearby allies, and the damage-fight has no allies/minions/monsters present, so the dummy is Isolated for the whole fight",
+    "No — treat the dummy as non-isolated by default since neither source describes the specific 1v1-no-ally simulator scenario"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Kha'Zix''' considers any enemy unit to be {{as|Isolated|buzzword}} if they are not nearby to one of their allies.",
+    "increased to 210% against {{as|Isolated|buzzword}} targets."
+   ]
+  },
+  {
+   "question": "Does the Unseen Threat buff (from P or from an R cast/recast) persist indefinitely until consumed by an attack, or does it expire after some unstated duration, capping how many times it can be banked/used across the 15s fight?",
+   "options": [
+    "Persists until consumed by the next basic attack on a champion, no timeout",
+    "Has an unstated short expiry window like most 'next attack empowered' buffs, limiting stacking with delayed attacks"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Kha'Zix''' empowers his next {{tip|basic attack}} against an enemy champion to deal ... bonus magic damage and {{tip|slow}} them"
+   ]
+  },
+  {
+   "question": "Which ability (Q, W, or E) should be assumed evolved for the damage-fight build, since evolution choice materially changes single-target damage output (only Q's evolution meaningfully boosts single-target damage/cooldown; W's and E's evolved bonuses are largely non-damage or multi-target)?",
+   "options": [
+    "Assume Evolved Reaper Claws (Q) only, maximizing single-target DPS via isolation CDR",
+    "Assume all three evolutions are eventually available/chosen per some other priority (e.g. per typical build order) even though only Q meaningfully raises dummy-fight damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the target is {{as|Isolated|buzzword}}, the {{sti|cooldown}} is reduced by 45%.",
+    "Multiple explosions do not deal additional damage against the same target nor provide '''Kha'Zix''' with extra healing."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting R (Void Assault) to guarantee Unseen Threat and gain the stealth/movement-speed buff before the fight timer or immediately at fight start.",
+   "Immediately use the empowered basic attack (Unseen Threat) on the dummy for the bonus magic damage + slow.",
+   "Cast Q (Taste Their Fear) on cooldown for isolated physical damage (assuming target counts as Isolated).",
+   "Cast E (Leap) to close/re-engage distance and deal its landing AoE damage, buffering Q afterward if needed.",
+   "Cast W (Void Spike) on cooldown for its physical damage tick.",
+   "Weave basic attacks between every ability cast (cast times are all 0.25s, leaving auto-attack windows).",
+   "Recast R as soon as the free-recast window opens (2s after breaking stealth) to re-trigger Unseen Threat for another empowered attack, repeating this loop of R-recast + empowered attack + Q/W/E on cooldown until 15s elapses.",
+   "Recast Q/W/E every time each comes off cooldown, prioritizing Q given its short 4s (or ~2.2s evolved-isolated) cooldown for the highest attack-count contribution."
+  ],
+  "questions": [
+   "Does the dummy fight allow Kha'Zix to reposition (walk out and re-leap) for a second E cast's damage, or is E limited purely by its 12-to-20s cooldown regardless of movement?",
+   "Should R be recast purely for the Unseen Threat empowered-attack proc as often as its free-recast window allows, or is that not worth the stealth/attack-break interaction inside a straightforward 15s single-target fight?",
+   "At what champion level/evolution point count is Kha'Zix assumed to be for the damage fight, since this determines how many of Q/W/E evolutions (and thus which primitives) are actually active?",
+   "Is Unseen Threat's damage type (magic) and its 'grouped cast instance' rule expected to interact with the simulator's on-hit/crit/item-proc accounting in a way that changes the optimal number of R recasts used purely to re-trigger it?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

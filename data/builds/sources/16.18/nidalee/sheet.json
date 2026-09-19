@@ -1,0 +1,667 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "NidaleePassiveHunt",
+    "key": "Characters/Nidalee/Spells/NidaleePassiveHuntAbility/NidaleePassiveHunt"
+   }
+  ],
+  "Q": [
+   {
+    "script": "JavelinToss",
+    "key": "Characters/Nidalee/Spells/JavelinTossAbility/JavelinToss",
+    "cooldown": 6,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TooltipCougarMinimumDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       30,
+       55,
+       80,
+       105
+      ]
+     },
+     "SpearMinimumAPRatio": 0.5,
+     "SpearMinimumDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       90,
+       110,
+       130,
+       150
+      ]
+     },
+     "SpearMaximumDamage": {
+      "axis": "rank",
+      "v": [
+       227.5,
+       292.5,
+       357.5,
+       422.5,
+       487.5
+      ]
+     },
+     "DamageMulti": 3.25,
+     "RangeThreshold": 525
+    },
+    "calcs": {
+     "HumanMinimumDamage": {
+      "expr": "SpearMinimumDamage=[70/90/110/130/150] + (SpearMinimumAPRatio=0.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        90,
+        110,
+        130,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "SpearMinimumAPRatio"
+       }
+      ],
+      "refs": [
+       "SpearMinimumAPRatio",
+       "SpearMinimumDamage"
+      ]
+     },
+     "HumanMaximumDamage": {
+      "expr": "HumanMinimumDamage * DamageMulti=3.25",
+      "modifies": "HumanMinimumDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        227.5,
+        292.5,
+        357.5,
+        422.5,
+        487.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.625,
+        "dataValue": "SpearMinimumAPRatio"
+       }
+      ],
+      "refs": [
+       "DamageMulti",
+       "SpearMinimumAPRatio",
+       "SpearMinimumDamage"
+      ]
+     },
+     "{38f95809}": {
+      "expr": "TooltipCougarMinimumDamage=[5/30/55/80/105]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        30,
+        55,
+        80,
+        105
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "TooltipCougarMinimumDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "Bushwhack",
+    "key": "Characters/Nidalee/Spells/BushwhackAbility/Bushwhack",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DotDuration": 4,
+     "BaseDamagePerTick": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "TrapLifetime": 120,
+     "TotalFlatDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       80,
+       120,
+       160,
+       200
+      ]
+     }
+    },
+    "calcs": {
+     "MaxTraps": {
+      "expr": "byLevelL[4/4/4/4/4/6/6/6/6/6/8/8/8/8/8/10/10/10] + ModesBonusMaxTraps",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "ModesBonusMaxTraps"
+      ]
+     },
+     "DamagePerSecond": {
+      "expr": "BaseDamagePerTick=[10/20/30/40/50] + 0.05xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30,
+        40,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamagePerTick"
+      ]
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value ModesBonusMaxTraps"
+    ]
+   }
+  ],
+  "E": [
+   {
+    "script": "PrimalSurge",
+    "key": "Characters/Nidalee/Spells/PrimalSurgeAbility/PrimalSurge",
+    "cooldown": 12,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       50,
+       75,
+       100,
+       125,
+       150
+      ]
+     },
+     "MaxHealMult": 1,
+     "MaxHealThreshold": 0.05,
+     "BonusAS": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5,
+       0.6,
+       0.7
+      ]
+     },
+     "ASDuration": 7
+    },
+    "calcs": {
+     "TotalHealing": {
+      "expr": "BaseHeal=[50/75/100/125/150] + 0.35xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        75,
+        100,
+        125,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35
+       }
+      ],
+      "refs": [
+       "BaseHeal"
+      ]
+     },
+     "MaxHealing": {
+      "expr": "TotalHealing * 1 + MaxHealMult=1",
+      "modifies": "TotalHealing",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        150,
+        200,
+        250,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "BaseHeal",
+       "MaxHealMult"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "AspectOfTheCougar",
+    "key": "Characters/Nidalee/Spells/AspectOfTheCougarAbility/AspectOfTheCougar",
+    "cooldown": 3,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "PassivePercentMS": 10,
+     "TakedownBaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       30,
+       55,
+       80
+      ]
+     },
+     "TakedownADRatio": 0.75,
+     "TakedownAPRatio": 0.4,
+     "TakedownDamageAmp": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.25,
+       1.5,
+       1.75
+      ]
+     },
+     "PounceCooldown": {
+      "axis": "rank",
+      "v": [
+       3,
+       2.5,
+       2,
+       1.5
+      ]
+     },
+     "PounceDamage": {
+      "axis": "rank",
+      "v": [
+       55,
+       100,
+       145,
+       190
+      ]
+     },
+     "PounceADRatio": 0.5,
+     "PounceAPRatio": 0.3,
+     "SwipeDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       130,
+       190,
+       250
+      ]
+     },
+     "SwipeADRatio": 0.7,
+     "SwipeAPRatio": 0.55
+    },
+    "calcs": {
+     "TotalPounceDamage": {
+      "expr": "PounceDamage=[55/100/145/190] + (PounceADRatio=0.5)xbonus ad + (PounceAPRatio=0.3)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        100,
+        145,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5,
+        "dataValue": "PounceADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "PounceAPRatio"
+       }
+      ],
+      "refs": [
+       "PounceADRatio",
+       "PounceAPRatio",
+       "PounceDamage"
+      ]
+     },
+     "TotalSwipeDamage": {
+      "expr": "SwipeDamage=[70/130/190/250] + (SwipeADRatio=0.7)xbonus ad + (SwipeAPRatio=0.55)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        130,
+        190,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.7,
+        "dataValue": "SwipeADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55,
+        "dataValue": "SwipeAPRatio"
+       }
+      ],
+      "refs": [
+       "SwipeADRatio",
+       "SwipeAPRatio",
+       "SwipeDamage"
+      ]
+     },
+     "TotalTakedownDamage": {
+      "expr": "TakedownBaseDamage=[5/30/55/80] + (TakedownADRatio=0.75)xad + (TakedownAPRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        30,
+        55,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "TakedownADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "TakedownAPRatio"
+       }
+      ],
+      "refs": [
+       "TakedownADRatio",
+       "TakedownAPRatio",
+       "TakedownBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "Pounce",
+    "key": "Characters/Nidalee/Spells/Pounce",
+    "cooldown": 6,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "EnhancedPounceRange": 750
+    }
+   },
+   {
+    "script": "Takedown",
+    "key": "Characters/Nidalee/Spells/Takedown",
+    "cooldown": 6,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TotalADRatio": 0.75,
+     "BuffDuration": 10,
+     "BonusAttackRange": 75
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "JavelinToss",
+  "W": "Bushwhack",
+  "E": "PrimalSurge",
+  "R": "AspectOfTheCougar",
+  "P": "NidaleePassiveHunt"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 295,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.15
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Nidalee",
+  "name": "Nidalee",
+  "partype": "Mana",
+  "passive": "Prowl",
+  "spells": [
+   {
+    "id": "JavelinToss",
+    "name": "Javelin Toss / Takedown",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "Bushwhack",
+    "name": "Bushwhack / Pounce",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ]
+   },
+   {
+    "id": "PrimalSurge",
+    "name": "Primal Surge / Swipe",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "AspectOfTheCougar",
+    "name": "Aspect Of The Cougar",
+    "maxrank": 4,
+    "cooldown": [
+     3,
+     3,
+     3,
+     3
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Prowl": {
+    "targeting": "Passive",
+    "affects": "Enemies, Self"
+   }
+  },
+  "Q": {
+   "Javelin Toss": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Takedown": {
+    "damagetype": "Magic",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies"
+   }
+  },
+  "W": {
+   "Bushwhack": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   },
+   "Pounce": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Unit-targeted|Unit]]}}",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Primal Surge": {
+    "targeting": "Unit",
+    "affects": "Self, Allies",
+    "costtype": "Mana"
+   },
+   "Swipe": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Aspect of the Cougar": {
+    "targeting": "Auto",
+    "affects": "Self"
+   },
+   "Aspect of the Cougar 2": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  }
+ }
+}

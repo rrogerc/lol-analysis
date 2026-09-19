@@ -1,0 +1,185 @@
+{
+ "name": "Void Swarm",
+ "cooldown": {
+  "values": [
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "quote": "8"
+ },
+ "cost": {
+  "values": [
+   40,
+   45,
+   50,
+   55,
+   60
+  ],
+  "resource": "mana",
+  "quote": "{{ap|40 to 60}}"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Voidling Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    8,
+    8,
+    9,
+    9,
+    10
+   ],
+   "terms": [],
+   "quote": "{{ap|8|8|9|9|10}} seconds",
+   "bin": [
+    "MalzaharW.VoidlingDuration"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Voidling attack magic damage vs. champions (level-scaling base plus ratios)",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    5.0,
+    8.5,
+    12.0,
+    15.5,
+    19.0,
+    22.5,
+    26.0,
+    29.5,
+    33.0,
+    36.5,
+    40.0,
+    43.5,
+    47.0,
+    50.5,
+    54.0,
+    57.5,
+    61.0,
+    64.5
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.4
+    },
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{pp|5+3.5*(x-1)*(0.7025+0.0175*(x-1))|formula=5 + 10.5 growth}} (+ {{ap|12 to 20}}) {{as|(+ 40% '''bonus''' AD)}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "MalzaharW#{c2505620}",
+    "MalzaharW.ADRatio",
+    "MalzaharW.APRatio",
+    "MalzaharW#VoidlingBonusDamageTooltip"
+   ],
+   "binNote": "The wiki's pp formula evaluates to a slightly different curve (e.g. level 2 = 7.52, level 3 = 10.1625) than the bin's byLevel row, which is exactly linear (+3.5 per level: 5.0, 8.5, 12.0, ... 64.5). Used the bin's exact linear values since they are the source of truth for the game data; the wiki's displayed formula appears to be an imprecise approximation of the same byLevel curve."
+  },
+  {
+   "id": "w_2b",
+   "meaning": "Voidling attack magic damage vs. champions (rank-scaling flat part)",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    12,
+    14,
+    16,
+    18,
+    20
+   ],
+   "terms": [],
+   "quote": "(+ {{ap|12 to 20}})",
+   "bin": [
+    "MalzaharW.VoidlingBaseDamage"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Zz'Rot Swarm stack cap",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "up to a maximum of 2",
+   "bin": [
+    "MalzaharW.StackCap"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Delay before each Voidling is summoned",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "{{fd|0.5}} seconds after the previous one",
+   "bin": [
+    "MalzaharW.SummonDelay"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The active consumes all stacks after a 0.5-second delay before the first Voidling appears, and additional Voidlings from consumed stacks are summoned sequentially, each 0.5 seconds after the previous.",
+   "quote": "after a {{fd|0.5}}-second delay, summons a {{ui|Voidling}} at the target location. Additional ''Voidlings'' are then summoned for each ''Zz'Rot Swarm'' stack consumed, with each ''Voidling'' being summoned {{fd|0.5}} seconds after the previous one.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Malzahar generates a Zz'Rot Swarm stack whenever he casts another ability, up to the cap, meaning Q/E casts build toward extra Voidlings on the next W.",
+   "quote": "'''Malzahar''' generates a stack of ''Zz'Rot Swarm'' when he casts another {{tip|ability}}, up to a maximum of 2.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Stacks are granted per cast attempt, not per successful activation - even a cancelled ability cast still grants a stack.",
+   "quote": "''Zz'Rot Swarm'' stacks are gained per cast and not per ability activation. For example, if {{ai|Malefic Visions|Malzahar}} is cast and the ability cancels under certain circumstances, a ''Zz'Rot Swarm'' stack will still be granted despite the ability's failure to complete.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "All accumulated Zz'Rot Swarm stacks are lost when Malzahar dies.",
+   "quote": "'''Malzahar''' loses all {{tip|stacks}} upon {{tip|death}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Voidling attack damage is reduced against epic monsters and increased against enemy minions infected by Malefic Visions; neither epic monsters nor minions are present in the simulated fights.",
+   "quote": "reduced by 50% against epic {{tip|monsters}} and increased by 200% to enemy {{tip|minions}} infected by ''{{ai|Malefic Visions|Malzahar}}''",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MalzaharW.LaneMinionMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "MalzaharW.EpicMonsterMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "MalzaharW.StackDuration",
+   "reason": "unknown"
+  },
+  {
+   "ref": "MalzaharW.MaxStacks",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

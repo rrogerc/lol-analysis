@@ -1,0 +1,738 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ShacoPassive",
+    "key": "Characters/Shaco/Spells/ShacoPassiveAbility/ShacoPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "PerUnitCD": 3,
+     "MonsterCritMod": 2,
+     "APRatio": 0.4,
+     "CloneMult": 0.75,
+     "ShivSlowAmount": -0.4,
+     "ShredDuration": 4,
+     "ShivExecuteDamagePercent": 1.5,
+     "AttackBonusADRatio": 0.2
+    },
+    "calcs": {
+     "MonsterDamageTooltip": {
+      "expr": "(MonsterCritMod=2 + 1xbonus critDamage)xad + (APRatio=0.4)xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "APRatio",
+       "MonsterCritMod"
+      ]
+     },
+     "BasicAttackDamage": {
+      "expr": "byLevel(20..35) + (AttackBonusADRatio=0.2)xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        20.882353,
+        21.764706,
+        22.647059,
+        23.529412,
+        24.411765,
+        25.2941176,
+        26.17647,
+        27.058823,
+        27.941177,
+        28.82353,
+        29.7058824,
+        30.588235,
+        31.470588,
+        32.35294,
+        33.235294,
+        34.117647,
+        35
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2,
+        "dataValue": "AttackBonusADRatio"
+       }
+      ],
+      "refs": [
+       "AttackBonusADRatio"
+      ]
+     },
+     "ShivDamage": {
+      "expr": "byLevel(15..50) + 0.1xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        15,
+        17.058823,
+        19.117647,
+        21.17647,
+        23.235294,
+        25.2941176,
+        27.352941,
+        29.411765,
+        31.470588,
+        33.52941,
+        35.588235,
+        37.64706,
+        39.705882,
+        41.764706,
+        43.82353,
+        45.882353,
+        47.941176,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": []
+     },
+     "ShivDamageExecute": {
+      "expr": "ShivDamage * ShivExecuteDamagePercent=1.5",
+      "modifies": "ShivDamage",
+      "flat": {
+       "axis": "level",
+       "v": [
+        22.5,
+        25.588234,
+        28.67647,
+        31.764705,
+        34.85294,
+        37.941176,
+        41.02941,
+        44.11765,
+        47.205882,
+        50.294115,
+        53.38235,
+        56.47059,
+        59.558823,
+        62.64706,
+        65.7353,
+        68.82353,
+        71.911764,
+        75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15
+       }
+      ],
+      "refs": [
+       "ShivExecuteDamagePercent"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "Deceive",
+    "key": "Characters/Shaco/Spells/DeceiveAbility/Deceive",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12.5,
+      12,
+      11.5,
+      11
+     ]
+    },
+    "cost": 40,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       35,
+       45,
+       55,
+       65
+      ]
+     },
+     "StealthDuration": {
+      "axis": "rank",
+      "v": [
+       2.5,
+       2.75,
+       3,
+       3.25,
+       3.5
+      ]
+     },
+     "CDRefund": 2.5,
+     "ExtraAATime": 0.25,
+     "PseudoCastTime": 0.125,
+     "BonusADRatio": 0.6,
+     "NonCritBackstabMod": 0.6
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[25/35/45/55/65] + (BonusADRatio=0.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        35,
+        45,
+        55,
+        65
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     },
+     "QCritDamageMod": {
+      "expr": "1 + (NonCritBackstabMod=0.6)*(1xcritDamage + -1)",
+      "flat": 1,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "NonCritBackstabMod"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "JackInTheBox",
+    "key": "Characters/Shaco/Spells/JackInTheBoxAbility/JackInTheBox",
+    "cooldown": 15,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      65,
+      60,
+      55,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "AoEBaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "STBaseDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       40,
+       55,
+       70,
+       85
+      ]
+     },
+     "MinionFearDuration": 2,
+     "MonsterBonusDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     },
+     "MaxTraps": 25000,
+     "FearDuration": {
+      "axis": "rank",
+      "v": [
+       0.5,
+       0.75,
+       1,
+       1.25,
+       1.5
+      ]
+     },
+     "WAoEAPRatio": 0.12,
+     "WSingleTargetAPRatio": 0.18,
+     "BoxDuration": 40,
+     "ArmTime": 2
+    },
+    "calcs": {
+     "AoEDamage": {
+      "expr": "AoEBaseDamage=[10/15/20/25/30] + (WAoEAPRatio=0.12)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        15,
+        20,
+        25,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.12,
+        "dataValue": "WAoEAPRatio"
+       }
+      ],
+      "refs": [
+       "AoEBaseDamage",
+       "WAoEAPRatio"
+      ]
+     },
+     "STDamage": {
+      "expr": "STBaseDamage=[25/40/55/70/85] + (WSingleTargetAPRatio=0.18)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        40,
+        55,
+        70,
+        85
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.18,
+        "dataValue": "WSingleTargetAPRatio"
+       }
+      ],
+      "refs": [
+       "STBaseDamage",
+       "WSingleTargetAPRatio"
+      ]
+     },
+     "TrapDuration": {
+      "expr": "BoxDuration=40 + 0.1xap",
+      "flat": 40,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "BoxDuration"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "TwoShivPoison",
+    "key": "Characters/Shaco/Spells/TwoShivPoisonAbility/TwoShivPoison",
+    "cooldown": 8,
+    "cost": 75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       95,
+       120,
+       145,
+       170
+      ]
+     },
+     "ExecuteDamagePercent": 1.5,
+     "ExecuteHealthThreshold": 0.3,
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       -0.2,
+       -0.225,
+       -0.25,
+       -0.275,
+       -0.3
+      ]
+     },
+     "SlowDurationPassive": 2,
+     "SlowDurationActive": 3,
+     "APRatio": 0.6,
+     "BonusADRatio": 0.8
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/95/120/145/170] + (BonusADRatio=0.8)xbonus ad + (APRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        95,
+        120,
+        145,
+        170
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.8,
+        "dataValue": "BonusADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     },
+     "TotalExecuteDamage": {
+      "expr": "TotalDamage * ExecuteDamagePercent=1.5",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        105,
+        142.5,
+        180,
+        217.5,
+        255
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2,
+        "dataValue": "BonusADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "BonusADRatio",
+       "ExecuteDamagePercent"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "HallucinateFull",
+    "key": "Characters/Shaco/Spells/HallucinateFullAbility/HallucinateFull",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      90,
+      80
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TeleportRange": 150,
+     "STBaseDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       50,
+       75
+      ]
+     },
+     "AoEBaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30
+      ]
+     },
+     "CloneAADamagePercent": 0.6,
+     "CloneIncomingDamagePercent": 0.5,
+     "BoxFearDuration": 1,
+     "ExplosionBaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       225,
+       300
+      ]
+     },
+     "BoxArmTime": 2,
+     "BoxLifetime": 6,
+     "CloneLifetime": 18
+    },
+    "calcs": {
+     "STDamage": {
+      "expr": "STBaseDamage=[25/50/75] + 0.15xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        50,
+        75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.15
+       }
+      ],
+      "refs": [
+       "STBaseDamage"
+      ]
+     },
+     "AoEDamage": {
+      "expr": "AoEBaseDamage=[10/20/30] + 0.1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "AoEBaseDamage"
+      ]
+     },
+     "ExplosionTotalDamage": {
+      "expr": "ExplosionBaseDamage=[150/225/300] + 0.7xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        225,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "ExplosionBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "Deceive",
+  "W": "JackInTheBox",
+  "E": "TwoShivPoison",
+  "R": "HallucinateFull",
+  "P": "ShacoPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 297,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.2,
+   "{3a509002}": 0.07
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.07849616557359695
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Shaco",
+  "name": "Shaco",
+  "partype": "Mana",
+  "passive": "Backstab",
+  "spells": [
+   {
+    "id": "Deceive",
+    "name": "Deceive",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12.5,
+     12,
+     11.5,
+     11
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "JackInTheBox",
+    "name": "Jack In The Box",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     15,
+     15,
+     15,
+     15
+    ],
+    "cost": [
+     70,
+     65,
+     60,
+     55,
+     50
+    ]
+   },
+   {
+    "id": "TwoShivPoison",
+    "name": "Two-Shiv Poison",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ]
+   },
+   {
+    "id": "HallucinateFull",
+    "name": "Hallucinate",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     90,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Backstab": {
+    "damagetype": "Physical",
+    "spelleffects": "basic",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Deceive": {
+    "damagetype": "physical",
+    "spelleffects": "basic",
+    "targeting": "Location",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Jack in the Box": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Two-Shiv Poison": {
+    "damagetype": "Magic",
+    "spelleffects": "Spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Hallucinate": {
+    "damagetype": "Magic",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Location-targeted|Location]]",
+    "affects": "Self",
+    "costtype": "Mana"
+   },
+   "Hallucinate 2": {
+    "damagetype": "Magic",
+    "spelleffects": "Special",
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Location-targeted|Location]]",
+    "affects": "Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

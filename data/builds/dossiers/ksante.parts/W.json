@@ -1,0 +1,315 @@
+{
+ "name": "Path Maker",
+ "cooldown": {
+  "values": [
+   14,
+   13,
+   12,
+   11,
+   10
+  ],
+  "quote": "{{ap|14 to 10}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   45,
+   50,
+   55,
+   60
+  ],
+  "quote": "{{ap|40 to 60}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    45,
+    75,
+    105,
+    135,
+    165
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.08,
+     "coefScaling": [
+      {
+       "stat": "bonusArmor",
+       "per": 100,
+       "coef": 0.02
+      },
+      {
+       "stat": "bonusMr",
+       "per": 100,
+       "coef": 0.02
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|45 to 165}} {{as|(+ 8%|hp}} {{as|(+ 2% per 100 '''bonus''' armor)}} {{as|(+ 2% per 100 '''bonus''' magic resistance)}} {{as|of target's '''maximum''' health)}}",
+   "bin": [
+    "KSanteW.BaseDamage",
+    "KSanteW#TotalMaxHealthDamage"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Minimum Bonus True Damage",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    4.5,
+    7.5,
+    10.5,
+    13.5,
+    16.5
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.008,
+     "coefScaling": [
+      {
+       "stat": "bonusArmor",
+       "per": 100,
+       "coef": 0.002
+      },
+      {
+       "stat": "bonusMr",
+       "per": 100,
+       "coef": 0.002
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|45*0.1 to 165*0.1}} {{as|(+ {{ap|8*0.1}}%|hp}} {{as|(+ {{ap|2*0.1}}% per 100 '''bonus''' armor)}} {{as|(+ {{ap|2*0.1}}% per 100 '''bonus''' magic resistance)}} {{as|of target's '''maximum''' health)}}",
+   "bin": [
+    "KSanteW.BaseDamage",
+    "KSanteW#TotalMaxHealthDamage",
+    "KSanteW.RDamageIncreaseMin"
+   ],
+   "binNote": "Value is BaseDamage/TotalMaxHealthDamage multiplied by RDamageIncreaseMin=0.1 (10%), no dedicated bin row exists for the multiplied result."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Maximum Bonus True Damage",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    36,
+    60,
+    84,
+    108,
+    132
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.064,
+     "coefScaling": [
+      {
+       "stat": "bonusArmor",
+       "per": 100,
+       "coef": 0.016
+      },
+      {
+       "stat": "bonusMr",
+       "per": 100,
+       "coef": 0.016
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|45*0.8 to 165*0.8}} {{as|(+ {{ap|8*0.8}}%|hp}} {{as|(+ {{ap|2*0.8}}% per 100 '''bonus''' armor)}} {{as|(+ {{ap|2*0.8}}% per 100 '''bonus''' magic resistance)}} {{as|of target's '''maximum''' health)}}",
+   "bin": [
+    "KSanteW.BaseDamage",
+    "KSanteW#TotalMaxHealthDamage",
+    "KSanteW.RDamageIncreaseMax"
+   ],
+   "binNote": "Value is BaseDamage/TotalMaxHealthDamage multiplied by RDamageIncreaseMax=0.8 (80%), no dedicated bin row exists for the multiplied result."
+  },
+  {
+   "id": "w_6",
+   "meaning": "Damage reduction gained while channeling",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "gains {{tip|displacement immunity}} and 30% damage reduction",
+   "bin": [
+    "KSanteW.DamageReduction"
+   ]
+  },
+  {
+   "id": "w_7",
+   "meaning": "Damage reduction increased during All Out",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "damage reduction is increased to 75%",
+   "bin": [
+    "KSanteW.RDamageReduction"
+   ]
+  },
+  {
+   "id": "w_8a",
+   "meaning": "Minimum channel duration before recast is possible",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "charging for a minimum of {{fd|0.4}} seconds",
+   "bin": [
+    "KSanteW.MinChargeTime"
+   ]
+  },
+  {
+   "id": "w_8b",
+   "meaning": "Maximum channel duration (full charge)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "and up to 1 second",
+   "bin": [
+    "KSanteW.MaxDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Upon entering All Out, Path Maker's cooldown is fully refreshed, letting it be recast immediately.",
+   "quote": "Upon entering ''All Out'', ''Path Maker's'' {{sti|cooldown}} is refreshed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While charging, K'Sante gains displacement immunity and 30% damage reduction, reducing incoming damage during the wind-up.",
+   "quote": "gains {{tip|displacement immunity}} and 30% damage reduction",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "During All Out, the recast deals bonus true damage instead of the normal physical damage/knockback/stun, and its damage reduction rises to 75% while dash speed increases 20%.",
+   "quote": "''Path Maker'' no longer applies its {{tip|airborne|knock back}} and {{tip|stun}}, but its damage reduction is increased to 75%, the dash deals {{sti|true damage|...bonus true damage}}, and the dash speed is increased by 20%.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Path Maker's cooldown starts only after the dash/recast resolves, not on initial cast.",
+   "quote": "cdstart          = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The channel (and thus the eventual recast) cannot be interrupted by crowd control.",
+   "quote": "''Path Maker's'' charge cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KSanteW.MaxHealthDamage",
+   "reason": null
+  },
+  {
+   "ref": "KSanteW.MaxHealthDamageResistRatio",
+   "reason": null
+  },
+  {
+   "ref": "KSanteW.TimeToFullCharge",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteW.DashSpeedBase",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.DashSpeedAO",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.VictimDashMod",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.MinKnockbackDuration",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.MaxKnockbackDuration",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.KnockbackSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.KnockbackDist",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.KnockbackDistOnTopOfMod",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.MinDashBase",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.MaxDashBase",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KSanteW.MinDurationTOOLTIP",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteW.AOMinDurationTOOLTIP",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KSanteW.HexflashBugfixLockout",
+   "reason": "utility"
+  },
+  {
+   "ref": "KSanteW.RDamageIncreaseMin",
+   "reason": null
+  },
+  {
+   "ref": "KSanteW.RDamageIncreaseMax",
+   "reason": null
+  },
+  {
+   "ref": "KSanteW.MinimumMinionDamage",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KSanteW.DamageReduction",
+   "reason": null
+  },
+  {
+   "ref": "KSanteW.RDamageReduction",
+   "reason": null
+  },
+  {
+   "ref": "KSanteW.MaxMonsterDamage",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

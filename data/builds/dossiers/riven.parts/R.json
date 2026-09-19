@@ -1,0 +1,157 @@
+{
+ "name": "Blade of the Exile / Wind Slash",
+ "cooldown": {
+  "values": [
+   120,
+   90,
+   60
+  ],
+  "quote": "{{ap|120 to 60}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Minimum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    100,
+    150,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.55
+    }
+   ],
+   "quote": "{{ap|100 to 200}} {{as|(+ 55% '''bonus''' AD)}}",
+   "bin": [
+    "RivenFengShuiEngine#MinDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Maximum Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    300,
+    450,
+    600
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.65
+    }
+   ],
+   "quote": "{{ap|100*3 to 200*3}} {{as|(+ {{ap|55*3}}% '''bonus''' AD)}}",
+   "bin": [
+    "RivenFengShuiEngine#MaxDamage"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Wind Slash damage amplification from target's missing health (interpolates base damage from minimum to maximum), capped at 75% missing health",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": 0,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": 2.667
+    }
+   ],
+   "quote": "increased by {{as|{{pp|type= target's '''missing''' health|key=%|0 to 200 for 9|key1=%|0 to 75|formula=2.667% per 1% missing health. ''This is capped at 200% bonus damage at 75% missing health.''}}|health}}",
+   "bin": [],
+   "binNote": "No dedicated data value for the missing-health ratio; only MinBase/MaxBase and their AD ratios are stored, and the interpolation formula between them is presumably computed elsewhere (tooltip-only text)."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Bonus attack damage gained while empowered",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.2
+    }
+   ],
+   "quote": "gaining {{as|20% AD}} {{sti|ad|{{as|'''bonus''' attack damage}}}}",
+   "bin": [
+    "RivenFengShuiEngine.PercentBonusAD",
+    "RivenFengShuiEngine#BonusAD"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "Duration of the empowered state",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "'''Riven''' empowers her blade for 15 seconds",
+   "bin": [
+    "RivenFengShuiEngine.Duration"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "Delay before the empowerment bonuses (bonus AD, range, Wind Slash availability) take effect after cast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "All bonuses are gained after {{fd|0.5}} seconds of the ability starting its cast.",
+   "bin": [],
+   "binNote": "Not present as a separate DataValue in the sheet; the bin's own cast time is 0.25s but the wiki notes bonuses apply after 0.5s, a possible discrepancy between cast animation and effect application."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The bonus attack damage amount from Blade of the Exile is locked in at the moment of casting and does not update if bonus AD changes afterward.",
+   "quote": "The {{as|'''bonus''' attack damage}} amount is factored upon cast, and does not change.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Blade of the Exile's cooldown begins only after its effect (the 15-second empowerment) ends, not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Wind Slash's three missiles form a cone and each enemy can only be hit and damaged by one of the three missiles (no multi-hit stacking on a single target).",
+   "quote": "Each enemy can be damaged by only one missile.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting Wind Slash counts as an ability activation, triggering on-cast effects like Spellblade.",
+   "quote": "''Wind Slash'' counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Wind Slash's damage can be blocked by a spell shield.",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "RivenFengShuiEngine.TooltipAttackRange",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

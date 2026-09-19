@@ -1,0 +1,161 @@
+{
+ "champion": "zoe",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "More Sparkles! arms Zoe's next basic attack or Spell Thief bolt (within 5s of any ability cast) to deal bonus magic damage as a non-projectile hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Paddle Star!'s initial cast and Sleepy Trouble Bubble both deal a fixed base+AP magic damage instance on hit, on cooldown."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Paddle Star! has an initial cast and a distinct recast (different speed/width, no cast time, resets its own distance-based damage modifier), each counting as a separate ability activation."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Paddle Star!'s total damage scales 0% to ~150% (bugged cap 146.6%) with distance travelled before impact, so damage depends on assumed cast/engage range."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W"
+   ],
+   "note": "Spell Thief spawns 3 bolts that seek and strike the nearest enemy over time, each dealing a separate magic damage instance, independent of Zoe's own attacks/casts."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Sleepy Trouble Bubble refunds a percentage of its own cooldown when it hits an enemy champion."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "While asleep, the target takes 30% magic resistance reduction, increasing subsequent magic damage against it."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "The next non-persistent damage instance against the sleeping target is upgraded with bonus true damage equal to that hit's post-mitigation damage, capped at the ability's own damage value; depends on the target's asleep (controlled) state."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "R"
+   ],
+   "note": "Portal Jump resets Zoe's basic attack timer, even though it deals no damage itself."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Mana costs (40-60 for Q, flat 80 for E) can meaningfully cap how often these are cast inside a 15s window at low mana pools."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Sleepy Trouble Bubble's wake-up mechanic grants bonus true damage equal to the post-mitigation damage of the next qualifying hit on the sleeping target, capped at the ability's own base+AP value; this requires dynamically referencing another hit's own resulting damage and injecting a secondary true-damage instance conditioned on a consumable timed debuff, which no single closed-list primitive expresses cleanly (conditional-damage covers the 'target is controlled/asleep' gate but not 'damage equal to another hit's damage, capped'). Paddle Star!'s continuous 0-150%(bugged 146.6%) distance-based total-damage multiplier also needs bespoke numeric handling beyond a flag that positional assumptions apply."
+ },
+ "unsettled": [
+  {
+   "question": "What is Sleepy Trouble Bubble's real cast time: the bin's 0.3s or the wiki's stated 0.25s?",
+   "options": [
+    "Use bin value 0.3s",
+    "Use wiki value 0.25s (as recorded in the E part)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.3",
+    "cast time    = {{fd|0.25}}"
+   ]
+  },
+  {
+   "question": "What travel distance should Paddle Star! be assumed to have covered when it hits the dummy, given total damage scales 0% to ~150% (bugged cap 146.6%) with distance travelled?",
+   "options": [
+    "Assume point-blank cast (0% bonus, minimum damage)",
+    "Assume max-range initial cast/recast to near-max distance (up to ~146.6% bonus)",
+    "Assume some fixed mid-range engage distance"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The '''total''' damage is increased by {{pp|type=distance traveled|key=%|0 to 150 for 7|800;950;1350;1650;1950;2250;2550}}.",
+    "''Paddle Star!'s'' total damage will be increased for a maximum of 146,6% instead of the expected 150%.{{bug}}"
+   ]
+  },
+  {
+   "question": "If Spell Thief (W) is recast (0.25s cooldown) before the prior 3 bolts have finished firing/expired, do 3 additional bolts stack on top of the existing ones (up to some cap), or does recasting simply refresh the 10s window without adding more bolts?",
+   "options": [
+    "New bolts stack additively each cast (unbounded or capped)",
+    "Recasting only refreshes/replaces the existing 3-bolt set",
+    "Recasting while bolts are still active does nothing extra until they're consumed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "she gains {{sti|ms|{{as|'''bonus''' movement speed}}}} for a duration, and summons three bolts that orbit her for the next 10 seconds."
+   ]
+  },
+  {
+   "question": "Does a Spell Thief bolt landing count as a basic-attack-equivalent hit for on-hit item/rune effects (relevant to which item builds benefit), given it uses an attack-like animation but is flagged as spell, not on-hit, damage?",
+   "options": [
+    "Bolts trigger on-hit effects like a basic attack",
+    "Bolts never trigger on-hit effects, only More Sparkles can apply to them"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Zoe''' utilizes an attack-like animation whenever one of the bubbles hurls itself at an enemy, making it look as if she can attack while moving.",
+    "damagetype   = magic\n|spellshield  = true\n|spelleffects = spell"
+   ]
+  },
+  {
+   "question": "Does More Sparkles! hold only a single arm/charge that is refreshed (not stacked) by each subsequent ability cast within the 5s window, or can multiple casts before the empowering attack lands queue multiple bonus-damage procs?",
+   "options": [
+    "Single non-stacking charge, refreshed by each new cast",
+    "Multiple casts before attacking can queue/stack multiple procs"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After casting an {{tip|ability}}, '''Zoe''' empowers her next {{tip|basic attack}}<!--not on-hit?--> or ''{{ai|Spell Thief|Zoe}}'' bolt within 5 seconds to become {{tip|projectile|non-projectile}} and deal ..."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Sleepy Trouble Bubble (E) on the dummy: this deals its base+AP magic damage, applies drowsy/sleep, shreds 30% magic resist while asleep, and arms More Sparkles! for the next attack/bolt.",
+   "Immediately follow with a basic attack (or let a queued Spell Thief bolt fire) to consume the More Sparkles! empowered bonus and, if the target is already asleep, to trigger E's wake-up bonus true damage on that same hit.",
+   "Cast Paddle Star! (Q) at the assumed engage distance for its base+AP+distance-scaled damage, then use the recast during its 1s lingering window for a second, distance-reset damage instance if time and positioning allow.",
+   "Spam Spell Thief (W) on its 0.25s cooldown throughout the fight to continually re-arm More Sparkles! and keep 3 bolts firing at the dummy for extra magic damage instances.",
+   "Auto-attack in every gap between ability casts to maximize basic-attack (and onhit item) uptime.",
+   "Recast E and Q the moment each comes off cooldown (E's cooldown further shortened by its own on-hit refund), repeating the empower-then-attack sequencing each time to re-trigger More Sparkles! and, when a fresh sleep is active, the wake-up true damage bonus.",
+   "Omit Portal Jump (R) from the core loop since it deals no damage and imposes brief action lockouts, unless its attack-reset effect is confirmed to yield a net DPS gain given the fight length."
+  ],
+  "questions": [
+   "Is Portal Jump (R) worth weaving in purely for its attack-reset effect despite its lockout windows, in a 15s single-target damage race?",
+   "What engage/cast distance should the simulator assume for Zoe's Paddle Star! given its large distance-based damage swing?",
+   "Can W realistically be spammed every 0.25s for the whole fight (i.e., is the passive bolt/movement-speed trigger free of any real gating), or does something else limit how often it can be recast for value?",
+   "When both More Sparkles! and E's sleep-consumption bonus are pending on the same next hit, do they both apply to that single attack, or is there an ordering/exclusivity rule between them?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

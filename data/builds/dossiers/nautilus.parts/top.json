@@ -1,0 +1,139 @@
+{
+ "champion": "nautilus",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Staggering Blow adds bonus physical damage to basic attacks, limited to once per 6s per target"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dredge Line deals a single magic damage instance on hitting the dummy"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "While the shield holds, basic attacks apply Pain of Wrath to the target"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Titan's Wrath's empowered attack resets Nautilus' basic attack timer"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Pain of Wrath deals half its damage immediately, half after 1.25s"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Riptide fires three separately timed wave damage instances from one cast, later waves reduced to 50%"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Depth Charge deals periodic underway eruption damage every 0.25s while chasing, then a larger final eruption on reaching the target"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (60/60/50-90/100) against a 15s fight may cap total casts, especially with low starting mana"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Titan's Wrath's shield (base + % max HP) only matters for damage taken in the survival fight"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Number of underway Depth Charge eruptions that land on a stationary dummy before the final eruption depends on assumed cast range and the charge's accelerating travel speed"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Depth Charge (R) needs bespoke chase/acceleration logic (starts at 275 units/s, accelerates by 466.67/s, erupts every 0.25s) to determine how many underway damage instances land on a stationary dummy before the larger final eruption at the target's location; this can't be captured by a fixed-count multipart primitive without an assumed travel distance. Titan's Wrath (W)'s Pain of Wrath also needs bespoke stacking-cap logic: reapplying it while active adds a stack that does not restart the tick timer and deals no additional damage, which is stricter than a generic dot/onhit-rider primitive would assume."
+ },
+ "unsettled": [
+  {
+   "question": "How many underway Depth Charge (R) eruptions should be assumed to hit a stationary dummy before the final eruption lands?",
+   "options": [
+    "Assume the charge reaches the target almost immediately (0-1 underway hits) since dummy doesn't move and cast range is close",
+    "Assume a mid-range cast (e.g. 600-800 units) yielding roughly 2-4 underway eruptions given the accelerating speed formula",
+    "Ignore underway eruptions entirely and only count the final eruption's damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "creating eruptions every {{rutngt|0.25}} in its wake",
+    "speed        = 275 + {{fd|466.67}} per second",
+    "Upon reaching the primary target, the ''Depth Charge'' erupts a final time at their location."
+   ]
+  },
+  {
+   "question": "Do Riptide's (E) second and third wave hits on the same stationary dummy count as separate damage instances (each able to proc on-hit/on-damage item and rune effects), or is the reduction just a single combined damage number?",
+   "options": [
+    "Treat each of the three waves as a separate damage instance against the dummy since it never leaves the overlapping hit radius",
+    "Treat only the first wave as a real 'hit' and the later waves as passive damage-over-time ticks that don't proc on-hit effects"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Each wave deals {{as|magic damage}} to enemies hit, reduced to 50% against those hit by subsequent waves beyond the first",
+    "The first wave happens at 0 seconds after the cast time ends, the second wave at {{fd|0.297}} seconds and the third wave at {{fd|0.561}} seconds."
+   ]
+  },
+  {
+   "question": "Passive (P) bonus damage per level is given in the bin only as an unresolved ByCharLevelFormulaCalculationPart; is the wiki's stated linear interpolation formula (14 + (116-14)/17*(level-1)) exactly what the game uses, or could the live formula differ from this reconstruction at some levels?",
+   "options": [
+    "Trust the wiki's linear interpolation formula exactly as given",
+    "Treat the per-level values as uncertain outside the levels the wiki explicitly cross-checks, pending the unresolved bin formula"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|14 + (116-14)/17*(x-1) for 20}}",
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Dredge Line) on the dummy for its magic damage hit and to close to melee range.",
+   "Immediately follow with W (Titan's Wrath) to raise the shield and arm the next basic attacks with Pain of Wrath.",
+   "Cast R (Depth Charge) on the dummy early, since its long cooldown (80-120s) means it can only be used once in the 15s fight.",
+   "Auto-attack continuously between ability casts: this triggers Staggering Blow's bonus damage (once per 6s per target) and, while the W shield holds, applies and refreshes Pain of Wrath, resetting the attack timer each time it lands.",
+   "Cast E (Riptide) on cooldown for its three-wave AoE damage against the dummy.",
+   "Recast Q and W again as soon as they come off cooldown, always weaving basic attacks in between to keep Pain of Wrath and Staggering Blow procs active as much as possible.",
+   "Do not attempt to recast R, since even at max rank its 80s cooldown exceeds the 15s fight window."
+  ],
+  "questions": [
+   "What cast range against the dummy should be assumed for Depth Charge, since it directly determines how many underway eruptions land before the final burst?",
+   "Should R be cast at the very start of the fight to maximize the number of full-cooldown windows for Q/W/E, or held until W's shield and Pain of Wrath are already active to add onto the burst?",
+   "Given Q's cost (60) and W's cost (60) and E's rising cost (50-90) plus R's 100, does mana realistically run out before 15s at typical starting mana/regen, capping the number of casts of each spell?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

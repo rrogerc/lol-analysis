@@ -1,0 +1,177 @@
+{
+ "name": "Living Artillery",
+ "cooldown": {
+  "values": [
+   2,
+   1.5,
+   1
+  ],
+  "quote": "{{ap|2 to 1}}"
+ },
+ "cost": {
+  "values": [
+   40,
+   40,
+   40
+  ],
+  "quote": "{{pp|type=stacks|40 to 400 for 10|0 to 9}}",
+  "resource": "mana",
+  "binNote": "Base cost is 40 mana at all ranks (KogMawLivingArtillery.BaseCost); the wiki's quoted 40 to 400 range is the stack-based surcharge (+40 mana per stack, up to 9 stacks, cap 400), not a per-rank value."
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    100,
+    140,
+    180
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.75
+    },
+    {
+     "stat": "ap",
+     "coef": [
+      0.35,
+      0.4,
+      0.45
+     ]
+    }
+   ],
+   "quote": "{{ap|100 to 180}} {{as|(+ 75% '''bonus''' AD)}} {{as|(+ {{ap|35 to 45}}% AP)}}",
+   "bin": [
+    "KogMawLivingArtillery#BaseDamageCalc"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "damage amplification based on target's missing health, capped at 60% missing health",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": 0.8333
+    }
+   ],
+   "quote": "{{as|{{pp|type=target's '''missing''' health|key=%|0 to 50 for 11|key1=%|0 to 60|formula=0.833% per 1% of target's '''missing''' health. ''This is capped at 50% increase at 60% '''missing''' health.''}}|health}}",
+   "bin": [
+    "KogMawLivingArtillery.TooltipMissingHealthDamageAmp"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "damage is doubled instead if the target is below 40% maximum health",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    2
+   ],
+   "terms": [],
+   "quote": "or instead by {{ccs|100%|magic}} if the target is below {{as|40% '''maximum''' health}}",
+   "bin": [
+    "KogMawLivingArtillery.FinalDamageMult"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "stack cap for Living Artillery",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 9,
+   "terms": [],
+   "quote": "refreshing on subsequent casts and stacking up to 9 times",
+   "bin": [],
+   "binNote": "No bin row names the stack cap directly; it is only inferable from ManaCostCap=400 divided by the 40-mana-per-stack surcharge (BaseCost)."
+  },
+  {
+   "id": "r_6",
+   "meaning": "duration of a Living Artillery stack before it expires",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 8,
+   "terms": [],
+   "quote": "'''Kog'Maw''' then generates a {{tip|stack}} of ''Living Artillery'' for 8 seconds",
+   "bin": [
+    "KogMawLivingArtillery.ManaCostDuration"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "mana cost increase per stack of Living Artillery",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 40,
+   "terms": [],
+   "quote": "''Living Artillery's'' {{sti|{{as|mana cost}}}} is increased by {{as|40|mana}}",
+   "bin": [
+    "KogMawLivingArtillery.BaseCost"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The acid globule drops and deals damage 0.6 seconds after cast, not instantly.",
+   "quote": "spits a globule of acid into the air that drops to the target location after {{fd|0.6}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage scales up to a 50% bonus at 60% missing health, but is replaced entirely by a flat 100% (double) bonus if the target is below 40% maximum health, rather than the two bonuses stacking.",
+   "quote": "or instead by {{ccs|100%|magic}} if the target is below {{as|40% '''maximum''' health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each cast refreshes the Living Artillery stack duration and adds a stack, up to 9, each stack permanently raising the ability's mana cost until it expires.",
+   "quote": "'''Kog'Maw''' then generates a {{tip|stack}} of ''Living Artillery'' for 8 seconds, refreshing on subsequent casts and stacking up to 9 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Living Artillery can be blocked by spell shields.",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KogMawLivingArtillery.Range",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KogMawLivingArtillery.ManaCostCap",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KogMawLivingArtillery.VisionDebuffDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "KogMawLivingArtillery.MaxExtraCost",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KogMawLivingArtillery.VisionRadius",
+   "reason": "utility"
+  },
+  {
+   "ref": "KogMawLivingArtillery.MidDamageMult",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

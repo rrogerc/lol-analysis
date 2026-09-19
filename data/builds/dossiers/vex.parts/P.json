@@ -1,0 +1,244 @@
+{
+ "name": "Doom 'n Gloom",
+ "cooldown": {
+  "values": [
+   25,
+   25,
+   25,
+   25,
+   25,
+   22,
+   22,
+   22,
+   22,
+   22,
+   19,
+   19,
+   19,
+   19,
+   19,
+   16,
+   16,
+   16
+  ],
+  "quote": "{{pp|25 to 16 for 4|1;6;11;16}}",
+  "binNote": "The bin's slot-level `cooldown: 0` on VexP is a placeholder for the passive slot itself; the actual Doom cooldown by level is given by VexP#DoomCD, which matches the wiki's values."
+ },
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_gloom_duration",
+   "meaning": "duration Gloom mark lasts on a dashing/blinking enemy",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "will be marked with ''Gloom'' for 6 seconds",
+   "bin": [
+    "VexP.GloomDuration"
+   ]
+  },
+  {
+   "id": "p_fear_duration",
+   "meaning": "duration enemies are feared by Doom",
+   "role": "duration",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.75,
+    0.75,
+    0.75,
+    0.75,
+    0.75,
+    1,
+    1,
+    1,
+    1.25,
+    1.25,
+    1.25,
+    1.25,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5
+   ],
+   "terms": [],
+   "quote": "{{pp|0.75 to 1.5 for 4|1;6;9;13}} seconds",
+   "bin": [
+    "VexP#FearDuration"
+   ]
+  },
+  {
+   "id": "p_gloom_proc_damage",
+   "meaning": "bonus magic damage dealt when Gloom mark is detonated on a champion",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    40,
+    46.47,
+    52.94,
+    59.41,
+    65.88,
+    72.35,
+    78.82,
+    85.29,
+    91.76,
+    98.24,
+    104.71,
+    111.18,
+    117.65,
+    124.12,
+    130.59,
+    137.06,
+    143.53,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{pp|40 + (150-40)/17*(x-1) for 20|color=magic damage}} {{as|(+ 25% AP)}}",
+   "bin": [
+    "VexP#GloomProcCalc"
+   ]
+  },
+  {
+   "id": "p_gloom_proc_nonchamp_pct",
+   "meaning": "Gloom detonation damage against non-champions, as a fraction (percent damage, exact composition not specified)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.45,
+    0.45,
+    0.45,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.55,
+    0.55,
+    0.55,
+    0.6,
+    0.6,
+    0.6
+   ],
+   "terms": [],
+   "quote": "Against non-champions, this instead deals {{pp|40 to 60 for 5|1;6;9;13;16|key=%}} damage",
+   "bin": [],
+   "binNote": "The sheet's row 'VexP.GloomMinionMod (percent) = byLevelL[0.4/.../0.6]' contains these exact values, but its name (with a literal space and parentheses) is not a valid identifiable data-value reference the checker can resolve, so it is cited here as unresolvable rather than matched; the numbers do match the wiki's stated percentages exactly."
+  },
+  {
+   "id": "p_doom_refund_champ",
+   "meaning": "fraction of Doom's cooldown refunded when Gloom detonates on a champion",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "refunds 25% of ''Doom's'' cooldown",
+   "bin": [
+    "VexP.GloomCDChamp"
+   ]
+  },
+  {
+   "id": "p_doom_refund_nonchamp",
+   "meaning": "fraction of Doom's cooldown refunded when Gloom detonates on a non-champion",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "refunds 10% of ''Doom's'' cooldown",
+   "bin": [
+    "VexP.GloomCDNonChamp"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Vex's next basic attack (which becomes non-projectile) or basic ability hit against an enemy with Gloom detonates the mark for bonus damage and CDR.",
+   "quote": "'''Vex's''' next {{tip|basic attack}}, which becomes {{tip|projectile|non-projectile}}, or basic ability hit against an enemy with ''Gloom'' will detonate the mark",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Looming Darkness (E) also inflicts Gloom on hit, but cannot itself detonate an existing mark.",
+   "quote": "''{{ai|Looming Darkness|Vex}}'' will also inflict ''Gloom'', but cannot detonate it.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Doom's cooldown begins as soon as the empowered basic ability is cast, not when it lands.",
+   "quote": "''Doom's'' cooldown starts as soon as the basic ability is cast.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell Shield blocks all of Doom's effects but does not block Gloom's empowered attack or the mark itself.",
+   "quote": "{{tip|Spell shield}} will block all of ''Doom's'' effects but not ''Gloom's'' empowered attack nor mark.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A Gloom mark about to expire refreshes to 0.5 seconds when Vex starts an attack windup against that target.",
+   "quote": "''Gloom's'' mark duration will refresh to {{fd|0.5}} seconds when '''Vex''' starts an attack windup against a target that has a mark which is about to expire.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "VexP.MaxDoomCD",
+   "reason": "unknown"
+  },
+  {
+   "ref": "VexP.DashListenerRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "VexP.DashLockoutTime",
+   "reason": "unknown"
+  },
+  {
+   "ref": "VexP.FearSlowPercentMax",
+   "reason": "utility"
+  },
+  {
+   "ref": "VexP.FearedMinionSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "VexP.EFearedMinionSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "VexP.FearSlowPercentMin",
+   "reason": "utility"
+  },
+  {
+   "ref": "VexP.RangeOfMaxFearSlow",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "VexP.RangeOfMinFearSlow",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "VexP#{c21c264c}",
+   "reason": "unknown"
+  },
+  {
+   "ref": "VexP.GloomMinionMod (percent)",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

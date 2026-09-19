@@ -1,0 +1,197 @@
+{
+ "name": "Test of Spirit / Vessel",
+ "cooldown": {
+  "values": [
+   16,
+   15,
+   14,
+   13,
+   12
+  ],
+  "quote": "{{ap|16 to 12}}"
+ },
+ "cost": {
+  "values": [
+   35,
+   40,
+   45,
+   50,
+   55
+  ],
+  "quote": "{{ap|35 to 55}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Damage Transmission (echo percent of pre-mitigation damage taken by Spirit)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.0008,
+     "coefScaling": [
+      {
+       "stat": "ad",
+       "per": 100,
+       "coef": 0.08
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|25 to 45}}% {{as|(+ 8% per 100 AD)}}",
+   "bin": [
+    "IllaoiE#EchoPercent"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Spirit tether duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 7,
+   "terms": [],
+   "quote": "tethered to the {{as|Spirit|buzzword}} for {{tt|7 seconds|Timer starts when the target is hit}}",
+   "bin": [
+    "IllaoiE.SpiritDuration"
+   ]
+  },
+  {
+   "id": "e_3",
+   "meaning": "Vessel debuff duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "marking the target as a {{as|Vessel|buzzword3}} for 4 seconds",
+   "bin": [
+    "IllaoiE.VesselDuration"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "Slow amount when tether returns after Vessel severed",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.8,
+   "terms": [],
+   "quote": "{{tip|slow|slowing}} them by 80% for {{fd|1.5}} seconds",
+   "bin": [
+    "IllaoiE.SlowAmount"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "slowing them by 80% for {{fd|1.5}} seconds once the tether returns",
+   "bin": [
+    "IllaoiE.SlowDuration"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "Time between tentacle attacks on Vessel/Spirit",
+   "role": "interval",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "terms": [],
+   "quote": "once every {{pp|4.5 to 3.5 for 3|1 to 13|formula=4-0.5 every 6 levels, with an up to 0.5-second delay. Cooldown starts upon starting the slam.}} seconds",
+   "bin": [
+    "IllaoiE#TimeBetweenVesselTentacleSlams"
+   ],
+   "binNote": "Wiki text says 4.5 to 3.5 but bin/formula and level table both show 4 to 3 (4-0.5 every 6 levels starting at 4); treating wiki '4.5' as a likely typo, using bin values."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The Spirit echoes a portion of pre-mitigation damage it takes to the tethered target as the ability's damage; this is the only source of damage from this ability in a dummy fight.",
+   "quote": "echoes a portion of the {{tt|pre-mitigation damage|Damage calculated before modifiers}} received to the tethered champion",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Echoed damage type matches the damage type that hit the Spirit (physical/magic/true), not a fixed type.",
+   "quote": "damagetype   = {{dv|{{tip|Physical damage|Physical}}|{{tip|Magic damage|Magic}}|{{tip|True damage|True}}<br>(Echoed damage)}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Echoed damage is capped to the Spirit's current health, and modifiers apply in a specific (potentially inconsistent) order.",
+   "quote": "Echoed damage is calculated by taking the pre-mitigation damage against the {{as|Spirit|buzzword}}, applying ''Test of Spirit's'' damage modifier, and then capping it to the {{as|Spirit's|buzzword}} {{as|'''current''' health}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Transferred/echoed damage applies on-damage effects like damage amplifiers, Black Cleaver, Morellonomicon, etc., but does not doubly apply on-hit or on-spell effects to the Vessel.",
+   "quote": "Transferred damage will apply on-damage effects, such as damage amplifiers ... Transferred damage will not doubly apply on-hit or on-spell effects versus the target",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Illaoi cannot recast Test of Spirit until the current Spirit dies.",
+   "quote": "Test of Spirit cannot be cast again until the {{as|Spirit|buzzword}} dies.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ability is unusable/locked out while the projectile travels and while pulling the Spirit.",
+   "quote": "'''Illaoi''' is {{tip|lockout|unable to act}} while firing the projectile and while the target's {{as|Spirit|buzzword}} is being pulled.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "IllaoiE.GraceBeforeDormantAfterELand",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "IllaoiE.Density",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "IllaoiE.SpiritLeashRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "IllaoiE#{87aff6dd}",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

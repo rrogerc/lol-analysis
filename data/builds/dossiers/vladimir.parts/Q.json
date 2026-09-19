@@ -1,0 +1,99 @@
+{
+ "name": "Transfusion / Crimson Rush",
+ "cooldown": {
+  "values": [9, 7.9, 6.8, 5.7, 4.6],
+  "quote": "{{ap|9 to 4.6}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [80, 100, 120, 140, 160],
+   "terms": [{"stat": "ap", "coef": 0.6}],
+   "quote": "{{ap|80 to 160}} {{as|(+ 60% AP)}}",
+   "bin": ["VladimirQ.BaseDamage", "VladimirQ#BaseDamageTooltip"]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Increased Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [148, 185, 222, 259, 296],
+   "terms": [{"stat": "ap", "coef": 1.11}],
+   "quote": "{{ap|80*1.85 to 160*1.85}} {{as|(+ 111% AP)}}",
+   "bin": ["VladimirQ#EmpoweredDamageTooltip"],
+   "binNote": "EmpoweredDamageTooltip = BaseDamageTooltip * 1.85 (flat [148/185/222/259/296], + 1.11xap), matching the wiki's total exactly."
+  },
+  {
+   "id": "q_4",
+   "meaning": "Duration of the Crimson Rush surge before it fully depletes (the window to land the empowered cast)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "depletes over {{fd|2.5}} seconds",
+   "bin": ["VladimirQ.FrenzyDuration"]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Crimson Rush stacks required to trigger the surge (arms the next Transfusion as the empowered cast)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "At 2 points of ''{{tip|Fury|Crimson Rush}}'', '''Vladimir''' surges",
+   "bin": [],
+   "binNote": "The wiki states the surge triggers at 2 stacks of Crimson Rush. VladimirQ's data values have no named stack-cap row for this. sheet.json's top-level resource block (arType 8, values {726ee5cd}=2, {c4ab3550}=0) plausibly encodes the resource max/start as 2/0, matching the wiki, but its keys are unlabeled hashes rather than a spell row kit_sources.py sheet prints, so it is not cited with confidence."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Transfusion generates 1 point of Crimson Rush over the course of its cooldown (i.e. stacks build up while the ability is on cooldown after being cast).",
+   "quote": "He then generates 1 point of ''{{tip|Fury|Crimson Rush}}'' over the {{sti|cooldown}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At 2 points of Crimson Rush, Vladimir surges; casting Transfusion during the surge consumes all Crimson Rush to deal 85% increased damage.",
+   "quote": "At 2 points of ''{{tip|Fury|Crimson Rush}}'', '''Vladimir''' surges, gaining",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Once triggered, the surge (Crimson Rush) depletes over 2.5 seconds, so the empowered cast must land inside that window or the charge is lost.",
+   "quote": "depletes over {{fd|2.5}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Crimson Rush depletes 75% slower while Vladimir is in Sanguine Pool, channeling Tides of Blood, or in stasis, extending the window to land the empowered Transfusion.",
+   "quote": "''{{tip|Fury|Crimson Rush}}'' depletes 75% slower during ''{{ai|Sanguine Pool|Vladimir}}'', ''{{ai|Tides of Blood|Vladimir}}'', or {{tip|stasis (buff)|stasis}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Although visualized as a projectile, Transfusion's healing (and by the same cast, presumably its damage) triggers as soon as the 0.25s cast time completes, not on a travel delay.",
+   "quote": "the healing itself triggers as soon as the cast time completes.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Vladimir can cast Sanguine Pool and Hemoplague during Transfusion's cast time, so the 0.25s cast does not block those other abilities.",
+   "quote": "'''Vladimir''' can cast {{ai|Sanguine Pool|Vladimir}} and {{ai|Hemoplague|Vladimir}} during ''Transfusion's'' cast time.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "VladimirQ.HealAPRatio", "reason": "defensive"},
+  {"ref": "VladimirQ.BaseHeal", "reason": "defensive"},
+  {"ref": "VladimirQ.Empowered___HealPer100AP_0_1_", "reason": "defensive"},
+  {"ref": "VladimirQ.MinionHealPercent", "reason": "defensive"},
+  {"ref": "VladimirQ.DamagePercentAmp", "reason": "unknown"}
+ ]
+}

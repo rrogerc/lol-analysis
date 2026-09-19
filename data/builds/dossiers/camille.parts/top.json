@@ -1,0 +1,183 @@
+{
+ "champion": "camille",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "next basic attack against a champion grants a shield (defensive, not damage, but marks an on-hit trigger with its own cooldown gate)"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q arms next basic attack with bonus AD physical damage + bonus true damage on delayed recast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q has a timed recast window (0-3.5s) that doubles damage and adds true damage if delayed past 1.5s"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "both Q casts reset the basic attack timer"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E"
+   ],
+   "note": "Tactical Sweep base cone damage and Wall Dive dash damage are on-cast/on-delay damage instances"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "outer-cone additional damage scales with target's max health"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "1.1s sweep animation during which Camille cannot basic attack (though other abilities can be cast)"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E",
+    "Q"
+   ],
+   "note": "Wall Dive grants bonus attack speed for 5s; Q grants bonus MS for 1s (MS not damage-relevant but AS is)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's basic-attack bonus magic damage is a percent of target's current health"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "R"
+   ],
+   "note": "while target is in R's zone, Camille's basic attacks deal bonus magic damage"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs for Q/W/E/R could matter over a 15s fight depending on build"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's cooldown starts only on first attack landing, not on cast, effectively shortening the usable window"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Q's recast timing logic (whether the player delays 1.5s+ to double damage and add true damage, versus recasting immediately for a faster but weaker second hit) is a genuine choice that trades DPS efficiency for damage-per-instance, and the true-damage conversion percentage is level-gated and capped — this needs bespoke sequencing logic beyond a flat 'empowered-attack' primitive since the simulator must decide the recast delay policy. Additionally R's onhit-rider (bonus magic damage as % current health) only applies while the target remains inside the zone for a duration gated by R rank, requiring bespoke duration-window tracking distinct from a generic onhit-rider that would otherwise apply indefinitely."
+ },
+ "unsettled": [
+  {
+   "question": "Should the simulated Q recast be timed immediately (weak, mana-free re-empower) or delayed 1.5s+ for double damage + true damage, given the loss of attack tempo either way?",
+   "options": [
+    "Always delay recast past 1.5s to maximize per-cast damage even if it costs attack speed uptime",
+    "Always recast immediately after the 0.25s minimum to maximize attack frequency",
+    "Recast timing should be optimized per-attack-speed-breakpoint (i.e. simulate both and pick better)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If ''Precision Protocol'' is recast after {{fd|1.5}} seconds of the first attack, then the '''bonus''' damage is doubled, and ... of the attack's '''total''' damage will be dealt as {{as|{{sti|true damage}}}}."
+   ]
+  },
+  {
+   "question": "At levels 17-18, does the true-damage conversion percentage on Q's delayed recast stay capped at 100% (per wiki 'capped at level 16') or continue past 100% as the bin's byLevel array literally states (1.04, 1.08)?",
+   "options": [
+    "Cap at 100% for levels 17-18 as wiki states",
+    "Use bin's literal values >100% (1.04/1.08), possibly clipped to 100% by the game engine anyway making this moot",
+    "Treat as a bin bug/unused tail with no real effect since levels 17-18 rarely reached"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|key=%|40 to 100 for 16|formula=36%+(4%*level). ''Capped at level 16''}}",
+    "byLevelL[0.4/0.44/0.48/0.52/0.56/0.6/0.64/0.68/0.72/0.76/0.8/0.84/0.88/0.92/0.96/1/1.04/1.08]"
+   ]
+  },
+  {
+   "question": "Does Camille's R onhit-rider bonus magic damage apply to every basic attack she lands on the target for the full zone duration, or only to the single attack she makes immediately upon landing ('Camille will attempt to basic attack the target upon landing')?",
+   "options": [
+    "Bonus magic damage applies to every basic attack against the target for the whole zone duration (2.5-4s)",
+    "Bonus magic damage applies only to the guaranteed on-landing attack, with normal attacks afterward",
+    "Bonus applies to all attacks but only while target remains within melee/attack range, which a stationary dummy always satisfies"
+   ],
+   "impact": "high",
+   "quotes": [
+    "While within the zone, '''Camille's''' basic attacks against the target deal {{as|'''bonus''' magic damage}}.",
+    "'''Camille''' will attempt to basic attack the target upon landing."
+   ]
+  },
+  {
+   "question": "Is Wall Dive's damage a single-target hit on the dummy (as in a 1v1 damage fight) or does its AoE radius matter at all — and can Wall Dive even be used against a stationary target with no wall to bind to, given Hookshot requires terrain?",
+   "options": [
+    "Assume Camille has terrain available to Hookshot off of, enabling Wall Dive damage in the rotation",
+    "Exclude Wall Dive from the damage-fight rotation since a terrain-less dummy arena may make E's damage inaccessible",
+    "Model Hookshot+Wall Dive as usable regardless of terrain for simulation purposes (abstracting away the terrain requirement)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Camille''' fires a grapple in the target direction. If the grapple collides with terrain, '''Camille''' will {{tip|dash}} toward and attach to the terrain"
+   ]
+  },
+  {
+   "question": "Does the wiki's Tactical Sweep cooldown/cost ({{ap|12 to 10}}, {{ap|50 to 70}}) match the numbers-sheet ddragon row, given the raw CamilleW cooldown row in the sheet ([15/14/13/12/11]) disagrees with ddragon's [12,11.5,11,10.5,10]?",
+   "options": [
+    "Use ddragon/wiki values (12 to 10) as live",
+    "Use the raw CamilleW cooldown row (15 to 11) as live, treating ddragon as stale",
+    "Sheet contains two conflicting sources and neither is definitively marked authoritative"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "ddragon W Tactical Sweep: maxrank 5, cooldown [12, 11.5, 11, 10.5, 10]",
+    "cooldown: [15/14/13/12/11]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: assume Camille is already at full stacks/buffs available (no ramp-up needed since P/Q/W/E/R are all independently available).",
+   "Open with Q (Precision Protocol) to empower the next basic attack, then auto-attack to land the empowered hit.",
+   "Immediately weave W (Tactical Sweep) during the Q attack windup/animation since other abilities can be cast without cancelling Q's empowered attack.",
+   "Delay the Q recast until at least 1.5s after the first empowered attack landed, then recast to trigger the doubled damage + true damage conversion, continuing to auto-attack in between.",
+   "Use E (Hookshot -> Wall Dive) for its dash damage once terrain is assumed available, weaving it in during downtime between Q cooldowns.",
+   "Use R (The Hextech Ultimatum) as soon as available (or once mana/cooldown allow) to leash the dummy and gain the bonus magic damage on-hit for its duration; keep attacking the target throughout since it can't escape the zone.",
+   "Fill all remaining time with basic attacks between ability cooldowns to maximize on-hit and empowered-attack uptime; recast Q on cooldown following the same 1.5s-delay pattern each time.",
+   "Repeat W and E on cooldown, prioritizing weaving them so they never clip the Q empowered-attack windup or auto-attack rhythm."
+  ],
+  "questions": [
+   "Should Q's recast always be delayed to the 1.5s breakpoint for maximum single-target damage, or does attack-speed-driven uptime loss make immediate recasting better at some item builds?",
+   "Is terrain assumed present in the damage-fight arena so Hookshot/Wall Dive can be used at all, and if so, at what distance/wall configuration?",
+   "Does R's bonus magic on-hit last the full zone duration for every attack, changing whether R should be cast early (to front-load DPS window) or held for a burst finish?",
+   "Given W's 1.1s channel blocks basic attacks, should W be cast during a gap in the auto-attack cycle to minimize lost auto-attack DPS, or is it always worth it regardless of timing?",
+   "Which cooldown/cost values for W are correct: the ddragon row or the raw CamilleW row in the numbers sheet, since this affects how many W casts fit in 15 seconds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

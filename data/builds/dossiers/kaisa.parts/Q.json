@@ -1,0 +1,225 @@
+{
+ "name": "Icathian Rain / Icathian Rain 2",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": {
+  "values": [
+   55,
+   55,
+   55,
+   55,
+   55
+  ],
+  "quote": "55",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage Per Missile",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    40,
+    55,
+    70,
+    85,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.55
+    },
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|40 to 100}} {{as|(+ 55% '''bonus''' AD)}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "KaisaQ#TotalIndividualMissileDamage",
+    "KaisaQ.BaseDamage",
+    "KaisaQ.BonusADRatio",
+    "KaisaQ.APRatio"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Reduced Damage Per Missile",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    10,
+    13.75,
+    17.5,
+    21.25,
+    25
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.1375
+    },
+    {
+     "stat": "ap",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{ap|40*0.25 to 100*0.25}} {{as|(+ {{ap|55*0.25}}% '''bonus''' AD)}} {{as|(+ {{ap|20*0.25}}% AP)}}",
+   "bin": [
+    "KaisaQ.BaseDamage",
+    "KaisaQ.BonusADRatio",
+    "KaisaQ.APRatio",
+    "KaisaQ.ExtraHitReduction"
+   ],
+   "binNote": "No calculation row directly outputs the per-missile reduced value; it is BaseDamage/BonusADRatio/APRatio scaled by ExtraHitReduction=0.25, as also embedded in MaxDamageTotal's formula."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Total Single-Target Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    90,
+    123.75,
+    157.5,
+    191.25,
+    225
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.2375
+    },
+    {
+     "stat": "ap",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|40*(1+0.25*5) to 100*(1+0.25*5)}} {{as|(+ {{ap|55*(1+0.25*5)}}% '''bonus''' AD)}} {{as|(+ {{ap|20*(1+0.25*5)}}% AP)}}",
+   "bin": [
+    "KaisaQ.MaxDamage",
+    "KaisaQ#MaxDamageTotal",
+    "KaisaQ.BonusADRatio",
+    "KaisaQ.APRatio",
+    "KaisaQ.ExtraHitReduction"
+   ],
+   "binNote": "MaxDamage rows equal the base [90,123.75,...,225], confirming base*(1+0.25*5). The scaling coefficients 1.2375 (bonusAd) and 0.45 (ap) are not printed directly as separate data rows: they equal BonusADRatio=0.55 and APRatio=0.2 each multiplied by the same (1+ExtraHitReduction*5)=2.25 factor embedded in MaxDamageTotal's formula (BaseDamage+ratio*stat, then plus that whole sum times 5 times ExtraHitReduction=0.25), which algebraically produces coef*(1+5*0.25)=coef*2.25."
+  },
+  {
+   "id": "q_4",
+   "meaning": "Total Evolved Single-Target Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    150,
+    206.25,
+    262.5,
+    318.75,
+    375
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 2.0625
+    },
+    {
+     "stat": "ap",
+     "coef": 0.75
+    }
+   ],
+   "quote": "{{ap|40*(1+0.25*11) to 100*(1+0.25*11)}} {{as|(+ {{ap|55*(1+0.25*11)}}% '''bonus''' AD)}} {{as|(+ {{ap|20*(1+0.25*11)}}% AP)}}",
+   "bin": [
+    "KaisaQ.MaxDamageEvolved",
+    "KaisaQ#{b2bd0d2f}",
+    "KaisaQ.BonusADRatio",
+    "KaisaQ.APRatio",
+    "KaisaQ.ExtraHitReduction"
+   ],
+   "binNote": "MaxDamageEvolved rows equal the base [150,206.25,...,375], confirming base*(1+0.25*11). The scaling coefficients 2.0625 (bonusAd) and 0.75 (ap) are not printed directly as separate data rows: they equal BonusADRatio=0.55 and APRatio=0.2 each multiplied by the (1+ExtraHitReduction*11)=3.75 factor embedded in {b2bd0d2f}'s formula (BaseDamage+ratio*stat, then plus that whole sum times 11 times ExtraHitReduction=0.25), which algebraically produces coef*(1+11*0.25)=coef*3.75."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The swarm fires 6 missiles that split among nearby visible enemies, each hitting 0.4 seconds after cast, dealing separate damage instances.",
+   "quote": "releases a swarm of 6 missiles that evenly distributes among nearby {{tip|sight|visible}} enemies, each one hitting their target after {{fd|0.4}} seconds to deal {{as|physical damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Against a single target, all 6 (or 12 evolved) missiles hit it, but only the first deals full damage; the rest deal reduced damage.",
+   "quote": "Non-minions take {{ap|{{#var:mod}}*100}}% damage from missiles beyond their first.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first missile on a target is a single area-damage instance, while subsequent missiles on the same target are separate persistent area-damage instances.",
+   "quote": "The first missile on a target applies {{tip|area damage}}, while the rest on the same target apply {{tip|persistent area damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield only blocks one of the missiles, not all of them.",
+   "quote": "{{tip|Spell shield|Spell shields}} only block the damage from a single missile.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Targets are locked in at the moment of cast and do not change if the caster or target moves afterward.",
+   "quote": "''Icathian Rain'' acquires its targets upon cast. Moving will not change its targets.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting Supercharge does not interrupt or stop the already-fired missiles.",
+   "quote": "Charging {{ai|Supercharge|Kai'Sa}} will not stop the missiles from firing.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "When all missiles converge on a single target, it takes 1 second total for them all to land.",
+   "quote": "It takes 1 second for all missiles to fire at a single target.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Minions below 35% health take double damage from the missiles (does not apply to champions).",
+   "quote": "{{tip|Minions}} below {{sti|health|{{as|35% health}}}} take double damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability requires a nearby enemy to be cast at all.",
+   "quote": "''A nearby enemy is required to cast this ability.''",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KaisaQ.MaxDamageNL",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KaisaQ.MaxDamageEvolvedNL",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KaisaQ.MinionDamageMultiplier",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KaisaQ.MinionHPThreshold",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

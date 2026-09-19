@@ -1,0 +1,831 @@
+{
+ "champion": "zed",
+ "abilities": {
+  "P": {
+   "name": "Contempt for the Weak",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage as percent of target's maximum health",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.1,
+      0.1
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.075,
+        0.1,
+        0.1
+       ]
+      }
+     ],
+     "quote": "{{pp|key=%|5 to 10 for 3|1;7;17}} of the target's '''maximum''' health}} as {{as|'''bonus''' magic damage}}",
+     "bin": [
+      "ZedPassive#{6a1a62e9}"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "health threshold below which passive triggers",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "against targets {{as|below 50% '''maximum''' health}}",
+     "bin": [
+      "ZedPassive.CurrentHealthThreshold"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "internal cooldown before passive can trigger on the same champion again",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 10,
+     "terms": [],
+     "quote": "cannot occur on the same {{tip|champion}} more than once every few seconds",
+     "bin": [
+      "ZedPassive.PerUnitCD"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The enhanced attack applies other on-hit effects and can critically strike as normal (the bonus damage cannot).",
+     "quote": "The enhanced attack applies other {{tip|on-hit}} effects and can {{tip|critical strike|critically strike}} as normal (the bonus damage cannot).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Contempt for the Weak is not consumed when dodged or missed, but is consumed when blocked.",
+     "quote": "''Contempt for the Weak'' is not consumed when {{tip|dodged}} or {{tip|blind|missed}}, but it is consumed when {{tip|blocked}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The proc checks the target's health when the attack lands, not when it was declared.",
+     "quote": "''Contempt for the Weak'' considers the target's health upon landing the attack, not when it's declared.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not trigger against structures.",
+     "quote": "The empowered attack will not trigger against {{tip|structures}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZedPassive.MonsterDamageCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZedPassive.MonsterDamageMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZedPassive.ShenZedQuestKillCount",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZedPassive.ShenZedQuestBonus",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Razor Shuriken",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "6"
+   },
+   "cost": {
+    "values": [
+     75,
+     70,
+     65,
+     60,
+     55
+    ],
+    "quote": "{{ap|75 to 55}}",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "ZedQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      48,
+      72,
+      96,
+      120,
+      144
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|80*0.6 to 240*0.6}} {{as|(+ {{ap|100*0.6}}% '''bonus''' AD)}}",
+     "bin": [
+      "ZedQ#PassThroughDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Deals reduced damage to targets beyond the first hit by the shuriken.",
+     "quote": "deals {{as|physical damage}} to enemies hit, reduced to 60% against targets beyond the first",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocking the shuriken still counts as a hit for reduced pass-through damage to subsequent targets.",
+     "quote": "''Shurikens'' blocked by {{tip|spell shield}} still count as being hit for the reduced pass-through damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's damage/effects resolve at the end of its cast time.",
+     "quote": "{{Effect at cast time end}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Living Shadow / Living Shadow 2",
+   "cooldown": {
+    "values": [
+     20,
+     19,
+     18,
+     17,
+     16
+    ],
+    "quote": "{{ap|20 to 16}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     35,
+     30,
+     25,
+     20
+    ],
+    "quote": "{{ap|40 to 20}}",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Energy Restored",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ],
+     "terms": [],
+     "quote": "{{as|{{ap|30 to 50}}|energy}}",
+     "bin": [
+      "ZedW.EnergyRestoreDoubleHit"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Shadow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5.25,
+     "terms": [],
+     "quote": "remains there for {{fd|5.25}} seconds",
+     "bin": [
+      "ZedW.ShadowDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Recast time limit (buff duration to swap)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5.25,
+     "terms": [],
+     "quote": "gains a buff for {{fd|5.25}} seconds that indicates and determines the duration in which he may recast ''Living Shadow''",
+     "bin": [
+      "ZedW.SwapTimeLimit"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Zed and his Shadows mimic Q and E; hitting an ability on the same target from both restores energy, once per cast ability.",
+     "quote": "restores {{sti|{{as|energy}}}} whenever he and his [[File:Zed's Shadow.png|20px|border|link=]] ''Shadows'' or multiple ''Shadows'' hit an ability on the same target. This may only occur once per cast ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The energy refund is not granted if the mimicked ability is blocked by a spell shield.",
+     "quote": "The {{sti|energy}} refund is not granted if the mimicked ability is blocked by a {{tip|spell shield}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Shadow can mimic Razor Shuriken and Shadow Slash regardless of range.",
+     "quote": "being able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If cast while Q is in cast time and recast swaps places, Zed releases the shuriken from the original cast location while remaining in cast time, then throws the shuriken the Shadow would have thrown from the new location.",
+     "quote": "If ''Living Shadow'' is recast during {{ais|Q|Zed}} cast, '''Zed''' will instantly release the shuriken from the cast location of {{ai|Q|Zed}} while still remaining in cast time. Once he has swapped places, he will then throw the shuriken that the [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' would have thrown instead.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting a new Living Shadow while a non-Death Mark Shadow already exists makes the previous Shadow instantly disappear.",
+     "quote": "If '''Zed''' casts ''Living Shadow'' while a non-''{{ai|Death Mark 2|Zed|Death Mark}} Shadow'' is already present, the previous ''Shadow'' will instantly disappear.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the Shadow expires during Q's cast time, the mimicked cast is cancelled.",
+     "quote": "If a [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' expires while in the cast time of {{ai|Q|Zed}}, the mimicked cast will be cancelled.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shadows cast E independently of whether Zed is in Q's cast time.",
+     "quote": "[[File:Zed's Shadow.png|20px|border|link=]] ''Shadows'' will cast {{ai|E|Zed}} independently of being in {{ais|Q|Zed}} cast time or not.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZedW.RecastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZedW.MimickRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZedW.ShadowDurationTooltip",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Shadow Slash",
+   "cooldown": {
+    "values": [
+     5,
+     4.5,
+     4,
+     3.5,
+     3
+    ],
+    "quote": "{{ap|5 to 3}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "energy"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      92.5,
+      115,
+      137.5,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|70 to 160}} {{as|(+ 70% '''bonus''' AD)}}",
+     "bin": [
+      "ZedE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "ZedE.MoveSpeedMod"
+     ],
+     "binNote": "Wiki shows base slow 20/25/30/35/40%; bin ZedE.MoveSpeedMod lists -0.2/-0.25/-0.3/-0.35/-0.4, matching."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Enhanced Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      37.5,
+      45,
+      52.5,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|20*1.5 to 40*1.5}}%",
+     "bin": [
+      "ZedE.MoveSpeedModBonus"
+     ],
+     "binNote": "Wiki 1.5x of base slow (30/37.5/45/52.5/60%); bin ZedE.MoveSpeedModBonus lists -0.3/-0.375/-0.45/-0.525/-0.6, matching."
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}",
+     "bin": [
+      "ZedE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Living Shadow cooldown reduction per champion hit",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "reduced by 3 seconds for each enemy {{tip|champion}} hit by '''Zed's''' slash",
+     "bin": [
+      "ZedE.ShadowHitCDR"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "A target can only be damaged by one slash per cast of Shadow Slash, even if hit by multiple overlapping slashes from Zed and his Shadows.",
+     "quote": "a target can only be damaged by one slash per cast of ''Shadow Slash''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Being hit by two or more slashes at once applies the enhanced slow instead of dealing extra damage.",
+     "quote": "with {{tt|multiple slashes|See notes}} dealing no additional damage but the slow's effectiveness being increased by 50%",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield blocks only one Shadow Slash hit even if multiple hit simultaneously, prioritizing the Shadow's slash over Zed's.",
+     "quote": "{{tip|Spell shield}} will only block one ''Shadow Slash'' even if multiple of them hit at the same time, prioritizing blocking the slash from '''Zed's''' ... ''Shadow''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shadow Slash does not interrupt attack, movement, or cast commands, so it does not reset the attack timer.",
+     "quote": "''Shadow Slash'' does not interrupt attack, movement, or cast commands.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZedE.ADRatio",
+     "reason": null
+    },
+    {
+     "ref": "ZedE.ZedRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZedE.ShadowRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Death Mark / Death Mark 2",
+   "cooldown": {
+    "values": [
+     120,
+     110,
+     100
+    ],
+    "quote": "{{ap|120 to 100}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1
+      }
+     ],
+     "quote": "{{as|100% AD}} (+ {{ap|25|40|55}}% of damage stored)",
+     "bin": [
+      "ZedR#RCalculatedDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "share of stored damage detonated",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": [
+        0.25,
+        0.4,
+        0.55
+       ]
+      }
+     ],
+     "quote": "(+ {{ap|25|40|55}}% of damage stored)",
+     "bin": [
+      "ZedR.RDamageAmp"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Marked for Death duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "renders the target ''Marked for Death'' for 3 seconds",
+     "bin": [
+      "ZedR.RDeathMarkDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "delay before dash begins",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.6,
+     "terms": [],
+     "quote": "after a {{fd|0.6}}-second delay",
+     "bin": [],
+     "binNote": "No bin row for this value; the sheet only exposes RShadowDurationDisplayed, RDeathMarkDuration, RCanSwapBuffDuration, RGhostedDuration, RVisionDuration and RReactivateCD for timing, none of which match 0.6. Likely a hardcoded/tooltip-only cast-sequence timing not exposed as a named DataValue."
+    },
+    {
+     "id": "r_5",
+     "meaning": "dash travel time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "over {{fd|0.35}} seconds",
+     "bin": [],
+     "binNote": "No matching DataValue in the sheet; dash travel time appears not to be exposed as a named bin field."
+    },
+    {
+     "id": "r_6",
+     "meaning": "Shadow spawn duration (recastable window)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 9,
+     "terms": [],
+     "quote": "spawns a ... ''Shadow'' at his casting position for 9 seconds",
+     "bin": [],
+     "binNote": "Sheet has RShadowDurationDisplayed=7.5 and ZedR#{43a019eb}=7.5+0.5=8, neither equal to the wiki's stated 9 seconds; this is a disagreement between wiki text (9s) and the bin's displayed/calculated shadow duration (7.5/8s) that I cannot resolve, so no bin row is named."
+    },
+    {
+     "id": "r_7",
+     "meaning": "delay after reappearance before recast is allowed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "can be recast after {{fd|0.5}} seconds of his reappearance",
+     "bin": [
+      "ZedR.RReactivateCD"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "window before Shadow expiry when recast is disallowed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "not in the last {{fd|1.25}} seconds of its duration",
+     "bin": [],
+     "binNote": "No matching DataValue found in the sheet for this recast cutoff window."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Zed becomes untargetable during the cast delay and dash, and cannot cast Death Mark's detonation damage until the mark duration ends.",
+     "quote": "'''Zed''' becomes {{tip|untargetable}} and, after a {{fd|0.6}}-second delay, he {{tip|dashes}} to 125 units beyond the target enemy champion",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "During Marked for Death, Zed stores a portion of all pre-mitigation physical and magic damage he and his Shadows deal to the target, which detonates at the end of the duration as physical damage.",
+     "quote": "'''Zed''' stores a portion of all {{tt|pre-mitigation|Damage calculated before modifiers}} {{as|physical damage}} and {{as|magic damage}} he and his [[File:Zed's Shadow.png|20px|border|link=]] ''Shadows'' deal to the target, detonating at the end of the duration to deal {{as|physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death Mark does not store true damage despite storing physical and magic damage.",
+     "quote": "''Death Mark's'' stored damage derives from all [[basic attack]]s, [[Champion ability|abilities]], [[item]]s, [[Runes Reforged|runes]] and [[buff]]s.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Shadow spawned by Death Mark can mimic Razor Shuriken and Shadow Slash regardless of range, adding extra damage instances against the target while marked.",
+     "quote": "which is able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Zed is ordered to basic attack his target immediately after reappearing from the dash.",
+     "quote": "'''Zed''' will be ordered to basic attack his target after reappearing.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Zed gains ghosting for the duration of the mark, a mobility effect not a damage/defense effect.",
+     "quote": "gains {{tip|ghost|ghosting}} for the same duration",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield only blocks the mark's application, not the cast or the detonation of an already-applied mark.",
+     "quote": "{{tip|Spell shield}} will only block the {{as|mark's|buzzword}} application. They will not prevent '''Zed''' from initiating ''Death Mark'' against the target nor block the detonation from a {{as|mark|buzzword}} that is already applied.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death Mark's cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZedR.RShadowDurationDisplayed",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZedR.RCanSwapBuffDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZedR.RGhostedDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZedR.RVisionDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZedR#{43a019eb}",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Contempt for the Weak adds bonus magic on-hit damage vs targets below 50% max HP, gated by a 10s per-target internal cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "P only triggers while target HP is below the 50% max-HP threshold"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q and E deal fixed base + bonus AD damage on cast/cooldown"
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "The Shadow from W (and the longer-lived Shadow from R) mimics Zed's Q and E casts, adding extra damage instances against the same target"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W and R each have a Shadow Swap recast; R additionally has a delayed detonation separate from the initial mark application"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Energy costs (Q 75-55, W 40-20, E 40) meaningfully cap cast frequency in a 15s fight"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Shadow Slash reduces Living Shadow's current cooldown by 3s per enemy champion hit"
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "R"
+   ],
+   "note": "Marked for Death stores a % of all pre-mitigation physical/magic damage Zed and his Shadows deal to the target, detonating as physical damage at duration's end"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Zed's mechanics (on-hit conditional bonus, plain-cast abilities, a mimicking pet/summon, a stored-damage detonation on the target, and cooldown/energy interactions) are all expressible by combining existing primitives; no unique mechanic falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "Do Zed's Shadows (from W and R) automatically mimic every Q and E cast while active, adding a second (and while both a W-Shadow and R-Shadow exist, a third) full damage instance against the dummy, or does mimicry require some other condition not stated in the sources?",
+   "options": [
+    "Every Q/E cast while a Shadow is active is automatically also cast by the Shadow, dealing a second full instance of that ability's damage to the target",
+    "Mimicry only happens under some additional unstated condition (e.g. only on the first cast after the Shadow spawns), so not every Q/E cast is doubled"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Zed''' creates a ... ''Shadow'' that dashes to the target location and remains there for {{fd|5.25}} seconds, being able to mimic ''{{ai|Razor Shuriken|Zed}}'' and ''{{ai|Shadow Slash|Zed}}'' regardless of range."
+   ]
+  },
+  {
+   "question": "How long does the Shadow spawned by Death Mark actually persist and remain able to mimic Q/E: the wiki description states 9 seconds, but the bin's RShadowDurationDisplayed (7.5) and the calculated {43a019eb} (7.5+0.5=8) do not match 9?",
+   "options": [
+    "9 seconds is live (wiki description text)",
+    "7.5 seconds is live (RShadowDurationDisplayed)",
+    "8 seconds is live (ZedR#{43a019eb} calculation)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Zed''' also spawns a [[File:Zed's Shadow.png|20px|border|link=]] ''Shadow'' at his casting position for 9 seconds",
+    "ZedR#{43a019eb} = RShadowDurationDisplayed=7.5 + 0.5"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting W (Living Shadow) onto or near the target so a Shadow is present to mimic upcoming Q/E casts.",
+   "Cast R (Death Mark) on the target to apply Marked for Death and spawn R's longer-lived Shadow, beginning the stored-damage window.",
+   "Immediately cast Q (Razor Shuriken) so both Zed and the active Shadow(s) hit the target with Q's damage.",
+   "Cast E (Shadow Slash) so Zed's and the Shadow's slashes both land on the target (extra slashes beyond the first apply no bonus damage but reduce W's cooldown).",
+   "Weave basic attacks between ability casts; Contempt for the Weak (P) adds bonus magic damage once the target drops below 50% max HP, subject to its 10s per-target cooldown.",
+   "Recast Q and E on cooldown as energy allows, prioritizing keeping a Shadow alive/present so it continues mimicking casts.",
+   "Let Marked for Death detonate at the end of its 3-second duration for its stored-damage physical burst.",
+   "Continue the Q/E/auto-attack loop for the remainder of the 15s window, recasting W to refresh a Shadow when its duration or R's Shadow lapses."
+  ],
+  "questions": [
+   "Is Shadow mimicry of Q/E fully automatic on every cast while a Shadow is present, and does it happen for both a W-Shadow and an R-Shadow simultaneously if both exist?",
+   "What target health trajectory should the simulator assume for the dummy, since Contempt for the Weak's trigger and its 10s internal cooldown depend on when the target crosses the 50% HP threshold?",
+   "Given Q/W/E energy costs and Zed's max energy/regen (not given in these sources), is the proposed cast-everything-on-cooldown rotation energy-sustainable for the full 15s, or does energy force skipping some E or W casts?",
+   "Does the Death Mark detonation's stored-damage percentage draw only from damage dealt during the 3s Marked-for-Death window, or does it also include the R cast's own flat 100% AD component as a separate simultaneous hit rather than part of one combined detonation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

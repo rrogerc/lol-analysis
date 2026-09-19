@@ -1,0 +1,1551 @@
+{
+ "champion": "udyr",
+ "abilities": {
+  "P": {
+   "name": "Bridge Between",
+   "cooldown": {
+    "values": [
+     50,
+     44,
+     38,
+     32,
+     26,
+     20
+    ],
+    "quote": "{{pp|50 to 20 for 4|1 to 16}}",
+    "binNote": "Bin's UdyrPassive#UltCD gives 50/50/50/50/50/40/40/40/40/40/30/30/30/30/30/20/20/20 by level (levels 1-18), which agrees at levels 1,6,11,16 with the wiki's 50/44/38/32/26/20 pplevel progression at listed breakpoints 1..16, but interpolation differs; both describe the same by-level cooldown reduction."
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}} seconds and within the following 5 seconds"
+   },
+   "values": [
+    {
+     "id": "p_globalcd",
+     "meaning": "global cooldown incurred on other basic abilities when one is cast",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}}-second global cooldown",
+     "bin": [
+      "UdyrPassive.GlobalCD"
+     ]
+    },
+    {
+     "id": "p_awaken_window",
+     "meaning": "time window after re-entering a stance during which it can be Awakened",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "within the following 5 seconds to ''Awaken'' it",
+     "bin": [],
+     "binNote": "No bin row in this sheet carries the 5-second Awaken window; it is described only in the wiki's ability text."
+    },
+    {
+     "id": "p_unawaken_cd",
+     "meaning": "cooldown incurred on the current stance's ability if the Awaken window is not consumed",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "incurs a {{fd|0.25}}-second cooldown",
+     "bin": [],
+     "binNote": "No bin row in this sheet carries this 0.25s fallback cooldown; only the wiki text states it."
+    },
+    {
+     "id": "p_monktraining_as",
+     "meaning": "bonus attack speed granted to next two empowered on-hit attacks after casting an ability",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "{{sti|{{as|30% '''bonus''' attack speed}}}}",
+     "bin": [],
+     "binNote": "Sheet prints 'UdyrPassive#AttackSpeed (percent) = 0.3' as a plain data value, not a resolvable calculation the checker recognizes by that name; the 0.3 value matches the wiki's 30% bonus attack speed but no citable calculation row is available, so bin is left empty."
+    },
+    {
+     "id": "p_monktraining_duration",
+     "meaning": "duration of Monk Training's on-hit attack window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "within 4 seconds",
+     "bin": [
+      "UdyrPassive.AttackSpeedDuration"
+     ]
+    },
+    {
+     "id": "p_monktraining_cdr",
+     "meaning": "percent of Awakened Spirit's total cooldown refunded per Monk Training proc",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [],
+     "quote": "refund 5% of ''Awakened Spirit's'' '''total''' cooldown",
+     "bin": [
+      "UdyrPassive.UltCDReduction"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting a basic ability puts Udyr's other basic abilities on a brief shared global cooldown.",
+     "quote": "incur a {{sti|cd|{{tt|{{fd|1.5}}-second global cooldown|Affected by ability haste}}}} when cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The global cooldown does not apply to abilities already on a longer individual cooldown.",
+     "quote": "The global cooldown will not incur on abilities that are currently on a greater cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Awakened Spirit's cooldown is affected by ultimate haste, not regular ability haste.",
+     "quote": "''Awakened Spirit's'' cooldown is affected by {{sti|ah|icononly=true}} {{as|ultimate haste|ah}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Switching stances does not end the effects granted by the previous stance's Monk Training proc early.",
+     "quote": "Switching ''Stances'' will not cause any additional effects granted by the previous one to end prematurely.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Monk Training's empowered attacks apply on-hit and grant attack speed for the next two basic attacks after casting any ability.",
+     "quote": "empowers his next two {{tip|basic attacks}} {{tip|on-hit}} within 4 seconds to gain {{sti|{{as|30% '''bonus''' attack speed}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown refund from Monk Training does not occur if Awakened Spirit's remaining cooldown is under 1 second.",
+     "quote": "though not if the remaining cooldown is less than 1 second",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An Awaken cast also triggers Monk Training and empowers the next two attacks with the stance's unawakened on-hit effect as well.",
+     "quote": "''Awakened Spirit's'' cast also activates ''Monk Training'' and empowers the next 2 attacks by the stances unawakened effects as well, overriding unused unawakened stance attacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Empowered attacks are not consumed if they are parried.",
+     "quote": "The empowered attacks will not get consumed if they are parried.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Awakened Spirit is on full cooldown at game start.",
+     "quote": "''Awakened Spirit'' is placed on full cooldown at the start of the game.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "UdyrPassive.UdyrAHAmountPerCloudDragon",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "UdyrPassive.SwapChargeBonus",
+     "reason": "unknown"
+    },
+    {
+     "ref": "UdyrPassive.MaxCharge",
+     "reason": "utility"
+    },
+    {
+     "ref": "UdyrPassive.UltCDMultiplier",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "UdyrPassive.GlobalCDEmpowered",
+     "reason": "unknown"
+    },
+    {
+     "ref": "UdyrPassive#AttackSpeed (percent)",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Wilding Claw",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "{{tt|6|Starts on-cast, but recasting refreshes the cooldown}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage per empowered attack (% of target's max health)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.035
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|3 to 8 6}}% {{as|(+ {{fd|3.5}}% per 100 '''bonus''' AD)}} of target's '''maximum''' health}}",
+     "bin": [
+      "UdyrQ#MaxHPOnHit1"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.32,
+      0.44,
+      0.56,
+      0.68,
+      0.8
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 80 6}}%",
+     "bin": [
+      "UdyrQ.AttackSpeedBase"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Bonus Physical Damage On-Hit",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      6,
+      12,
+      18,
+      24,
+      30,
+      36
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.2
+      },
+      {
+       "stat": "bonusHp",
+       "coef": [
+        0.01,
+        0.012,
+        0.014,
+        0.016,
+        0.018,
+        0.02
+       ]
+      }
+     ],
+     "quote": "{{ap|6 to 36 6}} {{as|(+ 20% '''bonus''' AD)}} {{as|(+ {{ap|1 to 2 6}}% '''bonus''' health)}}",
+     "bin": [
+      "UdyrQ#OnHitDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Awaken bonus attack speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.2,
+      0.2294,
+      0.2588,
+      0.2882,
+      0.3176,
+      0.3471,
+      0.3765,
+      0.4059,
+      0.4353,
+      0.4647,
+      0.4941,
+      0.5235,
+      0.5529,
+      0.5824,
+      0.6118,
+      0.6412,
+      0.6706,
+      0.7
+     ],
+     "terms": [],
+     "quote": "{{pp|20 + (70-20)/17*(x-1) for 20|key=%}} '''bonus''' attack speed",
+     "bin": [
+      "UdyrQ.EmpoweredBonusASLevel1",
+      "UdyrQ.EmpoweredBonusASLevel18"
+     ],
+     "binNote": "The bin only stores the level 1 and level 18 endpoints (0.2 and 0.7) as separate DataValues; the wiki's linear-interpolation formula (20 + (70-20)/17*(x-1))% reproduces exactly those two endpoints at level 1 and level 18 and interpolates the 16 intermediate levels the bin does not enumerate. No disagreement, just a by-level array vs two named endpoints."
+    },
+    {
+     "id": "q_6",
+     "meaning": "Awaken additional physical damage (% of target's max health)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.02,
+        0.02118,
+        0.02235,
+        0.02353,
+        0.02471,
+        0.02588,
+        0.02706,
+        0.02824,
+        0.02941,
+        0.03059,
+        0.03176,
+        0.03294,
+        0.03412,
+        0.03529,
+        0.03647,
+        0.03765,
+        0.03882,
+        0.04
+       ],
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.015
+        },
+        {
+         "stat": "bonusHp",
+         "per": 100,
+         "coef": 0.001
+        }
+       ]
+      }
+     ],
+     "quote": "an additional {{as|{{pp|2 + (4-2)/17*(x-1) for 20|key=%}} {{as|(+ {{fd|1.5}}% per 100 '''bonus''' AD)}} {{as|(+ {{fd|0.1}}% per 100 '''bonus''' health)}} of the target's '''maximum''' health}}",
+     "bin": [
+      "UdyrQ.Q2MaxHPADRatio"
+     ],
+     "binNote": "Wiki states +1.5% per 100 bonus AD for this by-level percent; the closest bin field Q2MaxHPADRatio=0.0005 implies +5% per 100 bonus AD (0.0005*100), a disagreement. The bin has no by-level array matching byLevel(0.02..0.04) either; reported as the nearest candidate."
+    },
+    {
+     "id": "q_7",
+     "meaning": "Awaken lightning damage per hit (% of target's max health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.015,
+        0.01588,
+        0.01676,
+        0.01765,
+        0.01853,
+        0.01941,
+        0.02029,
+        0.02118,
+        0.02206,
+        0.02294,
+        0.02382,
+        0.02471,
+        0.02559,
+        0.02647,
+        0.02735,
+        0.02824,
+        0.02912,
+        0.03
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.006
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|1.5 + (3-1.5)/17*(x-1) for 20|key=%}}|health}} {{as|(+ {{fd|0.6}}% per 100 AP)}} {{as|of the target's '''maximum''' health}} per hit",
+     "bin": [
+      "UdyrQ.LightningDamageLevel1",
+      "UdyrQ.LightningDamageLevel18",
+      "UdyrQ.LightningAPRatio"
+     ],
+     "binNote": "The bin only stores the level 1 and level 18 endpoints (0.015 and 0.03) as separate DataValues; the wiki's linear-interpolation formula (1.5 + (3-1.5)/17*(x-1))% reproduces exactly those two endpoints at level 1 and level 18 and interpolates the 16 intermediate levels the bin does not enumerate. LightningAPRatio=6e-05 matches the stated +0.6% per 100 AP (6e-05*100=0.006). No disagreement."
+    },
+    {
+     "id": "q_11",
+     "meaning": "Bonus Attack Speed buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "UdyrQ.AttackSpeedDurationBase"
+     ]
+    },
+    {
+     "id": "q_13",
+     "meaning": "Number of lightning bounces per empowered attack",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "strike with lightning{{ft|6 times over 1 second,",
+     "bin": [
+      "UdyrQ.Bounces"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Udyr enters Claw Stance, empowering his next two basic attacks to deal bonus on-hit physical damage.",
+     "quote": "'''Udyr''' enters ''Claw Stance'', empowering his next two basic attacks to gain {{sti|range|50}} '''bonus''' range and deal {{as|'''bonus''' physical damage}} {{tip|on-hit}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast, but using the recast (Awaken) refreshes it.",
+     "quote": "Starts on-cast, but recasting refreshes the cooldown",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Deals spell damage on the primary target and applies area damage on the lightning strikes.",
+     "quote": "Deals {{tip|spell damage}} to the primary target and applies {{tip|area damage}} on the lightning strikes.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The lightning strikes can bounce to and hit the same single target multiple times when no other enemies are nearby, stacking their damage.",
+     "quote": "chaining to up to 3 nearby {{tip|sight|visible}} enemies and being able to hit the same target multiple times",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If both empowered attacks are used on the same isolated target, the lightning damage from both can stack on it.",
+     "quote": "If both empowered attacks are used on the same isolated target, the lightning strikes can deal up to {{as|{{pp|3*6 + (6*6-3*6)/17*(x-1) for 20|key=%}}|health}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield only blocks the lightning-strike portion of an empowered attack, not necessarily the base on-hit damage.",
+     "quote": "{{tip|Spell shield}} will only block an empowered attack's application of the lightning strikes.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attacks are not triggered or consumed if they hit a structure/ward or are parried.",
+     "quote": "The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Awaken recast's empowered attacks and lightning strikes must be used within 4 seconds of the recast.",
+     "quote": "if used within 4 seconds",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "UdyrQ.AttackSpeedDurationEmpowered",
+     "reason": "unknown"
+    },
+    {
+     "ref": "UdyrQ.RepeatBouncePenalty",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "UdyrQ.BounceRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "UdyrQ.AttackRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Iron Mantle",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "{{tt|6|Starts on-cast, but recasting refreshes the cooldown}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     39,
+     38,
+     36,
+     35,
+     34,
+     33,
+     32,
+     31,
+     29,
+     28,
+     27,
+     26,
+     25,
+     24,
+     22,
+     21,
+     20
+    ],
+    "quote": "{{pp|40 - (40-23)/17*(x-1) for 20}}",
+    "resource": "mana",
+    "binNote": "Wiki cost decreases per champion level (40 down to 23) via the pp formula; the sheet shows a flat cost of 40 with no level scaling, so the level curve is not reflected in the bin's `cost` field."
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Life Steal (Mantle Stance empowered attacks)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "terms": [],
+     "quote": "{{ap|15 to 20 6}}%",
+     "bin": [
+      "UdyrW.LifeSteal"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      45,
+      65,
+      85,
+      105,
+      125,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      },
+      {
+       "stat": "ap",
+       "coef": 0.4
+      },
+      {
+       "stat": "maxHp",
+       "coef": [
+        0.02,
+        0.023,
+        0.026,
+        0.029,
+        0.032,
+        0.035
+       ]
+      }
+     ],
+     "quote": "{{ap|45 to 145 6}} {{as|(+ 50% '''bonus''' AD)}} {{as|(+ 40% AP)}} {{as|(+ {{ap|2 to 3.5 6}}% '''maximum''' health)}}",
+     "bin": [
+      "UdyrW#TotalShield"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Increased Shield Strength (Awaken recast)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      20.0,
+      27.6,
+      35.3,
+      42.9,
+      50.6,
+      58.2,
+      65.9,
+      73.5,
+      81.2,
+      88.8,
+      96.5,
+      104.1,
+      111.8,
+      119.4,
+      127.1,
+      134.7,
+      142.4,
+      150.0
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      },
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      },
+      {
+       "stat": "maxHp",
+       "coef": 0.08
+      }
+     ],
+     "quote": "{{pp|20 + (150-20)/17*(x-1) for 20}} (+ {{ap|45 to 145 6}}) {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 65% AP)}} {{as|(+ 8% '''maximum''' health)}}",
+     "bin": [
+      "UdyrW#RecastShield"
+     ],
+     "binNote": "RecastShield also adds the rank-based ShieldBase term ([45..145]) shown separately in the wiki quote as '(+ {{ap|45 to 145 6}})'; that additive rank component is not represented in this value's level-based base list because the schema base list is single-dimensional (by level only)."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Total Healing (Awaken)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      10.0,
+      13.8,
+      17.6,
+      21.5,
+      25.3,
+      29.1,
+      32.9,
+      36.8,
+      40.6,
+      44.4,
+      48.2,
+      52.1,
+      55.9,
+      59.7,
+      63.5,
+      67.4,
+      71.2,
+      75.0
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.325
+      },
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      },
+      {
+       "stat": "maxHp",
+       "coef": 0.04
+      }
+     ],
+     "quote": "{{pp|20/2 + (150/2-20/2)/17*(x-1) for 20}} (+ {{ap|45/2 to 145/2 6}}) {{as|(+ {{ap|100/2}}% '''bonus''' AD)}} {{as|(+ {{ap|65/2}}% AP)}} {{as|(+ {{ap|8/2}}% '''maximum''' health)}}",
+     "bin": [
+      "UdyrW#RecastHeal"
+     ],
+     "binNote": "RecastHeal = RecastShield * PercentOfShieldHealAmount(0.5); the rank-based additive part ('+ {{ap|45/2 to 145/2 6}}') is not captured in this value's level-based base list for the same reason as w_3."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Heal per Tick (Awaken)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.63,
+      0.86,
+      1.1,
+      1.34,
+      1.58,
+      1.82,
+      2.06,
+      2.3,
+      2.54,
+      2.78,
+      3.01,
+      3.25,
+      3.49,
+      3.73,
+      3.97,
+      4.21,
+      4.45,
+      4.69
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0203
+      },
+      {
+       "stat": "bonusAd",
+       "coef": 0.03125
+      },
+      {
+       "stat": "maxHp",
+       "coef": 0.0025
+      }
+     ],
+     "quote": "{{pp|20/{{#var:w_tt}}/2 + (150/{{#var:w_tt}}/2-20/{{#var:w_tt}}/2)/17*(x-1) for 20|round=2}} (+ {{ap|45/{{#var:w_tt}}/2 to 145/{{#var:w_tt}}/2 6|round=2}}) {{as|(+ {{ap|100/{{#var:w_tt}}/2|round=2}}% '''bonus''' AD)}} {{as|(+ {{ap|65/{{#var:w_tt}}/2|round=2}}% AP)}} {{as|(+ {{ap|8/{{#var:w_tt}}/2}}% '''maximum''' health)}}",
+     "bin": [
+      "UdyrW#RecastHeal"
+     ],
+     "binNote": "The bin has no separate per-tick row; this is Total Healing (RecastHeal) divided by the number of ticks (ShieldDuration/tick-rate = 4/0.25 = 16), a wiki-only derived construct."
+    },
+    {
+     "id": "w_6",
+     "meaning": "Increased Life Steal (Awaken)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      32,
+      34,
+      36,
+      38,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|15*2 to 20*2 6}}%",
+     "bin": [
+      "UdyrW#{5fcd3b84}"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "heal on-hit per empowered attack (Mantle Stance)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.012
+      },
+      {
+       "stat": "ap",
+       "coef": 0.08
+      }
+     ],
+     "quote": "{{as|{{fd|{{#var:wo_h}}}}% of his '''maximum''' health}} {{as|(+ {{#var:wo_ap}}% AP)}}",
+     "bin": [
+      "UdyrW#LifeOnHit"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "heal on-hit per empowered attack (Awaken, doubled)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.024
+      },
+      {
+       "stat": "ap",
+       "coef": 0.16
+      }
+     ],
+     "quote": "heal him for {{as|{{fd|{{ap|{{#var:wo_h}}*2}}}}% of his '''maximum''' health}} {{as|(+ {{ap|{{#var:wo_ap}}*2}}% AP)}}",
+     "bin": [
+      "UdyrW#LifeOnHitAwakened"
+     ]
+    },
+    {
+     "id": "w_9",
+     "meaning": "Shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "grants himself a {{tip|shield}} for {{#var:w_sd}} seconds",
+     "bin": [
+      "UdyrW.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_10",
+     "meaning": "Awaken heal tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "heals every {{fd|{{#var:w_st}}}} seconds",
+     "bin": [],
+     "binNote": "No bin row stores the tick interval; the sheet's ShieldDuration=4 is the only related field and the tick count (4/0.25=16) is only derivable from the wiki's w_st variable, which has no bin counterpart."
+    },
+    {
+     "id": "w_11",
+     "meaning": "on-hit heal effectiveness against minions",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 60,
+     "terms": [],
+     "quote": "Healing {{tip|on-hit}} is reduced to 60% against {{tip|minions}}",
+     "bin": [
+      "UdyrW.HealOnHitMinionPenalty"
+     ],
+     "binNote": "Bin stores the penalty as a 0.4 reduction factor (implying 60% effectiveness, i.e. 1-0.4); wiki states the resulting 60% directly, both agree once interpreted correctly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Active empowers Udyr's next two basic attacks on-hit with life steal and a flat heal, and grants Udyr a shield.",
+     "quote": "empowering his next two basic attacks {{tip|on-hit}} to gain {{as|{{sti|life steal}}}} and {{tip|heal}} him",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Recasting (Awaken) increases the shield's strength, stacking with the remaining shield from the first cast, adds a heal-over-time, and doubles the life steal and heal of the empowered attacks.",
+     "quote": "increases the {{tip|shield|shield's}} strength, stacking with the remaining shield from the first cast, and {{tip|heals}} every {{fd|{{#var:w_st}}}} seconds over the next {{#var:w_sd}} seconds, as well as causes the empowered attacks to instead gain doubled {{as|{{sti|life steal}}}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Healing on-hit is reduced against minions.",
+     "quote": "Healing {{tip|on-hit}} is reduced to 60% against {{tip|minions}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The empowered attacks apply on-hit/spell effects to the target.",
+     "quote": "The empowered attacks apply {{tip|spell effects}} to the target.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attacks are not consumed if they hit a structure or ward or are parried.",
+     "quote": "The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The increased life steal buff is a flat buff that expires after two valid attacks land, not a per-attack modifier, so effects like Ravenous Hydra heal at the increased rate while active.",
+     "quote": "The increased life steal is a buff that expires after two valid attacks have been completed, as opposed to an on-attack modifier for your next two attacks. This means that while the buff is active, {{ii|Ravenous Hydra}} will heal at the increased life steal value.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts on cast, but recasting refreshes the ability's cooldown.",
+     "quote": "Starts on-cast, but recasting refreshes the cooldown",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Blazing Stampede",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "{{tt|6|Starts on-cast, but recasting refreshes the cooldown}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     36.6,
+     33.2,
+     29.8,
+     26.4,
+     23
+    ],
+    "quote": "{{pp|40 - (40-23)/17*(x-1) for 20}}",
+    "resource": "mana",
+    "binNote": "Bin's flat 'cost: 40' and 'ddragon E cost [40,40,40,40,40,40]' are per-cast-instance base rows; the wiki's pp-formula describes cost decreasing by rank via a scaling formula the bin does not expose as a per-rank array. Reporting the wiki's stated values as the finding."
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      25,
+      31,
+      37,
+      43,
+      49,
+      55
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.05,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.05
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|25 to 55 6}}% {{as|(+ 5% per 100 '''bonus''' AD)}}",
+     "bin": [
+      "UdyrE#MoveSpeed",
+      "UdyrE.BaseMoveSpeed"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Decayed Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      7.5,
+      9.3,
+      11.1,
+      12.9,
+      14.7,
+      16.5
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.015,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.015
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|25*0.3 to 55*0.3 6}}% {{as|(+ {{ap|5*0.3}}% per 100 '''bonus''' AD)}}",
+     "bin": [],
+     "binNote": "Decayed value is 30% of e_1, computed by the wiki's own formula; no separate bin row carries it."
+    },
+    {
+     "id": "e_3",
+     "meaning": "Stun Duration on empowered attack",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds",
+     "bin": [
+      "UdyrE.StunDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Bonus Movement Speed duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "gains {{sti|{{as|'''bonus''' movement speed}}}} for 4 seconds",
+     "bin": [
+      "UdyrE.MoveSpeedDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Time over which the speed buff decays",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "decays to 30% effectiveness over {{fd|1.5}} seconds",
+     "bin": [],
+     "binNote": "No dedicated decay-time data value found in the bin; UnstoppableDuration (1.5) matches numerically but is described elsewhere as the Awaken CC-immunity duration, so not cited here."
+    },
+    {
+     "id": "e_6",
+     "meaning": "Awaken bonus attack range",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 75,
+     "terms": [],
+     "quote": "gains {{sti|range|75}} '''bonus''' attack range",
+     "bin": [
+      "UdyrE.EmpoweredBonusRange"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Awaken CC-immunity duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "gains {{tip|cc-immune|immunity to crowd control}} for {{fd|1.5}} seconds",
+     "bin": [
+      "UdyrE.UnstoppableDuration"
+     ]
+    },
+    {
+     "id": "e_8",
+     "meaning": "Internal cooldown between stuns on the same target",
+     "role": "interval",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      6,
+      5.6,
+      5.2,
+      4.8,
+      4.4,
+      4
+     ],
+     "terms": [],
+     "quote": "This cannot affect the same target more than once every few seconds.",
+     "bin": [
+      "UdyrE.ICD"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Empowered attacks in Stampede Stance have an uncancellable windup and dash onto the target if not already in range.",
+     "quote": "empowering his basic attacks to have an {{tip|uncancellable windup}} and {{tt|{{tip|dash|pounce}} on the target|to 75 units closer than attack range, if Udyr is not closer already (pending for test)}} to {{tip|stun}} them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack still applies its effects even if the dash is interrupted, but does not trigger or get consumed on structures, wards, or if parried.",
+     "quote": "The empowered attack will still apply its effects even if the dash is interrupted.\n* The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each empowered attack is its own cast instance, meaning on-hit/on-cast effects tied to distinct casts apply separately.",
+     "quote": "Each empowered attack is considered to belong to its own {{tip|cast instance}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Udyr becomes ghosted and gains movement speed for 4 seconds while in this stance, unrelated to damage output.",
+     "quote": "'''Udyr''' becomes {{tip|ghosted}} and gains {{sti|{{as|'''bonus''' movement speed}}}} for 4 seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Recasting the ability refreshes its cooldown instead of starting a new one from a fixed point.",
+     "quote": "Starts on-cast, but recasting refreshes the cooldown",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Wingborne Storm",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "{{tt|6|Starts on-cast, but recasting refreshes the cooldown}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     39,
+     38,
+     37,
+     36,
+     35,
+     34,
+     33,
+     32,
+     31,
+     30,
+     29,
+     28,
+     27,
+     26,
+     25,
+     24,
+     23
+    ],
+    "quote": "{{pp|40 - (40-23)/17*(x-1) for 20}}",
+    "resource": "mana",
+    "binNote": "Bin's ddragon summary and section header list a flat cost of 40 for all ranks, but the wiki formula scales the cost down by champion level (40 to 23 over levels 1-18), which is by level, not by rank. This is a genuine disagreement between sources."
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage per Tick (blizzard)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      18,
+      26,
+      34,
+      42,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.175
+      }
+     ],
+     "quote": "{{ap|10 to 50 6}} {{as|(+ {{fd|17.5}}% AP)}}",
+     "bin": [
+      "UdyrR#StormDamage"
+     ],
+     "binNote": "StormDamage (base [20/36/52/68/84/100], +0.35xap) appears to be exactly double this per-tick value; the wiki's per-tick base and AP ratio (17.5%) are each half of StormDamage's base/ratio (0.35). Uncertain what StormDamage itself directly represents in-engine (possibly a per-two-tick or combined value); recorded with this inferred halving."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Total Magic Damage (blizzard, over full duration)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      144,
+      208,
+      272,
+      336,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.4
+      }
+     ],
+     "quote": "{{ap|10*8 to 50*8 6}} {{as|(+ {{ap|17.5*8}}% AP)}}",
+     "bin": [
+      "UdyrR#StormDamage"
+     ],
+     "binNote": "This is 4x StormDamage's base (StormBaseDamage) and 4x its AP ratio (0.35 -> 1.4), i.e. per-tick value (see r_1) multiplied by the 8 ticks over the 4-second duration. StormDamage's own exact in-engine meaning is unresolved (see r_1 note)."
+    },
+    {
+     "id": "r_5",
+     "meaning": "Empowered attack on-hit magic damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10.0,
+      11.764706,
+      13.52941176,
+      15.294118,
+      17.058823,
+      18.82353,
+      20.588235,
+      22.352941,
+      24.117647,
+      25.882353,
+      27.647059,
+      29.411765,
+      31.17647,
+      32.941176,
+      34.705882,
+      36.47059,
+      38.235294,
+      40.0
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{as|{{pp|10 + (40-10)/17*(x-1) for 20}}|magic damage}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "UdyrR#PulseDamage"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Awaken bonus magic damage per tick, as % of target's maximum health, total over the storm's duration",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      0.08,
+      0.08352941,
+      0.08705882,
+      0.09058823392671697,
+      0.09411765,
+      0.09764705773662119,
+      0.10117647,
+      0.1047058815465254,
+      0.10823529,
+      0.11176471,
+      0.11529411726138171,
+      0.11882353,
+      0.12235294,
+      0.12588235,
+      0.12941176488119013,
+      0.13294117678614223,
+      0.13647059,
+      0.14
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.08,
+        0.08352941,
+        0.08705882,
+        0.09058823392671697,
+        0.09411765,
+        0.09764705773662119,
+        0.10117647,
+        0.1047058815465254,
+        0.10823529,
+        0.11176471,
+        0.11529411726138171,
+        0.11882353,
+        0.12235294,
+        0.12588235,
+        0.12941176488119013,
+        0.13294117678614223,
+        0.13647059,
+        0.14
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.035
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|8 + (14-8)/17*(x-1) for 20|key=%}}|health}} {{as|(+ {{fd|3.5}}% per 100 AP)}} {{as|of the target's '''maximum''' health}} over the duration",
+     "bin": [
+      "UdyrR#PercentHPBlast"
+     ],
+     "binNote": "PercentHPBlast's AP ratio in the sheet is written via StormAPRatio=0.00035, which equals 0.035% per AP, i.e. 3.5% per 100 AP, matching the wiki's coefScaling; the flat/base numbers match exactly."
+    },
+    {
+     "id": "r_7",
+     "meaning": "Blizzard duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds",
+     "bin": [
+      "UdyrR.BuffDuration"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Blizzard tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}}",
+     "bin": [],
+     "binNote": "No standalone DataValue for the tick interval appears among the sheet's UdyrR rows; the 8 ticks over 4s (matching the total-vs-per-tick damage multiplier of 8) implies 0.5s, consistent with the wiki text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Storm Stance empowers Udyr's next two basic attacks to deal on-hit magic damage to nearby enemies.",
+     "quote": "empowering his next two {{tip|basic attacks}} {{tip|on-hit}} to deal",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The blizzard deals damage every 0.5 seconds to nearby enemies for its duration.",
+     "quote": "deals {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast, but using the Awaken recast refreshes the cooldown.",
+     "quote": "Starts on-cast, but recasting refreshes the cooldown",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Awaken recast ends the blizzard and unleashes a separate storm that causes the empowered attacks to deal their damage to enemies within it, and adds bonus magic damage equal to a percentage of the target's maximum health per tick.",
+     "quote": "unleashes a glacial storm for 4 seconds that is able to move on its own, as well as causes the empowered attacks to instead deal their damage to enemies within that storm",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+     "quote": "The empowered attacks will not trigger nor be consumed if they hit a structure or ward or are parried.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The storm around Udyr (blizzard) and an unleashed storm from Awaken are independent and can exist simultaneously.",
+     "quote": "The storm that '''Udyr''' surrounds himself with is independent from the unleashed storm.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "UdyrR.SlowPotency",
+     "reason": "utility"
+    },
+    {
+     "ref": "UdyrR.SlowDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Udyr has no ultimate; Q/W/E/R are each a Stance he swaps into, each empowering his next two basic attacks differently and overriding the previous stance's unused empowered attacks; switching stances does not end effects the previous stance already granted."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Every stance cast (and its Awaken recast) arms Udyr's next two on-hit basic attacks with the stance's bonus effect (Q: physical on-hit + AS; W: lifesteal+heal+shield; E: dash-stun; R: AoE magic pulse)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Each stance has an 'Awaken' recast (0.25-5s after the initial cast) that adds a stronger secondary effect (Q: lightning chain; W: bigger shield + HoT + doubled lifesteal/heal; E: bonus speed + CC immunity; R: storm becomes a mobile pulsing zone with % max-health damage) and refreshes/consumes the ability's cooldown."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Monk Training: after casting any basic ability, Udyr's next two on-hit basic attacks gain 30% bonus attack speed for 4s, independent of and stacking with the active stance's own empowered-attack effect."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "A 1.5s global cooldown is incurred on Q/W/E/R whenever one of them is cast; Monk Training refunds 5% of Awakened Spirit's total cooldown per proc (unless <1s remaining); Awaken recasts refresh (do not simply continue) the stance ability's 6s cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q flat 20; W/E/R 40 scaling down by champion level per wiki, flat 40 per bin) on 6s-cooldown abilities can matter over a 15s fight with heavy stance-cycling."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Storm Stance's blizzard deals magic damage every 0.5s for 4s around Udyr (and, after Awaken, from a separately-moving unleashed storm)."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's on-hit bonus damage, Awaken bonus damage and lightning strikes, and R's blizzard/storm/pulse damage are all expressed partly as a percentage of the target's maximum health."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q grants a stacking-capable bonus attack speed buff for 4s (base + Awaken addition); W's empowered attacks grant lifesteal (doubled on Awaken) that persists as a buff until two attacks land."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's Awaken recast detaches the storm into an independently-moving unit that seeks out and follows the target, dealing its own damage over time separate from Udyr's attacks/position."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Udyr's kit layers mechanics no single primitive (or simple combination) cleanly captures: (1) four interchangeable 'ultimate-like' abilities sharing one passive 'Awakened Spirit' charge with its own long, level/ultimate-haste-scaled cooldown (~50s to 20s) that is separate from each ability's own 6s cooldown and must be spent via a precisely-timed 0.25-5s recast window after entering a stance; (2) a 1.5s shared global cooldown across all four abilities layered on top of their individual cooldowns; (3) Monk Training's onhit-rider stacking with whichever stance's own empowered-attack effect is simultaneously active, including special-cased reactivation on Awaken casts that also re-applies the stance's un-awakened attack effect. Modeling how much of this fits in a single 15s fight (especially whether even one Awaken is achievable) needs bespoke sequencing logic beyond composing the closed-list primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Is Udyr's 'Awakened Spirit' resource off cooldown at the start of the simulated 15s damage fight, or does it start fully on cooldown as it does at real game start?",
+   "options": [
+    "Assume available at t=0 so an Awaken cast is reachable within the fight",
+    "Assume it starts on full (level-scaled, ~20-50s) cooldown, so no Awaken cast occurs during a 15s fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Awakened Spirit'' is placed on full cooldown at the start of the game.",
+    "{{pp|50 to 20 for 4|1 to 16}}"
+   ]
+  },
+  {
+   "question": "Q's Awaken bonus on-hit damage AD-scaling: does it use 1.5% max-HP damage per 100 bonus AD (wiki text) or 5% per 100 bonus AD (bin's Q2MaxHPADRatio=0.0005)?",
+   "options": [
+    "Wiki value: +1.5% per 100 bonus AD",
+    "Bin value: +5% per 100 bonus AD (Q2MaxHPADRatio=0.0005)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "an additional {{as|{{pp|2 + (4-2)/17*(x-1) for 20|key=%}} {{as|(+ {{fd|1.5}}% per 100 '''bonus''' AD)}}",
+    "UdyrQ.Q2MaxHPADRatio = 0.0005"
+   ]
+  },
+  {
+   "question": "Is UdyrR's bin field 'StormDamage' (base 20-100, +0.35xap) the per-tick empowered-attack pulse damage, or double the wiki's stated per-tick value (base 10-50, +0.175xap), i.e. does the bin represent a combined/two-tick value?",
+   "options": [
+    "Bin StormDamage is the real per-hit pulse damage (wiki's per-tick numbers are wrong or represent something else)",
+    "Wiki's per-tick numbers (half of StormDamage) are correct and bin's StormDamage aggregates two units"
+   ],
+   "impact": "high",
+   "quotes": [
+    "UdyrR#StormDamage = StormBaseDamage=[20/36/52/68/84/100] + 0.35xap",
+    "{{ap|10 to 50 6}} {{as|(+ {{fd|17.5}}% AP)}}"
+   ]
+  },
+  {
+   "question": "Do W/E/R mana costs actually scale down by champion level (wiki: 40 to 23/20 over levels 1-18) or stay flat at 40 as the ddragon summary and bin cost fields show?",
+   "options": [
+    "Costs decrease by level per the wiki's pp formula",
+    "Costs are flat 40 regardless of level, per the bin's static cost field"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|40 - (40-23)/17*(x-1) for 20}}",
+    "cost: 40"
+   ]
+  },
+  {
+   "question": "When only a single target (the dummy) is present, do all 6 lightning bounces from Q's Awaken land on it (as implied by 'able to hit the same target multiple times... for a lack of targets'), and do both empowered attacks' lightning waves fully stack on it if both land on the same isolated target within the 4s window?",
+   "options": [
+    "Yes, all bounces from both empowered attacks land on the single dummy and stack additively",
+    "Some bounces are wasted or capped even against a single target"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "chaining to up to 3 nearby {{tip|sight|visible}} enemies and being able to hit the same target multiple times",
+    "If both empowered attacks are used on the same isolated target, the lightning strikes can deal up to"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Wilding Claw) to enter Claw Stance, arming the next two basic attacks and starting the attack-speed buff.",
+   "Auto-attack immediately and continuously; the two empowered attacks trigger Q's bonus on-hit physical damage.",
+   "Within 0.25-5s of the Q cast, if Awakened Spirit is available, recast Q to Awaken it, gaining the lightning-chain empowered attacks and extra attack speed; keep auto-attacking to land all lightning ticks on the dummy.",
+   "Respect the shared 1.5s global cooldown before casting any other stance ability after Q.",
+   "Recast Q again as soon as its 6s cooldown is up to refresh Claw Stance and repeat the empowered on-hit damage, since Q has the lowest cost/cooldown and the most direct offensive on-hit and health%-based damage of the four stances.",
+   "Weave in R (Wingborne Storm) once per its 6s cooldown when it does not delay a Q recast, for its self-centered blizzard DoT and its own empowered on-hit pulse damage against the stationary dummy.",
+   "Do not prioritize W (Iron Mantle) for damage output, since it grants only self-healing/shielding/lifesteal with no offensive on-hit component, which the damage-only dummy fight does not need; only cast it if mana/cooldown are otherwise idle and lifesteal-on-hit itemization needs to be exercised.",
+   "Do not prioritize E (Blazing Stampede) beyond triggering it to keep attacking; its offensive contribution is limited to a CC stun (ignored per instructions) and movement speed (ignored), so it contributes no ranked damage benefit versus a stationary dummy.",
+   "Keep basic-attacking without gaps throughout the 15s window so Monk Training's post-cast attack-speed buff is never wasted."
+  ],
+  "questions": [
+   "Given Awakened Spirit's long level/ultimate-haste-scaled cooldown (~20-50s), how many Awaken casts, if any, should the simulator assume occur within a single 15s fight, and does that make W/E irrelevant to include in the rotation at all?",
+   "Should the simulator assume perfect execution of the 0.25-5s Awaken recast timing every time it's available, or apply a realistic reaction delay that could cause the window to be missed?",
+   "Is it correct to fully skip W and E in the damage-maximizing rotation, or does casting them still contribute indirectly (e.g., via Monk Training's attack-speed proc) enough to be worth weaving in over just spamming Q and R?",
+   "Does the shared 1.5s global cooldown ever actually bind given each stance's own cooldown is 6s, or is it only relevant when Awaken recasts are interleaved with a different stance's cast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

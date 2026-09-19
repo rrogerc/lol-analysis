@@ -1,0 +1,186 @@
+{
+ "name": "Needlework",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|{{fd|0.25}}|First cast}}|{{tt|{{fd|0.5}}|Second and third casts}}}}",
+  "binNote": "Only the first cast's cast time (0.25) matches GwenR.castTime; the second and third casts have a cast time of 0.5 per the wiki, not present as a separate bin cast time field here."
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage per Needle",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    30,
+    50,
+    70
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{ap|{{#var:bd1}} to {{#var:bd5}}}} {{as|(+ {{#var:ar}}% AP)}}",
+   "bin": [
+    "GwenR#TotalDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Damage with A Thousand Cuts",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    30,
+    50,
+    70
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.1
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.01,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.006
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|(+ {{#var:pd1}}% {{as|(+ {{ap|{{#var:pd2}}*1}}% per 100 AP)}} of the target's '''maximum''' health)}}",
+   "bin": [
+    "GwenR#TotalDamage",
+    "GwenP#PassiveMaxRTooltip",
+    "GwenP#{540bce84}"
+   ],
+   "binNote": "GwenP#PassiveMaxRTooltip = {540bce84} * 0.09 and {540bce84} = 1 + 0.006xap gives 0.09 + 0.00054xap, i.e. 9% base scaling with AP, not the 1% base with 0.6%-per-100AP scaling the wiki states for a single needle; the passive rows appear to describe a different (max-R, 9-needle) scale than this per-needle row, consistent with the wiki's own factor-of-9 relation between this row and the deleted max total row."
+  },
+  {
+   "id": "r_3",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.3,
+    0.45,
+    0.6
+   ],
+   "terms": [],
+   "quote": "{{ap|30 to 60}}%",
+   "bin": [
+    "GwenR.InitialSlow"
+   ],
+   "binNote": "Wiki states 30/45/60%; bin GwenR.InitialSlow is [-0.4, -0.5, -0.6] (40/50/60%, negative sign indicating a slow/reduction). Magnitudes disagree at ranks 1 and 2 (30 vs 40, 45 vs 50); rank 3 matches (60)."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Subsequent Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.15,
+    0.2,
+    0.25
+   ],
+   "terms": [],
+   "quote": "{{ap|15 to 25}}%",
+   "bin": [
+    "GwenR.SubsequentSlow"
+   ],
+   "binNote": "Wiki states magnitudes 15/20/25%; bin GwenR.SubsequentSlow is [-0.15, -0.2, -0.25], the same magnitudes with a negative sign indicating a slow/reduction rather than a buff. Value stated here as the positive magnitude the wiki uses."
+  },
+  {
+   "id": "r_8",
+   "meaning": "Slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "slows them for {{fd|1.5}} seconds",
+   "bin": [
+    "GwenR.DebuffDuration"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Static cooldown between recasts",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "with a 1-second {{tt|static cooldown|Unaffected by ability haste}} between casts",
+   "bin": [
+    "GwenR.LockoutTime"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Needlework can be recast up to two more times within 8 seconds of activation at no additional cost, each recast refreshing the duration and increasing needle count by 2.",
+   "quote": "''Needlework'' can be recast twice more within 8 seconds of the activation at no additional cost, with a 1-second {{tt|static cooldown|Unaffected by ability haste}} between casts. Each subsequent cast refreshes the duration and increases the number of needles launched by 2.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only the first cast (single needle) applies the Initial Slow; needle hits beyond the first on later casts apply the weaker Subsequent Slow to each target hit.",
+   "quote": "Needle hits beyond the first apply a {{tip|slow}} against each individual target.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Gwen can move during Needlework's cast times.",
+   "quote": "'''Gwen''' can move during Needlework's cast times.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Dying during a cast prevents the remaining needles of that cast from firing.",
+   "quote": "Dying during the cast time will prevent the remaining needles of the cast from being launched.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield blocks only one needle, so subsequent needles in the same cast or later casts still land.",
+   "quote": "{{tip|Spell shield}} blocks only one needle.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "GwenR.SlowAmount",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

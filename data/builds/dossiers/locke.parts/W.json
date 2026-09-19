@@ -1,0 +1,255 @@
+{
+ "name": "Soul Ignition",
+ "cooldown": {
+  "values": [
+   18,
+   17,
+   16,
+   15,
+   14
+  ],
+  "quote": "{{ap|18 to 14}}",
+  "binNote": "ddragon/bin cooldown array is [20/18/16/14/12], which disagrees with the wiki's stated [18/17/16/15/14]."
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana ({{as|+ {{fd|0.5}}% '''current''' health}} per {{fd|0.25}} seconds)"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Damage taken grey health cap (also the base damage-taken grey-health amount stored)",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    60,
+    80,
+    100,
+    120
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|40 to 120}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "LockeW#DamageRestoreAmount",
+    "LockeW.BaseDamageRestoreAmount"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "bonus attack speed while Soul Ignition is active",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    0.4,
+    0.41764706,
+    0.43529412,
+    0.45294118,
+    0.47058824,
+    0.4882353,
+    0.5058824,
+    0.5235294,
+    0.5411764681339264,
+    0.5588235,
+    0.5764706,
+    0.59411764,
+    0.6117646992206573,
+    0.62941176,
+    0.6470588147640228,
+    0.6647059,
+    0.6823529,
+    0.7
+   ],
+   "terms": [],
+   "quote": "{{as|{{pplevel|40 to 70|key=%}} '''bonus''' attack speed}}",
+   "bin": [
+    "LockeW#AttackSpeed"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "duration of Soul Ignition before automatic recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "ignites his soul for 6 seconds",
+   "bin": [
+    "LockeW#Duration",
+    "LockeW.BaseDuration"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "additional grey health stored based on missing health and elapsed duration",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    40,
+    49.41,
+    58.82,
+    68.24,
+    77.65,
+    87.06,
+    96.47,
+    105.88,
+    115.29,
+    124.71,
+    134.12,
+    143.53,
+    152.94,
+    162.35,
+    171.76,
+    181.18,
+    190.59,
+    200
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "'''Locke''' additionally stores up to {{pplevel|40 to 200}} {{as|(+ 20% AP)}} grey health for himself",
+   "bin": [
+    "LockeW#AdditionalHeal"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "current health threshold at/below which the missing-health grey health bonus is maximized",
+   "role": "other",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    150,
+    167.65,
+    185.29,
+    202.94,
+    220.59,
+    238.24,
+    255.88,
+    273.53,
+    291.18,
+    308.82,
+    326.47,
+    344.12,
+    361.76,
+    379.41,
+    397.06,
+    414.71,
+    432.35,
+    450
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.6
+    }
+   ],
+   "quote": "his {{as|'''current''' health}} is at or below {{pplevel|150 to 450|color=health}} {{as|(+ 60% AP)}}",
+   "bin": [
+    "LockeW.HealCapLevel1Value",
+    "LockeW.HealCapLevel18Value",
+    "LockeW.HealCapAPRatio"
+   ],
+   "binNote": "Bin gives only the level-1 (150) and level-18 (450) endpoints plus the 0.6 AP ratio; the wiki's intermediate levels are linearly interpolated from these two endpoints, matching LockeW#MaxHealingThreshold's formula shape."
+  },
+  {
+   "id": "w_6",
+   "meaning": "mana-and-health cost drained per tick, as a fraction of current health",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.005,
+   "terms": [],
+   "quote": "{{as|+ {{fd|0.5}}% '''current''' health}} per {{fd|0.25}} seconds",
+   "bin": [
+    "LockeW.HealthCost"
+   ],
+   "binNote": "LockeW.HealthCost=0.02 is the per-second drain rate (2%/s); the wiki quotes it per 0.25s tick (0.5%), the same rate."
+  },
+  {
+   "id": "w_7",
+   "meaning": "interval between health-cost ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "per {{fd|0.25}} seconds",
+   "bin": [],
+   "binNote": "No bin row states a tick interval directly; LockeW.HealthCost=0.02 is expressed per second in the bin, and the wiki's 0.25s cadence is not present as a separate data value."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Locke stores grey health equal to 100% of post-mitigation damage taken from enemy champions while Soul Ignition is active.",
+   "quote": "he stores an amount of [[grey health]] on his [[health bar]] equal to 100% of the {{tt|post-mitigation damage|Damage calculated after modifiers}} he takes from enemy {{tip|champions}}, up to a cap",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The recast (manual or automatic) ends Soul Ignition and heals Locke for the amount of grey health stored.",
+   "quote": "'''Locke''' ends ''Soul Ignition'' and consumes his [[grey health]] to {{tip|heal}} for the same amount",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Soul Ignition's cooldown does not begin until after the effect (and its recast) ends.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The recast becomes available 0.5 seconds after cast and happens automatically if not used manually before the duration ends.",
+   "quote": "After {{fd|0.5}} seconds, ''Soul Ignition'' can be recast within the duration, and does so automatically afterwards.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The health cost is based on Locke's current health at the time of each tick, not his health at the moment of cast, so it decreases as his health drops.",
+   "quote": "The health cost updates dynamically with '''Locke's''' {{as|'''current''' health}}, costing less the lower his remaining health is. It is not based on his {{as|'''current''' health}} at the time of cast.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "LockeW.BaseMoveSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "LockeW.Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "LockeW.DecayTime",
+   "reason": "utility"
+  },
+  {
+   "ref": "LockeW.MinMoveSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "LockeW.TimeMaxPower",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

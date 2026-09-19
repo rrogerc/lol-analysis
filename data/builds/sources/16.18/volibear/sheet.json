@@ -1,0 +1,925 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "VolibearP",
+    "key": "Characters/Volibear/Spells/VolibearPAbility/VolibearP",
+    "dataValues": {
+     "PDamageRatio": 0.2,
+     "BounceCounterMax": 5,
+     "APRatio": 0.45,
+     "BuffDuration": 6,
+     "PAttackSpeed": 0.05
+    },
+    "calcs": {
+     "ChainLightningDamage": {
+      "expr": "byLevelL[11/12/13/15/17/19/22/25/28/31/34/37/40/44/48/52/56/60] + (APRatio=0.45)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        11,
+        12,
+        13,
+        15,
+        17,
+        19,
+        22,
+        25,
+        28,
+        31,
+        34,
+        37,
+        40,
+        44,
+        48,
+        52,
+        56,
+        60
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.45,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "AttackSpeedCalc": {
+      "expr": "PAttackSpeed=0.05 + 0.0003xap",
+      "flat": 0.05,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0003
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "PAttackSpeed"
+      ]
+     },
+     "{ebe98aa3}": {
+      "expr": "PAttackSpeed=0.05 + 0.04xap",
+      "flat": 0.05,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.04
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "PAttackSpeed"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "VolibearQ",
+    "key": "Characters/Volibear/Spells/VolibearQAbility/VolibearQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": 50,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "MinSpeed": {
+      "axis": "rank",
+      "v": [
+       0.12,
+       0.155,
+       0.19,
+       0.225,
+       0.26
+      ]
+     },
+     "MaxSpeed": {
+      "axis": "rank",
+      "v": [
+       0.24,
+       0.31,
+       0.38,
+       0.45,
+       0.52
+      ]
+     },
+     "Duration": 4,
+     "StunDuration": 1,
+     "BonusADRatio": 1.6,
+     "BonusRange": 25
+    },
+    "calcs": {
+     "CalculatedDamage": {
+      "expr": "BaseDamage=[10/20/30/40/50] + 1xad + (BonusADRatio=1.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30,
+        40,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.6,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     },
+     "ADRatioTooltip": {
+      "expr": "(BonusADRatio=1.6)xbonus ad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.6,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BonusADRatio"
+      ]
+     },
+     "MinSpeedCalc": {
+      "expr": "MinSpeed=[0.12/0.155/0.19/0.225/0.26]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.12,
+        0.155,
+        0.19,
+        0.225,
+        0.26
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "MinSpeed"
+      ]
+     },
+     "MaxSpeedCalc": {
+      "expr": "MaxSpeed=[0.24/0.31/0.38/0.45/0.52]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.24,
+        0.31,
+        0.38,
+        0.45,
+        0.52
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "MaxSpeed"
+      ]
+     },
+     "{10404951}": {
+      "expr": "(BonusADRatio=1.6)xbonus ad + BaseDamage=[10/20/30/40/50]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30,
+        40,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.6,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     }
+    }
+   },
+   {
+    "script": "VolibearQAttack",
+    "key": "Characters/Volibear/Spells/VolibearQAbility/VolibearQAttack",
+    "cooldown": 12,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinSpeed": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       40,
+       60,
+       80,
+       100
+      ]
+     },
+     "BurstSpeed": {
+      "axis": "rank",
+      "v": [
+       20,
+       27.5,
+       35,
+       42.5,
+       50
+      ]
+     },
+     "MaxSpeed": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "VolibearW",
+    "key": "Characters/Volibear/Spells/VolibearWAbility/VolibearW",
+    "cooldown": 5,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       30,
+       55,
+       80,
+       105
+      ]
+     },
+     "HealPercent": {
+      "axis": "rank",
+      "v": [
+       0.08,
+       0.11,
+       0.14,
+       0.17,
+       0.2
+      ]
+     },
+     "BonusHealthRatio": 0.06,
+     "MarkDuration": 8,
+     "W2DamageMultiplier": 1.5,
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     },
+     "MinionAndMonsterMod": 0.5,
+     "W2BonusADDamageMultiplier": 0.0025
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[5/30/55/80/105] + 1.1xad + (BonusHealthRatio=0.06)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        30,
+        55,
+        80,
+        105
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.1
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.06,
+        "dataValue": "BonusHealthRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusHealthRatio"
+      ]
+     },
+     "EmpoweredDamage": {
+      "expr": "TotalDamage * W2DamageMultiplier=1.5 + (W2BonusADDamageMultiplier=0.0025)xbonus ad",
+      "modifies": "TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "W2BonusADDamageMultiplier",
+       "W2DamageMultiplier"
+      ]
+     },
+     "PercentMissingHealthHealingRatio": {
+      "expr": "HealPercent=[0.08/0.11/0.14/0.17/0.2]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.08,
+        0.11,
+        0.14,
+        0.17,
+        0.2
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "HealPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "VolibearE",
+    "key": "Characters/Volibear/Spells/VolibearEAbility/VolibearE",
+    "cooldown": 16,
+    "cost": 50,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowAmount": 0.4,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "PercentDamage": {
+      "axis": "rank",
+      "v": [
+       0.11,
+       0.12,
+       0.13,
+       0.14,
+       0.15
+      ]
+     },
+     "ShieldAmount": 0.14,
+     "MonsterDamageCapBase": {
+      "axis": "rank",
+      "v": [
+       150,
+       265,
+       380,
+       495,
+       610
+      ]
+     },
+     "ShieldDuration": 3,
+     "APRatio": 0.7,
+     "ShieldAPRatio": 0.75,
+     "SlowDuration": 2
+    },
+    "calcs": {
+     "ShieldValue": {
+      "expr": "(ShieldAmount=0.14)xmaxHp + (ShieldAPRatio=0.75)xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.14
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "ShieldAPRatio",
+       "ShieldAmount"
+      ]
+     },
+     "CalculatedDamage": {
+      "expr": "BaseDamage=[80/110/140/170/200] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "APRatioTooltip": {
+      "expr": "(APRatio=0.7)xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "ShieldAPRatioTooltip": {
+      "expr": "(ShieldAPRatio=0.75)xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "ShieldAPRatio"
+      ]
+     },
+     "TotalDamageTooltip": {
+      "expr": "BaseDamage=[80/110/140/170/200] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "MonsterDamageCap": {
+      "expr": "MonsterDamageCapBase=[150/265/380/495/610] + (APRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        265,
+        380,
+        495,
+        610
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "MonsterDamageCapBase"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "VolibearR",
+    "key": "Characters/Volibear/Spells/VolibearRAbility/VolibearR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      135,
+      110
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SweetSpotDamage": {
+      "axis": "rank",
+      "v": [
+       300,
+       500,
+       700
+      ]
+     },
+     "DashSpeed": 750,
+     "TransformDuration": 12,
+     "HealthAmount": {
+      "axis": "rank",
+      "v": [
+       175,
+       350,
+       525
+      ]
+     },
+     "TowerDamage": {
+      "axis": "rank",
+      "v": [
+       300,
+       500,
+       700
+      ]
+     },
+     "SlowAmount": 0.5,
+     "SlowDuration": 1,
+     "BonusAttackRange": 50,
+     "TowerDisableDuration": {
+      "axis": "rank",
+      "v": [
+       2,
+       3,
+       4
+      ]
+     },
+     "APRatio": 1.25
+    },
+    "calcs": {
+     "ADRatio": {
+      "expr": "2.5xbonus ad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.5
+       }
+      ],
+      "refs": []
+     },
+     "{4402b0fa}": {
+      "expr": "SweetSpotDamage=[300/500/700] + 2.5xbonus ad + 1.25xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        500,
+        700
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.5
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.25
+       }
+      ],
+      "refs": [
+       "SweetSpotDamage"
+      ]
+     },
+     "APRatioTooltip": {
+      "expr": "(APRatio=1.25)xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.25,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "TowerDamageTooltip": {
+      "expr": "TowerDamage=[300/500/700] + (APRatio=1.25)xap + 2.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        500,
+        700
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.25,
+        "dataValue": "APRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.5
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "TowerDamage"
+      ]
+     },
+     "SweetSpotDamageTooltip": {
+      "expr": "SweetSpotDamage=[300/500/700] + (APRatio=1.25)xap + 2.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        500,
+        700
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.25,
+        "dataValue": "APRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.5
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "SweetSpotDamage"
+      ]
+     },
+     "{d9a2963e}": {
+      "expr": "HealthAmount=[175/350/525]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        175,
+        350,
+        525
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "HealthAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "VolibearQ",
+  "W": "VolibearW",
+  "E": "VolibearE",
+  "R": "VolibearR",
+  "P": "VolibearP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 70,
+   "{c4ab3550}": 1.25,
+   "{3a509002}": 0.1
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Volibear",
+  "name": "Volibear",
+  "partype": "Mana",
+  "passive": "The Relentless Storm",
+  "spells": [
+   {
+    "id": "VolibearQ",
+    "name": "Thundering Smash",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "VolibearW",
+    "name": "Frenzied Maul",
+    "maxrank": 5,
+    "cooldown": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ],
+    "cost": [
+     20,
+     25,
+     30,
+     35,
+     40
+    ]
+   },
+   {
+    "id": "VolibearE",
+    "name": "Sky Splitter",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     16,
+     16,
+     16,
+     16
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "VolibearR",
+    "name": "Stormbringer",
+    "maxrank": 3,
+    "cooldown": [
+     160,
+     135,
+     110
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "The Relentless Storm": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "spellshield": "false",
+    "projectile": "false",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Thundering Smash": {
+    "damagetype": "Physical",
+    "spelleffects": "Special",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Frenzied Maul": {
+    "damagetype": "physical",
+    "spelleffects": "Special",
+    "onhiteffects": "true",
+    "spellshield": "true",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Sky Splitter": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Stormbringer": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

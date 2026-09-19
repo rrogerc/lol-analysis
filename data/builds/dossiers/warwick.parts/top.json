@@ -1,0 +1,146 @@
+{
+ "champion": "warwick",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "Eternal Hunger (P) is a flat bonus magic on-hit proc that fires on every basic attack and is explicitly re-triggered whenever Jaws of the Beast (Q) or Infinite Duress (R, on its 1st/3rd/5th ticks) 'apply on-hit effects'."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "Q",
+    "W"
+   ],
+   "note": "P's heal ratio and W's AS/MS bonus magnitude both switch on the target's current-health thresholds (50%/25% max HP); Q's primary damage term is itself a % of the target's max HP."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Blood Hunt grants a duration-limited (1.25s, refreshed on qualifying hits; or 8s while actively marked) attack-speed and move-speed buff."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Primal Howl's recast explicitly resets Warwick's basic attack timer."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Primal Howl is a cast-then-recast (or auto-recast) ability; Infinite Duress delivers its total damage as 6 separately timed 0.25s-interval instances over a 1.5s channel."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Infinite Duress ticks magic damage every 0.25s for up to 1.5s."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R",
+    "Q"
+   ],
+   "note": "Infinite Duress channels for up to 1.5s, blocking attacks per the wiki's channel interaction table; Jaws of the Beast can optionally be held to channel/charge (no extra damage, mobility-only, so lower priority for the damage fight)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Jaws of the Beast refunds its cooldown (not its cost) if the target dies before Warwick reaches it on a tapped cast."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (Q 80-100, W 55, E 40, R 100); Warwick's mana pool may constrain how often the full rotation can be repeated in 15s."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "P/Q/R self-heals (100%/250% post-mitigation for P, lifesteal-style heal for Q, 100% post-mitigation heal for R) and E's damage-reduction buff change damage taken, not damage dealt, and only matter for the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic in Warwick's kit (flat on-hit proc, health-threshold-gated buffs and heals, an attack-reset recast, a multi-tick channelled ultimate, mana costs, and a conditional cooldown refund) maps onto existing primitives; nothing requires bespoke simulator logic."
+ },
+ "unsettled": [
+  {
+   "question": "What are the true per-champion-level (1-18) values of Eternal Hunger's (P) bonus on-hit magic damage?",
+   "options": [
+    "Use the bin's WarwickP#OnHitDamage array directly: 18 explicit values from 6 (lvl1) to 55 (lvl18) with a step of (55-6)/17 ≈ 2.882 per level.",
+    "Use the wiki template's literal formula {{pp|6 + (55-6)/17*(x-1) for 20}}, which generates 20 stepped entries (step ≈2.0526 if spread over 20) and would need to be mapped/truncated onto 18 champion levels, producing different intermediate values than the bin array."
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{as|{{pp|6 + (55-6)/17*(x-1) for 20}} {{as|(+ 15% '''bonus''' AD)}} {{as|(+ 10% AP)}}|magic damage}}",
+    "WarwickP#OnHitDamage = byLevel(6..55) + (ADRatio=0.15)xbonus ad + (APRatio=0.1)xap"
+   ]
+  },
+  {
+   "question": "Where does Infinite Duress's (R) 100%-post-mitigation-damage self-heal come from, and is it actually live in this patch?",
+   "options": [
+    "It is a real, undocumented-in-the-bin heal effect (handled by a generic heal-on-damage component not exposed as a listed DataValue/Calculation), so it should be modeled as stated by the wiki.",
+    "It is only a wiki description/legacy claim with no corroborating bin row at all, so its presence or exact ratio should be treated as unverified pending a stronger check of the bin."
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Warwick''' {{tip|heals}} for 100% of all {{tt|post-mitigation damage|Damage calculated after resistances and modifiers.}} he deals to the target during ''Infinite Duress''."
+   ]
+  },
+  {
+   "question": "In the simulated 15s damage-race fight where the dummy can die, should Jaws of the Beast's (Q) cooldown-refund-on-kill (tapped cast, target dies before Warwick reaches them) be modeled, given the wiki also flags this refund as sometimes failing and having buggy edge cases?",
+   "options": [
+    "Always apply the refund when a tapped Q's target dies before the bite lands, matching the documented rule.",
+    "Never apply it (treat as an unreliable/bugged edge case not worth modeling), since the wiki explicitly notes the refund 'can occasionally fail' and even has patch-specific known-issue variants."
+   ],
+   "impact": "low",
+   "quotes": [
+    "If the target dies prior to '''Warwick''' reaching them, ''Jaws of the Beast'' refunds its cooldown when tapped.",
+    "The refund can occasionally fail."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Jaws of the Beast) on the dummy for immediate magic damage, on-hit application (triggering P), and lifesteal.",
+   "Auto-attack continuously between ability casts so P's on-hit damage and any on-hit item effects always tick.",
+   "Cast W (Blood Hunt) early (either the active for a guaranteed 8s AS/MS-eligibility window, or simply rely on the passive proc once the dummy's health first drops below 50%) to keep the attack-speed buff up as much as possible.",
+   "Weave E (Primal Howl) in and recast it as soon as the 1s minimum delay allows, primarily to use its attack-reset to fit in extra auto-attacks; its damage-reduction buff itself is irrelevant in the damage fight.",
+   "Cast R (Infinite Duress) on cooldown for its 6-instance, 1.5s channelled magic DoT with 3 on-hit-triggering ticks, accepting that autos are blocked during the channel.",
+   "Re-cast Q on cooldown throughout the fight (short 6-8s CD) since it is the highest-damage frequently-available spell, keeping mana permitting.",
+   "Prioritize spending mana on Q > R > E > W if mana becomes the binding constraint over the 15s window."
+  ],
+  "questions": [
+   "Is it worth spending 55 mana and a 0.5s cast time on W's active early (to guarantee its AS/MS eligibility before the dummy's health drops), or should mana be reserved for Q/R given Warwick's small mana pool?",
+   "Does R's channel (attack=false per the wiki's interaction table) fully block Warwick's basic attacks for its whole 1.5s, meaning it should be sequenced to minimize interrupting an ongoing on-hit-heavy auto-attack rhythm?",
+   "Is Q's hold/charge variant (which adds no extra damage, only repositioning) ever worth using in a stationary-dummy fight, or should Warwick always tap-cast Q for minimum lockout time?",
+   "Given all four abilities cost mana (Q 80-100, W 55, E 40, R 100) with no listed mana regen data here, is mana actually a binding constraint over 15s, or does Warwick's base mana pool/regen comfortably allow the full proposed rotation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

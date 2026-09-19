@@ -1,0 +1,929 @@
+{
+ "champion": "reksai",
+ "abilities": {
+  "P": {
+   "name": "Fury of the Xer'Sai",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "Fury generated per basic attack on-hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "generate {{tip|fury|{{as|25 Fury}}}} {{tip|on-hit}}",
+     "bin": [
+      "RekSaiPassive.FuryFromAttacks"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "Fury generation multiplier for basic attacks against minions (applied to the 25 Fury base)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.16,
+     "terms": [],
+     "quote": "reduced to {{as|{{ap|25*0.16}}|Fury}} per hit against {{tip|minions}}",
+     "bin": [
+      "RekSaiPassive.FuryMinionMod"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "Fury generated per basic attack against a ward or jungle plant",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "{{as|{{ap|25*0.2}}|Fury}} per hit against {{tip|ward|wards}} and [[jungle plants]]",
+     "bin": [],
+     "binNote": "0.2 mod for wards/plants has no corresponding bin row; only FuryMinionMod (0.16) is exposed for minions."
+    },
+    {
+     "id": "p_4",
+     "meaning": "Fury generated per ability that hits at least one unit (except Prey Seeker/Queen's Wrath)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "'''Rek'Sai's''' {{tip|abilities}} other than ''{{ai|Queen's Wrath|Rek'Sai}}'' generate {{as|25 Fury}} upon hitting at least one unit",
+     "bin": [
+      "RekSaiPassive.FuryFromAbilities"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "Fury lost per second after being out of combat for 8 seconds",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 20,
+     "terms": [],
+     "quote": "After 8 seconds of being [[out of combat]], she loses {{as|20 Fury}} per second.",
+     "bin": [],
+     "binNote": "Neither the 8-second delay nor the 20 Fury/second decay rate appears as a data value in the sheet."
+    },
+    {
+     "id": "p_6",
+     "meaning": "Duration over which burrowed Fury consumption heals",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "consumes her current {{as|Fury}} over 3 seconds to {{tip|heal}}",
+     "bin": [
+      "RekSaiPassive.HealDuration"
+     ]
+    },
+    {
+     "id": "p_7a",
+     "meaning": "Minimum heal size as percent of max health, at 0 Fury consumed",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.09,
+     "terms": [],
+     "quote": "{{as|{{pp|9 + (20-9)/17*(x-1) for 20|key=%}} '''maximum''' health}}",
+     "bin": [
+      "RekSaiPassive.HealPercentStartValue"
+     ]
+    },
+    {
+     "id": "p_7b",
+     "meaning": "Maximum heal size as percent of max health, at 100 Fury consumed",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "{{as|{{pp|9 + (20-9)/17*(x-1) for 20|key=%}} '''maximum''' health}}",
+     "bin": [
+      "RekSaiPassive.HealPercentEndValue"
+     ]
+    },
+    {
+     "id": "p_8",
+     "meaning": "Delay before automatic burrowed healing begins if Fury starts generating while already Burrowed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "If she starts generating {{as|Fury}} while {{sbc|Burrowed}}, the consumption occurs after 5 seconds.",
+     "bin": [
+      "RekSaiPassive.PauseDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks generate Fury on-hit, at a reduced rate against minions and a different reduced rate against wards/jungle plants.",
+     "quote": "'''Rek'Sai''' {{tip|basic attacks}} generate {{tip|fury|{{as|25 Fury}}}} {{tip|on-hit}}, reduced to {{as|{{ap|25*0.16}}|Fury}} per hit against {{tip|minions}}, and to {{as|{{ap|25*0.2}}|Fury}} per hit against {{tip|ward|wards}} and [[jungle plants]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Abilities other than Prey Seeker (Queen's Wrath) generate Fury on hitting at least one unit; Prey Seeker generates no Fury against non-champions.",
+     "quote": "''{{ai|Prey Seeker|Rek'Sai}}'' does not generate {{as|Fury}} against non-{{tip|champions}} hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Fury decays out of combat, reducing available Fury for empowered abilities.",
+     "quote": "After 8 seconds of being [[out of combat]], she loses {{as|20 Fury}} per second.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Burrowing consumes current Fury over time to heal Rek'Sai, stopping early if she reaches full health or fully consumes her Fury.",
+     "quote": "she consumes her current {{as|Fury}} over 3 seconds to {{tip|heal}} for {{pp|0 to 100|0 to 100 by 5|type=Fury|key=%|color=Fury}} of {{as|{{pp|9 + (20-9)/17*(x-1) for 20|key=%}} '''maximum''' health}}, stopping once fully consumed or she reaches {{sti|health|{{as|full health}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "When Fury is automatically consumed while already Burrowed (no transformation), the healing buff refreshes every second while Fury remains above 25, extending the heal to 6 seconds at 100 Fury (noted as a bug).",
+     "quote": "the healing buff will refresh every second while she has/maintains over {{as|25 Fury}}.{{bug|2}} This causes the healing to last 6 seconds at {{as|100 Fury}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Queen's Wrath / Prey Seeker",
+   "cooldown": {
+    "values": [
+     4,
+     3.5,
+     3,
+     2.5,
+     2
+    ],
+    "quote": "{{ap|4 to 2}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage from empowered attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.3,
+        0.35,
+        0.4,
+        0.45,
+        0.5
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|30 to 50}}% AD}}",
+     "bin": [
+      "RekSaiQ.UnburrowedADRatio"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      80,
+      110,
+      140,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.25
+      },
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|50 to 170}} {{as|(+ 25% '''bonus''' AD)}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "RekSaiQ#BurrowDamageTooltip"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Bonus attack speed gained on cast",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "gains {{sti|{{as|35% '''bonus''' attack speed}}}} for 3 seconds",
+     "bin": [
+      "RekSaiQ.AttackSpeed"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Duration of the attack speed buff / empower window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "for 3 seconds",
+     "bin": [
+      "RekSaiQ.BuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The empowered attack has an uncancellable windup and deals bonus physical damage to the target and surrounding enemies on hit.",
+     "quote": "Her next {{tip|basic attack}} {{tip|on-hit}} within the duration will have an {{tip|uncancellable windup}} and deal {{as|'''bonus''' physical damage}} to the target and surrounding enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Completing the empowered attack refreshes the buff, allowing up to 3 total empowered attacks before it expires.",
+     "quote": "If '''Rek'Sai''' completes an attack, the duration is refreshed, for up to 3 total empowered attacks.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Queen's Wrath resets Rek'Sai's basic attack timer.",
+     "quote": "''Queen's Wrath {{tip|basic attack reset|resets}} '''Rek'Sai's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary target's damage is affected by critical strike modifiers.",
+     "quote": "''Queen's Wrath's'' damage to the primary target is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the attack is dodged, blocked, or Rek'Sai is blinded, primary-target damage is nullified but the surrounding AoE damage still occurs.",
+     "quote": "When {{tip|dodge|dodged}} or {{tip|block|blocked}}, or if '''Rek'Sai''' is {{tip|blind|blinded}}, the damage dealt to the primary target is nullified, but the damage around her will still occur.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Prey Seeker's void bolt detonates on the first enemy hit, dealing magic damage to all nearby enemies.",
+     "quote": "fires a void bolt in the target direction that detonates on the first enemy hit, dealing {{as|magic damage}} to all nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage to the primary target of Queen's Wrath applies spell damage rules, while damage to secondary targets applies proc damage rules.",
+     "quote": "Damage to the primary target applies {{tip|spell damage}} and damage to secondary targets applies {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RekSaiQ.UnburrowedBaseDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "RekSaiQ.AoERange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiQ.BurrowedCooldown",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "RekSaiQ.BurrowedAoE",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiQ.BurrowedDebuffDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Burrow / Unburrow",
+   "cooldown": {
+    "values": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "quote": "4"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      55,
+      80,
+      105,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|30 to 130}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "RekSaiW#UnburrowDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Knockup duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "knock them up}} for 1 second",
+     "bin": [
+      "RekSaiW.KnockupDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Lockout time after hitting an enemy",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "unable}} to move or attack for {{fd|0.15}} seconds after hitting an enemy with Unburrow",
+     "bin": [
+      "RekSaiW.LockoutTime"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Re-displace immunity duration on targets hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 6}}",
+     "bin": [
+      "RekSaiW.KnockupImmunity"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Unburrow deals magic damage to nearby enemies and knocks them up on cast (self-centered burst, not a targeted ability).",
+     "quote": "emerging from the ground to deal {{as|magic damage}} to nearby enemies and {{tip|airborne|knock them up}} for 1 second",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rek'Sai can be knocked out of Burrowed into Unburrowed by attacking, casting the ability automatically once in range and applying the damage/knockup to the attack target.",
+     "quote": "Rek'Sai can also trigger Unburrow by issuing an attack command, casting the ability once she is in attack range of the target and applying the knock up against them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Targets already hit by Unburrow cannot be displaced by it again for a duration, but presumably can still be damaged; this affects repeat-cast damage application on the same target.",
+     "quote": "Targets hit cannot be displaced by Unburrow again for some time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Unburrow does not count as an ability activation for on-cast effects like Spellblade.",
+     "quote": "Unburrow does not count as an ability activation for the purposes of on-cast effects such as Spellblade and triggering Force Pulse (Kassadin) passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Burrow (W as a burrowed-state toggle) does not itself deal damage and has no cast time; its cooldown starts after casting Unburrow.",
+     "quote": "Starts after casting Unburrow",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Unburrow's own cooldown begins only after the target is displaced (knocked up/back), not on cast.",
+     "quote": "Begins after the target is displaced",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While burrowed, Rek'Sai gains bonus movement speed, which does not affect either fight (no allies/terrain to path around, and speed doesn't change damage dealt or taken).",
+     "quote": "{{st|Bonus Movement Speed|{{ap|5 to 25}}}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RekSaiW.ADRatio",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "RekSaiW.ChampKnockbackRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiW.OtherKnockbackRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiW.KnockbackDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "RekSaiW.Slow",
+     "reason": "utility"
+    },
+    {
+     "ref": "RekSaiW.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "RekSaiW.VisionRadiusMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiW.KnockupRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiW.SearchRange",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiW.TremorTickTime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiW.DistanceCheck",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiW.BurrowedMoveSpeed",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Furious Bite / Tunnel",
+   "cooldown": {
+    "values": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "quote": "6"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      70,
+      95,
+      120,
+      145,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|70 to 170}} {{as|(+ {{ap|60}}% '''bonus''' AD)}}",
+     "bin": [
+      "RekSaiE#BaseDamageCalculation"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "True Damage",
+     "role": "damage",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      84,
+      114,
+      144,
+      174,
+      204
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.72
+      }
+     ],
+     "quote": "{{ap|70*1.2 to 170*1.2}} {{as|(+ {{ap|60*1.2}}% '''bonus''' AD)}}",
+     "bin": [
+      "RekSaiE#EmpoweredDamageCalculation"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "At maximum Fury, Furious Bite deals 120% damage and is converted to true damage.",
+     "quote": "At maximum {{tip|fury|{{as|Fury}}}}, ''Furious Bite'' deals {{ap|{{#var:ue_r}}*100|round=2}}% damage and is converted to {{ccs|{{as|true damage}}|true}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Furious Bite's cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Furious Bite can be blocked by spell shields.",
+     "quote": "\"spellshield\": \"True\"",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Tunnel version of E is a self-targeted dash with no cast time and deals no damage, so it does not affect the damage fight.",
+     "quote": "'''Rek'Sai''' {{tip|dashes}} in the target direction, leaving behind a ''Tunnel''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RekSaiE.DashDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiE.MinimumRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiE.DashSpeedBase",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiE.DashSpeedMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiE.MaximumTunnels",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiE.TunnelDurationMinutes",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiE.TunnelReuseCooldown",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiE.DashCooldown",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiE.TunnelTimeRatio",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Void Rush",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.25}}",
+    "binNote": "Wiki quotes {{fd|0.25}} for cast time, but the bin's RekSaiR.castTime is 0.35; recording the bin's value as stated since it disagrees with the wiki's displayed number."
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.15,
+        0.2,
+        0.25
+       ]
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ {{ap|15 to 25}}% of target's '''maximum''' health)}}",
+     "bin": [
+      "RekSaiR#RBaseDamageCalc",
+      "RekSaiR.PercentHealthDamage"
+     ],
+     "binNote": "Wiki uses RekSaiR/RBaseDamage and PercentHealthDamage; the RekSaiRWrapper values (150/300/450 base, missing-health scaling) differ and appear to be from a separate/older ability version."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Marked as Prey duration (passive mark applied on damage)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "lasting for 5 seconds",
+     "bin": [
+      "RekSaiR.PreyMarkDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "delay after cast before Rek'Sai emerges and pounces",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.9,
+     "terms": [],
+     "quote": "After {{tt|{{fd|0.9}} seconds|Estimated, from end of cast time}}, she {{tip|blink|blinks}} to a location",
+     "bin": [],
+     "binNote": "No bin data value corresponds to this 0.9s delay; likely derived from an animation/leap timing not exposed as a data row."
+    },
+    {
+     "id": "r_4",
+     "meaning": "dash distance through the target after arrival",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 125,
+     "terms": [],
+     "quote": "{{tip|dash|dashes}} 125 units through them",
+     "bin": [
+      "RekSaiR.ExtraDistance"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rek'Sai applies Marked as Prey to enemy champions she damages, which is required to target Void Rush.",
+     "quote": "'''Rek'Sai''' applies ''Marked as Prey'' to enemy champions she damages, lasting for 5 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rek'Sai becomes untargetable/vanished during the cast, then dashes and deals a single instance of damage on arrival.",
+     "quote": "she slashes at the target with her claws, dealing {{as|physical damage}}, and {{tip|dash|dashes}} 125 units through them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability is cancelled and put on a short cooldown if the target dies, moves too far, or leaves sight during the cast or vanish.",
+     "quote": "''Void Rush'' will be cancelled and placed on a {{sti|cd|5-second cooldown}} if the target dies or moves too far away during the cast time or while '''Rek'Sai''' is vanished, or if they are no longer in {{tip|sight}} during the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "No damage is dealt if the target is untargetable when Rek'Sai reaches them.",
+     "quote": "''Void Rush'' will not deal damage if the target is {{tip|untargetable}} by the time '''Rek'Sai''' reaches them.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If cast while burrowed, Rek'Sai automatically unburrows at the end of the cast time without triggering Unburrow's effects.",
+     "quote": "'''Rek'Sai''' will automatically {{ai|Unburrow|Rek'Sai}} at the end of Void Rush's cast time, placing {{ai|Burrow|Rek'Sai}} on a 1-second cooldown without triggering Unburrow's effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Rek'Sai gains displacement immunity from the start of the cast until the dash ends.",
+     "quote": "'''Rek'Sai''' gains the {{tip|displacement immunity}} from the start of the cast time, and loses it once her dash ends.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RekSaiR.TravelDistancePercent",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiR.LeapMovementSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "RekSaiR.VODistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiR.DamageCheckRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "RekSaiR.CastBuffDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "RekSaiR.ADRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks and abilities generate Fury which feeds E's max-Fury true-damage conversion"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Fury is a resource that gates whether Furious Bite hits its empowered (100% Fury) true-damage state"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Furious Bite deals 1.2x damage as true damage at max Fury instead of physical damage"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Queen's Wrath arms next basic attack(s) with bonus physical damage and attack speed"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "35% bonus attack speed for 3s, refreshed on each empowered attack landed, up to 3 attacks"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Queen's Wrath basic attack reset on cast"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Queen's Wrath primary target hit (spell damage/crit) + AoE secondary hits (proc damage) are separately calculated"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Unburrow, Furious Bite, and Void Rush deal on-cast/on-delay damage on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Void Rush deals bonus damage scaling with target's max health"
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "W"
+   ],
+   "note": "Burrowed/Unburrowed toggle swaps which abilities (and their damage) are available"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Burrowed Fury-consumption heal only matters for survival, not the damage fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Fury is a resource that both generates from all sources (attacks, abilities) and decays out-of-combat, and Furious Bite's damage type/amount depends non-linearly on current Fury (only fully converts to 1.2x true damage exactly at 100 Fury, otherwise scales as plain physical damage at RekSaiE.BaseDamageCalculation with no partial bonus described). The simulator needs bespoke logic to track a Fury meter across the 15s rotation (gains of 25 per ability/attack, decay after 8s out of combat) to decide whether each Furious Bite cast lands as physical or true/empowered damage — this is more than a simple resource-budget primitive since it also gates a conditional-damage branch, and the two interact (attack resets from Q change how fast Fury accumulates)."
+ },
+ "unsettled": [
+  {
+   "question": "Does Furious Bite's damage scale continuously with current Fury (partial bonus below 100) or is it strictly binary (normal damage below 100 Fury, full 1.2x true damage only at exactly 100 Fury)?",
+   "options": [
+    "Binary: only max Fury (100) grants the 1.2x true damage conversion, otherwise plain physical damage per RekSaiE.BaseDamageCalculation",
+    "Continuous: some partial scaling with Fury percentage is applied even below 100"
+   ],
+   "impact": "high",
+   "quotes": [
+    "At maximum {{tip|fury|{{as|Fury}}}}, ''Furious Bite'' deals {{ap|{{#var:ue_r}}*100|round=2}}% damage and is converted to {{ccs|{{as|true damage}}|true}}."
+   ]
+  },
+  {
+   "question": "Is Queen's Wrath's AoE secondary damage a separate damage instance from the primary target hit, and does it also scale/crit the same way, or is it a flat non-crit proc?",
+   "options": [
+    "Secondary AoE damage is a separate on-hit/proc instance using the same UnburrowedADRatio but without crit modifiers",
+    "Secondary AoE damage is identical in all respects including crit eligibility"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Damage to the primary target applies {{tip|spell damage}} and damage to secondary targets applies {{tip|proc damage}}.",
+    "''Queen's Wrath's'' damage to the primary target is affected by {{tip|critical strike}} modifiers."
+   ]
+  },
+  {
+   "question": "Which R base-damage/scaling row is live: RekSaiR (150/250/350 base, 15-25% target max HP) or RekSaiRWrapper (150/300/450 base, 25-35% target missing HP)? The wiki text matches RekSaiR's numbers but the sheet carries both, and RekSaiRWrapper's cooldown array (100/90/80) also differs from RekSaiR's (120/100/80) and the wiki (also 120/100/80).",
+   "options": [
+    "RekSaiR is the live spell (matches wiki description and cooldowns)",
+    "RekSaiRWrapper is the live spell (a newer rework not yet reflected on the wiki)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{ap|150 to 350}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ {{ap|15 to 25}}% of target's '''maximum''' health)}}",
+    "RekSaiRWrapper.PercentMissingHealthDamage = [25/30/35]"
+   ]
+  },
+  {
+   "question": "In the 15s damage-fight against a stationary full-health dummy, does Rek'Sai realistically reach 100 Fury (needed for Furious Bite's true-damage bonus) given the decay-after-8s-out-of-combat rule doesn't apply mid-fight, or should the sim assume she starts the fight at 0 Fury and must build it up via attacks/abilities first?",
+   "options": [
+    "Assume Fury starts at 0 and accumulates during the fight from attacks/abilities (25 per source)",
+    "Assume Fury starts at some pre-built value (e.g. 100) since real play often pre-stacks Fury before engaging"
+   ],
+   "impact": "medium",
+   "quotes": []
+  },
+  {
+   "question": "Does Void Rush require a pre-existing Marked as Prey debuff (from prior damage) to be cast at all, meaning in a 15s solo dummy fight it can only be used after another ability/attack has already applied the mark, delaying its first use?",
+   "options": [
+    "Yes, R can only be cast on a marked target, so the rotation must land a hit first",
+    "No practical restriction relevant to a dummy target that is always valid to mark/target"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Rek'Sai''' applies ''Marked as Prey'' to enemy champions she damages, lasting for 5 seconds.",
+    "'''Rek'Sai''' selects the target ''Marked as Prey''"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start Unburrowed (or immediately Unburrow if starting Burrowed) to access Queen's Wrath, Furious Bite, and basic attacks against the dummy",
+   "Auto-attack once to apply Marked as Prey and generate Fury, then use Queen's Wrath to empower the next attacks with bonus physical damage and attack speed",
+   "Weave Furious Bite on cooldown (every 6s) targeting the dummy, ideally timed for when Fury is near or at 100 for the true-damage conversion",
+   "Cast Void Rush once the dummy is Marked as Prey (from the first attack or ability hit) for its large physical + max-health-percent burst, then again if cooldown allows within 15s (rank 1 cooldown 120s means only one cast per fight at any rank)",
+   "Fill all remaining time with basic attacks (empowered by Queen's Wrath when available) and recast Queen's Wrath and Furious Bite on cooldown",
+   "Do not use Burrow/Unburrow toggle or Tunnel for repositioning since there is no terrain or movement benefit in the dummy fight, and toggling burrowed state costs no damage but the Unburrow damage burst itself should be counted once if she starts Burrowed"
+  ],
+  "questions": [
+   "Should the simulated fight assume Rek'Sai starts Unburrowed (typical mid-fight state) or Burrowed (requiring an initial Unburrow burst as part of the rotation)?",
+   "Is there an established optimal Fury-management opener in practice (e.g., pre-stacking Fury via jungle camps before engaging) that the 15s isolated dummy fight should mimic, or should Fury simply start at 0?",
+   "Given Void Rush's long cooldown (80-120s), should it be included in the rotation for level/item comparisons at all ranks, or only assumed once R is maxed/available (i.e., is R itself expected to be down at the relevant simulated level)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

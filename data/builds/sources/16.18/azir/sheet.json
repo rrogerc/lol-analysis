@@ -1,0 +1,572 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "AzirPassive",
+    "key": "Characters/Azir/Spells/AzirPassiveAbility/AzirPassive",
+    "cooldown": 90,
+    "dataValues": {
+     "TowerDisintegrationTime": 45,
+     "SoldierStabRange": 350,
+     "SoldierDeactivationRange": 660,
+     "APRatio": 0.4
+    },
+    "calcs": {
+     "TowerDamage": {
+      "expr": "byLevelL[230/230/230/230/230/230/245/260/275/290/305/320/335/350/365/380/395/410] + (APRatio=0.4)xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        230,
+        230,
+        230,
+        230,
+        230,
+        230,
+        245,
+        260,
+        275,
+        290,
+        305,
+        320,
+        335,
+        350,
+        365,
+        380,
+        395,
+        410
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio"
+      ]
+     },
+     "BonusResists": {
+      "expr": "byLevelL[30/30/30/30/30/30/35/40/45/50/55/60/65/70/75/80/85/90]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "AzirQWrapper",
+    "key": "Characters/Azir/Spells/AzirQWrapperAbility/AzirQWrapper",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      12,
+      10,
+      8,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      80,
+      90,
+      100,
+      110
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       95,
+       115,
+       135,
+       155
+      ]
+     },
+     "SlowAmount": -0.25,
+     "SpearLength": 325,
+     "APRatio": {
+      "axis": "rank",
+      "v": [
+       0.35,
+       0.4,
+       0.45,
+       0.5,
+       0.55
+      ]
+     },
+     "SoldierDashSpeed": 1600,
+     "SoldierFormationClumpDistance": 200
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[75/95/115/135/155] + (APRatio=[0.35/0.4/0.45/0.5/0.55])xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        95,
+        115,
+        135,
+        155
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.35,
+          0.4,
+          0.45,
+          0.5,
+          0.55
+         ]
+        },
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "AzirW",
+    "key": "Characters/Azir/Spells/AzirWAbility/AzirW",
+    "cooldown": 1.5,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      40,
+      35,
+      30,
+      25,
+      20
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "APRatio": {
+      "axis": "rank",
+      "v": [
+       0.35,
+       0.425,
+       0.5,
+       0.575,
+       0.65
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       65,
+       80,
+       95,
+       110
+      ]
+     },
+     "OnHitMultiplier": 0.5,
+     "SoldierDuration": 10,
+     "SubsequentDamageMod": 25,
+     "InputBufferProtection": 0.5
+    },
+    "calcs": {
+     "SecondaryTargetDamageMod": {
+      "expr": "byLevelL[0.2/0.2/0.2/0.2/0.2/0.2/0.2/0.2/0.28/0.36/0.44/0.52/0.6/0.68/0.76/0.84/0.92/1]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.28,
+        0.36,
+        0.44,
+        0.52,
+        0.6,
+        0.68,
+        0.76,
+        0.84,
+        0.9199999868869781,
+        1
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[50/65/80/95/110] + byLevelL[0/0/0/0/0/0/0/0/0/8/16/24/32/40/48/56/64/72] + (APRatio=[0.35/0.425/0.5/0.575/0.65])xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "AzirEWrapper",
+    "key": "Characters/Azir/Spells/AzirEWrapperAbility/AzirEWrapper",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      20.5,
+      19,
+      17.5,
+      16
+     ]
+    },
+    "cost": 60,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "DamageRatio": 0.6,
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       70,
+       110,
+       150,
+       190,
+       230
+      ]
+     },
+     "ShieldAPRatio": 0.6,
+     "DashSpeed": 1700,
+     "ShieldDuration": 1.5,
+     "CastRange": 1100
+    },
+    "calcs": {
+     "TotalShield": {
+      "expr": "BaseShield=[70/110/150/190/230] + (ShieldAPRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "ShieldAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldAPRatio"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[70/110/150/190/230] + (DamageRatio=0.6)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        110,
+        150,
+        190,
+        230
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6,
+        "dataValue": "DamageRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "DamageRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "AzirR",
+    "key": "Characters/Azir/Spells/AzirRAbility/AzirR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      105,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       400,
+       600
+      ]
+     },
+     "WallDuration": 5,
+     "NumberOfSoldiers": {
+      "axis": "rank",
+      "v": [
+       6,
+       7,
+       8
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[200/400/600] + 0.75xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        400,
+        600
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "AzirQWrapper",
+  "W": "AzirW",
+  "E": "AzirEWrapper",
+  "R": "AzirR",
+  "P": "AzirPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 320,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.15
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Azir",
+  "name": "Azir",
+  "partype": "Mana",
+  "passive": "Shurima's Legacy",
+  "spells": [
+   {
+    "id": "AzirQWrapper",
+    "name": "Conquering Sands",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     12,
+     10,
+     8,
+     6
+    ],
+    "cost": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ]
+   },
+   {
+    "id": "AzirW",
+    "name": "Arise!",
+    "maxrank": 5,
+    "cooldown": [
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5
+    ],
+    "cost": [
+     40,
+     35,
+     30,
+     25,
+     20
+    ]
+   },
+   {
+    "id": "AzirEWrapper",
+    "name": "Shifting Sands",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     20.5,
+     19,
+     17.5,
+     16
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "AzirR",
+    "name": "Emperor's Divide",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     105,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Shurima's Legacy": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "False",
+    "projectile": "False",
+    "targeting": "Unit",
+    "affects": "Turret ruins"
+   }
+  },
+  "Q": {
+   "Conquering Sands": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "Special",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Arise!": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "false",
+    "projectile": "False",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana + 1 Sand Soldier"
+   }
+  },
+  "E": {
+   "Shifting Sands": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Emperor's Divide": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "Special",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

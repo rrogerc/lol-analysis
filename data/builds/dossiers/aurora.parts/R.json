@@ -1,0 +1,213 @@
+{
+ "name": "Between Worlds",
+ "cooldown": {
+  "values": [
+   140,
+   120,
+   100
+  ],
+  "quote": "{{ap|140 to 100}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    175,
+    275,
+    375
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.7
+    }
+   ],
+   "quote": "{{ap|175 to 375}} {{as|(+ 70% AP)}}",
+   "bin": [
+    "AuroraR#DamageCalc"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "ai|Across the Veil|Aurora|Realm Hopper Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    3.5,
+    4.25,
+    5
+   ],
+   "terms": [],
+   "quote": "{{ap|3.5 to 5}} seconds",
+   "bin": [
+    "AuroraR.RBuffDuration"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Rift Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    1.75,
+    2.5,
+    3.25
+   ],
+   "terms": [],
+   "quote": "{{ap|2.5-0.75 to 4-0.75}} seconds<!-- Duration w/o the creation time. See notes -->",
+   "bin": [
+    "AuroraR.AreaDuration"
+   ],
+   "binNote": "Bin's AuroraR.AreaDuration is [2.5/3.25/4], matching the in-game tooltip the wiki says is wrong; wiki states the actual rift duration is 0.75s shorter (1.75/2.5/3.25) due to shockwave expansion time not being part of the rift itself."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Slow Duration",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    1.5,
+    1.75,
+    2
+   ],
+   "terms": [],
+   "quote": "{{ap|1.5 to 2}} seconds",
+   "bin": [
+    "AuroraR.StunDuration"
+   ],
+   "binNote": "No dedicated slow-duration data value found; AuroraR.StunDuration's numbers [1.5/1.75/2] match the wiki's border-collision slow duration exactly, but the field name suggests it may actually govern a stun elsewhere (unclear naming, using it as the only matching bin row)."
+  },
+  {
+   "id": "r_5",
+   "meaning": "shockwave slow amount",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": -0.3,
+   "terms": [],
+   "quote": "{{tip|slow}} them by 30% for 2 seconds",
+   "bin": [
+    "AuroraR.SlowPercent"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "border collision enemy slow amount",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": -0.5,
+   "terms": [],
+   "quote": "{{tip|slow|slowed}} by 50% for a duration",
+   "bin": [
+    "AuroraR.ExitSlowPercent"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "shockwave expansion time",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "expanding over {{fd|0.75}} seconds",
+   "bin": [],
+   "binNote": "No bin data value matches; the shockwave expansion time is not a separate DataValue in the sheet (AuroraR.AreaDuration is the rift duration including this time, per r_3's note), so this figure is only derivable from the wiki text."
+  },
+  {
+   "id": "r_8",
+   "meaning": "initial dash duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "over {{fd|0.4}} seconds",
+   "bin": [],
+   "binNote": "No matching DataValue in the sheet for the dash travel time; it appears to be hardcoded in the ability's animation/behavior data not exposed in this sheet."
+  },
+  {
+   "id": "r_9",
+   "meaning": "rift-border dash cast lockout duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "can be recast after 1 second of unleashing the shockwave while the rift is active",
+   "bin": [],
+   "binNote": "No matching DataValue in the sheet for the recast-enable delay; not exposed among the listed AuroraR fields."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The active is a direction-targeted magic-damage shockwave dealing damage to all enemies hit once.",
+   "quote": "unleashes a shockwave from {{tt|425 units|Estimated}} in front of her, expanding over {{fd|0.75}} seconds to deal {{as|magic damage}} to enemies hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cooldown starts only after the full effect (including the rift phase) resolves, not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The shockwave applies a slow to enemies hit, separate from the later border-collision slow.",
+   "quote": "deal {{as|magic damage}} to enemies hit and {{tip|slow}} them by 30% for 2 seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Aurora is displacement-immune and untargetable during her dashes (initial cast and rift-border dashes), which is a defensive survivability effect, not a damage one.",
+   "quote": "'''Aurora''' {{tip|dash|leaps}} in the target direction with {{tip|displacement immunity}} over {{fd|0.4}} seconds",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Spell shield can block both the shockwave damage and the border collision effects.",
+   "quote": "{{tip|Spell shield}} can block both the shockwave and border collision.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AuroraR.ExitBaseDamage",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "AuroraR.AoESize",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AuroraR.MSMultiplier",
+   "reason": "utility"
+  },
+  {
+   "ref": "AuroraR.JumpMaxDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AuroraR.JumpMinDistance",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

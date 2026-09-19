@@ -1,0 +1,860 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "KledPassive",
+    "key": "Characters/Kled/Spells/KledPassiveAbility/KledPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "CourageVsChamps": 15,
+     "CourageVsOther": 5,
+     "CourageLastHit": 5,
+     "DismountedResistRatio": 0.01,
+     "DismountedMSPenalty": 40,
+     "RemountDashDuration": 0.25,
+     "MountReturnTime": 0.25,
+     "DismountInvulnWindow": 0.5,
+     "DismountDistanceBase": 200,
+     "DismountSpeedRadius": 1200,
+     "ResistBonusPerEnemy": 0.3,
+     "ResistBonusRange": 1400,
+     "MountCD": 30
+    },
+    "calcs": {
+     "DismountedMS": {
+      "expr": "byLevelL[70/75/80/85/90/95/100/105/110/115/120/125/130/135/140/145/150/155]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110,
+        115,
+        120,
+        125,
+        130,
+        135,
+        140,
+        145,
+        150,
+        155
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "SkaarlHealth": {
+      "expr": "byLevel(400..1400)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        400,
+        458.82353,
+        517.64706,
+        576.4706,
+        635.2941,
+        694.1177,
+        752.94118,
+        811.7647,
+        870.58824,
+        929.41176,
+        988.2353,
+        1047.0588,
+        1105.88235,
+        1164.7059,
+        1223.5294,
+        1282.3529,
+        1341.1765,
+        1400
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "SkaarlRemountHealth": {
+      "expr": "byLevelL[0.4/0.4/0.4/0.4/0.4/0.5/0.5/0.5/0.5/0.5/0.6/0.6/0.6/0.6/0.6/0.7/0.7/0.7]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.7,
+        0.7,
+        0.7
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "DismountedResistBonus": {
+      "expr": "4 + (DismountedResistRatio=0.01)xbonus maxHp",
+      "flat": 4,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.01,
+        "dataValue": "DismountedResistRatio"
+       }
+      ],
+      "refs": [
+       "DismountedResistRatio"
+      ]
+     },
+     "MountCooldown": {
+      "expr": "MountCD=30",
+      "flat": 30,
+      "terms": [],
+      "refs": [
+       "MountCD"
+      ]
+     },
+     "DismountedResistBonusMax": {
+      "expr": "DismountedResistBonus * 2.5",
+      "modifies": "DismountedResistBonus",
+      "flat": 10,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.025,
+        "dataValue": "DismountedResistRatio"
+       }
+      ],
+      "refs": [
+       "DismountedResistRatio"
+      ]
+     },
+     "DismountedAttackPenalty": {
+      "expr": "byLevelL[0.15/0.15/0.15/0.15/0.15/0.1/0.1/0.1/0.1/0.1/0.05/0.05/0.05/0.05/0.05/3.72529e-09/3.72529e-09/3.72529e-09]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.10000001,
+        0.10000001,
+        0.10000001,
+        0.10000001,
+        0.10000001,
+        0.05000000447034836,
+        0.05000000447034836,
+        0.05000000447034836,
+        0.05000000447034836,
+        0.05000000447034836,
+        3.725290298461914e-09,
+        3.725290298461914e-09,
+        3.725290298461914e-09
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "KledQ",
+    "key": "Characters/Kled/Spells/KledQAbility/KledQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10,
+      9,
+      8,
+      7
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "GrievousAmount": 0.4,
+     "GrievousDuration": 5,
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       -0.3,
+       -0.35,
+       -0.4,
+       -0.45,
+       -0.5
+      ]
+     },
+     "SlowDuration": 2.5,
+     "CouragePerPellet": 5,
+     "DismountedBaseDamage": {
+      "axis": "rank",
+      "v": [
+       35,
+       50,
+       65,
+       80,
+       95
+      ]
+     },
+     "FirstHitBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       55,
+       80,
+       105,
+       130
+      ]
+     },
+     "TetherPopTime": 1.75,
+     "TetherPopDamageMultiplier": 2,
+     "MinionDamageMultiplier": 1.5,
+     "MissileSpawnCheckRadius": 60
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "FirstHitBaseDamage=[30/55/80/105/130] + 0.6xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        55,
+        80,
+        105,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "FirstHitBaseDamage"
+      ]
+     },
+     "TotalYankDamage": {
+      "expr": "TotalDamage * TetherPopDamageMultiplier=2",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        110,
+        160,
+        210,
+        260
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2
+       }
+      ],
+      "refs": [
+       "FirstHitBaseDamage",
+       "TetherPopDamageMultiplier"
+      ]
+     },
+     "DismountedQDamage": {
+      "expr": "DismountedBaseDamage=[35/50/65/80/95] + 0.65xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        50,
+        65,
+        80,
+        95
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.65
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "DismountedBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "KledW",
+    "key": "Characters/Kled/Spells/KledWAbility/KledW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "dataValues": {
+     "WCooldown": {
+      "axis": "rank",
+      "v": [
+       13,
+       12,
+       11,
+       10,
+       9
+      ]
+     },
+     "ChampCooldownRefund": 1.5,
+     "NonChampCooldownRefund": 0.5,
+     "AttackSpeed": 1.5,
+     "4HitMaxHealthDamage": {
+      "axis": "rank",
+      "v": [
+       4.5,
+       5,
+       5.5,
+       6,
+       6.5
+      ]
+     },
+     "BaseFlatDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     },
+     "ActiveDuration": 4,
+     "MonsterCap": 200
+    },
+    "calcs": {
+     "PercentDamage": {
+      "expr": "(4HitMaxHealthDamage=[4.5/5/5.5/6/6.5] + 0.02xbonus ad + 0.004xbonus maxHp) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.045,
+        0.05,
+        0.055,
+        0.06,
+        0.065
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0002
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 4e-05
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "4HitMaxHealthDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "KledE",
+    "key": "Characters/Kled/Spells/KledEAbility/KledE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashSpeed": 600,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       35,
+       60,
+       85,
+       110,
+       135
+      ]
+     },
+     "MoveSpeed": 0.5,
+     "MoveSpeedDuration": 1,
+     "RecastWindow": 3,
+     "PassthroughDistance": 350,
+     "TetherRange": 700
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[35/60/85/110/135] + 0.55xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        60,
+        85,
+        110,
+        135
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.55
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "KledR",
+    "key": "Characters/Kled/Spells/KledRAbility/KledR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      125,
+      110
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ShieldCapBase": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "PercentHPBase": {
+      "axis": "rank",
+      "v": [
+       4,
+       6,
+       8
+      ]
+     },
+     "DashAreaRange": 700,
+     "BackwardsCheckRange": 150,
+     "AreaTriggerRadius": 500,
+     "TOOLTIPRange": {
+      "axis": "rank",
+      "v": [
+       3500,
+       4000,
+       4500
+      ]
+     },
+     "SecondsToMaxPower": 3
+    },
+    "calcs": {
+     "{31b91b32}": {
+      "expr": "3xbonus ad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 3
+       }
+      ],
+      "refs": []
+     },
+     "{598e3ed3}": {
+      "expr": "PercentHPBase=[4/6/8] + 0.03xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        4,
+        6,
+        8
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.03
+       }
+      ],
+      "refs": [
+       "PercentHPBase"
+      ]
+     },
+     "MaximumShield": {
+      "expr": "ShieldCapBase=[200/300/400] + 3xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 3
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "ShieldCapBase"
+      ]
+     },
+     "MaximumChargeDamage": {
+      "expr": "(PercentHPBase=[4/6/8] + 0.03xbonus ad) * 0.03",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.12,
+        0.18,
+        0.24
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0009
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "PercentHPBase"
+      ]
+     },
+     "MinimumDamageTooltip": {
+      "expr": "(PercentHPBase=[4/6/8] + 0.03xbonus ad) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.04,
+        0.06,
+        0.08
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.0003
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "PercentHPBase"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "KledRiderQ",
+    "key": "Characters/Kled/Spells/KledRiderQAbility/KledRiderQ",
+    "cooldown": 3,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "CouragePerPellet": 5,
+     "MountedBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       55,
+       80,
+       105,
+       130,
+       155
+      ]
+     },
+     "DismountedBaseDamage": {
+      "axis": "rank",
+      "v": [
+       35,
+       50,
+       65,
+       80,
+       95,
+       110
+      ]
+     },
+     "RechargeTime": {
+      "axis": "rank",
+      "v": [
+       18,
+       16,
+       14,
+       12,
+       10,
+       8
+      ]
+     },
+     "FalloffPerMissile": 0.2,
+     "KnockbackDistance": 300,
+     "MissileSpawnCheckRadius": 55
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "DismountedBaseDamage=[35/50/65/80/95/110] + 0.65xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        50,
+        65,
+        80,
+        95,
+        110
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.65
+       }
+      ],
+      "refs": [
+       "DismountedBaseDamage"
+      ]
+     },
+     "MountedQCalc": {
+      "expr": "MountedBaseDamage=[30/55/80/105/130/155] + 0.6xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        55,
+        80,
+        105,
+        130,
+        155
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "MountedBaseDamage"
+      ]
+     },
+     "TOOLTIPAmmoRecharge": {
+      "expr": "(RechargeTime=[18/16/14/12/10/8]) * <CooldownMultiplierCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "RechargeTime"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ]
+ },
+ "roots": {
+  "Q": "KledQ",
+  "W": "KledW",
+  "E": "KledE",
+  "R": "KledR",
+  "P": "KledPassive"
+ },
+ "resource": {
+  "arType": 8,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Kled",
+  "name": "Kled",
+  "partype": "Courage",
+  "passive": "Skaarl, the Cowardly Lizard",
+  "spells": [
+   {
+    "id": "KledQ",
+    "name": "Bear Trap on a Rope",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KledW",
+    "name": "Violent Tendencies",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KledE",
+    "name": "Jousting",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KledR",
+    "name": "Chaaaaaaaarge!!!",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     125,
+     110
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Skaarl the Cowardly Lizard": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Bear Trap on a Rope": {
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Violent Tendencies": {
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Jousting": {
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies"
+   },
+   "Jousting 2": {
+    "spellshield": "True",
+    "targeting": "[[Direction-targeted|Direction]] / [[Auto-targeted|Auto]]",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Chaaaaaaaarge!!!": {
+    "spellshield": "True",
+    "targeting": "location",
+    "affects": "Self, Enemies, Allies"
+   },
+   "Chaaaaaaaarge!!! 2": {
+    "spellshield": "True",
+    "targeting": "location",
+    "affects": "Self, Enemies, Allies"
+   }
+  }
+ }
+}

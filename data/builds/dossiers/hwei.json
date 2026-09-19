@@ -1,0 +1,1209 @@
+{
+ "champion": "hwei",
+ "abilities": {
+  "P": {
+   "name": "Signature of the Visionary",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage from mark explosion",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      40,
+      53.75,
+      67.5,
+      81.25,
+      95,
+      108.75,
+      122.5,
+      136.25,
+      150,
+      163.75,
+      177.5,
+      191.25,
+      205,
+      218.75,
+      232.5,
+      246.25,
+      260,
+      285
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{as|{{pplevel|40 to 285}}|magic damage}} {{as|(+ 35% AP)}}",
+     "bin": [
+      "HweiPassive#TotalDamage"
+     ],
+     "binNote": "The wiki's pplevel values are evenly interpolated (linear steps of 13.75 per level) from 40 to 285, but the bin's byLevel(40..285) curve is not perfectly linear (e.g. level 2 is 54.41 not 53.75). The two sources disagree on the interpolation shape even though both start at 40 and end at 285; the wiki's number is recorded here."
+    },
+    {
+     "id": "p_2",
+     "meaning": "mark duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "mark enemies hit for 4 seconds",
+     "bin": [
+      "HweiPassive.Duration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "delay before explosion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.85,
+     "terms": [],
+     "quote": "{{fd|0.85}}-second delay",
+     "bin": [],
+     "binNote": "No data value in the P slot's sheet carries this 0.85s delay; the sheet lists InkTimeout and Duration only, neither of which matches."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Damaging abilities mark enemies hit; a subsequent damaging ability against a marked target consumes the mark to create an explosion.",
+     "quote": "Hwei's damaging abilities mark enemies hit for 4 seconds. Subsequent damaging abilities against marked targets consume the mark to create an explosion beneath them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability that consumes the mark cannot apply it on the same cast instance.",
+     "quote": "The ability that consumes the mark cannot apply it on the same {{tip|cast instance}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion happens where the target was when hit, not where they end up, and they can escape it during the delay.",
+     "quote": "The explosion occurs around the marked target from where they were when the ability damaged them to consume the mark.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies can be damaged by multiple explosions at once.",
+     "quote": "Enemies can be damaged by multiple explosions at once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks the mark, its consumption, and the detonation.",
+     "quote": "{{tip|Spell shield}} will block both the mark and its consumption as well as the detonation.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HweiPassive.InkTimeout",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Subject: Disaster / Devastating Fire / Severing Bolt / Molten Fissure",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     90,
+     100,
+     110,
+     120
+    ],
+    "quote": "{{ap|80 to 120}}",
+    "resource": "{{tt|mana|consumes upon using a basic ability}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Devastating Fire (QQ) magic damage, with bonus based on target's maximum health",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      80,
+      110,
+      140,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.07
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 170}} {{as|(+ 80% AP)}} {{as|(+ {{ap|3 to 7}}% of target's '''maximum''' health)}}",
+     "bin": [
+      "HweiQQ#Damage",
+      "HweiQQ.BonusDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Severing Bolt (QW) magic damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "HweiQW#Damage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Severing Bolt maximum damage multiplier applied to isolated/immobilized targets, scaling with the target's missing health",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      2,
+      2.375,
+      2.75,
+      3.125,
+      3.5
+     ],
+     "terms": [],
+     "quote": "{{ap|2.0*100 to 3.5*100}}%",
+     "bin": [
+      "HweiQW.BonusDamageMult"
+     ],
+     "binNote": "Multiplier itself; the wiki's per-health-threshold scaling table (missing-health interpolation) is not represented in the bin beyond this rank-based multiplier constant."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Molten Fissure (QE) explosion magic damage (per explosion, up to 7 explosions)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      35,
+      50,
+      65,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|20 to 80}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "HweiQE#Damage",
+      "HweiQE.BaseDamage"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "Molten Fissure lava fissure magic damage per tick (every 0.25s while standing in a fissure)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      8.75,
+      12.5,
+      16.25,
+      20
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.06
+      }
+     ],
+     "quote": "{{ap|50/10 to 200/10}} {{as|(+ {{ap|60/10}}% AP)}}",
+     "bin": [
+      "HweiQE#DamagePerSecond",
+      "HweiQE.BaseDPS"
+     ],
+     "binNote": "Bin gives DamagePerSecond (base+0.24xAP); wiki derives per-tick value by dividing by 10 (0.25s tick over the 2.5s duration), matching 0.24/4=0.06 AP ratio."
+    },
+    {
+     "id": "q_fissure_duration",
+     "meaning": "Lava fissure duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "A fissure lasts for {{fd|2.5}} seconds",
+     "bin": [
+      "HweiQE.Duration"
+     ]
+    },
+    {
+     "id": "q_fissure_interval",
+     "meaning": "Lava fissure tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every {{fd|0.25}} seconds",
+     "bin": [
+      "HweiQE.DamageDuration"
+     ],
+     "binNote": "Bin's DamageDuration=0.5 does not match wiki's stated 0.25s tick interval; reporting the wiki's value as stated."
+    },
+    {
+     "id": "q_explosion_delay",
+     "meaning": "Molten Fissure delay before eruptions begin and interval between explosions",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": [
+      0.6,
+      0.2
+     ],
+     "terms": [],
+     "quote": "After {{tt|{{fd|0.6}} seconds|From start of cast time}}, the path erupts into volcanic explosions every {{tt|{{fd|0.2}} seconds|Estimated}}",
+     "bin": [],
+     "binNote": "HweiQE has no 'Delay' data value in the sheet (only BaseDamage, BaseDPS, Duration, Radius, SlowPercent, DamageDuration, MinionDamageRatio, JungleDamageRatio are listed); neither the 0.6s initial delay nor the 0.2s inter-explosion interval (wiki itself marks it 'Estimated') corresponds to any named bin row."
+    },
+    {
+     "id": "q_bolt_delay",
+     "meaning": "Severing Bolt delay from cast to strike",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "strike at the target location after {{tt|1 second|From start of cast time}}",
+     "bin": [
+      "HweiQW.Delay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Devastating Fire explodes on hitting the first enemy or at max range, dealing damage to all enemies near the explosion (not just the one it hit).",
+     "quote": "explodes upon colliding with the first enemy or reaching maximum range, dealing {{as|magic damage}} to all nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Severing Bolt's damage only lands after a 1-second delay from the start of the cast, not instantly on cast.",
+     "quote": "calls upon a lightning bolt to strike at the target location after {{tt|1 second|From start of cast time}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Severing Bolt deals bonus damage based on the target's missing health if it hits only one enemy or hits immobilized enemies (a solo target dummy counts as isolated, so the bonus applies).",
+     "quote": "If ''Severing Bolt'' hits only one enemy or {{tip|immobilize|immobilized}} enemies, it deals {{ccs|increased|magic}} damage based on the {{tt|{{as|target's '''missing''' health}}|See notes}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Molten Fissure fires 7 separate explosion shockwaves, each of which can only hit a given enemy once (separate damage instances), plus a persistent lava fissure damage-over-time zone.",
+     "quote": "for a total of 7 explosions. Each explosion creates a shockwave that deals {{as|magic damage}} to nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Molten Fissure shockwaves can only hit each enemy once per explosion.",
+     "quote": "The shockwaves can only hit each enemy once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks a Molten Fissure explosion instance but does not block the subsequent persistent lava fissure damage.",
+     "quote": "{{tip|Spell shield}} will block an explosion but not the persistent lava damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Molten Fissure applies area damage for the explosions and persistent area damage for the lava, meaning enemies standing in multiple fissures can be damaged by each simultaneously.",
+     "quote": "Enemies may be damaged by multiple fissures at once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Toggling into or between the mood's sub-abilities does not count as an ability activation for on-cast effects, and Hwei exits the mood upon casting any of QQ/QW/QE.",
+     "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HweiQ.Tooltip_QQBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiQ.Tooltip_QQBonusDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiQ.Tooltip_QWBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiQ.Tooltip_QWBonusDamageMult",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiQ.Tooltip_QEBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiQ.Tooltip_QEBaseDPS",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Subject: Serenity / Fleeting Current / Pool of Reflection / Stirring Lights",
+   "cooldown": {
+    "values": [
+     18,
+     17.5,
+     17,
+     16.5,
+     16
+    ],
+    "quote": "{{ap|18 to 16}}"
+   },
+   "cost": {
+    "values": [
+     90,
+     95,
+     100,
+     105,
+     110
+    ],
+    "quote": "{{ap|90 to 110}}",
+    "resource": "{{tt|mana|consumes upon using a basic ability}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Fleeting Current path duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      4,
+      4.5,
+      5,
+      5.5,
+      6
+     ],
+     "terms": [],
+     "quote": "{{ap|4 to 6}} seconds",
+     "bin": [
+      "HweiW.Tooltip_WQAreaDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Pool of Reflection initial shield strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|50 to 130}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "HweiW#Tooltip_WWStartShieldAmount"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Pool of Reflection bonus shield gained per tick while standing in the pool",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      8.3333,
+      11.6667,
+      15,
+      18.3333,
+      21.6667
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{ap|50/6 to 130/6|round=2}} {{as|(+ {{ap|30/6|round=2}}% AP)}}",
+     "bin": [],
+     "binNote": "No bin row directly states the per-tick increment; derived as (ShieldAmount - StartShieldAmount) spread over the ~6 ticks implied by SecsToFullStack=3 at a 0.5s refresh (see description2's 'every 0.25...0.5 seconds')."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Pool of Reflection total maximum shield strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      140,
+      180,
+      220,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|50*2 to 130*2}} {{as|(+ {{ap|30*2}}% AP)}}",
+     "bin": [
+      "HweiWW#ShieldAmount"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Pool of Reflection initial shield strength granted to allies",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      42.5,
+      59.5,
+      76.5,
+      93.5,
+      110.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.255
+      }
+     ],
+     "quote": "{{ap|50*0.85 to 130*0.85}} {{as|(+ {{ap|30*0.85}}% AP)}}",
+     "bin": [],
+     "binNote": "Derived from HweiW#Tooltip_WWStartShieldAmount x HweiWW.AllyMod=0.85; no bin row states the ally-reduced value directly."
+    },
+    {
+     "id": "w_7",
+     "meaning": "Pool of Reflection bonus shield per tick granted to allies",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      7.0833,
+      9.9167,
+      12.75,
+      15.5833,
+      18.4167
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0425
+      }
+     ],
+     "quote": "{{ap|50*0.85/6 to 130*0.85/6|round=2}} {{as|(+ {{ap|30*0.85/6|round=2}}% AP)}}",
+     "bin": [],
+     "binNote": "Derived from w_4's per-tick value x HweiWW.AllyMod=0.85; no bin row states this directly."
+    },
+    {
+     "id": "w_8",
+     "meaning": "Pool of Reflection total maximum shield strength granted to allies",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      85,
+      119,
+      153,
+      187,
+      221
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.51
+      }
+     ],
+     "quote": "{{ap|50*2*0.85 to 130*2*0.85}} {{as|(+ {{ap|30*2*0.85}}% AP)}}",
+     "bin": [],
+     "binNote": "Derived from HweiWW#ShieldAmount x HweiWW.AllyMod=0.85; no bin row states the ally-reduced total directly."
+    },
+    {
+     "id": "w_9",
+     "meaning": "Stirring Lights bonus magic damage per empowered hit",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{ap|20 to 60}} {{as|(+ 15% AP)}}",
+     "bin": [
+      "HweiW#Tooltip_WEOnHitDamage"
+     ]
+    },
+    {
+     "id": "w_11",
+     "meaning": "Stirring Lights mana restored per empowered hit",
+     "role": "resource",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      45,
+      50,
+      55,
+      60,
+      65
+     ],
+     "terms": [],
+     "quote": "{{ap|135/3 to 195/3}}",
+     "bin": [
+      "HweiW.Tooltip_WEOnHitManaRestore"
+     ],
+     "binNote": "HweiWE#{a14e3318} adds a flat +3 to OnHitManaRestore that the wiki text does not mention; left out since the wiki's stated per-hit value (45-65) matches the raw HweiWE.OnHitManaRestore array, not the +3 calc."
+    },
+    {
+     "id": "w_13",
+     "meaning": "Stirring Lights bonus damage against minions/monsters when applied by an AoE ability",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      10,
+      15,
+      20,
+      25,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.075
+      }
+     ],
+     "quote": "{{ap|20*0.5 to 60*0.5}} {{as|(+ {{ap|15*0.5}}% AP)}}",
+     "bin": [],
+     "binNote": "This 50% reduction against non-champions is not represented by any bin row; it only appears in the wiki description2/notes. Not applicable to a single-champion dummy fight."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Serenity is a toggle: Hwei gains access to WQ/WW/WE (and Wash Brush) and exits the mood upon casting any of them.",
+     "quote": "{{sbc|Toggle:}} '''Hwei''' enters a serene mood, gaining access to its abilities as well as ''{{ai|Wash Brush|Hwei}}''. He will exit the mood upon casting any of them.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Casting WQ/WW/WE does not count as an ability activation for on-cast effects like Spellblade or Force Pulse's passive.",
+     "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stirring Lights empowers Hwei's next 3 basic attacks or ability hits within 9 seconds, each dealing bonus magic damage and restoring mana.",
+     "quote": "surrounds himself in swirling flares that empower his next 3 [[basic attacks]] or [[champion ability|ability]] hits within 9 seconds to each deal {{as|'''bonus''' magic damage}} and restore {{sti|{{as|mana}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield does not block Stirring Lights' bonus damage even when applied via an ability, which is a bug.",
+     "quote": "{{tip|Spell shield}} will not block the bonus damage even if it is applied by an ability.{{bug}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pool of Reflection's shield is granted at the start of the cast time and refreshes/grows every tick while allies (or Hwei) remain in the area.",
+     "quote": "creating a protective zone for 3 seconds that grants him and allied {{tip|champions}} a {{tip|shield}} at the start of the cast time and for {{fd|0.5}} seconds while within the area. The shield refreshes and increases in strength by an amount every {{rutngt|0.25}} over the duration while they remain in the area.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "It takes approximately 1.5 seconds standing in the pool to reach the maximum shield strength, and the shield regenerates back to its cap if it mitigates damage.",
+     "quote": "it takes approximately {{fd|1.5}} seconds to gain the full shield.** The shield will be regenerated back to its cap if it mitigates damage.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HweiW.Tooltip_WQBaseMoveSpeed",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Subject: Torment / Grim Visage / Gaze of the Abyss / Crushing Maw",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}",
+    "binNote": "Wiki gives 12/11.5/11/10.5/10 but the ddragon/bin cooldown array for HweiE is [13/12.5/12/11.5/11]; stating the wiki's number as instructed, this is a real disagreement between sources."
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "{{tt|mana|consumes upon using a basic ability}}"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Grim Visage (EQ) Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "HweiEQ#Damage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Grim Visage (EQ) fear/disable Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.125,
+      1.25,
+      1.375,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 1.5}} seconds",
+     "bin": [
+      "HweiEQ.FleeDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Gaze of the Abyss (EW) Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "HweiEW#Damage"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Gaze of the Abyss (EW) Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.2,
+      1.4,
+      1.6,
+      1.8,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1.2 to 2}} seconds",
+     "bin": [
+      "HweiEW.RootDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "Crushing Maw (EE) Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "HweiEE#Damage"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "Crushing Maw (EE) Slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      47.5,
+      55,
+      62.5,
+      70
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 70}}%",
+     "bin": [
+      "HweiEE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_7",
+     "meaning": "Crushing Maw (EE) slow decay duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "slowing them by an amount that decays over {{fd|1.25}} seconds",
+     "bin": [],
+     "binNote": "No HweiEE data row carries a decay-duration value (only BaseDamage, Delay, Width, Depth, SlowAmount are present); the 1.25s figure comes solely from the wiki description text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "E is a toggle that grants access to EQ/EW/EE abilities; casting any of them exits the mood.",
+     "quote": "'''Hwei''' enters a tumultuous mood, gaining access to its abilities as well as ''{{ai|Wash Brush|Hwei}}''. He will exit the mood upon casting any of them.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Toggled activation of the mood does not count as an ability activation for on-cast trigger effects.",
+     "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Grim Visage's slow is stronger the farther the target is from Hwei at the moment of the hit.",
+     "quote": "formula=70% + 1% for every 38 units the target is away from Hwei at the time of being hit",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Grim Visage's slow stacks multiplicatively with Crushing Maw's and other Hwei slows.",
+     "quote": "Grim Visage's {{tip|slow}} stacks multiplicatively with the slows applied by {{ai|Molten Fissure|Hwei}}, {{ai|Crushing Maw|Hwei}}, and {{ai|Spiraling Despair|Hwei}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Gaze of the Abyss locks onto the nearest visible enemy champion after a delay, then launches at them after a further delay, dealing damage on collision with the first enemy hit.",
+     "quote": "After {{fd|0.7}} seconds of being placed, the eye locks onto the nearest visible enemy champion or otherwise remains there until an enemy champion is in range. Once locked on, the eye launches itself at the target after a {{fd|0.3}}-second delay and collides with the first enemy hit to deal {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Crushing Maw snaps and deals damage 0.6 seconds after the start of cast time, slowing enemies with a decaying slow.",
+     "quote": "conjures a jaw at the target location that snaps after {{tt|{{fd|0.6}} seconds|From start of cast time}}, dealing {{as|magic damage}} to enemies in the area and {{tip|slow|slowing}} them by an amount that decays over {{fd|1.25}} seconds.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HweiE.Tooltip_EQBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiE.Tooltip_EWBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiE.Tooltip_EWRootDuration",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiE.Tooltip_EEBaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiE.Tooltip_EESlowAmount",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "HweiE.Tooltip_EQFleeDuration",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Spiraling Despair / Wash Brush",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage per Tick (aura, every 0.25s)",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      2.5,
+      5,
+      7.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0125
+      }
+     ],
+     "quote": "{{ap|10/4 to 30/4}} {{as|(+ {{ap|5/4}}% AP)}}",
+     "bin": [
+      "HweiR#DamageOverTime"
+     ],
+     "binNote": "HweiR#DamageOverTime = BaseDamageOverTime + 0.05xap is a per-second rate; the wiki's per-tick value divides it by 4 (one tick every 0.25s), giving base [2.5,5,7.5] and ap coef 0.0125."
+    },
+    {
+     "id": "r_2",
+     "meaning": "aura duration / total DoT window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "grows over 3 seconds",
+     "bin": [
+      "HweiR.Duration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "tick interval of the aura's damage/slow application",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "dealt {{as|magic damage}} and applied a {{tip|stack}} of ''Despair'' every {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No dedicated bin field states the 0.25s tick rate; it is implied by BaseDamageOverTime being a per-second value split across 12 ticks over the 3s Duration."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Magic Damage (explosion at end of duration or target death)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      325,
+      450
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|200 to 450}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "HweiR#Damage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The globule collides with the first enemy champion hit and applies the aura only to that champion (though the aura itself then damages all enemies within it).",
+     "quote": "collides with the first enemy {{tip|champion}} hit, afflicting them with an [[aura]] that grows over 3 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The aura deals persistent tick damage to enemies within it, separate from the final explosion damage instance.",
+     "quote": "Enemies within are both dealt {{as|magic damage}} and applied a {{tip|stack}} of ''Despair'' every {{fd|0.25}} seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At the end of the duration or if the target dies first, the aura deals a separate explosion damage instance to all enemies within it and removes all stacks.",
+     "quote": "At the end of the duration or when the target dies, the aura explodes to deal {{as|magic damage}} to enemies within and remove all ''Despair'' stacks from affected enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The tick damage is applied as persistent area damage while the explosion is a single area damage instance.",
+     "quote": "Applies {{tip|persistent area damage}} for the aura and deals {{tip|area damage}} for the explosion.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield can block the aura, the explosion, and the application of the first Despair stack.",
+     "quote": "{{tip|Spell shield}} can block the aura, explosion, and the application of the first ''Despair'' stack.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Wash Brush lets Hwei exit his current mood (swap Q/W/E form) for free, without triggering that ability's cost or cooldown; it does not deal damage or affect either fight's numbers.",
+     "quote": "'''Hwei''' exits his current ''mood'' without incurring its ability cost or cooldown, toggling it off.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Toggling Wash Brush does not count as an ability activation, so it will not trigger on-cast effects like Spellblade.",
+     "quote": "Toggled abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "HweiR.SlowPercentPerStack",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "HweiR.SlowDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "HweiR.MaxDamageHelper",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Each slot is a toggled 'mood' that grants access to 3 distinct sub-spells (QQ/QW/QE, WQ/WW/WE, EQ/EW/EE); casting any sub-spell ends the mood and puts the whole slot on cooldown. The simulator needs to pick which sub-spell to cast each time the slot is off cooldown."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive mark: a damaging ability applies a 4s mark to a hit enemy; a different damaging ability landing on the marked target consumes the mark and creates a separate bonus-damage explosion."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "QQ (Devastating Fire) adds bonus damage scaled to the target's max health (capped vs monsters); QW (Severing Bolt) adds a large damage multiplier if it hits only one enemy or an immobilized enemy, scaled by the target's missing health - both conditions are effectively always true against a lone dummy."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "QE (Molten Fissure) leaves ticking lava fissures (0.25s ticks over 2.5s) after each explosion; R (Spiraling Despair) applies a ticking aura (damage every 0.25s over 3s) before its final explosion."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "QE fires 7 separate timed explosion shockwaves from one cast (each a separate damage instance, plus the DoT fissures they leave); R has a separately-timed initial hit, a DoT aura, and a final explosion instance, each a distinct damage source."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Stirring Lights (WE) arms Hwei's next 3 basic attacks or ability hits (within 9s) to each deal bonus magic damage; relevant to the damage fight as extra magic damage riders on subsequent casts/attacks."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Every sub-spell has its own mana cost (50-120) charged only on the actual cast (not on toggling the mood); with 4 spell slots all costing mana this can meaningfully cap casts across 15s, especially combined with Stirring Lights' mana restore."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Hwei's kit is three independent 3-way stance-selection systems (Q/W/E moods) layered on top of a cross-ability mark-and-detonate passive that explicitly requires the triggering hit to come from a *different* damaging ability/cast instance than the one that applied the mark. No single closed-list primitive captures 'pick 1 of 3 sub-spells per slot, then chain casts across slots so each new hit detonates the previous ability's mark for bonus damage.' Correctly simulating maximum damage requires custom logic that (1) chooses the best sub-spell per mood each time a slot is off cooldown, and (2) sequences casts across Q/W/E/R so consecutive damaging hits alternate abilities to keep re-triggering Signature of the Visionary, rather than a fixed proc-on-primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Passive (Signature of the Visionary) mark-explosion damage scales 'byLevel(40..285)' in the bin, but the wiki's {{pplevel|40 to 285}} table is evenly interpolated (13.75 per level); the bin's actual per-level curve is not linear (e.g. level 2 differs from the wiki's 53.75). Which curve is the correct/live one for the simulator?",
+   "options": [
+    "Use the wiki's linear pplevel interpolation",
+    "Use the bin's byLevel(40..285) nonlinear curve"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pplevel|40 to 285}}|magic damage}} {{as|(+ 35% AP)}}",
+    "HweiPassive#TotalDamage = byLevel(40..285) + 0.35xap"
+   ]
+  },
+  {
+   "question": "The E slot's (Subject: Torment/EQ/EW/EE) cooldown values disagree between the ddragon/bin sheet ([13/12.5/12/11.5/11]) and the wiki template ({{ap|12 to 10}} = [12/11.5/11/10.5/10]). Which is the live value for the damage-fight simulation, since it directly changes how many E casts fit in 15s?",
+   "options": [
+    "Use the wiki's [12/11.5/11/10.5/10]",
+    "Use the bin/ddragon's [13/12.5/12/11.5/11]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: [13/12.5/12/11.5/11]",
+    "|cooldown     = {{ap|12 to 10}}"
+   ]
+  },
+  {
+   "question": "Severing Bolt's (QW) large missing-health damage multiplier only applies if the bolt 'hits only one enemy or immobilized enemies.' In a 1v1 target-dummy fight there are no other enemies to share the hit, so does the sim treat every QW cast as automatically qualifying for the full isolation/missing-health bonus, or does the engine require some other condition (e.g., no allied minions/monsters nearby) that a bare dummy fight might not satisfy?",
+   "options": [
+    "Always apply the isolated/immobilized bonus multiplier against the single dummy",
+    "Do not apply it unless the target is separately immobilized/marked as isolated by other means"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If ''Severing Bolt'' hits only one enemy or {{tip|immobilize|immobilized}} enemies, it deals {{ccs|increased|magic}} damage based on the {{tt|{{as|target's '''missing''' health}}|See notes}}"
+   ]
+  },
+  {
+   "question": "Molten Fissure's (QE) 0.6s pre-eruption delay and the ~0.2s interval between its 7 explosions (marked 'Estimated' on the wiki) have no corresponding named field in the bin sheet (only BaseDamage/BaseDPS/Duration/Radius/SlowPercent/DamageDuration/ratios are listed). Is the wiki's stated timing authoritative for scheduling all 7 explosion instances within the 15s window, or is there an undisclosed bin timing value that differs?",
+   "options": [
+    "Trust the wiki's 0.6s delay + ~0.2s interval for all 7 explosions",
+    "Treat the exact explosion cadence as unknown/uncertain and use a different assumption"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After {{tt|{{fd|0.6}} seconds|From start of cast time}}, the path erupts into volcanic explosions every {{tt|{{fd|0.2}} seconds|Estimated}} from the point of cast, for a total of 7 explosions."
+   ]
+  },
+  {
+   "question": "Stirring Lights' (WE) per-hit mana restore differs between sources: the wiki's leveling table states flat values [45/50/55/60/65] per hit, while the bin's HweiWE#{a14e3318} calculation adds a flat +3 (OnHitManaRestore + 3). Since mana restore affects how many spells Hwei can afford to cast within the 15s window (resource-budget), which value is live?",
+   "options": [
+    "Use the wiki's flat [45/50/55/60/65] per hit",
+    "Use the bin's calculated (value + 3) per hit"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{st|Mana Restore|{{ap|135/3 to 195/3}}|Total Mana Restore|{{ap|135 to 195}}}}",
+    "HweiWE#{a14e3318} = OnHitManaRestore=[45/50/55/60/65] + 3"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: toggle Serenity (W) into Stirring Lights (WE) and cast it immediately so its 3 empowered hits are ready to buff the opening abilities/attacks.",
+   "Open with Spiraling Despair (R) down the lane at the dummy to start its damage-over-time aura and apply the passive mark on the initial hit.",
+   "Immediately follow with a Q-mood cast (toggle Disaster then cast Severing Bolt, QW) targeted on the dummy: this is a different ability than R, so it detonates R's mark for the passive's bonus explosion, and QW's isolation/missing-health bonus is large against a lone target.",
+   "As soon as Q is off cooldown again, alternate into the E-mood (toggle Torment then cast Grim Visage, EQ, the fastest-cast E option) to re-apply a fresh mark and add more raw magic damage.",
+   "Continue weaving Q (whichever of QQ/QW/QE currently does the most damage against the dummy's remaining health/resists) and E (EQ/EW/EE) sub-spells back-to-back on cooldown for the rest of the 15s, always alternating which ability casts last so each new hit can detonate the previous ability's passive mark.",
+   "Use basic attacks in dead time between casts to consume Stirring Lights charges and keep DPS continuous; do not waste time on W's non-damaging sub-spells (WQ/WW) since they contribute no damage in a dummy fight.",
+   "Do not use Wash Brush during the fight - it only exits a mood for free but forfeits that mood's cast, i.e. it produces no damage and only wastes time in a max-DPS sequence.",
+   "R is only cast once at the opener given its long cooldown (120/100/80s) relative to the 15s fight window."
+  ],
+  "questions": [
+   "Given the dummy's assumed health/resist values, which specific QQ/QW/QE and EQ/EW/EE sub-spells actually maximize total damage in 15s - is QW's isolation/missing-health multiplier reliably the best Q option, or does QQ's max-health-ratio bonus win against tankier dummy stats?",
+   "Is pre-casting Stirring Lights (and any other setup) before the 15s timer starts allowed in this simulator's damage fight, or must all casts occur within the timed window?",
+   "When multiple different abilities are cast in quick succession, does the mark-explosion passive resolve on a strict first-applied-first-consumed basis, or could a later ability's hit consume an earlier mark out of order, changing which detonation combo is optimal?",
+   "Does the simulator model Hwei's toggle/mood-selection cost at all (e.g., is there any tax for switching moods), or is the choice of sub-spell effectively free once the slot is off cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

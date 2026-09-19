@@ -1,0 +1,215 @@
+{
+ "name": "Call of the Forge God",
+ "cooldown": {
+  "values": [
+   140,
+   120,
+   100
+  ],
+  "quote": "{{ap|140|120|100}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    125,
+    175,
+    225
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{ap|125|175|225}} {{as|(+ 20% AP)}}",
+   "bin": [
+    "OrnnR#RDamageCalc"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    50,
+    60
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 60}}%",
+   "bin": [
+    "OrnnR.RSlowPercentBasePreMath"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Total Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    250,
+    350,
+    450
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|250|350|450}} {{as|(+ 40% AP)}}",
+   "bin": [
+    "OrnnR#RDamageCalc"
+   ],
+   "binNote": "This is the sum of the two passes (initial pass + recast pass), each computed by RDamageCalc; no separate bin row exists for the combined total."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Recast/elemental active window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "{{tt|{{fd|1.25}}|Includes the cast time}} seconds while the elemental is active",
+   "bin": [],
+   "binNote": "No bin row states this recast window duration; it is a wiki-only tooltip value not present as a named data field."
+  },
+  {
+   "id": "r_5",
+   "meaning": "Slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "{{tip|slow|slows}} them for 2 seconds",
+   "bin": [
+    "OrnnR.RSlowDuration"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "Stun duration on recast hit (first champion hit)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "{{tip|stun|stuns}} them for 1 second, reduced to {{fd|0.5}} seconds after the first enemy {{tip|champion}} hit",
+   "bin": [
+    "OrnnR.RStunDuration"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Reduced stun duration after first champion hit",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "reduced to {{fd|0.5}} seconds after the first enemy {{tip|champion}} hit",
+   "bin": [
+    "OrnnR#MinStun"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "Brittle duration",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "applies {{tip|Brittle}} to targets for 3 seconds",
+   "bin": [
+    "OrnnR.BrittleDurationTOOLTIPONLY"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Total stun duration on Brittle enemies without tenacity",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 1.3,
+   "terms": [],
+   "quote": "{{tip|Brittle}} enemies without {{tip|Tenacity}} of their own will be {{tip|stun|stunned}} for a total of {{fd|1.3}} seconds",
+   "bin": [],
+   "binNote": "This is a derived/tooltip-only figure (base 1s stun plus Brittle's tenacity-loss effect extending CC duration); no bin row computes this combined total directly."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Cooldown starts only after the full sequence (recast/effect) resolves, not on initial cast.",
+   "quote": "cdstart       = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Both the initial pass and the recast pass deal the same base damage listed, each as an activation event.",
+   "quote": "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Despite being two separate activations, they count as the same cast instance for effects that key off casts.",
+   "quote": "Despite this, the effects of both casts count as the same {{tip|cast instance}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A spell shield can only block one of the two passes, so the other pass's damage still lands.",
+   "quote": "{{tip|Spell shield|Spell shields}} may only block one pass.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each enemy can only be hit once per pass (not multiple times), limiting damage instances per pass.",
+   "quote": "can affect enemies only once",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ornn is locked out of all actions during the recast dash and for 0.5s afterward, delaying his next action (relevant to attack/ability sequencing in the damage fight).",
+   "quote": "'''Ornn''' becomes locked out of all actions during the recast's dash and for {{fd|0.5}} seconds afterwards.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "OrnnR.RCastRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "OrnnR.RMissileMaxSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "OrnnR.RMissileAccelerationBase",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "OrnnR.RStunReduction",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

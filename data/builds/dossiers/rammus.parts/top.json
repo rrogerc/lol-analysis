@@ -1,0 +1,151 @@
+{
+ "champion": "rammus",
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Spiked Shell converts 15% total armor + 15% total MR into bonus AD, continuously recalculated"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Powerball channels then deals a single AoE collision burst; recastable early, auto-ends at 6s or on collision"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Powerball is a channel that blocks other actions (except W/R interactions) until it collides or is recast"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Defensive Ball Curl grants bonus armor/MR for 7s duration"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's return damage triggers only off attacks against Rammus; irrelevant in the damage fight where the dummy never attacks, only relevant in the survival fight as damage-taken interaction"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Frenzying Taunt's monster damage is a fixed-target on-cast burst (only relevant vs monsters, not champion dummy)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Soaring Slam impact + 3 timed aftershocks (aftershocks reapply slow only, no stated damage)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Soaring Slam deals doubled damage to turrets (not applicable to a champion dummy) and merges with Powerball damage if cast mid-Q"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q60/W40/E50/R100) may matter over a 15s rotation depending on Rammus's mana pool at the tested level"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Rammus's core damage kit is almost entirely single-burst abilities with no repeatable on-hit rider beyond the passive AD conversion; the simulator needs to know P's continuous AD-from-resists conversion (recalculated as armor/MR change from W and items), Q's channel-then-single-AoE-burst-on-collision behavior (with an assumed 'always collides on cast' resolution against a stationary dummy), and R's conditional merge with Q's damage if cast during the Q channel. None of the listed primitives individually capture 'channel that deals its one damage instance upon collision with a stationary target that is always in range,' so the fight needs a bespoke rule: Q's collision is assumed to happen essentially immediately on cast against a stationary dummy (channel time before collision needs a ruling, see unsettled)."
+ },
+ "unsettled": [
+  {
+   "question": "Against a stationary target dummy, does Powerball collide (and deal its damage) immediately on cast, or only after some travel time since the dummy doesn't move and Rammus must roll into it?",
+   "options": [
+    "Collision happens near-instantly since Rammus rolls toward the dummy and hits it almost immediately",
+    "Collision is delayed by whatever travel/pathing time the simulator assumes, effectively adding a cast-to-hit delay each time Q is used",
+    "Collision never happens automatically and requires the dummy to be adjacent at cast time"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Rammus''' stops rolling upon colliding with an enemy, dealing {{as|magic damage}} to all nearby enemies"
+   ]
+  },
+  {
+   "question": "After Powerball's initial collision burst, can Rammus re-cast Q again within the 15s fight to get a second collision-damage instance, or does the ability's post-effect cooldown-start plus recast/end behavior mean only one damage tick per cast is realistic?",
+   "options": [
+    "Only one collision burst per Q cast (recast just ends the channel, no second damage)",
+    "The automatic recast after 6s if not manually ended could produce a second collision if Rammus is still moving/near the dummy, effectively creating a second damage window"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Powerball'' can be recast after 1 second within the duration, and does so automatically afterwards"
+   ]
+  },
+  {
+   "question": "If the rotation casts Soaring Slam (R) while Powerball (Q) is channeling, does the dummy (stationary, single target) actually receive the merged Powerball damage bonus, given the epicenter/knockup mechanic is designed for multiple enemies at range?",
+   "options": [
+    "Yes — a single dummy standing at the impact epicenter takes both R's damage and Q's merged damage as two separate instances",
+    "No — this combo is positional/geometry-dependent (multi-hit shape) and should be treated as a positional assumption the dummy fight doesn't model, i.e., excluded from the baseline rotation"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "enemies within the epicenter of the impact are also {{tip|airborne|knocked up}} for {{fd|0.75}} seconds and are dealt ''{{ais|Powerball|Rammus}}'' damage"
+   ]
+  },
+  {
+   "question": "Does Spiked Shell's bonus AD (15% armor + 15% MR) apply to on-hit/on-attack damage the same way normal bonus AD does, or is there any restriction (e.g., does it interact with AD ratios on abilities)?",
+   "options": [
+    "It behaves as ordinary bonus AD, feeding into autoattack damage and any AD ratios",
+    "There is some special restriction not stated in either source"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Rammus''' gains {{sti|{{as|'''bonus''' attack damage}}}} equal to the sum of {{as|15% '''total''' armor}} and {{as|15% '''total''' magic resistance}}."
+   ]
+  },
+  {
+   "question": "Is Frenzying Taunt's monster-only magic damage ever relevant to the champion-dummy damage fight (since the dummy 'counts as an enemy champion')?",
+   "options": [
+    "No — dummy counts as champion, so E deals zero damage in the fight, it's purely a taunt with no damage output here",
+    "Some simulators might still credit the monster damage if the dummy is flagged as monster-like; sources don't clarify how the dummy is classified for this ability"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Monsters are additionally dealt {{as|magic damage}} upon being affected."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Powerball) to roll toward the dummy and immediately trigger its magic damage burst on collision, then manually recast to end the channel and start its cooldown.",
+   "Cast E (Frenzying Taunt) on the dummy for the taunt (no damage vs a champion-classified dummy) mainly to keep on-cast effects like Spellblade active; otherwise skip if it contributes nothing to damage.",
+   "Cast R (Soaring Slam) on the dummy's location for its magic damage impact once available.",
+   "Cast W (Defensive Ball Curl) mainly for the passive AD gain via Spiked Shell (indirectly, since W boosts armor/MR which feeds P's AD conversion) between other casts; it contributes no direct damage against a non-attacking dummy.",
+   "Auto-attack the dummy continuously between ability casts to benefit from Spiked Shell's bonus AD.",
+   "Repeat Q on cooldown (6s minimum with rank 5) as the primary repeatable damage source, weaving auto-attacks in between.",
+   "Use R again if it comes off cooldown within the 15s window (rank 1 has 120s cooldown, so likely only cast once)."
+  ],
+  "questions": [
+   "Should E even be included in the rotation, given it apparently deals no damage to a champion-classified dummy and only provides a taunt (no CC benefit is scored)?",
+   "How does the simulator model Q's channel time before collision — does Rammus effectively deal Q's damage at time 0 of the cast, or after some fixed travel delay, and does that delay block auto-attacks during the channel?",
+   "Is W worth casting at all in the damage fight, given its own damage-dealing tooltip only fires off enemy attacks (which the dummy never performs), and its buff only matters via feeding Spiked Shell's AD conversion?",
+   "At what level/item state should R's single 120s-cooldown cast be assumed to land relative to the 15s fight window — always at t=0, or held for maximum stat scaling?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

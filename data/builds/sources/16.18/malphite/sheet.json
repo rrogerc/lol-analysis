@@ -1,0 +1,578 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MalphiteShield",
+    "key": "Characters/Malphite/Spells/MalphiteShieldAbility/MalphiteShield",
+    "calcs": {
+     "PassiveCooldown": {
+      "expr": "byLevelL[8/8/8/8/8/8/7/7/7/7/7/7/6/6/6/6/6/6]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TotalShield": {
+      "expr": "0.1xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SeismicShard",
+    "key": "Characters/Malphite/Spells/SeismicShardAbility/SeismicShard",
+    "cooldown": 8,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SpeedSteal": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "SlowDuration": 3,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       120,
+       170,
+       220,
+       270
+      ]
+     }
+    },
+    "calcs": {
+     "QDamageCalc": {
+      "expr": "BaseDamage=[70/120/170/220/270] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        120,
+        170,
+        220,
+        270
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "Obduracy",
+    "key": "Characters/Malphite/Spells/ObduracyAbility/Obduracy",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9.5,
+      9,
+      8.5,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ThunderclapBuffDuration": 5,
+     "ThunderclapBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       40,
+       50,
+       60,
+       70
+      ]
+     },
+     "ThunderclapSlowDamage": 2,
+     "ThunderclapSplashAP": 0.3,
+     "ThunderclapSplashArmor": 0.15,
+     "ThunderclapBaseDamageAPRatio": 0.2,
+     "ThunderclapBaseDamageArmorRatio": 0.15,
+     "ThunderclapSplashDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       25,
+       35,
+       45,
+       55
+      ]
+     },
+     "BonusArmorPassive": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.15,
+       0.2,
+       0.25,
+       0.3
+      ]
+     },
+     "BonusArmorPassiveMultiplier": 3,
+     "ThunderClapSplashRange": 400,
+     "MonsterDamageMod": 1.8
+    },
+    "calcs": {
+     "TotalBonusDamage": {
+      "expr": "ThunderclapBaseDamage=[30/40/50/60/70] + (ThunderclapBaseDamageAPRatio=0.2)xap + (ThunderclapBaseDamageArmorRatio=0.15)xarmor?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        40,
+        50,
+        60,
+        70
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "ThunderclapBaseDamageAPRatio"
+       },
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "ThunderclapBaseDamageArmorRatio"
+       }
+      ],
+      "refs": [
+       "ThunderclapBaseDamage",
+       "ThunderclapBaseDamageAPRatio",
+       "ThunderclapBaseDamageArmorRatio"
+      ]
+     },
+     "{185669f9}": {
+      "expr": "TotalBonusDamage * ThunderclapSlowDamage=2",
+      "modifies": "TotalBonusDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        80,
+        100,
+        120,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "ThunderclapBaseDamageAPRatio"
+       },
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "ThunderclapBaseDamageArmorRatio"
+       }
+      ],
+      "refs": [
+       "ThunderclapBaseDamage",
+       "ThunderclapBaseDamageAPRatio",
+       "ThunderclapBaseDamageArmorRatio",
+       "ThunderclapSlowDamage"
+      ]
+     },
+     "ThunderclapSplash": {
+      "expr": "ThunderclapSplashDamage=[15/25/35/45/55] + (ThunderclapSplashAP=0.3)xap + (ThunderclapSplashArmor=0.15)xarmor?",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        25,
+        35,
+        45,
+        55
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "ThunderclapSplashAP"
+       },
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.15,
+        "dataValue": "ThunderclapSplashArmor"
+       }
+      ],
+      "refs": [
+       "ThunderclapSplashAP",
+       "ThunderclapSplashArmor",
+       "ThunderclapSplashDamage"
+      ]
+     },
+     "{71941255}": {
+      "expr": "(BonusArmorPassive=[0.1/0.15/0.2/0.25/0.3])*(BonusArmorPassiveMultiplier=3)",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.3,
+        0.45,
+        0.6,
+        0.75,
+        0.9
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "BonusArmorPassive",
+       "BonusArmorPassiveMultiplier"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "Landslide",
+    "key": "Characters/Malphite/Spells/LandslideAbility/Landslide",
+    "cooldown": 7,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "castTime": 0.2419,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       95,
+       130,
+       165,
+       200
+      ]
+     },
+     "ASReduction": {
+      "axis": "rank",
+      "v": [
+       30,
+       35,
+       40,
+       45,
+       50
+      ]
+     },
+     "Duration": 3
+    },
+    "calcs": {
+     "EDamageCalc": {
+      "expr": "BaseDamage=[60/95/130/165/200] + 0.4xarmor? + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        95,
+        130,
+        165,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "armor?",
+        "scope": "total",
+        "coef": 0.4
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "UFSlash",
+    "key": "Characters/Malphite/Spells/UFSlashAbility/UFSlash",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      130,
+      115,
+      100
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       300,
+       400
+      ]
+     },
+     "KnockupDuration": 1.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[200/300/400] + 0.9xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        300,
+        400
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SeismicShard",
+  "W": "Obduracy",
+  "E": "Landslide",
+  "R": "UFSlash",
+  "P": "MalphiteShield"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 280,
+   "{6216bf7b}": 60,
+   "{c4ab3550}": 1.46,
+   "{3a509002}": 0.11
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.05031888
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Malphite",
+  "name": "Malphite",
+  "partype": "Mana",
+  "passive": "Granite Shield",
+  "spells": [
+   {
+    "id": "SeismicShard",
+    "name": "Seismic Shard",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "Obduracy",
+    "name": "Thunderclap",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "cost": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ]
+   },
+   {
+    "id": "Landslide",
+    "name": "Ground Slam",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "UFSlash",
+    "name": "Unstoppable Force",
+    "maxrank": 3,
+    "cooldown": [
+     130,
+     115,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Granite Shield": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Seismic Shard": {
+    "damagetype": "magic",
+    "spelleffects": "single",
+    "spellshield": "Special",
+    "projectile": "true",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Thunderclap": {
+    "damagetype": "physical",
+    "spelleffects": "special",
+    "spellshield": "False",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Ground Slam": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Unstoppable Force": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

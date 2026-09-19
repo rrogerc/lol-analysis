@@ -1,0 +1,587 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "CamillePassive",
+    "key": "Characters/Camille/Spells/CamillePassiveAbility/CamillePassive",
+    "dataValues": {
+     "ShieldDuration": 2
+    },
+    "calcs": {
+     "PassiveCooldown": {
+      "expr": "byLevelL[14/14/14/14/14/14/11/11/11/11/11/11/8/8/8/8/8/8]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        14,
+        14,
+        14,
+        14,
+        14,
+        14,
+        11,
+        11,
+        11,
+        11,
+        11,
+        11,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "ShieldAmount": {
+      "expr": "(byLevelL[0.1/0.1/0.1/0.1/0.1/0.1/0.15/0.15/0.15/0.15/0.15/0.15/0.2/0.2/0.2/0.2/0.2/0.2])xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+         ]
+        }
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "CamilleQ",
+    "key": "Characters/Camille/Spells/CamilleQAbility/CamilleQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      8,
+      7,
+      6,
+      5
+     ]
+    },
+    "cost": 25,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "QRampUpTime": 1.5,
+     "BonusAARange": 50,
+     "TADRatio": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "MSBonus": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.3,
+       0.35,
+       0.4,
+       0.45
+      ]
+     },
+     "MSDuration": 1,
+     "QEmpoweredAmp": 2,
+     "Q2Duration": 2,
+     "QTotalRecastTime": 3.5
+    },
+    "calcs": {
+     "DamageConversionPercentage": {
+      "expr": "byLevelL[0.4/0.44/0.48/0.52/0.56/0.6/0.64/0.68/0.72/0.76/0.8/0.84/0.88/0.92/0.96/1/1.04/1.08]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.4,
+        0.44,
+        0.48000000417232513,
+        0.52,
+        0.56,
+        0.6,
+        0.64,
+        0.68,
+        0.72,
+        0.76,
+        0.8,
+        0.84,
+        0.88,
+        0.92,
+        0.96,
+        1,
+        1.04,
+        1.08
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "BonusDamage": {
+      "expr": "tADRatioxad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": null,
+        "dataValue": "tADRatio"
+       }
+      ],
+      "refs": [
+       "tADRatio"
+      ]
+     },
+     "EmpoweredBonusDamage": {
+      "expr": "BonusDamage * QEmpoweredAmp=2",
+      "modifies": "BonusDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "QEmpoweredAmp",
+       "tADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "CamilleW",
+    "key": "Characters/Camille/Spells/CamilleWAbility/CamilleW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      14,
+      13,
+      12,
+      11
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     },
+     "BADRatio": 0.6,
+     "SlowDuration": 2,
+     "ChargeDuration": 0.75,
+     "SlowPercentage": 80,
+     "OuterConeMaxHPDamage": {
+      "axis": "rank",
+      "v": [
+       0.07,
+       0.075,
+       0.08,
+       0.085,
+       0.09
+      ]
+     },
+     "ADRequiredFor1PercentDamage": 40,
+     "ADRequiredTooltipOnly": 0.00025,
+     "MonsterDamageReduction": 50,
+     "OuterConeHealingRatio": 100,
+     "BlastLength": 650,
+     "ConeAngle": 35
+    },
+    "calcs": {
+     "OuterEdgeTooltip": {
+      "expr": "OuterConeMaxHPDamage=[0.07/0.075/0.08/0.085/0.09] + (ADRequiredTooltipOnly=0.00025)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.07,
+        0.075,
+        0.08,
+        0.085,
+        0.09
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.00025,
+        "dataValue": "ADRequiredTooltipOnly"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ADRequiredTooltipOnly",
+       "OuterConeMaxHPDamage"
+      ]
+     },
+     "BaseDamageTotal": {
+      "expr": "BaseDamage=[60/85/110/135/160] + (BADRatio=0.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        85,
+        110,
+        135,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "BADRatio"
+       }
+      ],
+      "refs": [
+       "BADRatio",
+       "BaseDamage"
+      ]
+     },
+     "MonsterHealthDamageCap": {
+      "expr": "300",
+      "flat": 300,
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "CamilleE",
+    "key": "Characters/Camille/Spells/CamilleEAbility/CamilleE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": 70,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "EMinionMonsterGhostDuration": 3,
+     "KnockupDuration": 0.75,
+     "ASBuff": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "DashSpeed": 1050,
+     "ASDuration": 5,
+     "WallHangDuration": 1,
+     "E2LongDashRange": 800,
+     "E2ShortDashRange": 400,
+     "ECollisionRange": 130,
+     "BADRatio": 0.75
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/90/120/150/180] + (BADRatio=0.75)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.75,
+        "dataValue": "BADRatio"
+       }
+      ],
+      "refs": [
+       "BADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "CamilleR",
+    "key": "Characters/Camille/Spells/CamilleRAbility/CamilleR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      115,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RPercentCurrentHPDamage": {
+      "axis": "rank",
+      "v": [
+       4,
+       6,
+       8
+      ]
+     },
+     "RDuration": {
+      "axis": "rank",
+      "v": [
+       2.5,
+       3.25,
+       4
+      ]
+     },
+     "RCircleRadius": 425
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "CamilleQ",
+  "W": "CamilleW",
+  "E": "CamilleE",
+  "R": "CamilleR",
+  "P": "CamillePassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 375,
+   "{6216bf7b}": 52,
+   "{c4ab3550}": 1.63,
+   "{3a509002}": 0.15
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Camille",
+  "name": "Camille",
+  "partype": "Mana",
+  "passive": "Adaptive Defenses",
+  "spells": [
+   {
+    "id": "CamilleQ",
+    "name": "Precision Protocol",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "cost": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ]
+   },
+   {
+    "id": "CamilleW",
+    "name": "Tactical Sweep",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "CamilleE",
+    "name": "Hookshot",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ]
+   },
+   {
+    "id": "CamilleR",
+    "name": "The Hextech Ultimatum",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     115,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Adaptive Defenses": {
+    "targeting": "Passive",
+    "affects": "Self",
+    "occurrence": "On-hit"
+   }
+  },
+  "Q": {
+   "Precision Protocol": {
+    "damagetype": "Physical True",
+    "spelleffects": "spell",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana",
+    "occurrence": "On-hit"
+   },
+   "Precision Protocol 2": {
+    "damagetype": "Physical True",
+    "spelleffects": "spell",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana",
+    "occurrence": "On-hit"
+   },
+   "Precision Protocol 3": {
+    "damagetype": "Physical True",
+    "spelleffects": "spell",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "Mana",
+    "occurrence": "On-hit"
+   }
+  },
+  "W": {
+   "Tactical Sweep": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "False",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Hookshot": {
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Terrain, Self",
+    "costtype": "Mana"
+   },
+   "Wall Dive": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "The Hextech Ultimatum": {
+    "damagetype": "Magic",
+    "spelleffects": "Proc",
+    "spellshield": "true",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

@@ -1,0 +1,150 @@
+{
+ "champion": "illaoi",
+ "primitives": [
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "R",
+    "E"
+   ],
+   "note": "Tentacles are separate entities that deal a large share of Illaoi's damage; they are spawned passively (P) and commanded to slam by Q/W/R, and separately auto-attack the Spirit/Vessel from E on their own timer."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P: each tentacle slam's damage on a given target is reduced 50% per slam that target was hit by in the last 0.66s, capped at 75% reduction (a target-state-dependent damage reduction). W: bonus damage is a percent of the target's current maximum health with a separate minimum-damage floor."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Harsh Lesson arms Illaoi's next basic attack (within 6s) with bonus %max-health physical damage and a dash/leap."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Harsh Lesson resets Illaoi's basic attack timer on cast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Test of Spirit is a two-phase ability: a tendril grab that spawns a Spirit clone which echoes damage for up to 7s, then (on the Spirit's death or tether break) a separate Vessel-mark phase that spawns periodic autonomous tentacle attacks; E cannot be recast until the current Spirit dies."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Vessel mark on the target causes it to continuously spawn/attract Tentacle attacks for its 4s duration."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "For R's 8s duration, Harsh Lesson's cooldown is halved and R-spawned Tentacles attack on a fixed faster windup/lockout cadence."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "R halves Harsh Lesson's cooldown for its duration."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 40-60, E 35-55, R 100 flat) plausibly gate how often these can be cast inside the 15s window, especially at low mana pools/levels."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "The kit's damage is dominated by a shared Tentacle-command system that no single primitive captures cleanly: multiple independently-spawned Tentacles (passive spawn on a level-based timer, up to 6 more from R) each carry their own per-target 0.66s stacking damage-reduction state, and are 'commanded' to slam by whichever of Q/W/R/E-Vessel is used, with R further changing their attack cadence (0.5s windup + 0.5s lockout) instead of the normal per-level interval. Separately, E's echo mechanic requires simulating a second health/armor/MR pool (the Spirit, cloned from the target's current stats) that must actually take damage before it dies, with the echoed damage capped to the Spirit's current health and calculated pre-mitigation-then-modified in a specific (and per the wiki, sometimes inconsistent) order. Both of these need bespoke stateful logic beyond a fixed list of primitives."
+ },
+ "unsettled": [
+  {
+   "question": "In a single-target dummy fight, what actually damages the E Spirit clone to trigger its echo, and how much echo damage results per fight? Does Illaoi's own Q/W tentacle slams and auto-attacks hit the Spirit (since it stands in front of her, near the target), or is the Spirit only damaged by the tentacles' own separate periodic autonomous attacks on it, or is some fixed 'burst it down fast' assumption intended?",
+   "options": [
+    "Model the Spirit as taking all of Illaoi's own outgoing damage during the 7s tether (Q slams, W bonus damage, autos) until it dies, then echo per-hit",
+    "Model the Spirit as only damaged by the level-based autonomous tentacle attacks described in E's own tooltip (independent of Q/W usage)",
+    "Assume the Spirit is killed near-instantly by the rotation's first hit(s) for simplicity, and only count one or two echo instances"
+   ],
+   "impact": "high",
+   "quotes": [
+    "echoes a portion of the {{tt|pre-mitigation damage|Damage calculated before modifiers}} received to the tethered champion",
+    "Each {{as|Tentacle|buzzword2}} autonomously attacks the closest {{as|Vessel|buzzword3}} or {{as|Spirit|buzzword}}, prioritizing the latter, once every {{pp|4.5 to 3.5 for 3|1 to 13}} seconds"
+   ]
+  },
+  {
+   "question": "Is Harsh Lesson's max-health-percent damage a floor combined with the minimum (i.e. damage = max(percent-health value, minimum)), or are the two values added, or does the minimum only apply in specific cases (e.g. against low-health targets or non-champions)?",
+   "options": [
+    "damage = max(percentHealth-based value, WMinDamage)",
+    "damage = percentHealth-based value, with WMinDamage only relevant against structures/monsters where percent-health would be 0 or tiny",
+    "damage = percentHealth-based value + WMinDamage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The attack deals {{as|'''additional''' physical damage|physical damage}}, with a minimum threshold, and capped at 300 against non-champions",
+    "IllaoiW.WMinDamage = [20/30/40/50/60]"
+   ]
+  },
+  {
+   "question": "During R's duration, do R-spawned Tentacles (and any other active Tentacles near Illaoi) all switch to the fixed 0.5s-windup/0.5s-lockout attack cadence described in R's tooltip, or does that cadence apply only to R-spawned Tentacles while other Tentacles keep the normal level-based interval from E/P?",
+   "options": [
+    "All active Tentacles near Illaoi adopt the R cadence for the duration",
+    "Only the Tentacles summoned by R itself use the R cadence; pre-existing Tentacles keep their normal interval"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "all {{as|Tentacles|buzzword2}} awakened by '''Illaoi''' are {{tip|untargetable}}, will not show their hitboxes, nor go dormant, and will take {{fd|0.5}} seconds to make an attack; however they will then incur a lockout of {{fd|0.5}} seconds before being able to start a new attack",
+    "This does not affect the {{as|Tentacle|buzzword2}} attack from {{ai|Tentacle Smash|Illaoi}}."
+   ]
+  },
+  {
+   "question": "For the per-target Tentacle slam damage reduction (50% per slam in last 0.66s, capped at 75%), should the simulator model only the straightforward stacking rule, or also the documented 'unexpected' bug where extending the reduction window via one slam can outweigh that slam's own damage contribution on a successive slam?",
+   "options": [
+    "Model only the stated straightforward rule (each slam reduces itself by 50% per recent slam, capped 75%)",
+    "Also model the documented bug interaction where the reduction window extension changes a later slam's damage disproportionately"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Each enemy individually reduces the slam damage by 50% for every slam they were hit by in the last {{fd|0.66}} seconds, capped at 75% less damage.",
+    "A slam that extends the damage reduction window to reduce the damage of a successive slam that would otherwise not have been reduced, can have its contribution of damage effectivelly negated or even outweighted by the window extension."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume a passive Tentacle is already up near the target terrain at the start of the fight (per the passive's spawn-radius/terrain rules), available to be commanded immediately.",
+   "Open with E (Test of Spirit) on the dummy to grab its Spirit, starting the echo-damage window and marking a Tentacle target.",
+   "As soon as E's cast/pull lockout ends, use W (Harsh Lesson) to arm and immediately fire the empowered attack: bonus %max-health physical damage, an attack-timer reset, and a command for nearby Tentacles (including the passive one) to slam.",
+   "Weave Q (Tentacle Smash) on cooldown between W casts and auto-attacks, spacing slams to avoid unnecessarily stacking the 0.66s same-target damage-reduction window on the same tentacle.",
+   "Continue auto-attacking on-cooldown between spell casts, re-casting W every time its 4s cooldown is up (each cast both resets the auto-attack timer and adds another empowered-attack + tentacle-slam damage instance).",
+   "Cast R (Leap of Faith) as soon as it is off cooldown for its own %bonus-AD damage, to summon extra Tentacles, and to halve W's cooldown for its 8s duration (letting W be woven even more frequently).",
+   "Once the E Spirit dies (from Illaoi's own damage or the autonomous tentacle attacks on it) and the Vessel/slow phase resolves, recast E again if it is off cooldown, to restart the echo-damage cycle for the remainder of the 15s window.",
+   "Prioritize keeping Q, W and auto-attacks on cooldown throughout; treat E and R as scheduled around their own cooldown/recast-gating rather than as fixed-interval spells."
+  ],
+  "questions": [
+   "At the level/CDR being simulated, is R actually expected to be off cooldown and available at all within the 15s window, or should the rotation assume it is not used in most test cases?",
+   "Should the dummy fight assume a Tentacle is already active at t=0 (terrain-dependent passive spawn), or should the first passive Tentacle be treated as unavailable until its level-based spawn timer (18-7s) elapses?",
+   "Given E cannot be recast until the Spirit dies, and the Spirit's effective 'health pool' is itself an unsettled bespoke mechanic, how quickly should the rotation assume the Spirit dies (affecting whether a second E cast fits inside 15s)?",
+   "Should Q be cast on cooldown regardless of Tentacle-slam-reduction stacking, or should its timing be deliberately offset from other Tentacle commands to maximize total tentacle damage output?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

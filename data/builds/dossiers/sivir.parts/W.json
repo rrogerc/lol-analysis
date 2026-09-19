@@ -1,0 +1,205 @@
+{
+ "name": "Ricochet",
+ "cooldown": {
+  "values": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "quote": "12"
+ },
+ "cost": {
+  "values": [
+   60,
+   60,
+   60,
+   60,
+   60
+  ],
+  "quote": "60",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Bonus Attack Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4
+   ],
+   "terms": [],
+   "quote": "{{ap|20 to 40}}%",
+   "bin": [
+    "SivirW.RicochetAttackSpeed"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Bounce Damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.4,
+      0.425,
+      0.45,
+      0.475,
+      0.5
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|40 to 50}}% AD}}",
+   "bin": [
+    "SivirW#BounceDamage"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Bounce Critical Damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.4,
+      0.425,
+      0.45,
+      0.475,
+      0.5
+     ]
+    },
+    {
+     "stat": "critDamage",
+     "coef": 1
+    }
+   ],
+   "quote": "{{as|{{ap|40*{{ccd|Sivir|crit_base}}/100 to 50*{{ccd|Sivir|crit_base}}/100}}% AD}}",
+   "bin": [
+    "SivirW#BounceDamage"
+   ],
+   "binNote": "Sheet's BounceDamage calc has no explicit crit term; wiki states bounces crit for the champion's crit damage multiplier, applied on top of the same AD ratio."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Minion Bounce Damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.26,
+      0.27625,
+      0.2925,
+      0.30875,
+      0.325
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|40*0.65 to 50*0.65}}% AD}}",
+   "bin": [
+    "SivirW.MinionDamageMod",
+    "SivirW#BounceDamage"
+   ],
+   "binNote": "No bin row states the product directly; this value is MinionDamageMod=0.65 multiplied by BounceADRatio ([0.4..0.5]) from SivirW#BounceDamage, giving 0.26 to 0.325 as the wiki states."
+  },
+  {
+   "id": "w_5",
+   "meaning": "Minion Bounce Critical Damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.26,
+      0.27625,
+      0.2925,
+      0.30875,
+      0.325
+     ]
+    },
+    {
+     "stat": "critDamage",
+     "coef": 1
+    }
+   ],
+   "quote": "{{as|{{ap|(40*0.65)*{{ccd|Sivir|crit_base}}/100 to (50*0.65)*{{ccd|Sivir|crit_base}}/100}}% AD}}",
+   "bin": [
+    "SivirW.MinionDamageMod",
+    "SivirW#BounceDamage"
+   ],
+   "binNote": "Minion crit variant not directly in a bin row; derived as MinionDamageMod=0.65 times BounceADRatio times crit damage multiplier, not relevant to a dummy fight (no minions)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks bounce to additional nearby enemies while the buff is active, dealing physical damage to them.",
+   "quote": "causing her basic attacks to bounce to additional surrounding enemies, dealing {{as|physical damage}} to them",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the triggering attack crits, the bounces also deal critical damage.",
+   "quote": "If the triggering attack critically strikes, the bounces will do so as well",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bounces occur only up to 8 times total per empowered attack sequence.",
+   "quote": "Bounces occur only up to 8 times and can target each enemy up to one additional time per empowered attack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ricochet resets Sivir's basic attack timer only if the buff was not already active; refreshing the buff grants no reset.",
+   "quote": "Sivir's attack timer will only reset from casting Ricochet if the ability's buff was not already active on her. Refreshing the buff will not grant an attack reset.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ricochet deals reduced damage against minions and executes them below a health threshold.",
+   "quote": "Ricochet deals 65% damage against minions and executes them if they would be left below {{sti|{{as|15 health}}}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The buff lasts 4 seconds during which basic attacks are empowered.",
+   "quote": "empowers her crossblade for the next 4 seconds",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SivirW.BounceAttacks",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SivirW.BuffDuration",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "SivirW.MaxBounces",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

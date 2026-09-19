@@ -1,0 +1,167 @@
+{
+ "champion": "ekko",
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Resonance builds up to 3 stacks from basic attacks and damaging abilities, refreshing on hit; the 3rd stack consumes all stacks for bonus magic damage."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P's 3rd-stack bonus magic damage and W's missing-health bonus magic damage both ride on basic attacks."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's on-hit damage magnitude is 3% (+3%/100AP) of the target's missing health."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's on-hit damage only triggers while the target is below 30% max health."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's outgoing hit and R's arrival explosion are damage instances applied on cast/after a fixed delay."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q deals a separate outgoing instance and a separate return instance, each hitting once."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The return-damage instance depends on the grenade travelling out, expanding, and homing back onto the same target; a dummy fight must assume this reliably connects."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "E arms Ekko's next basic attack with bonus magic damage and a blink."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's dash resets Ekko's basic attack timer, letting the empowered attack come out early."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a 0.5s (wiki) cast/stasis window before the dash and explosion resolve, delaying when its damage and heal land."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W's detonation shield (self, positional) and R's self-heal only matter to damage taken/survival, not to damage dealt."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic that matters to the damage/survival fight maps onto existing primitives: Resonance is target-stacks feeding an onhit-rider, W's passive is a threshold-gated conditional onhit-rider, Q is a two-part plain-cast whose return instance needs a positional assumption, E is an empowered-attack that also triggers attack-reset, and R is a charge-or-channel plain-cast plus a defensive-only heal. No kit-specific logic beyond combining these primitives is required."
+ },
+ "unsettled": [
+  {
+   "question": "Is R's healing amplification based on the target's overall missing health (as the bin field name PercentHealAmpPerPercentMissingHealth implies) or on health lost specifically in the last 4 seconds (as the wiki tooltip states)?",
+   "options": [
+    "Amp scales with current missing health % at time of cast",
+    "Amp scales with damage taken in the trailing 4-second window only, independent of total missing health"
+   ],
+   "impact": "high",
+   "quotes": [
+    "EkkoR.PercentHealAmpPerPercentMissingHealth = 3",
+    "increased by {{as|{{pp|label1=health lost|key=%|key1=%|type=health lost in the last 4 seconds|0 to 300 for 11|0 to 100|formula=3% per 1% of health lost in the last 4 seconds}}|health}}"
+   ]
+  },
+  {
+   "question": "What is R's actual cast time before the explosion/heal resolves: 0.25s (bin castTime field) or 0.5s (wiki-stated cast time)?",
+   "options": [
+    "0.25s per bin",
+    "0.5s per wiki"
+   ],
+   "impact": "high",
+   "quotes": [
+    "castTime: 0.25",
+    "|cast time    = {{fd|0.5}}"
+   ]
+  },
+  {
+   "question": "Is Resonance's per-target retrigger lockout (4s, starts after the 3rd stack is consumed) the same timer as each stack's own 4s refresh window, or a separate internal cooldown gating how soon a new 3-hit cycle can begin on that target?",
+   "options": [
+    "Single shared 4s timer serves both purposes",
+    "Two independent 4s timers: one for stack decay, one for retrigger lockout after consumption"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "refreshing on subsequent hits and stacking up to 3 times",
+    "{{tt|4|Begins after the stacks are consumed}}"
+   ]
+  },
+  {
+   "question": "Should the survival-fight simulation assume Ekko ever triggers Parallel Convergence's self-shield, given it requires him to walk into the deployed chronosphere 1.25–2.75s after casting?",
+   "options": [
+    "Assume shield always lands (best-case defensive value)",
+    "Assume shield never triggers in a fight with no positioning/movement modeled"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If '''Ekko''' enters the sphere before it expires, it detonates to grant him a {{tip|shield}} for 2 seconds"
+   ]
+  },
+  {
+   "question": "What does the unresolved bin calculation EkkoW#{79b6144b} = MissingHealthPercent * 1xstat15? represent, and does it change W's on-hit damage formula (e.g. an additional stat scaling beyond AP)?",
+   "options": [
+    "Dead/unused calculation, ignore in favor of EkkoW#MissingHealthPercent as documented",
+    "Represents a real additional multiplier (e.g. bonus health) that should modify W's on-hit damage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "EkkoW#{79b6144b} = MissingHealthPercent * 1xstat15?"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by basic-attacking the dummy immediately to start building Resonance stacks.",
+   "Cast Q (Timewinder) on cooldown for its outgoing and later return magic-damage instances.",
+   "Weave E (Phase Dive) in right after a basic attack so its attack-reset lets the empowered, bonus-damage auto come out as early as possible; recast on cooldown.",
+   "Continue basic-attacking between ability casts so every 3rd hit consumes Resonance for its bonus magic damage, and so W's passive on-hit damage fires automatically once the dummy's health drops below 30%.",
+   "Cast R (Chronobreak) on cooldown purely for its own large magic-damage explosion; do not rely on its heal or stasis for anything in the damage fight.",
+   "Do not actively cast W for damage purposes, since its active only grants a self-shield/stun setup and deals no direct damage to a stationary, non-chasing dummy; let its passive on-hit component fire on its own.",
+   "Repeat: auto-attack + Q/E/R on cooldown, prioritizing not clipping auto-attacks, until the 15s window ends or the dummy dies."
+  ],
+  "questions": [
+   "Does the simulator assume Resonance starts at 0 stacks, or is some pre-fight stacking assumed?",
+   "Since R's explosion lands at the location Ekko occupied 4 seconds ago, does the dummy-fight model treat Ekko as stationary (so the dash is negligible and the explosion always lands on the dummy), or could early-fight positioning make R's first cast whiff?",
+   "What basic-attack windup/animation and attack-speed value should be assumed to determine exactly how many autos (and thus Resonance/W procs) land in 15 seconds, and how E's attack-reset should be timed relative to that?",
+   "Is it ever damage-optimal to cast W just to threaten/soften up (e.g., forcing the passive missing-health proc timing), or is it strictly correct to never actively cast W in the pure damage-race scenario?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

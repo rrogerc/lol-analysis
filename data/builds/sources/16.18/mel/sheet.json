@@ -1,0 +1,713 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "MelPassive",
+    "key": "Characters/Mel/Spells/MelPassiveAbility/MelPassive",
+    "dataValues": {
+     "OverwhelmDuration": 5,
+     "BonusAttackDuration": 5,
+     "PassiveBonusMissiles": 3,
+     "MaxPassiveBonusMissiles": 9
+    },
+    "calcs": {
+     "PassiveBonusMissileDamage": {
+      "expr": "byLevel(8..30) + 0.04xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        8,
+        9.294118,
+        10.588235,
+        11.882353,
+        13.176471,
+        14.47058824,
+        15.764706,
+        17.058823,
+        18.352941,
+        19.647059,
+        20.941177,
+        22.235294,
+        23.529412,
+        24.82353,
+        26.117647,
+        27.411765,
+        28.7058824,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.04
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "MelQ",
+    "key": "Characters/Mel/Spells/MelQAbility/MelQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      70,
+      75,
+      80,
+      85,
+      90
+     ]
+    },
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ExplosionDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       7,
+       9,
+       11,
+       13
+      ]
+     },
+     "ExplosionCount": {
+      "axis": "rank",
+      "v": [
+       6,
+       7,
+       8,
+       9,
+       10
+      ]
+     },
+     "Spread": 25,
+     "ExplosionRadius": 200,
+     "ChannelDuration": 0.5,
+     "MinionMod": 1,
+     "InitialDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       85,
+       110,
+       135,
+       160
+      ]
+     }
+    },
+    "calcs": {
+     "TotalExplosionDamage": {
+      "expr": "ExplosionDamage=[5/7/9/11/13] + 0.05xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        5,
+        7,
+        9,
+        11,
+        13
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "refs": [
+       "ExplosionDamage"
+      ]
+     },
+     "AllDamageHit": {
+      "expr": "<{f3cbe7b2}> + (<{f3cbe7b2}>)*(ExplosionCount=[6/7/8/9/10] + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "tooltipOnly": true,
+      "refs": [
+       "ExplosionCount"
+      ]
+     },
+     "MonsterModTooltip": {
+      "expr": "1 + (-1)*(MinionMod=1)",
+      "flat": 0,
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "MinionMod"
+      ]
+     },
+     "InitialExplosionDamage": {
+      "expr": "InitialDamage=[60/85/110/135/160] + 0.55xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        85,
+        110,
+        135,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55
+       }
+      ],
+      "refs": [
+       "InitialDamage"
+      ]
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "W": [
+   {
+    "script": "MelW",
+    "key": "Characters/Mel/Spells/MelWAbility/MelW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      38,
+      35,
+      33,
+      29,
+      26
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      80,
+      60,
+      40,
+      20,
+      0
+     ]
+    },
+    "dataValues": {
+     "Duration": 0.75,
+     "ShieldRadius": 175,
+     "BaseDamagePercent": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.45,
+       0.5,
+       0.55,
+       0.6
+      ]
+     },
+     "MoveSpeed": 0.4,
+     "PhysDamageMod": 0.3,
+     "BaseShieldAmount": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "MoveSpeedDuration": 0.75
+    },
+    "calcs": {
+     "DamagePercent": {
+      "expr": "BaseDamagePercent=[0.4/0.45/0.5/0.55/0.6] + 0.0005xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0005
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BaseDamagePercent"
+      ]
+     },
+     "ShieldAmount": {
+      "expr": "BaseShieldAmount=[80/110/140/170/200] + 0.7xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        110,
+        140,
+        170,
+        200
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "BaseShieldAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "MelE",
+    "key": "Characters/Mel/Spells/MelEAbility/MelE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10.5,
+      10,
+      9.5,
+      9
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RootDuration": 1.5,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       105,
+       150,
+       195,
+       240
+      ]
+     },
+     "BaseAreaDamage": {
+      "axis": "rank",
+      "v": [
+       16,
+       28,
+       40,
+       52,
+       64
+      ]
+     },
+     "AreaAPRatio": 0.08,
+     "AreaSlowAmount": 0.3,
+     "AreaSlowDuration": 0.25,
+     "MinionMod": 0.5,
+     "MaxAreaRadius": 230,
+     "TimeToMaxRadius": 0.5,
+     "AreaTicksPerSecond": 8,
+     "DoTDuration": 0.5
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[60/105/150/195/240] + 0.7xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        105,
+        150,
+        195,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "AreaDamagePerSecond": {
+      "expr": "BaseAreaDamage=[16/28/40/52/64] + (AreaAPRatio=0.08)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        16,
+        28,
+        40,
+        52,
+        64
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.08,
+        "dataValue": "AreaAPRatio"
+       }
+      ],
+      "refs": [
+       "AreaAPRatio",
+       "BaseAreaDamage"
+      ]
+     },
+     "MinionModTooltip": {
+      "expr": "1 + (-1)*(MinionMod=0.5)",
+      "flat": 0.5,
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "MinionMod"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "MelR",
+    "key": "Characters/Mel/Spells/MelRAbility/MelR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BasePassiveStackDamage": {
+      "axis": "rank",
+      "v": [
+       3,
+       4,
+       5
+      ]
+     },
+     "BasePassiveFlatDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       70,
+       80
+      ]
+     },
+     "MinionMod": 0.5,
+     "BaseUltStackDamage": {
+      "axis": "rank",
+      "v": [
+       4,
+       7,
+       10
+      ]
+     },
+     "BaseUltFlatDamage": {
+      "axis": "rank",
+      "v": [
+       125,
+       200,
+       275
+      ]
+     },
+     "DisintegrateDelay": 0.9
+    },
+    "calcs": {
+     "PassiveStackDamage": {
+      "expr": "BasePassiveStackDamage=[3/4/5] + 0.0075xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        3,
+        4,
+        5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0075
+       }
+      ],
+      "refs": [
+       "BasePassiveStackDamage"
+      ]
+     },
+     "PassiveFlatDamage": {
+      "expr": "BasePassiveFlatDamage=[60/70/80] + 0.1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        70,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "BasePassiveFlatDamage"
+      ]
+     },
+     "UltStackDamage": {
+      "expr": "BaseUltStackDamage=[4/7/10] + 0.04xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        4,
+        7,
+        10
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.04
+       }
+      ],
+      "refs": [
+       "BaseUltStackDamage"
+      ]
+     },
+     "UltFlatDamage": {
+      "expr": "BaseUltFlatDamage=[125/200/275] + 0.3xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        125,
+        200,
+        275
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": [
+       "BaseUltFlatDamage"
+      ]
+     },
+     "MinionModTooltip": {
+      "expr": "1 + (-1)*(MinionMod=0.5)",
+      "flat": 0.5,
+      "terms": [],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "MinionMod"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "MelQ",
+  "W": "MelW",
+  "E": "MelE",
+  "R": "MelR",
+  "P": "MelPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 480,
+   "{6216bf7b}": 28,
+   "{c4ab3550}": 1.8,
+   "{3a509002}": 0.18
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.144
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Mel",
+  "name": "Mel",
+  "partype": "Mana",
+  "passive": "Searing Brilliance",
+  "spells": [
+   {
+    "id": "MelQ",
+    "name": "Radiant Volley",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ]
+   },
+   {
+    "id": "MelW",
+    "name": "Rebuttal",
+    "maxrank": 5,
+    "cooldown": [
+     38,
+     35,
+     33,
+     29,
+     26
+    ],
+    "cost": [
+     80,
+     60,
+     40,
+     20,
+     0
+    ]
+   },
+   {
+    "id": "MelE",
+    "name": "Solar Snare",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10.5,
+     10,
+     9.5,
+     9
+    ],
+    "cost": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ]
+   },
+   {
+    "id": "MelR",
+    "name": "Golden Eclipse",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Searing Brilliance": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "spellshield": "false",
+    "projectile": "true",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Radiant Volley": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Rebuttal": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Solar Snare": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Golden Eclipse": {
+    "damagetype": "Magic",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

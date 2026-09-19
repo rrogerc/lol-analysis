@@ -1,0 +1,758 @@
+{
+ "champion": "masteryi",
+ "abilities": {
+  "P": {
+   "name": "Double Strike",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "second strike damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.5
+      }
+     ],
+     "quote": "the second strike dealing {{as|50% AD}} {{as|physical damage}}",
+     "bin": [
+      "MasterYiPassive#TotalDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "generate a {{tip|stack}} of ''Double Strike'' for 4 seconds",
+     "bin": [
+      "MasterYiPassive.StackDuration"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "stacks required to trigger second strike",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "Wiki says 3 stacks trigger the second strike, but MasterYiPassive.AttackCount = 4 in the bin. This is a real disagreement, not a units mismatch; the bin's AttackCount does not carry the wiki's 3."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks generate a stack of Double Strike on-hit, refreshing on subsequent hits.",
+     "quote": "basic attacks {{tip|on-hit}} generate a {{tip|stack}} of ''Double Strike'' for 4 seconds, refreshing on subsequent hits",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "At 3 stacks, the next attack is empowered to strike twice, consuming the stacks on-hit.",
+     "quote": "At 3 stacks, '''Master Yi's''' next basic attack {{tip|on-attack}} is empowered to consume the stacks {{tip|on-hit}} and strike twice",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second strike applies on-hit effects, triggers on-attack effects, and can critically strike separately from the first strike.",
+     "quote": "The second strike separately rolls a {{tip|critical strike}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Double Strike does not cause two full attacks; effects that trigger on completing the attack windup only trigger once.",
+     "quote": "''Double Strike'' does not cause '''Master Yi''' to attack twice. Effects that trigger on completing the attack windup will only trigger once",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The second strike itself can generate a stack for the next Double Strike activation.",
+     "quote": "the second strike applies on-hit effects, the second strike is able to add a stack for the next ''Double Strike'' activation",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Attacks that are dodged, blocked, or missed while blinded do not generate or refresh stacks.",
+     "quote": "Basic attacks that are {{tip|dodge|dodged}}, {{tip|block|blocked}}, or missed while '''Master Yi''' is {{tip|blind|blinded}} will not generate any stacks of ''Double Strike'' nor refresh the duration of active stacks.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MasterYiPassive.AttackCount",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Alpha Strike",
+   "cooldown": {
+    "values": [
+     20,
+     19.5,
+     19,
+     18.5,
+     18
+    ],
+    "quote": "{{ap|20 to 18}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Primary Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      40,
+      60,
+      80,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|20 to 100}} {{as|(+ {{fd|70}}% AD)}}",
+     "bin": [
+      "AlphaStrike#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Reduced Damage per hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      5,
+      10,
+      15,
+      20,
+      25
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.175
+      }
+     ],
+     "quote": "{{ap|20*0.25 to 100*0.25}} {{as|(+ {{ap|70*0.25}}% AD)}}",
+     "bin": [
+      "AlphaStrike#SubesquentDamage"
+     ]
+    },
+    {
+     "id": "q_onhit_primary",
+     "meaning": "On-hit damage effectiveness on the primary detonation",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "with on-hit damage reduced to {{#var:ohmod}}% effectiveness",
+     "bin": [
+      "AlphaStrike.BaseOnHitMultiplier"
+     ]
+    },
+    {
+     "id": "q_onhit_subsequent",
+     "meaning": "On-hit damage effectiveness on subsequent marks",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1875,
+     "terms": [],
+     "quote": "with on-hit damage reduced to {{ap|{{#var:ohmod}}*{{#var:l}}}}% effectiveness",
+     "bin": [
+      "AlphaStrike.BaseOnHitMultiplier",
+      "AlphaStrike.SubsequentHitMultiplier"
+     ],
+     "binNote": "This value is the product of BaseOnHitMultiplier=0.75 and SubsequentHitMultiplier=0.25 (0.75*0.25=0.1875); no single bin row states the combined 18.75% figure directly, it is computed from the two named rows as the wiki's formula {{#var:ohmod}}*{{#var:l}} shows."
+    },
+    {
+     "id": "q_crit_mod",
+     "meaning": "Bonus critical damage modifier applied to primary and lesser damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "100% + {{sti|critical damage|{{as|{{ap|{{#var:cmod}}*100}}% of {{as|'''bonus''' critical damage}}}}.}}",
+     "bin": [
+      "AlphaStrike.BonusCritDamageRatio"
+     ]
+    },
+    {
+     "id": "q_cdr_onhit",
+     "meaning": "Alpha Strike current cooldown reduction per on-hit basic attack",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "reduce ''Alpha Strike's'' {{sti|'''current''' cooldown}} by 1 second",
+     "bin": [
+      "AlphaStrike.BaseBasicAttackCDR"
+     ]
+    },
+    {
+     "id": "q_bounces",
+     "meaning": "Number of marks placed (initial target plus additional bounces)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for a total of 4 marks",
+     "bin": [
+      "AlphaStrike.AlphaStrikeBounces"
+     ]
+    },
+    {
+     "id": "q_mark_interval",
+     "meaning": "Delay between marking each successive target",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.2,
+     "terms": [],
+     "quote": "he marks the target enemy and then proceeds to mark the nearest {{tip|sight|visible}} un-marked enemy within 600 units, recurring every {{rutngt|0.2}}",
+     "bin": [],
+     "binNote": "The 0.2s mark interval is not exposed as a named DataValue in the visible sheet rows; only the bounce count (AlphaStrikeBounces) and multipliers appear."
+    },
+    {
+     "id": "q_total_cast_duration",
+     "meaning": "Total effective time from cast start to reappearance/final detonation with 4 bounces",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.087,
+     "terms": [],
+     "quote": "{{tt|{{fd|1.087}} seconds total|Effective time due to game ticks}} after the start of the cast with 4 bounces",
+     "bin": [],
+     "binNote": "Total lockout/cast duration is a derived tooltip value from game tick timing, not a single DataValue in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Master Yi vanishes and is unable to act during Alpha Strike, becoming targetable/interactable again only after reappearing.",
+     "quote": "'''Master Yi''' {{tip|vanish|vanishes}} and becomes {{tip|lockout|unable to act}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Alpha Strike's primary damage instance applies only after Master Yi reappears from the vanish, not on cast.",
+     "quote": "''Alpha Strike's'' primary damage applies after '''Master Yi''' reappears.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Marks after the first on the same target detonate instantly upon application rather than waiting for the final reappearance.",
+     "quote": "Marks after the first on the same target instead detonate instantly upon application to deal {{fd|{{#expr:{{#var:l}}*100}}}}% damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Alpha Strike's damage is calculated at the moment each mark is placed, so damage can vary if AD changes between marks.",
+     "quote": "''Alpha Strike's'' damage is calculated at the moment that each mark is placed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only the first instance of Alpha Strike's damage counts as a hit for on-hit-triggered effects like Electrocute and Eclipse.",
+     "quote": "Only the first instance of damage counts as a hit for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Alpha Strike does not grant its own on-hit cooldown reduction nor a stack of Double Strike when it applies on-hit effects.",
+     "quote": "Alpha Strike does not trigger its cooldown reduction nor grant a stack of {{ai|Double Strike|Master Yi}} when applying on-hit effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A single spell shield only blocks one instance of Alpha Strike's damage, not all of its hits.",
+     "quote": "{{tip|Spell shield}} will only block a single instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wuju Style and Highlander can be cast during Alpha Strike, and each Alpha Strike hit refreshes their current durations.",
+     "quote": "Each time Alpha Strike hits a target, the '''current''' durations of {{ai|Wuju Style|Master Yi}} and {{ai|Highlander|Master Yi}} are refreshed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Alpha Strike's cooldown starts counting down on cast, not on completion.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AlphaStrike.BonusMonsterDamage",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Meditate",
+   "cooldown": {
+    "values": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "quote": "10"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana ({{as|+ 6% '''maximum''' mana}} per second)"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [],
+   "mechanics": [
+    {
+     "claim": "While channeling Meditate, Master Yi cannot attack; a basic attack interrupts the channel.",
+     "quote": "{{ct|channel|attack=interrupts|cast=interrupts|move=interrupts|items=interrupts,true,,false|spells=true, interrupts, interrupts, interrupts, interrupts}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Meditate resets Master Yi's basic attack timer on cast.",
+     "quote": "''Meditate {{tip|basic attack reset|resets}} '''Master Yi's''' basic attack timer",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While channeling, Meditate pauses the duration of Wuju Style and Highlander, so those buffs are preserved but not advanced while the channel is active.",
+     "quote": "pauses ''{{ais|Wuju Style|Master Yi}}'' and ''{{ais|Highlander|Master Yi}}'' duration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Meditate channels for up to 4 seconds, during which Master Yi deals no damage (no auto-attacks or other abilities cast).",
+     "quote": "channels for up to 4 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Meditate's healing and damage reduction have no effect on a stationary dummy that never attacks back.",
+     "quote": "rapidly {{tip|healing}} himself based on {{as|his '''missing''' health}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Meditate.BaseHeal",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.HealDuration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.MaxMissingHealthPercent",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.TickFrequency",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.DamageReduction",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.DamageReductionTowerMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "Meditate.BaseManaCost",
+     "reason": "utility"
+    },
+    {
+     "ref": "Meditate.PercentManaCostPerSecond",
+     "reason": "utility"
+    },
+    {
+     "ref": "Meditate.InitialExtraDR",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.InitialExtraDRDuration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "Meditate.DRLinger",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Wuju Style",
+   "cooldown": {
+    "values": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "quote": "14"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus True Damage",
+     "role": "onhit",
+     "damageType": "true",
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ 35% '''bonus''' AD)}}",
+     "bin": [
+      "WujuStyle#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "duration of the bonus true damage on-hit effect",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "empowers his basic attacks within the next 5 seconds to deal {{sti|{{as|'''bonus''' true damage}}}}",
+     "bin": [
+      "WujuStyle.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Wuju Style applies bonus true damage on-hit for its duration, not as a single cast effect.",
+     "quote": "empowers his basic attacks within the next 5 seconds to deal {{sti|{{as|'''bonus''' true damage}}}} {{tip|on-hit}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wuju Style's cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wuju Style's bonus true damage does not interact with critical strikes.",
+     "quote": "''Wuju Style's'' bonus true damage does not interact with {{tip|critical strike|critical strikes}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Wuju Style cannot be cast while it is already active.",
+     "quote": "''Wuju Style'' cannot be cast while it is already active.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While active, the damage dynamically updates its calculations (e.g. as bonus AD changes).",
+     "quote": "While ''Wuju Style'' is active, the damage will dynamically update its calculations.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "WujuStyle.LegacySwordVFXDuration",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Highlander",
+   "cooldown": {
+    "values": [
+     85,
+     85,
+     85
+    ],
+    "quote": "85"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.25,
+      0.45,
+      0.65
+     ],
+     "terms": [],
+     "quote": "{{ap|25 to 65}}%",
+     "bin": [
+      "Highlander.RASBonus"
+     ]
+    },
+    {
+     "id": "r_dur",
+     "meaning": "Active duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "For the next 7 seconds, he gains",
+     "bin": [
+      "Highlander.RDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Highlander can be cast during Alpha Strike.",
+     "quote": "''Highlander'' can be cast during {{ai|Alpha Strike|Master Yi}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The attack speed buff begins on cast and lasts the ability's duration.",
+     "quote": "For the next 7 seconds, he gains {{tip|ghosting}}, {{sti|{{as|'''bonus''' attack speed}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast, not on effect end.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Scoring a champion takedown reduces current cooldowns of basic abilities by 70%.",
+     "quote": "reduces the {{sti|'''current''' cooldowns}} of '''Master Yi's''' basic [[Champion ability|abilities]] by 70%.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "While active, a takedown extends the duration by 7 seconds.",
+     "quote": "scoring a champion {{tip|takedown}} extends ''Highlander's'' duration by 7 seconds.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Highlander.RMSBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "Highlander.RKillAssistExtension",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "Highlander.RCooldownRefund",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Double Strike: basic attacks on-hit generate a stack (cap 3, 4s duration, refreshes on hit)"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "At 3 stacks the next basic attack is empowered to strike a second time for 50% AD physical on-hit damage, consuming the stacks"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Alpha Strike vanishes Master Yi and makes him unable to act (~1s total) while it resolves"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Alpha Strike places up to 4 marks (primary + up to 3 more, all on the sole dummy target since no other targets exist); primary detonates on reappear, later marks detonate instantly at 25% damage each"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Each Alpha Strike detonation applies on-hit effects at reduced effectiveness (75% on primary, 18.75% on subsequent marks); Wuju Style adds bonus true damage on every basic attack on-hit for its duration"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Alpha Strike's primary and lesser damage instances can critically strike using a custom BonusCritDamageRatio=1 modifier"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "On-hit basic attacks reduce Alpha Strike's current cooldown by 1s, scaled by ability haste"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Wuju Style: bonus true damage on-hit for 5s; Highlander: bonus attack speed (and movement speed) for 7s"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs on Q (50-70), W (40), R (100) can constrain casts within the 15s window at low mana pools/levels"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Meditate is a self-heal/damage-reduction channel that interrupts attacking; irrelevant against a non-attacking dummy and actively costs DPS uptime"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Master Yi's kit is expressible as a combination of listed primitives: a stacking on-hit passive that empowers an attack (P), a multi-part vanish-and-detonate active whose marks each apply on-hit at reduced effectiveness and can crit and refund its own cooldown (Q), a timed true-damage on-hit rider (E), and a timed attack-speed buff (R). No mechanic here (e.g. no pet, no stance/form swap, no ammo system) falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "How many stacks of Double Strike are actually required to trigger the empowered second strike?",
+   "options": [
+    "3 stacks, per the wiki's description and leveling text",
+    "4 stacks/attacks, per the bin's MasterYiPassive.AttackCount = 4"
+   ],
+   "impact": "high",
+   "quotes": [
+    "stacking up to 3 times",
+    "MasterYiPassive.AttackCount = 4"
+   ]
+  },
+  {
+   "question": "Does Wuju Style's bonus true damage on-hit trigger on every one of Alpha Strike's mark detonations (up to 4 per cast, since each applies on-hit effects), or only once per Alpha Strike cast?",
+   "options": [
+    "Once per mark/detonation (up to 4x per cast), since the wiki says Alpha Strike 'applies on-hit effects' at each detonation",
+    "Only once per cast, since the wiki singles out only 'the first instance of damage' as counting for on-hit-triggered effects like Electrocute/Eclipse, implying later marks may not fully re-trigger all on-hit riders"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Master Yi then detonates the marks to deal {{as|physical damage}} and apply {{tip|on-hit}} effects",
+    "Only the first instance of damage counts as a hit for effects such as {{ri|Electrocute}} and {{iis|Eclipse}}"
+   ]
+  },
+  {
+   "question": "How does ability haste scale Alpha Strike's per-basic-attack cooldown reduction (the unresolved CooldownMultiplierCalculationPart)?",
+   "options": [
+    "Standard ability-haste CDR-multiplier formula (reduction scales down with haste)",
+    "A different/bespoke formula not visible in the sheet",
+    "No haste scaling at all in the fight if no haste items are used, making this moot for the base-kit sim"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "! unresolved calculation part CooldownMultiplierCalculationPart",
+    "affected by {{as|{{sti|ability haste}}}}"
+   ]
+  },
+  {
+   "question": "What is the exact total lockout/vanish duration of Alpha Strike against a single stationary target (all 4 marks landing on the same dummy), which determines how much autoattack time is lost per Q cast?",
+   "options": [
+    "The wiki's stated ~1.087s total (4 bounces at 0.2s intervals + 0.15s exit delay, tick-adjusted)",
+    "A different effective duration if bounce timing behaves differently when repeatedly re-marking the same single target"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{tt|{{fd|1.087}} seconds total|Effective time due to game ticks}} after the start of the cast with 4 bounces"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "At the start of the fight, cast R (Highlander) immediately to get its 7s bonus attack speed window running as early as possible (85s cooldown means only one use in the fight).",
+   "Immediately follow with E (Wuju Style) to arm basic attacks with bonus true damage on-hit for the next 5s.",
+   "Cast Q (Alpha Strike) as soon as both buffs are active so its marks land while Wuju Style and Highlander are up (each Alpha Strike hit also refreshes their current durations).",
+   "Between ability casts, basic-attack continuously: this builds Double Strike stacks toward the empowered second strike, applies Wuju Style's true damage on-hit, and reduces Alpha Strike's current cooldown by 1s per hit.",
+   "Recast Q (Alpha Strike) every time it comes off cooldown for the rest of the fight, since attacking accelerates its cooldown.",
+   "Recast E (Wuju Style) as soon as its 14s cooldown is up (around t=14s) to relight the true-damage on-hit window for the fight's final second.",
+   "Never cast W (Meditate): it interrupts autoattacking and its heal/damage-reduction have no value against a dummy that deals no damage."
+  ],
+  "questions": [
+   "Should R (Highlander) be cast at t=0, or delayed slightly to align its 7s window with a burst of Q casts / on-hit procs for maximum overlap?",
+   "Does casting E or Q while auto-attacking interrupt the attack windup (does 'cast time = none' still consume a global action lockout that resets the attack timer), affecting how tightly they can be weaved between autoattacks?",
+   "With only one target available, does Alpha Strike still take the full multi-bounce travel time (0.2s per mark) when re-marking the same target, or does it resolve faster/slower than the wiki's assumed 4-distinct-target scenario?",
+   "Is there any in-game confirmation of whether Wuju Style's true damage rider applies on each of Alpha Strike's on-hit detonations against a single target, since this materially changes whether Q+E together are counted once or up to four times per Q cast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,143 @@
+{
+ "name": "Overload / Overload 2 / Overload 3 / Overload 4",
+ "cooldown": {
+  "values": [
+   5,
+   5,
+   5,
+   5,
+   5
+  ],
+  "quote": "5"
+ },
+ "cost": {
+  "values": [
+   40,
+   38,
+   36,
+   34,
+   32
+  ],
+  "quote": "{{ap|40 to 32}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    75,
+    95,
+    115,
+    135,
+    155
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.55
+    },
+    {
+     "stat": "bonusMana",
+     "coef": 0.02
+    }
+   ],
+   "quote": "{{ap|75 to 155}} {{as|(+ 55% AP)}} {{as|(+ 2% '''bonus''' mana)}}",
+   "bin": [
+    "RyzeQWrapper.BaseDamage",
+    "RyzeQWrapper#QDamageCalc"
+   ]
+  },
+  {
+   "id": "q_flux_amp",
+   "meaning": "Spell Flux Bonus damage amplification on Overload",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "terms": [],
+   "quote": "''Overload'' deals {{pp|type=[[File:Realm Warp.png|20px|border]] ''Realm Warp's'' Rank|key=%|25 to 100 for 4|0 to 3}} {{ccs|increased damage|magic}}",
+   "bin": [
+    "RyzeQWrapper.DamageAmp"
+   ],
+   "binNote": "Wiki text describes this amplifier as keyed to Realm Warp's rank (0-3) with values 25/50/75/100%, but the bin's RyzeQWrapper.DamageAmp array is indexed by Overload's own rank (1-5) with values 40/50/60/70/80%. The two sources disagree on both the indexing variable and the numbers; recorded the bin's per-Q-rank values here since that is what the data file actually keys on for this spell slot."
+  },
+  {
+   "id": "q_rune_cap",
+   "meaning": "Maximum Overload Rune stacks that can be held/consumed",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "refreshing on subsequent casts and stacking up to 2 times",
+   "bin": [
+    "RyzeQWrapper.MaximumRunes"
+   ]
+  },
+  {
+   "id": "q_rune_duration",
+   "meaning": "Duration an Overload Rune stack lasts before expiring",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "charge a [[File:Overload 3.png|20px|link=]] ''Rune'' {{tip|stack}} for 4 seconds, refreshing on subsequent casts",
+   "bin": [
+    "RyzeQWrapper.RuneDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Casting Ryze's other basic abilities (W/E) resets Overload's cooldown and grants a Rune stack, up to 2, letting Overload be recast much more often than its own cooldown suggests.",
+   "quote": "'''Ryze's''' other {{tip|ability|basic ability}} casts reset ''Overload's'' {{sti|cooldown}} and charge a [[File:Overload 3.png|20px|link=]] ''Rune'' {{tip|stack}} for 4 seconds, refreshing on subsequent casts and stacking up to 2 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting Overload consumes all currently held Rune stacks at once.",
+   "quote": "deals {{as|magic damage}} to the first enemy hit and consumes all [[File:Overload 4.png|20px|link=]] ''Rune'' stacks",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Ryze consumed the maximum 2 stacks, he also gains bonus movement speed, which does not itself change damage output.",
+   "quote": "If '''Ryze''' consumed 2 stacks, he gains {{sti|ms|{{as|'''bonus''' movement speed}}}} for 2 seconds.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "When enemies are affected by Spell Flux, Overload deals increased damage and spreads to nearby Fluxed enemies, applying spell damage to the primary target and area damage to secondary targets.",
+   "quote": "Applies {{tip|spell damage}} to the primary target and {{tip|area damage}} to secondary targets affected by {{ai|Spell Flux|Ryze|Flux}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Overload can be buffered up to 0.5 seconds before it comes off cooldown, effectively letting it be queued ahead of time.",
+   "quote": "''Overload'' can be buffered {{fd|0.5}} seconds before it comes off cooldown.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "RyzeQWrapper.MovementSpeedAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "RyzeQWrapper.MovementSpeedDuration",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

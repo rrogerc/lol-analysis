@@ -1,0 +1,535 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "CaitlynPassive",
+    "key": "Characters/Caitlyn/Spells/CaitlynPassiveAbility/CaitlynPassive",
+    "dataValues": {
+     "CriticalStrikeScaling": 1,
+     "TowerCap": 2.5,
+     "AttacksPerHeadshot": 5,
+     "BrushStackBonus": 1
+    },
+    "calcs": {
+     "HeadShotBonusDamage": {
+      "expr": "(byLevelL[0.6/0.6/0.6/0.6/0.6/0.6/0.8/0.8/0.8/0.8/0.8/0.8/1/1/1/1/1/1] + ((CriticalStrikeScaling=1)xcritChance)*(1xcritDamage + -1))xad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CriticalStrikeScaling"
+      ]
+     },
+     "HeadShotMinionBonusDamage": {
+      "expr": "(1 + (-1)*(byLevelL[0.5/0.5/0.5/0.5/0.5/0.5/0.7/0.7/0.7/0.7/0.7/0.7/0.9/0.9/0.9/0.9/0.9/0.9]))xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "BrushAttackTotal": {
+      "expr": "1 + BrushStackBonus=1",
+      "flat": 2,
+      "terms": [],
+      "refs": [
+       "BrushStackBonus"
+      ]
+     },
+     "{36ebd3cf}": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "{42962485}": {
+      "expr": "<{f3cbe7b2}> + <{f3cbe7b2}>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {f3cbe7b2}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "CaitlynQ",
+    "key": "Characters/Caitlyn/Spells/CaitlynQAbility/CaitlynQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      55,
+      60,
+      65,
+      70,
+      75
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       90,
+       130,
+       170,
+       210
+      ]
+     },
+     "SecondaryMult": 0.6,
+     "tADRatio": {
+      "axis": "rank",
+      "v": [
+       1.25,
+       1.45,
+       1.65,
+       1.85,
+       2.05
+      ]
+     }
+    },
+    "calcs": {
+     "InitialDamage": {
+      "expr": "BaseDamage=[50/90/130/170/210] + (tADRatio=[1.25/1.45/1.65/1.85/2.05])xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        90,
+        130,
+        170,
+        210
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          1.25,
+          1.45,
+          1.65,
+          1.85,
+          2.05
+         ]
+        }
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "tADRatio"
+      ]
+     },
+     "SecondaryDamage": {
+      "expr": "InitialDamage * SecondaryMult=0.6",
+      "modifies": "InitialDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        54,
+        78,
+        102,
+        126
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.75,
+          0.87,
+          0.99,
+          1.11,
+          1.23
+         ]
+        }
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "SecondaryMult",
+       "tADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "CaitlynW",
+    "key": "Characters/Caitlyn/Spells/CaitlynWAbility/CaitlynW",
+    "cooldown": 0.5,
+    "cost": 20,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       35,
+       80,
+       125,
+       170,
+       215
+      ]
+     },
+     "ADRatio": 0.3,
+     "TrapDuration": {
+      "axis": "rank",
+      "v": [
+       30,
+       35,
+       40,
+       45,
+       50
+      ]
+     },
+     "MaximumTraps": {
+      "axis": "rank",
+      "v": [
+       3,
+       3,
+       4,
+       4,
+       5
+      ]
+     },
+     "RootDuration": 1.5,
+     "MaximumCharges": {
+      "axis": "rank",
+      "v": [
+       3,
+       3,
+       4,
+       4,
+       5
+      ]
+     }
+    },
+    "calcs": {
+     "HeadShotBonusDamage": {
+      "expr": "BaseDamage=[35/80/125/170/215] + (ADRatio=0.3)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        35,
+        80,
+        125,
+        170,
+        215
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.3,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "CaitlynE",
+    "key": "Characters/Caitlyn/Spells/CaitlynEAbility/CaitlynE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      14,
+      12,
+      10,
+      8
+     ]
+    },
+    "cost": 75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       80,
+       130,
+       180,
+       230,
+       280
+      ]
+     },
+     "SlowDuration": 1,
+     "SlowAmount": 50
+    },
+    "calcs": {
+     "NetDamage": {
+      "expr": "Damage=[80/130/180/230/280] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        130,
+        180,
+        230,
+        280
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "CaitlynR",
+    "key": "Characters/Caitlyn/Spells/CaitlynRAbility/CaitlynR",
+    "cooldown": 90,
+    "cost": 100,
+    "dataValues": {
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       300,
+       475,
+       650
+      ]
+     },
+     "RADRatio": 1,
+     "CriticalStrikeModifier": 0.3
+    },
+    "calcs": {
+     "RTotalDamage": {
+      "expr": "(RBaseDamage=[300/475/650] + (RADRatio=1)xbonus ad) * 1 + ((CriticalStrikeModifier=0.3)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "CriticalStrikeModifier",
+       "RADRatio",
+       "RBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "CaitlynQ",
+  "W": "CaitlynW",
+  "E": "CaitlynE",
+  "R": "CaitlynR",
+  "P": "CaitlynPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 315,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.48,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.12291667
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Caitlyn",
+  "name": "Caitlyn",
+  "partype": "Mana",
+  "passive": "Headshot",
+  "spells": [
+   {
+    "id": "CaitlynQ",
+    "name": "Piltover Peacemaker",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ]
+   },
+   {
+    "id": "CaitlynW",
+    "name": "Yordle Snap Trap",
+    "maxrank": 5,
+    "cooldown": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "cost": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ]
+   },
+   {
+    "id": "CaitlynE",
+    "name": "90 Caliber Net",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "cost": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ]
+   },
+   {
+    "id": "CaitlynR",
+    "name": "Ace in the Hole",
+    "maxrank": 3,
+    "cooldown": [
+     90,
+     90,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Headshot": {
+    "damagetype": "Physical",
+    "spelleffects": "Basic",
+    "spellshield": "False",
+    "projectile": "True",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Piltover Peacemaker": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Yordle Snap Trap": {
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana + 1 Charge"
+   }
+  },
+  "E": {
+   "90 Caliber Net": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Ace in the Hole": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

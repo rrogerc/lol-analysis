@@ -1,0 +1,763 @@
+{
+ "champion": "sivir",
+ "abilities": {
+  "P": {
+   "name": "Fleet of Foot",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "decay duration of bonus move speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "decaying over {{fd|1.5}} seconds",
+     "bin": [
+      "SivirPassive.HasteDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks and damaging ability hits against enemy champions grant Sivir bonus move speed that refreshes on subsequent hits.",
+     "quote": "'''Sivir's''' {{tip|basic attacks}} {{tip|on-attack}} and {{tip|ability}} hits against enemy {{tip|champions}} grant her {{sti|ms|{{as|{{pp|changedisplay=true|55 to 75 for 5|1;6;11;16;18}} '''bonus''' movement speed}}}} decaying over {{fd|1.5}} seconds, refreshing on subsequent hits.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Fleet of Foot triggers even if the attack is dodged, blocked, misses due to blind, or is negated by a spell shield.",
+     "quote": "''Fleet of Foot'' will trigger even if the attack is {{tip|dodge|dodged}}, {{tip|block|blocked}} or misses due to {{tip|blind}} or if the ability is negated by a {{tip|spell shield}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Boomerang Blade",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     60,
+     65,
+     70,
+     75
+    ],
+    "quote": "{{ap|55 to 75}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{as|{{pp|type='''bonus''' attack speed|round=3|0.25;0.231;0.198;0.165;0.132;0.1|key1=%|0;15.2;41.6;68;94.4;120|formula=0.25*(1-(0.5 per 100% '''bonus''' attack speed)). ''This is capped at 60% reduction at 120% '''bonus''' attack speed.''}}|attack speed}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      85,
+      110,
+      135,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.7
+      },
+      {
+       "stat": "ap",
+       "coef": 0.6
+      },
+      {
+       "stat": "critChance",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|60 to 160}} {{as|(+ 70% '''bonus''' AD)}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "SivirQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Minimum Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      24,
+      34,
+      44,
+      54,
+      64
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.28
+      },
+      {
+       "stat": "ap",
+       "coef": 0.24
+      }
+     ],
+     "quote": "{{ap|60*0.4 to 160*0.4}} {{as|(+ {{ap|70*0.4}}% '''bonus''' AD)}} {{as|(+ 24% AP)}}",
+     "bin": [
+      "SivirQ.FallOffMinimum",
+      "SivirQ.BaseDamage",
+      "SivirQ.ADRatio",
+      "SivirQ.APRatio"
+     ],
+     "binNote": "Derived value = BaseDamage/ADRatio/APRatio all x FallOffMinimum(0.4); no dedicated calculation row exists."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Damage is reduced by 15% per non-champion hit, capped at 40% reduction (minimum 60% damage) at 4 enemies hit, and this modifier resets when the blade changes direction (returns).",
+     "quote": "Boomerang Blade's damage is reduced by {{pp|key=%|changedisplay=true|type=non-champions hit|0 to 60 for 5|0 to 4|formula=100%-(15%*Nº of non-champions hit). This is capped at 40% damage at 4 enemies hit.}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Upon reaching maximum range the blade returns to Sivir, resetting the damage falloff and dealing the same damage again to enemies on the way back, so a champion can be hit twice for full outgoing and full returning damage.",
+     "quote": "Upon reaching maximum range, the crossblade returns to her, resetting the damage modifier and dealing the same damage to enemies on its way back.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each enemy can only be hit once per pass (outgoing or returning), so a stationary dummy takes exactly two instances total.",
+     "quote": "Enemies can be hit only once per pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cast time is reduced by bonus attack speed, down to a floor of 0.1 (capped at 60% reduction at 120% bonus attack speed), which shortens the delay before damage lands but not a cooldown.",
+     "quote": "capped at 60% reduction at 120% '''bonus''' attack speed",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield only blocks one instance of this ability's damage.",
+     "quote": "{{tip|Spell shield}} only blocks one instance of damage.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SivirQ.FallOffRatio",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SivirQ.QAttackSpeedCastReductionPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SivirQ.QBaseCastTime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SivirQ.QAttackSpeedCastReductionMax",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SivirQ.CritRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ricochet",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "SivirW.RicochetAttackSpeed"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bounce Damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.4,
+        0.425,
+        0.45,
+        0.475,
+        0.5
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|40 to 50}}% AD}}",
+     "bin": [
+      "SivirW#BounceDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Bounce Critical Damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.4,
+        0.425,
+        0.45,
+        0.475,
+        0.5
+       ]
+      },
+      {
+       "stat": "critDamage",
+       "coef": 1
+      }
+     ],
+     "quote": "{{as|{{ap|40*{{ccd|Sivir|crit_base}}/100 to 50*{{ccd|Sivir|crit_base}}/100}}% AD}}",
+     "bin": [
+      "SivirW#BounceDamage"
+     ],
+     "binNote": "Sheet's BounceDamage calc has no explicit crit term; wiki states bounces crit for the champion's crit damage multiplier, applied on top of the same AD ratio."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Minion Bounce Damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.26,
+        0.27625,
+        0.2925,
+        0.30875,
+        0.325
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|40*0.65 to 50*0.65}}% AD}}",
+     "bin": [
+      "SivirW.MinionDamageMod",
+      "SivirW#BounceDamage"
+     ],
+     "binNote": "No bin row states the product directly; this value is MinionDamageMod=0.65 multiplied by BounceADRatio ([0.4..0.5]) from SivirW#BounceDamage, giving 0.26 to 0.325 as the wiki states."
+    },
+    {
+     "id": "w_5",
+     "meaning": "Minion Bounce Critical Damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.26,
+        0.27625,
+        0.2925,
+        0.30875,
+        0.325
+       ]
+      },
+      {
+       "stat": "critDamage",
+       "coef": 1
+      }
+     ],
+     "quote": "{{as|{{ap|(40*0.65)*{{ccd|Sivir|crit_base}}/100 to (50*0.65)*{{ccd|Sivir|crit_base}}/100}}% AD}}",
+     "bin": [
+      "SivirW.MinionDamageMod",
+      "SivirW#BounceDamage"
+     ],
+     "binNote": "Minion crit variant not directly in a bin row; derived as MinionDamageMod=0.65 times BounceADRatio times crit damage multiplier, not relevant to a dummy fight (no minions)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks bounce to additional nearby enemies while the buff is active, dealing physical damage to them.",
+     "quote": "causing her basic attacks to bounce to additional surrounding enemies, dealing {{as|physical damage}} to them",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the triggering attack crits, the bounces also deal critical damage.",
+     "quote": "If the triggering attack critically strikes, the bounces will do so as well",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bounces occur only up to 8 times total per empowered attack sequence.",
+     "quote": "Bounces occur only up to 8 times and can target each enemy up to one additional time per empowered attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ricochet resets Sivir's basic attack timer only if the buff was not already active; refreshing the buff grants no reset.",
+     "quote": "Sivir's attack timer will only reset from casting Ricochet if the ability's buff was not already active on her. Refreshing the buff will not grant an attack reset.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ricochet deals reduced damage against minions and executes them below a health threshold.",
+     "quote": "Ricochet deals 65% damage against minions and executes them if they would be left below {{sti|{{as|15 health}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The buff lasts 4 seconds during which basic attacks are empowered.",
+     "quote": "empowers her crossblade for the next 4 seconds",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SivirW.BounceAttacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SivirW.BuffDuration",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SivirW.MaxBounces",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Spell Shield",
+   "cooldown": {
+    "values": [
+     24,
+     22.5,
+     21,
+     19.5,
+     18
+    ],
+    "quote": "{{ap|24 to 18}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8
+       ]
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{as|{{ap|60 to 80}}% AD}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "SivirE#TotalHeal"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Spell shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "gains a {{tip|spell shield}} for {{fd|1.5}} seconds",
+     "bin": [
+      "SivirE.SpellShieldDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "delay before heal/haste activates after blocking",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "activates ''{{ai|Fleet of Foot|Sivir}}'' after {{fd|0.25}} seconds",
+     "bin": [],
+     "binNote": "No SivirE data value matches 0.25s; the sheet's SivirE has no such field (this looks like it may reuse SivirQ.QBaseCastTime=0.25 by coincidence, but no E-slot row corresponds to it)."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spell Shield blocks the next hostile effect and heals Sivir plus grants a move speed buff only if it successfully blocks something.",
+     "quote": "Upon successfully blocking a hostile effect, she {{tip|heals}} herself and activates ''{{ai|Fleet of Foot|Sivir}}''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield can still block delayed area-of-effect damage from an ability already applied to Sivir before the shield was up.",
+     "quote": "''Spell Shield'' will still block abilities that have already been applied to '''Sivir''' if the delayed effects of that ability is [[area of effect]]",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SivirE.HealAPRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "On the Hunt",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Buff Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      8,
+      10,
+      12
+     ],
+     "terms": [],
+     "quote": "{{ap|8 to 12}} seconds",
+     "bin": [
+      "SivirR.UltDuration"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 30}}%",
+     "bin": [],
+     "binNote": "wiki gives 20/25/30% for the 3 ranks of R; bin has no single matching field - MaxMS [0.2/0.25/0.3] matches these numbers exactly but MinMS [0.3/0.35/0.4] does not, so the bin's naming is ambiguous/inconsistent with the wiki value; regardless this is movement speed, pure utility not affecting either fight"
+    },
+    {
+     "id": "r_3",
+     "meaning": "basic attacks reduce basic ability current cooldowns",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduce her basic abilities' {{sti|'''current''' cooldowns}} by {{fd|0.5}} seconds each",
+     "bin": [
+      "SivirR.AttackCooldownRefund"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "takedown refresh window",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "within 3 seconds of damaging them",
+     "bin": [
+      "SivirR.DamagedMarkerDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While active, Sivir's basic attacks reduce her basic abilities' current cooldowns by 0.5 seconds each.",
+     "quote": "'''Sivir's''' basic attacks {{tip|on-attack}} reduce her basic abilities' {{sti|'''current''' cooldowns}} by {{fd|0.5}} seconds each.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sivir can refresh the duration of On the Hunt on a takedown within 3 seconds of damaging the enemy.",
+     "quote": "'''Sivir''' can refresh the duration of her ''On the Hunt'' buff whenever she scores a {{tip|takedown}} against an enemy champion within 3 seconds of damaging them.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SivirR.HuntAttackSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SivirR.MaxMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "SivirR.MinMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "SivirR.MaxMSDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SivirR.AuraRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SivirR.BuffExtension",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Boomerang Blade deals its physical damage on a short cast-time delay, on cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The blade travels out and, if it reaches max range, returns through the same lane, potentially hitting a single stationary target twice (outgoing + returning pass) each cast."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q's damage is partially scaled by crit chance/damage (CritRatio 0.4); W's bounce damage crits for full crit damage if the triggering attack crits."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's cast time shrinks with bonus attack speed, floored at a max 60% reduction, shortening time-to-damage but not cooldown."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ricochet arms Sivir's next basic attacks (bin: up to 3) for the buff duration to bounce and deal bonus physical damage."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Each empowered basic attack produces bounce-damage instances as an on-hit rider."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Ricochet grants bonus attack speed for 4 seconds."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "W"
+   ],
+   "note": "Casting Ricochet resets Sivir's basic attack timer, but only if the buff was not already active (refreshing it does not reset)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "While On the Hunt is active, each basic attack reduces Sivir's basic ability (Q/W/E) current cooldowns by 0.5s."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs (Q 55-75, W 60, R 100) can meaningfully constrain how often abilities are recast within a 15s window depending on mana pool."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spell Shield only blocks a hostile ability/effect to heal and buff Sivir; irrelevant in the damage fight (dummy never casts), relevant only in the survival fight if the attacking enemy has a blockable ability."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage- and survival-relevant mechanics (returning-blade double hit, partial crit scaling, empowered-attack bounces, attack-speed-reduced cast time, attack reset, cooldown refund on attack, conditional block-heal) map onto existing primitives; no unique logic outside the closed list is required."
+ },
+ "unsettled": [
+  {
+   "question": "Against a single dummy target, does Ricochet's bounce ever land on that same target (an 'additional' bounce hit), or does bounce damage require a second distinct enemy and therefore never trigger in a 1-target dummy fight?",
+   "options": [
+    "Bounces can retarget the same lone enemy up to once per empowered attack, so each empowered auto deals a normal-hit instance plus one bounce-damage instance on the dummy",
+    "Bounce damage requires nearby additional enemies and never procs against a single dummy, so Ricochet's only damage-fight value is its own basic-attack no bonus and the attack-speed buff/attack reset"
+   ],
+   "impact": "high",
+   "quotes": [
+    "causing her basic attacks to bounce to additional surrounding enemies, dealing {{as|physical damage}} to them",
+    "Bounces occur only up to 8 times and can target each enemy up to one additional time per empowered attack."
+   ]
+  },
+  {
+   "question": "How many of Sivir's attacks during Ricochet's 4-second window are actually empowered: the bin field SivirW.BounceAttacks=3 caps it at 3 attacks, but the wiki description only mentions the 4-second duration with no explicit attack-count cap.",
+   "options": [
+    "Only the first 3 basic attacks landed while the buff is up gain the bounce effect (bin value is live)",
+    "Every basic attack landed within the full 4-second duration is empowered, with no 3-attack cap (BounceAttacks is stale/unused)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "SivirW.BounceAttacks = 3",
+    "'''Sivir''' empowers her crossblade for the next 4 seconds"
+   ]
+  },
+  {
+   "question": "For Boomerang Blade's return pass, should the dummy be assumed positioned so the blade travels to max range and returns through it (hitting twice per cast), or positioned such that it only ever takes the single outgoing hit?",
+   "options": [
+    "Assume max-range cast so the target is hit by both the outgoing and returning missile each Q cast (2x damage instances)",
+    "Assume a closer engagement range where the blade does not return through the target, so only 1 damage instance per Q cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon reaching maximum range, the crossblade returns to her, resetting the damage modifier and dealing the same damage to enemies on its way back.",
+    "Enemies can be hit only once per pass."
+   ]
+  },
+  {
+   "question": "The bin's SivirW#BounceDamage calculation shows no crit term, while the wiki explicitly states bounce damage crits (for full crit damage multiplier) when the triggering attack crits. Which is authoritative for whether bounce damage should be crit-scaled in the simulator?",
+   "options": [
+    "Trust the wiki: apply the champion's full crit damage multiplier to bounce damage whenever the triggering attack crits",
+    "Trust the bin's calculation row literally: bounce damage never benefits from crit, regardless of the triggering attack"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If the triggering attack {{tip|critical strike|critically strikes}}, the bounces will do so as well for {{as|{{critical damage|{{ccd|Sivir|crit_base}}|100}}|critical damage}} damage.",
+    "SivirW#BounceDamage = (BounceADRatio=[0.4/0.425/0.45/0.475/0.5])xad"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with W (Ricochet) to gain bonus attack speed and empower upcoming basic attacks with bounce damage, and to reset the basic attack timer since the buff was not previously active.",
+   "Weave basic attacks continuously between ability casts, prioritizing landing them while Ricochet's empowered-attack window is active.",
+   "Cast Q (Boomerang Blade) as soon as it is off cooldown, aiming for max range so the blade both travels out and returns through the target for two damage instances per cast.",
+   "Cast R (On the Hunt) once available to start converting subsequent basic attacks into current-cooldown reduction on Q and W, accelerating their recast cadence for the remainder of the fight.",
+   "Recast W every time its (possibly reduced) cooldown is up to refresh the attack-speed buff and re-arm the bounce-damage empowered attacks, continuing to auto-attack in between.",
+   "Repeat Q on cooldown throughout the 15s window, interleaved with autos and W recasts, spending mana on Q/W/R in that priority as it becomes available."
+  ],
+  "questions": [
+   "At the simulated level/build (mana pool, attack speed, crit chance), can Sivir actually sustain casting Q, W and R at their listed cooldowns/costs for the full 15s without running out of mana, or does resource-budget force skipping a cast?",
+   "Should R be cast as early as possible purely for its cooldown-refund utility on Q/W despite dealing no direct damage itself and costing 100 mana, or is it better held/omitted in a pure single-target damage fight?",
+   "Is the dummy engaged at Q's maximum range (to get the returning-blade double hit) the standard assumption for this simulator, or is a fixed melee/short range used that would only ever produce a single Q hit?",
+   "Given the single-target ambiguity around Ricochet's bounce, should the rotation assume bounce damage contributes on every empowered auto-attack, or should it be treated as producing no extra damage against the lone dummy?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

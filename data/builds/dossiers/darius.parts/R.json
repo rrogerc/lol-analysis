@@ -1,0 +1,118 @@
+{
+ "name": "Noxian Guillotine",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   0
+  ],
+  "quote": "{{ap|100|100|0}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.3667,
+  "quote": "{{fd|0.3667}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "True Damage",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    125,
+    250,
+    375
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.75
+    }
+   ],
+   "quote": "{{ap|125 to 375}} {{as|(+ 75% '''bonus''' AD)}}",
+   "bin": [
+    "DariusExecute#Damage",
+    "DariusExecute.RBaseDamage"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Bonus Damage Per Stack",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    25,
+    50,
+    75
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|125*0.2 to 375*0.2}} {{as|(+ 15% '''bonus''' AD)}}",
+   "bin": [
+    "DariusExecute.RDamagePercentPerHemoStack",
+    "DariusExecute#Damage",
+    "DariusExecute.RBaseDamage"
+   ],
+   "binNote": "No bin row carries 25/50/75 or 0.15 directly: this is the wiki's precomputed per-stack contribution, equal to DariusExecute#Damage (RBaseDamage + 0.75x bonus AD) multiplied by RDamagePercentPerHemoStack=0.2 (i.e. 0.2*125=25, 0.2*250=50, 0.2*375=75, and 0.2*0.75=0.15 bonus AD coef). The bin stores the 20%-per-stack multiplier once (RDamagePercentPerHemoStack) rather than as five precomputed flat/ratio numbers; r_1's damage is scaled by (1 + 0.2*stacks, capped at 1.0) rather than this row being added as a separate instance."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The ability's cooldown starts on cast, not on hit.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage is true damage, increased 20% per Hemorrhage stack on the target, capped at 100% bonus at 5 stacks.",
+   "quote": "increased by {{pp|type=target's [[File:Hemorrhage.png|20px]] Hemorrhage stacks|key=%|0 to 100 by 20|0 to 5|formula=20% for every Hemorrhage stack the target has, capped at 100% at 5 stacks}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Noxian Guillotine applies Hemorrhage (its stacking bleed debuff) after the damage lands, so the hit itself is not affected by the stack it applies.",
+   "quote": "''Noxian Guillotine'' applies {{ai|Hemorrhage|Darius}} after the damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Darius leaps to the target to deliver the strike; the leap does not change that the target is still hit.",
+   "quote": "'''Darius''' will only leap towards the target if it is at range, or leap backwards if it is very close.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the target dies shortly after being hit, Darius can recast the ability within 20 seconds at no cost, and this refreshes on further successful executions.",
+   "quote": "He can also recast the ability within 20 seconds at no cost, which refreshes on further successful executions.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At max rank (rank 3), Noxian Guillotine has no mana cost and no recast timer restriction.",
+   "quote": "At rank 3, ''Noxian Guillotine'' has no {{sti|{{as|mana cost}}}} and recast timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Darius cannot cast Decimate or Apprehend for a short window after Noxian Guillotine's cast time.",
+   "quote": "'''''Darius''' is unable to cast {{ai|Decimate|Darius}} or {{ai|Apprehend|Darius}} for {{fd|0.25}} seconds after Noxian Guillotine's cast time.''",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "DariusExecute.RRecastDuration",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

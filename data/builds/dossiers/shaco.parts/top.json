@@ -1,0 +1,171 @@
+{
+ "champion": "shaco",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Backstab adds bonus physical damage to basic attacks that land from behind, folded into the same attack instance."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Backstab damage is affected by crit modifiers; Deceive's post-invis attack crits for a fixed 160% (200% if a real crit was rolled), overriding the normal crit multiplier."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deceive arms Shaco's next basic attack (within 0.25s of breaking stealth) with bonus physical damage added to that attack's damage instance."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deceive's invisibility + blink is the natural opener that sets up the Backstab-empowered first attack; decides how the 15s fight begins."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "P",
+    "Q",
+    "E"
+   ],
+   "note": "Backstab and its Q/E riders require attacking the target from behind; a stationary dummy fight must assume whether/for-how-long 'behind' holds."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Jack in the Box's initial cast, Two-Shiv Poison's dagger throw, and Hallucinate's clone-death explosion each deal damage on a fixed trigger."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "A sprung Jack in the Box (and each of R's three mini-boxes) auto-fires magic damage every 0.5s for its active window, i.e. a ticking zone."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "The trap box, and Hallucinate's clone plus its three deployed mini-boxes, are separate entities dealing part of the total damage."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "E"
+   ],
+   "note": "Two-Shiv Poison's dagger (and its Backstab bonus) deals 1.5x damage if the target is below 30% max health."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "The Backstab bonus rider on Two-Shiv Poison only applies while hitting from behind, layering with the execute condition."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (40/70-50/75/100) across four abilities on a base mana pool can meaningfully cap casts inside a 15s fight."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hallucinate is a cast (vanish+clone) with a separate recast (reposition clone) and a separately-timed explosion/mini-box payload on clone death or expiry."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deceive.CDRefund=2.5 in the bin suggests a cooldown refund, condition and applicability to a dummy kill undocumented on the wiki."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant part of Shaco's kit (backstab rider, Deceive's empowered/crit attack, Jack in the Box and Hallucinate's mini-boxes as ticking pets, Two-Shiv's execute) maps onto existing primitives. The only friction is real-world doubt (does backstab/positioning persist, does the clone survive to explode) rather than a mechanic the primitive list cannot express."
+ },
+ "unsettled": [
+  {
+   "question": "Does Hallucinate's clone (and its explosion + 3 mini-boxes) ever pay off within the 15s damage fight, given the clone lives 18s and a stationary, non-retaliating dummy will not kill it early?",
+   "options": [
+    "Assume the clone survives its full 18s and never explodes within the 15s window, so R contributes only whatever the clone's basic attacks (if any) deal, not the explosion/mini-box damage",
+    "Assume the simulator force-expires or force-kills the clone during the fight window so the explosion and mini-boxes always resolve and are counted",
+    "Exclude R from the damage rotation entirely as not realistically payoff-positive in a 15s single-target dummy fight"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does Hallucinate's clone auto-attack the dummy during its lifetime (per HallucinateFull.CloneAADamagePercent), functioning as a pet contributing basic-attack damage, or is that value inapplicable outside real combat/player control against a dummy?",
+   "options": [
+    "Clone auto-attacks the dummy like a controllable pet, dealing 60% of Shaco's basic attack damage per hit",
+    "Clone does not auto-attack a stationary dummy in this fight construct (matches the bin annotation 'not-in-a-dummy-fight')"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Is the dummy treated as being attacked 'from behind' for the whole fight (so Backstab and its Q/E riders are always active), or only for the single attack immediately following Deceive's blink?",
+   "options": [
+    "Assume permanent backstab positioning for all attacks/E casts throughout the fight (maximizes damage, simplest assumption)",
+    "Assume backstab only applies to the one attack empowered by Deceive right after each Q cast, with normal-facing attacks/E casts the rest of the time"
+   ],
+   "impact": "high"
+  },
+  {
+   "question": "Does Jack in the Box actually spring and start ticking against a stationary target dummy standing in melee range, given the wiki says it springs 'upon enemy contact,' or does it require the dummy to move onto it?",
+   "options": [
+    "Box springs as soon as Shaco or the dummy is within range/contact after the 2s arm time, so W reliably contributes dot damage",
+    "Box only springs on genuine movement-based contact and may never trigger against a truly stationary dummy, so W's damage should be counted as unreliable or zero"
+   ],
+   "impact": "medium"
+  },
+  {
+   "question": "For R's single-target mini-box damage (rank 2 value), is the correct base 50 (matching bin HallucinateFull.STBaseDamage=[25/50/75] and the wiki's own arithmetic reading of '{{ap|25 to 75}}' over 3 ranks) or 75 (as recorded in the R ability part's r_3/r_6 base array [25,75,75])?",
+   "options": [
+    "Use 25/50/75 (bin array and correct arithmetic expansion of the wiki template)",
+    "Use 25/75/75 as currently recorded in the finished R ability JSON"
+   ],
+   "impact": "medium"
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Deceive) to blink behind the dummy and go invisible, setting up a from-behind position.",
+   "Land the Deceive-empowered basic attack immediately as invisibility breaks, which benefits from Q's bonus damage, Backstab's bonus damage, and the guaranteed 160%/200% crit modifier.",
+   "Cast E (Two-Shiv Poison) on cooldown (~every 8s) throughout the fight for its magic damage plus, while positioned from behind, its Backstab bonus.",
+   "Cast W (Jack in the Box) on cooldown (~every 15s) at the dummy's location to add its AoE/single-target tick damage once armed and sprung.",
+   "Fill all remaining time between ability casts with basic attacks against the dummy, maintaining Backstab positioning if assumed to persist.",
+   "Re-cast Q again once its (post-effect) cooldown is up to refresh the empowered-attack/backstab-crit window and continue the loop.",
+   "Treat R (Hallucinate) as optional/low-priority given its long cooldown (80-100s) and clone lifetime (18s) exceeding the fight duration; cast it only if the sim counts clone auto-attacks or forces the explosion to resolve."
+  ],
+  "questions": [
+   "Should R be included in the max-damage rotation for a single 15s dummy fight at all, or is it strictly worse than spending the cast time on Q/E/W and auto-attacks?",
+   "Does the simulator model 'attacking from behind' as a toggle the player can hold indefinitely against a stationary dummy, or does it need to be re-earned (e.g. only right after a Deceive blink)?",
+   "Is Deceive's cooldown-refund (Deceive.CDRefund) triggered by damaging or killing the dummy, and if so does it apply within this fight?",
+   "Does Jack in the Box's spring condition ever trigger in a fight where only Shaco is moving and the dummy stands still?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,215 @@
+{
+ "name": "Breath of Light",
+ "cooldown": {
+  "values": [
+   3,
+   3,
+   3,
+   3,
+   3
+  ],
+  "quote": "3"
+ },
+ "cost": {
+  "values": [
+   30,
+   35,
+   40,
+   45,
+   50
+  ],
+  "resource": "mana {{tt|(+ {{ap|30*0.25 to 50*0.25}} mana per {{fd|0.25}} seconds)|cost for mana per 0.25 seconds starts being paid after 1.25 seconds into the channel.}}",
+  "quote": "{{ap|30 to 50}}"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_2",
+   "meaning": "Magic Damage per Second (primary target)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    45,
+    60,
+    75,
+    90,
+    105
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.55
+    }
+   ],
+   "quote": "{{ap|45 to 105}} {{as|(+ 55% AP)}}",
+   "bin": [
+    "AurelionSolQ#DamagePerSecond"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Secondary Magic Damage per Second (surrounding enemies)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    22.5,
+    30,
+    37.5,
+    45,
+    52.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.275
+    }
+   ],
+   "quote": "{{ap|45*0.5 to 105*0.5}} {{as|(+ {{ap|55*0.5}}% AP)}}",
+   "bin": [
+    "AurelionSolQ#DamagePerSecond",
+    "AurelionSolQ.AOEModifier"
+   ],
+   "binNote": "No single bin row states 22.5/30/37.5/45/52.5 or the 0.275 ratio directly; these are derived by multiplying AurelionSolQ#DamagePerSecond's flat values [45,60,75,90,105] and its ap coefficient 0.55 by AurelionSolQ.AOEModifier=0.5 (the secondary-target/AOE damage multiplier), matching the wiki's stated *0.5 halving."
+  },
+  {
+   "id": "q_7",
+   "meaning": "Bonus Magic Damage (burst on primary target per full second burned)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    60,
+    70,
+    80,
+    90,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    },
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.00031
+    }
+   ],
+   "quote": "{{ap|60 to 100}} {{as|(+ 30% AP)}} {{ai|Cosmic Creator|Aurelion Sol|{{as|(+|hp}} {{as|({{fd|3.1}}% Stardust)}}{{as|%|hp}} {{as|of target's '''maximum''' health)}}|hp}}",
+   "bin": [
+    "AurelionSolQ#BurstDamage",
+    "AurelionSolQ.QMaxHealthTrueDamagePerStack"
+   ],
+   "binNote": "The bonus true-damage-vs-max-health term scales with Aurelion Sol's Stardust buffStacks (AurelionSolQ.QMaxHealthTrueDamagePerStack x buffStacks), a passive-stack-dependent value the wiki table does not fully break out; treated here as a flat per-stack coefficient since the stack count is not a rank number."
+  },
+  {
+   "id": "q_8",
+   "meaning": "Maximum channel duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    3.25,
+    3.25,
+    3.25,
+    3.25,
+    160
+   ],
+   "terms": [],
+   "quote": "{{fd|3.25}} seconds",
+   "bin": [
+    "AurelionSolQ.MaxChannelDuration"
+   ],
+   "binNote": "Wiki states rank 5's channel duration becomes 160 seconds ('description5'), while the bin's MaxChannelDuration array shows 9999 for rank 5; both represent an effectively-uncapped channel, but the literal numbers differ."
+  },
+  {
+   "id": "q_10",
+   "meaning": "Burst trigger interval (bonus damage fires each full second the burn persists)",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "the beam will deal a burst of {{ccs|{{as|'''bonus''' magic damage}}|magic}} for each full second that it burns them",
+   "bin": [
+    "AurelionSolQ.BurstAfter"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The beam continuously ticks damage to the first enemy hit every 0.125 seconds, and deals only 50% damage to other enemies caught in the beam.",
+   "quote": "dealing {{as|magic damage}} to them and surrounding enemies every {{fd|0.125}} seconds. Secondary targets are dealt 50% damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A note contradicts the description, stating the burn timer ticks in 0.2 second intervals with the burst triggering at 5 completed intervals (1 full second) rather than 0.125 second ticks.",
+   "quote": "''Breath of Light's'' burn places a timer on the primary target, which ticks in {{fd|0.2}} second intervals. Thus, at{{ft|5 completed intervals,|1 full second,}}the burst damage is triggered.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The primary-target burn timer resets to zero (losing progress toward the next burst) if the target is not hit again within 1 second of no longer being burned.",
+   "quote": "It falls off and resets to zero if a target is not hit within 1 second of no longer being afflicted by the burn.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The beam and burst damage are separate persistent damage instances (beam is persistent area damage, burst is persistent damage), relevant for on-hit/proc interactions.",
+   "quote": "Applies {{tip|persistent damage}} on the burst and {{tip|persistent area damage}} on the beam.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell Shield only blocks the burst component of the ability, not the continuous beam damage.",
+   "quote": "{{tip|Spell shield}} will only block the burst damage.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Casting/steering Breath of Light can be recast to end it early, and it automatically recasts (ends) at the end of its duration.",
+   "quote": "''Breath of Light'' can be recast within the duration, and does so automatically afterwards.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability's cooldown does not begin until the channel ends.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "AurelionSolQ.AngularDegreesPerSec",
+   "reason": "utility"
+  },
+  {
+   "ref": "AurelionSolQ.BeamWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolQ.ManaCostPerSecond",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "AurelionSolQ.BeamSegments",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "AurelionSolQ.WProcCooldown",
+   "reason": "unknown"
+  },
+  {
+   "ref": "AurelionSolQ.QMassStolen",
+   "reason": "utility"
+  },
+  {
+   "ref": "AurelionSolQ.DistancePerMass",
+   "reason": "utility"
+  },
+  {
+   "ref": "AurelionSolQ.MonsterDamageCap",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

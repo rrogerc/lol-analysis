@@ -1,0 +1,124 @@
+{
+ "champion": "jarvaniv",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Martial Cadence adds bonus physical damage to every basic attack, gated by an internal per-target cooldown that scales by champion level (6s→3s)."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Martial Cadence's bonus damage is 8% of the target's current health, floored at 20 and capped at 400 vs non-champions."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q deals damage on a 0.4s cast, E deals damage on cast with no cast time, R deals damage on impact after a 0.35s leap."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dragon Strike shreds the target's armor by 10-26% for 3 seconds, applied after the initial hit's own damage."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Deployed flag grants an attack-speed aura (equal to the passive %) to Jarvan while near it for the flag's 8s duration, plus Jarvan's own permanent passive attack-speed bonus."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Passive permanent attack speed stacks additively with the deployed flag's aura attack speed (up to double the listed value); multiple flags' auras do not stack with each other."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cataclysm has an initial leap+damage+terrain-creation part and an optional manual recast (after 0.75s) that destroys the terrain; both count as ability activations for on-cast effects."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Golden Aegis deals no damage; it only slows enemies and shields Jarvan, relevant to the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (onhit rider with health-based cap/floor, plain-cast burst damage, armor shred debuff, an attack-speed aura/passive stacking rule, and a recastable ultimate) maps onto existing primitives; nothing requires bespoke logic beyond combining them."
+ },
+ "unsettled": [
+  {
+   "question": "If Dragon Strike is cast more than once during the 15s fight (its cooldown of 6-10s allows this), does the second cast's armor-shred refresh/overwrite the first application, stack additively, or simply reapply the same debuff with no additional effect?",
+   "options": [
+    "Refreshes duration/magnitude to the latest cast's value (no stacking)",
+    "Stacks additively with the prior instance",
+    "Second application is redundant since duration (3s) is shorter than the cooldown and rarely overlaps"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The armor reduction is applied after the damage. The damage dealt does not benefit from it in this case."
+   ]
+  },
+  {
+   "question": "Should the simulator assume Jarvan maintains continuous attack-speed-aura uptime from a deployed Demacian Standard flag throughout the 15s fight, or should uptime be gated realistically by the flag's 8s duration versus its ~10-12s (rank-dependent) recast cooldown, leaving gaps where only the base passive AS applies?",
+   "options": [
+    "Assume 100% uptime (always standing in aura range with a flag active)",
+    "Model actual uptime windows based on E's cooldown vs the flag's 8s duration, leaving gaps between casts",
+    "Assume the flag is only up during the opening cast and never recast within 15s"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Jarvan IV''' gains a total of {{ap|20*2 to 30*2}}% bonus attack speed from ''Demacian Standard'' while near the flag.",
+    "The flag then remains for 8 seconds, granting {{tip|sight}} of its surroundings and providing an {{tip|aura}}"
+   ]
+  },
+  {
+   "question": "Dragon Strike's description says Jarvan can cast any ability during its dash, but it is unclear whether basic attacks can also be issued (and land) during the 0.4s cast + subsequent dash animation, which affects how many total auto-attacks (and thus Martial Cadence procs) fit into the 15s window.",
+   "options": [
+    "Basic attacks queue/land normally during the Q cast and dash with no lost attack time",
+    "The dash briefly blocks attack commands, costing a small amount of attack uptime each Q cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''''Jarvan IV''' can cast any of his [[champion ability|abilities]] during the dash.''"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Dragon Strike (Q) on the dummy for immediate physical damage and to apply the armor shred before other physical damage lands.",
+   "Follow immediately with Cataclysm (R) on the dummy so its large physical-damage burst benefits from the reduced armor from Q.",
+   "Cast Demacian Standard (E) at the dummy's location for magic damage and to gain the attack-speed aura/passive bonus for the rest of the fight.",
+   "Auto-attack continuously between and after ability casts, letting Martial Cadence proc its bonus current-health-based physical damage on its internal cooldown.",
+   "Recast Dragon Strike (Q) every time it comes off cooldown (6-10s by rank) for repeated physical damage and to keep the armor shred active.",
+   "Recast Demacian Standard (E) every time it comes off cooldown (~10-12s) to add more magic damage and refresh the attack-speed aura.",
+   "Do not cast Golden Aegis (W) in the damage-fight rotation, since it deals no damage and only provides a shield/slow relevant to the survival fight.",
+   "Do not manually recast Cataclysm to destroy the terrain unless it is free of downside, since the recast itself adds no damage."
+  ],
+  "questions": [
+   "Is the dummy always within Cataclysm's 650-unit target range and Dragon Strike's dash/aoe range so R and Q can be cast on cooldown without repositioning delay?",
+   "At what champion level and item build is this rotation intended to be evaluated, since Martial Cadence's proc cooldown (3-6s) and Demacian Standard's rank both change how much value auto-attack weaving contributes?",
+   "Should Q be assumed to hit a pre-placed Demacian Standard flag (triggering the dash/knockup with no extra damage) as part of optimal play, or is that interaction irrelevant to the damage fight and should be ignored?",
+   "Is R best opened immediately at the start of the fight (for its long cooldown to begin ticking down early) even before Q's armor shred is up, trading some R damage for more total R casts over a longer window, or is a single 15s fight short enough that R's cooldown never matters and shred-before-R is strictly better?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

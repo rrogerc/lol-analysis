@@ -1,0 +1,110 @@
+{
+ "champion": "leona",
+ "primitives": [
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Shield of Daybreak arms Leona's next basic attack within 6s to deal bonus magic damage (10-110 +0.3 AP) and apply CC; the attack has uncancellable windup and bonus range"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q's empowered attack resets the basic attack timer and does not put the basic attack on cooldown, effectively granting a second reset; E orders an automatic basic attack against the dash target once the dash completes"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q 30-50, W 60, E 40-60, R 100) that can constrain how often abilities are cast inside the 15s window"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "W's detonation, E's sword-flight damage, and R's delayed-impact damage each deal a fixed on-cast/on-delay magic damage instance on cooldown"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Eclipse grants flat pre-mitigation damage reduction (capped at 50% of the instance) plus bonus armor and bonus MR for 3s (extended to 6s if the detonation hits an enemy) — relevant to the survival fight"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "E"
+   ],
+   "note": "Leona is locked out of moving or attacking while Zenith Blade's sword is in flight, though she may still cast other abilities during the dash"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Against a single stationary dummy, Eclipse's detonation will always hit and its guard-duration extension therefore resolves deterministically (always +3s), so no bespoke conditional logic is needed there. Sunlight's bonus damage requires an allied champion to consume the mark; since neither fight type includes allies, this passive simply never fires and needs no primitive or bespoke handling — it is inert in this simulation rather than something requiring special logic."
+ },
+ "unsettled": [
+  {
+   "question": "Does Leona's own basic attacks/abilities ever count as the 'allied champion' consumption needed to trigger Sunlight's bonus magic damage, or is that damage strictly unavailable to her in a 1v1 fight with no allies present?",
+   "options": [
+    "Sunlight's bonus damage can never be dealt in a solo (no-ally) fight, since the wiki explicitly attributes the consuming hit to 'allied champions'' attacks, distinct from Leona herself",
+    "The simulator should assume some proxy trigger (e.g. treat Leona's own follow-up hit as consuming the mark) to include Sunlight's damage in the fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Allied {{tip|champions|champions'}} damaging attacks and abilities against a marked target will consume the mark to deal {{as|{{pplevel|32 to 151}}|magic damage}} {{as|'''bonus''' magic damage}}."
+   ]
+  },
+  {
+   "question": "Does Shield of Daybreak (Q) itself have a 0.25s cast time (as the bin's castTime field states) or is it effectively instant/none (as the wiki's 'cast time = none' states), affecting how tightly it can be weaved with auto-attacks in the DPS rotation?",
+   "options": [
+    "Q has a real 0.25s cast time per the bin, delaying the next action by that amount",
+    "Q has no cast time (instant, attack-command style) per the wiki, and the bin's castTime field is not reflecting live behavior"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.25",
+    "|cast time    = none"
+   ]
+  },
+  {
+   "question": "Sunlight's per-champion-level bonus damage (32 to 151) is only wiki-sourced since the bin's ByCharLevelFormulaCalculationPart is unresolved — are the intermediate per-level values (and thus the value used at the simulated level) accurate, given this can't be cross-checked against the bin?",
+   "options": [
+    "Trust the wiki's pplevel curve (32 to 151) as-is for whatever level is simulated",
+    "Treat Sunlight's exact per-level value as unverified/unknown pending the resolved bin formula"
+   ],
+   "impact": "low",
+   "quotes": [
+    "deal {{as|{{pplevel|32 to 151}}|magic damage}} {{as|'''bonus''' magic damage}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Shield of Daybreak) to arm the next basic attack, then auto-attack the dummy to land Q's bonus magic damage, stun, and trigger Q's extra attack reset.",
+   "Immediately follow with W (Eclipse) to gain the guard buff and queue its detonation damage 3s later (extended to 6s of guard since the detonation will hit the stationary dummy).",
+   "Cast E (Zenith Blade) at the dummy for its on-flight magic damage; accept the brief lockout on movement/attacks while the sword travels, then let the automatic post-dash basic attack fire.",
+   "Cast R (Solar Flare) once available (likely only once given its 60-90s cooldown) for its large delayed magic damage burst, since the target is stationary and guaranteed to be hit including by the epicenter.",
+   "Fill all remaining time with basic attacks, recasting Q every 5s (re-arming the empowered attack each time it's off cooldown) and recasting W and E on their cooldowns to add their detonation/sword damage instances.",
+   "Prioritize keeping Q and auto-attacks uninterrupted since they have the shortest cooldown and generate the most attack resets; treat E's cast as a brief DPS pause due to the lockout during sword flight."
+  ],
+  "questions": [
+   "Should Sunlight's bonus damage be counted at all in the damage fight given the total absence of allied champions, or should the simulator assume some proxy trigger for it?",
+   "Is Q's cast time genuinely 0.25s (bin) or effectively instant (wiki 'none'), and how should that reconcile with its attack-reset behavior when weaving with auto-attacks?",
+   "At what level/rank assumptions should Leona be simulated (this affects whether R can be cast once or twice in the 15s window, and which rank's cooldown reduction applies)?",
+   "Does E's forced auto-attack after the dash count toward Sunlight's 'ability hit' marking for consistency, or only Leona's actual spell casts?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

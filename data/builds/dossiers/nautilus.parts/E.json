@@ -1,0 +1,204 @@
+{
+ "name": "Riptide",
+ "cooldown": {
+  "values": [
+   7,
+   6.5,
+   6,
+   5.5,
+   5
+  ],
+  "quote": "{{ap|7 to 5}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   60,
+   70,
+   80,
+   90
+  ],
+  "quote": "{{ap|50 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    55,
+    90,
+    125,
+    160,
+    195
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|55 to 195}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "NautilusSplashZone#DamageCalc"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Reduced Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    27.5,
+    45,
+    62.5,
+    80,
+    97.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.25
+    }
+   ],
+   "quote": "{{ap|55*0.5 to 195*0.5}} {{as|(+ {{ap|50*0.5}}% AP)}}",
+   "bin": [
+    "NautilusSplashZone.MultiHitReduction",
+    "NautilusSplashZone#DamageCalc"
+   ],
+   "binNote": "the wiki halves both flat base and AP ratio of DamageCalc via MultiHitReduction=0.5; no dedicated bin row carries the halved 27.5/45/62.5/80/97.5 or 0.25 numbers directly, they are derived by multiplying DamageCalc's outputs by MultiHitReduction"
+  },
+  {
+   "id": "e_3",
+   "meaning": "Maximum Total Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    110,
+    180,
+    250,
+    320,
+    390
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|55*2 to 195*2}} {{as|(+ {{ap|50*2}}% AP)}}",
+   "bin": [],
+   "binNote": "this is a derived sum (first wave full + two reduced waves) restating e_1/e_2, no dedicated bin row"
+  },
+  {
+   "id": "e_4",
+   "meaning": "Slow",
+   "role": "utility",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{ap|30 to 50}}%",
+   "bin": [
+    "NautilusSplashZone.SlowPercent"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "Monster Bonus Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    125,
+    165,
+    205,
+    245,
+    285
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|125 to 285}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "NautilusSplashZone#MonsterBonusCalc"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "duration over which the three waves radiate out",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.561,
+   "terms": [],
+   "quote": "over {{fd|0.561}} seconds",
+   "bin": [],
+   "binNote": "wave timing (0.561s total, with waves at 0/0.297/0.561) is not present as a data value in the sheet; only measured wiki timing"
+  },
+  {
+   "id": "e_7",
+   "meaning": "duration over which the slow decays",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "slows them by an amount that decays over {{fd|1.5}} seconds",
+   "bin": [
+    "NautilusSplashZone.SlowDuration"
+   ],
+   "binNote": "wiki states the slow decays over 1.5s while the bin's SlowDuration is 1.25; kept the wiki's stated number per instructions, disagreement noted"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Nautilus sends three waves of explosions that each deal magic damage; damage from waves after the first hitting the same target is reduced to 50%.",
+   "quote": "Each wave deals {{as|magic damage}} to enemies hit, reduced to 50% against those hit by subsequent waves beyond the first",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first wave happens at 0s after cast time ends, second at 0.297s, third at 0.561s after cast.",
+   "quote": "The first wave happens at 0 seconds after the cast time ends, the second wave at {{fd|0.297}} seconds and the third wave at {{fd|0.561}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first hit against monsters deals bonus magic damage.",
+   "quote": "The first hit against {{tip|monsters}} deals {{as|'''bonus''' magic damage}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NautilusSplashZone.DamageMonsterMod",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NautilusSplashZone.ExtraWavePenalty",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "NautilusSplashZone.DamageRadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

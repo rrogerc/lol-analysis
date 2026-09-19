@@ -1,0 +1,1029 @@
+{
+ "champion": "aurora",
+ "abilities": {
+  "P": {
+   "name": "Spirit Abjuration",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage on third stack, based on target's max health",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": 0.01,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.01,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.027
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|1% {{as|(+ {{fd|2.7}}% per 100 AP)}} of the target's '''maximum''' health}}",
+     "bin": [
+      "AuroraPassive#ProcDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "damage cap against monsters",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10,
+      20,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      100,
+      110,
+      120,
+      130,
+      140,
+      150,
+      160,
+      170,
+      180
+     ],
+     "terms": [],
+     "quote": "capped at {{pplevel|90+10*x}} against {{tip|monsters}}",
+     "bin": [
+      "AuroraPassive#{394d1781}"
+     ],
+     "binNote": "wiki text 90+10*x with level x=0..17 yields 90..260, but bin byLevel values are 10..180; discrepancy between wiki formula and bin table not resolved"
+    },
+    {
+     "id": "p_3",
+     "meaning": "duration of a stack before it expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "for 4 seconds, refreshing on subsequent applications",
+     "bin": [
+      "AuroraPassive.DebuffDuration"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "stack cap before consumption",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "no bin data value for the stack cap; it is implicit in code, not exposed as a named row"
+    },
+    {
+     "id": "p_5",
+     "meaning": "spirit follow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "follows her for the same duration",
+     "bin": [
+      "AuroraPassive.SpiritModeDuration"
+     ]
+    },
+    {
+     "id": "p_6",
+     "meaning": "heal per tick per active spirit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.02
+      }
+     ],
+     "quote": "{{pplevel|2 + x|color=heal}} {{as|(+ 2% AP)}} every second",
+     "bin": [
+      "AuroraPassive#HealCalc"
+     ],
+     "binNote": "wiki pplevel formula '2 + x' with level x=1..18 gives 3..20, matching the bin's byLevel(3..20) values exactly; corrected from a prior mis-transcription that shifted values by +2"
+    },
+    {
+     "id": "p_7",
+     "meaning": "maximum simultaneous spirits",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "up to 4 {{as|Spirits|buzzword}} at a time",
+     "bin": [],
+     "binNote": "no bin data value found for the spirit cap; not exposed as a named row"
+    },
+    {
+     "id": "p_8",
+     "meaning": "maximum heal per tick at 4 spirits",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      12,
+      16,
+      20,
+      24,
+      28,
+      32,
+      36,
+      40,
+      44,
+      48,
+      52,
+      56,
+      60,
+      64,
+      68,
+      72,
+      76,
+      80
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.08
+      }
+     ],
+     "quote": "maximum heal per tick of {{pplevel|(2 + x)*4|color=heal}} {{as|(+ {{ap|2*4}}% AP)}}",
+     "bin": [
+      "AuroraPassive#HealCalc"
+     ],
+     "binNote": "this is a derived total (per-tick value x4 spirits), restating p_6 and p_7; no separate bin row exists, only HealCalc's per-spirit numbers multiplied by the spirit cap"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Only damaging basic attacks and abilities apply stacks of Spirit Abjuration.",
+     "quote": "'''Aurora's''' damaging {{tip|basic attacks}} and {{tip|abilities}} apply a {{tip|stack}} of ''Spirit Abjuration'' to enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The third stack consumes all stacks and deals the bonus damage as a separate instance.",
+     "quote": "The third stack against a target consumes them all to deal {{as|'''bonus''' magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Runaan's Hurricane bolts apply stacks but other on-hit effects like Guinsoo's Rageblade do not.",
+     "quote": "{{ii|Runaan's Hurricane}} bolts are also empowered to apply stacks (while other effects that apply {{tip|on-hit|on-hits}}, like {{ii|Guinsoo's Rageblade}}, are not).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Exorcism (heal-over-time from spirits) only occurs when the consumed target was a champion, not against a dummy/monster in general.",
+     "quote": "Upon consuming the stacks from a {{tip|champion}}, '''Aurora''' additionally exorcises them",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Each active spirit heals Aurora every second; subsequent exorcisms refresh all active spirits.",
+     "quote": "For each active {{as|Spirit|buzzword}}, '''Aurora''' is {{tip|heal|healed}} for {{pplevel|2 + x|color=heal}} {{as|(+ 2% AP)}} every second.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AuroraPassive.MonsterMaxDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AuroraPassive.MSIncrease",
+     "reason": "utility"
+    },
+    {
+     "ref": "AuroraPassive.BonusMsIncrease",
+     "reason": "utility"
+    },
+    {
+     "ref": "AuroraPassive#BonusMSCalc",
+     "reason": "utility"
+    },
+    {
+     "ref": "AuroraPassive#MoveSpeedCalc",
+     "reason": "utility"
+    },
+    {
+     "ref": "AuroraPassive#CooldownDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AuroraPassive#{406b6e3e}",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Twofold Hex / Twofold Hex 2",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9 to 7}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{dv|{{tt|{{fd|0.25}}|Active}}|{{tt|None|Recast}}}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Outbound bolt magic damage to enemies hit",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      45,
+      70,
+      95,
+      120,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|45 to 145}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "AuroraQ#Damage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Recast bolt minimum magic damage (0% target missing health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      45,
+      70,
+      95,
+      120,
+      145
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{st|Minimum Magic Damage|{{ap|{{#var:b1}} to {{#var:b5}}}} {{as|(+ {{#var:ap}}% AP)}}",
+     "bin": [
+      "AuroraQ#{f7c018c7}"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Recast bolt maximum magic damage (100% target missing health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      67.5,
+      105,
+      142.5,
+      180,
+      217.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "Maximum Magic Damage|{{ap|{{#var:b1}}*{{#var:hpmod}} to {{#var:b5}}*{{#var:hpmod}}}} {{as|(+ {{ap|{{#var:ap}}*{{#var:hpmod}}}}% AP)}}",
+     "bin": [
+      "AuroraQ#Q2DamageMax"
+     ]
+    },
+    {
+     "id": "q_missing_hp_scale",
+     "meaning": "Recast bolt damage increased per 1% of target's missing health, from minimum (0%) to maximum (100% missing health)",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "formula={{#expr:{{#var:hpmod}}-1}}% per 1% of target's '''missing''' health",
+     "bin": [
+      "AuroraQ.MissingHealthPercentMod"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Subsequent recast bolt minimum magic damage (against an already-hit enemy, 0% missing health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      9,
+      14,
+      19,
+      24,
+      29
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.08
+      }
+     ],
+     "quote": "Subsequent Bolt Minimum Magic Damage|{{ap|{{#var:b1}}*{{#var:boltmod}} to {{#var:b5}}*{{#var:boltmod}}}} {{as|(+ {{ap|{{#var:ap}}*{{#var:boltmod}}}}% AP)}}",
+     "bin": [],
+     "binNote": "The 20% subsequent-bolt multiplier (boltmod) named in the wiki template variable has no matching AuroraQ data value; only Q2MinionMod (0.4, vs minions) and MissingHealthPercentMod (0.5, missing-health coefficient) are present in the bin, neither of which is 0.2."
+    },
+    {
+     "id": "q_5",
+     "meaning": "Subsequent recast bolt maximum magic damage (against an already-hit enemy, 100% missing health)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      13.5,
+      21,
+      28.5,
+      36,
+      43.5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.12
+      }
+     ],
+     "quote": "Subsequent Bolt Maximum Magic Damage|{{ap|{{#var:b1}}*{{#var:hpmod}}*{{#var:boltmod}} to {{#var:b5}}*{{#var:hpmod}}*{{#var:boltmod}}}} {{as|(+ {{ap|{{#var:ap}}*{{#var:hpmod}}*{{#var:boltmod}}}}% AP)}}",
+     "bin": [],
+     "binNote": "Same missing boltmod (0.2) data value as q_4; the 1.5x max-health component is covered by MissingHealthPercentMod but the 0.2 subsequent-bolt reduction is not represented in the bin's AuroraQ data values."
+    },
+    {
+     "id": "q_mark_duration",
+     "meaning": "Duration of the curse mark before it is automatically expunged (recast)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3.5,
+     "terms": [],
+     "quote": "marks them with a curse for {{fd|3.5}} seconds",
+     "bin": [
+      "AuroraQ.MarkDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Twofold Hex can be recast after 0.1 seconds while at least one target is marked, and automatically recasts at the end of the mark's duration if not recast manually.",
+     "quote": "''Twofold Hex'' can be recast after {{fd|0.1}} seconds while at least one target is marked, and does so automatically at the end of the mark's duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The recast fires bolts that deal magic damage to every enemy they pass through, scaled up by each target's missing health, and hitting the same target again on the same recast deals only 20% damage.",
+     "quote": "Subsequent bolts against an enemy deal {{ap|{{#var:boltmod}}*100}}% damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Once Aurora has successfully recast Twofold Hex, she cannot recast it again for the remainder of that mark's duration regardless of remaining marked enemies.",
+     "quote": "Once '''Aurora''' has successfully recast ''Twofold Hex'', she will not be able to recast it again for the duration regardless of any number of marked enemies still remaining.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield can block the effects of both the outbound cast and the recast.",
+     "quote": "{{tip|Spell shield}} can block the effects of the active and the recast.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AuroraQ.DamageReduction",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AuroraQ.MinionDamageReduction",
+     "reason": "unknown"
+    },
+    {
+     "ref": "AuroraQ.Q2MinionMod",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Across the Veil",
+   "cooldown": {
+    "values": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "quote": "{{ap|22 to 18}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Invisibility Duration",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1,
+      1.15,
+      1.3,
+      1.45,
+      1.6
+     ],
+     "terms": [],
+     "quote": "{{ap|1 to 1.6}} seconds",
+     "bin": [
+      "AuroraW.InvisDuration"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "AuroraW.MoveSpeedBonus"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Aurora is locked out of using all abilities, summoner spells, and item actives during the dash, and cannot buffer casts to fire after the lockout.",
+     "quote": "'''Aurora''' is locked out of using all abilities, summoner spells, and item actives during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Using a basic attack breaks the invisibility stealth at the end of the attack windup.",
+     "quote": "Using a basic attack breaks the stealth at the end of the attack windup.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Aurora's dash is interrupted, she does not gain the invisibility.",
+     "quote": "'''Aurora''' will '''not''' gain the stealth if her dash is interrupted.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Scoring a takedown against an enemy champion within 3 seconds of damaging them resets the ability's cooldown.",
+     "quote": "Scoring a {{tip|takedown}} against an enemy {{tip|champion}} within 3 seconds of damaging them will reset ''Across the Veil's'' {{sti|cooldown}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Realm Hopper's re-application does not stack; it overrides the previous buff's duration only if the new total duration is longer than the remaining one.",
+     "quote": "If the '''total''' duration of ''Realm Hopper'' gained from a new cast of ''Across the Veil'' or ''{{ai|Between Worlds|Aurora}}'' is longer than the '''remaining''' duration of the one gained from a previous cast, then re-gaining ''Realm Hopper'' will override the previous buff's duration.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AuroraW.DashBonusSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "AuroraW.JumpDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AuroraW.WallCheatDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "The Weirding",
+   "cooldown": {
+    "values": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "quote": "{{ap|15 to 11}}"
+   },
+   "cost": {
+    "values": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "quote": "80",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.35,
+    "quote": "{{fd|0.35}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      110,
+      150,
+      190,
+      230
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|70 to 230}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "AuroraE#DamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "slow amount from the blast",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.8,
+     "terms": [],
+     "quote": "{{tip|slow|slows}} them by 80% for 1 second decaying after the first {{fd|0.15}} seconds",
+     "bin": [
+      "AuroraE.SlowPercent"
+     ],
+     "binNote": "Bin stores this as -0.8 (a signed movement speed modifier); the wiki states the magnitude as 80%. Same number."
+    },
+    {
+     "id": "e_3",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|slow|slows}} them by 80% for 1 second decaying after the first {{fd|0.15}} seconds",
+     "bin": [
+      "AuroraE.SlowDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Aurora dashes backward when casting E and is locked out of actions during the dash.",
+     "quote": "'''Aurora''' is locked out of using all abilities, summoner spells, and item actives during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If grounded or rooted, Aurora does not dash backward but can still cast the ability (and deal its damage).",
+     "quote": "While {{tip|ground|grounded}} or {{tip|root|rooted}}, ''The Weirding'' can be cast but '''Aurora''' will not {{tip|dash}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AuroraE.SelfKnockBackDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AuroraE.AoELength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AuroraE.AoEWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AuroraE.SlowDecay",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Between Worlds",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{ap|140 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      175,
+      275,
+      375
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|175 to 375}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "AuroraR#DamageCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "ai|Across the Veil|Aurora|Realm Hopper Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      3.5,
+      4.25,
+      5
+     ],
+     "terms": [],
+     "quote": "{{ap|3.5 to 5}} seconds",
+     "bin": [
+      "AuroraR.RBuffDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Rift Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.75,
+      2.5,
+      3.25
+     ],
+     "terms": [],
+     "quote": "{{ap|2.5-0.75 to 4-0.75}} seconds<!-- Duration w/o the creation time. See notes -->",
+     "bin": [
+      "AuroraR.AreaDuration"
+     ],
+     "binNote": "Bin's AuroraR.AreaDuration is [2.5/3.25/4], matching the in-game tooltip the wiki says is wrong; wiki states the actual rift duration is 0.75s shorter (1.75/2.5/3.25) due to shockwave expansion time not being part of the rift itself."
+    },
+    {
+     "id": "r_4",
+     "meaning": "Slow Duration",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.5,
+      1.75,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1.5 to 2}} seconds",
+     "bin": [
+      "AuroraR.StunDuration"
+     ],
+     "binNote": "No dedicated slow-duration data value found; AuroraR.StunDuration's numbers [1.5/1.75/2] match the wiki's border-collision slow duration exactly, but the field name suggests it may actually govern a stun elsewhere (unclear naming, using it as the only matching bin row)."
+    },
+    {
+     "id": "r_5",
+     "meaning": "shockwave slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": -0.3,
+     "terms": [],
+     "quote": "{{tip|slow}} them by 30% for 2 seconds",
+     "bin": [
+      "AuroraR.SlowPercent"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "border collision enemy slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": -0.5,
+     "terms": [],
+     "quote": "{{tip|slow|slowed}} by 50% for a duration",
+     "bin": [
+      "AuroraR.ExitSlowPercent"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "shockwave expansion time",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "expanding over {{fd|0.75}} seconds",
+     "bin": [],
+     "binNote": "No bin data value matches; the shockwave expansion time is not a separate DataValue in the sheet (AuroraR.AreaDuration is the rift duration including this time, per r_3's note), so this figure is only derivable from the wiki text."
+    },
+    {
+     "id": "r_8",
+     "meaning": "initial dash duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "over {{fd|0.4}} seconds",
+     "bin": [],
+     "binNote": "No matching DataValue in the sheet for the dash travel time; it appears to be hardcoded in the ability's animation/behavior data not exposed in this sheet."
+    },
+    {
+     "id": "r_9",
+     "meaning": "rift-border dash cast lockout duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "can be recast after 1 second of unleashing the shockwave while the rift is active",
+     "bin": [],
+     "binNote": "No matching DataValue in the sheet for the recast-enable delay; not exposed among the listed AuroraR fields."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The active is a direction-targeted magic-damage shockwave dealing damage to all enemies hit once.",
+     "quote": "unleashes a shockwave from {{tt|425 units|Estimated}} in front of her, expanding over {{fd|0.75}} seconds to deal {{as|magic damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts only after the full effect (including the rift phase) resolves, not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shockwave applies a slow to enemies hit, separate from the later border-collision slow.",
+     "quote": "deal {{as|magic damage}} to enemies hit and {{tip|slow}} them by 30% for 2 seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Aurora is displacement-immune and untargetable during her dashes (initial cast and rift-border dashes), which is a defensive survivability effect, not a damage one.",
+     "quote": "'''Aurora''' {{tip|dash|leaps}} in the target direction with {{tip|displacement immunity}} over {{fd|0.4}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield can block both the shockwave damage and the border collision effects.",
+     "quote": "{{tip|Spell shield}} can block both the shockwave and border collision.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AuroraR.ExitBaseDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AuroraR.AoESize",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AuroraR.MSMultiplier",
+     "reason": "utility"
+    },
+    {
+     "ref": "AuroraR.JumpMaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "AuroraR.JumpMinDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Spirit Abjuration: damaging basic attacks/abilities apply a stack (cap 3, 4s duration, refreshes) to the target; the 3rd stack consumes all stacks for bonus damage."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "P's proc damage scales off target's max health; Q's recast bolt damage scales linearly from base (0% missing health) to 1.5x base (100% missing health)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Twofold Hex outbound bolt marks the target, then a manual or automatic recast fires a return bolt that expunges the mark for separate damage."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "The Weirding and the shockwave portion of Between Worlds deal a single fixed-formula magic damage instance on cast."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (60/80/100) against a limited mana pool can cap how many Q/E/R cycles fit in the 15s window."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "P's per-second heal from active Spirits, and W/R's invisibility, ghosting, bonus movement speed, displacement immunity and untargetability are pure survival/mobility effects irrelevant to the damage fight and (per the mobility-is-ignored rule) largely irrelevant to the survival fight too, except P's heal which changes effective health taken."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (stack-and-consume passive, missing-health-scaled recast, plain-cast E/R, mana budget) is expressible with existing primitives once the single-dummy simplification is applied (only one Abjuration cycle and one active Q mark can exist on a single target at a time, so the kit's multi-target-only wrinkles, like Q's reduced subsequent-bolt damage, never trigger)."
+ },
+ "unsettled": [
+  {
+   "question": "When does Between Worlds' cooldown actually start given 'cdstart = post-effect'?",
+   "options": [
+    "CD starts immediately once the shockwave resolves (~0.4s dash + up to 0.75s expansion after cast)",
+    "CD starts only once the rift naturally closes (full AreaDuration, ~1.75-3.25s after the shockwave per the wiki's corrected duration)",
+    "CD starts at the moment Aurora manually recasts to close the rift early (as soon as the 1s recast-enable delay has passed)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cdstart      = post-effect",
+    "''Between Worlds'' can be recast after 1 second of unleashing the shockwave while the rift is active."
+   ]
+  },
+  {
+   "question": "Does Spirit Abjuration's own max-health proc damage (the 3rd-stack consume) count as a 'damaging ability' that itself re-applies a fresh stack of Spirit Abjuration to the target?",
+   "options": [
+    "The proc is excluded from applying a new stack (stacks only build back up from subsequent attacks/abilities)",
+    "The proc counts as a damaging effect and immediately seeds stack #1 again on the same hit"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Aurora's''' damaging {{tip|basic attacks}} and {{tip|abilities}} apply a {{tip|stack}} of ''Spirit Abjuration''",
+    "The third stack against a target consumes them all to deal {{as|'''bonus''' magic damage}}"
+   ]
+  },
+  {
+   "question": "In the survival fight, is the tanky defender (Aurora) assumed to land damaging hits/abilities on her attacker at all, which is required to trigger Spirit Abjuration stacks, the 3rd-stack consume, and the resulting per-second heal from exorcised Spirits?",
+   "options": [
+    "Aurora is purely passive/defensive in the survival fight, so P's heal never triggers",
+    "Aurora is assumed to auto-attack and/or cast on cooldown even while being the survival-fight target, so the heal applies"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Upon consuming the stacks from a {{tip|champion}}, '''Aurora''' additionally exorcises them, freeing a {{as|Spirit|buzzword}}",
+    "For each active {{as|Spirit|buzzword}}, '''Aurora''' is {{tip|heal|healed}} for {{pplevel|2 + x|color=heal}} {{as|(+ 2% AP)}} every second."
+   ]
+  },
+  {
+   "question": "Does Spirit Abjuration's monster-damage cap (AuroraPassive#{394d1781}) apply to the stationary target dummy used in the damage fight, given the dummy 'counts as an enemy champion' per the fight's rules, and the bin's byLevel table (10-180) doesn't match the wiki's stated formula (90+10*x, giving 90-260)?",
+   "options": [
+    "The cap never applies since the dummy is defined as a champion, not a monster",
+    "The cap should still be applied using the bin's byLevel values as a conservative ceiling",
+    "The cap should be applied using the wiki's stated 90+10*x formula instead of the bin table"
+   ],
+   "impact": "low",
+   "quotes": [
+    "capped at {{pplevel|90+10*x}} against {{tip|monsters}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the fight by casting R (Between Worlds) on the dummy for its shockwave magic damage and Realm Hopper buff, since its cooldown (100-140s) is far longer than the 15s window and it should only ever be cast once.",
+   "Immediately follow with Q (Twofold Hex) outbound cast to hit the dummy, dealing damage, applying a mark, and adding a Spirit Abjuration stack.",
+   "Weave in a basic attack (also applies a Spirit Abjuration stack) while waiting out Q's 0.1s recast-enable delay.",
+   "Cast E (The Weirding) for its flat magic damage and a further Spirit Abjuration stack.",
+   "Manually recast Q as soon as the 0.1s window opens (rather than letting it auto-recast at the mark's 3.5s expiry) to maximize ability uptime and DPS, dealing the return-bolt damage scaled by the dummy's current missing health.",
+   "Repeat the Q cast-recast cycle on cooldown (~7-9s full cycle depending on rank) for the rest of the 15s, weaving E on its own cooldown (~11-15s) and basic attacks in between to keep stacking/consuming Spirit Abjuration for its bonus max-health-based damage roughly every third damaging hit.",
+   "Do not cast W (Across the Veil) at any point: it deals no damage and only grants invisibility, ghosting and bonus movement speed, none of which matter against a stationary, non-attacking dummy."
+  ],
+  "questions": [
+   "Should Q's recast be fired immediately after the 0.1s delay for uptime, or deliberately delayed toward the mark's 3.5s expiry so the missing-health scaling benefits from a lower dummy health percentage, and does the delay cost more DPS than it gains?",
+   "Does the simulator model Aurora's basic attacks between ability casts (needed to help build Spirit Abjuration stacks and use Runaan's-style on-hit interactions), or is the rotation ability-casts-only?",
+   "At what point (level/items) does Aurora's mana pool actually become the binding constraint on repeating the Q/E cycle for the full 15 seconds, given Q+E costs 140 mana per full cycle plus R's 100 mana up front?",
+   "Is R best opened at the very start of the fight for maximum total damage window, or held briefly so its long cast-to-cooldown-start delay (post-effect) doesn't waste time that could instead go to Q/E cycles?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,200 @@
+{
+ "name": "Chomp",
+ "cooldown": {
+  "values": [
+   3.5,
+   3.5,
+   3.5,
+   3.5,
+   3.5
+  ],
+  "quote": "{{fd|3.5}}"
+ },
+ "cost": {
+  "values": [
+   20,
+   20,
+   20,
+   20,
+   20
+  ],
+  "quote": "20",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Bonus Physical Damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    10,
+    30,
+    50,
+    70,
+    90
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.15,
+      0.25,
+      0.35,
+      0.45,
+      0.55
+     ]
+    }
+   ],
+   "quote": "{{ap|10 to 90}} {{as|(+ {{ap|15 to 55}}% AD)}}",
+   "bin": [
+    "TrundleTrollSmash.BonusDamage",
+    "TrundleTrollSmash#TotalDamage"
+   ],
+   "binNote": "The wiki states only the bonus 15%-55% AD ratio (on top of the attack's own normal AD damage). TrundleTrollSmash#TotalDamage / ADScaling instead carries 1.15-1.55 (i.e. 100% AD + the same 15-55% bonus), because the calculation apparently folds the base attack's AD damage into this instance's total rather than treating them as separate damage sources. Stating the wiki's 0.15-0.55 bonus ratio here since that's what the tooltip describes as this ability's added damage."
+  },
+  {
+   "id": "q_2",
+   "meaning": "Bonus Attack Damage",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    20,
+    25,
+    30,
+    35,
+    40
+   ],
+   "terms": [],
+   "quote": "{{ap|20 to 40}}",
+   "bin": [
+    "TrundleTrollSmash.BonusAD"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Attack Damage Reduction",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    10,
+    12.5,
+    15,
+    17.5,
+    20
+   ],
+   "terms": [],
+   "quote": "{{ap|20/2 to 40/2}}",
+   "bin": [
+    "TrundleTrollSmash.SappedAD"
+   ],
+   "binNote": "SappedAD stores the reduction as a negative subtraction (-10 to -20); the wiki states the magnitude of the reduction as a positive number, which is the same value with the sign convention of 'reduce by'."
+  },
+  {
+   "id": "q_4",
+   "meaning": "duration of the buff/debuff after empowered attack",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "gains {{sti|{{as|'''bonus''' attack damage}}}} for 5 seconds",
+   "bin": [
+    "TrundleTrollSmash.SapDebuffDuration"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "window to use empowered attack before it expires",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 7,
+   "terms": [],
+   "quote": "empowers his next {{tip|basic attack}} within 7 seconds",
+   "bin": [
+    "TrundleTrollSmash.PrepDuration"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "slow amount applied to the target",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "{{tip|slow}} the target by 75% for {{fd|0.1}} seconds",
+   "bin": [
+    "TrundleTrollSmash.SlowAmount"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "duration of the slow",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "for {{fd|0.1}} seconds",
+   "bin": [
+    "TrundleTrollSmash.SlowDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Chomp empowers the next basic attack, gives it an uncancellable windup, and applies bonus physical damage and a slow on hit.",
+   "quote": "empowers his next {{tip|basic attack}} within 7 seconds to have an {{tip|uncancellable windup}}, gain {{sti|25 '''bonus''' range}}, deal {{as|'''bonus''' physical damage}} and {{tip|slow}} the target by 75% for {{fd|0.1}} seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Trundle gains the bonus AD even if the empowered attack is dodged, blocked, missed while blinded, or blocked by spell shield.",
+   "quote": "''Chomp'' will still incur the {{sti|{{as|attack damage}}}} increase for '''Trundle''' even if the attack is {{tip|dodged}}, {{tip|blocked}}, missed while he is {{tip|blind|blinded}}, or it is blocked by {{tip|spell shield}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield only blocks the attack damage reduction and slow, not the bonus damage/bonus AD to Trundle.",
+   "quote": "{{tip|Spell shield}} will only block the attack damage reduction and {{tip|slow}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The target's bonus AD cannot be reduced below 0 by the debuff; total AD is still reduced accordingly.",
+   "quote": "If the attack damage reduction would reduce the target's {{as|'''bonus''' attack damage}} below {{as|0|ad}}, the target's {{as|'''base''' attack damage}} value is unaffected, but their {{as|'''total''' attack damage}} will still be reduced.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Chomp resets Trundle's basic attack timer.",
+   "quote": "''Chomp {{tip|basic attack reset|resets}} '''Trundle's''' basic attack timer.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts after the empowered attack lands (post-effect), not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TrundleTrollSmash.TooltipQADRatio",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "TrundleTrollSmash.BonusRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "TrundleTrollSmash.ADScaling",
+   "reason": "stale-duplicate"
+  }
+ ],
+ "filledBy": "sonnet"
+}

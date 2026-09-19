@@ -1,0 +1,638 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ZaahenPassive",
+    "key": "Characters/Zaahen/Spells/ZaahenPassiveAbility/ZaahenPassive",
+    "cooldown": 100,
+    "dataValues": {
+     "PercentBonusAD": 0.025,
+     "FallOffDuration": 5,
+     "RevivePercent": 0.6,
+     "MaxStacks": 12,
+     "ReviveDuration": 4,
+     "NumberOfTicks": 32,
+     "MaxStacksMultiplier": 2,
+     "PBonusADMin": 0.015,
+     "PBonusADMax": 0.028,
+     "ReviveLevel1Value": 0.3,
+     "ReviveAdditionalBonusAtThisLevel": 0.15
+    },
+    "calcs": {
+     "ReviveCooldownCalc": {
+      "expr": "byLevelL[300/300/300/300/300/240/240/240/240/240/180/180/180/180/180/120/120/120]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        300,
+        300,
+        300,
+        300,
+        300,
+        240,
+        240,
+        240,
+        240,
+        240,
+        180,
+        180,
+        180,
+        180,
+        180,
+        120,
+        120,
+        120
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "RevivePercentCalc": {
+      "expr": "<{4ce08984}>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "PercentBonusADCalc": {
+      "expr": "<{ee18a47b}>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {4ce08984}",
+     "unresolved calculation part {ee18a47b}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "ZaahenQ",
+    "key": "Characters/Zaahen/Spells/ZaahenQAbility/ZaahenQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Q1BaseDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       30,
+       45,
+       60,
+       75
+      ]
+     },
+     "KnockUpDuration": 0.75,
+     "RecastWindow": 4,
+     "TimeBetweenAttacks": 1.5,
+     "HealPercent": {
+      "axis": "rank",
+      "v": [
+       0.05,
+       0.06,
+       0.07,
+       0.08,
+       0.09
+      ]
+     },
+     "MinionHealPercent": 0.5,
+     "Q2BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       60,
+       90,
+       120,
+       150
+      ]
+     },
+     "QBonusRange": 25,
+     "QCoeff": {
+      "axis": "rank",
+      "v": [
+       0.2,
+       0.25,
+       0.3,
+       0.35,
+       0.4
+      ]
+     },
+     "MonsterDamagePercent": 1
+    },
+    "calcs": {
+     "InitialDamage": {
+      "expr": "Q1BaseDamage=[15/30/45/60/75] + (QCoeff=[0.2/0.25/0.3/0.35/0.4])xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        30,
+        45,
+        60,
+        75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.2,
+          0.25,
+          0.3,
+          0.35,
+          0.4
+         ]
+        },
+        "dataValue": "QCoeff"
+       }
+      ],
+      "refs": [
+       "Q1BaseDamage",
+       "QCoeff"
+      ]
+     },
+     "SecondHitDamage": {
+      "expr": "Q2BaseDamage=[30/60/90/120/150] + (QCoeff=[0.2/0.25/0.3/0.35/0.4])xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        60,
+        90,
+        120,
+        150
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.2,
+          0.25,
+          0.3,
+          0.35,
+          0.4
+         ]
+        },
+        "dataValue": "QCoeff"
+       }
+      ],
+      "refs": [
+       "Q2BaseDamage",
+       "QCoeff"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ZaahenW",
+    "key": "Characters/Zaahen/Spells/ZaahenWAbility/ZaahenW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": 50,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "InitialBaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "SecondaryBaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       50,
+       70,
+       90,
+       110
+      ]
+     },
+     "MaximumPullDistance": 225,
+     "PullSpeed": 900
+    },
+    "calcs": {
+     "InitialDamage": {
+      "expr": "InitialBaseDamage=[40/60/80/100/120] + 0.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "InitialBaseDamage"
+      ]
+     },
+     "SecondaryDamage": {
+      "expr": "SecondaryBaseDamage=[30/50/70/90/110] + 0.3xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        50,
+        70,
+        90,
+        110
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.3
+       }
+      ],
+      "refs": [
+       "SecondaryBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ZaahenE",
+    "key": "Characters/Zaahen/Spells/ZaahenEAbility/ZaahenE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9.5,
+      9,
+      8.5,
+      8
+     ]
+    },
+    "cost": 40,
+    "dataValues": {
+     "Damage_Base": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "DashDistance": 350,
+     "DashSpeed": 900,
+     "MaximumRadius": 375,
+     "MinimumRadius": 200,
+     "PercentHPDamage": {
+      "axis": "rank",
+      "v": [
+       0.04,
+       0.045,
+       0.05,
+       0.055,
+       0.06
+      ]
+     },
+     "MonsterDamageCap": 400,
+     "MonsterDamageBonus": 50,
+     "SweetSpotDamageMod": 1.5,
+     "DamageBonusBase": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     }
+    },
+    "calcs": {
+     "BaseDamageCalc": {
+      "expr": "Damage_Base=[40/60/80/100/120] + 0.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "Damage_Base"
+      ]
+     },
+     "BonusDamageCalc": {
+      "expr": "BaseDamageCalc * SweetSpotDamageMod=1.5",
+      "modifies": "BaseDamageCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.75
+       }
+      ],
+      "refs": [
+       "Damage_Base",
+       "SweetSpotDamageMod"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ZaahenR",
+    "key": "Characters/Zaahen/Spells/ZaahenRAbility/ZaahenR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      95,
+      80
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashMaxDistance": 600,
+     "DashMinDistance": 10,
+     "EndDamage": {
+      "axis": "rank",
+      "v": [
+       250,
+       400,
+       550
+      ]
+     },
+     "DashSpeed": 2800,
+     "HealPercent": 0.33,
+     "AoESize": 550,
+     "DamageReduction": 0.5,
+     "ArmorPen": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.2,
+       0.3
+      ]
+     },
+     "BonusADDamageRatio": 2
+    },
+    "calcs": {
+     "DamageEndCalc": {
+      "expr": "EndDamage=[250/400/550] + (BonusADDamageRatio=2)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        250,
+        400,
+        550
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2,
+        "dataValue": "BonusADDamageRatio"
+       }
+      ],
+      "refs": [
+       "BonusADDamageRatio",
+       "EndDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "ZaahenQ",
+  "W": "ZaahenW",
+  "E": "ZaahenE",
+  "R": "ZaahenR",
+  "P": "ZaahenPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 350,
+   "{6216bf7b}": 55,
+   "{c4ab3550}": 1.63,
+   "{3a509002}": 0.15
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Zaahen",
+  "name": "Zaahen",
+  "partype": "Mana",
+  "passive": "Cultivation of War",
+  "spells": [
+   {
+    "id": "ZaahenQ",
+    "name": "The Darkin Glaive",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ]
+   },
+   {
+    "id": "ZaahenW",
+    "name": "Dreaded Return",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13.5,
+     13,
+     12.5,
+     12
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "ZaahenE",
+    "name": "Aureate Rush",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "ZaahenR",
+    "name": "Grim Deliverance",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     95,
+     80
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Cultivation of War": {
+    "spellshield": "false",
+    "targeting": "Passive",
+    "affects": "Self"
+   },
+   "Determination": {
+    "spellshield": "false",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "The Darkin Glaive": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   },
+   "The Darkin Glaive 2": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Dreaded Return": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Aureate Rush": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "true",
+    "targeting": "Location",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Grim Deliverance": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "special",
+    "targeting": "Location",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

@@ -1,0 +1,123 @@
+{
+ "champion": "orianna",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Each ability deals its magic damage on cast (Q pass-through/arrival, W pulse, E pass-through, R shockwave), usable on cooldown against the dummy"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Clockwork Winding adds flat+AP-scaling bonus magic damage on top of every basic attack"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Clockwork Winding stacks up to 2 from attacks, each stack adding +15% to the on-hit bonus damage, 4s duration refreshed on hit, lost only on target-switch (irrelevant vs one dummy)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The Ball can deal a first full-damage hit to enemies it passes through, then a separate arrival-impact hit to nearby enemies at 70% damage"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Whether the Ball's flight path from Orianna to the cast location/target actually passes over the single dummy (giving Q a pass-through hit, or E a pass-through hit en route to a self-cast) depends on assumed cast geometry"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "0.5s cast time before the shockwave lands, during which Orianna cannot act; damage is delivered at cast-time end"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 35, W 60-80, E 60, R 100) against Orianna's mana pool can cap how many casts fit in the 15s window"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Command: Protect's shield strength/duration and the passive bonus armor/MR from the attached Ball never matter to the damage fight but govern how long Orianna survives in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All damage-relevant behavior (flat+AP scaling casts, an on-hit rider with a small stack cap, a two-part Q hit, a channel-like R cast time, mana gating, and E's purely defensive kit half) is expressible with existing primitives. The remaining difficulty is not new logic but which geometric/targeting assumption applies to a single stationary dummy, which is captured as unsettled questions rather than a missing primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Command: Attack (Q) hit the single dummy twice per cast (once as the Ball flies through it, once more on arrival splash), applying the 70%-reduced damage to the second hit, or does it land on/adjacent to the dummy and only hit once?",
+   "options": [
+    "Q always registers as two separate damage instances on the same target when cast on/through it (full damage + 70% reduced damage)",
+    "Q only ever produces one damage instance against a single target dummy (the flight-through and arrival-splash are mutually exclusive in this geometry)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|magic damage}} to enemies it passes through and nearby enemies upon arrival, reduced to 70% against those hit beyond the first"
+   ]
+  },
+  {
+   "question": "When Command: Protect (E) is self-cast with no allies present and the Ball is already attached to Orianna, does it still deal its 'passes through' damage component to the dummy, or does it deal zero damage because the Ball never travels (and the note says a cast onto a target already attached doesn't even trigger the global cooldown)?",
+   "options": [
+    "E deals its full pass-through damage to the dummy every cast regardless of travel distance",
+    "E deals no damage on self-cast when the Ball is already attached to Orianna, since there is no flight path to pass through the dummy"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''The Ball''' will not incur its global cooldown from a ''{{ai|Command: Protect|Orianna}}'' cast that is used on a target already attached to it."
+   ]
+  },
+  {
+   "question": "Should the 15s damage-fight rotation open with Command: Shockwave (R) for early burst, or hold it for a later cast, given that in a real fight R is normally saved for its stun/pull but those have no value against a dummy?",
+   "options": [
+    "Cast R at first availability purely to maximize casts-per-15s and front-load damage",
+    "Cast R last since its 0.5s cast time and long cooldown make timing within the window matter for total number of R casts, not just order"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight already autoattacking the dummy so Clockwork Winding stacks begin accruing immediately.",
+   "Cast Command: Attack (Q) on the dummy as soon as possible for its damage, then recast on cooldown throughout the fight (cooldown 7→3s by rank).",
+   "Cast Command: Dissonance (W) on cooldown (7s) whenever available, since it is an auto-targeted pulse requiring no travel time.",
+   "Cast Command: Protect (E) on self on cooldown (9s) for its damage component, assuming it still hits the dummy on each cast.",
+   "Cast Command: Shockwave (R) as soon as it is off cooldown for its large flat+AP damage burst.",
+   "Between ability casts, continue autoattacking the dummy to keep 2 stacks of Clockwork Winding active, maximizing the on-hit bonus magic damage per swing.",
+   "Repeat Q > W > E on cooldown, inserting R whenever it becomes available, for the full 15 seconds, prioritizing not clipping autoattacks."
+  ],
+  "questions": [
+   "Is Orianna assumed to start the fight with the Ball already attached to her (default resting state), or already cast out onto the dummy's position?",
+   "In the survival fight, should Command: Protect always be kept up (shield + bonus resists) as the primary defensive primitive, or is the passive armor/MR from a stationary Ball attachment always active regardless of casts?",
+   "Does the 0.01s global ability cooldown from any cast meaningfully constrain how tightly Q/W/E/R can be sequenced back-to-back in a 15s simulation, or is it negligible and should be ignored?",
+   "Should mana be assumed effectively unlimited (typical late-game itemization) for this fight, or does the simulator want the mana costs enforced against a specific mana pool at the given level/items?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

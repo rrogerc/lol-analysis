@@ -1,0 +1,187 @@
+{
+ "name": "Ultrashock Laser",
+ "cooldown": {
+  "values": [
+   12,
+   11,
+   10,
+   9,
+   8
+  ],
+  "quote": "{{ap|12 to 8}}"
+ },
+ "cost": {
+  "values": [
+   50,
+   60,
+   70,
+   80,
+   90
+  ],
+  "quote": "{{ap|50 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.55,
+  "quote": "{{as|{{pp|type='''bonus''' attack speed|round=3|0.55;0.528;0.495;0.462;0.429;0.396;0.363;0.33;0.3|key1=%|0;24.4444;61.1111;97.7778;134.444;171.111;207.778;244.444;277.778|formula=0.55-0.09 per 100% '''bonus''' attack speed. ''This is capped at 45.5% reduction at 277.8% '''bonus''' attack speed.''}}}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    70,
+    110,
+    150,
+    190
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.0
+    },
+    {
+     "stat": "ap",
+     "coef": 0.5
+    }
+   ],
+   "quote": "{{ap|30 to 190}} {{as|(+ 100% AD)}} {{as|(+ 50% AP)}}",
+   "bin": [
+    "ZeriW#TotalDamage"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Critical Strike Damage (laser vs champions/monsters)",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    45,
+    105,
+    165,
+    225,
+    285
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.5
+    },
+    {
+     "stat": "ap",
+     "coef": 0.75
+    }
+   ],
+   "quote": "{{ap|30*150/100 to 190*150/100}} {{as|(+ {{ap|100*150/100}}% AD)}} {{as|(+ {{ap|50*150/100}}% AP)}}",
+   "bin": [
+    "ZeriW#WallDamage",
+    "ZeriW.CriticalEffectiveness"
+   ],
+   "binNote": "CriticalEffectiveness=0.5 with critDamage baseline ~2.0 (200%) yields WallDamage = TotalDamage*(1+0.5*(critDamage-1)); wiki's #var:crit=150% is the resulting effective multiplier at default 200% crit damage, not a directly separate bin data value."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Slow",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{ap|30 to 50}}%",
+   "bin": [
+    "ZeriW.SlowPercent"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "slows]] them for 2 seconds",
+   "bin": [
+    "ZeriW.SlowDuration"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Laser cast delay after hitting terrain",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.85,
+   "terms": [],
+   "quote": "fires after {{fd|0.85}} seconds",
+   "bin": [
+    "ZeriW.BeamCastTime"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The base pulse deals physical damage and slows only the first enemy hit; if it hits terrain it transforms into a laser hitting all enemies in a line.",
+   "quote": "fires an electric pulse in the target direction that deals {{as|physical damage}} to the first enemy hit and {{tip|slows}} them for 2 seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The terrain-triggered laser always critically strikes against champions and monsters (not against other targets), unlike the base pulse.",
+   "quote": "applying the same effects to enemies hit and {{tip|critical strike|critically striking}} for {{as|{{critical damage|{{#var:crit}}|{{#var:ie_mod_W}}}}|critical damage}} damage against {{tip|champions}} and {{tip|monsters}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Cast time shrinks with bonus attack speed, down to a minimum, capped at 45.5% reduction.",
+   "quote": "0.55-0.09 per 100% '''bonus''' attack speed. ''This is capped at 45.5% reduction at 277.8% '''bonus''' attack speed.''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The pulse missile can be blocked by projectile-interception effects, but the laser cannot.",
+   "quote": "The pulse missile is blocked by {{tip|projectile|projectile-interception}} effects but not the laser.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Can be blocked by spell shields.",
+   "quote": "spellshield  = true",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ZeriW.WallBeamRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ZeriW.BeamWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ZeriW.MinCastTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "ZeriW.ASpeedCastTimeScalarPerHundrethSecond",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "ZeriW.BaseCastTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "ZeriW.APRatio",
+   "reason": null
+  }
+ ],
+ "filledBy": "sonnet"
+}

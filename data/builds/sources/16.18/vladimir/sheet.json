@@ -1,0 +1,715 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "VladimirBloodGorged",
+    "key": "Characters/Vladimir/Spells/VladimirBloodGorgedAbility/VladimirBloodGorged",
+    "dataValues": {
+     "HPforAP": 30,
+     "APRatioBonusHP": 1.6
+    },
+    "calcs": {
+     "ApproximateAPBonusAvoidingRecursion": {
+      "expr": "((1xbonus maxHp + (APRatioBonusHP=1.6)*(-1xap))*((0.01)*(3.333))) * 1.06",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.0353298
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": -0.05652768
+       }
+      ],
+      "refs": [
+       "APRatioBonusHP"
+      ]
+     },
+     "ApproximateHPBonusAvoidingRecursion": {
+      "expr": "(1xbonus ap + ((0.01)*(3.333))*(-1xbonus maxHp))*((1.06)*(APRatioBonusHP=1.6))",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "bonus",
+        "coef": 1.696
+       },
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": -0.05652768
+       }
+      ],
+      "refs": [
+       "APRatioBonusHP"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "VladimirQ",
+    "key": "Characters/Vladimir/Spells/VladimirQAbility/VladimirQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      9,
+      7.9,
+      6.8,
+      5.7,
+      4.6
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HealAPRatio": 0.35,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       100,
+       120,
+       140,
+       160
+      ]
+     },
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30,
+       35,
+       40
+      ]
+     },
+     "Empowered___HealPer100AP_0_1_": 0.04,
+     "DamagePercentAmp": 85,
+     "FrenzyDuration": 2.5,
+     "MinionHealPercent": 35
+    },
+    "calcs": {
+     "BaseDamageTooltip": {
+      "expr": "BaseDamage=[80/100/120/140/160] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        100,
+        120,
+        140,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "BaseHealTooltip": {
+      "expr": "BaseHeal=[20/25/30/35/40] + (HealAPRatio=0.35)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30,
+        35,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35,
+        "dataValue": "HealAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseHeal",
+       "HealAPRatio"
+      ]
+     },
+     "EmpoweredDamageTooltip": {
+      "expr": "BaseDamageTooltip * 1.85",
+      "modifies": "BaseDamageTooltip",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        148,
+        185,
+        222,
+        259,
+        296
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.11
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "EmpoweredHealPercentTooltip": {
+      "expr": "EmpoweredHealPercent * 1",
+      "modifies": "EmpoweredHealPercent",
+      "flat": 0.05,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0004
+       }
+      ],
+      "refs": []
+     },
+     "{097cda4f}": {
+      "expr": "byLevel(30..200)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100,
+        110,
+        120,
+        130,
+        140,
+        150,
+        160,
+        170,
+        180,
+        190,
+        200
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "EmpoweredHealTooltip": {
+      "expr": "{097cda4f} * 1",
+      "modifies": "{097cda4f}",
+      "flat": {
+       "axis": "level",
+       "v": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100,
+        110,
+        120,
+        130,
+        140,
+        150,
+        160,
+        170,
+        180,
+        190,
+        200
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "EmpoweredHealPercent": {
+      "expr": "(5 + 0.04xap) * 0.01",
+      "flat": 0.05,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0004
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "MovementSpeedOnQ2": {
+      "expr": "byLevelL[10/10/10/10/10/20/20/20/20/20/30/30/30/30/30/40/40/40]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        20,
+        20,
+        20,
+        20,
+        20,
+        30,
+        30,
+        30,
+        30,
+        30,
+        40,
+        40,
+        40
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "VladimirSanguinePool",
+    "key": "Characters/Vladimir/Spells/VladimirSanguinePoolAbility/VladimirSanguinePool",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      28,
+      25,
+      22,
+      19,
+      16
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MinionHealingMod": 0.6,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       135,
+       190,
+       245,
+       300
+      ]
+     },
+     "HealthCost": 0.15,
+     "BonusHealthRatio": 0.15,
+     "MoveSpeedMod": -0.4,
+     "VampPercent": 0.3,
+     "HasteBoost": 0.375,
+     "HasteDuration": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/135/190/245/300] + (BonusHealthRatio=0.15)xbonus maxHp",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        135,
+        190,
+        245,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.15,
+        "dataValue": "BonusHealthRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusHealthRatio"
+      ]
+     },
+     "TotalHeal": {
+      "expr": "TotalDamage * VampPercent=0.3",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        24,
+        40.5,
+        57,
+        73.5,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.045,
+        "dataValue": "BonusHealthRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusHealthRatio",
+       "VampPercent"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "VladimirE",
+    "key": "Characters/Vladimir/Spells/VladimirEAbility/VladimirE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      11,
+      9,
+      7,
+      5
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       40,
+       45,
+       50,
+       55,
+       60
+      ]
+     },
+     "MaxHealthCost": 8,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60,
+       75,
+       90
+      ]
+     },
+     "TotalMaxHPDamage": 6,
+     "MaxChannelTime": 1.5,
+     "TimetoRampMaxDamage": 1,
+     "BaseMaxDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     }
+    },
+    "calcs": {
+     "MinDamageTooltip": {
+      "expr": "BaseDamage=[30/45/60/75/90] + 0.015xmaxHp + 0.35xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        45,
+        60,
+        75,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.015
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.35
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MaxDamageTooltip": {
+      "expr": "BaseMaxDamage=[60/90/120/150/180] + 0.06xmaxHp + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.06
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "BaseMaxDamage"
+      ]
+     },
+     "ChargeHealthTooltip": {
+      "expr": "0.08xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.08
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "VladimirHemoplague",
+    "key": "Characters/Vladimir/Spells/VladimirHemoplagueAbility/VladimirHemoplague",
+    "cooldown": 120,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "DamageAmp": 10,
+     "VampPercentFirstChamp": 100,
+     "Duration": 4,
+     "VampPercentAdditionalChamp": 40
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[150/250/350] + 0.7xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "SecondaryHealingTooltip": {
+      "expr": "Damage * 0.4",
+      "modifies": "Damage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        100,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.28
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "VladimirQ",
+  "W": "VladimirSanguinePool",
+  "E": "VladimirE",
+  "R": "VladimirHemoplague",
+  "P": "VladimirBloodGorged"
+ },
+ "resource": {
+  "arType": 8,
+  "values": {
+   "{726ee5cd}": 2,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Vladimir",
+  "name": "Vladimir",
+  "partype": "Crimson Rush",
+  "passive": "Crimson Pact",
+  "spells": [
+   {
+    "id": "VladimirQ",
+    "name": "Transfusion",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     7.9,
+     6.8,
+     5.7,
+     4.6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "VladimirSanguinePool",
+    "name": "Sanguine Pool",
+    "maxrank": 5,
+    "cooldown": [
+     28,
+     25,
+     22,
+     19,
+     16
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "VladimirE",
+    "name": "Tides of Blood",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     11,
+     9,
+     7,
+     5
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "VladimirHemoplague",
+    "name": "Hemoplague",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     120,
+     120
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Crimson Pact": {}
+  },
+  "Q": {
+   "Transfusion": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Unit",
+    "affects": "Self, Enemies"
+   },
+   "Crimson Rush": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Unit",
+    "affects": "Self, Enemies"
+   }
+  },
+  "W": {
+   "Sanguine Pool": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "{{as|'''current''' health}}"
+   }
+  },
+  "E": {
+   "Tides of Blood": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "{{as|'''maximum''' health}}"
+   }
+  },
+  "R": {
+   "Hemoplague": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "special",
+    "projectile": "false",
+    "targeting": "Location",
+    "affects": "Self, Enemies"
+   }
+  }
+ }
+}

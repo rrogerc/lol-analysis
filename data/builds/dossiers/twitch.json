@@ -1,0 +1,609 @@
+{
+ "champion": "twitch",
+ "abilities": {
+  "P": {
+   "name": "Deadly Venom",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "Deadly Venom damage per stack, per second",
+     "role": "dot",
+     "damageType": "true",
+     "by": "level",
+     "base": [
+      1,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{pp|1 to 5 for 5|1 to 17|formula=1 every 4 levels}}|true damage}}}} {{as|(+ 3% AP)}}",
+     "bin": [
+      "TwitchDeadlyVenomMarker#DamagePerSecond"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "Maximum Deadly Venom stacks on one target",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "refreshing on subsequent applications and stacking up to 6 times",
+     "bin": [
+      "TwitchDeadlyVenomMarker.MaxStacks"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "Deadly Venom stack duration, refreshed by each new application",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Deadly Venom'' for 6 seconds, refreshing on subsequent applications",
+     "bin": [
+      "TwitchDeadlyVenomMarker.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Twitch's basic attacks apply Deadly Venom on-hit; a new application refreshes the existing stack's duration rather than starting a second timer, stacking up to 6 times.",
+     "quote": "apply a {{tip|stack}} of ''Deadly Venom'' for 6 seconds, refreshing on subsequent applications and stacking up to 6 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Deadly Venom deals proc/persistent damage over time and does not trigger spell effects (e.g. on-cast procs).",
+     "quote": "''Deadly Venom'' deals {{tip|proc damage|proc}} {{tip|persistent damage|damage over time}}, and does not trigger {{tip|spell effects}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": []
+  },
+  "Q": {
+   "name": "Ambush / Ambush 2 / Ambush 3",
+   "cooldown": {
+    "values": 16,
+    "quote": "16"
+   },
+   "cost": {
+    "values": 40,
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Attack Speed gained upon breaking stealth",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "TwitchHideInShadows.AttackSpeedMod"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Duration of the bonus attack speed after breaking stealth",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "Upon breaking stealth, '''Twitch''' gains {{sti|{{as|'''bonus''' attack speed}}}} for 6 seconds.",
+     "bin": [
+      "TwitchHideInShadows.AttackSpeedDuration"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Delay after cast before the camouflage (and its effects) begins",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "After a 1-second delay, '''Twitch''' becomes {{tip|camouflage|camouflaged}} for a duration.",
+     "bin": [
+      "TwitchHideInShadows.MaxFadeTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Attacking, or casting Venom Cask or Contaminate, ends Ambush's camouflage immediately (before its full duration elapses).",
+     "quote": "Attacking or casting ''{{ai|Venom Cask|Twitch}}'' or ''{{ai|Contaminate|Twitch}}'' ends ''Ambush'' immediately.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Entering stealth cancels Twitch's current basic attack (a swing already in progress is lost).",
+     "quote": "Entering stealth cancels '''Twitch's''' current basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A basic attack breaks Ambush's stealth (and starts the bonus attack speed) at the start of the attack's windup, not when it lands.",
+     "quote": "Using a basic attack {{tip|breaks stealth|breaks the stealth}} at the start of the attack windup.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ambush's cooldown does not start while the ability is still active; it only begins once the camouflage ends (by being broken or expiring).",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If an enemy champion dies while afflicted with Deadly Venom, Ambush's cooldown is reset immediately.",
+     "quote": "When an enemy {{tip|champion}} dies while afflicted with ''{{ai|Deadly Venom|Twitch}}'', ''Ambush's'' cooldown is {{sti|cdr|reset}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TwitchHideInShadows.StealthDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TwitchHideInShadows.StealthDetectionRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TwitchHideInShadows.MoveSpeedMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TwitchHideInShadows.HiddenSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TwitchHideInShadows.MoveBonusRange",
+     "reason": "range-or-geometry"
+    }
+   ]
+  },
+  "W": {
+   "name": "Venom Cask",
+   "cooldown": {
+    "values": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "quote": "{{ap|13 to 9}}"
+   },
+   "cost": {
+    "values": 70,
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Deadly Venom stacks applied per cast (on landing plus each second the zone persists)",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "''Venom Cask'' can apply a maximum of 4 {{ai|Deadly Venom|Twitch}} stacks per enemy per cast.",
+     "bin": [],
+     "binNote": "The sheet has no data value stating 4 directly; only the zone Duration=3 exists (1 stack on landing + 1 per second for 3 seconds = 4, per the wiki's note), so this count comes from the wiki text alone."
+    },
+    {
+     "id": "w_2",
+     "meaning": "Contaminated zone duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "The area then becomes contaminated for 3 seconds",
+     "bin": [
+      "TwitchVenomCask.Duration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Zone tick interval (Deadly Venom stack applied per tick)",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "applying a ''{{ai|Deadly Venom|Twitch}}'' stack each second to enemies within",
+     "bin": [],
+     "binNote": "The sheet has no explicit tick-interval data value; the 1-second cadence is only stated in the wiki's description text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Venom Cask's cask applies a Deadly Venom stack to enemies hit when it lands.",
+     "quote": "applying ''{{ai|Deadly Venom|Twitch}}'' to enemies in the area and granting {{tip|sight}} of it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "After landing, Venom Cask leaves a zone that applies another Deadly Venom stack once per second for 3 seconds to enemies standing in it, separate from the stacks basic attacks apply on-hit.",
+     "quote": "The area then becomes contaminated for 3 seconds, applying a ''{{ai|Deadly Venom|Twitch}}'' stack each second to enemies within",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TwitchVenomCask.BaseSlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "TwitchVenomCask.SlowAPRatio",
+     "reason": "utility"
+    },
+    {
+     "ref": "TwitchVenomCask.AoERadius",
+     "reason": "range-or-geometry"
+    }
+   ]
+  },
+  "E": {
+   "name": "Contaminate",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Base Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 60}}",
+     "bin": [
+      "TwitchExpunge.BaseDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Physical Damage Per Stack",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      15,
+      20,
+      25,
+      30,
+      35
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.35
+      }
+     ],
+     "quote": "{{ap|15 to 35}} {{as|(+ 35% '''bonus''' AD)}}",
+     "bin": [
+      "TwitchExpunge#PhysicalDamagePerStack"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Magic Damage Per Stack",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.35
+      }
+     ],
+     "quote": "''Contaminate'' deals additional {{as|physical damage}} and {{as|35% AP}} {{as|magic damage}} for each stack of ''{{ai|Deadly Venom|Twitch}}'' on the target.",
+     "bin": [
+      "TwitchExpunge#MagicDamagePerStack"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "A nearby enemy with a Deadly Venom stack is required to cast Contaminate; only enemies afflicted with Deadly Venom are hit.",
+     "quote": "A nearby enemy with {{ai|Deadly Venom|Twitch}} is required to cast this ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Contaminate's per-stack physical and magic damage is based on the number of Deadly Venom stacks the target had at the start of the cast time, not when the damage lands.",
+     "quote": "''Contaminate'' will deal the additional damage to targets based on the number of {{ai|Deadly Venom|Twitch}} stacks they had at the start of the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Contaminate deals its base physical damage once, plus the physical and magic per-stack bonus for every stack of Deadly Venom on the target (up to the 6-stack cap).",
+     "quote": "''Contaminate'' deals additional {{as|physical damage}} and {{as|35% AP}} {{as|magic damage}} for each stack of ''{{ai|Deadly Venom|Twitch}}'' on the target.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TwitchExpunge.MaxStacks",
+     "reason": "tooltip-only"
+    }
+   ]
+  },
+  "R": {
+   "name": "Spray and Pray",
+   "cooldown": {
+    "values": 90,
+    "quote": "90"
+   },
+   "cost": {
+    "values": 100,
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Bonus Attack Damage",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 60}}",
+     "bin": [
+      "TwitchFullAutomatic.BonusAD"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Duration of the bonus attack damage/range and bolt-attack effect",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "'''Twitch''' gains {{sti|{{as|'''bonus''' attack damage}}}} and {{sti|range|300 '''bonus''' attack range}} for 6 seconds",
+     "bin": [
+      "TwitchFullAutomatic.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "While active, Twitch's basic attacks are replaced by line-shaped bolts; Spray and Pray itself deals no separate on-cast damage instance.",
+     "quote": "his {{tip|basic attack|basic attacks}} are replaced by ''bolts'' that travel slightly further than his attack range in a straight line, dealing damage to {{tt|every enemy unit|non-champions and champions, wards and plants, turrets and structures}} hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A bolt deals 100% of the triggering attack's damage to the first enemy it hits, 10 percentage points less for each enemy already hit by that bolt, floored at 60%; against a single target a bolt always deals 100%.",
+     "quote": "formula=100% - 10% per enemy hit. ''This is capped at 60% damage.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spray and Pray's bolts apply on-hit effects and can critically strike, like a normal basic attack.",
+     "quote": "apply {{tip|on-hit}} effects, and can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Twitch|crit_base}}|100}}|critical damage}} damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spray and Pray's cooldown starts on cast, not when its 6-second effect ends.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "TwitchFullAutomatic.BonusRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TwitchFullAutomatic.FallOffDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TwitchFullAutomatic.MinimumFallOffDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "TwitchFullAutomatic.OvershootMult",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "TwitchFullAutomatic.OvershootMin",
+     "reason": "range-or-geometry"
+    }
+   ]
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "W",
+    "E"
+   ],
+   "note": "Deadly Venom stacks (cap 6) are placed on the target by P's on-hit and added/refreshed by W's cask (on landing) and its 3 s zone (one more per second); E (Contaminate) reads the current stack count for its per-stack physical/magic bonus damage. Whether E consumes those stacks is unsettled."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P's Deadly Venom is a true-damage tick per stack per second. W's cask leaves a 3-second zone that ticks once per second, but the tick applies a Deadly Venom stack rather than dealing direct damage itself."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Contaminate can only be cast on/near a target that already carries a Deadly Venom stack, and its bonus damage scales with that target's stack count at the start of the cast."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q grants bonus attack speed for 6 s after breaking stealth; R grants bonus attack damage (and attack range) for 6 s."
+  },
+  {
+   "id": "stealth-or-opener",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Ambush is cast before the fight: a 1 s delay, then camouflage that a subsequent attack or W/E cast breaks immediately, paying out the attack-speed buff right as the dummy fight begins."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "R"
+   ],
+   "note": "Spray and Pray's bolts explicitly apply on-hit effects and can critically strike, like a normal basic attack."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Spray and Pray's bolts pierce every enemy hit in a line, dealing 10 percentage points less per enemy already hit (floored at 60%). Against this fight's single stationary target a bolt always hits only that target, so it always deals 100%."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (Q 40, W 70, E 50-90 by rank, R 100) from a 300+40/level pool with modest regen; repeated W/E casts across a 15 s fight may be mana-limited depending on level and build."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit decomposes into standard target-stacks/dot bookkeeping (Deadly Venom), conditional per-stack damage (Contaminate), timed self-buffs (Q's attack speed, R's bonus AD), a stealth opener (Q), and a crit-capable, positionally-trivial (single target) empowered attack (R). No mechanic here needs logic outside the primitive list."
+ },
+ "unsettled": [
+  {
+   "question": "Does casting Contaminate consume/remove the target's Deadly Venom stacks it just scored bonus damage from, or do the stacks persist and keep ticking on their own timers?",
+   "options": [
+    "Contaminate consumes/resets the stacks it scores damage from",
+    "Stacks are unaffected by Contaminate and continue independently (added by attacks/Venom Cask, expiring/refreshing on their own 6 s timers)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Contaminate'' will deal the additional damage to targets based on the number of {{ai|Deadly Venom|Twitch}} stacks they had at the start of the cast time."
+   ]
+  },
+  {
+   "question": "Does Ambush's bonus attack speed pay out if the camouflage simply times out on its own (never broken by attacking or casting Venom Cask/Contaminate), or only when it is actively broken?",
+   "options": [
+    "Any way the effect ends, including natural expiry, counts as 'breaking stealth' and grants the bonus attack speed",
+    "Only an explicit break (attacking, or casting Venom Cask/Contaminate) grants it; a natural timeout grants nothing"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Upon breaking stealth, '''Twitch''' gains {{sti|{{as|'''bonus''' attack speed}}}} for 6 seconds.",
+    "Attacking or casting ''{{ai|Venom Cask|Twitch}}'' or ''{{ai|Contaminate|Twitch}}'' ends ''Ambush'' immediately."
+   ]
+  },
+  {
+   "question": "What critical-strike damage multiplier does Spray and Pray's bolts use? The wiki names a champion-specific {{ccd|Twitch|crit_base}} constant that neither the wiki capture nor the sheet resolves to a number.",
+   "options": [
+    "Twitch uses the engine's standard/default critical-strike damage multiplier",
+    "Twitch has a distinct crit_base baked into the bin that this capture did not include"
+   ],
+   "impact": "low",
+   "quotes": [
+    "can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Twitch|crit_base}}|100}}|critical damage}} damage"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Before the fight timer starts, cast Ambush (Q) so its 1-second delay and camouflage resolve pre-fight.",
+   "At the start of the fight, cast Venom Cask (W) on the dummy: this breaks Ambush's camouflage immediately (paying out the 6-second bonus attack speed) and applies the on-landing Deadly Venom stack, followed by one more stack per second for 3 seconds.",
+   "Cast Spray and Pray (R) as soon as it is available so its bonus attack damage is active for as much of the fight as possible, including while Contaminate is scoring its bonus-AD-scaled per-stack damage.",
+   "Auto-attack (or bolt-attack while R is active) continuously between casts to keep adding/refreshing Deadly Venom stacks toward the 6-stack cap and to make use of Q's attack-speed buff.",
+   "Cast Contaminate (E) once Deadly Venom stacks on the target are high, converting them into its per-stack physical and magic bonus damage; recast on cooldown as mana allows.",
+   "Recast Venom Cask on cooldown to keep Deadly Venom stacks topped up ahead of the next Contaminate, mana permitting."
+  ],
+  "questions": [
+   "Does Contaminate consume the target's Deadly Venom stacks, changing how soon it should be recast relative to rebuilding stacks?",
+   "How many Deadly Venom stacks (and how much elapsed time) should Contaminate wait for before its first cast, given its own cooldown and mana cost against a ~15 s fight?",
+   "Should Spray and Pray be cast immediately (to front-load its bonus AD for Contaminate) or held to align with a later, higher-stack Contaminate?",
+   "Is mana actually a binding constraint across Q/W/E/R at the levels/items this fight will be run at, or is it never tight enough to change the rotation?"
+  ]
+ }
+}

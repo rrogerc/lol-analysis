@@ -1,0 +1,221 @@
+{
+ "name": "Bear Trap on a Rope",
+ "cooldown": {
+  "values": [
+   11,
+   10,
+   9,
+   8,
+   7
+  ],
+  "quote": "{{ap|11 to 7}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    30,
+    55,
+    80,
+    105,
+    130
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.6
+    }
+   ],
+   "quote": "{{ap|30 to 130}} {{as|(+ 60% '''bonus''' AD)}}",
+   "bin": [
+    "KledQ#TotalDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Minion and Small Monster Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    45,
+    82.5,
+    120,
+    157.5,
+    195
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.9
+    }
+   ],
+   "quote": "{{ap|30*1.5 to 130*1.5}} {{as|(+ {{#expr:60*1.5}}% '''bonus''' AD)}}",
+   "bin": [
+    "KledQ.MinionDamageMultiplier",
+    "KledQ#TotalDamage"
+   ],
+   "binNote": "No single bin row states 45/82.5/... directly; it is KledQ#TotalDamage's flat/ratio values (30..130, 0.6) multiplied by KledQ.MinionDamageMultiplier=1.5, matching the wiki's stated 150% figure."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    60,
+    110,
+    160,
+    210,
+    260
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.2
+    }
+   ],
+   "quote": "{{ap|30*2 to 130*2}} {{as|(+ {{#expr:60*2}}% '''bonus''' AD)}}",
+   "bin": [
+    "KledQ#TotalYankDamage"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Total Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    90,
+    165,
+    240,
+    315,
+    390
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 1.8
+    }
+   ],
+   "quote": "{{ap|30*3 to 130*3}} {{as|(+ {{#expr:60*3}}% '''bonus''' AD)}}",
+   "bin": [
+    "KledQ#TotalDamage",
+    "KledQ#TotalYankDamage"
+   ],
+   "binNote": "This is a wiki-computed sum of the first-hit damage (KledQ#TotalDamage) and the pull damage (KledQ#TotalYankDamage); no bin row states this combined total directly."
+  },
+  {
+   "id": "q_5",
+   "meaning": "Slow",
+   "role": "utility",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{ap|30 to 50}}%",
+   "bin": [
+    "KledQ.SlowAmount"
+   ],
+   "binNote": "Bin stores SlowAmount as a negative delta ([-0.3..-0.5]) representing the reduction applied to move speed; the wiki states the same magnitude as a positive percentage."
+  },
+  {
+   "id": "q_6",
+   "meaning": "Slow duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "{{tip|slow|slows}} them for {{fd|2.5}} seconds",
+   "bin": [
+    "KledQ.SlowDuration"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "Tether duration before it pulls",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.75,
+   "terms": [],
+   "quote": "forming a {{tip|tether}} between '''Kled''' and the target for {{fd|1.75}} seconds",
+   "bin": [
+    "KledQ.TetherPopTime"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The bear trap deals damage to enemies hit by the projectile, and forms a tether against the first champion or large monster hit; the tether later pulls them for the second damage instance.",
+   "quote": "deals {{as|physical damage}} to enemies hit, increased to 150% against {{tip|minion|minions}}, small {{tip|pet|pets}}, and small and medium {{tip|monsters}}. The bear trap collides with the first enemy {{tip|champion}}, large pet, or large monster hit",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first hit and the tether-pop hit are separate, non-lifesteal-applying damage instances.",
+   "quote": "dApplyLifesteal      = false",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The pull damage recalculates dynamically based on Kled's current AD at the moment it triggers, not when the tether was applied.",
+   "quote": "The pull damage is updated dynamically based on '''Kled's''' current attack damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The tether cannot be broken within the first 0.25 seconds of its application, meaning the pull cannot be avoided immediately.",
+   "quote": "The tether cannot be broken within the first {{tt|{{fd|0.25}}|estimated}} seconds of its application.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability casts toward the cursor position at the start of the cast time, not at its end.",
+   "quote": "The ability will cast to wherever the caster's cursor was at the start of the cast time.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Bear Trap on a Rope can be cast while Jousting (Kled's E), allowing it during the dash.",
+   "quote": "''Bear Trap on a Rope can be cast while {{ai|Jousting|Kled}}.''",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KledQ.GrievousAmount",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledQ.GrievousDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "KledQ.CouragePerPellet",
+   "reason": "utility"
+  },
+  {
+   "ref": "KledQ.DismountedBaseDamage",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "KledQ.MissileSpawnCheckRadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

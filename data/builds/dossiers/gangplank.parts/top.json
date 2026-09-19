@@ -1,0 +1,204 @@
+{
+ "champion": "gangplank",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Trial by Fire empowers next basic attack with a true-damage DoT every 15s cooldown, refreshed/reset by Powder Keg explosions"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "P"
+   ],
+   "note": "the next basic attack is armed to apply the burn"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "E"
+   ],
+   "note": "Powder Keg explosions reset Trial by Fire's cooldown"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "true damage burn over 2.5s"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Parrrley fires on cast on cooldown; Cannon Barrage fires waves on cast"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "mana costs limit cast frequency, especially R (100 mana) and repeated Q"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Powder Keg placement + separate trigger via attack/Parrrley with chain explosions; Cannon Barrage fires 12 separately-timed waves in 4 clusters"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Powder Keg uses a charge/stock system with a max charge count and recharge timer, not a normal cooldown"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Powder Keg slow + armor penetration on champions; Cannon Barrage slow (utility only, ignored for damage but armor pen affects damage taken)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "bonus physical damage to champions only, on top of base explosion damage"
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Parrrley damage can crit; a keg-destroying attack that crits causes the explosion to deal crit damage"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Remove Scurvy is a self-heal/cleanse with no damage relevance in the damage fight, but relevant to survival fight as a heal"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Powder Keg (E) does not fit any single primitive cleanly: it is placed on a location as a distinct entity with its own hit points (3 health, decaying over time), must then be destroyed by a separate basic attack or Parrrley cast from Gangplank to explode, and that triggering attack's own damage (including on-hit/Spellblade effects but not on-hit proc damage) becomes the explosion's base damage, plus a flat bonus vs champions, with a chain-reaction to other nearby kegs each on a 0.3s (or bin's 0.5s) delay. This is a two-stage cast-then-destroy pet/trap mechanic with damage-forwarding from the triggering attack, which is not captured by weapon-or-ammo-system, pet-or-summon, or recast-or-multipart alone. A bespoke rule is needed: place keg -> attack keg with a normal attack or Q -> that attack's damage (plus champion bonus, minus armor pen) is dealt as keg explosion damage, with the placing attack itself also dealing its own damage to the dummy directly (double-dip), and chains only relevant if multiple kegs are placed and clustered (a positional assumption the dummy fight must decide)."
+ },
+ "unsettled": [
+  {
+   "question": "What is Powder Keg's chain-explosion delay: 0.3s (wiki) or 0.5s (bin GangplankE.CooldownBetweenBarrels)?",
+   "options": [
+    "Use wiki's 0.3s stated for chain delay",
+    "Use bin's 0.5s (same field also doubles as recharge/cooldown value)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{rutngt|0.3}}-delay between explosions",
+    "GangplankE.CooldownBetweenBarrels = 0.5"
+   ]
+  },
+  {
+   "question": "Cannon Barrage intra-cluster wave delay: wiki says 0.25s between waves in a cluster, but bin's GangplankR.CannonDelay = 0.5.",
+   "options": [
+    "Use wiki's 0.25s",
+    "Use bin's 0.5s",
+    "They measure different things (e.g. delay from cluster start vs between waves) and both could be simultaneously true"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "each wave in a cluster hitting {{fd|0.25}} seconds after the other",
+    "GangplankR.CannonDelay = 0.5"
+   ]
+  },
+  {
+   "question": "How many Powder Kegs should the damage-fight rotation place and detonate, and does the dummy-fight model even support a keg as a distinct destructible entity with its own damage-forwarding rule, or should it be approximated as a flat bonus proc on attacks?",
+   "options": [
+    "Model E fully: place a keg then destroy it with a basic attack/Q, forwarding that attack's damage into a second explosion instance with the champion bonus added",
+    "Approximate E as a periodic bonus true/physical damage proc timed by the charge recharge rate, ignoring the two-step place/destroy structure",
+    "Exclude E from the damage fight entirely as too far outside engine primitives"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Gangplank''' consumes a charge to place a powder keg at the target location",
+    "it will explode to deal the {{as|attack's damage|pdamage}} to nearby enemies"
+   ]
+  },
+  {
+   "question": "Does the same attack that destroys a keg deal both its normal damage to the dummy AND get 'redealt' as the explosion damage (double-hit), or does destroying the keg replace/redirect that attack's damage so the dummy is hit once for a combined total?",
+   "options": [
+    "Dummy takes the attack's normal damage instance, plus a separate explosion damage instance equal to that same attack's damage + champion bonus (double count)",
+    "The keg destroying attack only deals its damage via the explosion (single instance), since the keg absorbs the attack (proc damage to the keg itself is reduced to 0)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Attacks against ''Powder Kegs'' will apply {{tip|on-hit}} effects...but {{tip|proc damage}} against the keg itself is reduced to 0.",
+    "it will explode to deal the {{as|attack's damage|pdamage}} to nearby enemies"
+   ]
+  },
+  {
+   "question": "Does Trial by Fire's cooldown reset from a Powder Keg explosion happen once per keg detonated by Gangplank in the 15s fight, and should the rotation assume Gangplank keeps a keg pre-placed to instantly refresh Trial by Fire on cooldown, effectively removing its 15s cooldown constraint?",
+   "options": [
+    "Assume keg resets are used opportunistically to near-permanently uptime Trial by Fire (best case for damage)",
+    "Assume Trial by Fire is used on its raw 15s cooldown without keg resets (conservative/simple case)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Every time a ''{{ai|Powder Keg|Gangplank}}'' explodes, the {{sti|cooldown}} for ''Trial by Fire'' resets and '''Gangplank''' gains its {{as|'''bonus''' movement speed}}."
+   ]
+  },
+  {
+   "question": "Is Trial by Fire's true-damage burn (P) mutually exclusive with Q (Parrrley) and E (Powder Keg) applying it at all, or only exclusive in the same attack instance (i.e., can a subsequent auto-attack after a Q still apply it)?",
+   "options": [
+    "Trial by Fire can never be applied via Q or E casts, only via plain basic attacks",
+    "Trial by Fire is blocked only on the specific attack instance that is a Q or keg-trigger, but any other basic attack (including ones that also proc other on-hit effects) can carry it"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Trial by Fire cannot be applied with {{ai|Parrrley|Gangplank}} nor {{ai|Powder Keg|Gangplank}}."
+   ]
+  },
+  {
+   "question": "Does Cannon Barrage's global-range, location-targeted AOE actually land on and fully hit a single stationary dummy target for all 12 waves (i.e., can we assume 100% wave uptime on the dummy), given the dummy fight has no positioning/movement?",
+   "options": [
+    "Assume all waves hit the stationary dummy (best case, matches spec's stationary-target assumption)",
+    "Assume some waves could miss if the dummy could reposition (not applicable here since target is stationary)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "calling down 12 waves of cannonballs in clusters of 3 every 2 seconds... to all enemies within the area"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: place a Powder Keg near the dummy if a charge is available (does not cost time in the fight, keg has 25s lifetime), to set up an instant Trial by Fire refresh once destroyed.",
+   "Open by casting Cannon Barrage (R) on the dummy's location immediately (long cooldown, cast early to maximize uptime of its 12 magic-damage waves across the fight duration).",
+   "Immediately follow with Parrrley (Q) on cooldown throughout the fight (4.5s cooldown, cheap enough on mana budget) as the primary repeated damage source.",
+   "Whenever Trial by Fire is off cooldown, weave a basic attack (or let auto-attacks naturally continue) into the Q rotation so the empowered burn attack fires immediately once available.",
+   "Attack the placed Powder Keg (via basic attack or Parrrley) as soon as convenient to detonate it, dealing the triggering attack's damage plus the champion bonus damage, and to reset Trial by Fire's cooldown for another proc.",
+   "Re-place and re-detonate Powder Kegs whenever a charge is available and it does not delay Q/auto-attack casts, to keep resetting Trial by Fire and adding extra explosion damage instances.",
+   "Continue basic-attacking between Q casts (respecting its cast time and the attack timer) to maximize total auto-attack damage and Trial by Fire uptime.",
+   "Do not cast Remove Scurvy (W) in the damage fight since it only heals/cleanses and has no damage-fight contribution; only relevant in the survival fight as periodic self-healing on cooldown."
+  ],
+  "questions": [
+   "In the intended damage-fight sim, is Gangplank expected to actively manage the Powder Keg place-then-destroy loop, or is E excluded/simplified because it needs bespoke logic the primitive list can't express?",
+   "Should Trial by Fire resets from Powder Keg explosions be assumed to happen on-cooldown throughout the fight (best case), given they require actively timing an extra basic attack onto a placed keg?",
+   "Does casting Q at a target that has a keg nearby cause it to hit the champion target directly as well as detonate the keg, or does the sim need to treat keg detonation as an entirely separate, optional action from the main single-target rotation?",
+   "For the survival fight, should Remove Scurvy's heal timing (on cooldown vs. saved for a health threshold) be assumed, since that materially changes effective health survived?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

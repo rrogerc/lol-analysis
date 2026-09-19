@@ -1,0 +1,119 @@
+{
+ "champion": "lillia",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Q, W, E deal damage on cast or after a fixed cast/travel delay on their own cooldowns; R's own missile deals no self-damage but arms the wake-up bonus (see conditional-damage)."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Dream-Laden Bough: any Lillia ability that hits an enemy applies 'Dream Dust', a 3s/6-tick DoT dealing 5% (+1.25%/100AP) of the target's max HP total, capped vs monsters. Triggered by Q/W/E hits and by R's wake-up damage (R's sleep application itself does not apply it)."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q deals bonus true damage equal to its magic damage only to targets caught within the outer ring (225-485 range) of the swing; W deals 3x damage to targets caught in a 65-radius epicenter sweet spot. The dummy fight must assume whether the target is standing in these zones for every cast."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R puts an enemy champion drowsy (1.5s) then asleep (2s, after a 0.3s missile travel); the next non-persistent damage instance a sleeping target takes from a champion/large monster/turret consumes the debuff for bonus magic damage (100-200 + 40% AP). Requires the target to already be marked by Dream Dust to cast R at all, and requires a follow-up qualifying hit to land while asleep to realize the bonus."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 65, W 50, E 70, R 50) with no listed mana-restore mechanic on the kit; over a 15s fight with no items/runes assumed, mana could cap the number of casts, especially with W/Q on short (4-14s) cooldowns and E fixed at 12s."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant mechanics (base ability damage, an ability-triggered percent-max-HP DoT shared across all four abilities, positional bonus-damage zones on Q and W, and R's 'next hit while asleep' bonus damage) are all expressible as combinations of plain-cast, dot, positional-assumption, and conditional-damage primitives; no unique stat-conversion, form-change, ammo, or pet logic is needed for the damage fight."
+ },
+ "unsettled": [
+  {
+   "question": "When Dream Dust is already active on the target and a second Lillia ability hits it, does the new hit simply refresh the existing 3s/6-tick DoT (one DoT instance total), or does it start a fully independent second DoT instance that stacks/ticks alongside the first?",
+   "options": [
+    "Refresh only: re-applying Dream Dust resets the 3s timer but there is still only one DoT running at a time",
+    "Stacking: each ability hit creates its own independent 3s/6-tick DoT instance, so overlapping casts multiply total Dream Dust damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Lillia's''' {{tip|abilities}} apply ''Dream Dust'' to enemies hit"
+   ]
+  },
+  {
+   "question": "Lillia's Dream Dust self-heal-per-level curve disagrees between the bin's LilliaP#ChampionHeal byLevel(1..15) array (times 6 ticks) and the wiki's stated pplevel quadratic formula (6..90) — which curve is authoritative for computing sustain in the survival fight?",
+   "options": [
+    "Use the bin's byLevel(1..15) array x 6 ticks",
+    "Use the wiki's stated pplevel formula 6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1))"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pplevel|6 + ((90-6)/17)*(x-1)*(0.7025+0.0175*(x-1))|color=heal}} {{as|(+ 30% AP)}} against {{tip|champions}}"
+   ]
+  },
+  {
+   "question": "W's effective delay before impact disagrees between sources: the bin's LilliaW.MaximumCastTime is 0.75s flat, while the wiki states cast time as 'None' with an actual pre-impact delay of 0.6 to 0.75s depending on dash distance (rounded to the next game tick, up to 0.767s). Which value should gate how often W can deal damage in the 15s window relative to its cooldown?",
+   "options": [
+    "Treat W as always taking the maximum 0.75s (or 0.767s per the note) delay before impact",
+    "Treat W's delay as variable (0.6-0.75s) depending on assumed cast distance to the stationary dummy"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Dash starts immediately before a 0.25 cast time, but actual delay is 0.6 to 0.75 seconds",
+    "cannot move before the strike goes off at {{fd|0.767}} seconds, regardless"
+   ]
+  },
+  {
+   "question": "E's cast time disagrees between the bin (LilliaE castTime = 0.35) and the wiki (0.4) — which is the live value for pacing E's casts in the rotation?",
+   "options": [
+    "Use the bin's 0.35s",
+    "Use the wiki's 0.4s"
+   ],
+   "impact": "low",
+   "quotes": [
+    "cast time    = {{fd|0.4}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with E (Swirlseed) at 0.4s cast to land the first Dream Dust application on the dummy and begin its DoT.",
+   "Immediately follow with Q (Blooming Blows), positioning so the dummy is caught in the outer ring for both the magic and bonus true damage, refreshing/stacking Dream Dust.",
+   "Cast W (Watch Out! Eep!) aiming for the epicenter sweet spot for 3x damage, again applying/refreshing Dream Dust.",
+   "Once the dummy carries a Dream Dust mark, cast R (Lilting Lullaby); it has 0.4s cast + 0.3s travel + 1.5s drowsy before the dummy falls asleep (~2.2s after R is cast).",
+   "During R's drowsy window, keep recasting Q on its short cooldown (4-6s) and weave basic attacks; time a qualifying non-persistent hit (an autoattack or another ability cast) to land the instant the sleep debuff is live, so it consumes the debuff for R's bonus magic damage.",
+   "For the remainder of the 15s window, recast Q every time it comes off cooldown (highest priority, cheapest, shortest CD), fire E every 12s, W every 10-14s, and fill any gaps with basic attacks, tracking mana against the ~235 mana used per Q+W+E+R cycle.",
+   "R itself will not come off cooldown again inside 15s (110-150s CD), so it is cast once, as early as its prerequisite (a Dream Dust mark) allows."
+  ],
+  "questions": [
+   "Does the simulator model Lillia performing basic attacks between ability casts in the damage fight, or is the rotation ability-casts-only? This changes whether R's wake-up bonus is best consumed by an autoattack or by weaving another ability cast into the ~2.2s drowsy window.",
+   "Should R be cast as early as possible (as soon as a Dream Dust mark exists, likely right after the opening E) to maximize the number of 15s-window ticks that benefit from its bonus damage, or held to guarantee no drowsy time is wasted while other cooldowns are down?",
+   "When multiple Dream Dust instances would be active/refreshing simultaneously (see unsettled question on stacking), does the optimal rotation change to spacing out casts (to avoid wasted overlap) versus stacking them as fast as possible?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

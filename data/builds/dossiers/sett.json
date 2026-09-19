@@ -1,0 +1,1073 @@
+{
+ "champion": "sett",
+ "abilities": {
+  "P": {
+   "name": "Pit Grit",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus health regenerated per 0.5s per 5% missing health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.075,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      1,
+      1,
+      1
+     ],
+     "terms": [],
+     "quote": "{{pp|0.075;0.25;0.5;1;1.025;1.05|1 to 16 for 4;19;20|changedisplay=true|round=3}} health}} every {{fd|0.5}} seconds",
+     "bin": [
+      "SettPassive#{7733e08c}"
+     ],
+     "binNote": "SettPassive#{7733e08c} evaluates to [0.03,0.03,0.03,0.03,0.03,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.2,0.4,0.4,0.4] (byLevel[3..40]*0.01), which is exactly 0.4x the wiki's stated per-tick values (0.075..1); the related tooltip calc {7733e08c}*5 gives 0.15..2, also not matching. This is a genuine disagreement between the wiki text and the bin's resolved numbers; stating the wiki's number here."
+    },
+    {
+     "id": "p_2",
+     "meaning": "health regen tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "every {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "No standalone tick-interval data value found in the sheet; only present in the wiki description."
+    },
+    {
+     "id": "p_3",
+     "meaning": "missing health fraction per regen unit (5%)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [],
+     "quote": "per {{sti|{{as|5% of his '''missing''' health}}}}",
+     "bin": [],
+     "binNote": "SettPassive.MissingHealthUnit = 0.01 is the 1% unit used inside the {7733e08c} calc; the wiki's 5% figure is 5x that unit and isn't a separate data row."
+    },
+    {
+     "id": "p_4",
+     "meaning": "Right Punch bonus physical damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.55
+      }
+     ],
+     "quote": "{{as|{{pp|5 + (90-5)/17*(x-1) for 20}}|physical damage}} {{as|(+ 55% '''bonus''' AD)}}",
+     "bin": [
+      "SettPassive#RightPunchBonus"
+     ],
+     "binNote": "RightPunchBonus's base term reads an unresolved ByCharLevelFormulaCalculationPart; the linear 5-to-90 progression from the wiki matches a straightforward +5/level formula but the exact bin base values could not be independently confirmed."
+    },
+    {
+     "id": "p_5",
+     "meaning": "Right Punch windup as a fraction of Left Punch windup (effective attack speed multiplier)",
+     "role": "onhit",
+     "damageType": null,
+     "by": "const",
+     "base": 0.125,
+     "terms": [],
+     "quote": "windup is sped up and fixed at {{ft|{{fd|12.5%}} of a {{as|Left Punch's|armor}} windup time.|800% of a {{as|Left Punch's|armor}} windup speed.}}",
+     "bin": [],
+     "binNote": "No matching data value found; SettPassive.AttackSpeed = 1.5 does not equal the wiki's stated 8x (800%) windup speed, so it is not used for this number (see binUnused)."
+    },
+    {
+     "id": "p_6",
+     "meaning": "Left Punch reset window (time before reverting from Right Punch state)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "reset back to it after 2 seconds of not performing a {{as|Right Punch|buzzword3}}",
+     "bin": [],
+     "binNote": "No matching data value found in the Passive slot rows for this 2-second reset timer."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sett regenerates additional health based on his missing health, on top of normal regen.",
+     "quote": "regenerates additional health based on {{as|his '''missing''' health}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Basic attacks alternate between a normal Left Punch and an empowered Right Punch, resetting to Left Punch if no Right Punch occurs for 2 seconds.",
+     "quote": "basic attacks alternate between his {{as|Left Punch|armor}} and a {{as|Right Punch|buzzword3}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Right Punch's bonus damage can be life stolen from.",
+     "quote": "The bonus physical damage from the {{as|Right Punch|buzzword3}} benefits from {{as|{{sti|life steal}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Right Punch does not grant bonus attack speed; instead its windup time is separately fixed to be much shorter, and this fixed windup is still affected by attack speed buffs not already active on the prior Left Punch.",
+     "quote": "does not grant {{as|{{sti|'''bonus''' attack speed}}}}, rather its windup is sped up and fixed",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SettPassive.NumHits",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettPassive.LockoutTimer",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.MarkerDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.GrabDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettPassive.SelfSlowPercent",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettPassive.MaxHPOnHit",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.AttackSpeed",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.JabDamagePercent",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.HookDamagePercentFinal",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.PassiveHealthThreshold",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.PassiveHealthThresholdAmp",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettPassive.MissingHealthUnit",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Knuckle Down / Looking for a Fight",
+   "cooldown": {
+    "values": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "quote": "{{ap|9 to 5}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Physical Damage per empowered attack",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      10,
+      20,
+      30,
+      40,
+      50
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.01,
+       "coefScaling": [
+        {
+         "stat": "ad",
+         "per": 100,
+         "coef": [
+          0.01,
+          0.015,
+          0.02,
+          0.025,
+          0.03
+         ]
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|10 to 50}} {{as|(+ 1% {{as|(+ {{ap|1 to 3}}% per 100 AD)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "SettQ.BaseDamage",
+      "SettQ#MaxHealthDamageCalc"
+     ]
+    },
+    {
+     "id": "q_5_duration",
+     "meaning": "duration during which the next two basic attacks are empowered",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "empowers his next two basic attacks within 5 seconds",
+     "bin": [
+      "SettQ.Duration"
+     ],
+     "binNote": "Wiki description says the empowerment window is 5 seconds; the bin's SettQ.Duration = 4. Recorded the wiki's number and flagging the disagreement."
+    },
+    {
+     "id": "q_6_hits",
+     "meaning": "number of basic attacks empowered",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "empowers his next two basic attacks",
+     "bin": [],
+     "binNote": "No bin data value in SettQ gives '2' directly (SettQ.StackCount = 1 does not match); the count of empowered attacks is not exposed as a separate row."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Knuckle Down resets Sett's basic attack timer, so the empowered attacks come out immediately without waiting for the normal attack interval.",
+     "quote": "Knuckle Down {{tip|basic attack reset|resets}} '''Sett's''' basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The two empowered attacks are guaranteed to land as a Left Punch followed by a Right Punch, and Knuckle Down resets Sett's current Pit Grit passive state, ignoring the usual time-out for a follow-up Right Punch.",
+     "quote": "The empowered attacks are guaranteed to be a {{as|Left Punch|Armor}} followed by a {{as|Right Punch|buzzword3}}, resetting '''Sett's''' current {{ai|Pit Grit|Sett}} state (if applicable) and ignoring the usual time-out period for a follow-up {{as|Right Punch|buzzword3}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus damage from Knuckle Down is capped at 400 total damage per attack against monsters (not relevant to a champion-dummy fight).",
+     "quote": "capped at 400 '''total''' damage of each attack against {{tip|monsters}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown does not begin until after its effect (both empowered attacks or the window expiring), not on cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SettQ.StackCount",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettQ.HealthCost",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "SettQ.MSAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettQ.MSDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettQ.AdrenalineDecayLockTimer",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettQ.BaseHealthCost",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "SettQ.ADRatio",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettQ.QMinimumDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SettQ.MaxHealthTADRatioTOOLTIP",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "SettQ.MonsterCap",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Haymaker",
+   "cooldown": {
+    "values": [
+     18,
+     16.5,
+     15,
+     13.5,
+     12
+    ],
+    "quote": "{{ap|18 to 12}}"
+   },
+   "cost": {
+    "values": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "quote": "100%",
+    "resource": "'''current''' grit"
+   },
+   "castTime": {
+    "value": 0.75,
+    "quote": "{{fd|0.75}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      80,
+      100,
+      120,
+      140,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "other",
+       "coef": 0.25,
+       "coefScaling": [
+        {
+         "stat": "bonusAd",
+         "per": 100,
+         "coef": 0.25
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|80 to 160}} (+ 25% {{as|(+ 25% per 100 '''bonus''' AD)}} of expended ''Grit'')",
+     "bin": [
+      "SettW#DamageCalc",
+      "SettW#DamageConversion"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Grit shield decay start delay",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "decaying in strength over the duration after {{fd|0.75}} seconds",
+     "bin": [
+      "SettW.ShieldDecayDelay"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Shield total duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "grant himself a {{tip|shield}} at the start of the cast time that is equal to the expended ''Grit'' for 3 seconds",
+     "bin": [
+      "SettW.ShieldMaxDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "Grit shield conversion (percent of stored Grit converted to shield)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "consumes all of his stored ''Grit'' to grant himself a {{tip|shield}}... equal to the expended ''Grit''",
+     "bin": [
+      "SettW.ShieldConversion"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Grit cap as percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "up to a cap of {{as|50% of his '''maximum''' health}}",
+     "bin": [
+      "SettW.StoredHealth"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Passive: Grit stored as percent of post-mitigation damage taken",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "stores 100% of {{tt|post-mitigation damage...}} taken as ''Grit''",
+     "bin": [
+      "SettW.DamageStored"
+     ]
+    },
+    {
+     "id": "w_7",
+     "meaning": "Grit decay rate per second (after 4 second delay)",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "Each instance of stored ''Grit'' decays in value by 30% every second after 4 seconds.",
+     "bin": [
+      "SettW.ResourceDecayRate"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "Grit decay delay before it starts decaying",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "decays in value by 30% every second after 4 seconds",
+     "bin": [
+      "SettW.AdrenalineStorageWindow"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies hit in the middle line take true damage instead of physical damage.",
+     "quote": "those hit in a line in the middle are dealt {{ccs|{{sti|{{as|true damage}}}}|true}} instead.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage dealt scales with the amount of Grit expended, which is consumed at the start of the cast time.",
+     "quote": "he immediately consumes all of his stored ''Grit'' to grant himself a {{tip|shield}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Sett does not store Grit from damage mitigated by shields.",
+     "quote": "'''Sett''' does not store ''Grit'' from damage that was mitigated by {{tip|shield|shields}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The blast and damage occur only after the cast time ends.",
+     "quote": "After the cast time, he unleashes a massive blast in an area in the target direction, dealing {{as|physical damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The shield is granted at the start of the cast time and decays after 0.75 seconds.",
+     "quote": "The shield is granted at the start of the cast time and will decay afterwards.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SettW.DamageAmp",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "SettW.Duration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettW.MovementSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettW.MSDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettW.GreyHealthDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettW.LockTime",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettW.DamageConversionBase",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettW.EnrageDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettW.EnrageHealingMult",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettW.EnrageADMult",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettW.EnrageArmorPen",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Facebreaker",
+   "cooldown": {
+    "values": [
+     16,
+     14.5,
+     13,
+     11.5,
+     10
+    ],
+    "quote": "{{ap|16 to 10}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|50 to 130}} {{as|(+ 60% AD)}}",
+     "bin": [
+      "SettE#DamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "bonus physical damage to monsters",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      125,
+      150,
+      175,
+      200,
+      225
+     ],
+     "terms": [],
+     "quote": "{{pp|125 to 250}} '''bonus''' physical damage}} to {{tip|monsters}}",
+     "bin": [
+      "SettE.MonsterDamage"
+     ],
+     "binNote": "Wiki's pp|125 to 250 does not match the 5-rank MonsterDamage array [150/175/200/225/250]; the bin's SettE#MonsterBonus byLevel(125..250) appears to be the actual source read by the tooltip, a separate level-scaled value from MonsterDamage."
+    },
+    {
+     "id": "e_3",
+     "meaning": "slow amount",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.7,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 70% for {{fd|0.5}} seconds",
+     "bin": [
+      "SettE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "slowing}} them by 70% for {{fd|0.5}} seconds",
+     "bin": [
+      "SettE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "stun duration on double-side hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|stun|stunned}} for 1 second upon landing",
+     "bin": [
+      "SettE.StunDuration"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "self lockout duration after cast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "'''''Sett''' becomes {{tip|lockout|unable}} to move or attack for {{fd|0.25}} seconds after Facebreaker's cast time.''",
+     "bin": [
+      "SettE.Duration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sett automatically follows up with a basic attack on the closest enemy pulled in by Facebreaker.",
+     "quote": "'''Sett''' will afterwards attempt to basic attack the closest target picked up by ''Facebreaker'', prioritising champions and prioritising those in front of him.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Facebreaker's cast generates an extra Hail of Blades stack despite not being a basic attack reset.",
+     "quote": "''Facebreaker's'' cast generates an additional stack of {{ri|Hail of Blades}} despite the ability not {{tip|basic attack reset|resetting}} his basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Facebreaker hits no enemies, Sett's Haymaker (W) is also locked out for 0.25 seconds after the cast time.",
+     "quote": "If ''Facebreaker'' does not hit an enemy, {{ai|Haymaker|Sett}} is also unable to be cast for {{fd|0.25}} seconds after the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Stunning requires hitting at least one enemy on each side of Sett; targets behind spell shields don't count toward this requirement.",
+     "quote": "Targets protected by {{tip|spell shield|spell shields}} don't count toward the requirement to {{tip|stun}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SettE.LeapDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SettE.ThrowRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SettE.SingleBaseDamage",
+     "reason": "unknown"
+    },
+    {
+     "ref": "SettE.MaxHealthDamage",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "The Show Stopper",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.4,
+        0.5,
+        0.6
+       ]
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 120% '''bonus''' AD)}} {{as|(+ {{ap|40 to 60}}% of primary target's '''bonus''' health)}}",
+     "bin": [
+      "SettR#DamageCalc",
+      "SettR#MaxHealthDamageCalc"
+     ],
+     "binNote": "SettR.MaxHealthDamage is 0.4/0.5/0.6 and reads as target max health in the bin's calc, while the wiki describes it as a percentage of the target's bonus health; there is no separate bonus-health-only variable in the bin, so the wiki's 'bonus health' framing cannot be verified against a matching bin row."
+    },
+    {
+     "id": "r_2",
+     "meaning": "Reduced Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.3
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.1,
+        0.125,
+        0.15
+       ]
+      }
+     ],
+     "quote": "{{ap|200*0.25 to 400*0.25}} {{as|(+ 30% '''bonus''' AD)}} {{as|(+ {{ap|40*0.25 to 60*0.25}}% of primary target's '''bonus''' health)}}",
+     "bin": [
+      "SettR.CraterEdgeDamageReduction"
+     ],
+     "binNote": "Wiki states the reduced (edge) tier as exactly 25% of the base/AD/health-% values, matching a 0.75 reduction near the stated 'up to 75%'; but CraterEdgeDamageReduction=0.5 in the bin implies a 50% reduction (i.e. 0.5x), disagreeing with the wiki's 0.25x multiplier. No bin calculation directly produces the reduced-tier numbers; the 0.25 multiplier is taken from the wiki's own arithmetic notation."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sett dashes to and suppresses the target, then leaps and slams them, dealing damage to nearby enemies based on the target's bonus health.",
+     "quote": "carries the target enemy champion and dashes through the air with displacement immunity, then slams them into the ground to deal physical damage to nearby enemies based on the target's bonus health",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies within the epicenter (125 unit radius around landing) take full damage; other enemies hit by the shockwave take reduced damage based on proximity, up to 75% reduction.",
+     "quote": "take {{ccs|{{as|physical damage}}|physical}}, and other enemies hit by the shockwave take {{as|physical damage}} that is reduced by up to 75% based on proximity.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "All targets hit are slowed by 99% for 1 second (crowd control, does not affect either fight).",
+     "quote": "All targets hit are {{tip|slow|slowed}} by 99% for 1 second.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target resists the suppression (CC-immune, displacement immune, or spell shield), Sett will not attach them but still deals the shockwave damage.",
+     "quote": "If the target resists the suppression by being {{tip|cc-immune|immune to crowd control}}, {{tip|displacement immune}}, or having a {{tip|spell shield}}, '''Sett''' will not attach them to himself.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This ability can be blocked by a spell shield.",
+     "quote": "spellshield  = true",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "SettR.GrabDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettR.MoveSpeedBonus",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettR.DistanceToFirstHit",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SettR.DistancePastFirstHit",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SettR.MaxPassiveStacks",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettR.DelayBeforeDecay",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettR.CarryDistancePerStack",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SettR.ResistDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettR.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettR.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettR.CraterDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettR.CraterRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "SettR.CraterMaxHaste",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "SettR.CraterMaxSlow",
+     "reason": "utility"
+    },
+    {
+     "ref": "SettR.CraterSweetSpotRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks alternate Left Punch / Right Punch; the Right Punch is effectively every 2nd basic attack"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Right Punch deals bonus physical damage (base by level + 55% bonus AD) on top of the normal attack"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Right Punch does not scale with bonus attack speed; its windup is instead fixed as a fraction (12.5%) of Left Punch's windup, still receptive to AS buffs not already active on the prior Left Punch"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Knuckle Down resets Sett's basic attack timer and forces the next two attacks to be Left Punch then Right Punch, resetting the Pit Grit alternation state"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Knuckle Down arms Sett's next two basic attacks with bonus physical damage based on target's max health"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's empowered-attack damage and R's slam damage both scale with a percent of the target's max/bonus health"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "W"
+   ],
+   "note": "Grit is a stored resource (capped at 50% max HP, decays 30%/s after 4s) that Haymaker fully consumes on cast; its cost is 100% of current Grit"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "W"
+   ],
+   "note": "Passive converts post-mitigation damage taken 1:1 into stored Grit; Haymaker converts expended Grit into both a shield and bonus outgoing damage"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Each ability deals its damage after a fixed cast time, on cooldown"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Haymaker's damage type (true vs physical) depends on whether the target overlaps the inner rectangle vs the trapezoid/circle hitbox; The Show Stopper's damage depends on whether the target is within the 125-unit epicenter or is hit by the falling-off shockwave"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The primitives above (nth-hit-or-cast + onhit-rider + attack-speed-interaction for the passive, attack-reset + empowered-attack + conditional-damage for Q, resource-budget + stat-conversion for W, plain-cast + positional-assumption for W/R, conditional-damage for R) together express the kit's mechanics. The main wrinkle - that in a dummy fight where the target never damages Sett, W's Grit income is naturally zero via the stat-conversion/resource-budget primitives rather than needing special-cased logic - is a parameter question (see unsettled), not a modeling gap."
+ },
+ "unsettled": [
+  {
+   "question": "In the dummy damage fight, does Haymaker's target (the single dummy) take the true damage from the inner rectangle, the physical damage from the trapezoid/circle aoe, or could it receive both simultaneously since the hitboxes are separate and can overlap?",
+   "options": [
+    "Assume the dummy is always in the true-damage line (true damage only)",
+    "Assume the dummy is only in the outer aoe (physical damage only)",
+    "Assume the dummy overlaps both hitboxes and takes both instances of damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "those hit in a line in the middle are dealt {{ccs|{{sti|{{as|true damage}}}}|true}} instead.",
+    "Enemies are hit by ''Haymaker'' only when their hitbox overlaps with both of those areas."
+   ]
+  },
+  {
+   "question": "Since the target dummy never damages Sett, does the simulated fight credit Sett with any Grit for Haymaker's expended-Grit damage/shield term (e.g., an assumed pre-fight cap, or self-inflicted sources), or should Grit be treated as 0 throughout, leaving Haymaker at its flat base damage only?",
+   "options": [
+    "Grit stays at 0 (no incoming damage source in a one-sided dummy fight)",
+    "Assume Sett opens the fight at or near the 50% max-HP Grit cap and casts Haymaker immediately",
+    "Assume some intermediate/decayed Grit value is available on each cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sett''' stores 100% of {{tt|post-mitigation damage...}} taken as ''Grit''",
+    "up to a cap of {{as|50% of his '''maximum''' health}}"
+   ]
+  },
+  {
+   "question": "The Show Stopper's health-scaling term is described on the wiki as a percent of the target's 'bonus' health, but the bin variable name (SettR.MaxHealthDamage, feeding SettR#MaxHealthDamageCalc) reads as target max health with no separate bonus-health-only row. Which is the live behavior?",
+   "options": [
+    "Use target's bonus (non-base) health per the wiki text",
+    "Use target's total max health per the bin's calculation naming"
+   ],
+   "impact": "high",
+   "quotes": [
+    "(+ {{ap|40 to 60}}% of primary target's '''bonus''' health)",
+    "SettR#MaxHealthDamageCalc (percent) = MaxHealthDamage=[0.4/0.5/0.6]"
+   ]
+  },
+  {
+   "question": "For The Show Stopper's shockwave, is the dummy assumed to be the primary/suppressed target standing within the 125-unit epicenter (full damage), or elsewhere in the shockwave radius (reduced damage, up to 75% per wiki text vs a 0.5 multiplier implied by the bin's CraterEdgeDamageReduction)?",
+   "options": [
+    "Dummy (the suppressed target) always lands in the epicenter and takes full damage",
+    "Dummy could be treated as an 'edge' hit with a 75% reduction per the wiki's arithmetic",
+    "Dummy is an edge hit with a 50% reduction per the bin's CraterEdgeDamageReduction=0.5"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies within {{tt|the epicenter...}} take {{ccs|{{as|physical damage}}|physical}}",
+    "other enemies hit by the shockwave take {{as|physical damage}} that is reduced by up to 75% based on proximity.",
+    "SettR.CraterEdgeDamageReduction = 0.5"
+   ]
+  },
+  {
+   "question": "The Right Punch's bonus physical damage base value comes from an unresolved ByCharLevelFormulaCalculationPart in the bin; the wiki's stated pp-formula (linear 5 to 90 across levels 1-20) is used as a stand-in. Is this the actual live per-level progression?",
+   "options": [
+    "Trust the wiki's linear 5-to-90 formula as exact",
+    "Treat the exact by-level base as unverified pending the resolved bin formula"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pp|5 + (90-5)/17*(x-1) for 20}}|physical damage}} {{as|(+ 55% '''bonus''' AD)}}",
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (The Show Stopper) on the dummy if it is off cooldown, since it is Sett's single biggest burst hit and a 15s fight likely only fits one cast.",
+   "Immediately follow with Q (Knuckle Down) to guarantee a Left Punch then Right Punch with bonus max-health-based damage and to reset the attack timer.",
+   "Continue basic-attacking on-cooldown throughout, letting Left/Right Punch alternate naturally between other ability casts.",
+   "Cast E (Facebreaker) on cooldown for its flat physical AoE hit whenever it is up.",
+   "Cast W (Haymaker) on cooldown as well, even though expended Grit is likely near zero absent incoming damage, for its flat base damage component.",
+   "Re-cast Q every time it comes off cooldown (9s down to 5s), since its empowered attacks are cheap, resource-free, and scale with the dummy's max health.",
+   "Repeat the Q/E/W/auto-attack loop for the remainder of the 15 seconds; do not expect a second R cast given its 80-120s cooldown."
+  ],
+  "questions": [
+   "Does the simulator grant Sett any starting or accruing Grit in a one-sided dummy fight, or is Haymaker's Grit-based damage/shield term always effectively zero?",
+   "Is R assumed available at the start of the fight (i.e., is the simulated encounter timed to line up with R's cooldown), or should the rotation assume R is unavailable and plan around Q/W/E/autos only?",
+   "Where is the dummy assumed to stand relative to Sett for Haymaker's true-damage line versus its outer physical aoe, and relative to Show Stopper's epicenter versus shockwave edge?",
+   "Does the simulator track and enforce the Left/Right Punch alternation state (and its 2-second reset window) between ability casts, or does every basic attack default to a fixed damage value?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

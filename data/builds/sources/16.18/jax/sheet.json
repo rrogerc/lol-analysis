@@ -1,0 +1,694 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "JaxPassive",
+    "key": "Characters/Jax/Spells/JaxPassiveAbility/JaxPassive",
+    "dataValues": {
+     "BuffDuration": 2.5,
+     "MaxStacks": 8,
+     "FallOffRate": 0.35,
+     "BelvethVsJaxQuestRewardStacks": 5
+    },
+    "calcs": {
+     "AttackSpeedPerStack": {
+      "expr": "byLevelL[0.05/0.05/0.05/0.065/0.065/0.065/0.08/0.08/0.08/0.095/0.095/0.095/0.11/0.11/0.11/0.125/0.125/0.125]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.05,
+        0.05,
+        0.05,
+        0.065,
+        0.065,
+        0.065,
+        0.08,
+        0.08,
+        0.08,
+        0.095,
+        0.095,
+        0.095,
+        0.11,
+        0.11,
+        0.11,
+        0.125,
+        0.125,
+        0.125
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "MaxBonusAttackSpeed": {
+      "expr": "AttackSpeedPerStack * MaxStacks=8",
+      "modifies": "AttackSpeedPerStack",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.4,
+        0.4,
+        0.4,
+        0.52,
+        0.52,
+        0.52,
+        0.64,
+        0.64,
+        0.64,
+        0.76,
+        0.76,
+        0.76,
+        0.88,
+        0.88,
+        0.88,
+        1,
+        1,
+        1
+       ]
+      },
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "MaxStacks"
+      ]
+     },
+     "BelvethVsJaxQuestRewardAttackSpeedPerStack": {
+      "expr": "byLevelL[0.0028/0.0034/0.004/0.0046/0.0052/0.0058/0.0064/0.007/0.0076/0.0082/0.0088/0.0094/0.01/0.0106/0.0112/0.0118/0.0124/0.013]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.0028,
+        0.003399999928660691,
+        0.003999999957159162,
+        0.0046,
+        0.0052,
+        0.0058,
+        0.006400000071153045,
+        0.007,
+        0.0076,
+        0.0082,
+        0.0088,
+        0.0094,
+        0.01,
+        0.01060000027064234,
+        0.011200000299140811,
+        0.0118,
+        0.0124,
+        0.013
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "BelvethVsJaxQuestRewardAttackSpeed": {
+      "expr": "BelvethVsJaxQuestRewardAttackSpeedPerStack * 1xbuffStacks",
+      "modifies": "BelvethVsJaxQuestRewardAttackSpeedPerStack",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "JaxQ",
+    "key": "Characters/Jax/Spells/JaxQAbility/JaxQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      8,
+      7.5,
+      7,
+      6.5,
+      6
+     ]
+    },
+    "cost": 50,
+    "costLegacy": 65,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       65,
+       105,
+       145,
+       185,
+       225
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[65/105/145/185/225] + 1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        105,
+        145,
+        185,
+        225
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "JaxW",
+    "key": "Characters/Jax/Spells/JaxWAbility/JaxW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6,
+      5,
+      4,
+      3
+     ]
+    },
+    "cost": 30,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Damage": {
+      "axis": "rank",
+      "v": [
+       50,
+       85,
+       120,
+       155,
+       190
+      ]
+     },
+     "StructureMod": 0.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "Damage=[50/85/120/155/190] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        85,
+        120,
+        155,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "Damage"
+      ]
+     },
+     "FinalDamage": {
+      "expr": "None unless {\"mBuffName\": \"{12395d09}\", \"__type\": \"HasBuffCastRequirement\"} then TotalDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "JaxE",
+    "key": "Characters/Jax/Spells/JaxEAbility/JaxE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      17,
+      15,
+      13,
+      11,
+      9
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       70,
+       100,
+       130,
+       160
+      ]
+     },
+     "StunDuration": 1,
+     "PercentIncreasedPerDodge": 0.2,
+     "MaxDodgesForDamageIncrease": 5,
+     "PercentHealthDamage": 4,
+     "DodgeDuration": 2,
+     "AoEDamageReduction": 25,
+     "APRatio": 0.7
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[40/70/100/130/160] + (APRatio=0.7)xbonus ap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        70,
+        100,
+        130,
+        160
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "bonus",
+        "coef": 0.7,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "MaxDamage": {
+      "expr": "TotalDamage * 2",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        140,
+        200,
+        260,
+        320
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "bonus",
+        "coef": 1.4,
+        "dataValue": "APRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "MaxPercentHealthDamage": {
+      "expr": "(PercentHealthDamage=4) * 2",
+      "flat": 8,
+      "terms": [],
+      "tooltipOnly": true,
+      "refs": [
+       "PercentHealthDamage"
+      ]
+     },
+     "MonsterDamageCap": {
+      "expr": "byLevel(9000..9000)",
+      "flat": 9000,
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "JaxR",
+    "key": "Characters/Jax/Spells/JaxRAbility/JaxR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      100,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "Duration": 8,
+     "PassiveBaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       130,
+       185
+      ]
+     },
+     "PassiveFallOffTime": 2.5,
+     "BaseResists": {
+      "axis": "rank",
+      "v": [
+       45,
+       60,
+       75
+      ]
+     },
+     "ResistsPerExtraTarget": {
+      "axis": "rank",
+      "v": [
+       20,
+       25,
+       30
+      ]
+     },
+     "MRMult": 0.6,
+     "SwingDamageBase": {
+      "axis": "rank",
+      "v": [
+       100,
+       175,
+       250
+      ]
+     },
+     "AoESize": 375,
+     "StructureMod": 0.5
+    },
+    "calcs": {
+     "OnHitDamage": {
+      "expr": "PassiveBaseDamage=[75/130/185] + 0.6xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        130,
+        185
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.6
+       }
+      ],
+      "refs": [
+       "PassiveBaseDamage"
+      ]
+     },
+     "BaseArmor": {
+      "expr": "BaseResists=[45/60/75] + 0.4xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        45,
+        60,
+        75
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "BaseResists"
+      ]
+     },
+     "BonusArmor": {
+      "expr": "ResistsPerExtraTarget=[20/25/30] + 0.1xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        25,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.1
+       }
+      ],
+      "refs": [
+       "ResistsPerExtraTarget"
+      ]
+     },
+     "SwingDamageTotal": {
+      "expr": "SwingDamageBase=[100/175/250] + 1xbonus ap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        175,
+        250
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "bonus",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "SwingDamageBase"
+      ]
+     },
+     "BaseMR": {
+      "expr": "BaseArmor * MRMult=0.6",
+      "modifies": "BaseArmor",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        27,
+        36,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.24
+       }
+      ],
+      "refs": [
+       "BaseResists",
+       "MRMult"
+      ]
+     },
+     "BonusMR": {
+      "expr": "BonusArmor * MRMult=0.6",
+      "modifies": "BonusArmor",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        12,
+        15,
+        18
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.06
+       }
+      ],
+      "refs": [
+       "MRMult",
+       "ResistsPerExtraTarget"
+      ]
+     },
+     "FinalDamage": {
+      "expr": "None unless {\"mBuffName\": \"{1e75ffdf}\", \"__type\": \"HasBuffCastRequirement\"} then OnHitDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "JaxQ",
+  "W": "JaxW",
+  "E": "JaxE",
+  "R": "JaxR",
+  "P": "JaxPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 339,
+   "{6216bf7b}": 52,
+   "{c4ab3550}": 1.64,
+   "{3a509002}": 0.14
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.09189044
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Jax",
+  "name": "Jax",
+  "partype": "Mana",
+  "passive": "Relentless Assault",
+  "spells": [
+   {
+    "id": "JaxQ",
+    "name": "Leap Strike",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "cost": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ]
+   },
+   {
+    "id": "JaxW",
+    "name": "Empower",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6,
+     5,
+     4,
+     3
+    ],
+    "cost": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ]
+   },
+   {
+    "id": "JaxE",
+    "name": "Counter Strike",
+    "maxrank": 5,
+    "cooldown": [
+     17,
+     15,
+     13,
+     11,
+     9
+    ],
+    "cost": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ]
+   },
+   {
+    "id": "JaxR",
+    "name": "Grandmaster-at-Arms",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     100,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Relentless Assault": {
+    "targeting": "Passive",
+    "affects": "Enemies, Self"
+   }
+  },
+  "Q": {
+   "Leap Strike": {
+    "damagetype": "physical",
+    "spelleffects": "single",
+    "spellshield": "true",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Empower": {
+    "damagetype": "magic",
+    "spelleffects": "spell",
+    "spellshield": "true",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Counter Strike": {
+    "damagetype": "magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Grandmaster-at-Arms": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Enemies, Self",
+    "costtype": "mana"
+   }
+  }
+ }
+}

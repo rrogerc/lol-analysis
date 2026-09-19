@@ -1,0 +1,753 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "NunuPassive",
+    "key": "Characters/Nunu/Spells/NunuPassiveAbility/NunuPassive",
+    "cooldown": 20,
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MonsterRadius": 700,
+     "LargeRadius": 1000,
+     "BloodBoilBaseDuration": 4,
+     "ADRatioForAOE": 0.3,
+     "ASIncrease": 0.2,
+     "MSIncrease": 0.1
+    },
+    "calcs": {
+     "CleaveDamage": {
+      "expr": "(ADRatioForAOE=0.3)xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "ADRatioForAOE"
+       }
+      ],
+      "refs": [
+       "ADRatioForAOE"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "NunuQ",
+    "key": "Characters/Nunu/Spells/NunuQAbility/NunuQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "cost": 60,
+    "castTime": 0.3,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MonsterMinionDamage": {
+      "axis": "rank",
+      "v": [
+       400,
+       600,
+       800,
+       1000,
+       1200
+      ]
+     },
+     "BaseHealing": {
+      "axis": "rank",
+      "v": [
+       65,
+       95,
+       125,
+       155,
+       185
+      ]
+     },
+     "ChampionDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       100,
+       140,
+       180,
+       220
+      ]
+     },
+     "PercentageOfBonusHP": 0.1,
+     "ChampionHealingScalar": 0.6,
+     "LowHealthThreshhold": 0.5,
+     "LowHealthHealingScalar": 0.5,
+     "BonusMaxHPDamage": 0.05,
+     "ChampDamageAPRatio": 0.65,
+     "MonsterHealingAPRatio": 0.9
+    },
+    "calcs": {
+     "MonsterHealing": {
+      "expr": "BaseHealing=[65/95/125/155/185] + (PercentageOfBonusHP=0.1)xbonus maxHp + (MonsterHealingAPRatio=0.9)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        95,
+        125,
+        155,
+        185
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.1,
+        "dataValue": "PercentageOfBonusHP"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.9,
+        "dataValue": "MonsterHealingAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseHealing",
+       "MonsterHealingAPRatio",
+       "PercentageOfBonusHP"
+      ]
+     },
+     "TotalChampionDamage": {
+      "expr": "ChampionDamage=[60/100/140/180/220] + (BonusMaxHPDamage=0.05)xbonus maxHp + (ChampDamageAPRatio=0.65)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        100,
+        140,
+        180,
+        220
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.05,
+        "dataValue": "BonusMaxHPDamage"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.65,
+        "dataValue": "ChampDamageAPRatio"
+       }
+      ],
+      "refs": [
+       "BonusMaxHPDamage",
+       "ChampDamageAPRatio",
+       "ChampionDamage"
+      ]
+     },
+     "ChampionHealing": {
+      "expr": "MonsterHealing * ChampionHealingScalar=0.6",
+      "modifies": "MonsterHealing",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        39,
+        57,
+        75,
+        93,
+        111
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.06,
+        "dataValue": "PercentageOfBonusHP"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.54,
+        "dataValue": "MonsterHealingAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseHealing",
+       "ChampionHealingScalar",
+       "MonsterHealingAPRatio",
+       "PercentageOfBonusHP"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "NunuW",
+    "key": "Characters/Nunu/Spells/NunuWAbility/NunuW",
+    "cooldown": 14,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MonsterCollisionRadiusScalar": 1.25,
+     "MonsterImpactRadiusScalar": 1.75,
+     "InitialCastRadiusScalar": 2.5,
+     "WalkDistanceAfterThrow": 350,
+     "TurnRateMultiplier1": 1.75,
+     "TurnRateMultiplier2": 2.5,
+     "TurnRateMultiplier3": 3.25,
+     "TurnRateMultTime1": 1,
+     "TurnRateMultTime2": 2,
+     "TurnRateMultTime3": 3,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       180,
+       225,
+       270,
+       315,
+       360
+      ]
+     },
+     "MaxDamageTime": 5,
+     "MaxDamageScalar": 1,
+     "MaxDuration": 10,
+     "BaseKnockupDuration": 0.5,
+     "AdditionalKnockupOverTime": 0.25,
+     "AdditionalStunDurationOverTime": 0.75,
+     "NoImpactDamageScalar": 0.333,
+     "MaximumSnowballRollDistance": 1750,
+     "MinimumSnowballRollDistance": 750,
+     "SlowAmount": -0.5,
+     "SlowDuration": 1,
+     "MinimumSnowballRadius": 75,
+     "MaximumSnowballRadius": 200,
+     "AdditionalStartingSpeed": 75,
+     "AdditionalSpeedPerLevel": 10,
+     "AdditionalSpeedCapPerLevel": 10,
+     "MinimumSnowballMissileSpeed": 350,
+     "LargeSnowballTime": 5,
+     "MediumSnowballTime": 2.5,
+     "LargeSnowballMissileWidth": 200,
+     "MediumSnowballMissileWidth": 137.5,
+     "SmallSnowballMissileWidth": 75,
+     "MaximumAPRatio": 1.5
+    },
+    "calcs": {
+     "MaximumSnowballDamage": {
+      "expr": "BaseDamage=[180/225/270/315/360] + (MaximumAPRatio=1.5)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        180,
+        225,
+        270,
+        315,
+        360
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5,
+        "dataValue": "MaximumAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "MaximumAPRatio"
+      ]
+     },
+     "NoImpactSnowballDamage": {
+      "expr": "MaximumSnowballDamage * NoImpactDamageScalar=0.333",
+      "modifies": "MaximumSnowballDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        59.94,
+        74.925,
+        89.91,
+        104.895,
+        119.88
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4995,
+        "dataValue": "MaximumAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "MaximumAPRatio",
+       "NoImpactDamageScalar"
+      ]
+     },
+     "MaximumStunDuration": {
+      "expr": "BaseKnockupDuration=0.5 + AdditionalStunDurationOverTime=0.75",
+      "flat": 1.25,
+      "terms": [],
+      "refs": [
+       "AdditionalStunDurationOverTime",
+       "BaseKnockupDuration"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "NunuE",
+    "key": "Characters/Nunu/Spells/NunuEAbility/NunuE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      13,
+      12,
+      11,
+      10
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       22.5,
+       30,
+       37.5,
+       45
+      ]
+     },
+     "SlowAmount": {
+      "axis": "rank",
+      "v": [
+       -0.3,
+       -0.35,
+       -0.4,
+       -0.45,
+       -0.5
+      ]
+     },
+     "SlowDuration": 1,
+     "RootDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     },
+     "TotalSpellDuration": 3,
+     "DelayBetweenSnowballs": 0.15,
+     "SplashConeLength": 225,
+     "SplashConeAngle": 22.5
+    },
+    "calcs": {
+     "TotalSnowballDamage": {
+      "expr": "BaseDamage=[15/22.5/30/37.5/45] + 0.12xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        15,
+        22.5,
+        30,
+        37.5,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.12
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TotalRootDamage": {
+      "expr": "RootDamage=[20/30/40/50/60] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        30,
+        40,
+        50,
+        60
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "refs": [
+       "RootDamage"
+      ]
+     },
+     "RootDuration": {
+      "expr": "byLevel(0.5..1.5)",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.5,
+        0.5588235,
+        0.61764706,
+        0.6764706,
+        0.7352941,
+        0.7941176,
+        0.85294118,
+        0.9117647,
+        0.9705882,
+        1.0294118,
+        1.0882353,
+        1.1470588,
+        1.2058823,
+        1.2647059,
+        1.3235294,
+        1.382353,
+        1.44117647,
+        1.5
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   },
+   {
+    "script": "NunuESnowballBurstFire",
+    "key": "Characters/Nunu/Spells/NunuEAbility/NunuESnowballBurstFire",
+    "cooldown": 0.9,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MaxBursts": 3
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "NunuR",
+    "key": "Characters/Nunu/Spells/NunuRAbility/NunuR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      110,
+      100,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       625,
+       925,
+       1275
+      ]
+     },
+     "SlowStartAmount": -0.5,
+     "MaxSlowAmount": -0.95,
+     "ChannelDuration": 3,
+     "SlowDuration": 3,
+     "MaxShieldDuration": 6,
+     "ShieldDecayDuration": 3,
+     "BaseShieldAmount": {
+      "axis": "rank",
+      "v": [
+       65,
+       75,
+       85
+      ]
+     },
+     "ShieldBonusHealthPercent": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.4,
+       0.5
+      ]
+     }
+    },
+    "calcs": {
+     "TotalShieldAmount": {
+      "expr": "BaseShieldAmount=[65/75/85] + (ShieldBonusHealthPercent=[0.3/0.4/0.5])xbonus maxHp + 1.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        65,
+        75,
+        85
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.3,
+          0.4,
+          0.5
+         ]
+        },
+        "dataValue": "ShieldBonusHealthPercent"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "BaseShieldAmount",
+       "ShieldBonusHealthPercent"
+      ]
+     },
+     "MaximumDamage": {
+      "expr": "BaseDamage=[625/925/1275] + 3xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        625,
+        925,
+        1275
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 3
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "MinDamage": {
+      "expr": "MaximumDamage * 0.5",
+      "modifies": "MaximumDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        312.5,
+        462.5,
+        637.5
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1.5
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "NunuQ",
+  "W": "NunuW",
+  "E": "NunuE",
+  "R": "NunuR",
+  "P": "NunuPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 280,
+   "{6216bf7b}": 42,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.1
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.106414
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Nunu",
+  "name": "Nunu & Willump",
+  "partype": "Mana",
+  "passive": "Call of the Freljord",
+  "spells": [
+   {
+    "id": "NunuQ",
+    "name": "Consume",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ]
+   },
+   {
+    "id": "NunuW",
+    "name": "Biggest Snowball Ever!",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "NunuE",
+    "name": "Snowball Barrage",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "NunuR",
+    "name": "Absolute Zero",
+    "maxrank": 3,
+    "cooldown": [
+     110,
+     100,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Call of the Freljord": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "targeting": "Passive",
+    "affects": "Self, Allies"
+   }
+  },
+  "Q": {
+   "Consume": {
+    "damagetype": "Magic True",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Biggest Snowball Ever!": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "Direction",
+    "affects": "Self, Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Snowball Barrage": {
+    "damagetype": "Magic",
+    "spelleffects": "aoe",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Absolute Zero": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

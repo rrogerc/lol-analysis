@@ -1,0 +1,112 @@
+{
+ "champion": "pyke",
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive converts bonus health into bonus AD (1 bonus AD per 14 bonus health), which feeds the bonus-AD ratios on Q, E, and R."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q channels for up to 3s (or a 0.4-0.5s quick-release) before its recast fires; Pyke is slowed/limited during the charge and then locked out while the harpoon is in flight."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's damage only happens on the recast (quick-release thrust or empowered harpoon) after the initial charge cast; R can be recast for free within 20s if it kills a champion inside the X."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (70-90 for Q, 40 for E, 100 for R) can limit how many casts fit in a 15s window depending on mana pool/regen from the build."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's damage/stun resolves on a fixed 1s delay after cast (when the phantom returns), then goes on cooldown."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals a much larger 'raw' amount if the target is below a level-scaling health threshold (executed) versus a fixed 50% physical amount if above it."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (charged/recast Q, delayed E hit, execute-threshold R, passive stat conversion, mana costs) is expressible with the listed primitives; nothing requires bespoke logic beyond combining them."
+ },
+ "unsettled": [
+  {
+   "question": "What is the true minimum time to quick-release Bone Skewer (Q) instead of fully charging?",
+   "options": [
+    "0.4s, per the wiki description ('Releasing the ability within 0.4 seconds')",
+    "0.5s, per the bin's PykeQ.MinChargeTime value"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Releasing the ability within {{fd|0.4}} seconds causes '''Pyke''' to instead thrust his blade",
+    "PykeQ.MinChargeTime = 0.5"
+   ]
+  },
+  {
+   "question": "Does the 15s damage-fight dummy ever cross Death from Below's execute health threshold, and if so does the simulator switch R's damage from the reduced/mitigated amount to the full 'raw' execute amount (plus grant a free recast)?",
+   "options": [
+    "Dummy HP never drops below the (high, level-scaling) threshold, so R always deals the reduced 50% physical amount",
+    "Dummy HP is tracked and can fall below the threshold late in the fight, triggering the full raw-damage execute and a free recast",
+    "Simulator ignores the execute branch entirely and always uses the non-execute physical formula"
+   ],
+   "impact": "high",
+   "quotes": [
+    "executing enemy {{tip|champions}} within the area that are below {{as|{{pp|250;290;330;370;400;430;450;470;490;510;530;540;550|6 to 18}}|health}}",
+    "Other enemies hit and enemy champions above the threshold are instead dealt 50% of the amount as physical damage.",
+    "Applies {{tip|raw damage}} to executed targets and {{tip|area damage}} to targets above the threshold."
+   ]
+  },
+  {
+   "question": "Should the simulated build be assumed to carry any Lethality, given P, W, E and R all have explicit per-Lethality scaling terms that are otherwise 0?",
+   "options": [
+    "Assume 0 Lethality (pure AD/other build) so these ratios contribute nothing",
+    "Assume some nonzero Lethality since Pyke is commonly itemized with it, materially changing R's threshold/damage and E's stun duration"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|(+ {{fd|1.5}} per 1 Lethality)}}",
+    "{{as|(+ {{fd|0.75}} per 1 Lethality)}}",
+    "{{as|(+ {{fd|0.1}} per 10 Lethality)}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Do not cast W: it deals no damage and its camouflage/movement-speed benefits are ignored under the fight's mobility rule, so casting it only wastes mana and a GCD.",
+   "Open with a quick-release Q (tap, ~0.4s) at point-blank range on the dummy for its physical damage, since a full 3s charge only extends range, which is irrelevant against a stationary adjacent dummy.",
+   "Cast E (Phantom Undertow) through the dummy; its damage and stun resolve 1s later when the phantom returns, during which Pyke can keep auto-attacking.",
+   "Cast R (Death from Below) on the dummy for its large upfront physical damage (using the non-execute 50% formula, since the dummy is assumed to stay above the execute threshold for most of the fight).",
+   "Fill all remaining time with basic attacks, and recast Q and E again each time they come off cooldown (Q every 8-10s, E every 11-15s depending on rank), since Pyke has no onhit rider or attack-reset to change basic-attack value.",
+   "Only consider a free R recast if the dummy is actually brought below the execute threshold and dies inside the X during the cast, which likely does not occur before the 15s window ends."
+  ],
+  "questions": [
+   "Is quick-releasing Q always strictly better for damage output than charging it, given the fight has no range requirement, or does charge time interact with cooldown/lockout in a way that changes optimal cast frequency?",
+   "Should R be cast immediately at the start of the fight for maximum early burst, or held later in case the dummy's HP is being tracked down toward the execute threshold?",
+   "Given R's long cooldown (70-100s), is more than one R cast ever expected within a single 15s fight, or should the rotation assume exactly one R cast?",
+   "Does the simulator model Pyke's own mana pool/regen enough that mana costs (Q 70-90, E 40, R 100) actually constrain how many Q/E casts fit into 15s, or is mana assumed unlimited for this fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

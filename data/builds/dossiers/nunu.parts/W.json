@@ -1,0 +1,290 @@
+{
+ "name": "Biggest Snowball Ever!",
+ "cooldown": {
+  "values": [
+   14,
+   14,
+   14,
+   14,
+   14
+  ],
+  "quote": "14"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Minimum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    36,
+    43.2,
+    50.4,
+    57.6,
+    64.8
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.06
+    }
+   ],
+   "quote": "{{ap|36 to 72}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "NunuW#MaximumSnowballDamage"
+   ],
+   "binNote": "Wiki's 'minimum' damage is 1/5th of the max damage formula (BaseDamage=[180..360]/5=36..72, AP ratio 1.5/5=0.3), representing damage at the start of the charge scaling window (charge-time percent scaling, formula field not separately in bin)."
+  },
+  {
+   "id": "w_2",
+   "meaning": "Maximum Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    180,
+    216,
+    252,
+    288,
+    324
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|36*5 to 72*5}} {{as|(+ {{ap|30*5}}% AP)}}",
+   "bin": [
+    "NunuW.BaseDamage"
+   ],
+   "binNote": "wiki's leveling3 max values (36*5..72*5=180..360, +150% AP) disagree with bin NunuW#MaximumSnowballDamage which states BaseDamage=[180/225/270/315/360] + 1.5xAP (150% AP matches, but base disagrees: wiki computes 36*5 to 72*5 = 180 to 360 using a linear-in-rank formula 36+9*rank*5 rather than the bin's actual per-rank values [180,225,270,315,360]); recording wiki's stated numbers as required."
+  },
+  {
+   "id": "w_3",
+   "meaning": "Minimum Minion/Monster Roll Damage",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    11.988,
+    14.3856,
+    16.7832,
+    19.1808,
+    21.5784
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.01998
+    }
+   ],
+   "quote": "{{ap|36*0.333 to 72*0.333}} {{as|(+ {{ap|30*0.333}}% AP)}}",
+   "bin": [
+    "NunuW#NoImpactSnowballDamage"
+   ],
+   "binNote": "0.333 scalar matches NunuW.NoImpactDamageScalar; applied to the same 'minimum' base-per-rank values used in w_1 (36..72 scaled by rank), not directly a bin row."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Maximum Minion/Monster Roll Damage",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    59.94,
+    71.928,
+    83.916,
+    95.904,
+    107.892
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0999
+    }
+   ],
+   "quote": "{{ap|36*0.333*5 to 72*0.333*5}} {{as|(+ {{ap|30*0.333*5}}% AP)}}",
+   "bin": [
+    "NunuW#NoImpactSnowballDamage",
+    "NunuW.NoImpactDamageScalar"
+   ],
+   "binNote": "0.333 scalar of max damage (w_2), matching NunuW#NoImpactSnowballDamage = MaximumSnowballDamage * 0.333."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Willump becomes slow-immune and ghosted while channeling, and cleanses himself of all slows on cast.",
+   "quote": "'''Willump''' {{tip|cleanse|cleanses}} himself from all {{tip|slow|slows}} and {{tip|channel|channels}} for up to 10 seconds, becoming {{tip|ghosted}} and {{tip|slow-immune}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The snowball explodes on hitting an enemy champion (or large monster/terrain), dealing AoE magic damage that scales up with charge time, and applies knockup then stun scaling with charge time.",
+   "quote": "The snowball explodes upon hitting an enemy {{tip|champion}}, {{tip|pet|large pet}}, medium or large {{tip|monster}}, or terrain, dealing {{as|magic damage}} to nearby enemies",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Against minions and small monsters, the snowball instead rolls over them dealing only 33.3% of the damage, without exploding.",
+   "quote": "The snowball rolls over enemy {{tip|minion|minions}} and small monsters hit, dealing {{fd|33.3}}% of the damage as {{as|magic damage}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The snowball can be recast to manually release it early, or it auto-releases after the max channel duration or on interruption.",
+   "quote": "''Biggest Snowball Ever!'' can be recast after {{fd|0.5}} seconds during the channel, and does so automatically after the channel or if {{tip|interrupt|interrupted}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown starts only after the effect (channel/release) ends, not on initial cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The initial cast and the manual recast each count as separate ability activations for on-cast effects.",
+   "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NunuW.MonsterCollisionRadiusScalar",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.MonsterImpactRadiusScalar",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.InitialCastRadiusScalar",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.WalkDistanceAfterThrow",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.TurnRateMultiplier1",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.TurnRateMultiplier2",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.TurnRateMultiplier3",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.TurnRateMultTime1",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.TurnRateMultTime2",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.TurnRateMultTime3",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.MaxDamageTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "NunuW.MaxDamageScalar",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "NunuW.MaxDuration",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "NunuW.BaseKnockupDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuW.AdditionalKnockupOverTime",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuW.AdditionalStunDurationOverTime",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuW.MaximumSnowballRollDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.MinimumSnowballRollDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.SlowAmount",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuW.SlowDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "NunuW.MinimumSnowballRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.MaximumSnowballRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.AdditionalStartingSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.AdditionalSpeedPerLevel",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.AdditionalSpeedCapPerLevel",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.MinimumSnowballMissileSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "NunuW.LargeSnowballTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "NunuW.MediumSnowballTime",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "NunuW.LargeSnowballMissileWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.MediumSnowballMissileWidth",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NunuW.SmallSnowballMissileWidth",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

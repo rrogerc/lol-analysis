@@ -1,0 +1,831 @@
+{
+ "champion": "vex",
+ "abilities": {
+  "P": {
+   "name": "Doom 'n Gloom",
+   "cooldown": {
+    "values": [
+     25,
+     25,
+     25,
+     25,
+     25,
+     22,
+     22,
+     22,
+     22,
+     22,
+     19,
+     19,
+     19,
+     19,
+     19,
+     16,
+     16,
+     16
+    ],
+    "quote": "{{pp|25 to 16 for 4|1;6;11;16}}",
+    "binNote": "The bin's slot-level `cooldown: 0` on VexP is a placeholder for the passive slot itself; the actual Doom cooldown by level is given by VexP#DoomCD, which matches the wiki's values."
+   },
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_gloom_duration",
+     "meaning": "duration Gloom mark lasts on a dashing/blinking enemy",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "will be marked with ''Gloom'' for 6 seconds",
+     "bin": [
+      "VexP.GloomDuration"
+     ]
+    },
+    {
+     "id": "p_fear_duration",
+     "meaning": "duration enemies are feared by Doom",
+     "role": "duration",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      1,
+      1,
+      1,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.5,
+      1.5,
+      1.5,
+      1.5,
+      1.5,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{pp|0.75 to 1.5 for 4|1;6;9;13}} seconds",
+     "bin": [
+      "VexP#FearDuration"
+     ]
+    },
+    {
+     "id": "p_gloom_proc_damage",
+     "meaning": "bonus magic damage dealt when Gloom mark is detonated on a champion",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      40,
+      46.47,
+      52.94,
+      59.41,
+      65.88,
+      72.35,
+      78.82,
+      85.29,
+      91.76,
+      98.24,
+      104.71,
+      111.18,
+      117.65,
+      124.12,
+      130.59,
+      137.06,
+      143.53,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{pp|40 + (150-40)/17*(x-1) for 20|color=magic damage}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "VexP#GloomProcCalc"
+     ]
+    },
+    {
+     "id": "p_gloom_proc_nonchamp_pct",
+     "meaning": "Gloom detonation damage against non-champions, as a fraction (percent damage, exact composition not specified)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      0.4,
+      0.4,
+      0.4,
+      0.4,
+      0.4,
+      0.45,
+      0.45,
+      0.45,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.55,
+      0.55,
+      0.55,
+      0.6,
+      0.6,
+      0.6
+     ],
+     "terms": [],
+     "quote": "Against non-champions, this instead deals {{pp|40 to 60 for 5|1;6;9;13;16|key=%}} damage",
+     "bin": [],
+     "binNote": "The sheet's row 'VexP.GloomMinionMod (percent) = byLevelL[0.4/.../0.6]' contains these exact values, but its name (with a literal space and parentheses) is not a valid identifiable data-value reference the checker can resolve, so it is cited here as unresolvable rather than matched; the numbers do match the wiki's stated percentages exactly."
+    },
+    {
+     "id": "p_doom_refund_champ",
+     "meaning": "fraction of Doom's cooldown refunded when Gloom detonates on a champion",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "refunds 25% of ''Doom's'' cooldown",
+     "bin": [
+      "VexP.GloomCDChamp"
+     ]
+    },
+    {
+     "id": "p_doom_refund_nonchamp",
+     "meaning": "fraction of Doom's cooldown refunded when Gloom detonates on a non-champion",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "refunds 10% of ''Doom's'' cooldown",
+     "bin": [
+      "VexP.GloomCDNonChamp"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Vex's next basic attack (which becomes non-projectile) or basic ability hit against an enemy with Gloom detonates the mark for bonus damage and CDR.",
+     "quote": "'''Vex's''' next {{tip|basic attack}}, which becomes {{tip|projectile|non-projectile}}, or basic ability hit against an enemy with ''Gloom'' will detonate the mark",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Looming Darkness (E) also inflicts Gloom on hit, but cannot itself detonate an existing mark.",
+     "quote": "''{{ai|Looming Darkness|Vex}}'' will also inflict ''Gloom'', but cannot detonate it.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Doom's cooldown begins as soon as the empowered basic ability is cast, not when it lands.",
+     "quote": "''Doom's'' cooldown starts as soon as the basic ability is cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Shield blocks all of Doom's effects but does not block Gloom's empowered attack or the mark itself.",
+     "quote": "{{tip|Spell shield}} will block all of ''Doom's'' effects but not ''Gloom's'' empowered attack nor mark.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A Gloom mark about to expire refreshes to 0.5 seconds when Vex starts an attack windup against that target.",
+     "quote": "''Gloom's'' mark duration will refresh to {{fd|0.5}} seconds when '''Vex''' starts an attack windup against a target that has a mark which is about to expire.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VexP.MaxDoomCD",
+     "reason": "unknown"
+    },
+    {
+     "ref": "VexP.DashListenerRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexP.DashLockoutTime",
+     "reason": "unknown"
+    },
+    {
+     "ref": "VexP.FearSlowPercentMax",
+     "reason": "utility"
+    },
+    {
+     "ref": "VexP.FearedMinionSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "VexP.EFearedMinionSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "VexP.FearSlowPercentMin",
+     "reason": "utility"
+    },
+    {
+     "ref": "VexP.RangeOfMaxFearSlow",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexP.RangeOfMinFearSlow",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexP#{c21c264c}",
+     "reason": "unknown"
+    },
+    {
+     "ref": "VexP.GloomMinionMod (percent)",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Mistral Bolt",
+   "cooldown": {
+    "values": [
+     8,
+     7,
+     6,
+     5,
+     4
+    ],
+    "quote": "{{ap|8 to 4}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.15,
+    "quote": "{{fd|0.15}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      115,
+      160,
+      205,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|70 to 250}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "VexQ#QDamageCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The wave narrows and accelerates after travelling 500 units, which can change whether it still hits the target in a moving fight, though not in the stationary dummy fight.",
+     "quote": "After travelling 500 units, the wave accelerates but also narrows itself.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability fires from Vex's position at the end of the cast time, not where she was at the start.",
+     "quote": "''Mistral Bolt'' will fire from wherever '''Vex''' is at the end of the cast time, towards the originally targeted location",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VexQ.BaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "VexQ.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Personal Space",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|16 to 12}}"
+   },
+   "cost": {
+    "values": [
+     75,
+     75,
+     75,
+     75,
+     75
+    ],
+    "quote": "75",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 75% AP)}}",
+     "bin": [
+      "VexW#ShieldCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "VexW#WDamageCalc"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "shield duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "granting herself a {{tip|shield}} for {{fd|2.5}} seconds",
+     "bin": [
+      "VexW.ShieldDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The damage and shield trigger before the cast time finishes, at the moment of the scream.",
+     "quote": "emits a deafening scream around her before the cast time, dealing {{as|magic damage}} to nearby enemies and granting herself a {{tip|shield}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Vex can move during the cast time.",
+     "quote": "''Vex'' can move during Personal Space's cast time.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's radius is slightly increased against enemies that are dashing.",
+     "quote": "The scream's radius is slightly increased against enemies that are {{tip|dash|dashing}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VexW.AOERadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexW.BonusAOERadiusVsDashes",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Looming Darkness",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12",
+    "binNote": "Bin lists VexE cooldown as 13 (flat) while wiki states 12 at all ranks; unresolved disagreement, wiki value kept."
+   },
+   "cost": {
+    "values": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ],
+    "quote": "{{ap|70 to 110}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": [
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 130}} {{as|(+ {{ap|40 to 60}}% AP)}}",
+     "bin": [
+      "VexE#EDamageCalc"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "VexE.SlowAmount"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slowing}} them for 2 seconds",
+     "bin": [
+      "VexE.SlowDuration"
+     ]
+    },
+    {
+     "id": "e_4a",
+     "meaning": "Doom's cooldown refund on non-champion kill",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [],
+     "quote": "Killing an enemy with ''Looming Darkness'' refunds 10% of ''{{ai|Doom 'n Gloom|Vex|Doom's}}'' {{sti|cooldown}}",
+     "bin": [
+      "VexE.GloomCDNonChampTooltip"
+     ]
+    },
+    {
+     "id": "e_4b",
+     "meaning": "Doom's cooldown refund on champion kill",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "increased to 25% for champion kills",
+     "bin": [
+      "VexE.GloomCDChampTooltip"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The explosion's radius increases based on cast distance, up to a cap.",
+     "quote": "The explosion's radius increases based on cast distance.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Looming Darkness can be blocked by spell shields.",
+     "quote": "spellshield  = true",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Killing an enemy refunds a portion of Doom 'n Gloom's cooldown, more for champion kills.",
+     "quote": "Killing an enemy with ''Looming Darkness'' refunds 10% of ''{{ai|Doom 'n Gloom|Vex|Doom's}}'' {{sti|cooldown}}, increased to 25% for champion kills.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VexE.StartingRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexE.RadiusGrowthRate",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexE.MaxRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "VexE.APRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Shadow Surge",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{tt|{{ap|140 to 100}}|Starts post-effect of initial cast}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{dv|{{tt|{{fd|0.25}}|Active}}|{{tt|None|Recast}}}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      125,
+      175
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|75 to 175}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "VexR#RDamageCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "VexR#RecastDamageCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Shadow stops upon hitting an enemy champion, marking them for 4 seconds during which they are revealed.",
+     "quote": "''Shadow'' stops upon hitting an enemy {{tip|champion}} to mark them for 4 seconds, during which they are {{tip|true sight|revealed}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Shadow Surge can be recast while the target is marked; on arrival the mark is consumed to deal magic damage.",
+     "quote": "''Shadow Surge'' can be recast while the target is marked.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The dash to the marked target grants displacement immunity.",
+     "quote": "'''Vex''' {{tip|dashes}} towards the marked target with {{tip|displacement immunity}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Vex scores a takedown on the marked target within 8 seconds of the mark, she can recast Shadow Surge again within 12 seconds at no cost after 0.5 seconds, repeating the effects.",
+     "quote": "If '''Vex''' scores a {{tip|takedown}} against ''Shadow Surge's'' marked target within 8 seconds of its application, '''Vex''' can cast ''Shadow Surge'' again within 12 seconds at no cost after {{fd|0.5}} seconds, repeating the effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This bonus recast is granted even if the target died to Shadow Surge itself.",
+     "quote": "''Shadow Surge'' grants the additional cast from scoring the takedown even if the target died to the ability.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts after the post-effect (i.e. after the initial cast's on-hit resolution, not on button press).",
+     "quote": "Starts post-effect of initial cast",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "VexR.R2Duration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VexR.TakedownWindow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "VexR.ResetWindow",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Q, W, E deal on-cast/near-instant magic damage on cooldown; R's initial missile hit is also a plain cast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Shadow Surge has two separately-timed damage instances: the initial missile hit, then a free recast dash-strike that deals larger damage and consumes the mark."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Personal Space's shield component only matters in the survival fight, not the damage fight."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (W flat 75, others scale by rank); over a 15s window with limited mana regen this can cap how often Q/W/E are recast."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's cooldown is stated to start post-effect of the initial cast rather than on button press, changing when it is available again relative to a naive on-cast cooldown model."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Vex's kit reduces to standard plain casts plus one recast-or-multipart ultimate; nothing requires bespoke logic beyond the listed primitives. The Passive (Doom 'n Gloom) is deliberately excluded from primitives: Gloom only marks enemies that dash or blink, which a stationary target dummy never does, so under the stated fight rules the passive's bonus damage and Doom's CDR refund cannot trigger and Doom's own empowerment only grants knockdown/fear (crowd control, explicitly ignored)."
+ },
+ "unsettled": [
+  {
+   "question": "Should the damage fight simulator model any passive (P) damage at all, given Gloom requires the target to dash/blink and the target dummy is stationary and never dashes?",
+   "options": [
+    "P contributes zero damage in the damage fight; Doom's periodic empowerment only ever grants CC (ignored) since Gloom can never be applied to a non-moving dummy",
+    "The simulator should assume some artificial periodic Gloom application (e.g. treat Doom's ready state as always able to detonate) to approximate real play, adding VexP#GloomProcCalc damage on some cadence"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Nearby enemy {{tip|champions}} and {{tip|monsters}} that {{tip|dash}} or {{tip|blink}} will be marked with ''Gloom''",
+    "Doom's cooldown starts as soon as the basic ability is cast."
+   ]
+  },
+  {
+   "question": "Looming Darkness's (E) cooldown: the bin lists a flat 13 at all ranks, but the wiki states 12 at all ranks. Which is live?",
+   "options": [
+    "12 seconds (wiki)",
+    "13 seconds (bin)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: 13",
+    "cooldown     = 12"
+   ]
+  },
+  {
+   "question": "The Gloom detonation damage-vs-champions formula is written as a 20-step progression ('for 20') while the bin's corresponding row (VexP#GloomProcCalc) is indexed by 18 champion levels. Does the wiki's per-step value line up 1:1 with champion level 1-18, or does it imply extra steps beyond level 18 (e.g. from some other scaling variable)?",
+   "options": [
+    "The 20 steps map onto levels 1-18 with the last two steps unused/capped (matches bin's byLevel[1..18] exactly, as the numeric values line up)",
+    "There is a genuine extra scaling dimension not captured by champion level in the bin snippet provided"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{pp|40 + (150-40)/17*(x-1) for 20|color=magic damage}}"
+   ]
+  },
+  {
+   "question": "Does Vex's basic attack (used to weave between spell casts) ever detonate a Gloom mark or otherwise interact with Doom in the damage fight, or is it a plain, unmodified basic attack given the dummy never dashes?",
+   "options": [
+    "Plain basic attacks only; no Gloom/Doom interaction is reachable against a stationary dummy",
+    "Some other passive trigger (untested/undocumented) still allows Doom to fire off cooldown against any target, adding periodic bonus damage to an attack or ability"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Vex's''' next {{tip|basic attack}}, which becomes {{tip|projectile|non-projectile}}, or basic ability hit against an enemy with ''Gloom'' will detonate the mark"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open the fight with Shadow Surge (R) fired directly at the dummy to land the initial missile hit and apply the mark.",
+   "Immediately recast Shadow Surge to dash in and land the larger recast damage instance (this is Vex's single largest burst and her only long-cooldown resource, so front-load it).",
+   "Weave in Mistral Bolt (Q) on cooldown throughout the fight, since it has the shortest cooldown (8s down to 4s) and highest AP ratio among the basic abilities.",
+   "Cast Looming Darkness (E) on cooldown for its magic damage, prioritizing it whenever mana allows since its cooldown is fixed and independent of rank.",
+   "Cast Personal Space (W) on cooldown for its magic damage component even though its shield is irrelevant in the pure damage fight; its damage still contributes to total output.",
+   "Fill all remaining time between ability cooldowns with basic attacks against the dummy.",
+   "Do not expect or rely on any Gloom/Doom passive proc, since the stationary dummy never dashes or blinks to apply the Gloom mark.",
+   "Do not plan for a second full use of R within the 15s window; its cooldown (140s down to 100s) is far longer than the fight duration, so only the opening cast-and-recast sequence is available."
+  ],
+  "questions": [
+   "Given mana costs scale up by rank on Q/W/E/R (and Vex's base mana/regen at the assumed level), is there enough mana to cast every ability on cooldown for the full 15s, or does the simulator need to model a point where casts are skipped for lack of mana?",
+   "Should R be cast immediately at t=0, or is there a benefit to holding it briefly so its recast damage lands after some Q/W/E damage has already reduced the dummy's health (relevant only if execute-style interactions existed, which they don't here, but worth confirming there's no hidden order dependency)?",
+   "Is the dummy ever treated as 'moving' or capable of triggering Gloom via any built-in dash-like behavior in the simulator's target-dummy implementation, which would change whether P's Gloom/Doom mechanic should be modeled at all?",
+   "Does basic-attack weave order matter (i.e., should attacks be delayed to line up with ability cooldowns, or fired continuously regardless of upcoming casts) for maximizing total damage in the 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

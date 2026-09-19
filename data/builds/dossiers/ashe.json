@@ -1,0 +1,547 @@
+{
+ "champion": "ashe",
+ "abilities": {
+  "P": {
+   "name": "Frost Shot / Frost Shot 2",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus physical damage on basic attacks, in place of the usual critical strike damage bonus",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 1,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": 1
+      },
+      {
+       "stat": "critDamage",
+       "coef": 1
+      }
+     ],
+     "quote": "'''Ashe's''' {{tip|basic attacks}} deal {{as|'''bonus''' physical damage}} equal to {{critical damage|0 to 100|0 to 100|critScaling=true}} of the {{as|attack's damage}}.",
+     "bin": [
+      "AshePassive#DamageBonus",
+      "AshePassive#{da9201cc}"
+     ],
+     "binNote": "Literal transcription only, not a validated formula: the bin is AshePassive#DamageBonus = 1 + (1 + 1 x StatA) x critDamage, then {da9201cc} = DamageBonus x ad. StatA prints as 'bonus cooldownReduction' with a '?' flag (no such stat exists in the allowed list, so it is reported here as 'other'); the sheet also flags the final critDamage reference with '?'. The formula multiplies (1 + StatA) by critDamage rather than adding them, so base=1 plus these two coef-1 terms is the ingredients as printed, not an algebraic reconstruction (1 + StatA + critDamage != 1 + (1+StatA) x critDamage). The wiki gives no authored numbers either, only a prose range ('0 to 100'), so neither source yields a checkable closed-form ratio here; see top.json unsettled."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The bonus physical damage is dealt on every basic attack, not only when a critical strike is rolled.",
+     "quote": "'''Ashe's''' {{tip|basic attacks}} deal {{as|'''bonus''' physical damage}} equal to",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Critical strikes deal no additional damage beyond the normal attack (the usual crit damage multiplier is replaced by the on-hit bonus).",
+     "quote": "{{tip|critical strike|Critical strikes}} do not deal any additional damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AshePassive.SlowDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  },
+  "Q": {
+   "name": "Ranger's Focus / Ranger's Focus 2",
+   "cooldown": null,
+   "cost": {
+    "values": 30,
+    "resource": "mana",
+    "quote": "cost         = 30"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 60}}%",
+     "bin": [
+      "AsheQ.BonusAS"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Total Damage Per Flurry",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        1.1,
+        1.15,
+        1.2,
+        1.25,
+        1.3
+       ]
+      }
+     ],
+     "quote": "{{#vardefine:ad1|110}}<!-- Generic/Normal rank 1 total damage AD ratio as a PERCENTAGE\n-->{{#vardefine:ad5|130}}",
+     "bin": [
+      "AsheQ.DamagePerStrike",
+      "AsheQ#EmpoweredDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "duration of the Ranger's Focus active buff (bonus attack speed + empowered attacks)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "For 6 seconds, '''Ashe''' gains",
+     "bin": [
+      "AsheQ.BuffDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Focus stacks needed to activate Ranger's Focus (also its stack cap)",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "stacking up to 4 times",
+     "bin": [
+      "AsheQ.MaxStacks"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "arrows fired per empowered attack while Ranger's Focus is active",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "{{ap|{{#var:ad1}}/5 to {{#var:ad5}}/5}}% AD",
+     "bin": [
+      "AsheQ.ShotsPerStrike"
+     ]
+    },
+    {
+     "id": "q_6",
+     "meaning": "total physical damage of the first empowered flurry of each Ranger's Focus activation (fires six arrows instead of five)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        1.32,
+        1.38,
+        1.44,
+        1.5,
+        1.56
+       ]
+      }
+     ],
+     "quote": "six arrows, dealing a total of {{as|{{ap|{{#var:ad1}}*1.2 to {{#var:ad5}}*1.2}}%|attack damage}} {{as|attack damage}}.",
+     "bin": [],
+     "binNote": "AsheQ.ShotsPerStrike is a flat 5 for every flurry, and no data value in the AsheQ block carries a 6-arrow count or a 1.2x/20% multiplier, so this wiki-only first-flurry bonus has no visible bin support at all. It may be scripted outside the dumped data values, or the wiki text could be stale for 16.18. The 132/138/144/150/156% figures are derived purely from the wiki's own ad1/ad5 vardefines x1.2, unconfirmed by the bin."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Casting Ranger's Focus (each empowered attack while it is active) resets Ashe's basic attack timer.",
+     "quote": "''Ranger's Focus {{tip|basic attack reset|resets}} '''Ashe's''' basic attack timer.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An empowered flurry deals 1 instance of basic damage followed by 4 instances of a non-reactive (default or proc) damage type.",
+     "quote": "The flurries deal 1 instance of {{tip|basic damage}} followed by 4 instances of a non-reactive type of damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A flurry applies on-hit effects only once despite dealing 5 separate damage instances.",
+     "quote": "apply {{tip|on-hit}} effects only once",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The very first flurry of each Ranger's Focus activation fires one extra arrow (six total) instead of five.",
+     "quote": "one additional arrow, dealing 20% increased total damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AsheQ.StackDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AsheQ.TimerDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "AsheQ.StackFalloffDuration",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  },
+  "W": {
+   "name": "Volley",
+   "cooldown": {
+    "values": [
+     18,
+     14.5,
+     11,
+     7.5,
+     4
+    ],
+    "quote": "{{ap|18 to 4}}",
+    "binNote": "Matches the ddragon summary and the 'Volley' bin object's own cooldown row. One of four vestigial duplicate spell objects for this ability, VolleyRank2, instead carries [18/14.5/11/6.5/4] (6.5 not 7.5 at rank 4); VolleyRank3-5 agree with 'Volley' at 7.5. Reported here since it is the kind of internal-bin discrepancy worth recording, even though ddragon and the wiki both independently support 7.5."
+   },
+   "cost": {
+    "values": [
+     75,
+     70,
+     65,
+     60,
+     55
+    ],
+    "quote": "{{ap|75 to 55}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Arrows",
+     "role": "count",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      7,
+      8,
+      9,
+      10,
+      11
+     ],
+     "terms": [],
+     "quote": "{{ap|7 to 11}}",
+     "bin": [
+      "Volley.NumberOfArrowsTooltip"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      60,
+      95,
+      130,
+      165,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|60 to 200}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "Volley.BaseDamage",
+      "Volley.ADRatio",
+      "Volley#TotalDamage"
+     ],
+     "binNote": "Matches the primary 'Volley' bin object exactly (BaseDamage [60/95/130/165/200], ADRatio 1 on bonus ad). Four other same-slot bin objects (VolleyRank2, VolleyRank3, VolleyRank4, VolleyRank5) instead carry BaseDamage [20/35/50/65/80] scaling off 1x total ad (not bonus ad) - a much lower, differently-scaled progression the wiki does not corroborate anywhere. Treated as stale duplicates here because the wiki's leveling table matches 'Volley' precisely and ddragon's cooldown line also matches 'Volley'/Rank3-5 rather than Rank2, but this is a large enough discrepancy (fully different formula, not just one differing number) that it is also raised in top.json's unsettled list."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "A single enemy can be crossed by more than one of the cone's arrows but only ever takes damage from the first arrow that hits it - Volley cannot deal its damage more than once to the same target.",
+     "quote": "Enemies can intercept multiple arrows but do not take damage from any beyond the first.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Volley's damage resolves at the end of its cast time, not at the moment of cast.",
+     "quote": "{{Effect at cast time end}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": []
+  },
+  "E": {
+   "name": "Hawkshot",
+   "cooldown": {
+    "values": 5,
+    "quote": "5"
+   },
+   "cost": {
+    "values": 1,
+    "quote": "1",
+    "resource": "charge"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [],
+   "mechanics": [],
+   "binUnused": [
+    {
+     "ref": "AsheSpiritOfTheHawk.BaseCooldown",
+     "reason": "utility"
+    },
+    {
+     "ref": "AsheSpiritOfTheHawk.VisionDuration",
+     "reason": "utility"
+    }
+   ]
+  },
+  "R": {
+   "name": "Enchanted Crystal Arrow",
+   "cooldown": {
+    "values": [
+     100,
+     80,
+     60
+    ],
+    "quote": "{{ap|100 to 60}}"
+   },
+   "cost": {
+    "values": 100,
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      400,
+      600
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|200 to 600}} {{as|(+ 120% AP)}}",
+     "bin": [
+      "EnchantedCrystalArrow.RBaseDamage",
+      "EnchantedCrystalArrow.APRatio",
+      "EnchantedCrystalArrow#RMainDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The arrow deals its damage only to the first enemy champion it hits, and shatters there.",
+     "quote": "The arrow shatters upon hitting an enemy {{tip|champion}}, dealing them {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies surrounding the primary target also take the same damage - a second, multi-target effect that never applies with only one enemy present.",
+     "quote": "Enemies surrounding the primary target are dealt the same damage",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The arrow is launched (its travel begins) at the start of the cast time, unlike Volley whose effect resolves at cast time end - so its 0.25 s cast time is followed by additional travel time before the damage lands.",
+     "quote": "{{Effect at cast time start}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EnchantedCrystalArrow.MinStunDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EnchantedCrystalArrow.MaxStunDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EnchantedCrystalArrow.SlowRadius",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EnchantedCrystalArrow.AoECoefficient",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ]
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Frost Shot's guaranteed bonus physical damage lands on every basic attack (and ability hit)."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Critical strikes deal no extra damage; the passive substitutes a guaranteed on-hit bonus derived from crit chance/crit damage stats instead of a normal crit multiplier."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Basic attacks build Focus stacks (cap 4, generated only while Ranger's Focus is inactive) that gate its activation."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Activating Ranger's Focus grants bonus attack speed for 6 seconds."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "While active, every basic attack fires a 5-arrow flurry (6 on the first one after activation) of modified physical damage instead of a normal hit."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Each empowered attack resets Ashe's basic attack timer."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs (30 / 75-55 / 100) plus Q's 4-Focus-stack gate meaningfully limit casts inside a 15 s fight."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Both deal fixed damage on a cast/travel delay, on cooldown; neither builds or consumes a resource beyond mana."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic in the kit (on-hit rider, crit substitution, stacking self-buff, timed self-buff, empowered attacks, attack reset, plain-cast nukes, mana budget) maps onto an existing primitive. The one open problem is numeric, not structural: Frost Shot's (P) on-hit bonus is computed in the bin from a product of two crit-related stats that the schema's linear base+terms cannot reconstruct, and one of those two stats is itself unresolved by the sheet tool - see the first unsettled question and P.json's binNote."
+ },
+ "unsettled": [
+  {
+   "question": "What is Frost Shot's (P) actual on-hit damage formula? The bin's AshePassive#DamageBonus calc is '1 + (1 + 1 x StatA) x critDamage', where StatA prints as 'bonus cooldownReduction' and both StatA and critDamage carry the sheet's own '?' (unresolved-reference) flag. The wiki gives only a prose range ('0 to 100') with no explicit formula.",
+   "options": [
+    "StatA is really critChance and the formula is effectively a critChance/critDamage product as commonly described for this passive, with the sheet mis-resolving the stat name",
+    "The formula is exactly as printed, including a genuine (if unusual) dependency on a cooldown-reduction-like stat",
+    "Some other resolution not visible from these two sources"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Ashe's''' {{tip|basic attacks}} deal {{as|'''bonus''' physical damage}} equal to {{critical damage|0 to 100|0 to 100|critScaling=true}} of the {{as|attack's damage}}."
+   ]
+  },
+  {
+   "question": "Does Frost Shot's (P) on-hit bonus apply once per empowered attack during Ranger's Focus (like other on-hit effects, which the wiki says apply only once per flurry) or once per individual arrow (5 instances)?",
+   "options": [
+    "Once per flurry, same as other on-hit effects",
+    "Once per arrow (5x during a normal flurry, 6x on the first one of an activation)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The flurries {{tip|applies life steal|apply}} {{as|{{sti|life steal}}}} and ''{{ai|Frost Shot|Ashe}}'' per arrow, but apply {{tip|on-hit}} effects only once."
+   ]
+  },
+  {
+   "question": "Is Ranger's Focus's (Q) 'first flurry fires six arrows for 20% more total damage' bonus still live at patch 16.18? No data value anywhere in the AsheQ bin block (ShotsPerStrike is a flat 5) carries a 6-arrow count or a 1.2x/20% multiplier.",
+   "options": [
+    "Yes - implemented directly in ability script rather than as a separate tunable data value",
+    "No - the wiki text is stale and every flurry (including the first of an activation) is a plain 5-arrow, un-bonused flurry"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The first flurry of a ''Ranger's Focus'' cast fires{{ft|one additional arrow, dealing 20% increased total damage."
+   ]
+  },
+  {
+   "question": "Which Volley (W) damage progression is live: the primary 'Volley' bin object (60/95/130/165/200 base, +100% bonus AD - matches the wiki exactly) or the four duplicate 'VolleyRank2..5' bin objects (20/35/50/65/80 base, +100% of total AD)?",
+   "options": [
+    "'Volley' is live and Rank2-5 are stale legacy duplicate spell objects (favored here: matches the wiki, and ddragon's own cooldown line also matches Volley/Rank3-5 rather than Rank2)",
+    "One of the Rank2-5 objects is actually what the live client uses"
+   ],
+   "impact": "high",
+   "quotes": [
+    "{{st|Physical Damage|{{ap|60 to 200}} {{as|(+ 100% '''bonus''' AD)}}}}"
+   ]
+  },
+  {
+   "question": "How much travel time should the dummy fight assume between Enchanted Crystal Arrow's (R) cast (launched at cast-time start, per the wiki's 'Effect at cast time start' note) and its impact, given it is a global-range, accelerating (1500 to 2100 units/s) skillshot and neither source states an assumed target distance?",
+   "options": [
+    "Treat it as negligible/near-instant beyond the 0.25 s cast time, as if the dummy were at short range",
+    "Assume some specific longer travel distance/time that meaningfully delays when its damage lands in the 15 s window"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{Effect at cast time start}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Cast Enchanted Crystal Arrow (R) as soon as the fight starts: it has by far the longest cooldown (100-60 s, so only one cast fits in 15 s regardless of timing) and a cast-plus-travel delay before its damage lands, so casting it first gets that delay out of the way soonest.",
+   "Attack continuously from the start; Frost Shot's (P) on-hit physical bonus applies automatically to every attack with no separate action needed.",
+   "Once 4 basic attacks have built 4 Focus stacks, activate Ranger's Focus (Q) immediately - it is free of cooldown, instant, and resets the attack timer, so it costs no tempo.",
+   "For the next 6 seconds keep attacking; each attack fires an empowered flurry (6 arrows on the first one, 5 on the rest) instead of a normal hit.",
+   "When the Ranger's Focus buff expires, resume plain attacks to rebuild 4 Focus stacks, then reactivate Q; repeat this cycle for the rest of the fight.",
+   "Cast Volley (W) on cooldown whenever doing so does not appear to cost an attack that would otherwise land first, since it is flat added damage paid for only in mana."
+  ],
+  "questions": [
+   "Does reaching 4 Focus stacks auto-cast Ranger's Focus, or does the simulator need to explicitly trigger it - and is there any delay in doing so?",
+   "Is weaving Volley in on cooldown actually correct, or does its 0.25 s cast time (which delays the next attack) cost more attack/flurry damage than it adds, especially once Ranger's Focus's attack-speed buff is active?",
+   "Should Enchanted Crystal Arrow be delayed until after the first Ranger's Focus activation so its cast does not interrupt stack-building, or does casting it immediately regardless of Q's state maximize total damage?",
+   "At what champion level and starting mana/attack-speed is this fight run, and does Ashe have enough mana across the fight to cast Q, W and R as proposed without being capped by the resource-budget primitive?"
+  ]
+ }
+}

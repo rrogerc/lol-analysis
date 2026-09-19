@@ -1,0 +1,732 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "VarusPassive",
+    "key": "Characters/Varus/Spells/VarusPassiveAbility/VarusPassive",
+    "dataValues": {
+     "PassiveAS": 0.3,
+     "PassiveASMinion": 0.1,
+     "PassiveASRatio": 0.4,
+     "PassiveASRatioMinion": 0.2,
+     "AStoADMinion": 11,
+     "AStoAPMinion": 11,
+     "AStoADChampion": 33,
+     "AStoAPChampion": 33,
+     "NewASCap": 3.33
+    },
+    "calcs": {
+     "MinionAS": {
+      "expr": "byLevelL[0.1/0.1/0.1/0.1/0.1/0.1/0.15/0.15/0.15/0.15/0.15/0.15/0.2/0.2/0.2/0.2/0.2/0.2]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.15,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "ChampionAS": {
+      "expr": "PassiveAS=0.3",
+      "flat": 0.3,
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "PassiveAS"
+      ]
+     },
+     "ASDuration": {
+      "expr": "byLevelL[5/5/5/5/5/7/7/7/7/7/9/9/9/9/9/11/11/11]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        7,
+        7,
+        7,
+        7,
+        7,
+        9,
+        9,
+        9,
+        9,
+        9,
+        11,
+        11,
+        11
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "MinionAD": {
+      "expr": "(AStoADMinion=11)xbonus attackWindup?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 11,
+        "dataValue": "AStoADMinion"
+       }
+      ],
+      "refs": [
+       "AStoADMinion"
+      ]
+     },
+     "MinionAP": {
+      "expr": "(AStoAPMinion=11)xbonus attackWindup?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 11,
+        "dataValue": "AStoAPMinion"
+       }
+      ],
+      "refs": [
+       "AStoAPMinion"
+      ]
+     },
+     "ChampionAD": {
+      "expr": "(AStoADChampion=33)xbonus attackWindup?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 33,
+        "dataValue": "AStoADChampion"
+       }
+      ],
+      "refs": [
+       "AStoADChampion"
+      ]
+     },
+     "ChampionAP": {
+      "expr": "(AStoAPChampion=33)xbonus attackWindup?",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "attackWindup?",
+        "scope": "bonus",
+        "coef": 33,
+        "dataValue": "AStoAPChampion"
+       }
+      ],
+      "refs": [
+       "AStoAPChampion"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "VarusQ",
+    "key": "Characters/Varus/Spells/VarusQAbility/VarusQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      16,
+      15,
+      14,
+      13,
+      12
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamageMax": {
+      "axis": "rank",
+      "v": [
+       80,
+       150,
+       220,
+       290,
+       360
+      ]
+     },
+     "ChargeMultiplierInverse": 0.66667,
+     "tADRatioMax": 1.2,
+     "MaxChargeAmp": 0.5,
+     "FalloffPercent": 0.15,
+     "ManaRefund": 0.5,
+     "MaxChannelDuration": 4,
+     "CDRefund": 3,
+     "MoveSpeedMod": -0.2,
+     "MinDamagePercent": 0.33
+    },
+    "calcs": {
+     "{b3ef3984}": {
+      "expr": "TotalDamageMax * ChargeMultiplierInverse=0.66667",
+      "modifies": "TotalDamageMax",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        53.3336,
+        100.0005,
+        146.6674,
+        193.3343,
+        240.0012
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.800004,
+        "dataValue": "tADRatioMax"
+       }
+      ],
+      "refs": [
+       "BaseDamageMax",
+       "ChargeMultiplierInverse",
+       "tADRatioMax"
+      ]
+     },
+     "TotalDamageMax": {
+      "expr": "BaseDamageMax=[80/150/220/290/360] + (tADRatioMax=1.2)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        150,
+        220,
+        290,
+        360
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.2,
+        "dataValue": "tADRatioMax"
+       }
+      ],
+      "refs": [
+       "BaseDamageMax",
+       "tADRatioMax"
+      ]
+     },
+     "TotalDamageMinTooltip": {
+      "expr": "TotalDamageMax * ChargeMultiplierInverse=0.66667",
+      "modifies": "TotalDamageMax",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        53.3336,
+        100.0005,
+        146.6674,
+        193.3343,
+        240.0012
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.800004,
+        "dataValue": "tADRatioMax"
+       }
+      ],
+      "refs": [
+       "BaseDamageMax",
+       "ChargeMultiplierInverse",
+       "tADRatioMax"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "VarusW",
+    "key": "Characters/Varus/Spells/VarusWAbility/VarusW",
+    "cooldown": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "VarusWDebuffDuration": 6,
+     "VarusWMaxStacks": 3,
+     "MaxMonsterDamage": 120,
+     "BasePercentHPPerStack": {
+      "axis": "rank",
+      "v": [
+       0.03,
+       0.035,
+       0.04,
+       0.045,
+       0.05
+      ]
+     },
+     "QEmpowerMonsterCap": 360,
+     "VarusWOnHitDamage": {
+      "axis": "rank",
+      "v": [
+       4,
+       13,
+       22,
+       31,
+       40
+      ]
+     },
+     "CDRPerBlightStack": 0.13,
+     "VarusWMaxChargeHPDamage": 1.5,
+     "OnHitRatio": 0.25,
+     "OnHitADRatio": 0.15,
+     "WQHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.06,
+       0.08,
+       0.1,
+       0.12,
+       0.14
+      ]
+     },
+     "DebuffDuration": 6,
+     "MaxStacks": 3
+    },
+    "calcs": {
+     "PercentHPPerStack": {
+      "expr": "BasePercentHPPerStack=[0.03/0.035/0.04/0.045/0.05] + ((0.01)*(0.013))xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.03,
+        0.035,
+        0.04,
+        0.045,
+        0.05
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00013
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "BasePercentHPPerStack"
+      ]
+     },
+     "QEmpowerPercentHP": {
+      "expr": "WQHealthDamage=[0.06/0.08/0.1/0.12/0.14]",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.06,
+        0.08,
+        0.1,
+        0.12,
+        0.14
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": [
+       "WQHealthDamage"
+      ]
+     },
+     "OnHitDamage": {
+      "expr": "VarusWOnHitDamage=[4/13/22/31/40] + (OnHitRatio=0.25)xap + (OnHitADRatio=0.15)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        4,
+        13,
+        22,
+        31,
+        40
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "OnHitRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.15,
+        "dataValue": "OnHitADRatio"
+       }
+      ],
+      "refs": [
+       "OnHitADRatio",
+       "OnHitRatio",
+       "VarusWOnHitDamage"
+      ]
+     },
+     "MaxPercentHPPerStack": {
+      "expr": "PercentHPPerStack * 3",
+      "modifies": "PercentHPPerStack",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.09,
+        0.105,
+        0.12,
+        0.135,
+        0.15
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00039
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BasePercentHPPerStack"
+      ]
+     },
+     "MaxQEmpowerPercentHP": {
+      "expr": "QEmpowerPercentHP * VarusWMaxChargeHPDamage=1.5",
+      "modifies": "QEmpowerPercentHP",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.09,
+        0.12,
+        0.15,
+        0.18,
+        0.21
+       ]
+      },
+      "terms": [],
+      "refs": [
+       "VarusWMaxChargeHPDamage",
+       "WQHealthDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "VarusE",
+    "key": "Characters/Varus/Spells/VarusEAbility/VarusE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      16,
+      14,
+      12,
+      10
+     ]
+    },
+    "cost": 90,
+    "castTime": 0.2419,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "GrievousAmount": 0.4,
+     "GrievousDuration": 0.5,
+     "BonusADRatio": 0.9,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       60,
+       90,
+       120,
+       150,
+       180
+      ]
+     },
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       -0.3,
+       -0.35,
+       -0.4,
+       -0.45,
+       -0.5
+      ]
+     },
+     "AoERange": 300,
+     "DebuffDuration": 4,
+     "GroundDuration": 4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[60/90/120/150/180] + (BonusADRatio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        60,
+        90,
+        120,
+        150,
+        180
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "BonusADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "VarusR",
+    "key": "Characters/Varus/Spells/VarusRAbility/VarusR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      80,
+      60
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.2419,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "RootDuration": 2,
+     "VarusRTargetAcquisitionRange": 650,
+     "PassiveStacksAdded": 3,
+     "TimeBetweenStackAddition": 0.5,
+     "VarusRTargetLeashRange": 600,
+     "VarusRLeashTimer": 1.75,
+     "VarusWDebuffDuration": 6,
+     "VarusWMaxStacks": 3,
+     "PassiveStacks": 3
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[150/250/350] + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "VarusQ",
+  "W": "VarusW",
+  "E": "VarusE",
+  "R": "VarusR",
+  "P": "VarusPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 320,
+   "{6216bf7b}": 40,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.16
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.12456141
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Varus",
+  "name": "Varus",
+  "partype": "Mana",
+  "passive": "Living Vengeance",
+  "spells": [
+   {
+    "id": "VarusQ",
+    "name": "Piercing Arrow",
+    "maxrank": 5,
+    "cooldown": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "VarusW",
+    "name": "Blighted Quiver",
+    "maxrank": 5,
+    "cooldown": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "VarusE",
+    "name": "Hail of Arrows",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     16,
+     14,
+     12,
+     10
+    ],
+    "cost": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ]
+   },
+   {
+    "id": "VarusR",
+    "name": "Chain of Corruption",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     80,
+     60
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Living Vengeance": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Piercing Arrow": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "[[Auto-targeted|Auto]] / [[Direction-targeted|Direction]]",
+    "affects": "Self, Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Blighted Quiver": {
+    "damagetype": "Magic",
+    "spelleffects": "Proc",
+    "spellshield": "Special",
+    "targeting": "Auto",
+    "affects": "Enemies"
+   }
+  },
+  "E": {
+   "Hail of Arrows": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Chain of Corruption": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

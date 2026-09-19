@@ -1,0 +1,244 @@
+{
+ "name": "Demonic Ascension / Demonflare",
+ "cooldown": {
+  "values": [
+   120,
+   120,
+   120
+  ],
+  "quote": "{{tt|120|Starts on cast}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.5,
+  "quote": "{{fd|0.5}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    7.5,
+    12.5,
+    17.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.02
+    }
+   ],
+   "quote": "{{ap|15/2 to 35/2}} {{as|(+ {{ap|4/2}}% AP)}}",
+   "bin": [
+    "SwainR#DamageCalc"
+   ],
+   "binNote": "DamageCalc gives per-second values (15/25/35 + 0.04xAP); the wiki tick value is half of that since ticks occur every 0.5s (TimeBetweenTicks)."
+  },
+  {
+   "id": "r_2",
+   "meaning": "Heal per Tick",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    7.5,
+    15,
+    22.5
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.025
+    },
+    {
+     "stat": "bonusHp",
+     "coef": 0.0075
+    }
+   ],
+   "quote": "{{ap|15/2 to 45/2}} {{as|(+ {{ap|5/2}}% AP)}} {{as|(+ {{ap|1.5/2}}% of his '''bonus''' health)}}",
+   "bin": [
+    "SwainR#HealingCalc"
+   ],
+   "binNote": "HealingCalc gives per-second values (15/30/45 + 0.05xAP + 0.015xbonus maxHp); the wiki tick value is half of that per 0.5s tick."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Demonflare Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    150,
+    250,
+    350
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.4
+    }
+   ],
+   "quote": "{{ap|150 to 350}} {{as|(+ 40% AP)}}",
+   "bin": [
+    "SwainR#DemonflareDamageTotal"
+   ]
+  },
+  {
+   "id": "r_5",
+   "meaning": "Demonic Energy generated on cast (max maintainable)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 50,
+   "terms": [],
+   "quote": "generating {{as|50 Demonic Energy|azakana}}",
+   "bin": [
+    "SwainR.DemonPowerMax"
+   ]
+  },
+  {
+   "id": "r_6",
+   "meaning": "Demonic Energy decay per tick (base)",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "decays by {{as|5|azakana}} every {{fd|0.5}} seconds",
+   "bin": [
+    "SwainR.DemonPowerDegen",
+    "SwainR.TimeBetweenTicks"
+   ],
+   "binNote": "DemonPowerDegen=10 is the per-second rate; the wiki's 5-per-tick figure is that value halved for the 0.5s tick interval (TimeBetweenTicks)."
+  },
+  {
+   "id": "r_7",
+   "meaning": "Demonic Energy decay per tick after 5 seconds (amped)",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 7.5,
+   "terms": [],
+   "quote": "increased to {{as|{{fd|7.5}}|azakana}} after 5 seconds have elapsed",
+   "bin": [
+    "SwainR.DegenAmpAmount",
+    "SwainR.AmpTime",
+    "SwainR.TimeBetweenTicks"
+   ],
+   "binNote": "DegenAmpAmount=15 is the per-second amped decay rate; the wiki's 7.5-per-tick figure is that halved for the 0.5s tick interval, occurring after AmpTime=5s."
+  },
+  {
+   "id": "r_8",
+   "meaning": "Demonic Energy generated per tick while draining a champion",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "generates {{as|10 Demonic Energy|azakana}} every {{fd|0.5}} seconds while draining from at least one enemy {{tip|champion}}",
+   "bin": [
+    "SwainR.DemonPowerRegen",
+    "SwainR.TimeBetweenTicks"
+   ],
+   "binNote": "DemonPowerRegen=20 is the per-second rate; the wiki's 10-per-tick figure is that halved for the 0.5s tick interval."
+  },
+  {
+   "id": "r_9",
+   "meaning": "Maximum number of Demonflare casts allowed",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 100,
+   "terms": [],
+   "quote": "up to 100 times",
+   "bin": [
+    "SwainR.MaxDemonflareCast"
+   ]
+  },
+  {
+   "id": "r_10",
+   "meaning": "Delay before Demonflare can first be cast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "After 2 seconds, '''Swain''' gains the ability to cast",
+   "bin": [
+    "SwainR.DemonflareCastDelay"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Demonic Ascension's cooldown begins on cast, not on the buff ending.",
+   "quote": "{{tt|120|Starts on cast}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During Demonic Ascension, Swain deals damage and heals himself every 0.5 seconds per enemy target affected.",
+   "quote": "drains the lifeforce of nearby enemies, both dealing {{as|magic damage}} and {{tip|healing}} himself every {{fd|0.5}} seconds per target affected",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Demonic Ascension is lost (ends) once Demonic Energy is depleted to 0.",
+   "quote": "''Demonic Ascension'' is lost once all {{as|Demonic Energy|azakana}} is depleted to {{as|0|azakana}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Scoring a champion takedown fully restores Demonic Energy to 50, extending the buff's duration.",
+   "quote": "fully restores it to the maximum of {{as|50|azakana}} upon scoring a {{tip|champion}} {{tip|takedown}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Demonflare is automatically cast when Demonic Ascension expires, unless Demonflare is itself on cooldown at that moment.",
+   "quote": "does so automatically when ''Demonic Ascension'' expires if ''{{ai|Demonflare|Swain}}'' is not on cooldown at the time of expiration",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Demonflare will not auto-cast at the end of Demonic Ascension if the ability ends due to Swain's death.",
+   "quote": "will not automatically cast at the end of ''Demonic Ascension'' if it occurs due to '''Swain's''' {{tip|death}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Demonflare counts as an ability activation for on-cast effects such as Spellblade.",
+   "quote": "''Demonflare'' counts as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The heal from Demonic Ascension's drain is reduced by 90% against minions and monsters.",
+   "quote": "The heal is reduced by 90% against {{tip|minions}} and {{tip|monsters}}.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SwainR.MinionMonsterHealReduction",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SwainR.DemonflareSlowAmount",
+   "reason": "utility"
+  },
+  {
+   "ref": "SwainR.DemonflareSlowDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "SwainR.DemonflareCooldownTooltip",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

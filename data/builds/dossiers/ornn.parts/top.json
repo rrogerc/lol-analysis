@@ -1,0 +1,153 @@
+{
+ "champion": "ornn",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "On-cast/on-hit damage instances dealt on cooldown: Q fissure (physical, +110% AD), E charge pass and terrain shockwave (physical, +40% bonus armor +40% bonus MR), R's initial elemental pass and recast pass (magic, +20%/+40% AP)"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bellows Breath deals 5 ticks of magic damage over its 0.75s march, each tick the greater of a flat minimum and a %-max-HP amount"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "W's 0.75s march, E's 0.35s cast + dash + trailing lockout, and R's recast dash + 0.5s trailing lockout all make Ornn unable to act while they resolve"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a mandatory-for-max-damage recast (second elemental pass) available after ~1.25s, with cooldown starting only post-effect (after the full sequence resolves)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W's final tick and each R pass apply Brittle (3s) to the target, a prerequisite state consumed by the passive's bonus-damage interaction"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P",
+    "E",
+    "R"
+   ],
+   "note": "Master Craftsman/Temper: an immobilize or silence (Ornn's E knockup+stun or R knockup+stun) landing on a Brittle target consumes the debuff for bonus magic damage equal to a level-scaled % of the target's max HP"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Master Craftsman's 10%(+4% per Masterwork upgrade, up to 30%) increase to bonus armor, bonus magic resist and bonus health affects only damage taken (relevant to the survival fight, not the damage fight)"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (45/45-65/35-55/100) can meaningfully cap how many casts fit in the 15s window on a low-mana build"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Ornn's kit is expressible as a combination of existing primitives (target-debuff placing Brittle + conditional-damage consuming it, dot for W, recast-or-multipart for R, charge-or-channel for the action-locking windows), but the Brittle chain crosses three abilities (W/R apply it, E/R's own CC consumes it) and needs to be modeled as shared debuff state rather than a single self-contained ability effect."
+ },
+ "unsettled": [
+  {
+   "question": "When Searing Charge (E) or Call of the Forge God (R) applies its knockup+stun to a target that is simultaneously being freshly given Brittle by that same hit, does it consume that just-applied Brittle for the passive's bonus magic damage, or does consumption only happen against Brittle that was already present from an earlier, separate hit?",
+   "options": [
+    "Self-consumption: any stun/knockup from E or R that also applies Brittle immediately consumes it for bonus damage on the same hit",
+    "No self-consumption: Brittle must already exist on the target (e.g. from a prior W or R hit) before a later immobilize/silence can consume it"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Ornn's''' and allies' {{tip|immobilize|immobilizing}} effects or {{tip|silence|silences}} against ''Brittle'' enemies will consume the debuff to deal {{as|'''bonus''' magic damage}}",
+    "''{{cai|Searing Charge|Ornn}}'' and ''{{ai|Call of the Forge God|Ornn}}'' each apply both airborne and stun simultaneously for the same duration for this reason."
+   ]
+  },
+  {
+   "question": "Searing Charge's shockwave (its second, larger damage instance) only fires if Ornn's dash 'collides with terrain'; the simulated fights have no terrain at all. Does E therefore only ever land its single charge-pass damage in a dummy/survival fight, or should the sim assume a wall exists at max dash range so the shockwave always triggers?",
+   "options": [
+    "No terrain ever exists, so E's shockwave never fires and only the charge-pass damage instance lands each cast",
+    "Assume Ornn always reaches max dash range and a wall/terrain boundary triggers the shockwave, dealing both damage instances each cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If '''Ornn''' collides with terrain during the charge, he creates a shockwave that {{tip|airborne|knocks up}} and {{tip|stuns}} nearby enemies"
+   ]
+  },
+  {
+   "question": "Q's cast time is given as 0.3 in the bin (OrnnQ castTime) but as {{fd|0.25}} in the wiki template. Which value is live for 16.18?",
+   "options": [
+    "0.3s (bin value)",
+    "0.25s (wiki-stated value)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "castTime: 0.3",
+    "cast time    = {{fd|0.25}}"
+   ]
+  },
+  {
+   "question": "Bellows Breath's per-tick damage against a champion-type dummy: is it max(minimum-flat, %-max-HP), i.e. the minimum is purely a floor for low-HP/minion targets, or do the two apply under different, mutually exclusive conditions?",
+   "options": [
+    "Per tick, damage is the greater of the flat minimum and the %-max-HP amount (minimum acts as a floor against any target)",
+    "The %-max-HP formula only applies to champions and the flat minimum only ever applies to minions, with no floor comparison against champions"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Bellows Breath'' has a minimum damage threshold, which is also the damage dealt to {{tip|minion|minions}}, and is capped against {{tip|monsters}}."
+   ]
+  },
+  {
+   "question": "R's second (recast) pass requires Ornn to dash into and collide with the still-moving elemental. Against a single stationary dummy, should the sim assume this recast always successfully connects for the full 'Total Magic Damage' (both passes), or could/should it sometimes only be modeled as the single first-pass hit?",
+   "options": [
+    "Always assume the recast connects, dealing both passes' damage each R cast",
+    "Model uncertainty/geometry and only count the guaranteed first pass unless a hit is otherwise assumed"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{sbc|Recast:}} '''Ornn''' {{tip|dash|dashes}} in the target direction, though not through terrain. If he collides with the elemental, he sends it stampeding in the same direction."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Volcanic Rupture) on the dummy for immediate physical damage.",
+   "Cast W (Bellows Breath) through the dummy so all 5 ticks land and the final tick applies Brittle.",
+   "Immediately follow with E (Searing Charge) dashing through the dummy so its stun lands while the target is Brittle, aiming to consume Brittle for the passive's bonus magic damage in addition to E's own charge/shockwave damage.",
+   "Cast R (Call of the Forge God) to send the elemental through the dummy for the first damage pass, slow, and a fresh Brittle application.",
+   "As soon as the ~1.25s window allows, recast R to dash into the elemental and send it back through the dummy for the second damage pass and its own stun.",
+   "Weave basic attacks on cooldown throughout; against a Brittle dummy these on-hit attacks knock it back rather than dealing bonus damage.",
+   "Repeat Q, W, E, R(+recast) in whatever order each ability comes off cooldown for the remainder of the 15s window, prioritizing keeping Brittle up so E's/R's stun can consume it."
+  ],
+  "questions": [
+   "Does Ornn's own E or R stun consume Brittle it applies on the same hit, or must Brittle already be present from an earlier ability - this changes whether E alone (without a prior W) ever procs the bonus damage?",
+   "With no terrain in the simulated fight, does E's shockwave ever trigger, and if not, is E's damage contribution just the single charge-pass hit for the whole fight?",
+   "Should the R recast be assumed to always successfully collide with the elemental against a stationary single target, granting the full two-pass damage every R cast?",
+   "Is it worth spending early casts on Q (no Brittle synergy) versus prioritizing getting W and R's Brittle up before E fires, given cooldown lengths (Q 9-7s, W 12-10s, E 14-12s, R 140-100s)?",
+   "For the survival-fight use of this dossier, what level and item state should be assumed for Master Craftsman's stat amp (10% base, higher if Masterwork upgrades are assumed)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

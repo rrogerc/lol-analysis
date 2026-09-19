@@ -1,0 +1,144 @@
+{
+ "champion": "hwei",
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Each slot is a toggled 'mood' that grants access to 3 distinct sub-spells (QQ/QW/QE, WQ/WW/WE, EQ/EW/EE); casting any sub-spell ends the mood and puts the whole slot on cooldown. The simulator needs to pick which sub-spell to cast each time the slot is off cooldown."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive mark: a damaging ability applies a 4s mark to a hit enemy; a different damaging ability landing on the marked target consumes the mark and creates a separate bonus-damage explosion."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "QQ (Devastating Fire) adds bonus damage scaled to the target's max health (capped vs monsters); QW (Severing Bolt) adds a large damage multiplier if it hits only one enemy or an immobilized enemy, scaled by the target's missing health - both conditions are effectively always true against a lone dummy."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "QE (Molten Fissure) leaves ticking lava fissures (0.25s ticks over 2.5s) after each explosion; R (Spiraling Despair) applies a ticking aura (damage every 0.25s over 3s) before its final explosion."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "QE fires 7 separate timed explosion shockwaves from one cast (each a separate damage instance, plus the DoT fissures they leave); R has a separately-timed initial hit, a DoT aura, and a final explosion instance, each a distinct damage source."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "Stirring Lights (WE) arms Hwei's next 3 basic attacks or ability hits (within 9s) to each deal bonus magic damage; relevant to the damage fight as extra magic damage riders on subsequent casts/attacks."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Every sub-spell has its own mana cost (50-120) charged only on the actual cast (not on toggling the mood); with 4 spell slots all costing mana this can meaningfully cap casts across 15s, especially combined with Stirring Lights' mana restore."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Hwei's kit is three independent 3-way stance-selection systems (Q/W/E moods) layered on top of a cross-ability mark-and-detonate passive that explicitly requires the triggering hit to come from a *different* damaging ability/cast instance than the one that applied the mark. No single closed-list primitive captures 'pick 1 of 3 sub-spells per slot, then chain casts across slots so each new hit detonates the previous ability's mark for bonus damage.' Correctly simulating maximum damage requires custom logic that (1) chooses the best sub-spell per mood each time a slot is off cooldown, and (2) sequences casts across Q/W/E/R so consecutive damaging hits alternate abilities to keep re-triggering Signature of the Visionary, rather than a fixed proc-on-primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Passive (Signature of the Visionary) mark-explosion damage scales 'byLevel(40..285)' in the bin, but the wiki's {{pplevel|40 to 285}} table is evenly interpolated (13.75 per level); the bin's actual per-level curve is not linear (e.g. level 2 differs from the wiki's 53.75). Which curve is the correct/live one for the simulator?",
+   "options": [
+    "Use the wiki's linear pplevel interpolation",
+    "Use the bin's byLevel(40..285) nonlinear curve"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pplevel|40 to 285}}|magic damage}} {{as|(+ 35% AP)}}",
+    "HweiPassive#TotalDamage = byLevel(40..285) + 0.35xap"
+   ]
+  },
+  {
+   "question": "The E slot's (Subject: Torment/EQ/EW/EE) cooldown values disagree between the ddragon/bin sheet ([13/12.5/12/11.5/11]) and the wiki template ({{ap|12 to 10}} = [12/11.5/11/10.5/10]). Which is the live value for the damage-fight simulation, since it directly changes how many E casts fit in 15s?",
+   "options": [
+    "Use the wiki's [12/11.5/11/10.5/10]",
+    "Use the bin/ddragon's [13/12.5/12/11.5/11]"
+   ],
+   "impact": "high",
+   "quotes": [
+    "cooldown: [13/12.5/12/11.5/11]",
+    "|cooldown     = {{ap|12 to 10}}"
+   ]
+  },
+  {
+   "question": "Severing Bolt's (QW) large missing-health damage multiplier only applies if the bolt 'hits only one enemy or immobilized enemies.' In a 1v1 target-dummy fight there are no other enemies to share the hit, so does the sim treat every QW cast as automatically qualifying for the full isolation/missing-health bonus, or does the engine require some other condition (e.g., no allied minions/monsters nearby) that a bare dummy fight might not satisfy?",
+   "options": [
+    "Always apply the isolated/immobilized bonus multiplier against the single dummy",
+    "Do not apply it unless the target is separately immobilized/marked as isolated by other means"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If ''Severing Bolt'' hits only one enemy or {{tip|immobilize|immobilized}} enemies, it deals {{ccs|increased|magic}} damage based on the {{tt|{{as|target's '''missing''' health}}|See notes}}"
+   ]
+  },
+  {
+   "question": "Molten Fissure's (QE) 0.6s pre-eruption delay and the ~0.2s interval between its 7 explosions (marked 'Estimated' on the wiki) have no corresponding named field in the bin sheet (only BaseDamage/BaseDPS/Duration/Radius/SlowPercent/DamageDuration/ratios are listed). Is the wiki's stated timing authoritative for scheduling all 7 explosion instances within the 15s window, or is there an undisclosed bin timing value that differs?",
+   "options": [
+    "Trust the wiki's 0.6s delay + ~0.2s interval for all 7 explosions",
+    "Treat the exact explosion cadence as unknown/uncertain and use a different assumption"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "After {{tt|{{fd|0.6}} seconds|From start of cast time}}, the path erupts into volcanic explosions every {{tt|{{fd|0.2}} seconds|Estimated}} from the point of cast, for a total of 7 explosions."
+   ]
+  },
+  {
+   "question": "Stirring Lights' (WE) per-hit mana restore differs between sources: the wiki's leveling table states flat values [45/50/55/60/65] per hit, while the bin's HweiWE#{a14e3318} calculation adds a flat +3 (OnHitManaRestore + 3). Since mana restore affects how many spells Hwei can afford to cast within the 15s window (resource-budget), which value is live?",
+   "options": [
+    "Use the wiki's flat [45/50/55/60/65] per hit",
+    "Use the bin's calculated (value + 3) per hit"
+   ],
+   "impact": "low",
+   "quotes": [
+    "{{st|Mana Restore|{{ap|135/3 to 195/3}}|Total Mana Restore|{{ap|135 to 195}}}}",
+    "HweiWE#{a14e3318} = OnHitManaRestore=[45/50/55/60/65] + 3"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: toggle Serenity (W) into Stirring Lights (WE) and cast it immediately so its 3 empowered hits are ready to buff the opening abilities/attacks.",
+   "Open with Spiraling Despair (R) down the lane at the dummy to start its damage-over-time aura and apply the passive mark on the initial hit.",
+   "Immediately follow with a Q-mood cast (toggle Disaster then cast Severing Bolt, QW) targeted on the dummy: this is a different ability than R, so it detonates R's mark for the passive's bonus explosion, and QW's isolation/missing-health bonus is large against a lone target.",
+   "As soon as Q is off cooldown again, alternate into the E-mood (toggle Torment then cast Grim Visage, EQ, the fastest-cast E option) to re-apply a fresh mark and add more raw magic damage.",
+   "Continue weaving Q (whichever of QQ/QW/QE currently does the most damage against the dummy's remaining health/resists) and E (EQ/EW/EE) sub-spells back-to-back on cooldown for the rest of the 15s, always alternating which ability casts last so each new hit can detonate the previous ability's passive mark.",
+   "Use basic attacks in dead time between casts to consume Stirring Lights charges and keep DPS continuous; do not waste time on W's non-damaging sub-spells (WQ/WW) since they contribute no damage in a dummy fight.",
+   "Do not use Wash Brush during the fight - it only exits a mood for free but forfeits that mood's cast, i.e. it produces no damage and only wastes time in a max-DPS sequence.",
+   "R is only cast once at the opener given its long cooldown (120/100/80s) relative to the 15s fight window."
+  ],
+  "questions": [
+   "Given the dummy's assumed health/resist values, which specific QQ/QW/QE and EQ/EW/EE sub-spells actually maximize total damage in 15s - is QW's isolation/missing-health multiplier reliably the best Q option, or does QQ's max-health-ratio bonus win against tankier dummy stats?",
+   "Is pre-casting Stirring Lights (and any other setup) before the 15s timer starts allowed in this simulator's damage fight, or must all casts occur within the timed window?",
+   "When multiple different abilities are cast in quick succession, does the mark-explosion passive resolve on a strict first-applied-first-consumed basis, or could a later ability's hit consume an earlier mark out of order, changing which detonation combo is optimal?",
+   "Does the simulator model Hwei's toggle/mood-selection cost at all (e.g., is there any tax for switching moods), or is the choice of sub-spell effectively free once the slot is off cooldown?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

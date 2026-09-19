@@ -1,0 +1,1199 @@
+{
+ "champion": "zeri",
+ "abilities": {
+  "P": {
+   "name": "Living Battery",
+   "cooldown": null,
+   "cost": {
+    "values": [
+     10,
+     100
+    ],
+    "quote": "{{dv|{{tt|10|Regular zaps}}|{{tt|100|Full charge zap}}}}",
+    "resource": "charge"
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_zap_damage",
+     "meaning": "magic damage from a regular (uncharged) zap basic attack",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      10,
+      10.635,
+      11.302,
+      11.999,
+      12.726,
+      13.485,
+      14.276,
+      15.096,
+      15.946,
+      16.829,
+      17.743,
+      18.687,
+      19.662,
+      20.668,
+      21.704,
+      22.772,
+      23.871,
+      25
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{as|{{pp|10+(15/17)*(x-1)*(0.7025+0.0175*(x-1)) for 20}}|magic damage}} {{as|(+ 3% AP)}}",
+     "bin": [
+      "ZeriQ#MinDamage"
+     ],
+     "binNote": "The wiki's per-level formula 10+(15/17)*(x-1)*(0.7025+0.0175*(x-1)) is quadratic and matches the bin's endpoints (10 at level 1, 25 at level 18) but not its intermediate values: the bin's ZeriQ#MinDamage flat array is a plain linear interpolation (10, 10.882353, 11.764706, ...) between the same endpoints. This is a genuine disagreement between the wiki's stated formula and the bin's linear array; the wiki's numbers are recorded here."
+    },
+    {
+     "id": "p_execute_threshold",
+     "meaning": "health threshold below which a regular zap executes the target",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      70,
+      75.29,
+      80.59,
+      85.88,
+      91.18,
+      96.47,
+      101.76,
+      107.06,
+      112.35,
+      117.65,
+      122.94,
+      128.24,
+      133.53,
+      138.82,
+      144.12,
+      149.41,
+      154.71,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "the target if they are below {{pp|70 + (160-70)/17*(x-1) for 20|color=hp}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "ZeriQ#PassiveExecuteThreshold"
+     ]
+    },
+    {
+     "id": "p_fullcharge_base",
+     "meaning": "magic damage from the full-charge empowered attack",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.1
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.01,
+        0.0158824,
+        0.0217647,
+        0.0276471,
+        0.0335294,
+        0.0394118,
+        0.0452941,
+        0.0511765,
+        0.0570588,
+        0.0629412,
+        0.0688235,
+        0.0747059,
+        0.0805882,
+        0.0864706,
+        0.0923529,
+        0.0982353,
+        0.1041176,
+        0.11
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|75 + (160-75)/17*(x-1) for 20}}|magic damage}} {{as|(+ 110% AP)}} {{as|(+ {{pp|1 + (11-1)/17*(x-1) for 20|key=%}} of target's '''maximum''' health)}}",
+     "bin": [
+      "ZeriQ#PassiveMaxDamage",
+      "ZeriQ#PassiveMaxChargePercentHealth"
+     ]
+    },
+    {
+     "id": "p_fullcharge_monster_cap",
+     "meaning": "cap on the target-max-health portion of the full-charge attack against monsters",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 300,
+     "terms": [],
+     "quote": "The damage based on the target's health ratio is capped at 300 against {{tip|monsters}}.",
+     "bin": [
+      "ZeriQ.MaxPercentHealthToMonsters"
+     ],
+     "binNote": "Not usable in a dummy fight (dummy counts as an enemy champion, not a monster); listed here for completeness only."
+    },
+    {
+     "id": "p_max_charge",
+     "meaning": "maximum charge Zeri can hold before her next attack becomes the empowered full-charge attack",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 100,
+     "terms": [],
+     "quote": "up to a maximum of 100 charge",
+     "bin": [
+      "ZeriQ.MaxPercentHealthToMonsters"
+     ],
+     "binNote": "No numbers sheet row directly under P's own header stores the 100-charge cap or the 10-charge-per-40-units/10-per-Q-cast rates; these are only stated in the wikitext description, so bin is []."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Zeri generates 1 charge for every 40 units she travels by any means and 10 charge every time she casts Burst Fire, up to a maximum of 100 charge.",
+     "quote": "generates 1 charge for every 40 units she travels by any means and 10 charge every time she casts ''{{ai|Burst Fire|Zeri}}'', up to a maximum of 100 charge",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacks consume charge (10 for a regular zap, all 100 for the empowered full-charge attack) to deal modified damage instead of normal auto-attack damage.",
+     "quote": "consume charge to deal '''modified''' damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Zeri's charged/uncharged basic attacks apply spell effects as spell damage and trigger on-cast effects, but do not deal physical damage and cannot critically strike nor trigger on-hit or on-attack effects.",
+     "quote": "'''Zeri's''' {{tip|basic attacks}} apply {{tip|spell effects}} as {{tip|spell damage}} and trigger on-cast effects, but they do not deal {{as|physical damage}} and '''cannot''' {{tip|critically strike}} nor trigger {{tip|on-hit}} and {{tip|on-attack}} effects.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Uncharged attacks do not execute enemies that are shielded or invulnerable while below the health threshold.",
+     "quote": "Uncharged attacks do not execute enemies that are {{tip|shield|shielded}} or {{tip|invulnerable}} while below the health threshold.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Charged (full-charge) attacks only deal the base flat damage component to structures, ignoring the AP and max-health ratios.",
+     "quote": "Charged attacks only deal the '''base''' damage to {{tip|structures}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZeriPassive.ShieldDuration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ZeriPassive.HastePercent",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ZeriPassive.EnergizedDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ZeriPassive.PercentShieldSteal",
+     "reason": "defensive"
+    },
+    {
+     "ref": "ZeriPassive.ChampHitHasteDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Burst Fire",
+   "cooldown": {
+    "values": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "quote": "1{{Divided by}}'''Zeri's''' {{as|attack speed}}",
+    "binNote": "The bin's static cooldown field is 0 for all ranks; the wiki states the true cooldown is dynamic, equal to 1 divided by Zeri's attack speed (capped via AttackSpeedCap=1.5), not a flat per-rank value."
+   },
+   "cost": {
+    "values": null,
+    "quote": "None",
+    "resource": null
+   },
+   "castTime": null,
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Total Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      22,
+      26,
+      30,
+      34,
+      38
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        1.02,
+        1.04,
+        1.06,
+        1.08,
+        1.1
+       ]
+      }
+     ],
+     "quote": "{{ap|22 to 38}} {{as|(+ {{ap|102 to 110}}% AD)}}",
+     "bin": [
+      "ZeriQ#ActiveDamageThatCanCrit"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Physical Damage per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      3.14,
+      3.71,
+      4.29,
+      4.86,
+      5.43
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.1457,
+        0.1486,
+        0.1514,
+        0.1543,
+        0.1571
+       ]
+      }
+     ],
+     "quote": "{{ap|22/7 to 38/7|round=2}} {{as|(+ {{ap|102/7 to 110/7|round=2}}% AD)}}",
+     "bin": [
+      "ZeriQ#ActiveDamageThatCanCrit"
+     ],
+     "binNote": "Derived by the wiki dividing the total-burst base/ratio (ZeriQ.BaseDamage, ZeriQ.ActiveADRatio) by NumberOfMissiles=7 (rounds); no separate bin row per-hit."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Burst Fire fires 7 rounds over the cast time, each a separate basic-attack damage instance to the first enemy hit.",
+     "quote": "fires a burst of {{#var:rounds}} rounds in the target direction over the cast time, each dealing {{as|physical damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each round is treated as a basic attack: it deals basic damage, can critically strike, and applies on-hit and on-attack effects.",
+     "quote": "it hits any enemy unit a typical basic attack can; deals {{tip|basic damage}}; can {{tip|critically strike}} for {{as|{{critical damage|{{ccd|Zeri|crit_base}}|100}}|critical damage}} damage; and applies {{tip|on-hit}} and {{tip|on-attack}} effects to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Burst Fire's cooldown and cast time scale down with attack speed, capped at 1.5 attacks per second (only Overcharged bonus AS can exceed the cap).",
+     "quote": "''Burst Fire's'' {{sti|cooldown}} and cast time are reduced with {{sti|{{as|attack speed}}}}, with the maximum of {{as|{{fd|1.5}}|attack speed}} attacks per second",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "60% of attack speed in excess of the cap is converted into bonus attack damage.",
+     "quote": "{{#expr: {{#var:excess_as_to_ad_ratio}} * 100 }}% of {{as|attack speed}} in excess of the cap is converted into {{sti|{{as|'''bonus''' attack damage}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Burst Fire deals basic damage and does not trigger spell effects, but is tagged area of effect for targets after the first.",
+     "quote": "''Burst Fire'' deals {{tip|basic damage}} and does not trigger {{tip|spell effects}}. It is additionally tagged as [[area of effect]] when damaging targets after the first.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Burst Fire does not trigger Spellblade despite counting as an ability activation for other on-cast effects.",
+     "quote": "It does '''not''' count as an ability activation for {{tip|Spellblade}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Burst Fire does not cancel a previous attack order or movement.",
+     "quote": "Casting ''Burst Fire'' does not cancel previous attack ({{ai|Living Battery|Zeri}}) and movement orders.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Burst Fire has no mana cost.",
+     "quote": "cost = None",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZeriQ.MinCooldown",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriQ.AttackSpeedCap",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZeriQ.ExcessAttackSpeedToADMult",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriQ.NumberOfMissiles",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriQ.EnergizedMissiles",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZeriQ.SlowDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZeriQ.SlowPercent",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZeriQ.ActivePercentDamageToTowers",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZeriQ.MaxPercentHealthToMonsters",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZeriQ.ChargePerAttack",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ZeriQ.ChargeDistanceMultiplier",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ultrashock Laser",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.55,
+    "quote": "{{as|{{pp|type='''bonus''' attack speed|round=3|0.55;0.528;0.495;0.462;0.429;0.396;0.363;0.33;0.3|key1=%|0;24.4444;61.1111;97.7778;134.444;171.111;207.778;244.444;277.778|formula=0.55-0.09 per 100% '''bonus''' attack speed. ''This is capped at 45.5% reduction at 277.8% '''bonus''' attack speed.''}}}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      30,
+      70,
+      110,
+      150,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.0
+      },
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|30 to 190}} {{as|(+ 100% AD)}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "ZeriW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Critical Strike Damage (laser vs champions/monsters)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      45,
+      105,
+      165,
+      225,
+      285
+     ],
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 1.5
+      },
+      {
+       "stat": "ap",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|30*150/100 to 190*150/100}} {{as|(+ {{ap|100*150/100}}% AD)}} {{as|(+ {{ap|50*150/100}}% AP)}}",
+     "bin": [
+      "ZeriW#WallDamage",
+      "ZeriW.CriticalEffectiveness"
+     ],
+     "binNote": "CriticalEffectiveness=0.5 with critDamage baseline ~2.0 (200%) yields WallDamage = TotalDamage*(1+0.5*(critDamage-1)); wiki's #var:crit=150% is the resulting effective multiplier at default 200% crit damage, not a directly separate bin data value."
+    },
+    {
+     "id": "w_4",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "ZeriW.SlowPercent"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slows]] them for 2 seconds",
+     "bin": [
+      "ZeriW.SlowDuration"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "Laser cast delay after hitting terrain",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.85,
+     "terms": [],
+     "quote": "fires after {{fd|0.85}} seconds",
+     "bin": [
+      "ZeriW.BeamCastTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The base pulse deals physical damage and slows only the first enemy hit; if it hits terrain it transforms into a laser hitting all enemies in a line.",
+     "quote": "fires an electric pulse in the target direction that deals {{as|physical damage}} to the first enemy hit and {{tip|slows}} them for 2 seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The terrain-triggered laser always critically strikes against champions and monsters (not against other targets), unlike the base pulse.",
+     "quote": "applying the same effects to enemies hit and {{tip|critical strike|critically striking}} for {{as|{{critical damage|{{#var:crit}}|{{#var:ie_mod_W}}}}|critical damage}} damage against {{tip|champions}} and {{tip|monsters}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cast time shrinks with bonus attack speed, down to a minimum, capped at 45.5% reduction.",
+     "quote": "0.55-0.09 per 100% '''bonus''' attack speed. ''This is capped at 45.5% reduction at 277.8% '''bonus''' attack speed.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The pulse missile can be blocked by projectile-interception effects, but the laser cannot.",
+     "quote": "The pulse missile is blocked by {{tip|projectile|projectile-interception}} effects but not the laser.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Can be blocked by spell shields.",
+     "quote": "spellshield  = true",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZeriW.WallBeamRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZeriW.BeamWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZeriW.MinCastTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriW.ASpeedCastTimeScalarPerHundrethSecond",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriW.BaseCastTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriW.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Spark Surge",
+   "cooldown": {
+    "values": [
+     24,
+     22.5,
+     21,
+     19.5,
+     18
+    ],
+    "quote": "{{ap|24 to 18}}"
+   },
+   "cost": {
+    "values": [
+     90,
+     85,
+     80,
+     75,
+     70
+    ],
+    "quote": "{{ap|90 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "None"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "ai|Burst Fire|Zeri Bonus Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      22,
+      24,
+      26,
+      28,
+      30
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.2
+      }
+     ],
+     "quote": "{{ap|22 to 30}} {{as|(+ 20% AP)}}",
+     "bin": [
+      "ZeriE#BonusDamageTotal"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "ai|Burst Fire|Zeri Secondary Target Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": [
+        0.8,
+        0.85,
+        0.9,
+        0.95,
+        1
+       ]
+      }
+     ],
+     "quote": "{{ap|80 to 100}}%",
+     "bin": [
+      "ZeriE.PenDamagePercent"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Lightning Rounds buff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "gains ''Lightning Rounds'' for 5 seconds",
+     "bin": [
+      "ZeriE.BuffDuration"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "cooldown reduction on hit with charged attack or Burst Fire",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "reduced by {{fd|0.5}} seconds whenever '''Zeri''' hits at least one enemy with a ''{{ai|Basic Attack 2|Zeri|charged}}'' basic attack or ''{{ai|Burst Fire|Zeri}}''",
+     "bin": [
+      "ZeriE.CDReductionPerHit"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "cooldown reduction if Burst Fire critically strikes",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "increased to {{fd|1.5}} seconds if the latter {{tip|critical strike|critically strikes}}",
+     "bin": [
+      "ZeriE.CritCDReductionPerHit"
+     ]
+    },
+    {
+     "id": "e_6",
+     "meaning": "number of enemies Burst Fire 2 pierces through",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "pierce through enemies to deal modified damage",
+     "bin": [
+      "ZeriE.NumberOfPierceShots"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Lightning Rounds Burst Fire bonus damage on first hit increases with the caster's critical strike damage.",
+     "quote": "increased by {{critical damage|0 to 100|critScaling=true}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Secondary target damage from pierce does not apply on-hit effects or lifesteal, nor trigger on-attack effects, but is affected by critical strike modifiers.",
+     "quote": "Targets after the first take modified damage which does not apply {{tip|on-hit}} effects or {{as|{{sti|life steal}}}} nor trigger {{tip|on-attack}} effects, but is affected by {{tip|critical strike}} modifiers.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spark Surge's cooldown starts on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spark Surge resets Zeri's basic attack timer and Burst Fire's cooldown.",
+     "quote": "Spark Surge {{tip|basic attack reset|resets}} '''Zeri's''' basic attack timer and {{ais|Burst Fire|Zeri}} cooldown.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Q (Burst Fire) is disabled during the dash, while W and R remain usable.",
+     "quote": "{{ai|Q|Zeri}} is disabled. {{ai|W|Zeri}} and {{ai|R|Zeri}} are usable.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZeriE.MaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZeriE.MaxDistanceOverWalls",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZeriE.ShortHopAnimCutoff",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriE.MediumHopAnimCutoff",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriE.RevealRangeOverWalls",
+     "reason": "utility"
+    },
+    {
+     "ref": "ZeriE.BonusDamageBase",
+     "reason": null
+    },
+    {
+     "ref": "ZeriE.BonusAPRatio",
+     "reason": null
+    },
+    {
+     "ref": "ZeriE.IndicatorRevealTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ZeriE.CritScalingMod",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ZeriE.CDReductionModNonChamp",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Lightning Crash",
+   "cooldown": {
+    "values": [
+     80,
+     75,
+     70
+    ],
+    "quote": "{{ap|80 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage (nova)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.6
+      },
+      {
+       "stat": "ap",
+       "coef": 1.1
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 60% '''bonus''' AD)}} {{as|(+ 110% AP)}}",
+     "bin": [
+      "ZeriR#TotalActiveDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Overcharged duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "she enters ''Overcharged'' for 5 seconds",
+     "bin": [
+      "ZeriR.RDuration"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Overcharged duration extension per hit",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "extend the duration by {{fd|2.5}} seconds",
+     "bin": [
+      "ZeriR.DurationIncreasePerHit"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Overcharged bonus movement speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "gains {{as|{{sti|15% '''bonus''' movement speed}}}}",
+     "bin": [
+      "ZeriR.BaseBonusMS"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Overcharged bonus attack speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "and {{as|{{sti|30% '''bonus''' attack speed}}}}",
+     "bin": [
+      "ZeriR.BaseASPercent"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "Burst Fire electricity chain physical damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": 0.4
+      }
+     ],
+     "quote": "deal {{as|40% AD}} {{as|physical damage}}",
+     "bin": [
+      "ZeriR#ChainPhysicalDamage"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "Hypercharged stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2.5,
+     "terms": [],
+     "quote": "generate {{tip|stacks}} of ''Hypercharged'' from enemy champions that last {{fd|2.5}} seconds",
+     "bin": [
+      "ZeriR.MaxHyperchargeDuration"
+     ]
+    },
+    {
+     "id": "r_8",
+     "meaning": "Hypercharged move speed per stack",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.015,
+     "terms": [],
+     "quote": "'''Zeri''' gains {{as|{{sti|{{fd|1.5}}% '''bonus''' movement speed}}}}",
+     "bin": [
+      "ZeriR.MSPercent"
+     ]
+    },
+    {
+     "id": "r_9",
+     "meaning": "Max Hypercharged stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 100000,
+     "terms": [],
+     "quote": "'''Zeri''' can stack ''Hypercharged'' up to 100,000 times.",
+     "bin": [
+      "ZeriR.MaxStacks"
+     ]
+    },
+    {
+     "id": "r_10",
+     "meaning": "Max chain lightning targets",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "chains electricity to the nearest {{tip|sight|visible}} enemy within 650 units of the target, up to 4 subsequent targets",
+     "bin": [
+      "ZeriR.MaxChainTargets"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The nova hits nearby enemies on cast and, if it hits at least one enemy champion, triggers Overcharged.",
+     "quote": "discharges an electric nova that deals {{as|magic damage}} to nearby enemies. If this hits at least one enemy champion, she enters ''Overcharged'' for 5 seconds.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "During Overcharged, Burst Fire fires 3 rounds instead of the normal burst, and the first round to hit an enemy per cast chains to up to 4 additional targets for bonus physical damage that can crit.",
+     "quote": "instead fires 3 rounds that travel with increased speed. The first round to hit an enemy per {{tip|cast instance}} chains electricity to the nearest {{tip|sight|visible}} enemy within 650 units of the target, up to 4 subsequent targets, to deal {{as|40% AD}} {{as|physical damage}}. This damage can {{tip|critically strike}} for {{as|{{critical damage|40}}|critical damage}} {{as|AD}} {{as|'''bonus''' physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Zeri gains 1 Hypercharged stack per champion hit with an ability or charged attack during Overcharged, increased to 3 on critically striking abilities.",
+     "quote": "She generates 1 stack for each one she hits with an ability or ''{{ai|Living Battery|Zeri|charged}}'' attack, increased to 3 on abilities that {{tip|critically strike}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield blocks the initial nova but does not prevent Zeri from entering Overcharged.",
+     "quote": "{{tip|Spell shield}} blocks ''Lightning Crash's'' initial nova but does not prevent '''Zeri''' from becoming ''Overcharged''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The nova applies as area damage and the chain lightning applies as proc damage (a separate damage instance per hit).",
+     "quote": "Applies {{tip|area damage}} for the nova and {{tip|proc damage}} for the chain lightning.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Zeri can move during the ability's cast time.",
+     "quote": "'''''Zeri''' can move during Lightning Crash's cast time.''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ZeriR.StackDuration",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ZeriR.NovaRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ZeriR.BonusMagicDamage",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Living Battery's 0-100 charge counter governs whether a basic attack is a cheap 10-charge zap or the full 100-charge empowered zap; charge builds from movement and from casting Q."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "P"
+   ],
+   "note": "Uncharged zaps execute the target below a level-scaling %max-health/flat threshold (ZeriQ#PassiveExecuteThreshold)."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every time accumulated charge hits 100 (via ~10 basic attacks and/or Q casts), the next basic attack is the empowered full-charge zap instead of a regular one."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W's pulse and R's nova deal their damage on cast/short delay."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Burst Fire's true cooldown and cast time are 1/attack speed, capped at 1.5 attacks/sec (raised only by R's Overcharged)."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "Q"
+   ],
+   "note": "60% of bonus attack speed percent in excess of the 1.5 AS cap is converted into bonus AD."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Each of Q's 7 rounds rolls crit individually; R's Overcharged chain-lightning bounce can also crit."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q fires 7 separately-timed missile hits over its cast time (3 while Overcharged); R deals a nova hit plus a separately-timed chain-lightning proc."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Spark Surge grants Lightning Rounds for 5s, arming Burst Fire with bonus magic damage on the first target hit and pierce on subsequent targets."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's current cooldown is reduced 0.5s (1.5s on a crit) whenever a charged attack or Burst Fire hits."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "Casting Spark Surge resets Zeri's basic attack timer and Q's cooldown/cast-time gate."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Overcharged (5s, extendable) grants 30% bonus AS with a raised AS cap, 15% MS, and swaps Q into its 3-round chain-lightning form."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W"
+   ],
+   "note": "The upgraded wall-triggered laser (which crits and hits multiple enemies) requires terrain; per the no-terrain fight rule only the base non-crit pulse to the single target is reachable."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "Overcharged Burst Fire's chain lightning needs a second visible enemy within 650 units to bounce to; with a single dummy target this component never triggers."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (W 50-90, E 90-70, R 100) may meaningfully gate how often these are recast inside 15s depending on mana pool/regen."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Zeri's basic attack is not a normal physical auto-attack: Living Battery fully replaces it with a charge-gated magic-damage system (cheap 10-charge zaps with an execute clause, cycling into a 100-charge empowered zap with an AP+target-max-health scaling that periodically recurs), and that charge is fed both by movement (largely absent in a stationary dummy fight) and by casting Q. Layered on top, Q (Burst Fire) is itself not a simple cooldown ability but an AS-gated 7-hit basic-attack burst whose true cast rate and bonus AD depend on Zeri's attack speed relative to a cap, and R's Overcharged state swaps Q into a different 3-hit chain-lightning form while raising that cap, and E arms Q with extra first-hit/pierce damage for a duration. None of the closed primitives individually captures the shared identity between P's charge system and Q's AS-gated firing, or R's in-place override of Q's behavior; this interlock needs bespoke state-machine logic (current charge, current Q form, active timed buffs) rather than a single primitive lookup."
+ },
+ "unsettled": [
+  {
+   "question": "What damage type does Ultrashock Laser's pulse/laser actually deal: magic (per the infobox flag) or physical (per the description and blurb text, which repeatedly say 'physical damage')?",
+   "options": [
+    "Magic damage, per the flags block (damagetype: Magic)",
+    "Physical damage, per the repeated 'deals {{as|physical damage}}' wording in the description/blurb",
+    "The infobox is stale and the text is authoritative, or vice versa"
+   ],
+   "impact": "high",
+   "quotes": [
+    "\"damagetype\": \"Magic\"",
+    "fires an electric pulse in the target direction that deals {{as|physical damage}} to the first enemy hit"
+   ]
+  },
+  {
+   "question": "In a stationary 15s dummy fight with no movement, does Living Battery's charge accrue at all beyond the 10-per-Q-cast rate (its other source is '1 charge per 40 units travelled'), and should the simulator assume Zeri starts the fight at 0 or 100 charge?",
+   "options": [
+    "Charge only comes from casting Burst Fire (no movement assumed), starting from 0 charge",
+    "Zeri starts at 100 charge per 'gains maximum charge when the game starts', so the first attack is always the empowered zap",
+    "Assume some baseline kiting distance per second to also generate charge from movement, as in real play"
+   ],
+   "impact": "high",
+   "quotes": [
+    "generates 1 charge for every 40 units she travels by any means and 10 charge every time she casts ''{{ai|Burst Fire|Zeri}}''",
+    "'''Zeri''' gains maximum charge when the game starts and upon [[respawn]]ing."
+   ]
+  },
+  {
+   "question": "During Overcharged, Q's attack-speed cap becomes 1.5+({{ccd|Zeri|as_ratio}}*0.3); Zeri's base per-level 'as_ratio' stat is not present anywhere in the provided numbers sheet or wiki template text, so the exact numeric AS cap while Overcharged is unresolved.",
+   "options": [
+    "Use Zeri's known live-game base attack speed ratio (an external stat not given here) to compute the exact cap",
+    "Treat the Overcharged cap as an unbounded/very high cap for simulation purposes since the multiplier is unknown",
+    "Ignore the cap increase entirely and keep the 1.5 AS cap even while Overcharged"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "an increased attack speed cap of {{as|{{ap|1.5+({{ccd|Zeri|as_ratio}}*0.3)}}|as}}"
+   ]
+  },
+  {
+   "question": "ZeriPassive#PassiveAttackSpeed (a by-level ratio of 0.2 rising to 0.3, filed under the Passive's own bin header) is never referenced anywhere in the wiki's Living Battery template text. Is this simply Zeri's champion base-stats attack-speed-per-level growth curve (already reflected in her base stats and not a separate kit mechanic to model), or an additional passive bonus attack speed the fight sim must add on top of normal base AS?",
+   "options": [
+    "It is just the base-stats AS growth curve, already covered by standard per-level base attack speed and needs no separate handling",
+    "It is an additional passive attack-speed bonus stacking on top of base AS that the sim must add explicitly"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "ZeriPassive#PassiveAttackSpeed = byLevelL[0.2/0.2/0.2/0.2/0.2/0.25/0.25/0.25/0.25/0.25/0.3/0.3/0.3/0.3/0.3/0.3/0.3/0.3]"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume Zeri starts the fight at max Living Battery charge (100) per 'gains maximum charge when the game starts'.",
+   "Open with R (Lightning Crash) for its nova magic damage and to immediately enter Overcharged (30% bonus AS, raised AS cap, empowered 3-round chain-lightning Burst Fire).",
+   "Immediately follow with E (Spark Surge) to gain Lightning Rounds, adding bonus magic damage to the first target hit by every Burst Fire cast for the next 5s.",
+   "For the remainder of the fight, continuously alternate: basic attacks (Living Battery zaps -- a full-charge empowered zap roughly every 10th attack/cast) and Burst Fire (Q) casts back-to-back at the attack-speed-gated cast rate, since Q has no cost and its true cooldown is just 1/attack speed.",
+   "Cast W (Ultrashock Laser) for its pulse damage every time it comes off cooldown (~8-12s at base), since it costs mana but deals a large chunk of burst damage.",
+   "Re-cast E again as soon as it comes off cooldown (18-24s base, reduced by 0.5-1.5s per qualifying hit) to refresh Lightning Rounds before the 5s buff expires, mana permitting.",
+   "Do not plan a second R cast; its 70-80s cooldown will not come back up within the 15s fight window."
+  ],
+  "questions": [
+   "Do Q (Burst Fire) casts and P (Living Battery) auto-attacks share the same attack timer/action slot (mutually exclusive), or can Zeri weave both independently for more total actions per second?",
+   "Does Spark Surge's basic-attack-timer reset also let a Living Battery zap or Burst Fire cast happen 'for free' immediately after the dash, effectively adding an extra action within the 15s window?",
+   "Should the rotation assume mana is never a binding constraint (typical for a leveled-up ranged carry with mana items), or should E/R/W casts be throttled by a specific assumed mana pool and regen?",
+   "Is it expected that Zeri's opening action is R (for the Overcharged buff window) rather than immediately auto-attacking, given R's 0.25s cast time delays her first hit?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

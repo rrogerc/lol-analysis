@@ -1,0 +1,126 @@
+{
+ "champion": "swain",
+ "primitives": [
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Five bolts fired over 0.25s are separately timed damage instances against the same target, with a per-subsequent-bolt bonus and (per wiki notes) the total split evenly among however many bolts connect."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Vision of Empire deals its damage in one instance on a fixed 1.5s delay after cast, on cooldown."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nevermove only deals damage/roots if the wave reaches max range and homes back to detonate on the first enemy hit; against a stationary dummy this requires assuming Swain casts it at max range so the return-and-detonate condition is met."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Nevermove has a recast (the pull) available while the target is rooted; the recast itself deals no damage but collects a Soul Fragment (heal/stat), so it is a separately timed follow-up part of the ability."
+  },
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demonic Ascension is a stance with its own drain damage/heal that ends and reverts, distinct from the base kit, and unlocks the separate Demonflare active while active."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "While in Demonic Ascension, Swain deals magic damage and heals every 0.5s per enemy target drained."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "R"
+   ],
+   "note": "Demonic Ascension is maintained by a Demonic Energy meter (starts at 50, decays 5/tick then 7.5/tick after 5s, regenerates 10/tick while draining a champion) that gates how long the stance and its DoT/heal persist."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (40-60 Q, 60-80 W, 50-70 E, 100 R) may meaningfully limit how many casts fit in a 15s fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Two mechanics resist the closed primitive list's flat modeling. (1) Q's five bolts: the bin computes each bolt's damage from an escalating 25%-bonus-per-subsequent-hit formula (InitialDamage, ExtraBoltDamage, MaxDamage), while the wiki notes instead describe the ability's total damage as being split evenly across however many bolts land on a single target -- these are two different damage models for the same ability and a script needs a explicit chosen formula, not just a per-hit damage value. (2) R's Demonic Ascension is a resource-driven stance: its duration is governed by a Demonic Energy meter that decays at a rate which itself changes after 5s, but regenerates while draining any enemy champion (a dummy counts as one) and fully refills on a takedown; whether this makes the stance self-sustaining for the whole fight, when/how often Demonflare can be recast during it (a cooldown value exists in the bin but is flagged as tooltip-only by the wiki), and the automatic cast on expiry all require bespoke state-machine logic beyond a fixed cooldown/duration/DoT primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does Death's Hand's total damage get split evenly among the bolts that connect with a single target, or does each bolt deal its own bin-calculated amount (base+AP for the first, +25% bonus per subsequent hit, uncapped by an even split)?",
+   "options": [
+    "Use the bin's per-bolt formulas directly: bolt 1 = InitialDamage, bolts 2-5 each = InitialDamage*1.25 (or similarly escalating), summing above the tooltip's 'total damage' figure",
+    "Follow the wiki note: compute the tooltip 'total damage' for however many bolts hit, then divide evenly across those bolts, so 5/5 bolts hitting yields 5 equal instances summing to MaxDamage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "The total damage to a single target will be split evenly among each bolt that hits, meaning that hitting with more bolts will deal less damage per hit (but more overall damage).",
+    "SwainQ#ExtraBoltDamage = InitialDamage * ExtraBoltRatio=0.25"
+   ]
+  },
+  {
+   "question": "Against a single stationary target that counts as an enemy champion, does draining it during Demonic Ascension generate enough Demonic Energy (10/tick) to outpace or match the decay (5/tick, then 7.5/tick after 5s), letting the stance (and its DoT/heal) persist for the whole 15s fight rather than expiring quickly?",
+   "options": [
+    "Energy regen from draining the dummy keeps net energy flat or rising (capped at 50), so Ascension is effectively permanent once cast on a single target dummy fight",
+    "Decay and regen are not simultaneous/additive as assumed, or some other rule caps effective drain time, so Ascension still expires within a few seconds despite continuous draining"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Swain''' generates {{as|10 Demonic Energy|azakana}} every {{fd|0.5}} seconds while draining from at least one enemy {{tip|champion}}",
+    "decays by {{as|5|azakana}} every {{fd|0.5}} seconds, increased to {{as|{{fd|7.5}}|azakana}} after 5 seconds have elapsed"
+   ]
+  },
+  {
+   "question": "Can Demonflare be manually recast repeatedly during Demonic Ascension on some cooldown (the bin lists DemonflareCooldownTooltip=8 but the R part's authors flagged it as tooltip-only/unused), or does it only fire once automatically when Ascension expires (up to the 100-cast lifetime cap)?",
+   "options": [
+    "Demonflare has a real ~8s per-cast cooldown and can be cast manually multiple times per Ascension activation, in addition to the automatic cast on expiry",
+    "Demonflare is only cast automatically once, when Demonic Ascension ends (if it isn't on cooldown at that moment), and cannot otherwise be freely recast mid-stance"
+   ],
+   "impact": "high",
+   "quotes": [
+    "does so automatically when ''Demonic Ascension'' expires if ''{{ai|Demonflare|Swain}}'' is not on cooldown at the time of expiration",
+    "SwainR.DemonflareCooldownTooltip = 8"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Nevermove (E) cast at maximum range so the wave homes back and detonates on the dummy immediately, dealing its magic damage.",
+   "Follow with Death's Hand (Q) cast at point-blank range/facing the dummy so all five bolts connect for maximum total damage.",
+   "Cast Vision of Empire (W) targeted on the dummy; it explodes 1.5s after cast for magic damage.",
+   "Cast Demonic Ascension (R) to enter the drain stance, dealing repeating tick damage (and self-healing, irrelevant to damage dealt) every 0.5s while channeling on the dummy.",
+   "While in Demonic Ascension, cast Demonflare whenever it becomes available (assumed ~8s cadence) for its burst nova damage, layered on top of the drain ticks.",
+   "Recast Q and E on cooldown throughout the remaining fight duration, weaving them between R's drain ticks and Demonflare casts.",
+   "Recast W again if its cooldown (18-22s) comes up before the 15s fight ends (unlikely at rank 1-2, more likely at higher ranks/haste).",
+   "If mana becomes limiting, prioritize Q (cheapest, shortest cooldown) and R/Demonflare (largest single hits) over W."
+  ],
+  "questions": [
+   "Is it correct to assume Swain can always position at Nevermove's exact max range against a stationary dummy, or should a shorter-range cast (no return/detonate, no damage) be modeled as the default/likely case?",
+   "Does entering Demonic Ascension on a single-target dummy fight effectively become a permanent stance for the whole 15s (per the energy-regen question above), meaning R is only cast once, or does it need to be recast on cooldown after expiring partway through the fight?",
+   "How often can Demonflare actually be cast per Ascension activation, and should the rotation model it as a fixed-cadence DoT/burst hybrid or as a single guaranteed cast at stance end?",
+   "Should Nevermove's recast (pull) be included in the rotation for its heal-adjacent Soul Fragment collection even though it deals no damage itself, or omitted entirely since the damage fight only cares about damage output?",
+   "Given Q/W/E/R costs, is mana actually a binding constraint in a 15s fight at the levels/items being simulated, or is it safe to assume unlimited-effective mana for the rotation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

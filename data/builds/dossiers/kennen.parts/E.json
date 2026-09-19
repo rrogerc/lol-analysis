@@ -1,0 +1,210 @@
+{
+ "name": "Lightning Rush",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": {
+  "values": [
+   80,
+   80,
+   80,
+   80,
+   80
+  ],
+  "quote": "80",
+  "resource": "energy"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "e_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    120,
+    160,
+    200,
+    240
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.8
+    }
+   ],
+   "quote": "{{ap|80 to 240}} {{as|(+ 80% AP)}}",
+   "bin": [
+    "KennenLightningRush#TotalDamage"
+   ]
+  },
+  {
+   "id": "e_2",
+   "meaning": "Non-Champion Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    52,
+    78,
+    104,
+    130,
+    156
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.52
+    }
+   ],
+   "quote": "{{ap|80*0.65 to 240*0.65}} {{as|(+ {{ap|80*0.65}}% AP)}}",
+   "bin": [
+    "KennenLightningRush#TotalDamage",
+    "KennenLightningRush.DamageToMinions"
+   ],
+   "binNote": "The 0.65 multiplier against non-champions is not itself a calculation in the sheet; the wiki's non-champion numbers are TotalDamage's base/ap terms each scaled by DamageToMinions=0.65."
+  },
+  {
+   "id": "e_3",
+   "meaning": "Bonus Attack Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 80}}%",
+   "bin": [
+    "KennenLightningRush.TotalAS"
+   ]
+  },
+  {
+   "id": "e_4",
+   "meaning": "duration as ball (active form)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "'''Kennen''' turns into lightning for 2 seconds",
+   "bin": [
+    "KennenLightningRush.DurationAsBall"
+   ]
+  },
+  {
+   "id": "e_5",
+   "meaning": "energy restored on damaging an enemy",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 40,
+   "terms": [],
+   "quote": "restores {{sti|{{as|40 energy}}}} upon damaging at least one enemy",
+   "bin": [
+    "KennenLightningRush.EnergyRefund"
+   ]
+  },
+  {
+   "id": "e_6",
+   "meaning": "recast/auto-recast delay",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "''Lightning Rush'' can be recast after {{fd|0.5}} seconds, and does so automatically after the duration.",
+   "bin": [],
+   "binNote": "No data value in the sheet carries this 0.5s recast-availability delay; it appears only in the wiki description text."
+  },
+  {
+   "id": "e_7",
+   "meaning": "bonus attack speed duration after recast",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "be allowed to exceed the {{tt|attack speed cap|normally 3.003 attacks per second}} by the amount gained for 4 seconds",
+   "bin": [
+    "KennenLightningRush.DurationAfterBall"
+   ]
+  },
+  {
+   "id": "e_8",
+   "meaning": "duration extension per critical strike",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "{{tip|Critical strikes}} extend the {{as|'''bonus''' attack speed's}} duration by 1 second, up to the original duration.",
+   "bin": [
+    "KennenLightningRush.CritDurationBonus"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Lightning Rush deals damage to each enemy it passes through only once per cast.",
+   "quote": "''Lightning Rush'' will only damage any particular enemy once per cast.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While active as lightning, Kennen cannot basic attack.",
+   "quote": "becoming unable to declare basic attacks",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Recasting ends the dash early to grant bonus attack speed exceeding the attack speed cap.",
+   "quote": "'''Kennen''' ends ''Lightning Rush'' to gain {{sti|{{as|'''bonus''' attack speed}}}} and be allowed to exceed the {{tt|attack speed cap|normally 3.003 attacks per second}} by the amount gained for 4 seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Damage against non-champions (e.g. the target dummy, which counts as an enemy champion, would not be affected) is reduced to 65%.",
+   "quote": "reduced to 65% against non-champions",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown starts only after the active/recast effect ends.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast can be used even while affected by cast-inhibiting crowd control.",
+   "quote": "''Lightning Rush's recast can be used while affected by {{tip|cast-inhibiting crowd control}}.''",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KennenLightningRush.MovementSpeed",
+   "reason": "utility"
+  },
+  {
+   "ref": "KennenLightningRush.DamageRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "KennenLightningRush.linger",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

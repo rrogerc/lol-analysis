@@ -1,0 +1,554 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "KatarinaPassive",
+    "key": "Characters/Katarina/Spells/KatarinaPassiveAbility/KatarinaPassive",
+    "dataValues": {
+     "ResetWindow": 3,
+     "ResetCDR": 15,
+     "DaggerRadius": 340,
+     "DaggerDuration": 4,
+     "BonusADRatio": 0.6
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "<ByCharLevelFormulaCalculationPart> + (BonusADRatio=0.6)xbonus ad + (byLevelL[0.7/0.7/0.7/0.7/0.7/0.8/0.8/0.8/0.8/0.8/0.9/0.9/0.9/0.9/0.9/1/1/1])xap",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BonusADRatio"
+      ]
+     },
+     "{e1ba6b0f}": {
+      "expr": "byLevelL[0.78/0.78/0.78/0.78/0.78/0.84/0.84/0.84/0.84/0.84/0.9/0.9/0.9/0.9/0.9/0.96/0.96/0.96]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.78,
+        0.78,
+        0.78,
+        0.78,
+        0.78,
+        0.84,
+        0.84,
+        0.84,
+        0.84,
+        0.84,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.96,
+        0.96,
+        0.96
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ByCharLevelFormulaCalculationPart"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "KatarinaQ",
+    "key": "Characters/Katarina/Spells/KatarinaQAbility/KatarinaQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10,
+      9,
+      8,
+      7
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       115,
+       150,
+       185,
+       220
+      ]
+     },
+     "BounceOffset": 350,
+     "BounceRadius": 450,
+     "MaxBounces": 2,
+     "QAPRatio": 0.4
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/115/150/185/220] + (QAPRatio=0.4)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        115,
+        150,
+        185,
+        220
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "QAPRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "QAPRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "KatarinaW",
+    "key": "Characters/Katarina/Spells/KatarinaWAbility/KatarinaW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      15,
+      14,
+      13,
+      12,
+      11
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MovespeedDuration": 1.25,
+     "MovespeedAmount": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "KatarinaEWrapper",
+    "key": "Characters/Katarina/Spells/KatarinaEWrapperAbility/KatarinaEWrapper",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      11,
+      10,
+      9,
+      8
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     },
+     "DataCooldown": {
+      "axis": "rank",
+      "v": [
+       12,
+       11,
+       10,
+       9,
+       8
+      ]
+     },
+     "EADRatio": 0.4,
+     "EAPRatio": 0.25
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[20/30/40/50/60] + (EAPRatio=0.25)xap + (EADRatio=0.4)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        30,
+        40,
+        50,
+        60
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "EAPRatio"
+       },
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.4,
+        "dataValue": "EADRatio"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "EADRatio",
+       "EAPRatio"
+      ]
+     },
+     "DaggerCooldownReduction": {
+      "expr": "{016cd4b3} * (<CooldownMultiplierCalculationPart>)*(DataCooldown=[12/11/10/9/8])",
+      "modifies": "{016cd4b3}",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "DataCooldown"
+      ]
+     },
+     "{016cd4b3}": {
+      "expr": "byLevelL[0.78/0.78/0.78/0.78/0.78/0.84/0.84/0.84/0.84/0.84/0.9/0.9/0.9/0.9/0.9/0.96/0.96/0.96]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.78,
+        0.78,
+        0.78,
+        0.78,
+        0.78,
+        0.84,
+        0.84,
+        0.84,
+        0.84,
+        0.84,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.96,
+        0.96,
+        0.96
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "TooltipDaggerReduction": {
+      "expr": "byLevelL[0.78/0.78/0.78/0.78/0.78/0.84/0.84/0.84/0.84/0.84/0.9/0.9/0.9/0.9/0.9/0.96/0.96/0.96]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        0.78,
+        0.78,
+        0.78,
+        0.78,
+        0.78,
+        0.84,
+        0.84,
+        0.84,
+        0.84,
+        0.84,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.96,
+        0.96,
+        0.96
+       ]
+      },
+      "terms": [],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part CooldownMultiplierCalculationPart"
+    ]
+   }
+  ],
+  "R": [
+   {
+    "script": "KatarinaR",
+    "key": "Characters/Katarina/Spells/KatarinaRAbility/KatarinaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      75,
+      60,
+      45
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DamagePerTick": {
+      "axis": "rank",
+      "v": [
+       25,
+       37.5,
+       50
+      ]
+     },
+     "TicksPerSecond": 6,
+     "Duration": 2.5,
+     "GrievousDuration": 3,
+     "GrievousAmount": 0.4,
+     "OnHitRatio": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.3,
+       0.35
+      ]
+     },
+     "RAPRatio": 0.19
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "DamagePerTick=[25/37.5/50] + (RAPRatio=0.19)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        37.5,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.19,
+        "dataValue": "RAPRatio"
+       }
+      ],
+      "refs": [
+       "DamagePerTick",
+       "RAPRatio"
+      ]
+     },
+     "TotalDamageCalc": {
+      "expr": "DamageCalc * (TicksPerSecond=6)*(Duration=2.5)",
+      "modifies": "DamageCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        375,
+        562.5,
+        750
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 2.85,
+        "dataValue": "RAPRatio"
+       }
+      ],
+      "refs": [
+       "DamagePerTick",
+       "Duration",
+       "RAPRatio",
+       "TicksPerSecond"
+      ]
+     },
+     "ADDamageCalc": {
+      "expr": "((0.16)*(1 + 3.125xbonus attackWindup?))xbonus ad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "TotalADDamageCalc": {
+      "expr": "ADDamageCalc * (TicksPerSecond=6)*(Duration=2.5)",
+      "modifies": "ADDamageCalc",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "Duration",
+       "TicksPerSecond"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "KatarinaQ",
+  "W": "KatarinaW",
+  "E": "KatarinaEWrapper",
+  "R": "KatarinaR",
+  "P": "KatarinaPassive"
+ },
+ "resource": {
+  "arType": null,
+  "values": {
+   "{726ee5cd}": 0,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.15
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Katarina",
+  "name": "Katarina",
+  "partype": "None",
+  "passive": "Voracity",
+  "spells": [
+   {
+    "id": "KatarinaQ",
+    "name": "Bouncing Blade",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10,
+     9,
+     8,
+     7
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KatarinaW",
+    "name": "Preparation",
+    "maxrank": 5,
+    "cooldown": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KatarinaEWrapper",
+    "name": "Shunpo",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KatarinaR",
+    "name": "Death Lotus",
+    "maxrank": 3,
+    "cooldown": [
+     75,
+     60,
+     45
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Voracity": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Enemies, Self"
+   },
+   "Sinister Steel": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Enemies, Self"
+   }
+  },
+  "Q": {
+   "Bouncing Blade": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Preparation": {
+    "targeting": "Auto",
+    "affects": "Self"
+   }
+  },
+  "E": {
+   "Shunpo": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "targeting": "Location",
+    "affects": "Enemies"
+   }
+  },
+  "R": {
+   "Death Lotus": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "Special",
+    "projectile": "True",
+    "targeting": "Proximity",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

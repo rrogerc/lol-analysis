@@ -1,0 +1,137 @@
+{
+ "champion": "senna",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Mist stacks (gained by consuming marks or Mist Wraiths) grant permanent bonus AD (0.75/stack, no stated cap or decay found) and, every 20 stacks, bonus crit chance (10%); stack count also feeds R's shield scaling."
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Every 1% of total crit chance (items + Mist tiers) above 100% converts to 0.35% life steal."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Consuming a Mist mark deals bonus physical damage equal to a level-scaled percent of the target's current health (1%/level, capped at 10% from level 10), applying life steal at 100%."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "P"
+   ],
+   "note": "A hit applies a 4s Mist mark to the target; consuming it renders the target immune to being re-marked for a level-scaled duration (6s down to 4s)."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "Q"
+   ],
+   "note": "Relic Cannon: basic attacks on-hit deal 20% AD bonus physical damage (100% life steal) if damage >0; Piercing Darkness applies on-hit effects to the champion it triggers on-attack against."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Piercing Darkness' current cooldown is reduced by 1 second on every on-attack (basic attack landed), independent of Q's own casts."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q, W and R each deal one fixed physical damage instance per cast, scaling with bonus AD/AP and level/rank."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 70-110, W 50-70, E 70 flat, R 100 flat) could cap casts inside a 15s fight depending on mana pool/regen."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks can crit using crit chance granted by Mist-stack tiers; a bin value (CritDamageMod=0.8) may modify Senna's own critical strike damage multiplier but is not tied to any named calculation."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E's camouflage and movement speed, and R's shield to self/allies, are never read by a damage-only fight against a stationary dummy."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every offensive mechanic (mark-and-consume, stacking AD/crit from Mist, crit-to-lifesteal conversion, Relic Cannon on-hit, Q's on-attack cooldown refund, and Q/W/R's plain-cast damage) maps onto a primitive in the closed list. The remaining difficulty is entirely about how those primitives interact over time against a single continuously-attacked target (the mark/immunity duty cycle and resulting stack growth), which is a rotation/timing question rather than a missing mechanic type."
+ },
+ "unsettled": [
+  {
+   "question": "How does the Mist mark / consume / re-mark-immunity cycle play out against one continuously attacked target over 15s (does every other hit alternate apply/consume, and does the ~4-6s immunity window throttle this at high attack speed)?",
+   "options": [
+    "Simulate the full state machine per hit (unmarked -> mark applied -> consumed on next hit -> immune for N seconds -> repeat), which caps the rate of conditional-damage procs and Mist-stack gains regardless of attack speed",
+    "Approximate as a fixed proc rate (e.g., one consume per immunity-duration window) for simplicity",
+    "Treat every attack/ability hit as marking+consuming simultaneously (ignore the immunity gate), overcounting stack gain and current-health damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Subsequent attacks or ability hits against marked targets will consume the mark to grant '''Senna''' a {{tip|stack}} of {{as|Mist}} and deal {{as|'''bonus''' physical damage}}... rendering the target immune to being marked again for a few seconds."
+   ]
+  },
+  {
+   "question": "Does SennaPassive.CritDamageMod (0.8) modify Senna's own critical strike damage multiplier (e.g., her crits do 180% instead of 200%), or is it unused/tied to something else (e.g., Mist Wraiths)?",
+   "options": [
+    "It reduces Senna's own crit damage multiplier to 180%, affecting all basic-attack crit damage in the dummy fight",
+    "It is unused for Senna's own attacks and should be ignored"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "SennaPassive.CritDamageMod = 0.8",
+    "SennaPassive#CriticalDamage (percent) = 1xcritDamage"
+   ]
+  },
+  {
+   "question": "What starting Mist stack count should be assumed at the beginning of the damage fight (affects starting bonus AD, crit chance tier, and R's shield-from-stacks term)?",
+   "options": [
+    "0 stacks (no prior kills/marks before the timed fight begins)",
+    "Some nonzero baseline representing a typical mid-game stack count, left to the simulator's item/level assumptions"
+   ],
+   "impact": "medium",
+   "quotes": []
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with a basic attack or Q (Piercing Darkness) to apply the first Mist mark on the dummy, since the dummy counts as an enemy champion for marking purposes.",
+   "Weave continuous basic attacks throughout the fight to trigger Relic Cannon's on-hit bonus damage and to consume/re-apply Mist marks for the current-health-percent bonus damage and Mist stack gain.",
+   "Cast Q on cooldown once available; note Q's own cooldown is refunded 1s per basic attack landed (on-attack), so Q comes off cooldown faster the more Senna is actively auto-attacking.",
+   "Cast W (Last Embrace) on cooldown for its flat physical damage instance, timed so its hit also lands on the target to interact with the mark cycle.",
+   "Cast R (Dawning Shadow) as soon as it is available for its large physical-damage instance (250-550 + 0.7 AP + 1.15 bonus AD); given its long cooldown relative to a 15s window, it will likely be cast at most once, so cast it as early as safely possible to maximize total damage dealt in the window.",
+   "Do not cast E (Curse of the Black Mist) during the damage fight: it deals no damage and its camouflage/movement-speed effects are mobility/stealth, which the fight ignores."
+  ],
+  "questions": [
+   "Given the mark/immunity duty cycle, is there an attack-speed threshold beyond which extra basic attacks stop producing extra conditional-damage procs (i.e., is the cycle rate-limited by the mark's immunity duration rather than attack speed)?",
+   "Should R be front-loaded at the very start of the 15s window (maximizing chance to land once) or held to combo with a Q/W mark-consume for the current-health-percent proc, and does R's own hit count as an 'ability hit' that can apply or consume the Mist mark like Q and W do?",
+   "Does the simulator need to model Senna gaining a Mist Wraith kill from the dummy dying mid-fight (extra stack + gold), or is the dummy assumed to have effectively infinite health for the 15s window?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,175 @@
+{
+ "champion": "kogmaw",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Bio-Arcane Barrage empowers basic attacks with bonus magic damage based on target max health for 8s duration"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "W"
+   ],
+   "note": "next 8s of basic attacks gain range and the on-hit magic damage rider"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Caustic Spittle's passive grants Kog'Maw bonus attack speed continuously (unlocked, not activated)"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q shreds target's armor and magic resistance for 4s"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "E"
+   ],
+   "note": "Void Ooze leaves a ground field for 3s that ticks a slow every 0.25s (no damage tick, but treated as ticking zone for slow only; no repeat damage)"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q and E deal damage on a fixed short delay after cast, on cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Living Artillery is cast repeatedly (fast cooldown) as a separately-timed damage instance each time, not a true recast chain but multiple discrete casts"
+  },
+  {
+   "id": "ramping-per-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "each R cast adds a mana-cost-increasing stack (up to 9), raising cost per subsequent cast"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Living Artillery stacks (cost surcharge) accumulate with cap 9 and refresh/expire on an 8s timer"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs on all abilities, especially R's ramping cost, meaningfully limit casts within 15s"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "R damage scales with target's missing health (up to +50% at 60% missing) or is doubled outright below 40% max health"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a 0.6s travel/delay before impact, distinct fixed delay per cast"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "the 40% max-health threshold triggering doubled damage is a threshold-based damage step"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Icathian Surprise zombie-state invulnerability/movement speed is defensive/irrelevant to a damage-dealing dummy fight; only the on-death explosion could matter but requires Kog'Maw to die, which a damage fight (dummy doesn't fight back) never triggers"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "All mechanics that matter for the damage fight (onhit rider, empowered attacks, target debuffs, ramping mana cost with stacks, missing-health/threshold conditional damage on R, self attack-speed buff) are expressible with the closed list of primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Does Void Ooze's ground trail deal any repeat damage, or only apply the slow (no additional damage ticks)?",
+   "options": [
+    "The trail only slows and deals no further damage (matches both sources: only a single upfront hit is described as dealing damage)",
+    "The trail secretly deals damage per tick (unconfirmed, no bin/wiki damage value exists for it)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "A field of ooze is created in its wake for 3 seconds, {{tip|slow|slowing}} enemies within the area every {{fd|0.25}} seconds."
+   ]
+  },
+  {
+   "question": "Does Living Artillery's missing-health damage amplification (up to +50%) and the 40%-max-health double (+100%) stack additively/multiplicatively, or does the flat double simply override the missing-health scaling entirely when triggered?",
+   "options": [
+    "The 100% bonus below 40% max health completely replaces the missing-health scaling (mechanics note states 'instead')",
+    "The two amplifications could combine (e.g., missing-health bonus applies up to the threshold, then switches) -- not explicitly ruled out by wording alone"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Living Artillery's damage is increased by {{as|{{pp|...}}|health}}, or instead by {{ccs|100%|magic}} if the target is below {{as|40% '''maximum''' health}}."
+   ]
+  },
+  {
+   "question": "For a full-duration 15s dummy fight, how many R stacks (mana surcharge) does the simulator assume Kog'Maw has built up when computing sustained cast rate — starting from 0 stacks, or already capped at 9?",
+   "options": [
+    "Start at 0 stacks and ramp up over the fight (realistic opener)",
+    "Assume steady-state / capped 9 stacks throughout for a 'sustained DPS' comparison"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Kog'Maw''' then generates a {{tip|stack}} of ''Living Artillery'' for 8 seconds, refreshing on subsequent casts and stacking up to 9 times.",
+    "For each stack, ''Living Artillery's'' {{sti|{{as|mana cost}}}} is increased by {{as|40|mana}}."
+   ]
+  },
+  {
+   "question": "Does Bio-Arcane Barrage's bonus on-hit damage apply on every basic attack during its 8s window, or is it capped to a limited number of attacks (e.g. one empowered attack) as 'empowers his basic attacks' could be read either way?",
+   "options": [
+    "Applies to every basic attack landed during the full 8s duration (matches 'for the next 8 seconds' wording, standard reading)",
+    "Only empowers a limited number of attacks (not supported by sources, but flagged since 'empowered-attack' primitive usually implies a single/limited arming)"
+   ],
+   "impact": "low",
+   "quotes": [
+    "empowers his [[basic attack]]s for the next 8 seconds to gain {{sti|range|'''bonus''' attack range}} and deal {{as|'''bonus''' magic damage}} {{tip|on-hit}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-cast: activate Bio-Arcane Barrage (W) immediately to arm basic attacks with the max-health on-hit magic damage for its 8s window.",
+   "Open with Void Ooze (E) on cooldown for its upfront magic damage plus the armor/magic-resist shred setup (via Q) to maximize follow-up damage.",
+   "Cast Caustic Spittle (Q) on cooldown to apply the resistance shred and take advantage of its own attack-speed passive that is always active once ranked.",
+   "Auto-attack continuously between casts (basic attack timer applies to Q), benefiting from W's on-hit damage and Q's attack-speed passive.",
+   "Cast Living Artillery (R) on cooldown as mana allows, prioritizing casts before the stacking mana surcharge (ramping-per-cast) makes further casts unaffordable; re-cast W when its 17s cooldown comes up again mid-fight.",
+   "Re-apply E and Q on cooldown throughout the 15s window, weaving them between auto-attacks to keep the resistance shred active continuously on the dummy."
+  ],
+  "questions": [
+   "Should R be cast as fast as its 1-2s cooldown allows (spamming until mana runs out), or held back to avoid stacking cost so high that mana is exhausted before the fight ends?",
+   "Is mana treated as effectively unlimited for this simulated dummy fight (i.e., does the simulator assume max mana/mana regen items), or is realistic base mana pool assumed, which would materially cap R casts given its ramping cost?",
+   "Does the target dummy's health ever drop below the 40% and 60% missing-health thresholds during the fight, which would change which R damage tier applies over the course of the 15s (relevant since damage ranks in the sim are based on kill time against varying dummy health)?",
+   "Should the rotation prioritize W's on-hit rider (scales with target max HP, best against high-HP dummy) over spamming R, or is R generally the higher DPS component to prioritize?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

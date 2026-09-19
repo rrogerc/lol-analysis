@@ -1,0 +1,562 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "ViPassive",
+    "key": "Characters/Vi/Spells/ViPassiveAbility/ViPassive",
+    "dataValues": {
+     "ShieldDuration": 3,
+     "CDReductionOn3Hit": 4
+    },
+    "calcs": {
+     "TotalShield": {
+      "expr": "0.12xmaxHp",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "total",
+        "coef": 0.12
+       }
+      ],
+      "refs": []
+     },
+     "ShieldCooldown": {
+      "expr": "byLevelL[16/15.5/15/14.5/14/13.5/13/12.5/12/11.5/11/10.5/10/9.5/9/8.5/8/7.5]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        16,
+        15.5,
+        15,
+        14.5,
+        14,
+        13.5,
+        13,
+        12.5,
+        12,
+        11.5,
+        11,
+        10.5,
+        10,
+        9.5,
+        9,
+        8.5,
+        8,
+        7.5
+       ]
+      },
+      "terms": [],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "ViQ",
+    "key": "Characters/Vi/Spells/ViQAbility/ViQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      12,
+      10.5,
+      9,
+      7.5,
+      6
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      60,
+      70,
+      80,
+      90
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "KnockbackDuration": 0.75,
+     "MinDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       60,
+       80,
+       100,
+       120
+      ]
+     },
+     "MaxDamageMult": 2.5,
+     "MinionDamageMult": 1,
+     "MinDashRange": 250,
+     "ExtraDashRangeAtMaxCharge": 475,
+     "DashWallCheating": 50,
+     "ADRatio": 0.6,
+     "CanceledRefundTime": 3,
+     "ManaRefundPercent": 0.5,
+     "SelfSlow": 15,
+     "ChargeDuration": 6,
+     "VFXChargeDuration": 5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "MinDamage=[40/60/80/100/120] + (ADRatio=0.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        60,
+        80,
+        100,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "MinDamage"
+      ]
+     },
+     "MaxDamageTooltip": {
+      "expr": "TotalDamage * MaxDamageMult=2.5",
+      "modifies": "TotalDamage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        150,
+        200,
+        250,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "MaxDamageMult",
+       "MinDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "ViW",
+    "key": "Characters/Vi/Spells/ViWAbility/ViW",
+    "cooldown": 0,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ADCoefficient": 0.035,
+     "MaxHealthDamage": {
+      "axis": "rank",
+      "v": [
+       4,
+       5,
+       6,
+       7,
+       8
+      ]
+     },
+     "SharedBuffsDuration": 4,
+     "AttackSpeed": {
+      "axis": "rank",
+      "v": [
+       30,
+       35,
+       40,
+       45,
+       50
+      ]
+     },
+     "ShredAmount": 20,
+     "MonsterDamageCap": 300,
+     "MarkerBuffDuration": 4,
+     "StacksBeforeEffect": 2
+    },
+    "calcs": {
+     "TotalDamageTooltip": {
+      "expr": "(MaxHealthDamage=[4/5/6/7/8] + (ADCoefficient=0.035)xbonus ad) * 0.01",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.00035,
+        "dataValue": "ADCoefficient"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "ADCoefficient",
+       "MaxHealthDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "ViE",
+    "key": "Characters/Vi/Spells/ViEAbility/ViE",
+    "cooldown": 1,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      26,
+      32,
+      38,
+      44,
+      50
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ADRatio": 1.1,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       30,
+       50,
+       70,
+       90
+      ]
+     },
+     "BonusRange": 50,
+     "AttackBuffDuration": 6,
+     "StaticCooldown": 1
+    },
+    "calcs": {
+     "TotalDamageTooltip": {
+      "expr": "BaseDamage=[10/30/50/70/90] + (ADRatio=1.1)xad + 1xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        30,
+        50,
+        70,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.1,
+        "dataValue": "ADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "{36ebd3cf}": {
+      "expr": "1xcritDamage + -1",
+      "flat": -1,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "ViR",
+    "key": "Characters/Vi/Spells/ViRAbility/ViR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      115,
+      90
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "RBaseSpeed": 800,
+     "RStunDuration": 1.3,
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "SecondaryTargetDamageMultiplier": 1,
+     "SecondaryTargetKnockbackDistance": 350,
+     "SecondaryTargetStunDuration": 0.75,
+     "SecondaryTargetKnockbackDuration": 0.25,
+     "RBonusADRatio": 0.9
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "RBaseDamage=[150/250/350] + (RBonusADRatio=0.9)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "RBonusADRatio"
+       }
+      ],
+      "refs": [
+       "RBaseDamage",
+       "RBonusADRatio"
+      ]
+     },
+     "SecondaryTargetDamage": {
+      "expr": "Damage * SecondaryTargetDamageMultiplier=1",
+      "modifies": "Damage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.9,
+        "dataValue": "RBonusADRatio"
+       }
+      ],
+      "refs": [
+       "RBaseDamage",
+       "RBonusADRatio",
+       "SecondaryTargetDamageMultiplier"
+      ]
+     }
+    }
+   }
+  ],
+  "other": [
+   {
+    "script": "Crepe_WarwickVsVi_ViReward",
+    "key": "{1cbfc886}",
+    "dataValues": {
+     "BonusDamagePerc": 0.1,
+     "Distance": 1000,
+     "HealthThreshold": 0.4,
+     "BonusMS": 0.2
+    }
+   }
+  ]
+ },
+ "roots": {
+  "Q": "ViQ",
+  "W": "ViW",
+  "E": "ViE",
+  "R": "ViR",
+  "P": "ViPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 295,
+   "{6216bf7b}": 65,
+   "{c4ab3550}": 1.6,
+   "{3a509002}": 0.13
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Vi",
+  "name": "Vi",
+  "partype": "Mana",
+  "passive": "Blast Shield",
+  "spells": [
+   {
+    "id": "ViQ",
+    "name": "Vault Breaker",
+    "maxrank": 5,
+    "cooldown": [
+     12,
+     10.5,
+     9,
+     7.5,
+     6
+    ],
+    "cost": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ]
+   },
+   {
+    "id": "ViW",
+    "name": "Denting Blows",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "ViE",
+    "name": "Relentless Force",
+    "maxrank": 5,
+    "cooldown": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "cost": [
+     26,
+     32,
+     38,
+     44,
+     50
+    ]
+   },
+   {
+    "id": "ViR",
+    "name": "Cease and Desist",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     115,
+     90
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Blast Shield": {
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Vault Breaker": {
+    "damagetype": "physical",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "targeting": "[[Auto-targeted|Auto]] / [[Direction-targeted|Direction]]",
+    "affects": "Enemies, Self",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Denting Blows": {
+    "damagetype": "Physical",
+    "spelleffects": "Proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   },
+   "Denting Blows 2": {
+    "damagetype": "Physical",
+    "spelleffects": "Proc",
+    "spellshield": "False",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "E": {
+   "Relentless Force": {
+    "damagetype": "physical",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana + 1 charge"
+   },
+   "Relentless Force 2": {
+    "damagetype": "physical",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana + 1 charge"
+   }
+  },
+  "R": {
+   "Cease and Desist": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

@@ -1,0 +1,139 @@
+{
+ "champion": "tahmkench",
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks and Tongue Lash are empowered with bonus/additional magic damage scaled off bonus HP (+AP ratio), applying a stack of An Acquired Taste on champion hits."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "Q",
+    "R"
+   ],
+   "note": "Attacks and Tongue Lash build stacks on the target (cap 3, 5s refresh, decays one-by-one); at 3 stacks Q gains a bonus effect and R (Devour) becomes castable on the target, consuming all stacks."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Tongue Lash deals immediate magic damage on hit; Abyssal Dive deals delayed AoE magic damage on emergence; Regurgitate deals magic damage at the end of its displacement."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "W"
+   ],
+   "note": "Hitting an enemy champion with Abyssal Dive refunds 40-50% of its cooldown and 40% of its mana cost, letting it recur faster in the fight."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Abyssal Dive channels 1.35s (blocking actions) before its delayed blink/damage; Devour locks Tahm out briefly on cast and again for 0.4s after casting Regurgitate."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Devour (swallow, no direct damage) is a separate timed part from Regurgitate (the actual damage instance), which can be manually recast after 1s or auto-casts after up to 3s."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Mana costs on Q (34-50), W (60-120), and R (100 flat) can constrain how often abilities are cast within the ~15s window, especially without refunds."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Thick Skin (grey health storage, decay-heal, and shield) is purely defensive and irrelevant to the damage fight; relevant only to the survival fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage sources (onhit passive, Q, W, R-Regurgitate) and its stack-gating for R are expressible with onhit-rider, target-stacks, plain-cast, cooldown-manipulation, charge-or-channel, and recast-or-multipart. E is fully defensive-only. No mechanic here (e.g. no true pet, no form change, no crit interaction) falls outside the closed list."
+ },
+ "unsettled": [
+  {
+   "question": "What is R's (Devour) live effective cooldown in the damage fight?",
+   "options": [
+    "Use the ddragon/DataCooldown array [120, 100, 80] directly, since CooldownMultiplierCalculationPart is likely just standard CDR (1.0 with no items)",
+    "Treat the raw bin 'cooldown: 0' plus unresolved CDCalc as meaning the true base is something other than DataCooldown and should be flagged rather than assumed"
+   ],
+   "impact": "high",
+   "quotes": [
+    "TahmKenchRWrapper#CDCalc = (DataCooldown=[120/100/80])*(<CooldownMultiplierCalculationPart>)",
+    "! unresolved calculation part CooldownMultiplierCalculationPart"
+   ]
+  },
+  {
+   "question": "Is Tongue Lash's An Acquired Taste proc damage a fully separate, independently-mitigated damage instance from Tongue Lash's own damage, or should it be folded into one combined number for kill-time purposes?",
+   "options": [
+    "Model as two separate damage instances (Q hit + P proc hit), each independently subject to resists/on-hit-triggered effects, per the wiki's explicit note",
+    "Model as a single combined damage number since the bin only exposes one TotalDamage formula for the passive with no separate-instance flag"
+   ],
+   "impact": "high",
+   "quotes": [
+    "the damage is dealt as an '''additional''' instance of damage (as opposed to '''bonus''' damage when applied by basic attacks)",
+    "This causes effects like {{ri|Bone Plating}} and {{iis|Bloodletter's Curse}} {{nie|Vile Decay}} to be applied twice."
+   ]
+  },
+  {
+   "question": "Does Abyssal Dive's champion-hit mana refund scale by rank (same array as the cooldown refund) or is it a flat 40% at all ranks?",
+   "options": [
+    "Flat 40% mana refund regardless of rank, per the literal prose wording",
+    "Scales with rank using ChampRefund=[0.4, 0.425, 0.45, 0.475, 0.5], same as the cooldown refund percentage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "40% of ''Abyssal Dive's'' {{sti|{{as|mana}}}} cost as well as a percentage of its {{sti|cooldown}} are refunded.",
+    "TahmKenchW.ChampRefund = [0.4/0.425/0.45/0.475/0.5]"
+   ]
+  },
+  {
+   "question": "How fast do An Acquired Taste stacks expire once their duration ends: one every 0.67s (wiki) or one every 1s (bin PerStackDecayTimer)?",
+   "options": [
+    "0.67s per-stack decay (wiki prose)",
+    "1s per-stack decay (bin PerStackDecayTimer)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Stacks expire one by one every {{fd|0.67}} seconds when the duration ends.",
+    "TahmKenchPassive.PerStackDecayTimer = 1"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Tongue Lash (Q) on cooldown for its own damage plus applying/refreshing a stack of An Acquired Taste on the dummy.",
+   "Auto-attack the dummy between Q casts; each auto-attack also deals the on-hit An Acquired Taste bonus damage and adds/refreshes a stack.",
+   "Cast Abyssal Dive (W) as soon as it is off cooldown for its own delayed AoE damage; since the dummy counts as an enemy champion, this also triggers the cooldown/mana refund, letting it be recast sooner.",
+   "Continue alternating auto-attacks and Q casts to rebuild/maintain 3 stacks of An Acquired Taste on the dummy.",
+   "Once the dummy holds 3 stacks, cast Devour (R) on it, then recast Regurgitate as soon as legally possible to land its max-health-scaling magic damage and consume the stacks.",
+   "Resume the Q/auto-attack/W cadence to rebuild stacks toward a second Devour->Regurgitate cast if the 15s window and cooldowns allow."
+  ],
+  "questions": [
+   "Should Regurgitate be manually recast at its earliest allowed moment (1s after swallow) rather than waiting for the automatic cast at 3s, to minimize the window where the dummy is untargetable and no damage lands on it?",
+   "During Devour's swallow, is the target fully unattackable (no auto-attacks or Q/W can land on it) for the whole attach duration, creating dead time in the 15s fight that should be subtracted from other ability usage?",
+   "Does R's cooldown genuinely start counting only after Regurgitate resolves (cdstart: post-effect), meaning the first Devour->Regurgitate cycle's downtime before a second R cast must include the full swallow duration before the cooldown even begins?",
+   "Is it worth delaying the first Q cast to build the opening auto-attack into the rotation, or does Q's cast time/cooldown make cast-first strictly better for total 15s damage?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,155 @@
+{
+ "champion": "naafiri",
+ "primitives": [
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "P",
+    "W",
+    "R"
+   ],
+   "note": "Packmates spawn passively up to a level-gated cap (present at max from fight start per P), W temporarily adds 2 more, and R has each active Packmate land its own smaller collision-damage instance on the target."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Darkin Daggers applies a bleed dealing bonus physical damage in ticks every 0.5s over 5s."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q has a free recast within a window that behaves differently depending on target bleed state; E's dash-hit and arrival flurry are two separately timed damage instances; R has a conditional free recast after a takedown."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's recast bonus damage on an already-bleeding target scales with the target's missing health (base +0-100%, scaling +0-250%), capped at 100% missing health."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "The Call of the Pack grants 20% bonus AD and bonus movement speed for the 5s hunt duration, which feeds into bonus-AD ratios on Q/E/R cast during it."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "R"
+   ],
+   "note": "We Are More's summon cooldown is reduced 4s per champion/large-monster ability hit and 1s per kill; R grants a free recast within 12s if a takedown occurs within 7s of cast."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 50-90, W 60, E 40, R 100) can gate how many casts fit in the 15s window depending on mana pool/regen."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Hounds' Pursuit channels for 0.75s (blocking other actions) before the dash and damage resolve."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The kit's damage-relevant pieces (bleed dot, recast burst with missing-health scaling, timed AD buff, Packmate pet damage, channel-then-dash burst, cooldown refunds) all map onto existing primitives. The main open work is picking concrete assumptions (Packmate count present, whether the fight ever produces a takedown, exact recast timing) rather than needing new mechanics."
+ },
+ "unsettled": [
+  {
+   "question": "What exactly happens when Q is recast on a target that is still bleeding from the first cast, in terms of which damage components actually land (does the initial-cast physical damage still apply, or only the remaining bleed + missing-health-scaled bonus)?",
+   "options": [
+    "Recast on a bleeding target deals ONLY the remaining bleed damage plus the scaled bonus damage; no fresh 'initial hit' damage or new bleed is applied",
+    "Recast on a bleeding target deals a new initial hit AND the remaining bleed plus bonus, matching the wiki's 'Minimum/Maximum Total Physical Damage' rows which sum initial+bleed+bonus"
+   ],
+   "impact": "high",
+   "quotes": [
+    "If the dagger hits a target that is already {{as|bleeding|buzzword3}}, they are instead {{ccs|dealt|physical}} the remaining {{as|bleed|buzzword3}} damage plus {{as|'''additional bonus''' physical damage|physical damage}}",
+    "{{st|Minimum Total Physical Damage|{{ap|35+35+30 to 55+135+80}} {{as|(+ {{ap|20+80+40}}% '''bonus''' AD)}}|Maximum Total Physical Damage|{{ap|35+35+(30*2) to 55+135+(80*2)}} {{as|(+ {{ap|20+80+(40*3.5)}}% '''bonus''' AD)}}}}"
+   ]
+  },
+  {
+   "question": "Does Q's recast actually become available at 0.5s (wiki description) or 0.75s (bin NaafiriQ.RecastLockout), affecting how tightly the Q1->Q2 combo can be timed in the 15s fight?",
+   "options": [
+    "0.5s per the wiki tooltip text",
+    "0.75s per the live bin value NaafiriQ.RecastLockout"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "can be recast after {{fd|0.5}} seconds",
+    "NaafiriQ.RecastLockout = 0.75"
+   ]
+  },
+  {
+   "question": "Does R (Hounds' Pursuit) actually apply an armor shred debuff to the target, given the bin has a per-level ArmorShred value and a ShredDuration of 3s but the current wiki description/notes never mention a shred at all?",
+   "options": [
+    "R applies the byLevel armor shred for 3s on hit (legacy bin fields are still live and just undocumented on the wiki)",
+    "The armor shred fields are dead/legacy data with no in-game effect; R only deals damage and slows"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "NaafiriW#ArmorShred = byLevelL[6/8/10/12/14/16/18/20/22/24/26/28/30/32/34/36/38/40]",
+    "NaafiriW.ShredDuration = 3",
+    "'''Naafiri''' deals {{as|physical damage}} and {{tip|slows}} the target by 99% for {{fd|0.25}} seconds, whereas each ''Packmate'' deals {{ap|{{#var:rp}}*100}}% of that damage."
+   ]
+  },
+  {
+   "question": "How many active Packmates should be assumed to be present (and thus dealing R's per-Packmate damage and their own autos) during the 15s damage fight?",
+   "options": [
+    "Assume the level-appropriate cap is already full at fight start (per P's 'summons the maximum number when the game starts')",
+    "Assume 0 or a partial count, since PackmateSpawnCooldown (10-30s by level) means new Packmates may not have respawned yet if any were lost, and W's +2 temporary Packmates only apply 1.25s after W is cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Naafiri''' summons the maximum number of ''Packmates'' when the game starts and upon [[death|respawning]].",
+    "After {{fd|1.25}} seconds into the hunt, '''Naafiri''' summons 2 additional ''Packmates''"
+   ]
+  },
+  {
+   "question": "Does the Packmate 'Frenzy' mechanic (PackmateFrenzyDamageMult=1.3, 3 max counters, 3s duration) apply and stack within the 15s fight, boosting Packmate damage, given it is not described anywhere in the current wiki tooltip text?",
+   "options": [
+    "Frenzy is a real, currently-live mechanic that ramps Packmate damage up to 1.3x and should be modeled",
+    "Frenzy fields are legacy/cut content with no current effect and should be ignored"
+   ],
+   "impact": "low",
+   "quotes": [
+    "NaafiriP.PackmateFrenzyDamageMult = 1.3",
+    "NaafiriP#FrenzyDamageTooltipOnly = PackmateTotalDamage * PackmateFrenzyDamageMult=1.3"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Start the fight with the level-appropriate cap of Packmates already active (per We Are More's passive) fighting alongside Naafiri.",
+   "Open with The Call of the Pack (W) to gain 20% bonus AD and the hunt buff before committing to other casts, so subsequent AD-scaling abilities hit harder.",
+   "Follow immediately with Hounds' Pursuit (R): channel 0.75s, then dash in and deal the collision damage plus each active Packmate's smaller collision hit; this also extends W's hunt duration by 1.75s.",
+   "Cast Eviscerate (E) at the target's location for the dash-through damage plus the arrival flurry damage.",
+   "Cast Darkin Daggers (Q) for the initial hit and bleed application, then recast Q as soon as the recast lockout elapses (within the 4s free-recast window) to land the bleeding-target bonus damage.",
+   "Auto-attack with Naafiri and Packmates on cooldown/attack timer between ability casts.",
+   "Re-cast Q, E, W, and R on cooldown for the remainder of the 15s window in whichever order clears cooldowns fastest, prioritizing keeping W's AD buff active as much as possible.",
+   "Do not expect a free R recast from a takedown, since the dummy does not die mid-fight (unless the fight is defined to end in a kill)."
+  ],
+  "questions": [
+   "Is the simulator expected to model Naafiri's Packmates as independently attacking pets with their own attack-speed timers, or approximate their contribution as a flat periodic damage add-on?",
+   "When W's bonus AD buff is active for only part of the fight, does the simulator recompute AD-scaling ability damage per-cast using AD at cast time, or use a single average AD across the whole fight?",
+   "Should the optimal Q usage be back-to-back casts (burst the bleeding-target bonus quickly) or spacing casts so the bleed fully resolves before a fresh Q application, given the unsettled question about what recasting on a bleeding target actually does to total damage?",
+   "Does R's 0.75s channel fully block Naafiri's other actions (no auto-attacks, no other casts) during that window, reducing the total number of casts achievable in 15s?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

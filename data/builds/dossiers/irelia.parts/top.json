@@ -1,0 +1,170 @@
+{
+ "champion": "irelia",
+ "primitives": [
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Ionian Fervor: up to 4 stacks of bonus attack speed, each lasting 6s, refreshed by basic attacks/ability hits on enemy champions, large monsters or structures."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "At 4 stacks (max), basic attacks deal bonus magic on-hit damage (flat by-level + 20% bonus AD)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bladesurge deals physical damage on collision with the target or at dash completion."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Irelia is automatically ordered to acquire and attack the Bladesurge target as soon as the dash completes, effectively forcing an immediate basic attack."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bladesurge's cooldown is fully reset if the target dies to/during the dash, or reduced to 0.2s (a near-reset) if the target was marked Unsteady and is consumed on collision."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "E",
+    "R",
+    "Q"
+   ],
+   "note": "E's and R's initial hit apply an 'Unsteady' mark (5s) to the enemy champion hit; Bladesurge (Q) consumes the mark on collision to shorten its own cooldown."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "W"
+   ],
+   "note": "Defiant Dance channels for up to 1.5s (damage ramps over the first 0.75s), granting physical/magic damage reduction; the charge cannot be interrupted by CC but blocks other actions until recast."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Defiant Dance's damage and damage-reduction effect are delivered via a separately-timed recast swipe (manual or automatic) after the channel."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "E"
+   ],
+   "note": "Flawless Duet places two separately-timed blades (initial cast + recast, auto-recast at 3.5s if not manual); damage/stun only occurs once both blades converge."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Vanguard's Edge deals magic damage to enemies hit by the initial projectile barrage on cast (after 0.4s cast time)."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "R"
+   ],
+   "note": "The perimeter/zone deals a second instance of magic damage only to enemies that pass through the blade perimeter for the first time; whether a stationary dummy ever 'passes through' this zone is a geometric assumption the dummy fight must make."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q 15, W 70-90, E 50, R 100) on a champion with no innate mana scaling could meaningfully cap total casts across a 15s fight absent mana items/runes."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (stacking AS + onhit magic bonus on P, dash-collision damage/attack-reset/cooldown-refund on Q, charge-then-recast damage on W, two-part recast-and-converge damage on E, initial-hit-plus-zone damage on R, and the shared Unsteady mark/consume interaction) is expressible as a combination of existing primitives; no unique non-listed mechanic (e.g. resource conversion, stance change, pet) is present."
+ },
+ "unsettled": [
+  {
+   "question": "Does Vanguard's Edge's perimeter/zone damage (a full second instance of the R base damage + AP ratio) ever land on a stationary target dummy that was already hit by the initial barrage and never moves afterward?",
+   "options": [
+    "The zone never re-damages a target that doesn't move after being hit, so only the initial missile damage should be simulated per R cast",
+    "The target's position at the moment of being hit counts as 'passing through' the forming perimeter, so the zone damage should also be applied once per R cast",
+    "Neither instance of zone damage should be assumed reliably reproducible in a no-movement dummy fight; treat it as situational/unavailable"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Enemies that pass through the blades for the first time are dealt the same {{as|magic damage}} and are {{tip|slow|slowed}} by 90% for {{fd|1.5}} seconds.",
+    "In addition to its {{tip|projectile}}, ''Vanguard's Edge'' will check for enemy champions within a {{tip|cr|icononly=true}} 90-unit radius area from the projectile's origin point."
+   ]
+  },
+  {
+   "question": "What is the actual minimum delay before Flawless Duet can be recast (and thus how quickly the convergence/stun/damage lands after the initial cast)? The wiki states 0.15s, but the bin's IreliaE.CDBetweenCast is 0.25.",
+   "options": [
+    "Use the wiki's stated 0.15s minimum recast delay",
+    "Use the bin's IreliaE.CDBetweenCast = 0.25s value",
+    "These are different mechanics (one governs recast eligibility, the other something else) and both may be simultaneously true"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "can be recast after {{fd|0.15}} seconds while the blade is active",
+    "IreliaE.CDBetweenCast = 0.25"
+   ]
+  },
+  {
+   "question": "Does the convergence of Flawless Duet's two blades (and thus its damage) take 0.25s (wiki) or 0.35s (bin's IreliaE.RevTime), affecting how much of the 15s window each E cast consumes and thus how many casts fit?",
+   "options": [
+    "Use the wiki's stated 0.25s convergence time",
+    "Use the bin's RevTime = 0.35s value",
+    "RevTime is an unrelated internal field, not the convergence time at all"
+   ],
+   "impact": "low",
+   "quotes": [
+    "converge over {{fd|0.25}} seconds",
+    "IreliaE.RevTime = 0.35"
+   ]
+  },
+  {
+   "question": "In the maximizing-damage simulation, should Defiant Dance always be charged to the full 0.75s+ ramp before recasting (since the dummy never fights back and there's no risk), or should some shorter/partial charge be modeled to reflect realistic play?",
+   "options": [
+    "Always full-charge to 0.75s+ before recast for maximum swipe damage, since the dummy poses no threat in the damage fight",
+    "Model a shorter, more 'realistic' charge time that trades some damage for tempo",
+    "Charge time is a free player choice each cast and the simulator should treat it as a build/rotation variable rather than a fixed assumption"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "damage increases over the first {{fd|0.75}} seconds of the channel",
+    "''Defiant Dance's'' charge cannot be {{tip|interrupt|interrupted}} by {{tip|crowd control}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Bladesurge) on the dummy to engage instantly, dealing physical damage, healing, and generating an Ionian Fervor stack, then auto-attack (Q's forced attack-acquire) immediately after.",
+   "Cast E (Flawless Duet) targeting the dummy's location right after Q lands (E can be cast during Q's dash), then recast E once the minimum delay has passed so the blades converge on the dummy for magic damage and mark it Unsteady.",
+   "Start charging W (Defiant Dance) and hold the channel to its full 0.75s+ ramp (safe, since the dummy never attacks back), then recast the swipe onto the dummy for maximum physical damage.",
+   "Cast R (Vanguard's Edge) on cooldown once available, aimed through the dummy, for its initial magic burst damage.",
+   "Recast Q on cooldown throughout the fight; because E/R mark the dummy Unsteady, a fresh Q consuming that mark on collision drops its cooldown to ~0.2s, letting it be recast almost immediately.",
+   "Fill all remaining time between ability casts with basic attacks on the dummy, both for base auto-attack damage and to keep Ionian Fervor stacked at 4 for its bonus on-hit magic damage, and to refresh the stack duration.",
+   "Loop W (charge to max, recast) -> E (cast, recast) -> Q (spam via mark-reset cooldown) -> R (on cooldown) -> auto-attacks in the gaps, for the remaining duration of the 15s fight."
+  ],
+  "questions": [
+   "Given Irelia's moderate ability costs (W 70-90, R 100) and no innate mana scaling, will the simulated build's mana pool actually sustain this full-channel, spam-Q rotation for the whole 15s, or does mana become a binding constraint that should change the proposed order/frequency of casts?",
+   "Should the simulator assume Q always has a valid target to dash to for every cast within the 15s window (i.e., can Q be recast on the same stationary dummy indefinitely), or does something about Bladesurge's targeting restrict how often it can be re-cast on a single target?",
+   "Does the opening order (Q first vs. W first vs. E first) materially change total damage in a 15s window given the differing cooldowns, or is it dominated purely by fitting in the maximum number of each ability's casts regardless of order?",
+   "Should Ionian Fervor's on-hit magic bonus be assumed to be active (at 4 stacks) for the majority of the 15s fight, given the opening sequence involves several ability hits on the single target that would build stacks quickly, or is there a meaningful ramp-up period before max stacks that the rotation should account for?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

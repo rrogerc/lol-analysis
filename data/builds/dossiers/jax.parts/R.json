@@ -1,0 +1,100 @@
+{
+ "name": "Grandmaster-at-Arms",
+ "cooldown": {
+  "values": [110, 100, 90],
+  "quote": "{{ap|110 to 90}}"
+ },
+ "cost": {
+  "values": [100, 100, 100],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Additional Magic Damage",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [75, 130, 185],
+   "terms": [{"stat": "ap", "coef": 0.6}],
+   "quote": "{{ap|75 to 185}} {{as|(+ 60% AP)}}",
+   "bin": ["JaxR#OnHitDamage"]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [100, 175, 250],
+   "terms": [{"stat": "ap", "coef": 1.0}],
+   "quote": "{{ap|100 to 250}} {{as|(+ 100% AP)}}",
+   "bin": ["JaxR#SwingDamageTotal"]
+  },
+  {
+   "id": "r_3",
+   "meaning": "stacks of Grandmaster-at-Arms needed before the empowered on-hit consumes them, outside the active swing's buff window",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "stacking up to 2 times",
+   "bin": [],
+   "binNote": "No data value for this threshold appears in the sheet. The wiki's own texts disagree: the detailed description says stacks cap at 2 and the proc consumes 'At 2 stacks'; the short blurb2 instead says the passive normally applies 'every 3' stacks (see r_4 and the blurb2 quote in mechanics). Using the detailed description's number here."
+  },
+  {
+   "id": "r_4",
+   "meaning": "stacks needed to trigger the empowered on-hit while Grandmaster-at-Arms' active swing buff is up (reduced threshold)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "the empowered attack triggers at 1 stack instead.",
+   "bin": [],
+   "binNote": "No data value for this threshold appears in the sheet. Same wiki-internal disagreement as r_3: blurb2 states this reduced, active-window threshold is 'every 2' rather than 1. Using the detailed description's number here."
+  },
+  {
+   "id": "r_5",
+   "meaning": "seconds a Grandmaster-at-Arms stack lasts before falling off, refreshed on each on-hit",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "for {{fd|2.5}} seconds, refreshing on subsequent hits",
+   "bin": ["JaxR.PassiveFallOffTime"]
+  }
+ ],
+ "mechanics": [
+  {"claim": "Grandmaster-at-Arms' on-hit proc (Additional Magic Damage) and its active swing (Magic Damage) are independent effects: the on-hit stacks and consumes from basic attacks on its own timer, while the swing is a separate AoE cast on R's own cooldown.",
+   "quote": "The on-hit deals {{tip|proc damage}}. The swing deals {{tip|area damage}}.",
+   "affectsDamageFight": true},
+  {"claim": "The wiki's short blurb and its detailed description disagree on the on-hit's stack threshold: blurb2 says the passive normally procs every 3 stacks (every 2 while the swing's buff is active); the description instead says stacks cap at 2 and the proc consumes at 2 stacks (1 while active).",
+   "quote": "He applies his passive {{tip|on-hit}} every 2 stacks instead of every 3 while active.",
+   "affectsDamageFight": true},
+  {"claim": "The empowered on-hit attack is applied as a damage instance separate from Jax's basic attack, not merged into it.",
+   "quote": "The empowered attack is applied in a separate damage instance from '''Jax's''' basic attacks.",
+   "affectsDamageFight": true},
+  {"claim": "Grandmaster-at-Arms' cooldown starts immediately on cast, not after its effect resolves (unlike Empower and Counter Strike, which start post-effect).",
+   "quote": "cdstart = on-cast",
+   "affectsDamageFight": true},
+  {"claim": "The active swing's damage lands when the 0.25s cast time ends, not at the instant of casting.",
+   "quote": "{{Effect at cast time end}}",
+   "affectsDamageFight": true}
+ ],
+ "binUnused": [
+  {"ref": "JaxR.Duration", "reason": "defensive"},
+  {"ref": "JaxR.BaseResists", "reason": "defensive"},
+  {"ref": "JaxR.ResistsPerExtraTarget", "reason": "defensive"},
+  {"ref": "JaxR.MRMult", "reason": "defensive"},
+  {"ref": "JaxR.AoESize", "reason": "range-or-geometry"},
+  {"ref": "JaxR.StructureMod", "reason": "not-in-a-dummy-fight"}
+ ]
+}

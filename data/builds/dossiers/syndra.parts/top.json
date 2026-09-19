@@ -1,0 +1,152 @@
+{
+ "champion": "syndra",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q deals AoE magic damage after a short delay on a flat cooldown; E deals AoE magic damage on a 0.25s cast, on a flat cooldown"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's first cast grabs a Dark Sphere (no minions/monsters exist vs a lone dummy) and holds it; the recast throws it for the actual damage instance, cooldown starts post-effect (on the throw)"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Dark Spheres placed by Q are a shared consumable resource: W can only grab/throw a Dark Sphere against a lone champion dummy, and R's damage multiplies by how many live Dark Spheres (3 to 7) are on the field when it is cast"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "mana costs (Q 40-60, W 60-100, E 50, R 100) versus Syndra's mana pool can cap cast frequency across the 15s window"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Splinters of Wrath accumulate (cap 120) from landing two ability-damage instances on the target within 4s; each collected Splinter restores mana, and at the 120 cap Syndra gains a permanent +15% AP buff"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's passive grants Q ability haste (10/20/30 by rank), reducing Q's cooldown and raising Q's cast frequency for the whole fight"
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "At 100 Splinters of Wrath (Transcendent bonus) R executes the target below 15% max health"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "E deals a second, separate damage instance to a target hit by a Dark-Sphere knockback if it wasn't hit by the initial cone; whether this is achievable against a single stationary dummy depends on assumed sphere placement/geometry"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Dark Spheres are a stateful shared resource across three abilities that the closed primitive list can only approximate: Q creates them (with duration and, at 40 Splinters, extra charges), W can only find a target to grab/throw by consuming one of them (since the lone target is a champion, not a minion/monster), and R's total damage depends on how many live spheres exist at the moment of cast (a 3x-to-7x multiplier on DamagePerSphere). Simulating this correctly requires tracking a 'live Dark Sphere count' state fed by Q's cast history and depleted by W/R, which is bespoke logic beyond a single primitive tag. Additionally, the Splinters of Wrath stacking passive gates real damage/effect changes on four different abilities (Q ammo, W true damage, E cone/slow, R execute) behind stack thresholds whose accrual rate in a 15s single-target fight is not settled by the sources."
+ },
+ "unsettled": [
+  {
+   "question": "How many live Dark Spheres should be assumed present when R (Unleashed Power) is cast in the damage fight, given R always conjures 3 but can grab up to 4 more nearby live ones for a total of 3 to 7 spheres thrown?",
+   "options": [
+    "Assume only the minimum 3 self-conjured spheres (no prior Q casts banked)",
+    "Assume the maximum 7 spheres by pre-casting Q repeatedly (and banking Transcendent Q charges) before R",
+    "Assume some fixed intermediate number based on Q's cooldown versus R's cast timing in the rotation"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Syndra''' conjures 3 ''{{ai|Dark Sphere|Syndra|Dark Spheres}}'' and additionally grabs up to 4 nearby live ones. Afterwards, she barrages the target enemy champion with all collected ''Dark Spheres''"
+   ]
+  },
+  {
+   "question": "Should the simulated 15s damage fight model Splinters of Wrath accruing from zero (realistic mid-fight state) or assume Syndra starts at/near the 120-stack Transcendence cap (e.g. representing a late-game state), given this gates W's bonus true damage (60), E's slow/wider cone (80), R's execute (100), and the permanent +15% AP (120)?",
+   "options": [
+    "Start at 0 stacks and simulate realistic accrual over 15s from landing double-damage-instance procs on the dummy",
+    "Assume Syndra is already at maximum stacks (120) for the whole fight, since a dummy fight is meant to compare steady-state builds",
+    "Ignore the passive's damage-affecting bonuses entirely as unreachable in a short isolated fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Syndra''' collects {{as|Splinters of Wrath|buzzword}} that enhance each of her abilities based on the number of them collected, {{tip|stack|stacking}} up to 120 times.",
+    "At {{as|120 Splinters of Wrath|buzzword}}, '''Syndra''' achieves ''Transcendence'', increasing her {{sti|{{as|ability power}}}} by 15%."
+   ]
+  },
+  {
+   "question": "What is the exact length of the unstated per-target cooldown on the Splinters proc ('This cannot occur on the same target more than once every few seconds'), which caps how fast stacks (and thus threshold unlocks) can accrue during the fight?",
+   "options": [
+    "Treat it as roughly equal to the passive's PassiveMarkCooldown bin value (8s)",
+    "Treat it as unknown/unbounded and assume every qualifying double-hit within 4s procs a Splinter",
+    "Ignore proc-rate limiting and assume stacks accrue at whatever rate the rotation's ability-damage instances allow"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "This cannot occur on the same target more than once every few seconds.",
+    "SyndraPassive.PassiveMarkCooldown = 8"
+   ]
+  },
+  {
+   "question": "Is the live W (Force of Will) cooldown/cost the wiki's [13/12/11/10/9] (and the ddragon summary's matching [13,12,11,10,9]) or the bin's raw SyndraW.cooldown array [12/11/10/9/8], which is one second lower at every rank?",
+   "options": [
+    "Use the wiki/ddragon value [13 to 9] as authoritative",
+    "Use the bin's raw [12 to 8] as the true live value and treat the wiki as stale"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown     = {{ap|13 to 9}}",
+    "cooldown: [12/11/10/9/8]"
+   ]
+  },
+  {
+   "question": "Against a single stationary dummy with no geometry to knock a Dark Sphere into, can E's 'hit again by a pushed sphere if not already damaged' second damage instance realistically occur, or should E be modeled as a single damage instance per cast?",
+   "options": [
+    "Model E as always dealing exactly one damage instance per cast against the lone dummy (no sphere geometry to set up a second hit)",
+    "Model E as capable of dealing two damage instances per cast if a Dark Sphere is pre-placed on/near the dummy and gets knocked into it"
+   ],
+   "impact": "low",
+   "quotes": [
+    "dealt ''Scatter the Weak's'' damage if they were not damaged by the initial cast."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Q (Dark Sphere) on the dummy: deals direct magic damage after its 0.6s delay and leaves a Dark Sphere on the ground for 6s, which is needed as a grab target for W and as ammo for R.",
+   "Follow with E (Scatter the Weak) on the dummy for its magic damage.",
+   "Cast W to grab the Dark Sphere just placed by Q, then immediately recast W to throw it onto the dummy for its magic (and, if Transcendent, bonus true) damage.",
+   "Cast R (Unleashed Power) on the dummy once enough Dark Spheres (from repeated Q casts) are live on the field to maximize the number of spheres barraged (up to 7).",
+   "Recast Q on cooldown (7s, faster once R's passive ability haste and/or Transcendent extra charges apply) throughout the fight, both for its own damage and to keep replenishing spheres for W/R.",
+   "Recast E on its 15s cooldown and W on its ~9-13s cooldown (grab immediately followed by throw each time) for the rest of the 15s window.",
+   "Fill any remaining time between spell cooldowns with basic attacks, since Syndra's kit has no on-hit rider or attack-reset interactions to exploit."
+  ],
+  "questions": [
+   "How many Dark Spheres should be on the field (i.e., how many Q casts banked) at the moment R is cast, since this changes R's damage by more than 2x?",
+   "Should Splinters of Wrath be assumed at zero, some mid value, or the 120 cap for the whole fight, and does that change which abilities' bonus effects (W true damage, E wide cone, R execute, global +15% AP) should be simulated at all?",
+   "Since W can only grab a Dark Sphere against a lone champion dummy (no minions/monsters present), must every W cast in the rotation be preceded by an available, unconsumed Dark Sphere from Q, and does grabbing a sphere for W conflict with R's sphere consumption if both are queued close together?",
+   "Is mana a real constraint across this rotation (Q+W+E+R every available cooldown) at the levels/items the dummy fight tests, or is it assumed unlimited/refilled?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

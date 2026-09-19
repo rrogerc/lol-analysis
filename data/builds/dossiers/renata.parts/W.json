@@ -1,0 +1,203 @@
+{
+ "name": "Bailout",
+ "cooldown": {
+  "values": [
+   28,
+   27,
+   26,
+   25,
+   24
+  ],
+  "quote": "{{ap|28 to 24}}"
+ },
+ "cost": {
+  "values": [
+   80,
+   80,
+   80,
+   80,
+   80
+  ],
+  "quote": "80",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Bonus Attack Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0001
+    }
+   ],
+   "quote": "{{ap|10 to 30}}% {{as|(+ 1% per 100 AP)}}",
+   "bin": [
+    "RenataW#ASCalc"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Bonus Movement Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.1,
+    0.125,
+    0.15,
+    0.175,
+    0.2
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.0001
+    }
+   ],
+   "quote": "{{ap|10 to 20}}% {{as|(+ 1% per 100 AP)}}",
+   "bin": [
+    "RenataW#MSCalc"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Bailout buff duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "for 5 seconds, granting the target",
+   "bin": [
+    "RenataW.Duration"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "target restored to maximum health when taking fatal damage",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 1.0,
+   "terms": [],
+   "quote": "{{as|100% of their '''maximum''' health}}",
+   "bin": [],
+   "binNote": "No dedicated data value; the 100% restore is only stated in the description text, not a DataValue row."
+  },
+  {
+   "id": "w_7",
+   "meaning": "true damage burn per tick, percent of max health",
+   "role": "dot",
+   "damageType": "true",
+   "by": "const",
+   "base": 0.1,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": 0.1
+    }
+   ],
+   "quote": "{{as|10% of their '''maximum''' health}} every {{rutngt|0.25}}",
+   "bin": [],
+   "binNote": "The 10% figure appears only in the description; no DataValue named '10' exists (TriumphPercent=20 is a different, unrelated number used for the 20% restore-on-takedown value)."
+  },
+  {
+   "id": "w_8",
+   "meaning": "burn tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "every {{rutngt|0.25}} until they reach {{as|'''0''' health}}",
+   "bin": [
+    "RenataW.TicksPerSecond"
+   ],
+   "binNote": "TicksPerSecond=4 implies a 0.25s interval (1/4), matching the wiki's 0.25 quote."
+  },
+  {
+   "id": "w_9",
+   "meaning": "number of burn ticks before death (total burn duration)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "10% of their '''maximum''' health every {{rutngt|0.25}} until they reach {{as|'''0''' health}}",
+   "bin": [
+    "RenataW.TicksBeforeDeath"
+   ]
+  },
+  {
+   "id": "w_10",
+   "meaning": "current health set to percent of max health when burn is stopped by a takedown",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.2,
+   "terms": [],
+   "quote": "{{as|20% of their '''maximum''' health}} immediately afterwards",
+   "bin": [
+    "RenataW.TriumphPercent"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The attack speed and movement speed bonuses ramp up from their base value to double that value over the first 5 seconds of the buff.",
+   "quote": "with both of the bonuses increasing in effectiveness by {{pp|key=%|type=seconds elapsed|0 to 100 for 21|0 to 5}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Bailout's duration resets whenever the target scores a takedown within 6 seconds of damaging the enemy.",
+   "quote": "''Bailout's'' duration resets whenever the target scores a {{tip|takedown}} against an enemy champion within 6 seconds of damaging them.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the buff is refreshed, the attack/move speed ramp effectiveness does not reset.",
+   "quote": "''Bailout's'' bonuses will not reset in effectiveness if its duration is refreshed.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The lethal-damage restore-and-burn effect can trigger only once per application of Bailout while the target is not already burning.",
+   "quote": "This effect may occur only ''once'' per application of ''Bailout'' while the target already has the buff and is not burning.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The self-damage burn is raw damage calculated from the target's maximum health at the moment lethal damage was taken.",
+   "quote": "The self-damage taken is considered {{tip|raw damage}} and is calculated based on the target's '''maximum''' health at the time of taking lethal damage.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Casting Bailout on a target that already has the buff only refreshes its duration without resetting the AS/MS ramp.",
+   "quote": "Casting ''Bailout'' on a target that already has the buff will only refresh the duration (without resetting the bonuses).",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "RenataW.MaxStatMultiplier",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "RenataW.TagDuration",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

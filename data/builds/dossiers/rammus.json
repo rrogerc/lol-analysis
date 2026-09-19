@@ -1,0 +1,833 @@
+{
+ "champion": "rammus",
+ "abilities": {
+  "P": {
+   "name": "Spiked Shell",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus attack damage from total armor",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "armor",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{as|15% '''total''' armor}}",
+     "bin": [
+      "RammusP.ArmorRatio"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus attack damage from total magic resistance",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "mr",
+       "coef": 0.15
+      }
+     ],
+     "quote": "{{as|15% '''total''' magic resistance}}",
+     "bin": [
+      "RammusP.MagicResistRatio"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rammus gains bonus AD equal to the sum of 15% total armor and 15% total magic resistance, which affects his autoattack and on-hit damage output.",
+     "quote": "'''Rammus''' gains {{sti|{{as|'''bonus''' attack damage}}}} equal to the sum of {{as|15% '''total''' armor}} and {{as|15% '''total''' magic resistance}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "RammusP.BaseDamage",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Powerball",
+   "cooldown": {
+    "values": [
+     12,
+     10.5,
+     9,
+     7.5,
+     6
+    ],
+    "quote": "{{ap|12 to 6}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "quote": "60",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "PowerBall#PowerBallDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 80}}%",
+     "bin": [
+      "PowerBall.SlowPercent"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Slow duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|slow|slowed}} for 1 second",
+     "bin": [
+      "PowerBall.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Roll/channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "channeling for up to 6 seconds",
+     "bin": [
+      "PowerBall.RollDuration"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Stun duration on collision",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "stunned",
+     "bin": [
+      "PowerBall.StunDuration"
+     ],
+     "binNote": "Wiki description text does not state a numeric stun duration in the visible tooltip; the bin's StunDuration (0.35) is the only source for this number, distinct from the 0.4s reveal duration mentioned in text."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rammus stops rolling upon colliding with an enemy, dealing magic damage to all nearby enemies and knocking them back.",
+     "quote": "Rammus stops rolling upon colliding with an enemy, dealing {{as|magic damage}} to all nearby enemies and {{tip|airborne|knocking them back}} 125 units",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The damage is dealt only once, on collision, as an AoE burst rather than throughout the channel.",
+     "quote": "Rammus stops rolling upon colliding with an enemy, dealing {{as|magic damage}} to all nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Powerball can be recast after 1 second within the duration, ending the roll early and (presumably) skipping the collision damage if no enemy was hit.",
+     "quote": "''Powerball'' can be recast after 1 second within the duration, and does so automatically afterwards",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial cast and manual recast each count as separate ability activations for on-cast effects like Spellblade.",
+     "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins only after the effect (roll) ends, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PowerBall.MSMultiplier",
+     "reason": "utility"
+    },
+    {
+     "ref": "PowerBall.KnockbackDistance",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PowerBall.HeightVariable",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PowerBall.SelfStunTiming",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Defensive Ball Curl",
+   "cooldown": {
+    "values": [
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "quote": "7"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Armor",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      27,
+      32,
+      37,
+      42,
+      47
+     ],
+     "terms": [
+      {
+       "stat": "armor",
+       "coef": [
+        0.3,
+        0.375,
+        0.45,
+        0.525,
+        0.6
+       ]
+      }
+     ],
+     "quote": "{{ap|27 to 47}} {{as|(+ {{ap|30 to 60}}% '''total''' armor)}}",
+     "bin": [
+      "DefensiveBallCurl.FlatBonusArmor",
+      "DefensiveBallCurl.BonusArmorPercent"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bonus Magic Resistance",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [
+      {
+       "stat": "mr",
+       "coef": [
+        0.3,
+        0.375,
+        0.45,
+        0.525,
+        0.6
+       ]
+      }
+     ],
+     "quote": "{{ap|20 to 40}} {{as|(+ {{ap|30 to 60}}% '''total''' magic resistance)}}",
+     "bin": [
+      "DefensiveBallCurl.FlatBonusMR",
+      "DefensiveBallCurl.BonusMRPercent"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the defensive stance",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "enters a defensive stance for 7 seconds",
+     "bin": [
+      "DefensiveBallCurl.BuffDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "magic damage returned to attackers who basic attack Rammus while active",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "const",
+     "base": 15,
+     "terms": [
+      {
+       "stat": "armor",
+       "coef": 0.1
+      },
+      {
+       "stat": "mr",
+       "coef": 0.1
+      }
+     ],
+     "quote": "dealt {{as|15|magic damage}} {{as|(+ 10% '''total''' armor)}} {{as|(+ 10% '''total''' magic resistance)}} {{as|magic damage}}",
+     "bin": [
+      "DefensiveBallCurl#ReturnDamageCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The return damage triggers when an enemy lands a basic attack against Rammus while the buff is active, not from Rammus's own actions.",
+     "quote": "enemies that use a basic attack {{tip|on-hit}} against '''Rammus''' are dealt",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Deactivating Defensive Ball Curl ends the effect; it ends immediately if Powerball is cast.",
+     "quote": "''Defensive Ball Curl'' ends immediately if {{ai|Powerball|Rammus}} is cast.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "It returns damage from on-hit effects and Runaan's Hurricane, but not from turrets or turret-like sources.",
+     "quote": "will return damage from attacks and/or abilities that apply [[on-hit effect]]s ({{ai|Mystic Shot|Ezreal}}) as well as from {{iis|Runaan's Hurricane}} {{nie|Wind's Fury}} (will not return damage from [[turret]]s, {{ai|H-28G Evolution Turret|Heimerdinger}}, or {{ai|Jack in the Box|Shaco}})",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The resistance scaling for the return damage recalculates over the duration as Rammus's armor/MR change, including the flat bonus from this ability itself.",
+     "quote": "The resistance scaling will factor from all sources, including ''Defensive Ball Curl's'' flat bonus. This will recalculate over the duration.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "DefensiveBallCurl.DamageArmorRatio",
+     "reason": null
+    },
+    {
+     "ref": "DefensiveBallCurl.DamageMRRatio",
+     "reason": null
+    },
+    {
+     "ref": "DefensiveBallCurl.FlatDamageReturn",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Frenzying Taunt",
+   "cooldown": {
+    "values": [
+     12,
+     12,
+     12,
+     12,
+     12
+    ],
+    "quote": "12"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Taunt Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.2,
+      1.4,
+      1.6,
+      1.8,
+      2
+     ],
+     "terms": [],
+     "quote": "{{ap|1.2 to 2}} seconds",
+     "bin": [
+      "PuncturingTaunt.Duration"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Monster Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      100,
+      120,
+      140,
+      160
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|80 to 160}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "PuncturingTaunt#MonsterDamageCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability taunts the target enemy champion or monster; monsters additionally take magic damage, but champions do not take this damage.",
+     "quote": "Monsters are additionally dealt {{as|magic damage}} upon being affected.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PuncturingTaunt.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Soaring Slam",
+   "cooldown": {
+    "values": [
+     120,
+     105,
+     90
+    ],
+    "quote": "{{ap|120 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "None"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      250,
+      350
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|150 to 350}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "Tremors2#InitialDamageCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      40,
+      50
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 50}}%",
+     "bin": [
+      "Tremors2.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "duration of the slow applied by the impact",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "Tremors2.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "knock-up duration when cast during Powerball",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "knocked up for {{fd|0.75}} seconds",
+     "bin": [
+      "Tremors2.KnockupDuration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "number of aftershocks bursting from the area",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "The impact causes 3 aftershocks to burst from the area",
+     "bin": [
+      "Tremors2.NumberOfPulses"
+     ]
+    },
+    {
+     "id": "r_6",
+     "meaning": "duration over which the aftershocks occur",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3.5,
+     "terms": [],
+     "quote": "over {{fd|3.5}} seconds",
+     "bin": [
+      "Tremors2.BuffDuration"
+     ]
+    },
+    {
+     "id": "r_7",
+     "meaning": "damage multiplier against turrets",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "is doubled against {{tip|turrets}}",
+     "bin": [
+      "Tremors2.TurretDamageModifier"
+     ],
+     "binNote": "not-in-a-dummy-fight relevance, but kept as the number the wiki states for structures; no dummy in either fight is a turret"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Rammus dashes to the target location with crowd-control immunity for the duration of the dash.",
+     "quote": "leaps to the target location with {{tip|Cc-immunity}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The initial impact damage and slow occur on arrival, not on cast.",
+     "quote": "Upon arrival, he creates an impact that deals {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If cast during Powerball, Soaring Slam also deals Powerball's damage to enemies in the epicenter and knocks them up.",
+     "quote": "enemies within the epicenter of the impact are also {{tip|airborne|knocked up}} for {{fd|0.75}} seconds and are dealt ''{{ais|Powerball|Rammus}}'' damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting during Powerball does not end the Powerball channel until after the dash.",
+     "quote": "its channel will be maintained for the dash and end afterwards",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each of the 3 aftershocks reapplies and refreshes the initial slow, but the wiki does not state they deal damage.",
+     "quote": "each one applying and refreshing the duration of the initial {{tip|slow}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A spell shield blocks the initial impact (including the Powerball damage component) but not the aftershocks.",
+     "quote": "Spell shield will block the impact (including with {{ai|Powerball|Rammus}}) but not each aftershock",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the dash is interrupted, the ability produces no impact and no aftershocks.",
+     "quote": "will not impact nor generate aftershocks if the dash is interrupted",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability has no cast time.",
+     "quote": "cast time    = None",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Tremors2.TremorsAoERange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Tremors2.TremorsKnockupRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Tremors2.BaseCastRange",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Tremors2.DashRangeGrowth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Tremors2.MaxRangeForDmgGrowth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "Tremors2.DashSpeedGrowth",
+     "reason": "utility"
+    },
+    {
+     "ref": "Tremors2.MinDashSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "Tremors2.MaxDashSpeed",
+     "reason": "utility"
+    },
+    {
+     "ref": "Tremors2.APRatio",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Spiked Shell converts 15% total armor + 15% total MR into bonus AD, continuously recalculated"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Powerball channels then deals a single AoE collision burst; recastable early, auto-ends at 6s or on collision"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Powerball is a channel that blocks other actions (except W/R interactions) until it collides or is recast"
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Defensive Ball Curl grants bonus armor/MR for 7s duration"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's return damage triggers only off attacks against Rammus; irrelevant in the damage fight where the dummy never attacks, only relevant in the survival fight as damage-taken interaction"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Frenzying Taunt's monster damage is a fixed-target on-cast burst (only relevant vs monsters, not champion dummy)"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Soaring Slam impact + 3 timed aftershocks (aftershocks reapply slow only, no stated damage)"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "Soaring Slam deals doubled damage to turrets (not applicable to a champion dummy) and merges with Powerball damage if cast mid-Q"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q60/W40/E50/R100) may matter over a 15s rotation depending on Rammus's mana pool at the tested level"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Rammus's core damage kit is almost entirely single-burst abilities with no repeatable on-hit rider beyond the passive AD conversion; the simulator needs to know P's continuous AD-from-resists conversion (recalculated as armor/MR change from W and items), Q's channel-then-single-AoE-burst-on-collision behavior (with an assumed 'always collides on cast' resolution against a stationary dummy), and R's conditional merge with Q's damage if cast during the Q channel. None of the listed primitives individually capture 'channel that deals its one damage instance upon collision with a stationary target that is always in range,' so the fight needs a bespoke rule: Q's collision is assumed to happen essentially immediately on cast against a stationary dummy (channel time before collision needs a ruling, see unsettled)."
+ },
+ "unsettled": [
+  {
+   "question": "Against a stationary target dummy, does Powerball collide (and deal its damage) immediately on cast, or only after some travel time since the dummy doesn't move and Rammus must roll into it?",
+   "options": [
+    "Collision happens near-instantly since Rammus rolls toward the dummy and hits it almost immediately",
+    "Collision is delayed by whatever travel/pathing time the simulator assumes, effectively adding a cast-to-hit delay each time Q is used",
+    "Collision never happens automatically and requires the dummy to be adjacent at cast time"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Rammus''' stops rolling upon colliding with an enemy, dealing {{as|magic damage}} to all nearby enemies"
+   ]
+  },
+  {
+   "question": "After Powerball's initial collision burst, can Rammus re-cast Q again within the 15s fight to get a second collision-damage instance, or does the ability's post-effect cooldown-start plus recast/end behavior mean only one damage tick per cast is realistic?",
+   "options": [
+    "Only one collision burst per Q cast (recast just ends the channel, no second damage)",
+    "The automatic recast after 6s if not manually ended could produce a second collision if Rammus is still moving/near the dummy, effectively creating a second damage window"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Powerball'' can be recast after 1 second within the duration, and does so automatically afterwards"
+   ]
+  },
+  {
+   "question": "If the rotation casts Soaring Slam (R) while Powerball (Q) is channeling, does the dummy (stationary, single target) actually receive the merged Powerball damage bonus, given the epicenter/knockup mechanic is designed for multiple enemies at range?",
+   "options": [
+    "Yes — a single dummy standing at the impact epicenter takes both R's damage and Q's merged damage as two separate instances",
+    "No — this combo is positional/geometry-dependent (multi-hit shape) and should be treated as a positional assumption the dummy fight doesn't model, i.e., excluded from the baseline rotation"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "enemies within the epicenter of the impact are also {{tip|airborne|knocked up}} for {{fd|0.75}} seconds and are dealt ''{{ais|Powerball|Rammus}}'' damage"
+   ]
+  },
+  {
+   "question": "Does Spiked Shell's bonus AD (15% armor + 15% MR) apply to on-hit/on-attack damage the same way normal bonus AD does, or is there any restriction (e.g., does it interact with AD ratios on abilities)?",
+   "options": [
+    "It behaves as ordinary bonus AD, feeding into autoattack damage and any AD ratios",
+    "There is some special restriction not stated in either source"
+   ],
+   "impact": "low",
+   "quotes": [
+    "'''Rammus''' gains {{sti|{{as|'''bonus''' attack damage}}}} equal to the sum of {{as|15% '''total''' armor}} and {{as|15% '''total''' magic resistance}}."
+   ]
+  },
+  {
+   "question": "Is Frenzying Taunt's monster-only magic damage ever relevant to the champion-dummy damage fight (since the dummy 'counts as an enemy champion')?",
+   "options": [
+    "No — dummy counts as champion, so E deals zero damage in the fight, it's purely a taunt with no damage output here",
+    "Some simulators might still credit the monster damage if the dummy is flagged as monster-like; sources don't clarify how the dummy is classified for this ability"
+   ],
+   "impact": "low",
+   "quotes": [
+    "Monsters are additionally dealt {{as|magic damage}} upon being affected."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Powerball) to roll toward the dummy and immediately trigger its magic damage burst on collision, then manually recast to end the channel and start its cooldown.",
+   "Cast E (Frenzying Taunt) on the dummy for the taunt (no damage vs a champion-classified dummy) mainly to keep on-cast effects like Spellblade active; otherwise skip if it contributes nothing to damage.",
+   "Cast R (Soaring Slam) on the dummy's location for its magic damage impact once available.",
+   "Cast W (Defensive Ball Curl) mainly for the passive AD gain via Spiked Shell (indirectly, since W boosts armor/MR which feeds P's AD conversion) between other casts; it contributes no direct damage against a non-attacking dummy.",
+   "Auto-attack the dummy continuously between ability casts to benefit from Spiked Shell's bonus AD.",
+   "Repeat Q on cooldown (6s minimum with rank 5) as the primary repeatable damage source, weaving auto-attacks in between.",
+   "Use R again if it comes off cooldown within the 15s window (rank 1 has 120s cooldown, so likely only cast once)."
+  ],
+  "questions": [
+   "Should E even be included in the rotation, given it apparently deals no damage to a champion-classified dummy and only provides a taunt (no CC benefit is scored)?",
+   "How does the simulator model Q's channel time before collision — does Rammus effectively deal Q's damage at time 0 of the cast, or after some fixed travel delay, and does that delay block auto-attacks during the channel?",
+   "Is W worth casting at all in the damage fight, given its own damage-dealing tooltip only fires off enemy attacks (which the dummy never performs), and its buff only matters via feeding Spiked Shell's AD conversion?",
+   "At what level/item state should R's single 120s-cooldown cast be assumed to land relative to the 15s fight window — always at t=0, or held for maximum stat scaling?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

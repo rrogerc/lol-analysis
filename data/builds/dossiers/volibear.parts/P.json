@@ -1,0 +1,147 @@
+{
+ "name": "The Relentless Storm",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_stack_as",
+   "meaning": "bonus attack speed per stack of The Relentless Storm (up to 5 stacks)",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": [
+    0.05,
+    0.25
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": [
+      0.03,
+      0.15
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.03
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|5%|attack speed}} {{as|(+ 3% per 100 AP)}} {{as|'''bonus''' attack speed}}, up to {{as|25%|attack speed}} {{as|(+ 15% per 100 AP)}}",
+   "bin": [
+    "VolibearP#AttackSpeedCalc"
+   ],
+   "binNote": "wiki lists +3% per 100 AP per stack; bin AttackSpeedCalc gives 0.05 base + 0.0003xap which is 0.03% per AP point (3% per 100 AP), matching; the separate tooltip-only calc {ebe98aa3} uses 0.04xap (4% per AP point) which does not match either source and appears to be a stale/unused tooltip value"
+  },
+  {
+   "id": "p_stack_max",
+   "meaning": "maximum stacks of The Relentless Storm",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "stacking up to 5 times",
+   "bin": [
+    "VolibearP.BounceCounterMax"
+   ]
+  },
+  {
+   "id": "p_stack_duration",
+   "meaning": "duration of a stack of The Relentless Storm before it expires",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "he generates a {{tip|stack}} of ''The Relentless Storm'' for 6 seconds, refreshing on subsequent damage",
+   "bin": [
+    "VolibearP.BuffDuration"
+   ]
+  },
+  {
+   "id": "p_lightning_claws_damage",
+   "meaning": "Lightning Claws bonus magic on-hit damage to target and up to 4 chained enemies",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    10,
+    11,
+    12,
+    14,
+    17,
+    20,
+    23,
+    27,
+    31,
+    35,
+    39,
+    43,
+    47,
+    51,
+    55,
+    59,
+    63,
+    67
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{pp|10+1*x for 3; then + 2*x for 3; then + 3*x for 7; then + 4*x for 7|formula=10+1 per level until lvl 3, then+2 until lvl 6, then+3 per level until lvl 13, then+4 per level}} {{as|(+ 45% AP)}} '''bonus''' magic damage",
+   "bin": [
+    "VolibearP#ChainLightningDamage"
+   ],
+   "binNote": "wiki's formula (10,11,12,14,17,20,23,27,31,35,39,43,47,51,55,59,63,67) disagrees with the bin's byLevelL array on ChainLightningDamage (11,12,13,15,17,19,22,25,28,31,34,37,40,44,48,52,56,60); the two sequences diverge at level 1 (10 vs 11) and increasingly beyond level 5, though both use the same 0.45 AP ratio - stating the wiki's number per instructions, this is a genuine data mismatch between sources rather than a transcription error"
+  },
+  {
+   "id": "p_lightning_claws_chain_count",
+   "meaning": "number of enemies Lightning Claws damage can chain to",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "chaining up to 4 subsequent targets",
+   "bin": [
+    "VolibearP.BounceCounterMax"
+   ],
+   "binNote": "BounceCounterMax (5) is shared between max stacks and bounce count logic in the bin; the wiki states the chain applies to the initial target plus up to 4 additional (bounce) targets, consistent with a counter capped near 5"
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Stacks are gained from any basic attack or ability that damages at least one enemy, refreshing the stack duration each time.",
+   "quote": "Whenever '''Volibear''' damages at least one enemy with a {{tip|basic attack}} or {{tip|ability}}, he generates a {{tip|stack}} of ''The Relentless Storm'' for 6 seconds, refreshing on subsequent damage",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At 5 stacks Volibear's next on-hit attack (or the ability reaching 5 stacks) is empowered by Lightning Claws, dealing bonus magic on-hit damage that chains.",
+   "quote": "While at four stacks, the next attack or ability on-hit reaching the fifth stack will be empowered by ''Lightning Claws''",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Lightning Claws damage does not apply to structures or wards.",
+   "quote": "The empowered attacks do not affect {{tip|structures}} nor {{tip|wards}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "A stack is not gained if the attack misses/is dodged while Volibear is blinded, but is still granted if the attack is blocked (parried); Lightning Claws will not apply in the blocked case.",
+   "quote": "A stack of ''The Relentless Storm'' is not gained if the attack is {{tip|dodged}} and/or missed if '''Volibear''' is {{tip|blind|blinded}}. A stack is granted even if the attack is {{tip|blocked}}. In all cases, ''Lightning Claws'' will not apply",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "VolibearP.PDamageRatio",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

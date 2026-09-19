@@ -1,0 +1,97 @@
+{
+ "name": "Riftwalk",
+ "cooldown": {
+  "values": [5, 3.5, 2],
+  "quote": "{{ap|5 to 2}}"
+ },
+ "cost": {
+  "values": 40,
+  "quote": "{{pp|40*2^(x-1)|0 to 4 for 5|type=Stacks|formula=40 {{times}} 2^stacks}}",
+  "resource": "mana",
+  "binNote": "40 is only the 0-stack cost (matches RiftWalk.RBaseCost and the sheet's flat cost:40). The wiki's own formula scales cost with accumulated stacks (40 x 2^stacks, stacks 0-4); see value r_7."
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [80, 95, 110],
+   "terms": [{"stat": "ap", "coef": 0.5}, {"stat": "maxMana", "coef": 0.02}],
+   "quote": "{{ap|80 to 110}} {{as|(+ 50% AP)}} {{as|(+ 2% '''maximum''' mana)}}",
+   "bin": ["RiftWalk#BaseDamage"]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Bonus Damage Per Stack",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [35, 45, 55],
+   "terms": [{"stat": "ap", "coef": 0.07}, {"stat": "maxMana", "coef": 0.01}],
+   "quote": "{{ap|35 to 55}} {{as|(+ 7% AP)}} {{as|(+ 1% '''maximum''' mana)}}",
+   "bin": ["RiftWalk#BonusDamage"]
+  },
+  {
+   "id": "r_5",
+   "meaning": "Riftwalk Stack Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "for 15 seconds",
+   "bin": ["RiftWalk.RStackDuration"]
+  },
+  {
+   "id": "r_6",
+   "meaning": "Riftwalk Max Stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "stacking up to 4 times",
+   "bin": ["RiftWalk.MaxStacks"]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Cast Cost Scaling With Riftwalk Stacks",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 40,
+   "terms": [],
+   "quote": "{{pp|40*2^(x-1)|0 to 4 for 5|type=Stacks|formula=40 {{times}} 2^stacks}}",
+   "bin": ["RiftWalk.RBaseCost", "RiftWalk.RManaRatio", "RiftWalk.RStackManaRatio"],
+   "binNote": "The wiki states cost = 40 x 2^stacks for stacks 0-4 (40/80/160/320/640 mana), which is exponential and cannot be written as this schema's flat base + linear terms. RBaseCost=40 is the 0-stack base; RManaRatio=2 and RStackManaRatio=1 look like the formula's base and per-stack exponent rate (2^(1*stacks)), matching the wiki's numbers exactly, but no calc row in the sheet derives this - it is my reading of two otherwise-unexplained data values, not a stated calculation."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "After the blink deals damage, Kassadin gains a Riftwalk stack for 15 seconds; casting again refreshes the duration on all held stacks, up to a cap of 4.",
+   "quote": "He then gains a stack of ''Riftwalk'' for 15 seconds, refreshing on subsequent casts and stacking up to 4 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Riftwalk's damage is dealt to all nearby enemies upon arrival at the blink destination, not at the instant of casting.",
+   "quote": "dealing {{as|magic damage}} to all nearby enemies upon arrival",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each held Riftwalk stack both adds the per-stack bonus damage and raises the cast's mana cost; the wiki does not say whether a cast's own new stack (gained after arrival) counts toward that same cast's damage/cost or only affects the next cast.",
+   "quote": "For each stack, ''Riftwalk'' deals {{as|'''bonus''' magic damage}} at an increased {{sti|{{as|mana cost}}}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "RiftWalk.RiftWalkBaseDamage", "reason": "stale-duplicate"},
+  {"ref": "RiftWalk.CastRange", "reason": "range-or-geometry"},
+  {"ref": "RiftWalk.BaseCD", "reason": "tooltip-only"}
+ ]
+}

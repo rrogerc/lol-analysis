@@ -1,0 +1,167 @@
+{
+ "champion": "sett",
+ "primitives": [
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "P"
+   ],
+   "note": "Basic attacks alternate Left Punch / Right Punch; the Right Punch is effectively every 2nd basic attack"
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Right Punch deals bonus physical damage (base by level + 55% bonus AD) on top of the normal attack"
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "P"
+   ],
+   "note": "Right Punch does not scale with bonus attack speed; its windup is instead fixed as a fraction (12.5%) of Left Punch's windup, still receptive to AS buffs not already active on the prior Left Punch"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Knuckle Down resets Sett's basic attack timer and forces the next two attacks to be Left Punch then Right Punch, resetting the Pit Grit alternation state"
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Knuckle Down arms Sett's next two basic attacks with bonus physical damage based on target's max health"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's empowered-attack damage and R's slam damage both scale with a percent of the target's max/bonus health"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "W"
+   ],
+   "note": "Grit is a stored resource (capped at 50% max HP, decays 30%/s after 4s) that Haymaker fully consumes on cast; its cost is 100% of current Grit"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "W"
+   ],
+   "note": "Passive converts post-mitigation damage taken 1:1 into stored Grit; Haymaker converts expended Grit into both a shield and bonus outgoing damage"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Each ability deals its damage after a fixed cast time, on cooldown"
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "Haymaker's damage type (true vs physical) depends on whether the target overlaps the inner rectangle vs the trapezoid/circle hitbox; The Show Stopper's damage depends on whether the target is within the 125-unit epicenter or is hit by the falling-off shockwave"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "The primitives above (nth-hit-or-cast + onhit-rider + attack-speed-interaction for the passive, attack-reset + empowered-attack + conditional-damage for Q, resource-budget + stat-conversion for W, plain-cast + positional-assumption for W/R, conditional-damage for R) together express the kit's mechanics. The main wrinkle - that in a dummy fight where the target never damages Sett, W's Grit income is naturally zero via the stat-conversion/resource-budget primitives rather than needing special-cased logic - is a parameter question (see unsettled), not a modeling gap."
+ },
+ "unsettled": [
+  {
+   "question": "In the dummy damage fight, does Haymaker's target (the single dummy) take the true damage from the inner rectangle, the physical damage from the trapezoid/circle aoe, or could it receive both simultaneously since the hitboxes are separate and can overlap?",
+   "options": [
+    "Assume the dummy is always in the true-damage line (true damage only)",
+    "Assume the dummy is only in the outer aoe (physical damage only)",
+    "Assume the dummy overlaps both hitboxes and takes both instances of damage"
+   ],
+   "impact": "high",
+   "quotes": [
+    "those hit in a line in the middle are dealt {{ccs|{{sti|{{as|true damage}}}}|true}} instead.",
+    "Enemies are hit by ''Haymaker'' only when their hitbox overlaps with both of those areas."
+   ]
+  },
+  {
+   "question": "Since the target dummy never damages Sett, does the simulated fight credit Sett with any Grit for Haymaker's expended-Grit damage/shield term (e.g., an assumed pre-fight cap, or self-inflicted sources), or should Grit be treated as 0 throughout, leaving Haymaker at its flat base damage only?",
+   "options": [
+    "Grit stays at 0 (no incoming damage source in a one-sided dummy fight)",
+    "Assume Sett opens the fight at or near the 50% max-HP Grit cap and casts Haymaker immediately",
+    "Assume some intermediate/decayed Grit value is available on each cast"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sett''' stores 100% of {{tt|post-mitigation damage...}} taken as ''Grit''",
+    "up to a cap of {{as|50% of his '''maximum''' health}}"
+   ]
+  },
+  {
+   "question": "The Show Stopper's health-scaling term is described on the wiki as a percent of the target's 'bonus' health, but the bin variable name (SettR.MaxHealthDamage, feeding SettR#MaxHealthDamageCalc) reads as target max health with no separate bonus-health-only row. Which is the live behavior?",
+   "options": [
+    "Use target's bonus (non-base) health per the wiki text",
+    "Use target's total max health per the bin's calculation naming"
+   ],
+   "impact": "high",
+   "quotes": [
+    "(+ {{ap|40 to 60}}% of primary target's '''bonus''' health)",
+    "SettR#MaxHealthDamageCalc (percent) = MaxHealthDamage=[0.4/0.5/0.6]"
+   ]
+  },
+  {
+   "question": "For The Show Stopper's shockwave, is the dummy assumed to be the primary/suppressed target standing within the 125-unit epicenter (full damage), or elsewhere in the shockwave radius (reduced damage, up to 75% per wiki text vs a 0.5 multiplier implied by the bin's CraterEdgeDamageReduction)?",
+   "options": [
+    "Dummy (the suppressed target) always lands in the epicenter and takes full damage",
+    "Dummy could be treated as an 'edge' hit with a 75% reduction per the wiki's arithmetic",
+    "Dummy is an edge hit with a 50% reduction per the bin's CraterEdgeDamageReduction=0.5"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Enemies within {{tt|the epicenter...}} take {{ccs|{{as|physical damage}}|physical}}",
+    "other enemies hit by the shockwave take {{as|physical damage}} that is reduced by up to 75% based on proximity.",
+    "SettR.CraterEdgeDamageReduction = 0.5"
+   ]
+  },
+  {
+   "question": "The Right Punch's bonus physical damage base value comes from an unresolved ByCharLevelFormulaCalculationPart in the bin; the wiki's stated pp-formula (linear 5 to 90 across levels 1-20) is used as a stand-in. Is this the actual live per-level progression?",
+   "options": [
+    "Trust the wiki's linear 5-to-90 formula as exact",
+    "Treat the exact by-level base as unverified pending the resolved bin formula"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pp|5 + (90-5)/17*(x-1) for 20}}|physical damage}} {{as|(+ 55% '''bonus''' AD)}}",
+    "! unresolved calculation part ByCharLevelFormulaCalculationPart"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with R (The Show Stopper) on the dummy if it is off cooldown, since it is Sett's single biggest burst hit and a 15s fight likely only fits one cast.",
+   "Immediately follow with Q (Knuckle Down) to guarantee a Left Punch then Right Punch with bonus max-health-based damage and to reset the attack timer.",
+   "Continue basic-attacking on-cooldown throughout, letting Left/Right Punch alternate naturally between other ability casts.",
+   "Cast E (Facebreaker) on cooldown for its flat physical AoE hit whenever it is up.",
+   "Cast W (Haymaker) on cooldown as well, even though expended Grit is likely near zero absent incoming damage, for its flat base damage component.",
+   "Re-cast Q every time it comes off cooldown (9s down to 5s), since its empowered attacks are cheap, resource-free, and scale with the dummy's max health.",
+   "Repeat the Q/E/W/auto-attack loop for the remainder of the 15 seconds; do not expect a second R cast given its 80-120s cooldown."
+  ],
+  "questions": [
+   "Does the simulator grant Sett any starting or accruing Grit in a one-sided dummy fight, or is Haymaker's Grit-based damage/shield term always effectively zero?",
+   "Is R assumed available at the start of the fight (i.e., is the simulated encounter timed to line up with R's cooldown), or should the rotation assume R is unavailable and plan around Q/W/E/autos only?",
+   "Where is the dummy assumed to stand relative to Sett for Haymaker's true-damage line versus its outer physical aoe, and relative to Show Stopper's epicenter versus shockwave edge?",
+   "Does the simulator track and enforce the Left/Right Punch alternation state (and its 2-second reset window) between ability casts, or does every basic attack default to a fixed damage value?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

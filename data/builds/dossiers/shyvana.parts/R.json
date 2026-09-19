@@ -1,0 +1,222 @@
+{
+ "name": "Dragon's Descent",
+ "cooldown": null,
+ "cost": {
+  "values": [
+   3.333333
+  ],
+  "quote": "{{as|{{fd|3.{{recurring|3}}}}|Fury}}",
+  "resource": "{{as|dragon fury}} every {{fd|0.5}} seconds",
+  "binNote": "Matches ShyvanaR.FuryDrainPerSecond=6.66666 halved (drain per 0.5s tick); constant across ranks, not itself an array in the bin."
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Dragon Fury Generation per 0.5 Seconds",
+   "role": "resource",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.25,
+    0.375,
+    0.5
+   ],
+   "terms": [],
+   "quote": "{{as|{{ap|0.5/2 to 1/2}}|Fury}}",
+   "bin": [
+    "ShyvanaR.FuryGain"
+   ],
+   "binNote": "Bin's FuryGain=[0.5/0.75/1] is the per-second rate (matches r_2); this per-0.5s value is half that, not stated directly in the bin."
+  },
+  {
+   "id": "r_2",
+   "meaning": "Dragon Fury Generation per Second",
+   "role": "resource",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.5,
+    0.75,
+    1
+   ],
+   "terms": [],
+   "quote": "{{as|{{ap|0.5 to 1}}|Fury}}",
+   "bin": [
+    "ShyvanaR.FuryGain"
+   ]
+  },
+  {
+   "id": "r_3",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    150,
+    250,
+    350
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 1.0
+    }
+   ],
+   "quote": "{{ap|150 to 350}} {{as|(+ 100% AP)}}",
+   "bin": [
+    "ShyvanaR#Damage",
+    "ShyvanaR.BaseDamage"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "Bonus Health",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    150,
+    250,
+    350
+   ],
+   "terms": [],
+   "quote": "{{ap|150 to 350}}",
+   "bin": [
+    "ShyvanaR#Calc_Bonus_Health",
+    "ShyvanaR.BonusHealth"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Dragon Fury gained per enemy damaged by basic attacks and abilities",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 1.25,
+   "terms": [],
+   "quote": "abilities}} also generate {{as|{{fd|{{#var:faba}}}} Dragon Fury}} for each enemy damaged",
+   "bin": [
+    "ShyvanaR.Fury_Generation"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "Dragon Form Fury generation multiplier",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "increased{{ft|by {{ap|({{#var:dragf}}-1)*100}}%|to {{as|{{ap|{{#var:faba}}*{{#var:dragf}}}}|Fury}}}}during {{sbc|Dragon Form}}",
+   "bin": [
+    "ShyvanaR.FuryDragonFormMult"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Fury generation modifier vs non-champions",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "the generated amount is reduced to{{ft|25%.",
+   "bin": [
+    "ShyvanaR.Fury_AoE_Efficacy"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Dragon's Descent has no cooldown; it is gated purely by a Fury resource that must reach 100 to cast, and is spent at a recurring rate of ~3.33 per 0.5s while in Dragon Form.",
+   "quote": "{{as|Dragon Fury}} every {{fd|0.5}} seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Shyvana gains 100 Fury immediately upon learning the ability, so it can be cast right away on level-up.",
+   "quote": "'''Shyvana''' gains {{as|100 Dragon Fury}} upon learning ''Dragon's Descent''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Basic attacks and abilities generate Fury per enemy damaged, once per enemy per cast instance, and this generation is tripled while already in Dragon Form; against non-champions this generation from abilities is reduced to 25%.",
+   "quote": "increased{{ft|by {{ap|({{#var:dragf}}-1)*100}}%|to {{as|{{ap|{{#var:faba}}*{{#var:dragf}}}}|Fury}}}}during {{sbc|Dragon Form}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Shyvana's Q (Emberstrike) basic attack against the primary target generates the full Fury amount even against non-champions, unlike other abilities/attacks against non-champions.",
+   "quote": "''{{ais|Emberstrike|Shyvana}}'' attack against the primary target will generate the full {{as|Dragon Fury}} amount even if they're a non-champion.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Shyvana gains 1% bonus Fury generation from all sources per 1 ultimate haste, increasing her effective uptime and cast frequency of this ability.",
+   "quote": "'''Shyvana''' gains 1% '''bonus''' {{as|Dragon Fury}} generation from all sources per 1 [[ultimate haste]].",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Displacement immunity during the dash begins at the start of the cast time, not when the dash itself begins.",
+   "quote": "''Dragon's Descent's'' {{tip|displacement immunity}} begins from the start of the cast time.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Entering Dragon Form empowers Shyvana's basic abilities (Q/W/E) to apply an additional effect, which changes their damage output in Dragon Form (see Q/W/E dossier parts).",
+   "quote": "Her basic abilities are empowered to apply an additional effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Shyvana reverts to Human Form once all Dragon Fury has been depleted while in Dragon Form.",
+   "quote": "returning to {{sbc|Human Form}} once all {{as|Dragon Fury}} has been depleted.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ShyvanaR.MinCastRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaR.JumpDelay",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaR.JumpDampening",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaR.JumpGravity",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaR.JumpForwardMultiplier",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaR.Width",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaR.FuryDrainPerSecond",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "ShyvanaR.FearDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "ShyvanaR.SizeScaling",
+   "reason": "utility"
+  },
+  {
+   "ref": "ShyvanaR.BonusAttackRange",
+   "reason": "utility"
+  },
+  {
+   "ref": "ShyvanaR.FuryGainPerUltHaste",
+   "reason": "tooltip-only"
+  }
+ ],
+ "filledBy": "sonnet"
+}

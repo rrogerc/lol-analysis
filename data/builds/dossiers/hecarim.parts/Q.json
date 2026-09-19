@@ -1,0 +1,187 @@
+{
+ "name": "Rampage",
+ "cooldown": {
+  "values": [
+   4,
+   4,
+   4,
+   4,
+   4
+  ],
+  "quote": "{{pp|4-0.75*(x-1)|0 to 3 by 1|type=''Rampage'' stacks|formula=4 - 0.75 * [''Rampage'' stacks], capped at 3 stacks.|label=cooldown}}"
+ },
+ "cost": {
+  "values": [
+   28,
+   26,
+   24,
+   22,
+   20
+  ],
+  "quote": "{{ap|28 to 20}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    60,
+    90,
+    120,
+    150,
+    180
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.9
+    }
+   ],
+   "quote": "{{ap|60 to 180}} {{as|(+ 90% '''bonus''' AD)}}",
+   "bin": [
+    "HecarimRapidSlash#Damage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Minion damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    36,
+    54,
+    72,
+    90,
+    108
+   ],
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.54
+    }
+   ],
+   "quote": "{{ap|60*0.6 to 180*0.6}} {{as|(+ {{ap|90*0.6}}% '''bonus''' AD)}}",
+   "bin": [
+    "HecarimRapidSlash#MinionDamage",
+    "HecarimRapidSlash.MinionDamageRatio"
+   ],
+   "binNote": "MinionDamageRatio (0.6) is the multiplier applied to HecarimRapidSlash#Damage's base (60-180) and AD coefficient (0.9) to produce this value's numbers (36-108 base, 0.54 coef); it does not itself carry 36-108 or 0.54 directly, but is the sole bin source of the 60% reduction the wiki states."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Rampage stack duration before refresh",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 8,
+   "terms": [],
+   "quote": "gains a {{tip|stack}} of ''Rampage'' for 8 seconds, refreshing on subsequent damage and stacking up to 3 times",
+   "bin": [
+    "HecarimRapidSlash.BuffDuration"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Max Rampage stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 3,
+   "terms": [],
+   "quote": "stacking up to 3 times",
+   "bin": [
+    "HecarimRapidSlash.MaxStacks"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Damage increase per stack (and per 100 bonus AD)",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.03,
+   "terms": [
+    {
+     "stat": "bonusAd",
+     "coef": 0.03,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.03
+      }
+     ]
+    }
+   ],
+   "quote": "Each stack increases ''Rampage's'' damage by 3% {{as|(+ 3% per 100 '''bonus''' AD)}}",
+   "bin": [
+    "HecarimRapidSlash#RampageBonusDamagePerc",
+    "HecarimRapidSlash.RampageBonusRatio"
+   ],
+   "binNote": "RampageBonusRatio=3 is the flat percent-per-stack in whole-percent units (3 == 3%, matches the wiki's 3%); RampageBonusDamagePerc's ad term (0.03) matches the per-100-bonus-AD scaling."
+  },
+  {
+   "id": "q_6",
+   "meaning": "Base cooldown reduction per stack",
+   "role": "utility",
+   "damageType": null,
+   "by": "const",
+   "base": 0.75,
+   "terms": [],
+   "quote": "reduces its {{sti|cd|'''base''' cooldown}} by {{fd|0.75}} seconds",
+   "bin": [
+    "HecarimRapidSlash.RampageCooldownReduction"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "Stack expiry interval when duration ends",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "Stacks expire one by one every 1 second when the duration ends.",
+   "bin": [],
+   "binNote": "No dedicated data row for the 1-second expiry tick; only the overall RampageDuration (8s buff) is present. This value is stated only in the description text."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Rampage's damage is reduced to 60% against minions.",
+   "quote": "dealing {{as|physical damage}} to nearby enemies, reduced to 60% against {{tip|minions}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Hitting at least one enemy grants a stack of Rampage, refreshing the buff duration and stacking up to 3 times, each stack increasing damage and reducing cooldown.",
+   "quote": "If this damages an enemy, '''Hecarim''' gains a {{tip|stack}} of ''Rampage'' for 8 seconds, refreshing on subsequent damage and stacking up to 3 times.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At maximum stacks, damage is increased by up to 9% (plus scaling with bonus AD) and base cooldown is reduced by up to 2.25 seconds.",
+   "quote": "up to a 9% {{as|(+ 9% per 100 '''bonus''' AD)}} damage increase and a {{fd|2.25}}-second reduction of the '''base''' cooldown at maximum stacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Rampage has no cast time.",
+   "quote": "cast time    = none",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "HecarimRapidSlash.RampageDuration",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

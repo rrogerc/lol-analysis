@@ -1,0 +1,613 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "KindredPassiveManager",
+    "key": "Characters/Kindred/Spells/KindredPassiveManagerAbility/KindredPassiveManager",
+    "dataValues": {
+     "BaseHealAmount": 45,
+     "HealAmountPerLevel": 2,
+     "InitialMarkThreshold": 4,
+     "RangeIncrease": 25,
+     "FirstTierMultiplier": 3,
+     "ASPerMark": 0.05,
+     "EDamagePerMark": 0.5,
+     "AdditionalMarkThreshold": 3
+    },
+    "calcs": {
+     "QMarkBonus": {
+      "expr": "0.05xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({64290302})",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": []
+     },
+     "WMarkBonus": {
+      "expr": "0.01xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({64290302})",
+        "scope": "total",
+        "coef": 0.01
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "EMarkBonus": {
+      "expr": "0.005xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({64290302})",
+        "scope": "total",
+        "coef": 0.005
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     },
+     "{d34fc902}": {
+      "expr": "(RangeIncrease=25) * FirstTierMultiplier=3",
+      "flat": 75,
+      "terms": [],
+      "refs": [
+       "FirstTierMultiplier",
+       "RangeIncrease"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "KindredQ",
+    "key": "Characters/Kindred/Spells/KindredQAbility/KindredQ",
+    "cooldown": 9,
+    "cost": 35,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashSpeed": 500,
+     "DashSpeedScaling": 12,
+     "BaseASDuration": 4,
+     "CDNewValue": {
+      "axis": "rank",
+      "v": [
+       4,
+       3.5,
+       3,
+       2.5,
+       2
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       65,
+       90,
+       115,
+       140
+      ]
+     },
+     "BaseBonusAS": 0.35
+    },
+    "calcs": {
+     "TotalQAttackSpeed": {
+      "expr": "BaseBonusAS=0.35 + 0.05xbuffStacks",
+      "flat": 0.35,
+      "terms": [
+       {
+        "stat": "buffStacks({64290302})",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "BaseBonusAS"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[40/65/90/115/140] + 0.75xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        65,
+        90,
+        115,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.75
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "KindredQ_URFWrapper",
+    "key": "Characters/Kindred/Spells/KindredQAbility/KindredQ_URFWrapper",
+    "cooldown": 9,
+    "cost": 35,
+    "castTime": 0.01,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "DashSpeed": 500,
+     "DashSpeedScaling": 12,
+     "BaseASDuration": 4,
+     "CDNewValue": {
+      "axis": "rank",
+      "v": [
+       4,
+       3.5,
+       3,
+       2.5,
+       2
+      ]
+     },
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       65,
+       90,
+       115,
+       140
+      ]
+     },
+     "BaseBonusAS": 0.35
+    },
+    "calcs": {
+     "TotalQAttackSpeed": {
+      "expr": "BaseBonusAS=0.35 + 0.05xbuffStacks",
+      "flat": 0.35,
+      "terms": [
+       {
+        "stat": "buffStacks({64290302})",
+        "scope": "total",
+        "coef": 0.05
+       }
+      ],
+      "displayAsPercent": true,
+      "tooltipOnly": true,
+      "refs": [
+       "BaseBonusAS"
+      ]
+     },
+     "TotalDamage": {
+      "expr": "BaseDamage=[40/65/90/115/140] + 0.75xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        65,
+        90,
+        115,
+        140
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.75
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "KindredW",
+    "key": "Characters/Kindred/Spells/KindredWAbility/KindredW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      18,
+      17,
+      16,
+      15,
+      14
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "LambToWolfAttackSpeedConversionPercent": 0.25,
+     "RingRange": 800,
+     "APRatio": 0.2,
+     "CloneBasePercentDamage": 0.015,
+     "CloneDamageFlat": {
+      "axis": "rank",
+      "v": [
+       25,
+       30,
+       35,
+       40,
+       45
+      ]
+     },
+     "CloneADRatio": 0.2,
+     "ClonePercentDamagePerBounty": 0.01,
+     "BaseCurrentHealthDamage": 1.5,
+     "ZoneDuration": 8.5,
+     "MonsterBonusDmg": 0.5,
+     "MonsterSlowAmount": 0.5
+    },
+    "calcs": {
+     "AttackHeal": {
+      "expr": "byLevelL[47/49/51/53/55/57/59/61/63/65/67/69/71/73/75/77/79/81]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        47,
+        49,
+        51,
+        53,
+        55,
+        57,
+        59,
+        61,
+        63,
+        65,
+        67,
+        69,
+        71,
+        73,
+        75,
+        77,
+        79,
+        81
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "BaseWolfDamage": {
+      "expr": "CloneDamageFlat=[25/30/35/40/45] + (CloneADRatio=0.2)xbonus ad + (APRatio=0.2)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        30,
+        35,
+        40,
+        45
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.2,
+        "dataValue": "CloneADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "CloneADRatio",
+       "CloneDamageFlat"
+      ]
+     },
+     "PercentWolfDamage": {
+      "expr": "CloneBasePercentDamage=0.015 + (ClonePercentDamagePerBounty=0.01)xbuffStacks",
+      "flat": 0.015,
+      "terms": [
+       {
+        "stat": "buffStacks({64290302})",
+        "scope": "total",
+        "coef": 0.01,
+        "dataValue": "ClonePercentDamagePerBounty"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "CloneBasePercentDamage",
+       "ClonePercentDamagePerBounty"
+      ]
+     },
+     "{fe248f68}": {
+      "expr": "PercentWolfDamage * (1)xstat13?",
+      "modifies": "PercentWolfDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "KindredEWrapper",
+    "key": "Characters/Kindred/Spells/KindredEWrapperAbility/KindredEWrapper",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      14,
+      12.5,
+      11,
+      9.5,
+      8
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MonsterCap": 200,
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       110,
+       140,
+       170,
+       200
+      ]
+     },
+     "SlowAmount": 30,
+     "SlowDuration": 1,
+     "TotalDuration": 4,
+     "StacksToProc": 4,
+     "SlowAPRatio": 0.05,
+     "BasePercentDamage": 0.05,
+     "CritMod": 0.5,
+     "BonusADRatio": 1
+    },
+    "calcs": {
+     "BaseBiteDamage": {
+      "expr": "(BaseDamage=[80/110/140/170/200] + (BonusADRatio=1)xbonus ad) * 1 + ((CritMod=0.5)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BaseDamage",
+       "BonusADRatio",
+       "CritMod"
+      ]
+     },
+     "PercentBiteDamage": {
+      "expr": "(BasePercentDamage=0.05 + 0.005xbuffStacks) * 1 + ((CritMod=0.5)xcritChance)*(1xcritDamage + -1)",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "displayAsPercent": true,
+      "refs": [
+       "BasePercentDamage",
+       "CritMod"
+      ]
+     },
+     "CritDamage": {
+      "expr": "PercentBiteDamage * 1.5 + 1xbonus critDamage",
+      "modifies": "PercentBiteDamage",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     },
+     "TotalSlow": {
+      "expr": "SlowAmount=30 + (SlowAPRatio=0.05)xap",
+      "flat": 30,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.05,
+        "dataValue": "SlowAPRatio"
+       }
+      ],
+      "refs": [
+       "SlowAPRatio",
+       "SlowAmount"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "KindredR",
+    "key": "Characters/Kindred/Spells/KindredRAbility/KindredR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      160,
+      140,
+      120
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HealFlat": {
+      "axis": "rank",
+      "v": [
+       225,
+       300,
+       375
+      ]
+     },
+     "BuffDuration": 4,
+     "AoERadius": 530
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "KindredQ",
+  "W": "KindredW",
+  "E": "KindredEWrapper",
+  "R": "KindredR",
+  "P": "KindredPassiveManager"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 300,
+   "{6216bf7b}": 35,
+   "{c4ab3550}": 1.4,
+   "{3a509002}": 0.08
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1245614
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Kindred",
+  "name": "Kindred",
+  "partype": "Mana",
+  "passive": "Mark of the Kindred",
+  "spells": [
+   {
+    "id": "KindredQ",
+    "name": "Dance of Arrows",
+    "maxrank": 5,
+    "cooldown": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "cost": [
+     35,
+     35,
+     35,
+     35,
+     35
+    ]
+   },
+   {
+    "id": "KindredW",
+    "name": "Wolf's Frenzy",
+    "maxrank": 5,
+    "cooldown": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "KindredEWrapper",
+    "name": "Mounting Dread",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     12.5,
+     11,
+     9.5,
+     8
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "KindredR",
+    "name": "Lamb's Respite",
+    "maxrank": 3,
+    "cooldown": [
+     160,
+     140,
+     120
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Mark of the Kindred": {
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Dance of Arrows": {
+    "damagetype": "Physical",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Wolf's Frenzy": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Mounting Dread": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Lamb's Respite": {
+    "targeting": "Auto",
+    "affects": "Self, Allies, Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

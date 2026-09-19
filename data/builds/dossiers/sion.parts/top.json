@@ -1,0 +1,93 @@
+{
+ "champion": "sion",
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Roar of the Slayer has a fixed 0.25s cast time then deals its magic damage on a short travel delay, usable on cooldown."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q charges up to 2s and R channels up to 8s; both explicitly disable basic attacks while charging/channeling ({{ct|...|attack=false}}), so weaving autoattacks during the hold is impossible."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Q: charge then recast (manual or automatic) deals the damage instance. W: shield cast then a separate recast (or 6s auto-detonate) deals the magic damage. R: charge then either a collision-slam or a timed recast-leap-slam deals the damage instance; only one damage-dealing slam occurs per full ability use."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "E"
+   ],
+   "note": "25% armor reduction applied to the target for 4s on hit, increasing subsequent physical damage taken (Q, R, autoattacks) for the rest of the fight window."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "All four abilities cost mana (W's cost even ramps 75->95 by rank) with no in-kit mana restore; at low levels/low mana this can cap how many casts fit in the 15s window."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Q and R deal damage that scales continuously with a player-chosen hold duration during the charge/channel (Q's low/high damage bracket the 0s-to-cap charge time; R's min/max damage bracket 0s-to-3s of channel time), and the ability's own cooldown only starts once the hold ends. The closed primitive list's 'charge-or-channel' only flags that basic attacks are blocked during the hold; it has no parameter for 'damage is a continuous function of how long the player held the charge before releasing,' which materially changes both damage-per-cast and effective cast cycle time. This needs bespoke ramp logic (and a chosen optimal hold duration) rather than a primitive lookup."
+ },
+ "unsettled": [
+  {
+   "question": "Does Decimating Smash's (Q) damage ramp finish increasing at 1 second of charge, or does it keep increasing up to the full 2-second charge window described in the blurb?",
+   "options": [
+    "Damage ramp caps at 1s of charge (matching the wiki's range/knockup/stun table, which only lists values for channel time 0 to 1 by 0.25, and the 'charged for at least 1 second' threshold for the empowered knockup/stun form)",
+    "Damage ramp continues linearly for the full 2 seconds described in 'Sion prepares a strike... charging for up to 2 seconds to increase... damage every 0.25 seconds'"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sion''' prepares a strike in the target direction, {{tip|channel|charging}} for up to 2 seconds to increase ''Decimating Smash's'' {{sti|range}} over an area, {{tip|airborne|knock up}} duration, {{tip|stun}} duration, and damage every {{fd|0.25}} seconds",
+    "|range        = {{tip|cr|icononly = true}} {{pp|type=channel time|500;500;675;762.5;850|0 to 1 by 0.25|changedisplay=true}}"
+   ]
+  },
+  {
+   "question": "In a melee-range damage fight against a stationary target, does Sion's R (Unstoppable Onslaught) collide with the target almost immediately after cast (yielding near-minimum charge-time damage), or is the fight assumed to start at enough range for Sion to hold the full 3-second damage ramp before contact?",
+   "options": [
+    "Sion is adjacent to the dummy at cast, so the charge collides on contact almost immediately and only deals near-minimum R damage",
+    "The simulated positioning assumes enough starting distance/kiting for Sion to hold the charge for the full 3s ramp before it ends (by collision or recast)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Sion''' will stop upon {{tt|colliding|150 units in front of Sion for the charge and point blank for the leap}} with an enemy champion or {{tt|terrain|...}} during the charge, ending ''Unstoppable Onslaught'' with a slam.",
+    "This is capped at 3 seconds."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Roar of the Slayer (E) to apply the 25% armor shred before other physical-damage sources land, since it has only a 0.25s cast time and no channel lockout.",
+   "Cast Decimating Smash (Q), holding the charge for its full damage-ramp window (duration per the unsettled ramp-cap question) before releasing/recasting to land the empowered physical hit.",
+   "Weave a basic attack whenever no ability is charging/channeling (Q and R block autoattacks while held, so attacks fit between casts and during ability cooldowns).",
+   "Cast Soul Furnace (W) for the shield, then recast it as soon as it is available (3s later) to detonate immediately for magic damage rather than waiting the full 6s, since holding it longer grants no extra damage in a fight with no incoming attacks to shield against.",
+   "Cast Unstoppable Onslaught (R) once available, holding the charge for the full 3-second damage-ramp cap (subject to the collision/positioning question) before ending the channel via collision-slam or timed recast-leap-slam for the maximum physical hit.",
+   "Repeat Q, E, W, and basic attacks on cooldown for the remainder of the 15s window; R will likely only be available once given its 140/100/60s cooldown."
+  ],
+  "questions": [
+   "Should Q be held for 1s or the full 2s to maximize damage, given the unresolved damage-ramp-cap question above?",
+   "Should R be held for the full 3s ramp given the target's proximity, or does the dummy's fixed position force an early, low-ramp collision?",
+   "Is there any in-kit reason to delay Soul Furnace's detonation past the 3s minimum recast window (e.g. does holding it longer change anything), or is immediate detonation strictly optimal for damage-fight DPS?",
+   "What order of E (armor shred) versus Q/R (physical hits) is being assumed for how much of the fight benefits from the shred, given E's own cooldown (12-8s) versus Q's (10-6s)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

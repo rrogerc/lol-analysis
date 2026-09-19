@@ -1,0 +1,394 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SingedP",
+    "key": "Characters/Singed/Spells/SingedPAbility/SingedP",
+    "uncancellableWindup": true,
+    "dataValues": {
+     "MSPercent": 0.25,
+     "MSDuration": 2,
+     "PerTargetCD": 8,
+     "TriggerArea": 225
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "PoisonTrail",
+    "key": "Characters/Singed/Spells/PoisonTrailAbility/PoisonTrail",
+    "cooldown": 0,
+    "cost": 13,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamagePerSecond": {
+      "axis": "rank",
+      "v": [
+       20,
+       30,
+       40,
+       50,
+       60
+      ]
+     },
+     "APRatioPerSecond": 0.425,
+     "ToggleCooldown": 1,
+     "CloudDuration": 3.25,
+     "PoisonDuration": 2,
+     "TicksPerSecond": 4,
+     "MaxLingerTicks": 8
+    },
+    "calcs": {
+     "DamagePerSecond": {
+      "expr": "BaseDamagePerSecond=[20/30/40/50/60] + (APRatioPerSecond=0.425)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        30,
+        40,
+        50,
+        60
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.425,
+        "dataValue": "APRatioPerSecond"
+       }
+      ],
+      "refs": [
+       "APRatioPerSecond",
+       "BaseDamagePerSecond"
+      ]
+     },
+     "ApproximateTotalDamageTooltip": {
+      "expr": "DamagePerSecond * 4.75",
+      "modifies": "DamagePerSecond",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        95,
+        142.5,
+        190,
+        237.5,
+        285
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 2.01875,
+        "dataValue": "APRatioPerSecond"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "APRatioPerSecond",
+       "BaseDamagePerSecond"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "MegaAdhesive",
+    "key": "Characters/Singed/Spells/MegaAdhesiveAbility/MegaAdhesive",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      17,
+      16,
+      15,
+      14,
+      13
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SlowPercent": {
+      "axis": "rank",
+      "v": [
+       50,
+       55,
+       60,
+       65,
+       70
+      ]
+     },
+     "WDuration": 3,
+     "WRadius": 265,
+     "DelayExecute": 0.375
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "Fling",
+    "key": "Characters/Singed/Spells/FlingAbility/Fling",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9.5,
+      9,
+      8.5,
+      8
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      70,
+      80,
+      90,
+      100
+     ]
+    },
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamageValue": {
+      "axis": "rank",
+      "v": [
+       50,
+       60,
+       70,
+       80,
+       90
+      ]
+     },
+     "RootDuration": {
+      "axis": "rank",
+      "v": [
+       1,
+       1.25,
+       1.5,
+       1.75,
+       2
+      ]
+     },
+     "MaxHPDamage": {
+      "axis": "rank",
+      "v": [
+       6,
+       6.5,
+       7,
+       7.5,
+       8
+      ]
+     },
+     "FlingDistance": 420,
+     "NonChampionDamageCap": 300
+    },
+    "calcs": {
+     "BaseDamage": {
+      "expr": "BaseDamageValue=[50/60/70/80/90] + 0.55xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        60,
+        70,
+        80,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.55
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamageValue"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "InsanityPotion",
+    "key": "Characters/Singed/Spells/InsanityPotionAbility/InsanityPotion",
+    "cooldown": 100,
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "StatAmount": {
+      "axis": "rank",
+      "v": [
+       25,
+       55,
+       85
+      ]
+     },
+     "Duration": 25,
+     "GrievousAmount": 0.4,
+     "GrievousDuration": 1
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "PoisonTrail",
+  "W": "MegaAdhesive",
+  "E": "Fling",
+  "R": "InsanityPotion",
+  "P": "SingedP"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 330,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 1.5,
+   "{3a509002}": 0.11
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Singed",
+  "name": "Singed",
+  "partype": "Mana",
+  "passive": "Noxious Slipstream",
+  "spells": [
+   {
+    "id": "PoisonTrail",
+    "name": "Poison Trail",
+    "maxrank": 5,
+    "cooldown": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "cost": [
+     13,
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "id": "MegaAdhesive",
+    "name": "Mega Adhesive",
+    "maxrank": 5,
+    "cooldown": [
+     17,
+     16,
+     15,
+     14,
+     13
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "Fling",
+    "name": "Fling",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "cost": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ]
+   },
+   {
+    "id": "InsanityPotion",
+    "name": "Insanity Potion",
+    "maxrank": 3,
+    "cooldown": [
+     100,
+     100,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Noxious Slipstream": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Poison Trail": {
+    "damagetype": "Magic",
+    "spelleffects": "AoEDoT",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "Mana per second"
+   }
+  },
+  "W": {
+   "Mega Adhesive": {
+    "spellshield": "false",
+    "projectile": "true",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Fling": {
+    "damagetype": "Magic",
+    "spelleffects": "Spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Insanity Potion": {
+    "targeting": "Auto",
+    "affects": "Self",
+    "costtype": "mana"
+   }
+  }
+ }
+}

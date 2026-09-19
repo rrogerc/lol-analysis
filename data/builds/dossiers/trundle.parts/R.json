@@ -1,0 +1,246 @@
+{
+ "name": "Subjugate",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "r_3",
+   "meaning": "Initial Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.1,
+      0.125,
+      0.15
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.01
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|20/2 to 30/2}}% {{as|(+ 1% per 100 AP)}} of the target's '''maximum''' health|health}}",
+   "bin": [
+    "TrundlePain.PercentHPDamage",
+    "TrundlePain.PercentOfDamageAndShredUpfront",
+    "TrundlePain.PercentHPDamageAPRatio"
+   ],
+   "binNote": "No bin row states the upfront half directly; it is TrundlePain.PercentHPDamage (and its AP ratio) multiplied by PercentOfDamageAndShredUpfront=0.5, matching the wiki's 20/2 to 30/2%."
+  },
+  {
+   "id": "r_4",
+   "meaning": "Magic Damage Per Second",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.025,
+      0.03125,
+      0.0375
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.0025
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|20/8 to 30/8}}% {{as|(+ {{fd|0.25}}% per 100 AP)}} of the target's '''maximum''' health|health}}",
+   "bin": [
+    "TrundlePain.PercentHPDamage",
+    "TrundlePain.PercentOfDamageAndShredUpfront",
+    "TrundlePain.DurationOfDrainForTooltip",
+    "TrundlePain.PercentHPDamageAPRatio"
+   ],
+   "binNote": "No bin row states the per-second value directly; it is the remaining half of PercentHPDamage (and its AP ratio) divided across DurationOfDrainForTooltip=4 seconds, matching the wiki's 20/8 to 30/8%."
+  },
+  {
+   "id": "r_5",
+   "meaning": "Initial Healing",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.1,
+      0.125,
+      0.15
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.01
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|20/2 to 30/2}}% {{as|(+ 1% per 100 AP)}} of the target's '''maximum''' health|health}}",
+   "bin": [
+    "TrundlePain.PercentHPDamage",
+    "TrundlePain.PercentOfDamageAndShredUpfront",
+    "TrundlePain.PercentHPDamageAPRatio"
+   ],
+   "binNote": "Same upfront-half derivation as the initial damage value: healing equals the damage dealt."
+  },
+  {
+   "id": "r_6",
+   "meaning": "Healing Per Second",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.025,
+      0.03125,
+      0.0375
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.0025
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|20/8 to 30/8}}% {{as|(+ {{fd|0.25}}% per 100 AP)}} of the target's '''maximum''' health|health}}",
+   "bin": [
+    "TrundlePain.PercentHPDamage",
+    "TrundlePain.PercentOfDamageAndShredUpfront",
+    "TrundlePain.DurationOfDrainForTooltip",
+    "TrundlePain.PercentHPDamageAPRatio"
+   ],
+   "binNote": "Same per-second derivation as the damage-per-second value: healing per second equals damage per second."
+  },
+  {
+   "id": "r_7",
+   "meaning": "Armor and magic resist reduced from the target (and gained by Trundle)",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4,
+   "terms": [],
+   "quote": "reduces 40% of their '''current''' {{sti|armor penetration|{{as|armor}}}} and {{sti|magic penetration|{{as|magic resistance}}}}",
+   "bin": [
+    "TrundlePain.ArmorMRShred"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "Number of drain ticks after the initial cast",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "the other half is applied every second over the next 4 seconds",
+   "bin": [
+    "TrundlePain.NumberOfTicks",
+    "TrundlePain.DurationOfDrainForTooltip"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Duration the resistance reduction lingers after the drain ends",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "The resistances reduction on the target will linger for 4 seconds after the drain has ended.",
+   "bin": [
+    "TrundlePain.ShredDuration",
+    "TrundlePain.DurationOfDrainForTooltip"
+   ],
+   "binNote": "ShredDuration=8 covers the 4s drain plus 4s lingering; the wiki states the lingering portion as a separate 4 seconds."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Half of the total damage, healing and resistance reduction is applied instantly on cast; the other half is applied in ticks every second over the next 4 seconds.",
+   "quote": "Half of the drain's '''total''' damage, healing, and resistances reduction is applied on-cast, while the other half is applied every second over the next 4 seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability snapshots the target's maximum health, total armor, and total magic resist at cast; the remaining drain ticks use these snapshotted values even if the target's stats change afterward.",
+   "quote": "''Subjugate'' will snapshot the values of the target's '''current''' {{as|'''maximum''' health}}, {{as|'''total''' armor}}, and {{as|'''total''' magic resistance}} as soon as it completes its cast.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The healing Trundle receives is equal to the damage dealt, applied on the same schedule (half instant, half over ticks).",
+   "quote": "dealing {{as|magic damage}} and {{tip|heal|healing}} himself for the same amount",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Trundle gains the resistances reduced from the target as bonus armor and magic resist for himself, for as long as they remain reduced (including during the lingering period).",
+   "quote": "'''Trundle''' will gain the reduced resistances of the target for himself for as long as they remain reduced, including while they are lingering after the drain.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The resistance reduction is gradual: 20% is applied on-cast and an additional 5% per tick over 4 ticks, totaling 40% reduction by the end of the drain.",
+   "quote": "The target's resistances will be further reduced by 5% per drain tick, up to 20% by the end of the drain (totaling to 40% reduction from the initial 20% reduction on-cast).",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The debuff (and its damage/resistance-reduction ticks) persists even if the target dies.",
+   "quote": "The debuff on the target also ''persists through death''.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability's cooldown begins on cast, not on effect end.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "TrundlePain.ActualDurationOfDrainBuff",
+   "reason": "unknown"
+  },
+  {
+   "ref": "TrundlePain.ScaleModelAmount",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,834 @@
+{
+ "champion": "ekko",
+ "abilities": {
+  "P": {
+   "name": "Z-Drive Resonance",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus magic damage dealt when the third stack of Resonance is consumed",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{pp|30 to 70 by 10; 80 + (140-80)/12*(x-1) for 15|color=magic damage}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "EkkoPassive#ThreeHitDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "stack duration before Resonance refreshes/expires",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Resonance'' to enemies hit for 4 seconds",
+     "bin": [],
+     "binNote": "No bin row carries this duration; EkkoPassive.LockoutTime=4 is the same numeric value but is the separate per-target retrigger lockout (p_4), not this stack-refresh window. No dedicated stack-duration field exists in the sheet."
+    },
+    {
+     "id": "p_3",
+     "meaning": "stack cap",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "The sheet has no explicit stack-cap field; the value 3 is implied only by EkkoPassive#ThreeHitDamage being the 'third hit' damage calculation, not stated as a standalone data value."
+    },
+    {
+     "id": "p_4",
+     "meaning": "per-target cooldown before Resonance can trigger again on the same target",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "{{tt|4|Begins after the stacks are consumed}}",
+     "bin": [
+      "EkkoPassive.LockoutTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks on-hit and damaging abilities apply a stack of Resonance to enemies hit; the third stack consumes all stacks to deal bonus magic damage.",
+     "quote": "'''Ekko's''' {{tip|basic attacks}} {{tip|on-hit}} and damaging {{tip|abilities}} apply a {{tip|stack}} of ''Resonance'' to enemies hit for 4 seconds, refreshing on subsequent hits and stacking up to 3 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Resonance stacks are not applied nor consumed if the basic attack is dodged, blocked, or misses.",
+     "quote": "''Resonance'' stacks will not be applied nor consumed if the basic attack is {{tip|dodged}} or {{tip|blocked}} or if the attack {{tip|blind|misses}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Z-Drive Resonance deals 270% damage against monsters, not champions, so it does not apply in a champion dummy fight.",
+     "quote": "''Z-Drive Resonance'' deals 270% damage against {{tip|monsters}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Triggering Resonance against a champion grants Ekko bonus movement speed, not relevant to damage dealt or taken.",
+     "quote": "Triggering ''Resonance'' against a {{tip|champion}} grants '''Ekko''' {{pp|key=%|50 to 80 for 4|1 to 16|color=movement speed}} {{sti|ms|{{as|'''bonus''' movement speed}}}}",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EkkoPassive.ModesMultiplier",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "EkkoPassive.MonsterMod",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EkkoPassive#BonusMS",
+     "reason": "utility"
+    },
+    {
+     "ref": "EkkoPassive#SpeedDuration",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Timewinder",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9 to 7}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     50,
+     60,
+     70,
+     80
+    ],
+    "quote": "{{ap|40 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Initial Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      95,
+      110,
+      125,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|80 to 140}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "EkkoQ.OutgoingDamage",
+      "EkkoQ#InitialDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      40,
+      45,
+      50,
+      55,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|40 to 60}}%",
+     "bin": [
+      "EkkoQ.SlowPercent"
+     ],
+     "binNote": "Wiki gives the slow's magnitude as a positive percent (40 to 60); the bin stores it as a negative move speed modifier (-0.4 to -0.6), same magnitude, opposite sign convention for a debuff. Not a real disagreement, just sign convention."
+    },
+    {
+     "id": "q_3",
+     "meaning": "Return Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      40,
+      65,
+      90,
+      115,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|40 to 140}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "EkkoQ.ReturnDamage",
+      "EkkoQ#RecallDamage"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Expand delay before the grenade turns into the slow field / begins returning",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}} seconds to gradually expand",
+     "bin": [
+      "EkkoQ.ExpandDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Enemies can only be hit once per pass (once by the outgoing grenade, once by the returning grenade).",
+     "quote": "Enemies can be hit only once per pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks only one of the two damage instances (outgoing or return), not both.",
+     "quote": "{{tip|Spell shield}} will block only a single instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Hitting an enemy champion, or reaching 700 units, triggers the expansion into the slow field early; otherwise it expands at 700 units regardless.",
+     "quote": "At 700 units or upon hitting an enemy {{tip|champion}}, the grenade slows down for {{fd|1.75}} seconds to gradually expand",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "After expanding, the grenade contracts and homes back to Ekko at increased speed, dealing the return damage on the way back.",
+     "quote": "Afterwards, the grenade contracts and homes back to '''Ekko''' at an increased speed, dealing {{as|magic damage}} to enemies hit.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EkkoQ.SlowZoneRadius",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Parallel Convergence",
+   "cooldown": {
+    "values": [
+     22,
+     20,
+     18,
+     16,
+     14
+    ],
+    "quote": "{{ap|22 to 14}}"
+   },
+   "cost": {
+    "values": [
+     30,
+     35,
+     40,
+     45,
+     50
+    ],
+    "quote": "{{ap|30 to 50}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      120,
+      140,
+      160,
+      180
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{ap|100 to 180}} {{as|(+ 150% AP)}}",
+     "bin": [
+      "EkkoW#TotalShield"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "passive bonus on-hit magic damage as percent of target's missing health",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMissingHp",
+       "coef": 0.03,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.03
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|3% {{as|(+ 3% per 100 AP)}} of the target's '''missing''' health|health}}",
+     "bin": [
+      "EkkoW#MissingHealthPercent"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "passive triggers against enemies below this max-health threshold",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [],
+     "quote": "against enemies below {{sti|health|{{as|30% of their '''maximum''' health}}}}",
+     "bin": [
+      "EkkoW.BelowHealthThreshold"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive on-hit magic damage only procs against enemies whose current health is below 30% of their maximum health.",
+     "quote": "'''Ekko's''' basic attacks deal {{as|'''bonus''' magic damage}} equal to {{as|3% {{as|(+ 3% per 100 AP)}} of the target's '''missing''' health|health}} against enemies below {{sti|health|{{as|30% of their '''maximum''' health}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive can proc on the attack that also triggers the final stack of Z-Drive Resonance if that attack reduces the target below the 30% threshold.",
+     "quote": "The passive will proc with the attack that triggers the final stack of {{ai|Z-Drive Resonance|Ekko|Resonance}} if it reduces a target's health below the 30% threshold.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ekko gains a shield only when he walks into the deployed chronosphere before it expires, detonating it.",
+     "quote": "If '''Ekko''' enters the sphere before it expires, it detonates to grant him a {{tip|shield}} for 2 seconds and {{tip|stun}} enemies within",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Ekko can trigger the shield-granting detonation even while untargetable (e.g. during Chronobreak's dash), but not while resurrecting.",
+     "quote": "'''Ekko''' can detonate the expansion even while {{tip|untargetable}} (i.e. {{ais|Chronobreak|Ekko}} dash), but not if he is {{tip|resurrection|resurrecting}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EkkoW.OnHitMinMinionDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EkkoW.OnHitMaxMinionDamage",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "EkkoW.AoERadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "EkkoW.StunDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "EkkoW.SlowZoneDuration",
+     "reason": "utility"
+    },
+    {
+     "ref": "EkkoW.DelayBeforeDetonation",
+     "reason": "unknown"
+    },
+    {
+     "ref": "EkkoW.DelayBeforeEnemyCanSee",
+     "reason": "utility"
+    },
+    {
+     "ref": "EkkoW.SlowPercent",
+     "reason": "utility"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Phase Dive",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9 to 7}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "quote": "{{ap|40 to 60}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "{{ap|50 to 150}} {{as|(+ 40% AP)}}",
+     "bin": [
+      "EkkoE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "empowered attack cast time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "{{fd|0.25}}-second cast time",
+     "bin": [],
+     "binNote": "sheet's top-level 'castTime: 0.25' field matches this value but is a spell-level field, not a named DataValue or calculation row on EkkoE, so no bin row can be cited"
+    },
+    {
+     "id": "e_3",
+     "meaning": "duration the empowered basic attack buff lasts",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "empowers his next basic attack within 3 seconds",
+     "bin": [
+      "EkkoE.BuffDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Phase Dive resets Ekko's basic attack timer.",
+     "quote": "Phase Dive resets Ekko's basic attack timer.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ekko can cast any of his abilities during the dash.",
+     "quote": "Ekko can cast any of his abilities during the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack can miss, be blocked, or be dodged, consuming the attack without dealing damage.",
+     "quote": "Phase Dive's attack can miss and be blocked and dodged, consuming the basic attack without dealing any damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target becomes untargetable, dies, or is too far away during the empowered attack's cast time, the attack is cancelled but not consumed (can be used again).",
+     "quote": "If the target becomes untargetable, dies, or is too far away during the empowered attack's cast time, it is cancelled but not consumed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While grounded or rooted, Ekko loses the bonus attack range from Phase Dive.",
+     "quote": "While grounded or rooted, Ekko loses the bonus attack range from Phase Dive.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The ability's cooldown starts after the empowered attack resolves.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EkkoE.DashDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "EkkoE.AttackRangeIncrease",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Chronobreak",
+   "cooldown": {
+    "values": [
+     110,
+     80,
+     50
+    ],
+    "quote": "{{ap|110 to 50}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}",
+    "binNote": "Wiki states cast time 0.5s; bin's EkkoR.castTime field is 0.25, a disagreement. Reporting the wiki's stated value per instructions not to alter it to match the bin."
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      350,
+      500
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.75
+      }
+     ],
+     "quote": "{{ap|200 to 500}} {{as|(+ 175% AP)}}",
+     "bin": [
+      "EkkoR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "Minimum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|100 to 200}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "EkkoR#TotalBaseHeal"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Maximum Heal",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      400,
+      800
+     ],
+     "terms": [],
+     "quote": "{{ap|400 to 800}} {{as|(+ 240% AP)}}",
+     "bin": [],
+     "binNote": "This is 4x the minimum heal (base amplified by up to 300% via PercentHealAmpPerPercentMissingHealth=3, i.e. 3% extra heal per 1% missing health, capped near 100% missing health); no direct bin row states 400/800 or 240% AP, it is derived from EkkoR#TotalBaseHeal amplified by the heal-amp formula."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Ekko enters stasis at the start of the cast time, becoming untargetable/immune during the cast and dash.",
+     "quote": "'''Ekko''' enters {{tip|stasis (buff)|stasis}} at the start of the cast time",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The heal is increased based on health lost in the last 4 seconds, scaling 3% healing per 1% of health lost.",
+     "quote": "increased by {{as|{{pp|label1=health lost|key=%|key1=%|type=health lost in the last 4 seconds|0 to 300 for 11|0 to 100|formula=3% per 1% of health lost in the last 4 seconds}}|health}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Ekko dashes to the afterimage's location over 0.5 seconds before the stasis ends and the explosion occurs.",
+     "quote": "{{tip|dash|dashes}} to his ''afterimage's'' location at the time of cast over {{fd|0.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The explosion damage occurs only upon arrival at the afterimage location, ending the stasis.",
+     "quote": "Upon arrival, the stasis ends and he creates an explosion that deals {{as|magic damage}} to nearby enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ekko is immune to displacements (airborne) during the whole ability.",
+     "quote": "'''''Ekko''' is immune to all {{tip|airborne|displacements}} during Chronobreak.''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The explosion still occurs even if the dash is interrupted.",
+     "quote": "The ''afterimage's'' location will explode even if '''Ekko's''' {{tip|dash}} is interrupted.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "EkkoR.AoERadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "EkkoR.PercentHealAmpPerPercentMissingHealth",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P"
+   ],
+   "note": "Resonance builds up to 3 stacks from basic attacks and damaging abilities, refreshing on hit; the 3rd stack consumes all stacks for bonus magic damage."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P's 3rd-stack bonus magic damage and W's missing-health bonus magic damage both ride on basic attacks."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's on-hit damage magnitude is 3% (+3%/100AP) of the target's missing health."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "W"
+   ],
+   "note": "W's on-hit damage only triggers while the target is below 30% max health."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's outgoing hit and R's arrival explosion are damage instances applied on cast/after a fixed delay."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q deals a separate outgoing instance and a separate return instance, each hitting once."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "Q"
+   ],
+   "note": "The return-damage instance depends on the grenade travelling out, expanding, and homing back onto the same target; a dummy fight must assume this reliably connects."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "E arms Ekko's next basic attack with bonus magic damage and a blink."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's dash resets Ekko's basic attack timer, letting the empowered attack come out early."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "R has a 0.5s (wiki) cast/stasis window before the dash and explosion resolve, delaying when its damage and heal land."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W",
+    "R"
+   ],
+   "note": "W's detonation shield (self, positional) and R's self-heal only matter to damage taken/survival, not to damage dealt."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every mechanic that matters to the damage/survival fight maps onto existing primitives: Resonance is target-stacks feeding an onhit-rider, W's passive is a threshold-gated conditional onhit-rider, Q is a two-part plain-cast whose return instance needs a positional assumption, E is an empowered-attack that also triggers attack-reset, and R is a charge-or-channel plain-cast plus a defensive-only heal. No kit-specific logic beyond combining these primitives is required."
+ },
+ "unsettled": [
+  {
+   "question": "Is R's healing amplification based on the target's overall missing health (as the bin field name PercentHealAmpPerPercentMissingHealth implies) or on health lost specifically in the last 4 seconds (as the wiki tooltip states)?",
+   "options": [
+    "Amp scales with current missing health % at time of cast",
+    "Amp scales with damage taken in the trailing 4-second window only, independent of total missing health"
+   ],
+   "impact": "high",
+   "quotes": [
+    "EkkoR.PercentHealAmpPerPercentMissingHealth = 3",
+    "increased by {{as|{{pp|label1=health lost|key=%|key1=%|type=health lost in the last 4 seconds|0 to 300 for 11|0 to 100|formula=3% per 1% of health lost in the last 4 seconds}}|health}}"
+   ]
+  },
+  {
+   "question": "What is R's actual cast time before the explosion/heal resolves: 0.25s (bin castTime field) or 0.5s (wiki-stated cast time)?",
+   "options": [
+    "0.25s per bin",
+    "0.5s per wiki"
+   ],
+   "impact": "high",
+   "quotes": [
+    "castTime: 0.25",
+    "|cast time    = {{fd|0.5}}"
+   ]
+  },
+  {
+   "question": "Is Resonance's per-target retrigger lockout (4s, starts after the 3rd stack is consumed) the same timer as each stack's own 4s refresh window, or a separate internal cooldown gating how soon a new 3-hit cycle can begin on that target?",
+   "options": [
+    "Single shared 4s timer serves both purposes",
+    "Two independent 4s timers: one for stack decay, one for retrigger lockout after consumption"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "refreshing on subsequent hits and stacking up to 3 times",
+    "{{tt|4|Begins after the stacks are consumed}}"
+   ]
+  },
+  {
+   "question": "Should the survival-fight simulation assume Ekko ever triggers Parallel Convergence's self-shield, given it requires him to walk into the deployed chronosphere 1.25–2.75s after casting?",
+   "options": [
+    "Assume shield always lands (best-case defensive value)",
+    "Assume shield never triggers in a fight with no positioning/movement modeled"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If '''Ekko''' enters the sphere before it expires, it detonates to grant him a {{tip|shield}} for 2 seconds"
+   ]
+  },
+  {
+   "question": "What does the unresolved bin calculation EkkoW#{79b6144b} = MissingHealthPercent * 1xstat15? represent, and does it change W's on-hit damage formula (e.g. an additional stat scaling beyond AP)?",
+   "options": [
+    "Dead/unused calculation, ignore in favor of EkkoW#MissingHealthPercent as documented",
+    "Represents a real additional multiplier (e.g. bonus health) that should modify W's on-hit damage"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "EkkoW#{79b6144b} = MissingHealthPercent * 1xstat15?"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by basic-attacking the dummy immediately to start building Resonance stacks.",
+   "Cast Q (Timewinder) on cooldown for its outgoing and later return magic-damage instances.",
+   "Weave E (Phase Dive) in right after a basic attack so its attack-reset lets the empowered, bonus-damage auto come out as early as possible; recast on cooldown.",
+   "Continue basic-attacking between ability casts so every 3rd hit consumes Resonance for its bonus magic damage, and so W's passive on-hit damage fires automatically once the dummy's health drops below 30%.",
+   "Cast R (Chronobreak) on cooldown purely for its own large magic-damage explosion; do not rely on its heal or stasis for anything in the damage fight.",
+   "Do not actively cast W for damage purposes, since its active only grants a self-shield/stun setup and deals no direct damage to a stationary, non-chasing dummy; let its passive on-hit component fire on its own.",
+   "Repeat: auto-attack + Q/E/R on cooldown, prioritizing not clipping auto-attacks, until the 15s window ends or the dummy dies."
+  ],
+  "questions": [
+   "Does the simulator assume Resonance starts at 0 stacks, or is some pre-fight stacking assumed?",
+   "Since R's explosion lands at the location Ekko occupied 4 seconds ago, does the dummy-fight model treat Ekko as stationary (so the dash is negligible and the explosion always lands on the dummy), or could early-fight positioning make R's first cast whiff?",
+   "What basic-attack windup/animation and attack-speed value should be assumed to determine exactly how many autos (and thus Resonance/W procs) land in 15 seconds, and how E's attack-reset should be timed relative to that?",
+   "Is it ever damage-optimal to cast W just to threaten/soften up (e.g., forcing the passive missing-health proc timing), or is it strictly correct to never actively cast W in the pure damage-race scenario?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,459 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "KennenPassive",
+    "key": "Characters/Kennen/Spells/KennenPassiveAbility/KennenPassive",
+    "dataValues": {
+     "EnergyRestore": 25,
+     "StunDuration": 1.25,
+     "ReducedStunDuration": 0.5,
+     "MarkDuration": 6,
+     "DiminishingReturnDuration": 6
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "KennenShurikenHurlMissile1",
+    "key": "Characters/Kennen/Spells/KennenShurikenHurlMissile1Ability/KennenShurikenHurlMissile1",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      7,
+      6.25,
+      5.5,
+      4.75,
+      4
+     ]
+    },
+    "cost": {
+     "axis": "rank",
+     "v": [
+      60,
+      55,
+      50,
+      45,
+      40
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       75,
+       125,
+       175,
+       225,
+       275
+      ]
+     }
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[75/125/175/225/275] + 0.75xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        75,
+        125,
+        175,
+        225,
+        275
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.75
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "KennenBringTheLight",
+    "key": "Characters/Kennen/Spells/KennenBringTheLightAbility/KennenBringTheLight",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      11.25,
+      9.5,
+      7.75,
+      6
+     ]
+    },
+    "cost": 40,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "bADRatio": {
+      "axis": "rank",
+      "v": [
+       0.8,
+       0.9,
+       1,
+       1.1,
+       1.2
+      ]
+     },
+     "BaseOnHitDamage": {
+      "axis": "rank",
+      "v": [
+       35,
+       45,
+       55,
+       65,
+       75
+      ]
+     },
+     "BaseDamageActive": {
+      "axis": "rank",
+      "v": [
+       70,
+       95,
+       120,
+       145,
+       170
+      ]
+     },
+     "APRatioActive": 0.8
+    },
+    "calcs": {
+     "TotalDamagePassive": {
+      "expr": "BaseOnHitDamage=[35/45/55/65/75] + 0.35xap + (BADRatio)xbonus ad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "BADRatio",
+       "BaseOnHitDamage"
+      ]
+     },
+     "TotalDamageActive": {
+      "expr": "BaseDamageActive=[70/95/120/145/170] + (APRatioActive=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        95,
+        120,
+        145,
+        170
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "APRatioActive"
+       }
+      ],
+      "refs": [
+       "APRatioActive",
+       "BaseDamageActive"
+      ]
+     },
+     "TotalDamagePassiveCrit": {
+      "expr": "TotalDamagePassive * 1.4 + 0.4xbonus critDamage",
+      "modifies": "TotalDamagePassive",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "calculation names a missing data value BADRatio"
+    ]
+   }
+  ],
+  "E": [
+   {
+    "script": "KennenLightningRush",
+    "key": "Characters/Kennen/Spells/KennenLightningRushAbility/KennenLightningRush",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      10,
+      9,
+      8,
+      7,
+      6
+     ]
+    },
+    "cost": 80,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       80,
+       120,
+       160,
+       200,
+       240
+      ]
+     },
+     "EnergyRefund": 40,
+     "MovementSpeed": 1,
+     "DurationAsBall": 2,
+     "TotalAS": {
+      "axis": "rank",
+      "v": [
+       0.4,
+       0.5,
+       0.6,
+       0.7,
+       0.8
+      ]
+     },
+     "DurationAfterBall": 4,
+     "DamageToMinions": 0.65,
+     "DamageRadius": 200,
+     "linger": 0.15,
+     "CritDurationBonus": 1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[80/120/160/200/240] + 0.8xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        80,
+        120,
+        160,
+        200,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "KennenShurikenStorm",
+    "key": "Characters/Kennen/Spells/KennenShurikenStormAbility/KennenShurikenStorm",
+    "cooldown": 120,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       40,
+       80,
+       120
+      ]
+     },
+     "APRatio": 0.25,
+     "DamageAmp": 0.1,
+     "KennenRTickRate": 0.5,
+     "KennenRDefenses": {
+      "axis": "rank",
+      "v": [
+       25,
+       50,
+       75
+      ]
+     },
+     "KennenRDuration": 3
+    },
+    "calcs": {
+     "PerTickDamageCalculated": {
+      "expr": "BaseDamage=[40/80/120] + (APRatio=0.25)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        40,
+        80,
+        120
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "KennenShurikenHurlMissile1",
+  "W": "KennenBringTheLight",
+  "E": "KennenLightningRush",
+  "R": "KennenShurikenStorm",
+  "P": "KennenPassive"
+ },
+ "resource": {
+  "arType": 1,
+  "values": {
+   "{726ee5cd}": 200,
+   "{c4ab3550}": 10
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Kennen",
+  "name": "Kennen",
+  "partype": "Energy",
+  "passive": "Mark of the Storm",
+  "spells": [
+   {
+    "id": "KennenShurikenHurlMissile1",
+    "name": "Thundering Shuriken",
+    "maxrank": 5,
+    "cooldown": [
+     7,
+     6.25,
+     5.5,
+     4.75,
+     4
+    ],
+    "cost": [
+     60,
+     55,
+     50,
+     45,
+     40
+    ]
+   },
+   {
+    "id": "KennenBringTheLight",
+    "name": "Electrical Surge",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     11.25,
+     9.5,
+     7.75,
+     6
+    ],
+    "cost": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   {
+    "id": "KennenLightningRush",
+    "name": "Lightning Rush",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "cost": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   {
+    "id": "KennenShurikenStorm",
+    "name": "Slicing Maelstrom",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     120,
+     120
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Mark of the Storm": {
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Enemies"
+   }
+  },
+  "Q": {
+   "Thundering Shuriken": {
+    "damagetype": "Magic",
+    "spelleffects": "Single target",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "W": {
+   "Electrical Surge": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "onhiteffects": "Special",
+    "spellshield": "True",
+    "projectile": "False",
+    "targeting": "Proximity",
+    "affects": "Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "E": {
+   "Lightning Rush": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self, Enemies",
+    "costtype": "Energy"
+   }
+  },
+  "R": {
+   "Slicing Maelstrom": {
+    "damagetype": "Magic",
+    "spelleffects": "aoedot",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

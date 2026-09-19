@@ -1,0 +1,790 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "PantheonPassive",
+    "key": "Characters/Pantheon/Spells/PantheonPassiveAbility/PantheonPassive",
+    "dataValues": {
+     "ActionsToEmpower": 5,
+     "PhalanxDuration": 3,
+     "QDamageAmp": 0.4,
+     "QDamageAmpMelee": 0.7,
+     "OutOfCombatTimer": 15,
+     "QExtraAttacks": 1,
+     "CritThreshold": -1
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "PantheonQ",
+    "key": "Characters/Pantheon/Spells/PantheonQAbility/PantheonQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      11,
+      10.25,
+      9.5,
+      8.75,
+      8
+     ]
+    },
+    "cost": 25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "HoldDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       100,
+       130,
+       160,
+       190
+      ]
+     },
+     "TapDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       100,
+       130,
+       160,
+       190
+      ]
+     },
+     "CritHealthThreshold": 0.2,
+     "HoldRange": 1200,
+     "DamageFalloff": 0.5,
+     "TapCooldownRefund": 0.6,
+     "HoldExecuteDamage": {
+      "axis": "rank",
+      "v": [
+       85,
+       130,
+       175,
+       220,
+       265
+      ]
+     },
+     "SelfSlow": 0.1,
+     "MinTimeHoldCast": 0.35,
+     "MinionDamageMod": 0.7,
+     "ExecuteBaseDamage": {
+      "axis": "rank",
+      "v": [
+       155,
+       230,
+       305,
+       380,
+       455
+      ]
+     },
+     "MonsterDamageMod": 0.8
+    },
+    "calcs": {
+     "HoldDamageCalc": {
+      "expr": "HoldDamage=[70/100/130/160/190] + 1.15xbonus ad + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        100,
+        130,
+        160,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.15
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "HoldDamage"
+      ]
+     },
+     "TapDamageCalc": {
+      "expr": "TapDamage=[70/100/130/160/190] + 1.15xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        100,
+        130,
+        160,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.15
+       }
+      ],
+      "refs": [
+       "TapDamage"
+      ]
+     },
+     "EmpoweredDamageCalc": {
+      "expr": "byLevel(20..240) + 1.15xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        32.941176,
+        45.882353,
+        58.82353,
+        71.76471,
+        84.70588,
+        97.64706,
+        110.588235,
+        123.52941,
+        136.470588,
+        149.41176,
+        162.35294,
+        175.29412,
+        188.23529,
+        201.17647,
+        214.11765,
+        227.05882,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.15
+       }
+      ],
+      "refs": []
+     },
+     "{6fc04dc0}": {
+      "expr": "HoldExecuteDamage=[85/130/175/220/265] + 1.15xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        85,
+        130,
+        175,
+        220,
+        265
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.15
+       }
+      ],
+      "refs": [
+       "HoldExecuteDamage"
+      ]
+     },
+     "ExecuteDamageCalcModified": {
+      "expr": "HoldDamage=[70/100/130/160/190] + HoldExecuteDamage=[85/130/175/220/265] + 2.3xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        155,
+        230,
+        305,
+        380,
+        455
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 2.3
+       }
+      ],
+      "refs": [
+       "HoldDamage",
+       "HoldExecuteDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "PantheonW",
+    "key": "Characters/Pantheon/Spells/PantheonWAbility/PantheonW",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      13,
+      12,
+      11,
+      10,
+      9
+     ]
+    },
+    "cost": 55,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": 0,
+     "StunDuration": 1,
+     "BuffDuration": 4,
+     "EmpoweredNumHits": 3,
+     "EmpoweredDamageMult": 0.6,
+     "MaxHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.06,
+       0.065,
+       0.07,
+       0.075,
+       0.08
+      ]
+     },
+     "MonsterDamageCap": 150,
+     "MonsterDamageMin": 60,
+     "MaxHealthPer100AP": 0.00015
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=0 + 1xap",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{1b016817}": {
+      "expr": "(byLevel(0.4..0.55))xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.4,
+          0.40882354,
+          0.41764707,
+          0.4264706,
+          0.43529413,
+          0.4441176547723658,
+          0.45294118,
+          0.46176471,
+          0.47058824,
+          0.47941177,
+          0.4882353,
+          0.49705883,
+          0.5058824,
+          0.5147059,
+          0.5235294,
+          0.53235295,
+          0.5411765,
+          0.55
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "EmpoweredDamageMultCalcModified": {
+      "expr": "{1b016817} * 3",
+      "modifies": "{1b016817}",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          1.2,
+          1.2264706,
+          1.2529412,
+          1.2794118,
+          1.30588239,
+          1.332353,
+          1.3588235,
+          1.3852941,
+          1.4117647,
+          1.4382353,
+          1.464706,
+          1.4911765,
+          1.5176472,
+          1.5441177,
+          1.5705882,
+          1.5970589,
+          1.6235295,
+          1.65
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "MaxHealthDamageCalc": {
+      "expr": "MaxHealthDamage=[0.06/0.065/0.07/0.075/0.08] + 4e-05xbonus maxHp + (MaxHealthPer100AP=0.00015)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.06,
+        0.065,
+        0.07,
+        0.075,
+        0.08
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 4e-05
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.00015,
+        "dataValue": "MaxHealthPer100AP"
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "MaxHealthDamage",
+       "MaxHealthPer100AP"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "PantheonE",
+    "key": "Characters/Pantheon/Spells/PantheonEAbility/PantheonE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      21,
+      20,
+      19,
+      18
+     ]
+    },
+    "cost": 80,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "ShieldDuration": 1.5,
+     "AttacksPerSecond": 4,
+     "ShieldBaseDamage": {
+      "axis": "rank",
+      "v": [
+       55,
+       105,
+       155,
+       205,
+       255
+      ]
+     },
+     "SpearStrikesRadius": 525,
+     "ShieldSwipeRadius": 375,
+     "MinionDamageReduction": 0.5,
+     "RecastLockout": 0.3,
+     "SpeedDuration": 1.5,
+     "SpeedAmount": 0.6,
+     "ResistsDuration": 4
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "1xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": []
+     },
+     "ShieldDamageCalc": {
+      "expr": "ShieldBaseDamage=[55/105/155/205/255] + 1.5xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        55,
+        105,
+        155,
+        205,
+        255
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": [
+       "ShieldBaseDamage"
+      ]
+     },
+     "{e62bc5e9}": {
+      "expr": "DamageCalc * 0.167",
+      "modifies": "DamageCalc",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.167
+       }
+      ],
+      "refs": []
+     },
+     "EmpoweredDamageCalc": {
+      "expr": "DamageCalc * 1.67",
+      "modifies": "DamageCalc",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.67
+       }
+      ],
+      "refs": []
+     },
+     "HealCalc": {
+      "expr": "byLevelL[40/45/50/55/60/65/70/75/85/95/105/115/125/135/155/175/195/215] + 1.5xbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        85,
+        95,
+        105,
+        115,
+        125,
+        135,
+        155,
+        175,
+        195,
+        215
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1.5
+       }
+      ],
+      "refs": []
+     },
+     "ResistsCalc": {
+      "expr": "byLevel(5..30) + 0.025xbonus maxHp",
+      "flat": {
+       "axis": "level",
+       "v": [
+        5,
+        6.470588,
+        7.9411765,
+        9.411765,
+        10.882353,
+        12.3529412,
+        13.823529,
+        15.294118,
+        16.764706,
+        18.235294,
+        19.7058824,
+        21.17647,
+        22.647059,
+        24.117647,
+        25.588235,
+        27.058823,
+        28.529412,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "maxHp",
+        "scope": "bonus",
+        "coef": 0.025
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "PantheonR",
+    "key": "Characters/Pantheon/Spells/PantheonRAbility/PantheonR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      180,
+      165,
+      150
+     ]
+    },
+    "cost": 100,
+    "castTime": 0.1,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       300,
+       500,
+       700
+      ]
+     },
+     "EdgeDamageReduction": 0.5,
+     "Radius": 450,
+     "SweetSpotRadius": 125,
+     "CancelCooldown": 30,
+     "SpearSlow": 0.5,
+     "SpearSlowDuration": 2,
+     "ArmorPenetration": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.2,
+       0.3
+      ]
+     },
+     "APRatio": 1
+    },
+    "calcs": {
+     "DamageCalc": {
+      "expr": "BaseDamage=[300/500/700] + (APRatio=1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        300,
+        500,
+        700
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     },
+     "MinDamage": {
+      "expr": "DamageCalc * EdgeDamageReduction=0.5",
+      "modifies": "DamageCalc",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "APRatio"
+       }
+      ],
+      "tooltipOnly": true,
+      "refs": [
+       "APRatio",
+       "BaseDamage",
+       "EdgeDamageReduction"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "PantheonQ",
+  "W": "PantheonW",
+  "E": "PantheonE",
+  "R": "PantheonR",
+  "P": "PantheonPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 317,
+   "{6216bf7b}": 31,
+   "{c4ab3550}": 1.47,
+   "{3a509002}": 0.09
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1096875
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Pantheon",
+  "name": "Pantheon",
+  "partype": "Mana",
+  "passive": "Mortal Will",
+  "spells": [
+   {
+    "id": "PantheonQ",
+    "name": "Comet Spear",
+    "maxrank": 5,
+    "cooldown": [
+     11,
+     10.25,
+     9.5,
+     8.75,
+     8
+    ],
+    "cost": [
+     25,
+     25,
+     25,
+     25,
+     25
+    ]
+   },
+   {
+    "id": "PantheonW",
+    "name": "Shield Vault",
+    "maxrank": 5,
+    "cooldown": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "cost": [
+     55,
+     55,
+     55,
+     55,
+     55
+    ]
+   },
+   {
+    "id": "PantheonE",
+    "name": "Aegis Assault",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     21,
+     20,
+     19,
+     18
+    ],
+    "cost": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   {
+    "id": "PantheonR",
+    "name": "Grand Starfall",
+    "maxrank": 3,
+    "cooldown": [
+     180,
+     165,
+     150
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Mortal Will": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Comet Spear": {
+    "damagetype": "Physical",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "special",
+    "targeting": "{{dv|[[Auto-targeted|Auto]]|[[Direction-targeted|Direction]]}}",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "W": {
+   "Shield Vault": {
+    "damagetype": "physical",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "E": {
+   "Aegis Assault": {
+    "damagetype": "physical",
+    "spelleffects": "special",
+    "spellshield": "special",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  },
+  "R": {
+   "Grand Starfall": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "false",
+    "targeting": "Location",
+    "affects": "Enemies",
+    "costtype": "Mana"
+   }
+  }
+ }
+}

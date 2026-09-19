@@ -1,0 +1,781 @@
+{
+ "champion": "thresh",
+ "abilities": {
+  "P": {
+   "name": "Damnation",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "ability power gained per soul",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "For each {{tip|stack}}, '''Thresh''' gains {{sti|ap|{{as|1 ability power}}}} and {{sti|armor|{{as|1 '''bonus''' armor}}}}",
+     "bin": [
+      "ThreshPassiveSouls.StatValuePerSoul"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus armor gained per soul",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "For each {{tip|stack}}, '''Thresh''' gains {{sti|ap|{{as|1 ability power}}}} and {{sti|armor|{{as|1 '''bonus''' armor}}}}",
+     "bin": [
+      "ThreshPassiveSouls.StatValuePerSoul"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "duration a dropped soul remains before despawning",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "drop a ''Soul'' for 8 seconds",
+     "bin": [],
+     "binNote": "Soul lifetime is not represented in the sheet's data values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Thresh's armor does not increase through per-level growth.",
+     "quote": "'''Thresh's''' {{as|armor}} does not increase through [[Growth#Increasing_Statistics|growth (per level)]]",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Souls grant Thresh permanent AP and bonus armor per stack, both of which affect damage dealt and damage taken.",
+     "quote": "For each {{tip|stack}}, '''Thresh''' gains {{sti|ap|{{as|1 ability power}}}} and {{sti|armor|{{as|1 '''bonus''' armor}}}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ThreshPassiveSouls.SoulsToGainOnPickUp",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Death Sentence / Deathly Leap",
+   "cooldown": {
+    "values": [
+     19,
+     16.5,
+     14,
+     11.5,
+     9
+    ],
+    "quote": "{{ap|19 to 9}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{dv|{{tt|{{fd|0.5}}|Initial cast}}|{{tt|None|Recast}}}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage on hit",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200,
+      250,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.9
+      }
+     ],
+     "quote": "{{ap|100 to 300}} {{as|(+ 90% AP)}}",
+     "bin": [
+      "ThreshQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_stun",
+     "meaning": "Stun/mark duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "reveal them for {{fd|1.5}} seconds",
+     "bin": [
+      "ThreshQ.TauntLength"
+     ]
+    },
+    {
+     "id": "q_cdr",
+     "meaning": "Current cooldown reduction on hit",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "reduce ''Death Sentence's'' {{sti|'''current''' cooldown}} by 2 seconds",
+     "bin": [
+      "ThreshQ.HitBonusCooldown"
+     ]
+    },
+    {
+     "id": "q_slow",
+     "meaning": "Self-slow amount while Shackled",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 20,
+     "terms": [],
+     "quote": "is {{tip|slow|slowed}} by 20% for 1 second",
+     "bin": [
+      "ThreshQ.SlowPercent"
+     ],
+     "binNote": "Wiki text states 20% but bin ThreshQ.SlowPercent = 75; this is a self-slow after Shackle, not the same 75% value in the bin, which is unused/unexplained by this text - discrepancy noted."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Thresh is unable to move or attack while the scythe is in flight.",
+     "quote": "becoming {{tip|lockout|unable}} to move or attack while it is in flight.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The scythe stuns and reveals the first enemy hit and applies a Shackled mark preventing Thresh from basic attacking for its duration.",
+     "quote": "The scythe catches the first enemy hit to deal {{as|magic damage}}, {{tip|stun}} and {{tip|true sight|reveal}} them for {{fd|1.5}} seconds",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Thresh can recast Death Sentence as Deathly Leap to dash to the Shackled target, becoming able to attack again upon arrival.",
+     "quote": "'''Thresh''' stops tugging his hook and {{tip|dashes}} to the ''Shackled'' enemy, becoming able to attack again upon arrival.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks all of Death Sentence's effects, including the mark and preventing the cooldown reduction.",
+     "quote": "{{tip|Spell shield}} will block all of ''Death Sentence's'' effects, including the mark as well as prevent the cooldown reduction.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death Sentence triggers on-cast effects like Spellblade once at cast start and once at cast end, possibly a third time on Deathly Leap recast.",
+     "quote": "''Death Sentence'' triggers on-cast effects (such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive) once at the start of the cast, and once at the end of the cast.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ThreshQ.SlowPercent",
+     "reason": "defensive"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Dark Passage",
+   "cooldown": {
+    "values": [
+     21,
+     20,
+     19,
+     18,
+     17
+    ],
+    "quote": "{{ap|21 to 17}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ],
+    "quote": "{{ap|50 to 70}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      50,
+      70,
+      90,
+      110,
+      130
+     ],
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 2
+      }
+     ],
+     "quote": "{{ap|50 to 130}} (+ 2 per {{ai|Damnation|Thresh|Soul}} collected)",
+     "bin": [
+      "ThreshW#TotalShield"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "duration the lantern remains active",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 6,
+     "terms": [],
+     "quote": "lasting for 6 seconds while he remains nearby",
+     "bin": [
+      "ThreshW.LanternDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the granted shield",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "granted a {{tip|shield}} for 4 seconds",
+     "bin": [
+      "ThreshW.ShieldDuration"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "cast time for lantern throw",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "throws his lantern to the target location over {{fd|0.5}} seconds",
+     "bin": [],
+     "binNote": "The bin's ddragon castTime field is 0 (this ability shows cast time = none in the wiki template/tooltip); the 0.5s throw duration described in the text has no corresponding bin data value or calculation in the sheet."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Thresh and the first allied champion to reach the lantern each receive the shield; an ally can also select the lantern to dash to Thresh and gain the shield.",
+     "quote": "'''Thresh''' and the first allied champion to come near the lantern are granted a {{tip|shield}} for 4 seconds. An ally can select the lantern while in proximity of it, {{tip|dash|dashing}} to '''Thresh''' and gaining the shield.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If Thresh moves too far from the lantern it returns to him immediately, and he gains the shield from leashing out of range.",
+     "quote": "If '''Thresh''' moves too far away from the lantern, it returns back to him immediately.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "An ally cannot pick up the lantern while immobilized, grounded, or silenced.",
+     "quote": "An ally cannot select the lantern while {{tip|immobilize|immobilized}}, {{tip|ground|grounded}}, or {{tip|silence|silenced}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ThreshW.ShieldPerSoul",
+     "reason": null
+    },
+    {
+     "ref": "ThreshW.LanternDuration",
+     "reason": null
+    },
+    {
+     "ref": "ThreshW.BaseShieldValue",
+     "reason": null
+    },
+    {
+     "ref": "ThreshW.ShieldDuration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Flay / Flay 2 / Flay 3 / Flay 4 / Flay 5",
+   "cooldown": {
+    "values": [
+     13,
+     12.25,
+     11.5,
+     10.75,
+     10
+    ],
+    "quote": "{{ap|13 to 10}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.3889,
+    "quote": "{{tt|{{fd|0.3889}}|Effects start immediately}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Minimum Bonus Magic Damage (on-hit, per soul, no AD ratio)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 1.7
+      }
+     ],
+     "quote": "{{fd|1.7}} per {{ai|Damnation|Thresh|Soul}} collected {{as|(+ 0% AD)}}",
+     "bin": [
+      "ThreshE#PAttackDamageMin"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Maximum Bonus Magic Damage (on-hit, per soul, plus scaling AD ratio after 10s no-attack)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "stacks",
+       "coef": 1.7
+      },
+      {
+       "stat": "ad",
+       "coef": [
+        0.9,
+        1.2,
+        1.5,
+        1.8,
+        2.1
+       ]
+      }
+     ],
+     "quote": "{{fd|1.7}} per {{ai|Damnation|Thresh|Soul}} collected {{as|(+ {{ap|90 to 210}}% AD)}}",
+     "bin": [
+      "ThreshE#PAttackDamageMax",
+      "ThreshE.PassiveADRatioTT"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      110,
+      155,
+      200,
+      245
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|65 to 245}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "ThreshE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "Slow",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "ThreshE.ActiveSlowPercentage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive AD ratio on the empowered attack grows over 10 seconds without basic-attacking an enemy, reaching maximum at that point.",
+     "quote": "with the {{sti|{{as|AD}}}} ratio increasing over 10 seconds without basic attacking enemies",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active applies area damage on cast and the passive empowered attack deals a separate proc damage instance.",
+     "quote": "Applies {{tip|area damage}} on the ability and deals {{tip|proc damage}} on the enhanced basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The enhanced attack applies on-hit effects and can critically strike, but the bonus passive damage itself cannot crit.",
+     "quote": "The enhanced attack applies other [[on-hit effect]]s and can {{tip|critical strike|critically strike}} as normal (the bonus damage cannot).",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Effects of the active start at the beginning of the cast time rather than at its end.",
+     "quote": "''Flay's'' effects start at the start of the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Slow duration after being hit by the active lasts 1 second.",
+     "quote": "then are {{tip|slow|slowed}} for 1 second",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ThreshE.PassiveADRatio",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ThreshE.APRatio",
+     "reason": null
+    },
+    {
+     "ref": "ThreshE.ActiveBaseDamage",
+     "reason": null
+    },
+    {
+     "ref": "ThreshE.SlowDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ThreshE.PassiveDmgPerSoul",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "ThreshE.DmgPerSoul",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ThreshE.FullChargeDuration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "ThreshE.Icon1ThresholdPercentage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ThreshE.Icon2ThresholdPercentage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "ThreshE.Icon3ThresholdPercentage",
+     "reason": "tooltip-only"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "The Box",
+   "cooldown": {
+    "values": [
+     120,
+     100,
+     80
+    ],
+    "quote": "{{ap|120 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.45,
+    "quote": "{{fd|0.45}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      250,
+      400,
+      550
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1
+      }
+     ],
+     "quote": "{{ap|250 to 550}} {{as|(+ 100% AP)}}",
+     "bin": [
+      "ThreshRPenta#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "wall duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "erects a pentagon of spectral walls around him that each last for 5 seconds",
+     "bin": [],
+     "binNote": "wiki states 5 seconds; bin's ThreshRPenta.WallDuration is 4 - disagreement between wiki and bin"
+    },
+    {
+     "id": "r_3",
+     "meaning": "slow duration on wall break that deals damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "slowing them by 99% for 2 seconds",
+     "bin": [
+      "ThreshRPenta.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "reduced slow duration on subsequent wall breaks",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "the rest will deal no damage and {{tip|slow}} for only 1 second",
+     "bin": [],
+     "binNote": "no separate bin field for the reduced slow duration; only SlowDuration=2 exists for the damaging break"
+    },
+    {
+     "id": "r_5",
+     "meaning": "reuse cooldown for a wall break on the same enemy",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "Enemies that break a wall cannot do so again for 1 second.",
+     "bin": [],
+     "binNote": "not-in-a-dummy-fight utility value; no matching data row found"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Only the first wall broken by contact deals damage; subsequent wall breaks deal no damage but still apply a shorter slow.",
+     "quote": "After the first wall breaks, the rest will deal no damage and {{tip|slow}} for only 1 second.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If The Box hits multiple champions on cast, only one wall (chosen by a clockwise rule from the wall in front-right of Thresh's facing) deals damage and applies the extended slow.",
+     "quote": "If ''The Box'' hits multiple champions with different walls on cast, only one of the walls will deal damage and apply the extended slow duration.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The Box cannot be interrupted once cast, including by Thresh's death.",
+     "quote": "''The Box'' cannot be interrupted by any means, including death or {{tip|resurrection}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "ThreshRPenta.ThreshRCageRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ThreshRPenta.ThreshRWallThickness",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ThreshRPenta.ThreshRWallLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "ThreshRPenta.SlowAmount",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "ThreshRPenta.WallDuration",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "infinite-scaling",
+   "abilities": [
+    "P",
+    "E",
+    "W"
+   ],
+   "note": "Soul stacks (ThreshPassiveSouls buffStacks) are gained only when enemies/large minions/monsters die near Thresh; a solo target-dummy fight never produces this, so an assumed stack count must be picked. It feeds P's flat AP/armor, W's shield strength (+2/soul), and E's per-soul on-hit base damage (1.7/soul)."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Each collected Soul is a permanent stack (no expiry, no stated cap) granting +1 AP and +1 bonus armor per stack."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Death Sentence deals its magic damage instance on hitting the first enemy struck by the scythe."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Deathly Leap is a recast of Death Sentence that dashes Thresh to the Shackled target and restores his ability to attack; it deals no separate damage but resets his attack availability (interacts with attack-reset/positioning for follow-up autos)."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Landing Death Sentence reduces its own current cooldown by 2 seconds (ThreshQ.HitBonusCooldown), always triggering against a dummy that can't spell-shield it."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Dark Passage grants a shield to Thresh (and an ally) with no damage component; only relevant to a survival fight, never read by the damage-dealing dummy fight."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Flay's passive arms Thresh's next basic attack with bonus magic damage (1.7/soul, plus an AD ratio that ramps from 0% to 90-210% AD over 10s without basic-attacking), consumed on hit."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "Flay's active deals a magic damage instance on cast (area damage, separate from the on-hit passive proc)."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "The Box deals its magic damage instance once, on the first wall an enemy champion breaks by contact (only one wall can deal damage per cast in a single-target fight)."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Flay's passive bonus damage does not stack by casting or by landing attacks; instead its AD ratio continuously ramps from 0% up to its rank's max (90-210% AD) over 10 seconds of NOT basic-attacking an enemy, then the charge/ratio is reset back toward minimum whenever the empowered attack lands (or is blocked). This is a time-since-last-attack ramp/decay, which none of the closed-list primitives (empowered-attack, stacking-self-buff, ramping-per-cast) cleanly capture, since those key off casts/attacks rather than elapsed idle time. Modeling it requires bespoke logic that tracks time since Thresh's last basic attack and interpolates the AD ratio accordingly, and decides how quickly it resets after each consumed proc."
+ },
+ "unsettled": [
+  {
+   "question": "How many Souls (buffStacks) should Thresh be assumed to have at the start of (and possibly gaining during) the damage/survival fight, given a stationary dummy that never dies and drops no Souls?",
+   "options": [
+    "0 souls (strict dummy-fight reading: no kills occur)",
+    "A fixed representative number (e.g. 10-20, typical mid/late-game soul count) chosen as a simulator convention",
+    "Scale souls with champion level as a proxy for game-time progression"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Enemy {{tip|champions}}, large {{tip|minions}} and large {{tip|monsters}} that die near '''Thresh''' drop a ''Soul'' for 8 seconds.",
+    "For each {{tip|stack}}, '''Thresh''' gains {{sti|ap|{{as|1 ability power}}}} and {{sti|armor|{{as|1 '''bonus''' armor}}}}."
+   ]
+  },
+  {
+   "question": "In the 15s dummy fight, does Thresh continuously auto-attack (repeatedly consuming/resetting Flay's passive near its 0% AD floor) or hold basic attacks for 10s to let the passive ratio reach its rank max before using the empowered auto, and does landing the empowered attack fully reset the ramp to 0 or to some partial value?",
+   "options": [
+    "Always auto-attack on cooldown, accepting a near-minimum passive ratio most of the time",
+    "Delay/withhold autos for 10s once per window to cash in a max-ratio empowered attack, sacrificing raw attack count",
+    "Ratio resets only to a partial value after landing (not fully to 0), sustaining a higher average ratio"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Thresh's''' {{tip|basic attacks}} are empowered to deal {{as|'''bonus''' magic damage}}, with the {{sti|{{as|AD}}}} ratio increasing over 10 seconds without basic attacking enemies.",
+    "The enhanced attack applies other [[on-hit effect]]s and can {{tip|critical strike|critically strike}} as normal (the bonus damage cannot)."
+   ]
+  },
+  {
+   "question": "Does casting Deathly Leap (Q recast) trigger on-cast item/rune effects (e.g. Spellblade) a third time, and should the simulator treat it as a full extra 'cast' for cooldown-reduction or proc-count purposes, or purely as a repositioning/attack-reset action with no separate proc?",
+   "options": [
+    "Deathly Leap triggers on-cast effects a third time as the wiki notes describe (bug-flagged but real in-client behavior)",
+    "Deathly Leap is treated as a free follow-up with no additional on-cast proc, since it deals no damage of its own"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "''Death Sentence'' triggers on-cast effects (such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive) once at the start of the cast, and once at the end of the cast. It may trigger on-cast effects a third time when casting ''Deathly Leap''."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Assume a settled Soul-stack count is applied to Thresh's AP/armor and Flay's on-hit base before the fight begins.",
+   "Open with The Box (R) immediately for its large upfront magic damage burst, since its long cooldown means it will likely only be cast once in the 15s window.",
+   "Cast Death Sentence (Q) on the dummy for its magic damage, stun, and the current-cooldown reduction it grants on hit.",
+   "Recast as Deathly Leap once eligible to dash in and regain basic-attack availability without losing further time.",
+   "Weave basic attacks throughout, prioritizing landing the Flay passive's empowered attack whenever its ramped AD ratio is judged worthwhile per the ramp-timing ruling above.",
+   "Cast Flay (E) active on cooldown for its own magic damage instance, on top of (not instead of) its passive on-hit proc.",
+   "Repeat Q and E on cooldown for the remainder of the 15 seconds, filling gaps with basic attacks."
+  ],
+  "questions": [
+   "Should the fixed Soul-stack count assumption be a single simulator-wide constant, or should it scale with the champion level/item-value axis used elsewhere in the sheet?",
+   "Is it correct to model Flay's passive ramp with a continuous linear interpolation from 0% to its rank's max AD ratio over 10 seconds, resetting to 0% on any landed (or blocked) empowered attack?",
+   "Does the simulator's damage-fight harness allow a pre-combat idle window (to charge Flay's passive) before the 15s clock starts, or must all ramping happen within the timed window?",
+   "Should The Box's single cast be assumed to land its damage on the dummy immediately (ignoring wall-approach geometry), given it is a positional AoE keyed to enemy contact with a specific wall?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

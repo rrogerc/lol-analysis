@@ -1,0 +1,681 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "RekSaiPassive",
+    "key": "Characters/RekSai/Spells/RekSaiPassiveAbility/RekSaiPassive",
+    "cooldown": 0,
+    "dataValues": {
+     "FuryFromAttacks": 25,
+     "FuryFromAbilities": 25,
+     "FuryMinionMod": 0.16,
+     "HealDuration": 3,
+     "PauseDuration": 5,
+     "HealPercentStartValue": 0.09,
+     "HealPercentEndValue": 0.2
+    },
+    "calcs": {
+     "HealAmount": {
+      "expr": "(<{ee18a47b}>)xmaxHp",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part {ee18a47b}"
+    ]
+   }
+  ],
+  "Q": [
+   {
+    "script": "RekSaiQ",
+    "key": "Characters/RekSai/Spells/RekSaiQAbility/RekSaiQ",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      4,
+      3.5,
+      3,
+      2.5,
+      2
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BuffDuration": 3,
+     "UnburrowedBaseDamage": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25
+      ]
+     },
+     "UnburrowedADRatio": {
+      "axis": "rank",
+      "v": [
+       0.3,
+       0.35,
+       0.4,
+       0.45,
+       0.5
+      ]
+     },
+     "AoERange": 300,
+     "AttackSpeed": 0.35,
+     "BurrowedBaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       80,
+       110,
+       140,
+       170
+      ]
+     },
+     "BurrowedBonusADRatio": 0.25,
+     "BurrowedAPRatio": 0.7,
+     "BurrowedCooldown": {
+      "axis": "rank",
+      "v": [
+       12,
+       11.5,
+       11,
+       10.5,
+       10
+      ]
+     },
+     "BurrowedAoE": 200,
+     "BurrowedDebuffDuration": 5
+    },
+    "calcs": {
+     "TotalDamageTooltip": {
+      "expr": "(UnburrowedADRatio=[0.3/0.35/0.4/0.45/0.5])xad",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "rank",
+         "v": [
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5
+         ]
+        },
+        "dataValue": "UnburrowedADRatio"
+       }
+      ],
+      "refs": [
+       "UnburrowedADRatio"
+      ]
+     },
+     "BurrowDamageTooltip": {
+      "expr": "BurrowedBaseDamage=[50/80/110/140/170] + (BurrowedBonusADRatio=0.25)xbonus ad + (BurrowedAPRatio=0.7)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        80,
+        110,
+        140,
+        170
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.25,
+        "dataValue": "BurrowedBonusADRatio"
+       },
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.7,
+        "dataValue": "BurrowedAPRatio"
+       }
+      ],
+      "refs": [
+       "BurrowedAPRatio",
+       "BurrowedBaseDamage",
+       "BurrowedBonusADRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "RekSaiW",
+    "key": "Characters/RekSai/Spells/RekSaiWAbility/RekSaiW",
+    "cooldown": 4,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       30,
+       55,
+       80,
+       105,
+       130
+      ]
+     },
+     "ADRatio": 0.5,
+     "APRatio": 0.8,
+     "KnockupDuration": 1,
+     "KnockupImmunity": {
+      "axis": "rank",
+      "v": [
+       10,
+       9,
+       8,
+       7,
+       6
+      ]
+     },
+     "ChampKnockbackRange": 250,
+     "OtherKnockbackRange": 175,
+     "KnockbackDuration": 0.3,
+     "Slow": {
+      "axis": "rank",
+      "v": [
+       -0.3,
+       -0.35,
+       -0.4,
+       -0.45,
+       -0.5
+      ]
+     },
+     "SlowDuration": 1.25,
+     "VisionRadiusMod": -0.65,
+     "KnockupRange": 220,
+     "LockoutTime": 0.15,
+     "SearchRange": 1500,
+     "TremorTickTime": 1,
+     "DistanceCheck": 85,
+     "BurrowedMoveSpeed": {
+      "axis": "rank",
+      "v": [
+       5,
+       10,
+       15,
+       20,
+       25
+      ]
+     }
+    },
+    "calcs": {
+     "UnburrowDamage": {
+      "expr": "BaseDamage=[30/55/80/105/130] + (APRatio=0.8)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        55,
+        80,
+        105,
+        130
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.8,
+        "dataValue": "APRatio"
+       }
+      ],
+      "refs": [
+       "APRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "RekSaiE",
+    "key": "Characters/RekSai/Spells/RekSaiEAbility/RekSaiE",
+    "cooldown": 6,
+    "castTime": 0.25,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       70,
+       95,
+       120,
+       145,
+       170
+      ]
+     },
+     "BonusAD": 0.6,
+     "EmpoweredRatio": 1.2,
+     "DashDistance": 850,
+     "MinimumRange": 850,
+     "DashSpeedBase": 500,
+     "DashSpeedMod": 1,
+     "MaximumTunnels": 8,
+     "TunnelDurationMinutes": 10,
+     "TunnelReuseCooldown": {
+      "axis": "rank",
+      "v": [
+       6,
+       5,
+       4,
+       3,
+       2
+      ]
+     },
+     "DashCooldown": {
+      "axis": "rank",
+      "v": [
+       18,
+       17,
+       16,
+       15,
+       14
+      ]
+     },
+     "TunnelTimeRatio": 0.65
+    },
+    "calcs": {
+     "BaseDamageCalculation": {
+      "expr": "BaseDamage=[70/95/120/145/170] + (BonusAD=0.6)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        70,
+        95,
+        120,
+        145,
+        170
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.6,
+        "dataValue": "BonusAD"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusAD"
+      ]
+     },
+     "EmpoweredDamageCalculation": {
+      "expr": "BaseDamageCalculation * EmpoweredRatio=1.2",
+      "modifies": "BaseDamageCalculation",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        84,
+        114,
+        144,
+        174,
+        204
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.72,
+        "dataValue": "BonusAD"
+       }
+      ],
+      "refs": [
+       "BaseDamage",
+       "BonusAD",
+       "EmpoweredRatio"
+      ]
+     },
+     "DashSpeed": {
+      "expr": "DashSpeedBase=500 + (DashSpeedMod=1)xstat7?",
+      "flat": 500,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "total",
+        "coef": 1,
+        "dataValue": "DashSpeedMod"
+       }
+      ],
+      "refs": [
+       "DashSpeedBase",
+       "DashSpeedMod"
+      ]
+     },
+     "{009db1c8}": {
+      "expr": "(TunnelDurationMinutes=10) * 60",
+      "flat": 600,
+      "terms": [],
+      "refs": [
+       "TunnelDurationMinutes"
+      ]
+     },
+     "{438d87f9}": {
+      "expr": "DashSpeed * TunnelTimeRatio=0.65",
+      "modifies": "DashSpeed",
+      "flat": 325,
+      "terms": [
+       {
+        "stat": "stat7?",
+        "scope": "total",
+        "coef": 0.65,
+        "dataValue": "DashSpeedMod"
+       }
+      ],
+      "refs": [
+       "DashSpeedBase",
+       "DashSpeedMod",
+       "TunnelTimeRatio"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "RekSaiR",
+    "key": "Characters/RekSai/Spells/RekSaiRAbility/RekSaiR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TravelDistancePercent": 0.4,
+     "ExtraDistance": 125,
+     "LeapMovementSpeed": 1400,
+     "VODistance": 4000,
+     "DamageCheckRadius": 1000,
+     "PreyMarkDuration": 5,
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "PercentHealthDamage": {
+      "axis": "rank",
+      "v": [
+       15,
+       20,
+       25
+      ]
+     },
+     "CastBuffDuration": 1.1,
+     "ADRatio": 1
+    },
+    "calcs": {
+     "RBaseDamageCalc": {
+      "expr": "RBaseDamage=[150/250/350] + (ADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "RBaseDamage"
+      ]
+     }
+    }
+   },
+   {
+    "script": "RekSaiRWrapper",
+    "key": "Characters/RekSai/Spells/RekSaiRAbility/RekSaiRWrapper",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      100,
+      90,
+      80
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "TravelDistancePercent": 0.4,
+     "ExtraDistance": 125,
+     "LeapMovementSpeed": 1400,
+     "VODistance": 4000,
+     "DamageCheckRadius": 1000,
+     "PreyMarkDuration": 5,
+     "RBaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       300,
+       450
+      ]
+     },
+     "PercentMissingHealthDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       30,
+       35
+      ]
+     },
+     "CastBuffDuration": 1.1,
+     "ADRatio": 1
+    },
+    "calcs": {
+     "RBaseDamageCalc": {
+      "expr": "RBaseDamage=[150/300/450] + (ADRatio=1)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        300,
+        450
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "RBaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "RekSaiQ",
+  "W": "RekSaiW",
+  "E": "RekSaiE",
+  "R": "RekSaiR",
+  "P": "RekSaiPassive"
+ },
+ "resource": {
+  "arType": 8,
+  "values": {
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": null
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "RekSai",
+  "name": "Rek'Sai",
+  "partype": "Rage",
+  "passive": "Fury of the Xer'Sai",
+  "spells": [
+   {
+    "id": "RekSaiQ",
+    "name": "Queen's Wrath / Prey Seeker",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     3.5,
+     3,
+     2.5,
+     2
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "RekSaiW",
+    "name": "Burrow / Un-burrow",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "RekSaiE",
+    "name": "Furious Bite / Tunnel",
+    "maxrank": 5,
+    "cooldown": [
+     6,
+     6,
+     6,
+     6,
+     6
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "RekSaiR",
+    "name": "Void Rush",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Fury of the Xer'Sai": {
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Queen's Wrath": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "false",
+    "targeting": "Auto",
+    "affects": "Enemies"
+   },
+   "Prey Seeker": {
+    "damagetype": "Magic",
+    "spelleffects": "Area of effect",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies"
+   }
+  },
+  "W": {
+   "Burrow": {
+    "targeting": "Auto",
+    "affects": "Self"
+   },
+   "Unburrow": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "targeting": "Auto",
+    "affects": "Self / Enemies"
+   }
+  },
+  "E": {
+   "Furious Bite": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   },
+   "Tunnel": {
+    "targeting": "Direction",
+    "affects": "Self"
+   }
+  },
+  "R": {
+   "Void Rush": {
+    "damagetype": "Physical",
+    "spelleffects": "spell",
+    "spellshield": "True",
+    "targeting": "Unit",
+    "affects": "Enemies"
+   }
+  }
+ }
+}

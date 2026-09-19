@@ -1,0 +1,52 @@
+{
+ "name": "Crimson Pact",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "Ability power gained from Vladimir's bonus health",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [{"stat": "bonusHp", "coef": 0.03333}],
+   "quote": "{{#vardefine:cp1|3.333}}",
+   "bin": ["VladimirBloodGorged#ApproximateAPBonusAvoidingRecursion"],
+   "binNote": "Wiki states a flat 3.333% of bonus health as AP. The bin calc that actually produces the AP bonus is (1xbonus maxHp + (APRatioBonusHP=1.6)*(-1xap))*((0.01)*(3.333))*1.06, i.e. net coefficients 0.0353298xbonusHp - 0.05652768xap (sheet.json terms) - a recursion-avoiding approximation that subtracts a share of current AP and applies an extra 1.06x factor, not the flat ratio the wiki states."
+  },
+  {
+   "id": "p_2",
+   "meaning": "Bonus health gained from Vladimir's ability power",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [{"stat": "ap", "coef": 1.6}],
+   "quote": "{{#vardefine:cp2|160}}",
+   "bin": ["VladimirBloodGorged.APRatioBonusHP", "VladimirBloodGorged#ApproximateHPBonusAvoidingRecursion"],
+   "binNote": "APRatioBonusHP=1.6 matches the wiki's flat 160% exactly, but the calc that actually uses it is (1xbonus ap + ((0.01)*(3.333))*(-1xbonus maxHp))*((1.06)*(APRatioBonusHP=1.6)), i.e. net coefficients 1.696xap - 0.05652768xbonusHp (sheet.json terms) - a recursion-avoiding approximation that subtracts a share of current bonus health and applies an extra 1.06x factor, not a flat 160% conversion."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Crimson Pact's two conversions (bonus health to AP, and AP to bonus health) do not stack with each other.",
+   "quote": "These two bonuses do not stack with each other.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Crimson Pact's bonus AP stacks multiplicatively with other sources of percent AP, but its bonus health stacks additively with other sources of bonus health.",
+   "quote": "bonus''' ability power {{tip|stacks multiplicatively}} with other sources of {{as|% ability power}} but its '''bonus''' health {{tip|stacks additively}} with other sources of {{as|'''bonus''' health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Crimson Pact only raises Vladimir's maximum health; it does not restore his current health, which can drop to match a reduced maximum if the bonus is lost.",
+   "quote": "''Crimson Pact'' only affects '''Vladimir's''' {{as|'''maximum''' health}} and will not increase '''Vladimir's''' {{as|'''current''' health}}",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {"ref": "VladimirBloodGorged.HPforAP", "reason": "unknown"}
+ ]
+}

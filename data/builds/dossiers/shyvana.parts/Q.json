@@ -1,0 +1,227 @@
+{
+ "name": "Emberstrike / Emberstrike 2 / Emberstrike 3",
+ "cooldown": {
+  "values": [
+   10,
+   9,
+   8,
+   7,
+   6
+  ],
+  "quote": "{{ap|10 to 6}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Area Physical Damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    10,
+    15,
+    20,
+    25,
+    30
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1
+    },
+    {
+     "stat": "ap",
+     "coef": 0.3
+    }
+   ],
+   "quote": "{{ap|10 to 30}} {{as|(+ 110% AD)}} {{as|(+ 30% AP)}}",
+   "bin": [
+    "ShyvanaQ.Base_Damage",
+    "ShyvanaQ.Damage_AD_Ratio"
+   ],
+   "binNote": "ShyvanaQ#Calc_Damage's own formula text reads 'BASE_DAMAGE + (Damage_AD_Ratio=1.1)xad + 0.3xap', which literally matches the wiki's base/AD/AP numbers, but the sheet flags this calculation as broken ('calculation names a missing data value BASE_DAMAGE'), so the 0.3 AP coefficient cannot be resolved from a clean data value row - it only appears as literal text inside the malformed calculation."
+  },
+  {
+   "id": "q_2",
+   "meaning": "True Damage",
+   "role": "damage",
+   "damageType": "true",
+   "by": "rank",
+   "base": [
+    15,
+    22.5,
+    30,
+    37.5,
+    45
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.65
+    },
+    {
+     "stat": "ap",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|10*1.5 to 30*1.5}} {{as|(+ {{ap|110*1.5}}% AD)}} {{as|(+ {{ap|30*1.5}}% AP)}}",
+   "bin": [],
+   "binNote": "ShyvanaQ#Calc_Dragon_Form_Damage = Calc_Damage * 1.5, and Calc_Damage itself is broken in the sheet (references missing data value BASE_DAMAGE), so no bin row resolves to the base [15,22.5,30,37.5,45] or the 1.65/0.45 ratios; these numbers are only derivable by manually multiplying the (also unresolved) q_1 numbers by 1.5, per the wiki text and the Calc_Dragon_Form_Damage formula's stated multiplier."
+  },
+  {
+   "id": "q_3",
+   "meaning": "Passive on-hit bonus magic damage based on target's maximum health",
+   "role": "onhit",
+   "damageType": "magic",
+   "by": "const",
+   "base": 0.01,
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": 0.01,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.011
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|1% {{as|(+ {{fd|1.1}}% per 100 '''bonus''' AD)}} of the target's '''maximum''' health}}",
+   "bin": [
+    "ShyvanaQ#Calc_Max_Health_Damage",
+    "ShyvanaQ.Max_Health_Damage",
+    "ShyvanaQ.Max_Health_AD_Ratio"
+   ]
+  },
+  {
+   "id": "q_4",
+   "meaning": "Current cooldown reduction per on-hit basic attack",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "reduce ''Emberstrike's'' {{sti|'''current''' cooldown}} by {{fd|0.5}} seconds",
+   "bin": [
+    "ShyvanaQ.Cooldown_Reduction"
+   ]
+  },
+  {
+   "id": "q_5",
+   "meaning": "Window during which the empowered attack must be used after casting",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "empowers '''Shyvana's''' next {{tip|basic attack}} within 6 seconds",
+   "bin": [
+    "ShyvanaQ.EnhanceDuration"
+   ]
+  },
+  {
+   "id": "q_6",
+   "meaning": "Recast window after the empowered attack lands",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "the ability can be recast within and {{tt|up to|...}} the next 4 seconds each time",
+   "bin": [
+    "ShyvanaQ.RecastDuration"
+   ]
+  },
+  {
+   "id": "q_7",
+   "meaning": "Delay before recast becomes available after using an Emberstrike attack",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "After {{fd|1.5}} seconds of using an ''Emberstrike'' attack, or immediately following a basic attack, the ability can be recast",
+   "bin": [
+    "ShyvanaQ.LockoutDuration"
+   ]
+  },
+  {
+   "id": "q_8",
+   "meaning": "Bonus physical damage of empowered attacks against monsters",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "const",
+   "base": 10,
+   "terms": [],
+   "quote": "{{as|10 '''bonus''' physical damage}} against monsters",
+   "bin": [
+    "ShyvanaQ.Damage_Monster_Bonus",
+    "ShyvanaQ#Calc_Monster_Bonus"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Only the last empowered cast (Q2 in Human Form, Q3 in Dragon Form) puts the basic attack on cooldown, making the earlier casts function as free attack resets.",
+   "quote": "Only the last cast of ''Emberstrike'' puts '''Shyvana's''' basic attack on cooldown.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "All Emberstrike-empowered attacks reset Shyvana's basic attack timer, allowing extra attacks in the fight window.",
+   "quote": "All casts {{tip|basic attack reset|reset}} '''Shyvana's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The true damage cast (dragon form third cast) is always 150% of the pre-mitigation physical damage value, and cannot critically strike.",
+   "quote": "The true damage is always equal to 150% of the {{tt|pre-mitigation|Damage calculated before modifiers}} physical damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The area physical damage to the primary target (first/second cast) can critically strike.",
+   "quote": "The damage to the primary target is affected by {{tip|critical strike}} modifiers.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The passive on-hit magic damage deals a minimum of 10 and is capped at 200 against non-champions (monsters).",
+   "quote": "Against non-champions, this effect deals a minimum of 10 and is capped at 200.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attacks have an uncancellable windup.",
+   "quote": "empowers '''Shyvana's''' next {{tip|basic attack}} within 6 seconds to have an {{tip|uncancellable windup}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell Shield does not block or get consumed by the empowered strikes.",
+   "quote": "{{tip|Spell shield}} will '''not''' block any damage nor be consumed by the strikes.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The passive on-hit magic damage applies as proc damage rather than area damage.",
+   "quote": "The passive on-hit damage applies {{tip|proc damage}}.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ShyvanaQ.Q1Length",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaQ.Q2Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaQ.Bonus_Attack_Range",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,273 @@
+{
+ "name": "Absolution",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_markDamage",
+   "meaning": "bonus physical damage dealt when consuming a Mist mark, as a percent of target's current health",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "level",
+   "base": null,
+   "terms": [
+    {
+     "stat": "targetCurrentHp",
+     "coef": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|1 to 10 for 10|formula=1% * level, capped at level 10|key=%}} of the target's '''current''' health}}",
+   "bin": [
+    "SennaPassive#BonusCurentHealthDamage"
+   ],
+   "binNote": "The bin's raw byLevel array continues linearly to 18 at level 18, but the wiki's pp formula caps the value at 10 from level 10 onward; the sheet does not encode the cap itself."
+  },
+  {
+   "id": "p_markDuration",
+   "meaning": "duration a Mist mark lasts on a target before it can be consumed",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "mark enemy champions hit for 4 seconds",
+   "bin": [
+    "SennaPassive.MarkDuration"
+   ]
+  },
+  {
+   "id": "p_markImmunity",
+   "meaning": "duration a target is immune to being marked again after a mark is consumed",
+   "role": "target-debuff",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    5,
+    5,
+    5,
+    5,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "terms": [],
+   "quote": "{{pp|6;5;4|1;6;11}}",
+   "bin": [
+    "SennaPassive#DebuffDuration"
+   ]
+  },
+  {
+   "id": "p_relicCannonDamage",
+   "meaning": "on-hit bonus physical damage from basic attacks (Relic Cannon)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.2
+    }
+   ],
+   "quote": "{{as|20% AD}} {{as|'''bonus''' physical damage}}",
+   "bin": [
+    "SennaPassive#BonusOnHitDamage"
+   ]
+  },
+  {
+   "id": "p_adPerStack",
+   "meaning": "bonus attack damage granted per stack of Mist",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "stacks",
+     "coef": 0.75
+    }
+   ],
+   "quote": "{{fd|{{#var:i_ad}}}} '''bonus''' attack damage",
+   "bin": [
+    "SennaPassive.ADPerStack",
+    "SennaPassive#{bb59ad08}"
+   ]
+  },
+  {
+   "id": "p_stackThreshold",
+   "meaning": "number of Mist stacks needed for each critical strike chance/range bonus tier",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 20,
+   "terms": [],
+   "quote": "For every {{#var:stack}} stacks, she also gains",
+   "bin": [
+    "SennaPassive.StacksForBonus"
+   ]
+  },
+  {
+   "id": "p_critChancePerTier",
+   "meaning": "critical strike chance granted per stack threshold tier",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "{{as|{{#var:cs}}% critical strike chance}}",
+   "bin": [
+    "SennaPassive.BonusCritChance"
+   ]
+  },
+  {
+   "id": "p_critToLifesteal",
+   "meaning": "life steal gained per 1% crit chance in excess of 100%",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.35,
+   "terms": [],
+   "quote": "{{fd|{{#var:ls}}}}% {{as|{{sti|life steal}}}}",
+   "bin": [
+    "SennaPassive.CritToLifestealConversionPercent"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks on-hit and abilities against enemy champions apply a mark; a subsequent hit on a marked target consumes it to deal the current-health damage and grant a Mist stack.",
+   "quote": "Subsequent attacks or ability hits against marked targets will consume the mark to grant '''Senna''' a {{tip|stack}} of {{as|Mist}} and deal {{as|'''bonus''' physical damage}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The mark-consumption damage applies life steal at 100% effectiveness.",
+   "quote": "This damage {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}} at 100% effectiveness.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Relic Cannon's on-hit damage also applies life steal at 100% effectiveness, but only triggers if the attack deals more than 0 damage.",
+   "quote": "* ''Relic Cannon'' is only applied if the attack deals more than 0 damage.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Relic Cannon's damage applies at 100% life steal effectiveness.",
+   "quote": "The damage {{tip|applies lifesteal|applies}} {{as|{{sti|life steal}}}} at 100% effectiveness.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Mist stacks grant bonus attack damage continuously (a stacking self-buff), separate from the range/crit-chance tier bonuses.",
+   "quote": "For each stack of {{as|Mist}}, '''Senna''' gains {{sti|attack damage|{{as|{{fd|{{#var:i_ad}}}} '''bonus''' attack damage}}}}",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SennaPassive.SoulDuration",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SennaPassive.BonusRange",
+   "reason": "utility"
+  },
+  {
+   "ref": "SennaPassive.CritDamageMod",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.SoulDropPercentChance",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SennaPassive.SoulDropPercentChanceOnSennaKill",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "SennaPassive.MSStealDuration",
+   "reason": "utility"
+  },
+  {
+   "ref": "SennaPassive.SoulTravelDistanceBad",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SennaPassive.SoulTravelDistanceGood",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SennaPassive.SoulTravelVarianceRadiusInner",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SennaPassive.SoulTravelVarianceRadiusOuter",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SennaPassive.ChanceForGoodSoul",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SennaPassive.ThreshSoulsToTriggerQuest",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.SennaSoulsToTriggerQuest",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.QuestRewardForSennaStacks",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.QuestRewardSennaAPPerStack",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.QuestRewardSennaArmorPerStack",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.QuestRewardForThreshStacks",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.QuestAssistWindow",
+   "reason": "unknown"
+  },
+  {
+   "ref": "SennaPassive.ArmorShredDuration",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

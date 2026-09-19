@@ -1,0 +1,168 @@
+{
+ "name": "Headshot",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_headshot_ad_ratio",
+   "meaning": "Headshot bonus physical damage AD ratio vs champions (base by level, plus crit-scaling portion)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "level",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.8,
+      0.8,
+      0.8,
+      0.8,
+      0.8,
+      0.8,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "stat": "critDamage",
+     "coef": 1,
+     "coefScaling": [
+      {
+       "stat": "critChance",
+       "per": 1,
+       "coef": 1
+      }
+     ]
+    }
+   ],
+   "quote": "{{pp|key=%|60 to 100 for 3|1 to 13}}|ad}} {{as|(+ {{critical damage|0 to 100|critScaling=true}}) AD}}",
+   "bin": [
+    "CaitlynPassive#HeadShotBonusDamage"
+   ],
+   "binNote": "The by-level base (0.6/0.8/1) is the byLevelL[...] array inside CaitlynPassive#HeadShotBonusDamage, matching the wiki exactly. The critDamage term's coefficient of 1 with crit-chance scaling comes from the formula's (CriticalStrikeScaling=1 x critChance)*(1xcritDamage - 1) part; CriticalStrikeScaling=1 is the only bin row directly carrying that '1' coefficient standalone, which is why the checker matched it there rather than in the calculation row's ad-term array - both rows are cited as they jointly compose the calculation."
+  },
+  {
+   "id": "p_headshot_ad_ratio_nonchamp",
+   "meaning": "Headshot bonus physical damage AD ratio vs non-champions (flat, overrides level scaling)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 1.1
+    }
+   ],
+   "quote": "increased to {{as|110% (+ {{critical damage|0 to 100|critScaling=true}}) AD}} against non-champions",
+   "bin": [],
+   "binNote": "No bin row was found matching a flat 110% non-champion multiplier; CaitlynPassive#HeadShotMinionBonusDamage is a differently-shaped reduction formula (1 - byLevel) x ad and does not obviously correspond to this wiki value. Unresolved discrepancy."
+  },
+  {
+   "id": "p_stacks_to_headshot",
+   "meaning": "basic attacks needed to charge a Headshot (out of brush)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "At 5 stacks, or 4 while in ''brush''",
+   "bin": [
+    "CaitlynPassive.AttacksPerHeadshot"
+   ]
+  },
+  {
+   "id": "p_stacks_to_headshot_brush",
+   "meaning": "basic attacks needed to charge a Headshot while in brush (stacks doubled on-attack)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "At 5 stacks, or 4 while in ''brush''",
+   "bin": [
+    "CaitlynPassive.BrushStackBonus",
+    "CaitlynPassive.AttacksPerHeadshot"
+   ],
+   "binNote": "BrushStackBonus=1 is not the threshold itself but an additive stack bonus applied per attack while in brush (CaitlynPassive#BrushAttackTotal = 1 + BrushStackBonus = 2 stacks per attack in brush). Combined with AttacksPerHeadshot=5, doubled stack gain in brush means only ceil(5/2)=3 attacks by that arithmetic, yet the wiki states 4; the bin does not carry a direct '4' value anywhere, so this is reported as an unresolved discrepancy between the wiki's stated threshold and the derivable bin arithmetic rather than a directly matching row."
+  },
+  {
+   "id": "p_trap_headshot_window",
+   "meaning": "seconds after being trapped/netted during which an extra ranged Headshot can be granted",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.8,
+   "terms": [],
+   "quote": "{{fd|1.8}} seconds",
+   "bin": [],
+   "binNote": "No corresponding data value found in the sheet for this 1.8s window; unknown."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Basic attacks generate a stack of Count on-attack, doubled if Caitlyn is within brush.",
+   "quote": "basic attacks generate a {{tip|stack}} of ''Count'' {{tip|on-attack}}, doubled if she is within {{tip|brush}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "At max stacks the next basic attack consumes all stacks on-attack to become a Headshot with an uncancellable windup.",
+   "quote": "'''Caitlyn's''' basic attack is empowered to have an {{tip|uncancellable windup}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Only the ordinary 100% AD portion of the attack can critically strike; the Headshot bonus is added after the crit roll.",
+   "quote": "Only the ordinary {{as|100% attack damage}} portion of the attack can critically strike. The bonus from ''Headshot'' is added after the critical strike is rolled.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Headshot is a single instance of damage, so it does not trigger on-hit-per-instance effects like Tantrum or Warden's Mail twice.",
+   "quote": "''Headshot'' is a single instance of damage, thus does not trigger {{cais|Tantrum|Amumu}} or {{ii|Warden's Mail}} passives twice",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Ability-granted Headshots (from traps/nets) trigger on-attack effects including further Headshot stacking, the same as the normal Headshot override attack.",
+   "quote": "Ability-granted ''Headshots'' are the same as the original ''Headshot'' override attack... They trigger {{tip|on-attack}} effects (including stacking ''Headshot'')",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Attacking a target that becomes trapped/netted while Caitlyn's attack is on cooldown refunds part of the ongoing attack cooldown, letting the next attack start sooner.",
+   "quote": "this ongoing cooldown will be refunded partially so that her next attack on them can begin earlier",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Runaan's Hurricane bolts do not generate Headshot stacks since stacks are only generated on-attack.",
+   "quote": "Because ''Headshot'' stacks are generated {{tip|on-attack}}, {{iis|Runaan's Hurricane}} {{nies|Wind's Fury}} bolts will not generate any",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered Headshot attack will not trigger against wards, though stacks are still generated when attacking them.",
+   "quote": "The empowered attack will not trigger against {{tip|ward}}s.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The full Headshot damage applies life steal.",
+   "quote": "The full damage of ''Headshot'' applies {{as|{{sti|life steal}}}}",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "CaitlynPassive.TowerCap",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,102 @@
+{
+ "name": "Sanguine Pool",
+ "cooldown": {
+  "values": [28, 25, 22, 19, 16],
+  "quote": "{{ap|28 to 16}}"
+ },
+ "cost": {
+  "values": 0.15,
+  "quote": "{{as|15%|health}}",
+  "resource": "{{as|'''current''' health}}"
+ },
+ "castTime": null,
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [20, 33.75, 47.5, 61.25, 75],
+   "terms": [{"stat": "bonusHp", "coef": 0.0375}],
+   "quote": "{{ap|20 to 75}} {{as|(+ {{fd|3.75}}% '''bonus''' health)}}",
+   "bin": [],
+   "binNote": "The bin only exports the 4-tick total, not a per-tick row (see w_2: BaseDamage=[80/135/190/245/300] + 0.15xbonus maxHp via VladimirSanguinePool#TotalDamage). Dividing by the ability's 4 ticks gives exactly the wiki's per-tick figures here (20/33.75/47.5/61.25/75, ratio 0.0375xbonus health), so this is a derived split, not a disagreement."
+  },
+  {
+   "id": "w_2",
+   "meaning": "Total Magic Damage",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [80, 135, 190, 245, 300],
+   "terms": [{"stat": "bonusHp", "coef": 0.15}],
+   "quote": "{{ap|20*4 to 75*4}} {{as|(+ 15% '''bonus''' health)}}",
+   "bin": ["VladimirSanguinePool.BaseDamage", "VladimirSanguinePool#TotalDamage"]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Duration Vladimir is untargetable/ghosted and unable to attack or cast (also the pool's damage/slow duration)",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "becoming {{tip|untargetable}} and {{tip|ghosted}} for 2 seconds.",
+   "bin": [],
+   "binNote": "Not among VladimirSanguinePool's exported data values (only MinionHealingMod, BaseDamage, HealthCost, BonusHealthRatio, MoveSpeedMod, VampPercent, HasteBoost, HasteDuration are listed); the 2-second duration is stated only in the wikitext description."
+  },
+  {
+   "id": "w_4",
+   "meaning": "Interval between Sanguine Pool's damage/slow ticks",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "dealt {{as|magic damage}} every {{fd|0.5}} seconds over the duration",
+   "bin": [],
+   "binNote": "Not among VladimirSanguinePool's exported data values; the 0.5s tick interval is stated only in the wikitext description (it is however consistent with dividing the 2s duration into the 4 ticks that BaseDamage/TotalDamage's total implies)."
+  },
+  {
+   "id": "w_5",
+   "meaning": "Health cost to cast Sanguine Pool, as a percent of current health",
+   "role": "resource",
+   "damageType": null,
+   "by": "const",
+   "base": 0.15,
+   "terms": [],
+   "quote": "{{as|15%|health}}",
+   "bin": ["VladimirSanguinePool.HealthCost"]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Vladimir cannot use basic attacks or abilities during Sanguine Pool, but can still move.",
+   "quote": "'''Vladimir''' cannot use basic attacks nor abilities during Sanguine Pool, but he can still move.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If Tides of Blood is charging when Sanguine Pool is cast, Tides of Blood may still be recast (its automatic release is not blocked by the pool's action lock).",
+   "quote": "If {{ai|Tides of Blood|Vladimir}} is charging at the time of Sanguine Pool's activation, that ability may still be recast.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The first damage tick lands immediately on cast, and the last real tick lands 0.5 seconds before Vladimir becomes targetable again (i.e. ticks land at 0, 0.5, 1.0 and 1.5s into the 2s duration).",
+   "quote": "The first tick damages immediately so the final one occurs {{fd|0.5}} seconds before '''Vladimir''' becomes targetable again.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "There is an extra tick for 0 damage when Vladimir becomes targetable again (a 5th tick event at the 2s mark that deals no damage but still triggers the same spell effects as the normal ticks).",
+   "quote": "There is an extra damage tick for [[Damage#0_Damage_Instances|0 damage]] when '''Vladimir''' becomes targetable again, triggering the same spell effects as the normal ticks (except those which require damage greater than 0 being dealt).",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "VladimirSanguinePool.VampPercent", "reason": "defensive"},
+  {"ref": "VladimirSanguinePool.MinionHealingMod", "reason": "defensive"},
+  {"ref": "VladimirSanguinePool.MoveSpeedMod", "reason": "not-in-a-dummy-fight"},
+  {"ref": "VladimirSanguinePool.HasteBoost", "reason": "not-in-a-dummy-fight"},
+  {"ref": "VladimirSanguinePool.HasteDuration", "reason": "not-in-a-dummy-fight"}
+ ]
+}

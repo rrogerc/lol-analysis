@@ -1,0 +1,166 @@
+{
+ "champion": "vi",
+ "primitives": [
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "P"
+   ],
+   "note": "Blast Shield grants Vi a self-shield (12% max HP) on her next ability hit; it reduces damage taken in the survival fight but never appears in the damage-fight math."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Vault Breaker is charged for up to 1.25s (scaling range/speed/damage) within a longer hold window, blocking most other actions while charging."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Vault Breaker's active cast only arms the charge; the recast performs the actual dash and damage instance."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Q costs 50-90 mana with a 6-12s cooldown; E costs mana plus a stocked charge, both meaningfully limit casts across a 15s fight."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "W"
+   ],
+   "note": "Basic attacks (and Vault Breaker) apply Denting Blows stacks that build toward bonus on-hit damage."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "W"
+   ],
+   "note": "Denting Blows stacks (up to 3, refreshing on reapplication, 4s duration) live on the target and are consumed together."
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "The 3rd stack-applying hit consumes all stacks to deal the bonus %max-HP damage and apply the armor shred/attack-speed buff."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming Denting Blows inflicts 20% armor reduction on the target for 4 seconds."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Consuming Denting Blows grants Vi 30-50% bonus attack speed for 4 seconds, refreshing on subsequent triggers."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Force arms Vi's next basic attack (within 6s) with bonus modified physical damage and bonus range."
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "E"
+   ],
+   "note": "The empowered attack from Relentless Force resets Vi's basic attack timer."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Force's empowered attack can critically strike against the primary target for bonus physical damage; secondary targets take the same damage without counting as crits."
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "E"
+   ],
+   "note": "Relentless Force stocks up to 2 charges that recharge independently (12-8s per wiki recharge; bin cooldown field shows a static 1s), each consuming 1 charge + mana per use."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cease and Desist deals its primary damage after a fixed cast time plus dash/grab delay, on a long cooldown."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Vi's kit maps cleanly onto the closed primitive list: a charge-then-recast dash (Q), a stacking on-hit debuff/nuke that also grants a timed attack-speed buff (W), a charge-based empowered attack with an attack reset and crit interaction on an ammo-like recharge system (E), and a single long-cooldown gap-closer/stun that deals delayed damage (R). No mechanic here (proc math, resource gating, on-hit interactions) falls outside what those primitives can express."
+ },
+ "unsettled": [
+  {
+   "question": "What is Relentless Force's true recharge time per rank: the wiki's stated '12 to 8' seconds, or the bin's cooldown field, which lists a flat 1 second (matching ViE.StaticCooldown = 1) rather than a per-rank array?",
+   "options": [
+    "Use the wiki-stated recharge of 12 to 8 seconds per rank (the bin's cooldown=1 is a placeholder for a charge-based ability, not the real recharge)",
+    "Use the bin's flat 1-second cooldown value literally"
+   ],
+   "impact": "high",
+   "quotes": [
+    "|recharge     = {{ap|12 to 8}}",
+    "ddragon E Relentless Force: maxrank 5, cooldown [1, 1, 1, 1, 1], cost [26, 32, 38, 44, 50]",
+    "ViE.StaticCooldown = 1"
+   ]
+  },
+  {
+   "question": "How long can Vault Breaker's charge be held before it auto-cancels: the wiki's 'up to 4 seconds', or the bin's ViQ.ChargeDuration = 6?",
+   "options": [
+    "Charge auto-cancels at 4s per wiki text",
+    "Charge auto-cancels at 6s per bin ChargeDuration",
+    "4s is a display/tooltip rounding and the real cap is 6s (or vice versa)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Vi''' {{tip|channel|charges}} while being {{tip|slow|slowed}} by 15% for up to 4 seconds to increase ''Vault Breaker's'' {{sti|range}}, speed, and damage over the first {{fd|1.25}} seconds of the channel.",
+    "ViQ.ChargeDuration = 6"
+   ]
+  },
+  {
+   "question": "Denting Blows: does ViW.StacksBeforeEffect = 2 mean the triggering hit is the 3rd application (matching the wiki's 'third stack consumes them all'), or does it change how many total attacks are needed to proc the effect?",
+   "options": [
+    "3 total stack-applying hits are needed to trigger, as the wiki states (StacksBeforeEffect=2 just counts prior stacks)",
+    "Only 2 stack-applying hits are needed to trigger per the bin value"
+   ],
+   "impact": "low",
+   "quotes": [
+    "stacking up to 3 times. The third stack consumes them all to deal",
+    "ViW.StacksBeforeEffect = 2"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Cease and Desist (R) on the target for its upfront burst, since it has the longest cooldown and should be used as early as possible to maximize the number of casts available in future fights (and simply for max total damage in this one).",
+   "Immediately follow with Relentless Force (E) to arm and land an empowered, crit-capable basic attack that also resets the auto-attack timer, applying a Denting Blows stack.",
+   "Weave in Vault Breaker (Q): charge it to the full 1.25s damage/range cap, then recast to land the maximized-multiplier dash hit, applying a Denting Blows stack; accept the attack-time lost while channeling since the target cannot punish it.",
+   "Auto-attack continuously between E and Q casts, using each attack (and Q/E hits) to build Denting Blows stacks; on the 3rd stack-consuming hit, benefit from the bonus %max-HP physical damage, armor shred, and the following attack-speed buff.",
+   "Recast Relentless Force again as soon as a charge is available (it stocks up to 2), always prioritizing landing it as an attack reset to avoid wasting basic-attack windup time.",
+   "Repeat Q charge-and-dash on cooldown, timing it so the channel does not overlap with an about-to-consume 3rd Denting Blows stack (attack during the channel is blocked, so land the proc just before charging)."
+  ],
+  "questions": [
+   "Is charging Vault Breaker to the full 1.25s always worth the lost auto-attack/E time in a 15s stationary fight, or does the sim expect a faster minimum-charge Q to preserve attack uptime?",
+   "Should Cease and Desist be assumed to land instantly (target already within 300 units) for the dummy fight, or does its cast time + dash travel time need to be modeled before the R damage lands?",
+   "With R's long cooldown (140-90s), should the rotation assume only one R cast total in the 15s fight, and does the sim's level/duration assumptions ever allow a second cast?",
+   "Does landing Relentless Force on the primary (and only) dummy target always also apply a Denting Blows stack, confirming E counts toward the on-hit stack cycle alongside basic attacks and Q?",
+   "What is Relentless Force's real recharge time in the 15s fight given the bin/wiki conflict noted above, since it directly determines how many E casts (and attack resets) are available?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

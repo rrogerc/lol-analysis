@@ -1,0 +1,179 @@
+{
+ "champion": "udyr",
+ "primitives": [
+  {
+   "id": "form-or-stance",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Udyr has no ultimate; Q/W/E/R are each a Stance he swaps into, each empowering his next two basic attacks differently and overriding the previous stance's unused empowered attacks; switching stances does not end effects the previous stance already granted."
+  },
+  {
+   "id": "empowered-attack",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Every stance cast (and its Awaken recast) arms Udyr's next two on-hit basic attacks with the stance's bonus effect (Q: physical on-hit + AS; W: lifesteal+heal+shield; E: dash-stun; R: AoE magic pulse)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Each stance has an 'Awaken' recast (0.25-5s after the initial cast) that adds a stronger secondary effect (Q: lightning chain; W: bigger shield + HoT + doubled lifesteal/heal; E: bonus speed + CC immunity; R: storm becomes a mobile pulsing zone with % max-health damage) and refreshes/consumes the ability's cooldown."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Monk Training: after casting any basic ability, Udyr's next two on-hit basic attacks gain 30% bonus attack speed for 4s, independent of and stacking with the active stance's own empowered-attack effect."
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "A 1.5s global cooldown is incurred on Q/W/E/R whenever one of them is cast; Monk Training refunds 5% of Awakened Spirit's total cooldown per proc (unless <1s remaining); Awaken recasts refresh (do not simply continue) the stance ability's 6s cooldown."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (Q flat 20; W/E/R 40 scaling down by champion level per wiki, flat 40 per bin) on 6s-cooldown abilities can matter over a 15s fight with heavy stance-cycling."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "R"
+   ],
+   "note": "Storm Stance's blizzard deals magic damage every 0.5s for 4s around Udyr (and, after Awaken, from a separately-moving unleashed storm)."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's on-hit bonus damage, Awaken bonus damage and lightning strikes, and R's blizzard/storm/pulse damage are all expressed partly as a percentage of the target's maximum health."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "Q",
+    "W"
+   ],
+   "note": "Q grants a stacking-capable bonus attack speed buff for 4s (base + Awaken addition); W's empowered attacks grant lifesteal (doubled on Awaken) that persists as a buff until two attacks land."
+  },
+  {
+   "id": "pet-or-summon",
+   "abilities": [
+    "R"
+   ],
+   "note": "R's Awaken recast detaches the storm into an independently-moving unit that seeks out and follows the target, dealing its own damage over time separate from Udyr's attacks/position."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Udyr's kit layers mechanics no single primitive (or simple combination) cleanly captures: (1) four interchangeable 'ultimate-like' abilities sharing one passive 'Awakened Spirit' charge with its own long, level/ultimate-haste-scaled cooldown (~50s to 20s) that is separate from each ability's own 6s cooldown and must be spent via a precisely-timed 0.25-5s recast window after entering a stance; (2) a 1.5s shared global cooldown across all four abilities layered on top of their individual cooldowns; (3) Monk Training's onhit-rider stacking with whichever stance's own empowered-attack effect is simultaneously active, including special-cased reactivation on Awaken casts that also re-applies the stance's un-awakened attack effect. Modeling how much of this fits in a single 15s fight (especially whether even one Awaken is achievable) needs bespoke sequencing logic beyond composing the closed-list primitives."
+ },
+ "unsettled": [
+  {
+   "question": "Is Udyr's 'Awakened Spirit' resource off cooldown at the start of the simulated 15s damage fight, or does it start fully on cooldown as it does at real game start?",
+   "options": [
+    "Assume available at t=0 so an Awaken cast is reachable within the fight",
+    "Assume it starts on full (level-scaled, ~20-50s) cooldown, so no Awaken cast occurs during a 15s fight"
+   ],
+   "impact": "high",
+   "quotes": [
+    "''Awakened Spirit'' is placed on full cooldown at the start of the game.",
+    "{{pp|50 to 20 for 4|1 to 16}}"
+   ]
+  },
+  {
+   "question": "Q's Awaken bonus on-hit damage AD-scaling: does it use 1.5% max-HP damage per 100 bonus AD (wiki text) or 5% per 100 bonus AD (bin's Q2MaxHPADRatio=0.0005)?",
+   "options": [
+    "Wiki value: +1.5% per 100 bonus AD",
+    "Bin value: +5% per 100 bonus AD (Q2MaxHPADRatio=0.0005)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "an additional {{as|{{pp|2 + (4-2)/17*(x-1) for 20|key=%}} {{as|(+ {{fd|1.5}}% per 100 '''bonus''' AD)}}",
+    "UdyrQ.Q2MaxHPADRatio = 0.0005"
+   ]
+  },
+  {
+   "question": "Is UdyrR's bin field 'StormDamage' (base 20-100, +0.35xap) the per-tick empowered-attack pulse damage, or double the wiki's stated per-tick value (base 10-50, +0.175xap), i.e. does the bin represent a combined/two-tick value?",
+   "options": [
+    "Bin StormDamage is the real per-hit pulse damage (wiki's per-tick numbers are wrong or represent something else)",
+    "Wiki's per-tick numbers (half of StormDamage) are correct and bin's StormDamage aggregates two units"
+   ],
+   "impact": "high",
+   "quotes": [
+    "UdyrR#StormDamage = StormBaseDamage=[20/36/52/68/84/100] + 0.35xap",
+    "{{ap|10 to 50 6}} {{as|(+ {{fd|17.5}}% AP)}}"
+   ]
+  },
+  {
+   "question": "Do W/E/R mana costs actually scale down by champion level (wiki: 40 to 23/20 over levels 1-18) or stay flat at 40 as the ddragon summary and bin cost fields show?",
+   "options": [
+    "Costs decrease by level per the wiki's pp formula",
+    "Costs are flat 40 regardless of level, per the bin's static cost field"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{pp|40 - (40-23)/17*(x-1) for 20}}",
+    "cost: 40"
+   ]
+  },
+  {
+   "question": "When only a single target (the dummy) is present, do all 6 lightning bounces from Q's Awaken land on it (as implied by 'able to hit the same target multiple times... for a lack of targets'), and do both empowered attacks' lightning waves fully stack on it if both land on the same isolated target within the 4s window?",
+   "options": [
+    "Yes, all bounces from both empowered attacks land on the single dummy and stack additively",
+    "Some bounces are wasted or capped even against a single target"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "chaining to up to 3 nearby {{tip|sight|visible}} enemies and being able to hit the same target multiple times",
+    "If both empowered attacks are used on the same isolated target, the lightning strikes can deal up to"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open by casting Q (Wilding Claw) to enter Claw Stance, arming the next two basic attacks and starting the attack-speed buff.",
+   "Auto-attack immediately and continuously; the two empowered attacks trigger Q's bonus on-hit physical damage.",
+   "Within 0.25-5s of the Q cast, if Awakened Spirit is available, recast Q to Awaken it, gaining the lightning-chain empowered attacks and extra attack speed; keep auto-attacking to land all lightning ticks on the dummy.",
+   "Respect the shared 1.5s global cooldown before casting any other stance ability after Q.",
+   "Recast Q again as soon as its 6s cooldown is up to refresh Claw Stance and repeat the empowered on-hit damage, since Q has the lowest cost/cooldown and the most direct offensive on-hit and health%-based damage of the four stances.",
+   "Weave in R (Wingborne Storm) once per its 6s cooldown when it does not delay a Q recast, for its self-centered blizzard DoT and its own empowered on-hit pulse damage against the stationary dummy.",
+   "Do not prioritize W (Iron Mantle) for damage output, since it grants only self-healing/shielding/lifesteal with no offensive on-hit component, which the damage-only dummy fight does not need; only cast it if mana/cooldown are otherwise idle and lifesteal-on-hit itemization needs to be exercised.",
+   "Do not prioritize E (Blazing Stampede) beyond triggering it to keep attacking; its offensive contribution is limited to a CC stun (ignored per instructions) and movement speed (ignored), so it contributes no ranked damage benefit versus a stationary dummy.",
+   "Keep basic-attacking without gaps throughout the 15s window so Monk Training's post-cast attack-speed buff is never wasted."
+  ],
+  "questions": [
+   "Given Awakened Spirit's long level/ultimate-haste-scaled cooldown (~20-50s), how many Awaken casts, if any, should the simulator assume occur within a single 15s fight, and does that make W/E irrelevant to include in the rotation at all?",
+   "Should the simulator assume perfect execution of the 0.25-5s Awaken recast timing every time it's available, or apply a realistic reaction delay that could cause the window to be missed?",
+   "Is it correct to fully skip W and E in the damage-maximizing rotation, or does casting them still contribute indirectly (e.g., via Monk Training's attack-speed proc) enough to be worth weaving in over just spamming Q and R?",
+   "Does the shared 1.5s global cooldown ever actually bind given each stance's own cooldown is 6s, or is it only relevant when Awaken recasts are interleaved with a different stance's cast?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

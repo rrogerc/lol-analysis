@@ -1,0 +1,602 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "YonePassive",
+    "key": "Characters/Yone/Spells/YonePassiveAbility/YonePassive",
+    "cooldown": 0,
+    "dataValues": {
+     "MagicDamageSplit": 0.5,
+     "YoneCritToAD": 50,
+     "CritChanceMultiplier": 1,
+     "CritDamageMod": 0.95
+    },
+    "calcs": {
+     "CurrentCritDamage": {
+      "expr": "1xcritDamage",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "critDamage",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "YoneQ",
+    "key": "Characters/Yone/Spells/YoneQAbility/YoneQ",
+    "cooldown": 4,
+    "castTime": 0.35,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       25,
+       50,
+       75,
+       100,
+       125
+      ]
+     },
+     "ADRatio": 1.1,
+     "Width": 80,
+     "BuffDuration": 6,
+     "Q3MaxDistance": 450,
+     "Q3MinDistance": 450,
+     "Q3DashSpeed": 1500,
+     "Q3AoESize": 100,
+     "QAttackSpeedCDPercent": 0.6,
+     "QAttackSpeedCDMax": 0.66667,
+     "QAttackSpeedCastReductionPercent": 0.41667,
+     "QAttackSpeedCastReductionMax": 0.5,
+     "QBaseCastTime": 0.35,
+     "Q3KnockupHeight": 0.5,
+     "Q3KnockupDuration": 0.75
+    },
+    "calcs": {
+     "QDamage": {
+      "expr": "BaseDamage=[25/50/75/100/125] + (ADRatio=1.1)xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        50,
+        75,
+        100,
+        125
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1.1,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "TotalDamageCrit": {
+      "expr": "BaseDamage=[25/50/75/100/125] + ((ADRatio=1.1)xcritDamage)xad",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "YoneW",
+    "key": "Characters/Yone/Spells/YoneWAbility/YoneW",
+    "cooldown": 14,
+    "castTime": 0.5,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "MinionMod": 0.25,
+     "HealthStealMultiplier": 1,
+     "ConeWidth": 40,
+     "WAttackSpeedCDPercent": 0.6,
+     "WAttackSpeedCDMax": 0.57142,
+     "WAttackSpeedCastReductionPercent": 0.41667,
+     "WAttackSpeedCastReductionMax": 0.5,
+     "WBaseCastTime": 0.5,
+     "WCritMultiplier": 0.8,
+     "MaxHealthDamage": {
+      "axis": "rank",
+      "v": [
+       0.08,
+       0.09,
+       0.1,
+       0.11,
+       0.12
+      ]
+     },
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       10,
+       20,
+       30,
+       40,
+       50
+      ]
+     },
+     "FirstChampShieldMultiplier": 1,
+     "SecondChampShieldMultiplier": 0.5,
+     "ShieldDuration": 1.5,
+     "ShieldbADRatio": 0.65
+    },
+    "calcs": {
+     "WDamage": {
+      "expr": "BaseDamage=[10/20/30/40/50] + 1xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        20,
+        30,
+        40,
+        50
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 1
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "{8dfeb810}": {
+      "expr": "(1xad) * byLevel(0.2..1)",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": {
+         "axis": "level",
+         "v": [
+          0.2,
+          0.24705883,
+          0.29411765,
+          0.34117647,
+          0.3882353,
+          0.43529412,
+          0.48235294,
+          0.5294118,
+          0.5764706,
+          0.62352941,
+          0.67058824,
+          0.7176471,
+          0.7647059,
+          0.8117647,
+          0.85882353,
+          0.90588235,
+          0.9529412,
+          1
+         ]
+        }
+       }
+      ],
+      "refs": []
+     },
+     "WShield": {
+      "expr": "byLevel(40..90) + ShieldBADRatioxbonus ad",
+      "flat": {
+       "axis": "level",
+       "v": [
+        40,
+        42.941176,
+        45.882353,
+        48.82353,
+        51.764706,
+        54.705882,
+        57.64706,
+        60.588235,
+        63.52941,
+        66.47059,
+        69.411765,
+        72.35294,
+        75.29412,
+        78.23529,
+        81.17647,
+        84.117647,
+        87.05882,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": null,
+        "dataValue": "ShieldBADRatio"
+       }
+      ],
+      "refs": [
+       "ShieldBADRatio"
+      ]
+     },
+     "MinimumDamageMinions": {
+      "expr": "byLevelL[30/30/30/30/30/30/30/30/50/70/90/110/130/170/210/250/290/330]",
+      "flat": {
+       "axis": "level",
+       "v": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        50,
+        70,
+        90,
+        110,
+        130,
+        170,
+        210,
+        250,
+        290,
+        330
+       ]
+      },
+      "terms": [],
+      "refs": []
+     },
+     "MonsterDamageCap": {
+      "expr": "<ByCharLevelFormulaCalculationPart>",
+      "flat": null,
+      "terms": null,
+      "unresolved": true,
+      "refs": []
+     }
+    },
+    "warnings": [
+     "unresolved calculation part ByCharLevelFormulaCalculationPart"
+    ]
+   }
+  ],
+  "E": [
+   {
+    "script": "YoneE",
+    "key": "Characters/Yone/Spells/YoneEAbility/YoneE",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      22,
+      19,
+      16,
+      13,
+      10
+     ]
+    },
+    "dataValues": {
+     "ReturnTimer": 5,
+     "MovementSpeed": 0.3,
+     "DeathmarkBase": {
+      "axis": "rank",
+      "v": [
+       20,
+       35,
+       50,
+       65,
+       80
+      ]
+     },
+     "DeathmarkPercent": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.275,
+       0.3,
+       0.325,
+       0.35
+      ]
+     },
+     "RecastLockout": 0.5,
+     "EDashRange": 300,
+     "EDashSpeed": 1200,
+     "OnHitIncrease": 0.25,
+     "StartingMS": 0.1,
+     "MissingHealthPercent": {
+      "axis": "rank",
+      "v": [
+       0.25,
+       0.275,
+       0.3,
+       0.325,
+       0.35
+      ]
+     }
+    },
+    "calcs": {
+     "{df232269}": {
+      "expr": "DeathmarkBase=[20/35/50/65/80] + 0.25xad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        20,
+        35,
+        50,
+        65,
+        80
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "total",
+        "coef": 0.25
+       }
+      ],
+      "refs": [
+       "DeathmarkBase"
+      ]
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "YoneR",
+    "key": "Characters/Yone/Spells/YoneRAbility/YoneR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      120,
+      100,
+      80
+     ]
+    },
+    "castTime": 0.75,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       200,
+       400,
+       600
+      ]
+     },
+     "ADRatio": 0.8,
+     "BlinkDistanceBehindTarget": 200,
+     "Width": 225,
+     "RKnockupHeight": 0.5,
+     "RKnockupDuration": 0.75,
+     "RKnockTowardsSpeed": 3000,
+     "RKnockTowardsDampener": 0.8
+    },
+    "calcs": {
+     "Damage": {
+      "expr": "BaseDamage=[200/400/600] + (ADRatio=0.8)xbonus ad",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        200,
+        400,
+        600
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.8,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     },
+     "TooltipDamage": {
+      "expr": "Damage * 0.5",
+      "modifies": "Damage",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        100,
+        200,
+        300
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ad",
+        "scope": "bonus",
+        "coef": 0.4,
+        "dataValue": "ADRatio"
+       }
+      ],
+      "refs": [
+       "ADRatio",
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "YoneQ",
+  "W": "YoneW",
+  "E": "YoneE",
+  "R": "YoneR",
+  "P": "YonePassive"
+ },
+ "resource": {
+  "arType": 11,
+  "values": {
+   "{726ee5cd}": 500,
+   "{c4ab3550}": 0
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.08
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Yone",
+  "name": "Yone",
+  "partype": "Flow",
+  "passive": "Way of the Hunter",
+  "spells": [
+   {
+    "id": "YoneQ",
+    "name": "Mortal Steel",
+    "maxrank": 5,
+    "cooldown": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YoneW",
+    "name": "Spirit Cleave",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YoneE",
+    "name": "Soul Unbound",
+    "maxrank": 5,
+    "cooldown": [
+     22,
+     19,
+     16,
+     13,
+     10
+    ],
+    "cost": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "YoneR",
+    "name": "Fate Sealed",
+    "maxrank": 3,
+    "cooldown": [
+     120,
+     100,
+     80
+    ],
+    "cost": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Way of the Hunter": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "basic",
+    "targeting": "Passive",
+    "affects": "Self, Enemies"
+   }
+  },
+  "Q": {
+   "Mortal Steel": {
+    "damagetype": "Physical",
+    "spelleffects": "special",
+    "spellshield": "true",
+    "projectile": "special",
+    "targeting": "Direction",
+    "affects": "Self, Enemies"
+   }
+  },
+  "W": {
+   "Spirit Cleave": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "aoe",
+    "spellshield": "true",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Self, Enemies"
+   }
+  },
+  "E": {
+   "Soul Unbound": {
+    "damagetype": "True",
+    "spelleffects": "aoe",
+    "spellshield": "false",
+    "targeting": "{{dv|[[Direction-targeted|Direction]]|[[Auto-targeted|Auto]]}}",
+    "affects": "Self, Enemies"
+   }
+  },
+  "R": {
+   "Fate Sealed": {
+    "damagetype": "Physical Magic",
+    "spelleffects": "aoe",
+    "spellshield": "special",
+    "projectile": "false",
+    "targeting": "Direction",
+    "affects": "Self, Enemies"
+   }
+  }
+ }
+}

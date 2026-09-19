@@ -1,0 +1,891 @@
+{
+ "champion": "xayah",
+ "abilities": {
+  "P": {
+   "name": "Clean Cuts / Lover's Leap",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_secondary_ad",
+     "meaning": "physical damage to other enemies hit by the empowered attack's feather (percent of AD)",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ad",
+       "coef": [
+        0.35,
+        0.35,
+        0.35,
+        0.39,
+        0.39,
+        0.39,
+        0.43,
+        0.43,
+        0.43,
+        0.47,
+        0.47,
+        0.47,
+        0.51,
+        0.51,
+        0.51,
+        0.55,
+        0.55,
+        0.55
+       ]
+      }
+     ],
+     "quote": "{{as|{{pp|key=%|35 to 55 for 3|1 to 13}} AD}} {{as|physical damage}} to other enemies hit",
+     "bin": [],
+     "binNote": "No XayahPassive data value carries this AD% scaling; the sheet's PDamageFalloff/PStack fields are unrelated to this per-level AD ratio."
+    },
+    {
+     "id": "p_stacks_per_cast",
+     "meaning": "stacks of Clean Cuts generated per ability cast",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "'''Xayah's''' {{tip|ability}} casts generate 3 {{tip|stacks}} of ''Clean Cuts''",
+     "bin": [
+      "XayahPassive.PStacksPerCast"
+     ]
+    },
+    {
+     "id": "p_stack_max",
+     "meaning": "maximum Clean Cuts stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "stacking up to 5 times",
+     "bin": [
+      "XayahPassive.PStackMax"
+     ]
+    },
+    {
+     "id": "p_stack_duration",
+     "meaning": "duration a Clean Cuts stack lasts before expiring",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "lasting for 8 seconds, refreshing on subsequent casts",
+     "bin": [
+      "XayahPassive.PEmpoweredDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Basic attacks consume a Clean Cuts stack to fire an empowered attack that deals the attack's normal damage to the primary target and additional physical damage to other enemies hit.",
+     "quote": "'''Xayah's''' {{tip|basic attacks}} are empowered to each consume a stack {{tip|on-attack}} to instead shoot a {{as|Feather|buzzword}} that deals the triggering {{as|attack's damage}} to the primary target and {{as|{{pp|key=%|35 to 55 for 3|1 to 13}} AD}} {{as|physical damage}} to other enemies hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The secondary target damage can critically strike (for reduced crit damage) if the triggering attack crits.",
+     "quote": "The secondary target damage can {{tip|critical strike|critically strike}} for {{as|{{critical damage|{{ccd|Xayah|crit_base}}|100}}|critical damage}} damage if the triggering attack does.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The primary-target hit copies all properties of the basic attack (can trigger on-hit effects, can miss/be blinded) and applies lifesteal.",
+     "quote": "This is the damage to the primary target, and copies all properties of the basic attack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The pass-through (secondary target) damage does not trigger on-hit effects and does not apply lifesteal by default, and cannot miss.",
+     "quote": "dApplyLifesteal      = defaults to no",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Clean Cuts feathers still spawn even if the empowering basic attack is blocked.",
+     "quote": "''Clean Cut's'' feathers will spawn even if the basic attack is {{tip|blocked}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XayahPassive.PFeatherDuration",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "XayahPassive.PFeatherSpacingMin",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "XayahPassive.PFeatherSpacingMax",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "XayahPassive.PDamageFalloffMax",
+     "reason": "unknown"
+    },
+    {
+     "ref": "XayahPassive.PDamageFalloffMin",
+     "reason": "unknown"
+    },
+    {
+     "ref": "XayahPassive.PDamageFalloffMid",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Double Daggers",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     35,
+     35,
+     35,
+     35
+    ],
+    "quote": "35",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{pp|type='''bonus''' attack speed|round=3|0.25;0.033*7;0.033*6;0.033*5;0.033*4;0.1|key1=%|0;27.15;74.29;121.43;168.58;214.3|formula=0.25-(0.07 per 100% '''bonus''' attack speed). ''This is capped at 60% reduction at 214.3% '''bonus''' attack speed.''|color=attack speed}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage Per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      45,
+      60,
+      75,
+      90,
+      105
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|45 to 105}} {{as|(+ 50% '''bonus''' AD)}}",
+     "bin": [
+      "XayahQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "Reduced Damage per Hit",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      22.5,
+      30,
+      37.5,
+      45,
+      52.5
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|45/2 to 105/2}} {{as|(+ 25% '''bonus''' AD)}}",
+     "bin": [
+      "XayahQ#MultiHitDamage"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Two daggers are fired; targets hit after the first take 50% reduced damage on subsequent hits from the same cast.",
+     "quote": "Targets hit after the first take 50% reduced damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The two missiles fire with a delay between them and travel at a fixed speed, so damage lands on missile arrival, not on cast.",
+     "quote": "barrages two {{as|Feathers|buzzword}} in the target direction that each deal {{as|physical damage}} to enemies hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cast time (and the attack lockout during it) shrinks with bonus attack speed, down to a minimum of 0.1s, which effectively raises attack/cast frequency.",
+     "quote": "0.25-(0.07 per 100% '''bonus''' attack speed). ''This is capped at 60% reduction at 214.3% '''bonus''' attack speed.''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Xayah cannot basic attack during the cast time of Double Daggers, with the lockout also reduced by bonus attack speed.",
+     "quote": "'''Xayah''' is unable to declare basic attacks for a set duration during the cast time of ''Double Daggers''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks only one of the two dagger instances.",
+     "quote": "{{tip|Spell shield}} will only block a single instance of damage.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XayahQ.StartingCastTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "XayahQ.MinCastTime",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "XayahQ.ASpeedCastTimeScalarPerHundrethSecond",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "XayahQ.Missile1DelayTime",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "XayahQ.Missile2DelayTime",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "XayahQ.Missile1DelaySpeed",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "XayahQ.Missile2DelaySpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Deadly Plumage",
+   "cooldown": {
+    "values": [
+     18,
+     17,
+     16,
+     15,
+     14
+    ],
+    "quote": "{{ap|18 to 14}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     55,
+     50,
+     45,
+     40
+    ],
+    "quote": "{{ap|60 to 40}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      35,
+      40,
+      45,
+      50,
+      55
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 55}}%",
+     "bin": [
+      "XayahW.WAttackSpeedAmount"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "duration of the attack speed frenzy",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "enters a frenzy for 4 seconds",
+     "bin": [
+      "XayahW.WAttackSpeedDuration"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "additional feather damage as percent of triggering attack's damage",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 25,
+     "terms": [],
+     "quote": "fire an additional smaller feather at the target on-hit that deals 25% damage of the triggering attack's damage",
+     "bin": [
+      "XayahW.BonusDamagePercent"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "bonus movement speed on hitting an enemy champion",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 30,
+     "terms": [],
+     "quote": "gains {{sti|ms|{{as|30% '''bonus''' movement speed}}}}",
+     "bin": [
+      "XayahW.WMoveSpeedAmount"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "duration of the movement speed bonus",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "XayahW.WMoveSpeedDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The empowered feather fires on every basic attack hit during the buff, dealing extra on-hit damage as a separate missile.",
+     "quote": "causing her basic attacks to strike a second time, dealing '''reduced''' damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional missile's damage benefits from crits on the triggering attack but cannot itself critically strike.",
+     "quote": "Since the additional missile's damage is based on a percentage of the triggering attack's damage, it will also benefit from the increased damage of triggering attacks that {{tip|critically strike}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The additional missile itself cannot critically strike.",
+     "quote": "The additional missile itself however cannot {{tip|critically strike}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack will not trigger against wards.",
+     "quote": "The empowered attack will not trigger against [[ward]]s.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Deadly Plumage does not interact with Guinsoo's Rageblade Phantom Hit.",
+     "quote": "''Deadly Plumage'' does not interact with {{iis|Guinsoo's Rageblade}} ''Phantom Hit''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Runaan's Hurricane bolts also fire their own additional feather missile.",
+     "quote": "{{iis|Runaan's Hurricane}} {{nie|Wind's Fury}} interacts with ''Deadly Plumage'' by causing the additional bolts to fire their own additional missile",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The cooldown begins on cast.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XayahW.WRakanSeekDistance",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Bladecaller",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": {
+    "values": [
+     20,
+     20,
+     20,
+     20,
+     20
+    ],
+    "quote": "20",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage Per Feather",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      50,
+      65,
+      80,
+      95,
+      110
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      },
+      {
+       "stat": "critChance",
+       "coef": 0.5,
+       "coefScaling": [
+        {
+         "stat": "critDamage",
+         "per": 1,
+         "coef": 1
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|50 to 110}} {{as|(+ 40% '''bonus''' AD)}}",
+     "bin": [
+      "XayahE.BaseDamage",
+      "XayahE.bADRatio",
+      "XayahE.CritRatio",
+      "XayahE#FeatherDamage"
+     ],
+     "binNote": "XayahE#FeatherDamage = (BaseDamage + bADRatioxbonus ad) * (1 + (CritRatio=0.5)xcritChance*(1xcritDamage + -1)). The 1x coefficient on critDamage in this formula is not a separate named data value in the sheet (no row equals 1 for this purpose); it is an inline constant inside the calculation expression itself, so the coefScaling's '1' is only attested by that formula text, not a standalone DataValue row."
+    },
+    {
+     "id": "e_2",
+     "meaning": "Minion Damage Per Feather",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      25,
+      32.5,
+      40,
+      47.5,
+      55
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.2
+      },
+      {
+       "stat": "critChance",
+       "coef": 0.25,
+       "coefScaling": [
+        {
+         "stat": "critDamage",
+         "per": 1,
+         "coef": 1
+        }
+       ]
+      }
+     ],
+     "quote": "{{ap|50/2 to 110/2}} {{as|(+ {{ap|40/2}}% '''bonus''' AD)}}",
+     "bin": [
+      "XayahE.BaseDamage",
+      "XayahE.bADRatio",
+      "XayahE.CritRatio",
+      "XayahE.MinionMultiplier",
+      "XayahE#MinionDamage"
+     ],
+     "binNote": "XayahE#MinionDamage = FeatherDamage * MinionMultiplier(0.5), so the base, AD ratio, and crit term are all half of FeatherDamage's; this matches the wiki's halved values. As with e_1, the '1' coefficient on critDamage is an inline formula constant, not a standalone DataValue row."
+    },
+    {
+     "id": "e_3",
+     "meaning": "diminishing returns per successive feather hit beyond the first",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [],
+     "quote": "This formula is:\n*** For feathers <=19: Damage of one feather{{times}}(n{{minus}}{{fd|0.05}}{{times}}(n{{minus}}1){{divided by}}2{{times}}n)",
+     "bin": [
+      "XayahE.FeatherFalloff"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "root duration for enemies hit by at least three feathers",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "{{tip|root|rooted}} for {{fd|1.25}} seconds",
+     "bin": [
+      "XayahE.RootDuration"
+     ]
+    },
+    {
+     "id": "e_5",
+     "meaning": "minimum feather hits to trigger root",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "A target hit by at least three {{as|Feathers|buzzword}}",
+     "bin": [
+      "XayahE.FeatherThreshold"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Bladecaller recalls all planted Feathers to shoot back to Xayah, each dealing damage on hit.",
+     "quote": "'''Xayah''' recalls all planted {{as|Feathers|buzzword}} to shoot back to her, each dealing {{as|physical damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Damage per feather is increased by critical strike chance scaled by critical damage bonus.",
+     "quote": "increased by {{critical damage|0 to 50|critScaling=true}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bladecaller deals only half damage to minions.",
+     "quote": "''Bladecaller'' deals 50% damage to {{tip|minions}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each successive feather that hits the same cast deals reduced damage per a diminishing-returns formula not stated in the tooltip.",
+     "quote": "The damage dealt by ''Bladecaller'' follows a diminishing returns formula not mentioned in the ability's description, successively reducing extra damage from feathers beyond the first.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An enemy hit by a given individual feather can only be hit by that same feather once per pass.",
+     "quote": "Enemies can be hit by an individual {{as|Feather|buzzword}} only once per pass.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Feathers still in flight are recalled too, but only after landing normally first.",
+     "quote": "{{as|Feathers|buzzword}} that are 'in flight' will be called to '''Xayah''' too, but only once they've landed normally first.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "A spell shield blocks only a single instance of the ability's damage (one feather), not all of them.",
+     "quote": "{{tip|Spell shield}} will only block a single instance of damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bladecaller cannot be cast without a planted Feather on the ground, and cannot be ranked at level 1.",
+     "quote": "''Bladecaller'' cannot be cast without a {{as|Feather|buzzword}} on the ground.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XayahE.FeatherReturnDelay",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Featherstorm",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{ap|140 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "XayahR#Damage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "duration Xayah is ghosted and untargetable",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "XayahR.RUntargetable"
+     ],
+     "binNote": "wiki says 1.5, bin RUntargetable = 1.25; disagreement between sources"
+    },
+    {
+     "id": "r_3",
+     "meaning": "delay before the 5 feathers are fired",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "After 1 second, she shoots 5",
+     "bin": [
+      "XayahR.RAttackDelay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Xayah leaps into the air, becoming ghosted and untargetable, and cannot basic attack or cast abilities during Featherstorm, but can still move.",
+     "quote": "'''Xayah''' is unable to basic attack or cast abilities during Featherstorm, but can still move.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Five feathers are fired in a cone, each dealing physical damage to enemies hit, meaning the champion can be hit by multiple feathers as separate damage instances.",
+     "quote": "she shoots 5 {{as|Feathers|buzzword}} in a cone in the target direction that deal {{as|physical damage}} to enemies hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability can be blocked by a spell shield.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "XayahR.RUntargetable",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "P"
+   ],
+   "note": "Clean Cuts: 0-5 stacks generated by ability casts (3 per cast); each basic attack consumes one stack to fire the empowered attack instead of a normal one."
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "Stacks cap at 5, each stack instance lasts 8s and refreshes on subsequent ability casts (not a damage buff per se, but a capped/expiring resource gated identically to the primitive)."
+  },
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "P: empowered attack deals extra physical damage to other enemies hit (splash) beyond the primary target's normal attack damage. W: while buffed, every basic attack fires an extra feather dealing 25% of the triggering attack's damage on-hit."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "W"
+   ],
+   "note": "Deadly Plumage grants 35-55% bonus attack speed for 4s on cast; also grants a movement-speed buff on champion hit (movement-only, ignored for damage fight)."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Double Daggers fires two separately-timed missiles per cast; the second hit on a given target is reduced 50% relative to the first."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q's cast time (and the attack lockout during it) shrinks with bonus attack speed down to a 0.1s floor, changing effective cast/attack tempo."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "E deals damage instantly on cast (recalling planted feathers); R deals its damage on a fixed 1s delay after the leap."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "E"
+   ],
+   "note": "Each successive feather beyond the first that hits the same target in one Bladecaller cast deals diminishing damage per an undisclosed formula (5% falloff per prior hit, capped at 10% of base beyond the 19th)."
+  },
+  {
+   "id": "crit-interaction",
+   "abilities": [
+    "E",
+    "P"
+   ],
+   "note": "E's per-feather damage and P's empowered-attack secondary damage both scale up with the champion's crit chance/crit damage, even though the hit that lands cannot itself crit (E) or is reduced-crit (P)."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Featherstorm blocks basic attacks and other ability casts for its ~1.5s duration (Xayah can still move) before dealing damage."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (35/40-60/20/100, plus regen) may constrain how many casts of each ability fit in a 15s fight depending on mana pool/regen from build."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E"
+   ],
+   "note": "The number of feathers that actually pass through and hit the lone dummy when Bladecaller is cast depends on how many feathers were planted by prior Q casts/empowered attacks and their ground geometry relative to the target — this count directly feeds the diminishing-returns damage formula."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "R"
+   ],
+   "note": "The ghosted/untargetable window (1.25-1.5s, sources disagree) only matters for damage taken/survival, not for the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Bladecaller's damage is not a flat per-hit or per-stack value: it is 'damage of one feather' multiplied by a disclosed-but-nonstandard diminishing-returns formula over n, where n is the count of feathers that hit the target in that cast. That count is itself a simulation-dependent quantity driven by how many feathers Xayah has planted via Q casts and empowered autoattacks (Clean Cuts) before E is cast, and by geometry (how many of those planted feathers' return paths pass through the single dummy). No primitive in the closed list captures 'a formula over a self-generated, history-dependent hit count'; conditional-damage and positional-assumption together only flag the pieces, they do not encode the n-dependent falloff formula itself."
+ },
+ "unsettled": [
+  {
+   "question": "When Double Daggers is cast at a single stationary dummy, do both daggers actually strike that one target (first at full damage, second at 50% reduced, per 'targets hit after the first take 50% reduced damage'), or are the two daggers fired on separate left/right offset lines such that only one connects with a lone target standing on Xayah's centerline?",
+   "options": [
+    "Both daggers hit the single target every cast: total damage = 1x base + 0.5x base (the wiki's 'Total Reduced Damage' row, i.e. 1.5x per-hit base plus AD ratio)",
+    "Only one dagger reliably hits a single centered target (the width/offset geometry means the second dagger travels down an offset line and misses a single dummy): total damage = 1x base only",
+    "Depends on assumed target/caster positioning, which the dummy fight must define"
+   ],
+   "impact": "high",
+   "quotes": [
+    "Daggers shoot from '''Xayah's''' left and right side.",
+    "Targets hit after the first take 50% reduced damage."
+   ]
+  },
+  {
+   "question": "How many planted Feathers should the simulator assume are on the ground (and geometrically pass through the dummy) each time Bladecaller (E) is cast, given this count drives E's diminishing-returns damage formula?",
+   "options": [
+    "Count only feathers planted by Q casts and empowered autoattacks that occurred since the last E cast (feathers are consumed on recall)",
+    "Assume every feather ever planted in the fight so far that hasn't expired (6s ground duration) is available and hits, maximizing n",
+    "Use a fixed small assumed count (e.g. 1-2) reflecting that only feathers whose flight path crosses the single dummy's position actually register a hit"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Xayah''' recalls all planted {{as|Feathers|buzzword}} to shoot back to her, each dealing {{as|physical damage}} to enemies hit",
+    "Enemies can be hit by an individual {{as|Feather|buzzword}} only once per pass."
+   ]
+  },
+  {
+   "question": "Xayah's ultimate untargetable/ghosted duration: is it 1.5s (wiki description) or 1.25s (bin XayahR.RUntargetable)?",
+   "options": [
+    "1.5 seconds per the wiki description text",
+    "1.25 seconds per the bin data value RUntargetable"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Xayah''' leaps into the air, becoming {{tip|ghosted}} and {{tip|untargetable}} for {{fd|1.5}} seconds."
+   ]
+  },
+  {
+   "question": "Is Clean Cuts' empowered-attack secondary (pass-through) AD% scaling (35% to 55% bonus AD across ranks, keyed 'for 3') truly per-ability-rank-of-3 as the pp template implies, or does it scale off something else entirely (e.g. Xayah's own level, or a fixed value not tied to any single ability's rank)? The bin has no XayahPassive field matching this ratio at all.",
+   "options": [
+    "It scales in three steps of ability rank as the wiki's {{pp|...for 3}} template implies, reaching 55% at max rank of some ability",
+    "It is wiki-only lore/derived text without a confirmed underlying bin data value, and the true live scaling is unknown/unverifiable from these sources"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|{{pp|key=%|35 to 55 for 3|1 to 13}} AD}} {{as|physical damage}} to other enemies hit"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Enter the fight already auto-attacking to have Clean Cuts stacks and planted Feathers available immediately.",
+   "Cast Q (Double Daggers) as the opener to plant Feathers on the ground and generate 3 Clean Cuts stacks.",
+   "Weave in empowered basic attacks (consuming Clean Cuts stacks) between ability casts whenever a stack is available.",
+   "Cast W (Deadly Plumage) early to gain the attack-speed buff, which also speeds up Q's cast time and increases autoattack frequency for the rest of the fight.",
+   "Once several Feathers are planted (from the opening Q and empowered autoattacks), cast E (Bladecaller) to recall them for a burst hit and stack generation.",
+   "Cast R (Featherstorm) for its flat AD-scaled burst damage, accepting its ~1.5s window where Xayah cannot attack or cast (only reasonable once, given a 100-140s cooldown far exceeding the 15s fight).",
+   "Continue autoattacking (empowered by Clean Cuts and W's extra feather) throughout, refreshing Q and E off cooldown as they come up, and recasting E again whenever enough new Feathers have landed.",
+   "Track mana spend against the champion's mana pool/regen; if mana runs out, prioritize autoattacks (which don't cost mana) over marginal ability casts."
+  ],
+  "questions": [
+   "Should R be cast immediately for guaranteed burst, or held/skipped in a 15s single-target dummy fight since its animation costs ~1.5s of lost autoattack/Q/E uptime?",
+   "Given the unsettled feather-count question, how many times can E realistically be cast in 15s, and does it matter whether Q is cast before or after each E to maximize planted feathers for the recall?",
+   "Does the sim assume max ranks (5/5/5/3) and full runes/items from level 1, or a leveling curve, since ability ranks change Q/E/W numbers and R rank-1 availability?",
+   "Should autoattacks be paused to avoid the Q cast-time attack lockout, or does the simulator handle attack-timer/cast-time interaction automatically?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,253 @@
+{
+ "name": "Inferno Aegis / Inferno Aegis 2",
+ "cooldown": {
+  "values": [
+   13,
+   12.25,
+   11.5,
+   10.75,
+   10
+  ],
+  "quote": "{{ap|13 to 10}}"
+ },
+ "cost": null,
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Shield Strength",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    60,
+    80,
+    100,
+    120,
+    140
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.12
+    }
+   ],
+   "quote": "{{ap|60 to 140}} {{as|(+ 12% '''bonus''' health)}}",
+   "bin": [
+    "ShyvanaW#Calc_Shield"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Increased shield per champion",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    18,
+    24,
+    30,
+    36,
+    42
+   ],
+   "terms": [
+    {
+     "stat": "bonusHp",
+     "coef": 0.036
+    }
+   ],
+   "quote": "{{ap|60*0.3 to 140*0.3}} {{as|(+ {{ap|12*0.3}}% '''bonus''' health)}}",
+   "bin": [
+    "ShyvanaW#Calc_Shield_Per_Nearby_Champion"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    80,
+    100,
+    120,
+    140,
+    160
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.65
+    }
+   ],
+   "quote": "{{ap|80 to 160}} {{as|(+ 65% AP)}}",
+   "bin": [
+    "ShyvanaW#Damage"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Duration of shield/move speed buff",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2.5,
+   "terms": [],
+   "quote": "{{fd|2.5}} seconds",
+   "bin": [
+    "ShyvanaW.Duration"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Base bonus move speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{as|{{sti|25% '''bonus''' movement speed}}}}",
+   "bin": [
+    "ShyvanaW#MoveSpeed",
+    "ShyvanaW.BaseMoveSpeed"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Increased move speed while facing enemy champions",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "const",
+   "base": 0.4375,
+   "terms": [],
+   "quote": "increased to {{tt|{{as|{{fd|43.75}}%|ms}}|1.75x modifier}}",
+   "bin": [
+    "ShyvanaW#MoveSpeedTowardsEnemies",
+    "ShyvanaW.MoveSpeedAmpTowardsEnemies",
+    "ShyvanaW.BaseMoveSpeed"
+   ],
+   "binNote": "MoveSpeedAmpTowardsEnemies (1.75) is a multiplier, not the final percentage; the wiki's 43.75% equals BaseMoveSpeed (0.25) x MoveSpeedAmpTowardsEnemies (1.75), matching the ShyvanaW#MoveSpeedTowardsEnemies calculation exactly."
+  },
+  {
+   "id": "w_7",
+   "meaning": "Dragon Form recast heal, missing health scaling",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "level",
+   "base": [
+    60,
+    62.35,
+    64.71,
+    67.06,
+    69.41,
+    71.76,
+    74.12,
+    76.47,
+    78.82,
+    81.18,
+    83.53,
+    85.88,
+    88.24,
+    90.59,
+    92.94,
+    95.29,
+    97.65,
+    100
+   ],
+   "terms": [
+    {
+     "stat": "targetMissingHp",
+     "coef": [
+      0.04,
+      0.0424,
+      0.0447,
+      0.0471,
+      0.0494,
+      0.0518,
+      0.0541,
+      0.0565,
+      0.0588,
+      0.0612,
+      0.0635,
+      0.0659,
+      0.0682,
+      0.0706,
+      0.0729,
+      0.0753,
+      0.0776,
+      0.08
+     ]
+    }
+   ],
+   "quote": "{{pp|60 + (100-60)/17*(x-1) for 20|color=heal}} {{as|(+ {{pp|4 + (8-4)/17*(x-1) for 20|key=%}} '''missing''' health)}}",
+   "bin": [
+    "ShyvanaW#Calc_Base_Heal",
+    "ShyvanaW#Calc_Missing_Health_Heal"
+   ],
+   "binNote": "Bin's Calc_Heal_Min/Calc_Heal_Max formulas (byLevel 75..200, with bonus AD and AP terms) do not match the wiki's stated recast heal values (byLevel 60..100, missing health only, no AD/AP ratio); the wiki quote instead matches ShyvanaW#Calc_Base_Heal and Calc_Missing_Health_Heal, a separate pair of calculations with no AD/AP scaling terms. Treating the wiki's own quoted values as authoritative here. MissingHealthHealMultiplier (2) and Calc_Heal_Max/Calc_Heal_Min appear to belong to that alternate, unused formula pair."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Inferno Aegis can be recast after 1 second while the shield holds, and does so automatically after it expires or is broken.",
+   "quote": "After 1 second, ''Inferno Aegis'' can be recast while the shield holds and does so automatically after it expires or is broken.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast explosion deals magic damage to nearby enemies, a separate damage instance from the shield application.",
+   "quote": "'''Shyvana''' consumes the shield to explode, dealing {{as|magic damage}} to nearby enemies.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Shield strength is increased by 30% for every nearby enemy champion.",
+   "quote": "with the shield strength increased by 30% for every nearby enemy champion",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "In Dragon Form, if the explosion hits an enemy champion, Shyvana heals based on missing health.",
+   "quote": "If the explosion hits an enemy champion, '''Shyvana''' {{tip|heal|heals}} herself for {{pp|60 + (100-60)/17*(x-1) for 20|color=heal}} {{as|(+ {{pp|4 + (8-4)/17*(x-1) for 20|key=%}} '''missing''' health)}}.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Cooldown starts on cast.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "This ability has no cast time.",
+   "quote": "cast time    = none",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Inferno Aegis has spell shield interaction (can be blocked by spell shields).",
+   "quote": "spellshield  = True",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "ShyvanaW.Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaW.Shield_Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "ShyvanaW.MissingHealthHealMultiplier",
+   "reason": "unknown"
+  },
+  {
+   "ref": "ShyvanaW#Calc_Heal_Min",
+   "reason": "unknown"
+  },
+  {
+   "ref": "ShyvanaW#Calc_Heal_Max",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

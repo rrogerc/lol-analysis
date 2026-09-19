@@ -1,0 +1,824 @@
+{
+ "champion": "neeko",
+ "abilities": {
+  "P": {
+   "name": "Inherent Glamour",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "cooldown after manually switching/activating disguise",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "{{fd|0.5}}-second cooldown",
+     "bin": [],
+     "binNote": "no matching NeekoPassive row; the sheet's PassiveCooldown/ChargeTime values are for other triggers"
+    },
+    {
+     "id": "p_2",
+     "meaning": "cooldown after taking champion/turret damage while not disguised",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "puts ''Inherent Glamour'' on a 2-second cooldown",
+     "bin": [
+      "NeekoPassive.PassiveCooldown"
+     ],
+     "binNote": "wiki states 2 seconds for this trigger, but the sheet's NeekoPassive.PassiveCooldown = 6; the bin value does not match the wiki's stated number for this effect, and no other row carries a 2"
+    },
+    {
+     "id": "p_3",
+     "meaning": "time to gather a unit's Sho'Ma while standing near it",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "gather its ''Sho'Ma'' over 2 seconds",
+     "bin": [
+      "NeekoPassive.ChargeTime"
+     ],
+     "binNote": null
+    },
+    {
+     "id": "p_4",
+     "meaning": "cooldown after activating a stored Sho'Ma disguise",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "places ''Inherent Glamour'' on a 1-second cooldown",
+     "bin": [],
+     "binNote": "no matching NeekoPassive row for this specific trigger"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Disguised Neeko can still basic attack while retaining her disguise form.",
+     "quote": "While disguised, '''Neeko''' can use {{tip|basic attacks}} while keeping her form.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Casting Q or E breaks the disguise immediately; casting R breaks it only after a delay.",
+     "quote": "Casting {{ai|Q|Neeko}} or {{ai|E|Neeko}}.\n*** Casting {{ai|R|Neeko}} will not break the disguise immediately, but after a delay.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While disguised as a minion or monster, basic attack damage type/subtype and other combat attributes (crit behavior, projectile type) are copied from the disguise form, which can change damage output.",
+     "quote": "{{tip|Basic attack}} damage type ({{tip|basic damage}}, {{tip|ability damage}}), and subtype ({{tip|physical damage|{{as|physical damage}}}}, {{tip|magic damage|{{as|magic damage}}}})",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "While disguised as a non-champion, Neeko's total attack speed is set to that of the disguise's form, or to 2.0 if the disguise's total attack speed is higher.",
+     "quote": "'''Neeko''' instead has her {{as|'''total''' attack speed}} set to that of the disguise's form, or to {{fd|2.0}} if the disguise's form's {{as|'''total''' attack speed}} is any higher.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Taking damage lethal to the disguise's form or a turret's damage breaks the disguise, putting it on a 2-second cooldown; this is separate from the damage itself.",
+     "quote": "takes damage lethal to the disguise's form\n* enters the enemy team's [[spawn]] platform{{tt|*|or attempts to disguise while already on the platform}}\n* begins a {{tip|channel}} other than {{si|Recall}} / {{si|Empowered Recall}}\n* deals damage to a {{tip|structure}} with a non-champion disguise form\n* takes damage from a {{tip|turret}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Both Neeko and the disguise's apparent form take damage based on her real current health, armor, and magic resistance, not the disguise's.",
+     "quote": "Both '''Neeko''' and the disguise's form take damage based on her real '''current''' {{as|{{sti|health}}}}, {{as|{{sti|armor}}}}, and {{as|{{sti|magic resistance}}}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NeekoPassive.MagicPen",
+     "reason": "unknown"
+    },
+    {
+     "ref": "NeekoPassive.MagicPenDuration",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Blooming Burst",
+   "cooldown": {
+    "values": [
+     9,
+     8.5,
+     8,
+     7.5,
+     7
+    ],
+    "quote": "{{ap|9 to 7}}"
+   },
+   "cost": {
+    "values": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "quote": "{{ap|50 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Initial Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      110,
+      160,
+      210,
+      260
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|60 to 260}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "NeekoQ#ExplosionDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Subsequent Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      60,
+      85,
+      110,
+      135
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.25
+      }
+     ],
+     "quote": "{{ap|35 to 135}} {{as|(+ 25% AP)}}",
+     "bin": [
+      "NeekoQ#SecondDamage"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "Bonus Monster Damage",
+     "role": "other",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      35,
+      50,
+      65,
+      80,
+      95
+     ],
+     "terms": [],
+     "quote": "{{ap|35 to 95}}",
+     "bin": [
+      "NeekoQ.MonsterBonus"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "Slow Amount",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 40,
+     "terms": [],
+     "quote": "{{sbc|Active:}} '''Neeko''' tosses a seed that bursts upon landing at the target location, dealing {{as|magic damage}} to nearby enemies.",
+     "bin": [
+      "NeekoQ.SlowAmount"
+     ],
+     "binNote": "Wiki template leveling/description text does not mention a slow at all; only the bin has this value. Quote is the closest surrounding ability text, not a description of the slow itself."
+    },
+    {
+     "id": "q_6",
+     "meaning": "Slow Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{sbc|Active:}} '''Neeko''' tosses a seed that bursts upon landing at the target location, dealing {{as|magic damage}} to nearby enemies.",
+     "bin": [
+      "NeekoQ.SlowDuration"
+     ],
+     "binNote": "Wiki template leveling/description text does not mention a slow at all; only the bin has this value. Quote is the closest surrounding ability text, not a description of the slow itself."
+    },
+    {
+     "id": "q_7",
+     "meaning": "Delay before subsequent bloom",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds",
+     "bin": [
+      "NeekoQ.RepeatDelay"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The burst can bloom again up to 2 times per cast if it kills an enemy or hits a champion or large monster, dealing subsequent damage each time.",
+     "quote": "If the burst kills an enemy or hits a {{tip|champion}} or large {{tip|monster}}, the seed blooms after {{fd|0.75}} seconds to burst again, dealing {{as|magic damage}} to enemies in the same area. This may occur up to 2 times per cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shield blocks one instance of damage but does not prevent subsequent blooms.",
+     "quote": "{{tip|Spell shield}} blocks an instance of damage but does not prevent subsequent ''Blooms''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each bloom deals bonus damage against monsters.",
+     "quote": "Each bloom deals {{as|'''bonus''' magic damage}} against {{tip|monsters}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Shapesplitter",
+   "cooldown": {
+    "values": [
+     16,
+     15,
+     14,
+     13,
+     12
+    ],
+    "quote": "{{ap|16 to 12}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Bonus Magic Damage",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      30,
+      65,
+      100,
+      135,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|30 to 170}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "NeekoW#PassiveBonusDamageCalc"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Bonus Movement Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      10,
+      17.5,
+      25,
+      32.5,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|10 to 40}}%",
+     "bin": [
+      "NeekoW.PassiveHaste"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "Bonus Movement Speed",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      20,
+      25,
+      30,
+      35,
+      40
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 40}}%",
+     "bin": [
+      "NeekoW.Haste"
+     ]
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration of the stacking passive bonus movement speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "grant her {{sti|ms|{{as|'''bonus''' movement speed}}}} for 1 second",
+     "bin": [
+      "NeekoW.PassiveHasteDuration"
+     ]
+    },
+    {
+     "id": "w_5",
+     "meaning": "monster bonus damage on empowered attack",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 75,
+     "terms": [],
+     "quote": "This attack deals {{as|75 '''bonus''' magic damage}} against {{tip|monsters}}.",
+     "bin": [
+      "NeekoW.MonsterBonus"
+     ]
+    },
+    {
+     "id": "w_6",
+     "meaning": "stack cap for Shapesplitter passive",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "stacks up to 2 times",
+     "bin": [],
+     "binNote": "The bin has no data value for the stack cap (2); it is implied only by the passive being consumed at 2 stacks. No matching row exists."
+    },
+    {
+     "id": "w_7",
+     "meaning": "duration of clone (and active bonus movement speed)",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "gain {{as|'''bonus''' movement speed}} for 3 seconds",
+     "bin": [
+      "NeekoW.CloneDuration",
+      "NeekoW.HasteDuration"
+     ]
+    },
+    {
+     "id": "w_8",
+     "meaning": "invisibility duration on cast",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "instantly become {{tip|invisible}} for {{fd|0.5}} seconds",
+     "bin": [
+      "NeekoW.StealthDuration"
+     ]
+    },
+    {
+     "id": "w_9",
+     "meaning": "delay before clone disappears after taking damage",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "it will disappear prematurely after {{fd|0.5}} seconds",
+     "bin": [
+      "NeekoW.CloneDamageTimer"
+     ],
+     "binNote": "Wiki text states 0.5 seconds but the bin's NeekoW.CloneDamageTimer value is 0.75; recording the wiki's stated number per rules while flagging the disagreement."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The empowered on-hit attack consumes both stacks and becomes a non-projectile guaranteed-hit attack, dealing bonus magic damage and granting bonus movement speed.",
+     "quote": "At 2 stacks, her next basic attack {{tip|on-attack}} consumes them all to become {{tip|projectile|non-projectile}}, deal {{as|'''bonus''' magic damage}} and grant her {{sti|ms|{{as|'''bonus''' movement speed}}}} for 1 second.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Basic attacks generate a refreshing stack of Shapesplitter on-hit.",
+     "quote": "'''Neeko's''' {{tip|basic attacks}} {{tip|on-hit}} generate a {{tip|stack}} of ''Shapesplitter'',  which refreshes on subsequent attacks and stacks up to 2 times.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack will not trigger against wards and jungle plants.",
+     "quote": "The empowered attack will not trigger against {{tip|wards}} and [[jungle plants]].",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active clone's cooldown starts only after the clone expires.",
+     "quote": "Starts after clone expires.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Shapesplitter can be recast at any time while the clone is active to redirect it, and this recast does not count as an ability activation for on-cast effects.",
+     "quote": "Recasting ''Shapesplitter'' does not count as an ability activation for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NeekoW.PassiveDamage",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "NeekoW.APRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Tangle-Barbs",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     65,
+     70,
+     75,
+     80
+    ],
+    "quote": "{{ap|60 to 80}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      105,
+      140,
+      175,
+      210
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|70 to 210}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "NeekoE#BaseDamage"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.7,
+      0.9,
+      1.1,
+      1.3,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{ap|0.7 to 1.5}} seconds",
+     "bin": [
+      "NeekoE.MinRootDuration"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "Empowered Root Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.8,
+      2.1,
+      2.4,
+      2.7,
+      3
+     ],
+     "terms": [],
+     "quote": "{{ap|1.8 to 3}} seconds",
+     "bin": [
+      "NeekoE.MaxRootDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "If the spiral hits at least one enemy, it grows in size and its speed and root duration is increased.",
+     "quote": "If the spiral hits at least one enemy, it grows in size and its speed and root duration is increased.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spell shield will not prevent the missile from becoming empowered.",
+     "quote": "{{tip|Spell shield}} will not prevent the missile to become empowered.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NeekoE.BaseRootDuration",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "NeekoE.TargetsRequiredForMaxValue",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "NeekoE.EmpoweredWidth",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "NeekoE.EmpoweredSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Pop Blossom",
+   "cooldown": {
+    "values": [
+     120,
+     105,
+     90
+    ],
+    "quote": "{{ap|120 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.6,
+    "quote": "{{fd|0.6}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      150,
+      350,
+      550
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 1.2
+      }
+     ],
+     "quote": "{{ap|150 to 550}} {{as|(+ 120% AP)}}",
+     "bin": [
+      "NeekoR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "wind up (highlight) duration before knock up",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [],
+     "quote": "winds up spiritual essence over {{fd|1.25}} seconds",
+     "bin": [],
+     "binNote": "Wiki's wind-up duration of 1.25s is not matched by any single NeekoR data value; closest are DelayUntilReveal=1.25 (reveal delay) which likely corresponds to this wind-up."
+    },
+    {
+     "id": "r_3",
+     "meaning": "disguise break time into wind up",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "it will break after {{fd|0.5}} seconds into the duration",
+     "bin": [],
+     "binNote": "No NeekoR data value matches 0.5s exactly for disguise break; DelayBeforePassiveRemoval=0.5 seems related but its purpose per name is passive removal, not disguise break confirmation."
+    },
+    {
+     "id": "r_4",
+     "meaning": "knock up duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.6,
+     "terms": [],
+     "quote": "{{tip|airborne|knocking up}} nearby enemies for {{fd|0.6}} seconds",
+     "bin": [
+      "NeekoR.DelayUntilExplosion"
+     ],
+     "binNote": "DelayUntilExplosion=0.6 matches the knock-up duration numerically; the name suggests it is the delay to the landing explosion rather than an explicit knock-up length field, but the value agrees."
+    },
+    {
+     "id": "r_5",
+     "meaning": "stun duration on landing",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "and {{tip|stun|stuns}} them for {{fd|0.75}} seconds",
+     "bin": [
+      "NeekoR.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Spell shield blocks either the knock up or the damage and stun, but not both.",
+     "quote": "{{tip|Spell shield}} will block either the knock up or damage and stun, but not both.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "On-cast effects (highlighting the area) are applied on activation, and cooldown starts on cast.",
+     "quote": "On-cast effects are applied on activation.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The damage and stun occur only when the cast time ends and Neeko lands.",
+     "quote": "When the cast time ends, she lands to emit a burst of energy that deals {{as|magic damage}} to nearby enemies and {{tip|stun|stuns}} them",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "NeekoR.Duration",
+     "reason": "unknown"
+    },
+    {
+     "ref": "NeekoR.ShieldAmount",
+     "reason": "defensive"
+    },
+    {
+     "ref": "NeekoR.ShieldDuration",
+     "reason": "defensive"
+    },
+    {
+     "ref": "NeekoR.DelayUntilReveal",
+     "reason": "unknown"
+    },
+    {
+     "ref": "NeekoR.ShieldPerChampion",
+     "reason": "defensive"
+    },
+    {
+     "ref": "NeekoR.SlowAmount",
+     "reason": "utility"
+    },
+    {
+     "ref": "NeekoR.DelayBeforePassiveRemoval",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q's initial burst, E's spiral hit, and R's landing burst each deal a single fixed-timing magic damage instance on cast/cast-end"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Blooming Burst re-blooms up to 2 more times at a fixed 0.75s delay after the initial hit whenever it hits a champion (the dummy always counts), each bloom a separately timed damage instance"
+  },
+  {
+   "id": "nth-hit-or-cast",
+   "abilities": [
+    "W"
+   ],
+   "note": "Shapesplitter passive: every basic attack adds a stack (cap 2, refreshing), and the attack that reaches 2 stacks consumes them to deal a bonus magic damage on-hit instance"
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "R"
+   ],
+   "note": "Pop Blossom has a 1.25s wind-up plus a 0.6s cast time before its damage lands, during which Neeko is airborne/committed to the cast"
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Q, E, R, and W's on-hit passive are all expressible with plain-cast, recast-or-multipart, and nth-hit-or-cast. Passive P (Inherent Glamour) requires an allied champion or a non-champion unit (minion/monster/ward/plant) to disguise as; since the damage and survival fights have no allies, minions or terrain, disguising cannot occur and P contributes no damage-fight logic. W's active (clone) deals no damage of its own (only the passive on-hit rider does), so it is skipped in the dummy fight and needs no primitive."
+ },
+ "unsettled": [
+  {
+   "question": "Does R's 1.25s wind-up block Neeko from acting (auto-attacking, casting Q/E) before the 0.6s committed cast time begins, or can she act freely during the wind-up and only the final 0.6s is a hard commit?",
+   "options": [
+    "The full 1.25s wind-up + 0.6s cast time (1.85s total) blocks all other actions, matching a charge-or-channel with total duration 1.85s",
+    "Only the 0.6s wiki 'cast time' field blocks actions; the 1.25s wind-up (highlighting the area) does not prevent auto-attacks or other casts"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Neeko''' winds up spiritual essence over {{fd|1.25}} seconds and highlights an area around herself",
+    "|cast time    = {{fd|0.6}}",
+    "On-cast effects are applied on activation."
+   ]
+  },
+  {
+   "question": "Does each of Q's up-to-2 follow-up blooms count as a separate spell cast for on-hit/on-cast item and rune interactions (e.g. procs that trigger 'on ability cast' or apply per-instance), or are they treated as part of the single original cast?",
+   "options": [
+    "Each bloom is a fully separate damage/spell instance that can re-trigger on-hit or spell-based item effects",
+    "Only the initial burst counts as the 'cast'; the 2 blooms are follow-up damage from the same cast and do not re-trigger cast-based procs"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "the seed blooms after {{fd|0.75}} seconds to burst again, dealing {{as|magic damage}} to enemies in the same area. This may occur up to 2 times per cast."
+   ]
+  },
+  {
+   "question": "NeekoW.CloneDamageTimer in the bin is 0.75 but the wiki text states the clone disappears 0.5 seconds after taking damage; since the clone deals no damage in the dummy fight this doesn't change output, but is either value authoritative for any downstream timing use?",
+   "options": [
+    "Wiki's stated 0.5s is correct and the bin value is stale/unused",
+    "Bin's 0.75s is the live value and the wiki text is outdated"
+   ],
+   "impact": "low",
+   "quotes": [
+    "it will disappear prematurely after {{fd|0.5}} seconds",
+    "NeekoW.CloneDamageTimer = 0.75"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Neeko starts undisguised (no allied champions or other units exist to disguise as in this fight format), so Inherent Glamour contributes nothing.",
+   "Open by casting Q (Blooming Burst) on the dummy immediately; it deals its initial magic damage and then blooms up to two more times over the next 1.5 seconds for extra magic damage.",
+   "Cast E (Tangle-Barbs) as soon as its 0.25s cast time allows, adding another magic damage hit and refreshing on cooldown thereafter.",
+   "Weave in basic attacks continuously between and during ability casts; every second attack consumes Shapesplitter stacks for a bonus magic damage on-hit strike.",
+   "Cast R (Pop Blossom) once for its large burst of magic damage, accepting the wind-up/cast time before it lands; given its 90-120s cooldown it will not be available again within the 15s window.",
+   "Recast Q and E on cooldown for the remainder of the fight, continuing to auto-attack in between to keep triggering the W passive's empowered attacks."
+  ],
+  "questions": [
+   "Should R be cast immediately at the start of the fight to front-load its burst, or held until after Q/E have been used, given the simulator ranks by kill time and total damage over ~15s?",
+   "Does casting W's active clone ever benefit the damage fight (e.g. via any AP/haste self-buff that could indirectly matter to attack speed/casting), or should it be omitted entirely as proposed?",
+   "How much of the 15s window is actually available for casting given R's wind-up/cast-time commitment — does this materially reduce the number of Q/E casts and auto-attacks achievable?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

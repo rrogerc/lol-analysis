@@ -1,0 +1,262 @@
+{
+ "name": "Blood Frenzy / Snack Attack",
+ "cooldown": {
+  "values": [
+   14,
+   13,
+   12,
+   11,
+   10
+  ],
+  "quote": "{{ap|14 to 10}}"
+ },
+ "cost": {
+  "values": [
+   5,
+   5,
+   5,
+   5,
+   5
+  ],
+  "quote": "{{as|5%|health}}",
+  "resource": "{{as|'''current''' health}}"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Bonus Attack Speed during Blood Frenzy",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.55,
+    0.65,
+    0.75,
+    0.85,
+    0.95
+   ],
+   "terms": [],
+   "quote": "{{ap|55 to 95}}%",
+   "bin": [
+    "BriarW.BerserkAS"
+   ]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Bonus Movement Speed during Blood Frenzy",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.24,
+    0.33,
+    0.42,
+    0.51,
+    0.6
+   ],
+   "terms": [],
+   "quote": "{{ap|24 to 60}}%",
+   "bin": [
+    "BriarW.BerserkMS"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Cleave physical damage to enemies around Blood Frenzy attack target",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|60 to 100}}% AD}}",
+   "bin": [
+    "BriarW#TotalAoEDamage",
+    "BriarW.AoEAttackDamagePercent"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Snack Attack bonus physical damage",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [
+    5,
+    20,
+    35,
+    50,
+    65
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.05
+    },
+    {
+     "stat": "targetMissingHp",
+     "coef": 0.09,
+     "coefScaling": [
+      {
+       "stat": "bonusAd",
+       "per": 100,
+       "coef": 0.025
+      }
+     ]
+    }
+   ],
+   "quote": "{{ap|5 to 65}} {{as|(+ 5% AD)}} {{as|(+ 9% {{as|(+ {{fd|2.5}}% per 100 '''bonus''' AD)}} of the target's '''missing''' health)}}",
+   "bin": [
+    "BriarW#TotalAttackBonusDamage",
+    "BriarW#TotalAttackPercentMissingHealth"
+   ],
+   "binNote": "BriarW#TotalAttackBonusDamage = AttackBonusDamage + 1.05xad combines the 100% AD normal attack with the 5% bonus into one coefficient; only the 5% is this ability's bonus term, the rest is the base attack itself. BriarW#TotalAttackPercentMissingHealth carries the missing-health ratio in whole-percent units (9 and 0.025xbonus ad) rather than the fractional per-100-AD form the wiki quotes (9% and +2.5% per 100 bonus AD); same numbers, different scale convention."
+  },
+  {
+   "id": "w_5",
+   "meaning": "Snack Attack heal percentage of post-mitigation damage dealt",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.24,
+    0.28,
+    0.32,
+    0.36,
+    0.4
+   ],
+   "terms": [],
+   "quote": "{{ap|24 to 40}}%",
+   "bin": [
+    "BriarW.AttackHealPercent"
+   ]
+  },
+  {
+   "id": "w_6",
+   "meaning": "Blood Frenzy / Snack Attack window duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "gains ''Blood Frenzy'' for 5 seconds",
+   "bin": [
+    "BriarW.BerserkDuration"
+   ]
+  },
+  {
+   "id": "w_7",
+   "meaning": "Snack Attack flat heal, percent of Briar's maximum health",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "maxHp",
+     "coef": 0.05
+    }
+   ],
+   "quote": "{{as|5% of her '''maximum''' health}}",
+   "bin": [
+    "BriarW#AttackMaxHPHeal"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Briar dashes and gains Blood Frenzy for 5 seconds only if there is a nearby enemy upon her arrival.",
+   "quote": "'''Briar''' {{tip|dash|dashes}} in the target direction. If there is a nearby enemy upon her arrival, she gains ''Blood Frenzy'' for 5 seconds",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "During Blood Frenzy, Briar is forced to basic attack the nearest enemy with an uncancellable windup, empowered to deal cleave damage.",
+   "quote": "become {{tt|forced|See notes}} to basic attack the nearest enemy ... gains {{tip|ghosting}}, {{sti|{{as|'''bonus''' attack speed}}}} and {{sti|{{as|'''bonus''' movement speed}}}}, as well as empowering her basic attacks to have an {{tip|uncancellable windup}} and deal {{as|physical damage}} to enemies surrounding her target",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cleave/bonus attack damage is affected by critical strike modifiers, and cleave crits if the main attack crits.",
+   "quote": "This damage is affected by {{tip|critical strike}} modifiers.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Blood Frenzy resets Briar's basic attack timer.",
+   "quote": "Blood Frenzy {{tip|basic attack reset|resets}} '''Briar's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Snack Attack can only be cast during Blood Frenzy and is lost immediately if the frenzy ends.",
+   "quote": "''Snack Attack'' can only be used during ''{{ai|Blood Frenzy|Briar}}''; if the frenzy ends at any point, the empowered attack will be lost immediately.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Snack Attack resets Briar's basic attack timer.",
+   "quote": "Snack Attack {{tip|basic attack reset|resets}} '''Briar's''' basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Blood Frenzy's cooldown starts on cast, not on the frenzy ending.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Casting Chilling Scream (E) interrupts and ends Blood Frenzy early; Certain Death (R) can be cast during the frenzy without interrupting it.",
+   "quote": "''{{ai|E|Briar}}'' interrupts the frenzy. ''{{ai|R|Briar}}'' can be cast during the frenzy without interrupting it.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Snack Attack heals Briar for a flat 5% of her maximum health plus a percentage of the post-mitigation damage dealt.",
+   "quote": "healing her for {{as|5% of her '''maximum''' health}} plus a percentage of the {{tt|post-mitigation damage|Damage calculated after modifiers}} dealt",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "BriarW.TauntRange",
+   "reason": "utility"
+  },
+  {
+   "ref": "BriarW.MinDashDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarW.MaxDashDistance",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarW.MaxRangeOverWalls",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarW.DashSpeed",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarW.MaxMonsterDamage",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "BriarW.AoEAttackRadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "BriarW.MonsterAndMinionPercentMod",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

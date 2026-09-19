@@ -1,0 +1,826 @@
+{
+ "champion": "brand",
+ "abilities": {
+  "P": {
+   "name": "Blaze / Blaze 2",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_ablaze_dot",
+     "meaning": "Ablaze damage over time per stack, percent of target max health over 4 seconds",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "const",
+     "base": 0.02,
+     "terms": [],
+     "quote": "{{as|2% of their '''maximum''' health}} over 4 seconds",
+     "bin": [
+      "BrandPassive.PercentHealthDamage"
+     ],
+     "binNote": "wiki gives 2% (0.02) matching bin's PercentHealthDamage=2 (as a percent)."
+    },
+    {
+     "id": "p_ablaze_duration",
+     "meaning": "Ablaze stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "apply a {{tip|stack}} of ''Ablaze'' to enemies hit for 4 seconds",
+     "bin": [],
+     "binNote": "no bin row found for the 4s duration; not present in listed data values."
+    },
+    {
+     "id": "p_ablaze_tick_interval",
+     "meaning": "Ablaze damage tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "every {{fd|0.25}} seconds over 4 seconds",
+     "bin": [],
+     "binNote": "no matching data value listed for tick interval."
+    },
+    {
+     "id": "p_ablaze_max_stacks",
+     "meaning": "maximum Ablaze stacks",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times",
+     "bin": [],
+     "binNote": "no matching data value listed for max stacks."
+    },
+    {
+     "id": "p_ablaze_monster_mod",
+     "meaning": "Ablaze damage per tick multiplier vs monsters",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": 2.7,
+     "terms": [],
+     "quote": "''Ablaze'' deals 270% damage per tick to {{tip|monsters}}",
+     "bin": [
+      "BrandPassive.MonsterMod"
+     ],
+     "binNote": "bin MonsterMod=270 matches wiki's 270% multiplier."
+    },
+    {
+     "id": "p_ablaze_monster_cap",
+     "meaning": "Ablaze damage cap per tick against non-epic monsters, by stack count (1/2/3)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": [
+      12.5,
+      25,
+      37.5
+     ],
+     "terms": [],
+     "quote": "{{pp|50/4 to (50/4)*3|1;2;3|type=''Ablaze'' stacks}} per tick against non-epic monsters",
+     "bin": [
+      "BrandPassive.JungleMonsterDPSCap"
+     ],
+     "binNote": "JungleMonsterDPSCap=50 divided by 4 ticks/sec = 12.5 per tick per stack, matching wiki."
+    },
+    {
+     "id": "p_ablaze_epic_cap",
+     "meaning": "Ablaze damage cap per tick against epic monsters, by stack count (1/2/3)",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": [
+      20,
+      40,
+      60
+     ],
+     "terms": [],
+     "quote": "{{pp|80/4 to (80/4)*3|1;2;3|type=''Ablaze'' stacks}} per tick against epic monsters",
+     "bin": [
+      "BrandPassive.EpicMonsterDPSCap"
+     ],
+     "binNote": "EpicMonsterDPSCap=80 divided by 4 ticks/sec = 20 per tick per stack, matching wiki."
+    },
+    {
+     "id": "p_mana_restore",
+     "meaning": "mana restored on killing an Ablaze/ability-killed enemy, by champion level",
+     "role": "resource",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      20,
+      20,
+      23.33,
+      23.33,
+      23.33,
+      26.66,
+      26.66,
+      26.66,
+      29.99,
+      29.99,
+      29.99,
+      33.32,
+      33.32,
+      33.32,
+      36.653,
+      36.653,
+      36.653,
+      39.983
+     ],
+     "terms": [],
+     "quote": "restores {{as|{{pp|20 to 40 for 5|1;6 to 15|...}} {{sti|mana}}}}",
+     "bin": [
+      "BrandPassive#ManaRestore",
+      "BrandPassive.ManaRestoration"
+     ],
+     "binNote": "not-a-fight-value (mana restore doesn't affect damage dealt/taken in dummy or survival fight, but kept as resource role since it affects sustained cost); bin ManaRestore is a per-level interpolation of the rank array."
+    },
+    {
+     "id": "p_explosion_damage",
+     "meaning": "explosion damage percent of target max health at 3 stacks, by champion level (6/8/10/... to 12%) plus AP ratio",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.0002,
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.02
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|{{pplevel|6 to 12|key=%}} {{as|(+ 2% per 100 AP)}} of their '''maximum''' health}}",
+     "bin": [
+      "BrandPassive#ExplosionDamage"
+     ],
+     "binNote": "bin formula (byLevel(6..12) + 0.02xap)*0.01 matches wiki's level-scaling 6-12% base plus 2% per 100 AP; exact per-level breakpoints not enumerated in sheet, assumed linear as in Q/W/E style level scaling used elsewhere on this champ (levels 1,6,11,16 given as breakpoints)."
+    },
+    {
+     "id": "p_explosion_monster_cap",
+     "meaning": "explosion damage cap against monsters, by champion level breakpoints (1/6/11/16)",
+     "role": "target-debuff",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      270,
+      270,
+      270,
+      270,
+      270,
+      355,
+      355,
+      355,
+      355,
+      355,
+      440,
+      440,
+      440,
+      440,
+      440,
+      525,
+      525,
+      525
+     ],
+     "terms": [],
+     "quote": "capped at {{pp|270 to 525|1;6;11;16}} against {{tip|monsters}}",
+     "bin": [
+      "BrandPassive#JungleMonsterExplosionFlatCap"
+     ],
+     "binNote": "matches bin's JungleMonsterExplosionFlatCap byLevelL array exactly."
+    },
+    {
+     "id": "p_explosion_delay",
+     "meaning": "delay before explosion detonates after 3rd stack",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "after 2 seconds, consumes their stacks to explode",
+     "bin": [],
+     "binNote": "no matching data value listed for the 2s delay."
+    },
+    {
+     "id": "p_explosion_immunity",
+     "meaning": "duration Ablaze cannot restack after a ring explosion",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "have had a ring explode from them in the last 4 seconds",
+     "bin": [],
+     "binNote": "no matching data value listed for this cooldown-like immunity window."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Brand's abilities apply a stack of Ablaze to enemies hit, and each new application refreshes the duration of all existing stacks.",
+     "quote": "apply a {{tip|stack}} of ''Ablaze'' to enemies hit for 4 seconds, stacking up to 3 times and refreshing the duration of all stacks with each application",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Abilities used against a target already afflicted with Ablaze are empowered (e.g. W's empowered damage).",
+     "quote": "Subsequent abilities used against a target with ''Ablaze'' are empowered.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Each stack of Ablaze deals its own individual damage ticks based on when it was applied, even if all stacks' durations are refreshed together.",
+     "quote": "Each stack of ''Ablaze'' deals damage to the target individually and applies their damage ticks dependent on the time they were applied, even if the duration of all the stacks are refreshed.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ablaze's damage cap against a monster is applied after the monster damage multiplier is applied.",
+     "quote": "''Ablaze's'' damage cap against a {{tip|monster}} is applied after the increased monster damage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Reaching 3 stacks on an enemy champion or large monster triggers a ring that detonates after a 2 second delay, applying a stack of Ablaze and dealing AoE magic damage to nearby enemies; the target cannot be reapplied Ablaze for 4 seconds after a ring explodes from them.",
+     "quote": "causing it to form a fiery ring around the target that grants {{tip|sight}} within its radius and, after 2 seconds, consumes their stacks to explode. All enemies within the detonation are applied a stack of ''Ablaze''",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Killing an enemy afflicted with Ablaze, or any enemy with an ability, restores mana.",
+     "quote": "Killing an enemy afflicted with ''Ablaze'' or any enemy with an ability restores {{as|{{pp|20 to 40 for 5|1;6 to 15|...}} {{sti|mana}}}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The Ablaze burn is persistent/indirect damage and the ring explosion is area/indirect damage.",
+     "quote": "The burn deals {{tip|persistent damage}}, and the explosion deals {{tip|area damage}}; both are additionally tagged as {{tip|indirect damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Ablaze is a debuff that persists through the target's death.",
+     "quote": "''Ablaze'' is a {{tip|debuff}} that persists through {{tip|death}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BrandPassive.MonsterMod",
+     "reason": null
+    },
+    {
+     "ref": "BrandPassive.PercentHealthDamage",
+     "reason": null
+    },
+    {
+     "ref": "BrandPassive.EpicMonsterDPSCap",
+     "reason": null
+    },
+    {
+     "ref": "BrandPassive.JungleMonsterDPSCap",
+     "reason": null
+    },
+    {
+     "ref": "BrandPassive.ManaRestoration",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Sear",
+   "cooldown": {
+    "values": [
+     8,
+     7.5,
+     7,
+     6.5,
+     6
+    ],
+    "quote": "{{ap|8 to 6}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     70,
+     70,
+     70,
+     70
+    ],
+    "quote": "70",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      100,
+      130,
+      160,
+      190
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.65
+      }
+     ],
+     "quote": "{{ap|70 to 190}} {{as|(+ 65% AP)}}",
+     "bin": [
+      "BrandQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "stun duration on an Ablaze target",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.75,
+     "terms": [],
+     "quote": "{{fd|1.75}}",
+     "bin": [
+      "BrandQ.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Sear deals magic damage to the first enemy hit by the fireball.",
+     "quote": "launches a fireball in the target direction that deals {{as|magic damage}} to the first enemy hit",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target is Ablaze (from Brand's passive), Sear additionally stuns it for 1.75 seconds.",
+     "quote": "An ''Ablaze'' target hit will also be briefly {{tip|stun|stunned}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Pillar of Flame",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "quote": "{{ap|60 to 100}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      75,
+      120,
+      165,
+      210,
+      255
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|75 to 255}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "BrandW#TotalDamage"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Increased Damage on Ablaze target",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      93.75,
+      150,
+      206.25,
+      262.5,
+      318.75
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.875
+      }
+     ],
+     "quote": "{{ap|75*1.25 to 255*1.25}} {{as|(+ {{ap|70*1.25}}% AP)}}",
+     "bin": [
+      "BrandW#EmpoweredDamage"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "delay before the eruption",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.625,
+     "terms": [],
+     "quote": "{{rutngt|0.625}} delay",
+     "bin": [],
+     "binNote": "no matching bin row found for the eruption delay; not present in sheet"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The eruption happens after a delay following cast, and this delay does not include the cast time.",
+     "quote": "The delay before the eruption does not include the cast time.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An Ablaze target hit by Pillar of Flame takes 25% increased damage.",
+     "quote": "An ''Ablaze'' target hit will take bonus damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pillar of Flame can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BrandW.PDamageBonus",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Conflagration",
+   "cooldown": {
+    "values": [
+     13,
+     12,
+     11,
+     10,
+     9
+    ],
+    "quote": "{{ap|13 to 9}}"
+   },
+   "cost": {
+    "values": [
+     90,
+     90,
+     90,
+     90,
+     90
+    ],
+    "quote": "90",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      55,
+      80,
+      105,
+      130,
+      155
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.6
+      }
+     ],
+     "quote": "{{ap|55 to 155}} {{as|(+ 60% AP)}}",
+     "bin": [
+      "BrandE#EDamageCalc"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The flame spreads from the target to nearby enemies, dealing them the same damage.",
+     "quote": "causes the flame to spread from the target to nearby enemies, dealing them the same damage",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The spread targets are determined at cast time, and hit via homing missiles even if they later leave range.",
+     "quote": "The flame spreads to enemies near the primary target at the time of cast.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies that move out of range after cast are still hit, since the flame is spread as homing missiles.",
+     "quote": "Enemies that move out of range after the fact will still be hit, as the flame is spread as homing missiles to each of its targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target is Ablaze, the spread range is doubled.",
+     "quote": "''Conflagration's'' spread range is doubled.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Pyroclasm",
+   "cooldown": {
+    "values": [
+     100,
+     90,
+     80
+    ],
+    "quote": "{{ap|100 to 80}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      100,
+      175,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{ap|100 to 250}} {{as|(+ 30% AP)}}",
+     "bin": [
+      "BrandR#TotalDamage"
+     ]
+    },
+    {
+     "id": "r_3",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      30,
+      45,
+      60
+     ],
+     "terms": [],
+     "quote": "{{ap|30 to 60}}%",
+     "bin": [
+      "BrandR.SlowAmount"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "Slow Duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.25,
+     "terms": [],
+     "quote": "is {{tip|slow|slowed}} for {{fd|0.25}} seconds",
+     "bin": [
+      "BrandR.SlowDuration"
+     ]
+    },
+    {
+     "id": "r_5",
+     "meaning": "Delay between bounces",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.15,
+     "terms": [],
+     "quote": "having a {{fd|0.15}}-second delay between bounces",
+     "bin": [],
+     "binNote": "The bin has no data value for the inter-bounce delay; the wiki-stated 0.15s is not represented in the sheet's BrandR rows."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The fireball bounces between nearby enemies and Brand up to four times, dealing damage each time.",
+     "quote": "launches a fireball at the target enemy that bounces between nearby enemies and '''Brand''' up to four times, dealing {{as|magic damage}} to enemies each time",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pyroclasm prioritizes Ablaze enemy champions for bounce targeting, then other enemy champions.",
+     "quote": "''Pyroclasm'' prioritizes ''{{ai|Blaze|Brand|Ablaze}}'' enemy champions, then other enemy champions, then any valid bounce target, then '''Brand'''.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "An Ablaze target hit by the bounce is also briefly slowed.",
+     "quote": "An ''Ablaze'' target will also be briefly {{tip|slow|slowed}} when hit.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The same enemy can be hit and slowed by the missile more than once (multiple bounces).",
+     "quote": "This can affect the same enemy more than once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the bounce is blocked by an enemy's spell shield it deals no damage but keeps bouncing; if the initial target has a spell shield the ability does not bounce at all.",
+     "quote": "If the initial cast target uses {{tip|spell shield}}, ''Pyroclasm'' will not bounce. If the bounce is blocked by an enemy's ''spell shield'' it will not deal any damage, but it will keep on bouncing.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The fireball still bounces off a target even if that target is dead upon arrival.",
+     "quote": "The fireball will still bounce from the target even if they were dead upon arrival.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BrandR.APRatio",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "W",
+    "E"
+   ],
+   "note": "Sear, Pillar of Flame and Conflagration each deal fixed magic damage on cast or after a short fixed delay, gated by cooldown/cost."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Pyroclasm is a single cast that produces up to 4 separately timed bounce-damage instances with a 0.15s delay between them."
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Ablaze applies a 4s, 0.25s-tick damage-over-time (2% max HP per full duration) per stack, each stack ticking on its own independent schedule even when refreshed."
+  },
+  {
+   "id": "target-stacks",
+   "abilities": [
+    "P",
+    "W"
+   ],
+   "note": "Ablaze stacks (max 3) are added by any ability hit, read by W (and Q/R) to grant conditional bonus effects, and consumed at 3 stacks to trigger a delayed AoE explosion that also reapplies a stack."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (70/60-100/90/100) against a limited mana pool constrain how many casts fit in the 15s window; partially offset by passive mana restore on kills, which is unlikely to trigger against a non-dying dummy."
+  },
+  {
+   "id": "positional-assumption",
+   "abilities": [
+    "E",
+    "R"
+   ],
+   "note": "Conflagration's damage spread to 'nearby enemies' and Pyroclasm's bounce-to-nearby-enemies-or-Brand mechanic assume multiple targets/geometry that a single stationary dummy does not provide; needs an assumption for how these resolve against exactly one enemy."
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Ablaze's DoT ticks per stack are scheduled independently by the time each stack was applied (not reset by refreshes), and reaching 3 stacks spawns a delayed (2s) AoE explosion that consumes the stacks, deals separate burst damage, and reapplies exactly one new stack while blocking further stacking on that target for 4s. This stack-tracking-with-delayed-consumption-and-reapplication behavior, plus W's conditional 25% bonus damage gated on live Ablaze status at the moment of hit, is more than the closed list's plain dot/target-stacks primitives capture on their own and needs bespoke sequencing logic to simulate correctly."
+ },
+ "unsettled": [
+  {
+   "question": "In a fight with only Brand and one target (the dummy), how many of Pyroclasm's up to 4 bounces actually land damage on the dummy, given the ability's stated priority order (Ablaze champions, then other champions, then any valid bounce target, then Brand)?",
+   "options": [
+    "The missile bounces dummy -> Brand -> dummy -> Brand ..., re-hitting the dummy on every other bounce (up to 2-3 total hits on the dummy)",
+    "The missile only ever hits the dummy once (the initial cast) since 'other enemy champions'/'any valid bounce target' pools are empty and it is unclear whether the same already-hit target can be re-selected",
+    "The missile bounces to Brand and back to the dummy every bounce, hitting the dummy for all remaining bounces after Brand"
+   ],
+   "impact": "high",
+   "quotes": [
+    "bounces between nearby enemies and '''Brand''' up to four times, dealing {{as|magic damage}} to enemies each time",
+    "''Pyroclasm'' prioritizes ''{{ai|Blaze|Brand|Ablaze}}'' enemy champions, then other enemy champions, then any valid bounce target, then '''Brand'''."
+   ]
+  },
+  {
+   "question": "Does Conflagration's spread-to-nearby-enemies component ever deal a second damage instance to the same single dummy target, or does it require a distinct secondary target that doesn't exist in a 1v1 dummy fight?",
+   "options": [
+    "The spread never re-hits the primary target; with one target present E only ever deals one damage instance per cast",
+    "The 'spread' logic could target the same unit again if it re-enters the search radius, dealing a second instance"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "causes the flame to spread from the target to nearby enemies, dealing them the same damage",
+    "The flame spreads to enemies near the primary target at the time of cast."
+   ]
+  },
+  {
+   "question": "When Ablaze reaches 3 stacks on the dummy and the ring explosion resolves 2s later, does the explosion's damage instance count separately from (and stack with) the ongoing DoT ticks and W's ablaze bonus, and can the explosion be triggered repeatedly across the 15s fight (every time 3 stacks + 4s non-restack window elapse)?",
+   "options": [
+    "The explosion is a distinct extra damage source that can trigger multiple times in 15s as stacks are rebuilt after each 4s immunity window",
+    "The explosion is rare/edge-case and the simulator should not assume it reliably re-triggers within the fight window given ability cooldowns"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "after 2 seconds, consumes their stacks to explode. All enemies within the detonation are applied a stack of ''Ablaze''",
+    "'''Brand''' cannot stack ''Ablaze'' more than once on enemies that have had a ring explode from them in the last 4 seconds."
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open at max range with Conflagration (E) on the dummy to apply the first Ablaze stack and deal its base magic damage.",
+   "Follow immediately with Sear (Q) to add a second Ablaze stack and deal its magic damage (the stun is irrelevant to the damage fight).",
+   "Cast Pillar of Flame (W) third: the target is already Ablaze so W deals its 25% empowered bonus damage, and this hit brings Ablaze to 3 stacks, triggering the delayed ring explosion for extra AoE damage on the dummy 2 seconds later.",
+   "Cast Pyroclasm (R) as soon as it is available (its base cooldown of 80-100s means it will likely only be cast once in the 15s window), taking whatever bounce damage the engine resolves against the single target and Brand.",
+   "For the remainder of the 15s fight, recast Q, W, and E each on cooldown as mana allows, prioritizing whichever comes off cooldown soonest, since each application refreshes/adds an Ablaze stack and re-triggers W's empowered bonus and the periodic 3-stack explosion.",
+   "Do not withhold any ability for setup purposes (no crowd control or positioning value exists against a stationary dummy); cast on cooldown for maximum sustained damage."
+  ],
+  "questions": [
+   "Does the simulator model Ablaze's per-stack independent tick timers and the delayed 3-stack explosion, or does it need a simplified approximation (e.g. average DoT percentage) instead?",
+   "Should R be cast first (before any Ablaze stacks exist) to front-load its long-cooldown damage, or held until after E/Q/W establish Ablaze so its slow (irrelevant here) and any Ablaze-dependent behavior line up - does cast order among Q/W/E/R change total damage in this engine at all, or is it purely a function of not wasting cooldowns?",
+   "Given mana costs (Q 70, W 60-100 by rank, E 90, R 100) against a champion's mana pool, will the build/level assumed for the damage fight actually sustain full-cooldown recasting of Q/W/E for 15 seconds, or does mana become a binding constraint that changes the optimal rotation?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

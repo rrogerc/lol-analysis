@@ -1,0 +1,83 @@
+{
+ "champion": "vladimir",
+ "primitives": [
+  {"id": "stat-conversion", "abilities": ["P"], "note": "Crimson Pact converts bonus health to AP and AP to bonus health; the two conversions do not stack with each other."},
+  {"id": "dot", "abilities": ["W"], "note": "Sanguine Pool deals magic damage in ticks over its duration, scaling off bonus health."},
+  {"id": "nth-hit-or-cast", "abilities": ["Q"], "note": "Crimson Rush arms an 85%-increased-damage Transfusion roughly every 2nd cast, once 2 stacks have built up and are spent within the 2.5s surge window."},
+  {"id": "charge-or-channel", "abilities": ["E", "W"], "note": "Tides of Blood charges up to 1.5s, ramping its damage over the first second; Sanguine Pool locks out attacks and abilities for its full duration."},
+  {"id": "recast-or-multipart", "abilities": ["E"], "note": "Tides of Blood has a charge phase and a release/recast phase, auto-releasing at max charge or on interruption."},
+  {"id": "target-debuff", "abilities": ["R"], "note": "Hemoplague increases all damage the infected target takes by 10% for 4 seconds, including Hemoplague's own burst."},
+  {"id": "self-damage-or-health-cost", "abilities": ["W", "E"], "note": "Sanguine Pool costs a percent of current health; Tides of Blood costs a ramping percent of max health while charging, waived below 12% max health."},
+  {"id": "positional-assumption", "abilities": ["E"], "note": "Tides of Blood fires 15 blood bolts in a nova but any one target can be damaged only once per cast; the fight must assume the dummy is hit by at least one bolt."},
+  {"id": "defensive-only", "abilities": ["Q", "W", "R"], "note": "Transfusion's heal (base and empowered), Sanguine Pool's self-heal, and Hemoplague's on-burst heal are never read by a damage-only fight."}
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Crimson Pact's bin formula is not a one-way 'convert stat A to stat B' lookup: the AP-from-health and health-from-AP conversions are mutually coupled (each subtracts a share of the other conversion's input) and both carry an extra ~1.06x factor that the wiki's flat 3.333%/160% ratios do not show (see P's binNote and unsettled question below). Reproducing the bin exactly needs that coupled formula, not a single stat-conversion primitive applied once."
+ },
+ "unsettled": [
+  {
+   "question": "Does Crimson Pact need the bin's coupled, recursion-avoiding formula (APbonus = (bonusHp - 1.6xap) x 0.03333 x 1.06; HPbonus = (ap - 0.03333xbonusHp) x 1.6 x 1.06), or is the wiki's flat description (3.333% of bonus health as AP, and separately 160% of AP as bonus health, applied once each) an adequate stand-in?",
+   "options": [
+    "Use the bin's coupled approximation exactly, solving both conversions together.",
+    "Use the wiki's flat ratios applied once each, non-recursively.",
+    "Independently iterate the naive recursive definition (AP from HP, HP from that AP, ...) to its own fixed point."
+   ],
+   "impact": "high",
+   "quotes": ["{{#vardefine:cp1|3.333}}", "{{#vardefine:cp2|160}}", "These two bonuses do not stack with each other."]
+  },
+  {
+   "question": "Does Crimson Rush (Q's stacks) only progress once Transfusion has been cast at least once (accumulating 'over the cooldown' that a cast starts), or does it also accrue on some independent timer even before Vladimir's first cast of the fight?",
+   "options": [
+    "Stacks only build after a cast, tied to that cast's own cooldown timer; Vladimir starts the fight at 0 stacks.",
+    "Stacks accrue on a fixed timer from the start of the fight regardless of whether Transfusion has been cast."
+   ],
+   "impact": "medium",
+   "quotes": ["He then generates 1 point of ''{{tip|Fury|Crimson Rush}}'' over the {{sti|cooldown}}."]
+  },
+  {
+   "question": "Does Transfusion's damage land at the instant its 0.25s cast time completes (as the wiki explicitly states for its heal), or does it carry separate missile travel time despite being flagged as a non-projectile?",
+   "options": [
+    "Damage lands simultaneously with the heal, at cast completion.",
+    "Damage has its own travel delay to the target after the cast completes."
+   ],
+   "impact": "medium",
+   "quotes": ["the healing itself triggers as soon as the cast time completes."]
+  },
+  {
+   "question": "How does Tides of Blood's damage interpolate between its minimum (0s charge) and maximum (1s charge) values during that first second: linearly, in the same 0.25s steps as its health cost, or on some other curve?",
+   "options": [
+    "Linear interpolation over the 1-second ramp.",
+    "Stepped in 0.25s increments, matching the cost ramp's cadence.",
+    "Some other non-linear ramp."
+   ],
+   "impact": "high",
+   "quotes": ["increases ''Tides of Blood's'' damage over the first second of the channel", "{{pp|2 to 8|0 to 0.75 by 0.25|key=%|type=charge time|label1=seconds|color=health}}"]
+  },
+  {
+   "question": "Tides of Blood fires 15 blood bolts in a full nova but a single target can be damaged only once per cast: should a stationary single-target dummy fight assume every cast always lands its one damage instance, or can real geometry (a point target only in the path of some of the 15 directions) cause a cast to whiff entirely?",
+   "options": [
+    "Assume the dummy is always hit by at least one bolt, so every cast of Tides of Blood always deals its single damage instance.",
+    "Model bolt geometry explicitly, allowing some casts against a single point target to miss."
+   ],
+   "impact": "medium",
+   "quotes": ["''Enemies can intercept multiple bolts, but can be damaged only once.''"]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Hemoplague (R) on the dummy at t=0, starting its 4-second infection (and the +10% damage-taken window) as early as possible and setting its self-amplified burst damage to land at t=4s.",
+   "Cast Transfusion (Q) every time it is off cooldown for the rest of the fight.",
+   "Whenever Crimson Rush has reached 2 stacks (its surge is active), spend the next Transfusion cast inside the 2.5-second surge window so it lands as the 85%-increased-damage empowered hit rather than a base hit.",
+   "Charge Tides of Blood (E) and hold it for at least 1 second so it always releases at its maximum damage value, then let it auto-release (or recast it) and start charging again on cooldown.",
+   "Do not start charging Tides of Blood if Transfusion or Hemoplague still needs to be cast in the next 0.25 seconds, since both interrupt an in-progress charge; Sanguine Pool is safe to weave into an E charge without interrupting it.",
+   "Treat Sanguine Pool (W) as optional: only cast it if its own bonus-health-scaling damage over 2 seconds is confirmed to outweigh the Transfusion/Tides of Blood casts that its 2-second full action-lock would otherwise displace."
+  ],
+  "questions": [
+   "Does the fight clock start with Vladimir already able to surge on his first Transfusion cast, or does he need close to one full Transfusion cooldown (and thus one 'wasted' base cast) before the first empowered cast is available?",
+   "Is Sanguine Pool ever worth casting in a pure damage-maximizing rotation against a single stationary target, given it fully locks out attacks and other abilities for 2 seconds and the target never punishes standing still?",
+   "Should Tides of Blood always be held for the full 1-second ramp to guarantee maximum damage, or does releasing it earlier (lower damage per cast, but cooldown starts on-cast) fit more total casts into 15 seconds for more total damage?",
+   "Since Hemoplague's cooldown is 120 seconds, is opening with it always correct, or could delaying it slightly to line up its 4-second amplification window with an empowered Transfusion or a Tides of Blood release deal more total damage?"
+  ]
+ }
+}

@@ -1,0 +1,650 @@
+{
+ "champion": "amumu",
+ "abilities": {
+  "P": {
+   "name": "Cursed Touch",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "Curse debuff duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "mark enemies with ''Curse'' for 3 seconds",
+     "bin": [
+      "AmumuP.DebuffDuration"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "bonus true damage dealt to Cursed targets from incoming pre-mitigation magic damage",
+     "role": "onhit",
+     "damageType": "true",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": 0.1
+      }
+     ],
+     "quote": "receive {{sti|{{as|10% '''bonus''' true damage}}}} from all incoming {{tt|pre-mitigation|Damage calculated before modifiers}} {{as|magic damage}}",
+     "bin": [
+      "AmumuP.DamageAmp"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Amumu's basic attacks and Curse of the Sad Mummy mark enemies with Curse, refreshing on subsequent applications and per-tick damage from Despair.",
+     "quote": "are empowered to mark enemies with ''Curse'' for 3 seconds, refreshing on subsequent applications and ''{{ais|Despair|Amumu}}'' per-tick damage.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The bonus true damage applies to any incoming pre-mitigation magic damage from any source, amplifying magic damage dealt to Cursed targets.",
+     "quote": "receive {{sti|{{as|10% '''bonus''' true damage}}}} from all incoming {{tt|pre-mitigation|Damage calculated before modifiers}} {{as|magic damage}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Amumu's basic attack applies on-hit magic damage, Curse is applied before that magic damage lands, so it does not amplify its own triggering hit.",
+     "quote": "If the triggering basic attack from '''Amumu''' applies {{as|magic damage}} {{tip|on-hit}}, ''Curse'' will be applied before the {{as|magic damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Curse from Curse of the Sad Mummy is applied after its magic damage is dealt, so it only amplifies that hit if the target was already Cursed beforehand.",
+     "quote": "The ''Curse'' application from ''{{ai|Curse of the Sad Mummy|Amumu}}'' happens after the {{as|magic damage}} is dealt by it, therefore amplifying the damage only if the target was also already marked before the hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Curse application from Curse of the Sad Mummy is negated if the ability is blocked by a spell shield.",
+     "quote": "The application of ''Curse'' on ''{{ai|Curse of the Sad Mummy|Amumu}}'' is negated if the ability is blocked by a {{tip|spell shield}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Bandage Toss",
+   "cooldown": {
+    "values": [
+     3,
+     3,
+     3,
+     3,
+     3
+    ],
+    "quote": "3"
+   },
+   "cost": {
+    "values": [
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "quote": "50",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      70,
+      95,
+      120,
+      145,
+      170
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.85
+      }
+     ],
+     "quote": "{{ap|70 to 170}} {{as|(+ 85% AP)}}",
+     "bin": [
+      "BandageToss#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|stun|stunning}} them for 1 second",
+     "bin": [
+      "BandageToss.StunDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Amumu dashes to the target upon hit, and Despair can be cast during the dash.",
+     "quote": "{{tip|dash|pulling}} him to them",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Amumu is ordered to basic attack the target upon completion of the dash, which can trigger on-hit effects.",
+     "quote": "'''Amumu''' will be ordered to basic attack the target upon completion of the dash.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Bandage Toss periodically stocks a charge, up to a maximum of 2, allowing rapid recasts independent of the listed cooldown.",
+     "quote": "'''Amumu''' periodically [[stock]]s a ''Bandage Toss'' charge, up to a maximum of 2.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability still deals damage and stuns even if Amumu dies before the bandage lands.",
+     "quote": "''Bandage Toss'' does not fizzle on '''Amumu's''' {{tip|death}}, and can still stun and damage enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Amumu still dashes even if the spell is blocked by a spell shield.",
+     "quote": "'''Amumu''' is still able to {{tip|dash}} even if ''Bandage Toss'' is blocked by {{tip|spell shield}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "BandageToss.DashSpeed",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Despair",
+   "cooldown": {
+    "values": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "quote": "1"
+   },
+   "cost": {
+    "values": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "quote": "8",
+    "resource": "mana per second"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Magic Damage Per Tick",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      5,
+      5,
+      5,
+      5,
+      5
+     ],
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.005,
+        0.00625,
+        0.0075,
+        0.00875,
+        0.01
+       ],
+       "coefScaling": [
+        {
+         "stat": "ap",
+         "per": 100,
+         "coef": 0.0025
+        }
+       ]
+      }
+     ],
+     "quote": "5 {{as|(+ {{ap|0.5 to 1}}% {{as|(+ {{fd|0.25}}% per 100 AP)}} of target's '''maximum''' health)}}",
+     "bin": [
+      "AuraofDespair.HealthDamage",
+      "AuraofDespair.APRatio",
+      "AuraofDespair#TotalHealthDamage"
+     ],
+     "binNote": "AuraofDespair.BaseDamage=10 and AuraofDespair#{c8e45bc3}=BaseDamage*0.5=5 together derive the 5 flat base shown in the wiki tooltip, but the wiki's displayed base (5) and rank scaling (HealthDamage 1/1.25/1.5/1.75/2 %maxHP) match HealthDamage/APRatio/TotalHealthDamage directly; #{8a96509c} (TotalHealthDamage*0.005) is not reflected in the wiki tooltip and is not stated here"
+    },
+    {
+     "id": "w_2",
+     "meaning": "tick interval",
+     "role": "interval",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "dealing {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies",
+     "bin": [],
+     "binNote": "tick interval not present as a discrete bin data value in this sheet; taken from wiki description text"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Despair is a toggled aura that deals damage every 0.5 seconds to nearby enemies while active, costing mana per second, rather than being cast once.",
+     "quote": "{{sbc|Toggle:}} '''Amumu''' cries a continuous pool of tears, dealing {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Despair turns off automatically if Amumu cannot pay its mana cost, stopping the damage tick.",
+     "quote": "''Despair'' is toggled off automatically if '''Amumu''' becomes unable to pay its {{sti|{{as|mana}}}} cost.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Toggling Despair does not count as an ability activation, so it does not trigger on-cast effects.",
+     "quote": "Toggle abilities do not count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Despair's tooltip rounds its health-percent damage, but the true AP scaling is finer-grained (+0.0025% per 1 AP) than the displayed rounding suggests.",
+     "quote": "Despite the rounding in ''Despair's'' tooltip, it will deal increased damage for every point of {{tt|ability power|+0.0025% per 1 AP}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "AuraofDespair.BaseDamage",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "AuraofDespair#{c8e45bc3}",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "AuraofDespair#{8a96509c}",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Tantrum",
+   "cooldown": {
+    "values": [
+     9,
+     8,
+     7,
+     6,
+     5
+    ],
+    "quote": "{{ap|9 to 5}}"
+   },
+   "cost": {
+    "values": [
+     35,
+     35,
+     35,
+     35,
+     35
+    ],
+    "quote": "35",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage Reduction",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      5,
+      7,
+      9,
+      11,
+      13
+     ],
+     "terms": [
+      {
+       "stat": "bonusArmor",
+       "coef": 0.03
+      },
+      {
+       "stat": "bonusMr",
+       "coef": 0.03
+      }
+     ],
+     "quote": "{{ap|5 to 13}} {{as|(+ 3% '''bonus''' armor)}} {{as|(+ 3% '''bonus''' magic resistance)}}",
+     "bin": [
+      "Tantrum#DamageReduction"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      65,
+      95,
+      125,
+      155,
+      185
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.5
+      }
+     ],
+     "quote": "{{ap|65 to 185}} {{as|(+ 50% AP)}}",
+     "bin": [
+      "Tantrum#TantrumDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "cap on physical damage reduction per damage instance",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "capped at 50% of the damage instance",
+     "bin": [
+      "Tantrum.FlatDamageReductionMax"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "cooldown reduction when hit by a basic attack on-hit",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "reduced by {{fd|0.75}} seconds whenever '''Amumu''' is hit by a {{tip|basic attack}} {{tip|on-hit}}",
+     "bin": [
+      "Tantrum.CDROnHit"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The passive damage reduction applies to every separate instance of pre-mitigation physical damage taken, each capped individually at 50%.",
+     "quote": "reduces every instance of {{tt|pre-mitigation|Damage calculated before modifiers}} {{as|physical damage}} taken, capped at 50% of the damage instance",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A basic attack's base damage and each on-hit effect are separate damage instances, each reduced individually if physical.",
+     "quote": "A {{tip|basic attack}}'s {{tip|basic damage}} and each {{tip|on-hit}} effect are all separate damage instances, and may be reduced each if they deal {{as|physical damage}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Tantrum's current cooldown is reduced by 0.75s each time Amumu is hit by an on-hit basic attack effect, and this can trigger multiple times for multi-hit on-hit effects like Guinsoo's Rageblade.",
+     "quote": "''Tantrum's'' cooldown reduction will trigger multiple times for effects such as {{ai|Double Strike|Master Yi}} and {{iis|Guinsoo's Rageblade}} ''Phantom Hit''.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown reduction still triggers even if the incoming attack is blocked, but not if it misses due to blind.",
+     "quote": "The cooldown will be reduced, even if the incoming attack is {{tip|blocked}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "Tantrum.PassiveScaling",
+     "reason": "stale-duplicate"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Curse of the Sad Mummy",
+   "cooldown": {
+    "values": [
+     150,
+     125,
+     100
+    ],
+    "quote": "{{ap|150 to 100}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     150,
+     200
+    ],
+    "quote": "{{ap|100 to 200}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      200,
+      300,
+      400
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|200 to 400}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "CurseoftheSadMummy#RCalculatedDamage"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.5,
+     "terms": [],
+     "quote": "{{fd|1.5}} seconds",
+     "bin": [
+      "CurseoftheSadMummy.RDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The ability stuns nearby enemies after briefly knocking them down.",
+     "quote": "dealing {{as|magic damage}} as well as {{tip|knockdown|knocking them down}} and {{tip|stun|stunning}} them for {{fd|1.5}} seconds",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The effect (damage and stun) resolves at the end of the cast time.",
+     "quote": "{{Effect at cast time end}}",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "CurseoftheSadMummy.RDamage",
+     "reason": null
+    },
+    {
+     "ref": "CurseoftheSadMummy.RDuration",
+     "reason": null
+    },
+    {
+     "ref": "CurseoftheSadMummy.RCoefficient",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Cursed Touch mark applied by basic attacks and Curse of the Sad Mummy, refreshed by Despair per-tick damage; lasts 3s and gates the passive's bonus true damage on subsequent incoming magic damage"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Cursed targets take 10% bonus true damage on all incoming pre-mitigation magic damage (Q, W ticks, E, R) while marked"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Bandage Toss, Tantrum, and Curse of the Sad Mummy each deal a fixed magic damage instance on cast/dash-land/effect-resolve"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Despair toggle deals magic damage every 0.5s to nearby enemies (based on target max HP + AP) while active"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bandage Toss stocks a charge on a recharge timer, up to a max of 2, allowing back-to-back recasts independent of the base cooldown"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Amumu is ordered to basic-attack the target immediately upon completing the Bandage Toss dash"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (esp. W's continuous per-second cost and R's rank-scaling cost) can limit sustained casting/toggling within the 15s window"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tantrum's current cooldown is reduced 0.75s per on-hit basic attack Amumu is hit by; only relevant in the survival fight where the enemy champion attacks Amumu"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tantrum's passive physical damage reduction (capped 50% per instance, scaling with bonus armor/MR) only matters for damage taken in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Cursed Touch is a global damage-amplifying rider that applies to every subsequent instance of incoming magic damage against a marked target (from any of Amumu's own magic sources: Q, W ticks, E, R), not a normal on-hit or single-ability rider. It has explicit ordering rules the closed primitives don't express: an autoattack's own on-hit magic damage is NOT amplified by the mark that same attack just applied; R's own damage is amplified only if the target was already marked before R hit (R's own mark-refresh happens after R's damage); and R's mark application is negated entirely if blocked by a spell shield. Correctly simulating total damage requires custom sequencing logic (mark timestamp vs. each damage instance's resolution order) beyond what target-debuff/conditional-damage alone can encode."
+ },
+ "unsettled": [
+  {
+   "question": "Does each Despair tick's own magic damage benefit from the Cursed Touch bonus true damage if the target was already marked before that tick, given that the same tick also refreshes the mark?",
+   "options": [
+    "Tick damage resolves before the mark refresh, so it is amplified only if the target was already marked from a prior source (consistent with the R rule)",
+    "Tick damage and mark refresh are simultaneous/order-unspecified for W (unlike R, no explicit note is given), so every tick amplifies itself once marked at all",
+    "W ticks never trigger or benefit from the passive amp beyond the initial mark applied by an autoattack or R"
+   ],
+   "impact": "high",
+   "quotes": [
+    "refreshing on subsequent applications and ''{{ais|Despair|Amumu}}'' per-tick damage.",
+    "The ''Curse'' application from ''{{ai|Curse of the Sad Mummy|Amumu}}'' happens after the {{as|magic damage}} is dealt by it, therefore amplifying the damage only if the target was also already marked before the hit."
+   ]
+  },
+  {
+   "question": "Does Despair's first damage tick fire immediately on toggle-on, or only after the first 0.5s interval elapses?",
+   "options": [
+    "Tick fires at t=0 on toggle, then every 0.5s (31 ticks in 15s)",
+    "First tick fires at t=0.5s, then every 0.5s (30 ticks in 15s)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "dealing {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies"
+   ]
+  },
+  {
+   "question": "Does Bandage Toss start the 15s damage fight with 0 or 2 stocked charges, and at what rate do they recharge relative to the listed 3s base cooldown?",
+   "options": [
+    "Fight starts with 2 charges stocked (max), allowing two immediate back-to-back casts before the recharge timer/base cooldown governs further casts",
+    "Fight starts with 0 charges stocked and Q is gated purely by the recharge time (16 to 12s by rank) for the first several seconds",
+    "Fight starts with 1 charge and the listed 3s cooldown is what actually gates recasts once at least one charge is available"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Amumu''' periodically [[stock]]s a ''Bandage Toss'' charge, up to a maximum of 2.",
+    "recharge     = {{ap|16 to 12}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Toggle Despair (W) on at the start of the fight and leave it on for the duration, mana permitting, since it is a continuous aura dot.",
+   "Immediately cast Bandage Toss (Q) to apply the Cursed Touch mark and deal its magic damage, dashing to and auto-attacking the target on landing.",
+   "Cast Curse of the Sad Mummy (R) as soon as it is off cooldown/available (assumed champion level 6+) for its large magic damage burst, which also refreshes the Curse mark.",
+   "Cast Tantrum (E) on cooldown throughout the fight for repeated magic damage bursts.",
+   "Between ability casts, basic-attack the target continuously to keep the Curse mark refreshed and add auto-attack damage.",
+   "Recast Bandage Toss (Q) whenever a stocked charge is available for additional damage and a fresh mark refresh/attack-reset."
+  ],
+  "questions": [
+   "What champion level, ability ranks, and item build (mana pool, AP) should the 15s damage fight assume, since it determines whether R is available at all and how tight the mana budget is for keeping W toggled on continuously?",
+   "Is weaving basic attacks between every ability cast actually optimal for Amumu given his low base AD scaling, or should the rotation instead prioritize ability uptime and only auto-attack in dead time between casts?",
+   "Should the opener assume Bandage Toss is already stocked to its max 2 charges (as if the fight starts mid-combat) or empty (as if from a completely fresh state)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,188 @@
+{
+ "name": "Fury of the Sands",
+ "cooldown": {
+  "values": [
+   120,
+   100,
+   80
+  ],
+  "quote": "{{ap|120 to 80}}"
+ },
+ "cost": {
+  "values": [
+   100,
+   100,
+   100
+  ],
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.2,
+  "quote": "{{fd|0.2}}"
+ },
+ "values": [
+  {
+   "id": "r_1",
+   "meaning": "Bonus Health",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    300,
+    450,
+    600
+   ],
+   "terms": [],
+   "quote": "{{ap|300 to 600}}",
+   "bin": [
+    "NasusR.BonusHealth"
+   ]
+  },
+  {
+   "id": "r_2",
+   "meaning": "Bonus Resistances",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    40,
+    55,
+    70
+   ],
+   "terms": [],
+   "quote": "{{ap|40 to 70}}",
+   "bin": [
+    "NasusR.InitialResistGain"
+   ]
+  },
+  {
+   "id": "r_4",
+   "meaning": "Magic Damage Per Tick",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    0.015,
+    0.02,
+    0.025
+   ],
+   "terms": [
+    {
+     "stat": "targetMaxHp",
+     "coef": [
+      0.015,
+      0.02,
+      0.025
+     ],
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.005
+      }
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|1.5 to 2.5}}% {{as|(+ {{fd|0.5}}% per 100 AP)}} of target's '''maximum''' health}}",
+   "bin": [
+    "NasusR#DamageCalc",
+    "NasusR.AOEDamagePercent"
+   ],
+   "binNote": "AOEDamagePercent [0.03/0.04/0.05] and the 0.0001xap ratio in NasusR#DamageCalc are per-second figures; since ticks occur every 0.5s (2/sec), halving them gives the wiki's per-tick 1.5-2.5% (+0.5% per 100AP), so the sources agree once tick rate is accounted for."
+  },
+  {
+   "id": "r_6",
+   "meaning": "Damage per tick cap (from per-second cap)",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "const",
+   "base": 240,
+   "terms": [],
+   "quote": "capped at 240 per second",
+   "bin": [
+    "NasusR.MaxDamageCap"
+   ]
+  },
+  {
+   "id": "r_7",
+   "meaning": "Empower duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 15,
+   "terms": [],
+   "quote": "empowers himself for 15 seconds",
+   "bin": [
+    "NasusR.Duration"
+   ]
+  },
+  {
+   "id": "r_8",
+   "meaning": "Damage tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "every {{fd|0.5}} seconds to nearby enemies",
+   "bin": [
+    "NasusR.TickRate"
+   ]
+  },
+  {
+   "id": "r_9",
+   "meaning": "Siphoning Strike cooldown reduction while empowered",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "''{{ais|Siphoning Strike|Nasus}}'' {{sti|cooldown}} is halved",
+   "bin": [
+    "NasusR.QCDR"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "While empowered, Nasus deals periodic magic damage in an aura to nearby enemies based on their maximum health.",
+   "quote": "While '''Nasus''' is empowered, he deals {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies, capped at 240 per second",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "While Fury of the Sands is active, Siphoning Strike's cooldown is halved, allowing more frequent Q casts.",
+   "quote": "''{{ais|Siphoning Strike|Nasus}}'' {{sti|cooldown}} is halved",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The bonus health granted is not removed by Grievous Wounds and persists after the ultimate's duration ends.",
+   "quote": "Fury of the Sands' ''bonus health is not affected by {{tip|Grievous Wounds}} and '''Nasus''' retains it once the duration ends.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The ability's cooldown begins on cast, not on effect end.",
+   "quote": "cdstart      = on-cast",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "NasusR.AttackRangeIncrease",
+   "reason": "utility"
+  },
+  {
+   "ref": "NasusR.SizeIncreasePercent",
+   "reason": "utility"
+  },
+  {
+   "ref": "NasusR.BaseAoERadius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "NasusR.MinAoERadius",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

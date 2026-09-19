@@ -1,0 +1,971 @@
+{
+ "champion": "mordekaiser",
+ "abilities": {
+  "P": {
+   "name": "Darkness Rise",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_onhit",
+     "meaning": "bonus magic damage on basic attacks",
+     "role": "onhit",
+     "damageType": "magic",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.4
+      }
+     ],
+     "quote": "basic attacks are empowered to deal {{as|40% AP}} {{as|'''bonus''' magic damage}} {{tip|on-hit}}",
+     "bin": [
+      "MordekaiserPassive.PercentAPAddedToAutos"
+     ]
+    },
+    {
+     "id": "p_stackduration",
+     "meaning": "stack duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "lasting for 4 seconds, refreshing on subsequent triggers, and stacking up to 3 times",
+     "bin": [
+      "MordekaiserPassive.CombatTrackingDuration"
+     ]
+    },
+    {
+     "id": "p_stackcap",
+     "meaning": "stacks to trigger Darkness Rise",
+     "role": "count",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "stacking up to 3 times. At 3 stacks, he gains ''Darkness Rise''",
+     "bin": [
+      "MordekaiserPassive.MaximumStacks"
+     ]
+    },
+    {
+     "id": "p_aura",
+     "meaning": "aura magic damage per second to nearby enemies",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.3
+      },
+      {
+       "stat": "targetMaxHp",
+       "coef": [
+        0.01,
+        0.012352941,
+        0.014705882,
+        0.017058823,
+        0.0194117647,
+        0.021764706,
+        0.024117647,
+        0.026470588,
+        0.028823529,
+        0.031176471,
+        0.033529412,
+        0.035882353,
+        0.038235294,
+        0.040588235,
+        0.042941176,
+        0.04529412,
+        0.0476470588,
+        0.05
+       ]
+      }
+     ],
+     "quote": "{{as|5|magic damage}} {{as|(+ 30% AP)}} {{as|(+ {{pplevel|key=%|1 to 5}} of target's '''maximum''' health)}} {{as|magic damage}} every second",
+     "bin": [
+      "MordekaiserPassive#AuraDamagePerStack",
+      "MordekaiserPassive#PercentHealthForAura"
+     ],
+     "binNote": "MordekaiserPassive#PercentHealthForAura is a byLevel(1..5) calculation (percent, 18 values), not a per-rank value; the wiki's pplevel table matches this level scaling, so the targetMaxHp term is recorded by champion level rather than by ability rank."
+    },
+    {
+     "id": "p_auramonstercap",
+     "meaning": "aura damage per second cap against monsters",
+     "role": "dot",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      100,
+      110,
+      120,
+      130,
+      140,
+      150,
+      160,
+      170,
+      180,
+      190,
+      200,
+      200
+     ],
+     "terms": [],
+     "quote": "the damage is capped at{{ft|{{pplevel|40 to 200}} per second.",
+     "bin": [
+      "MordekaiserPassive#MaxAuraMonsterDamage"
+     ],
+     "binNote": "sheet gives byLevel(40..200), wiki pplevel range matches; treated as level-scaled 1-18 (exact interpolation unverified)"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Darkness Rise's on-hit bonus damage is a separate proc-damage instance from the basic attack, while the aura is persistent area damage.",
+     "quote": "''Darkness Rise'' deals {{tip|persistent area damage}} damage around '''Mordekaiser''', while the bonus damage on his basic attacks is {{tip|proc damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The on-hit bonus damage does not apply to structures.",
+     "quote": "''Darkness Rise's'' bonus damage {{tip|on-hit}} is not applied against {{tip|structures}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Abilities generate a stack on hit even if they deal no damage (e.g. against invulnerable targets or spell shields).",
+     "quote": "'''Mordekaiser''' will still generate ''Darkness Rise'' stacks from hitting his abilities even if they deal no damage, such as if the target is {{tip|invulnerable}} or blocks an ability with a {{tip|spell shield}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Basic attacks do not generate a stack if the attack is dodged, blocked, or missed while blinded.",
+     "quote": "Basic attacks do not generate a stack if their damage event does not happen due to the target being {{tip|invulnerable}}, or the attack being {{tip|dodge|dodged}}, {{tip|block|blocked}}, or missed while '''Mordekaiser''' is {{tip|blind|blinded}}.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Darkness Rise's aura damage alone does not refresh the Darkness Rise buff duration.",
+     "quote": "''Darkness Rise's'' area damage alone does not refresh ''Darkness Rise's'' buff.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MordekaiserPassive.FuryForQHit",
+     "reason": "utility"
+    },
+    {
+     "ref": "MordekaiserPassive.FuryForAutoHit",
+     "reason": "utility"
+    },
+    {
+     "ref": "MordekaiserPassive.FuryForEHit",
+     "reason": "utility"
+    },
+    {
+     "ref": "MordekaiserPassive.MovementSpeed",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "MordekaiserPassive.DoTRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MordekaiserPassive#BonusAPAuto",
+     "reason": "stale-duplicate"
+    },
+    {
+     "ref": "MordekaiserPassive#PassiveMovementSpeed (percent)",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Obliterate",
+   "cooldown": {
+    "values": [
+     8,
+     7,
+     6,
+     5,
+     4
+    ],
+    "quote": "{{ap|8 to 4}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Magic Damage (base + AD/AP ratios)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      115,
+      150,
+      185,
+      220
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.2
+      },
+      {
+       "stat": "ap",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{pp|0 + (45-0)/9*(x-1) for 12|1;10 to 20|formula=0 at level 1, then +5 every level starting at level 10}} (+ {{ap|80 to 220}}) {{as|(+ 120% '''bonus''' AD)}} {{as|(+ 70% AP)}}",
+     "bin": [
+      "MordekaiserQ.QBaseDamage",
+      "MordekaiserQ.ADRatio",
+      "MordekaiserQ.APRatio",
+      "MordekaiserQ#QDamage"
+     ]
+    },
+    {
+     "id": "q_1b",
+     "meaning": "Flat bonus magic damage added by champion level (0 at level 1, +5 per level starting level 10)",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "level",
+     "base": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45
+     ],
+     "terms": [],
+     "quote": "{{pp|0 + (45-0)/9*(x-1) for 12|1;10 to 20|formula=0 at level 1, then +5 every level starting at level 10}}",
+     "bin": [
+      "MordekaiserQ#QDamage"
+     ],
+     "binNote": "The bin's QDamage calculation adds a 'byLevelL' term whose 18 values are not printed under a named DataValue in the sheet; the values here are reconstructed from the wiki's per-level formula, which matches the calculation's described behavior (0 through level 9, then +5 per level from 10 to 18 reaching 45)."
+    },
+    {
+     "id": "q_2",
+     "meaning": "Isolated Damage Increase (multiplier applied to Obliterate's damage when only one enemy is hit)",
+     "role": "other",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      1.3,
+      1.35,
+      1.4,
+      1.45,
+      1.5
+     ],
+     "terms": [],
+     "quote": "{{ap|{{#expr:(1.3-1)*100}} to {{#expr:(1.5-1)*100}}}}%",
+     "bin": [
+      "MordekaiserQ.IsolationScalar"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Obliterate deals increased magic damage if it hits only a single enemy (isolated hit) instead of the normal multi-target damage.",
+     "quote": "dealing {{as|magic damage}} to enemies within, {{ccs|increased|magic}} if only one enemy is hit.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability applies as spell (single-target) damage if only one enemy is hit, and as area damage when multiple enemies are hit.",
+     "quote": "Applies {{tip|spell damage}} if it hits one target and {{tip|area damage}} to multiple targets.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Obliterate can be blocked by spell shields.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MordekaiserQ.IsolationTooltip",
+     "reason": "tooltip-only"
+    },
+    {
+     "ref": "MordekaiserQ.MaceStartDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MordekaiserQ.MaceLength",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MordekaiserQ.RectangleWidth",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Indestructible / Indestructible 2",
+   "cooldown": {
+    "values": [
+     12,
+     11,
+     10,
+     9,
+     8
+    ],
+    "quote": "{{ap|12 to 8}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Shield to Healing",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.35,
+      0.375,
+      0.4,
+      0.425,
+      0.45
+     ],
+     "terms": [],
+     "quote": "{{ap|0.35*100 to 0.45*100}}%",
+     "bin": [
+      "MordekaiserW.HealingPercent"
+     ]
+    },
+    {
+     "id": "w_duration",
+     "meaning": "duration of the shield granted by the active",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "grant himself a {{tip|shield}} for the same amount for 4 seconds",
+     "bin": [
+      "MordekaiserW.Duration"
+     ],
+     "binNote": "Wiki states the shield lasts 4 seconds; the bin's MordekaiserW.Duration is 5. Wiki number kept, disagreement flagged."
+    },
+    {
+     "id": "w_damageDealtConv",
+     "meaning": "percent of post-mitigation damage dealt converted to Potential Shield",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.45,
+     "terms": [],
+     "quote": "{{#vardefine:dam_dealt|45}}",
+     "bin": [
+      "MordekaiserW.DamageConversion"
+     ]
+    },
+    {
+     "id": "w_damageTakenConv",
+     "meaning": "percent of pre-mitigation damage taken converted to Potential Shield",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.075,
+     "terms": [],
+     "quote": "{{#vardefine:dam_taken|7.5}}",
+     "bin": [
+      "MordekaiserW.DamageTakenConversion"
+     ]
+    },
+    {
+     "id": "w_maxCap",
+     "meaning": "maximum Potential Shield, as a percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.3,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.3
+      }
+     ],
+     "quote": "{{#vardefine:max|30}}",
+     "bin": [
+      "MordekaiserW.MaxHealthCap"
+     ]
+    },
+    {
+     "id": "w_minThreshold",
+     "meaning": "minimum Potential Shield maintained while the ability is off cooldown, as a percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.05,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.05
+      }
+     ],
+     "quote": "{{#vardefine:min|5}}",
+     "bin": [
+      "MordekaiserW.BaseShield"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Passively, Mordekaiser stores a portion of the post-mitigation damage he deals and pre-mitigation damage he takes as Potential Shield, up to a cap based on max health.",
+     "quote": "'''Mordekaiser''' stores {{fd|{{#var:dam_dealt}}}}% of the {{tt|post-mitigation|Damage calculated after modifiers}} damage he deals and {{fd|{{#var:dam_taken}}}}% of the {{tt|pre-mitigation|Damage calculated before modifiers}} damage he takes",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The active consumes all stored Potential Shield and grants a shield of that amount, which decays exponentially over 4 seconds.",
+     "quote": "'''Mordekaiser''' consumes his ''Potential Shield'' to grant himself a {{tip|shield}} for the same amount for 4 seconds. The shield decays exponentially over the duration.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Indestructible can be recast (after 0.5s) while the shield from the active is up; the recast consumes the remaining shield to heal for a portion of it.",
+     "quote": "''Indestructible'' can be recast after {{fd|0.5}} seconds while the shield is active.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Both the initial cast and the recast count as separate ability activations for on-cast trigger effects.",
+     "quote": "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown begins only after the shield effect (and any recast) has resolved, not on initial cast.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Potential Shield gain from non-champion sources is reduced to 25% of the normal amount.",
+     "quote": "reduced to {{ap|{{#var:dam_dealt}}*{{#var:minion}}}}% of damage dealt and {{ap|{{#var:dam_taken}}*{{#var:minion}}}}% of damage taken for non-champion sources",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MordekaiserW.MinionPenalty",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MordekaiserW.TimeBeforeDecay",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "MordekaiserW.DecayPerSecond",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Death's Grasp",
+   "cooldown": {
+    "values": [
+     16,
+     14,
+     12,
+     10,
+     8
+    ],
+    "quote": "{{ap|16 to 8}}",
+    "binNote": "ddragon/bin lists cooldown [18/16/14/12/10]; wiki states 16 to 8. Kept wiki's number as instructed and flagged the discrepancy."
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{fd|0.25}}"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Magic Penetration",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.05,
+      0.075,
+      0.1,
+      0.125,
+      0.15
+     ],
+     "terms": [],
+     "quote": "{{ap|5 to 15}}%",
+     "bin": [
+      "MordekaiserE.MagicPen"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      60,
+      80,
+      100,
+      120,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.45
+      }
+     ],
+     "quote": "{{ap|60 to 140}} {{as|(+ 45% AP)}}",
+     "bin": [
+      "MordekaiserE#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "delay before claw deals damage and pulls",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.5,
+     "terms": [],
+     "quote": "After {{fd|0.5}} seconds, it deals {{as|magic damage}}",
+     "bin": [
+      "MordekaiserE.DelayBeforeMovement"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The active deals magic damage and pulls enemies hit by the claw after a delay from cast, not instantly.",
+     "quote": "After {{fd|0.5}} seconds, it deals {{as|magic damage}} to enemies within and {{tip|airborne|pulls}} them over 250 units.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The passive magic penetration is a permanent self-buff, not tied to the active's cast.",
+     "quote": "{{sbc|Passive:}} '''Mordekaiser''' gains {{sti|mpen|{{as|magic penetration}}}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The active can be blocked by a spell shield.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "This damage does not trigger on-hit effects.",
+     "quote": "dTriggerOnHitEvents  = false",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MordekaiserE.MaxDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MordekaiserE.KnockTowardsDistance",
+     "reason": "utility"
+    },
+    {
+     "ref": "MordekaiserE.StandAsideRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Realm of Death",
+   "cooldown": {
+    "values": [
+     140,
+     120,
+     100
+    ],
+    "quote": "{{ap|140 to 100}}"
+   },
+   "cost": null,
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_duration",
+     "meaning": "Death Realm / stat theft duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 7,
+     "terms": [],
+     "quote": "them with him to the ''Death Realm'' for 7 seconds",
+     "bin": [
+      "MordekaiserR.SpiritRealmDuration"
+     ]
+    },
+    {
+     "id": "r_heal",
+     "meaning": "heal for percent of target's maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "{{as|10% of their '''maximum''' health}}",
+     "bin": [
+      "MordekaiserR.StatStealPercentScalar"
+     ],
+     "binNote": "Wiki states 10% (StatStealPercentScalar = 0.1) matches the bin value exactly."
+    },
+    {
+     "id": "r_truedamage",
+     "meaning": "true damage from max health reduction (self-heal source)",
+     "role": "dot",
+     "damageType": "true",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetMaxHp",
+       "coef": 0.1
+      }
+     ],
+     "quote": "This is the damage dealt by the reduction of {{as|10% of the target's pre-reduction '''maximum''' health}}.",
+     "bin": [
+      "MordekaiserR.StatStealPercentScalar"
+     ],
+     "binNote": "Uses same 0.1 scalar as the stat steal; damage does not apply lifesteal/damage modifiers per dnotes."
+    },
+    {
+     "id": "r_statsteal_percent",
+     "meaning": "percent of target's current AP, total attack speed, max HP, armor, MR, and size reduced/stolen; base AD reduced by percent of current total AD",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.1,
+     "terms": [
+      {
+       "stat": "other",
+       "coef": 0.1
+      }
+     ],
+     "quote": "reducing their '''current''' {{sti|{{as|ability power}}}}, {{sti|{{as|'''total''' attack speed}}}}, {{sti|{{as|'''maximum''' health}}}}, {{sti|armor|{{as|armor}}}}, {{sti|{{as|magic resistance}}}}, and {{tip|size}} by 10%",
+     "bin": [
+      "MordekaiserR.StatStealPercentScalar"
+     ]
+    },
+    {
+     "id": "r_slow",
+     "meaning": "slow on target during cast time",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "slowing them by 75%",
+     "bin": [],
+     "binNote": "No bin row named for this slow value; not found in the sheet's R data values."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Mordekaiser gains the stats he takes from the target (AP, attack speed, max HP, armor, MR) for himself for the duration.",
+     "quote": "'''Mordekaiser''' gains the reduced stats of the target for himself for the same duration",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the target dies while in the Death Realm, Mordekaiser keeps the stolen stats until they respawn.",
+     "quote": "if the target dies while inside the ''Death Realm'', he keeps their partial stats until they [[death|respawn]]",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown starts on cast, not on effect end.",
+     "quote": "cdstart     = on-cast",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The health-reduction true damage ignores invulnerability, shields, and resistances, and does not interact with any effect such as items or runes.",
+     "quote": "It ignores {{tip|invulnerability}}, {{tip|shields}} and resistances.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The health-reduction damage does not apply damage modifiers, lifesteal, or omnivamp, and does not trigger on-hit or damage events.",
+     "quote": "dApplyDamageModifier = false",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Realm of Death cancels and goes on cooldown if the target is displacement immune, CC-immune, or protected by a spell shield during the cast.",
+     "quote": "will cancel and go on cooldown after its cast time if:\n** The target is {{tip|displacement immune}}, {{tip|cc-immune|crowd control immune}} or protected by a {{tip|spell shield}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target becomes untargetable, dies, is too far away, or Mordekaiser loses sight of them, the ability cancels without going on cooldown.",
+     "quote": "this ability will cancel but does not go on {{sti|cooldown}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Realm of Death does not trigger in-combat status effects.",
+     "quote": "''Realm of Death'' does not trigger [[Combat_status|in-combat]] effects.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The healing from Realm of Death is affected by healing modifiers.",
+     "quote": "''Realm of Death's'' {{tip|healing}} is affected by healing modifiers.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If the target's current health is lower than the amount that should be stolen, they are brought down to 1 health, but Mordekaiser still gets the full intended max health.",
+     "quote": "If the target's {{as|'''current''' health}} is lower than the amount that should be stolen, they will be brought down to 1 health. '''Mordekaiser''' will still get the intended amount of {{as|'''maximum''' health}}.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "MordekaiserR.ZoneRadius",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "MordekaiserR.GhostAPRatio",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Darkness Rise basic attack bonus magic damage (40% AP), proc damage"
+  },
+  {
+   "id": "stacking-self-buff",
+   "abilities": [
+    "P"
+   ],
+   "note": "3 stacks (from autos/Q/E hits) within 4s each grant Darkness Rise: MS + damaging aura"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "P"
+   ],
+   "note": "Darkness Rise aura: persistent area damage per second while active, scales with target max HP and AP"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E"
+   ],
+   "note": "Obliterate and Death's Grasp deal on-cast (or fixed-delay) damage on cooldown"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Obliterate deals increased damage (1.3x-1.5x) if it hits only one (isolated) enemy"
+  },
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "W"
+   ],
+   "note": "Indestructible passive converts damage dealt/taken into Potential Shield resource"
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "W"
+   ],
+   "note": "Indestructible: cast to shield, recast to convert remaining shield into heal"
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "R"
+   ],
+   "note": "Realm of Death reduces target's current AP, total AS, max HP, armor, MR, size, base AD by 10% for duration"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "R"
+   ],
+   "note": "true damage from 10% max-HP reduction, ignores resistances/shields, floors target at 1 HP"
+  },
+  {
+   "id": "self-damage-or-health-cost",
+   "abilities": [
+    "R"
+   ],
+   "note": "Mordekaiser heals for 10% of target's max HP and gains stolen stats (survival-fight relevant, not self-damage but stat/HP transfer)"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Potential Shield / shield-to-heal conversion primarily matters for the survival fight, not damage output"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Mordekaiser's W (Indestructible) is a resource-conversion shield/heal system (Potential Shield banked from % of damage dealt and taken, capped at 30% max HP with decay and a recast-to-heal mechanic) that the closed primitive list only approximates via stat-conversion + recast-or-multipart; a faithful survival-fight simulation needs bespoke logic tracking the Potential Shield meter (gain rates, decay, min/max caps, recast conversion to healing) rather than a generic timed shield. Additionally R's stat-steal (multi-stat theft applied to both caster and target simultaneously, including base AD reduction computed off current total AD, plus 'keeps stats if target dies') is a bespoke dual-buff/debuff transfer not cleanly covered by target-debuff alone."
+ },
+ "unsettled": [
+  {
+   "question": "Does Death's Grasp's cooldown use the wiki value (16/14/12/10/8) or the ddragon/bin value (18/16/14/12/10)? The two sources disagree.",
+   "options": [
+    "Use wiki cooldown [16,14,12,10,8]",
+    "Use bin/ddragon cooldown [18,16,14,12,10]"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "cooldown     = {{ap|16 to 8}}",
+    "ddragon E Death's Grasp: maxrank 5, cooldown [16, 14, 12, 10, 8], cost [0, 0, 0, 0, 0]"
+   ]
+  },
+  {
+   "question": "Does the wiki's stated W shield duration of 4 seconds override the bin's MordekaiserW.Duration = 5?",
+   "options": [
+    "Use wiki value: 4s shield duration",
+    "Use bin value: 5s shield duration"
+   ],
+   "impact": "low",
+   "quotes": [
+    "grant himself a {{tip|shield}} for the same amount for 4 seconds",
+    "MordekaiserW.Duration = 5"
+   ]
+  },
+  {
+   "question": "Does Darkness Rise's on-hit bonus damage and its aura DoT count as the same 'cast instance' as the triggering Q/E, or as independent instances, for on-hit/on-cast item interactions relevant to the damage fight (e.g. Spellblade proc, once-per-cast effects)?",
+   "options": [
+    "Treat as separate independent proc (safe simplification, ignore the cast-instance bug)",
+    "Model as merged with the triggering spell's cast instance per the documented bug"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "If ''Darkness Rise'' is activated through either {{ai|Obliterate|Mordekaiser}} or {{ai|Death's Grasp|Mordekaiser}}, it will be treated as the same {{tip|cast instance}} as the triggering spell."
+   ]
+  },
+  {
+   "question": "In a target-dummy damage fight, is it assumed the dummy is 'isolated' (alone) for Obliterate's increased single-target damage bonus, since the fight has only one enemy?",
+   "options": [
+    "Always apply isolation bonus (only one target exists in the fight)",
+    "Never apply isolation bonus (simulate Q as if hitting a group, i.e. base multi-hit damage only)"
+   ],
+   "impact": "high",
+   "quotes": [
+    "dealing {{as|magic damage}} to enemies within, {{ccs|increased|magic}} if it hits only one enemy."
+   ]
+  },
+  {
+   "question": "Does the target-dummy in the damage fight count as a monster or a champion for Darkness Rise's aura damage cap (40-200/s cap only applies 'against monsters')?",
+   "options": [
+    "Treat dummy as a champion: no aura damage cap applies",
+    "Treat dummy as a monster: aura damage is capped per level"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Against monsters, the damage is capped at{{ft|{{pplevel|40 to 200}} per second."
+   ]
+  },
+  {
+   "question": "The bin's MordekaiserQ#QDamage includes an unlabeled byLevelL flat-damage term (0 through level 9, +5/level from 10-18) not explicitly printed as a named DataValue; is this term correctly reconstructed and actually additive on top of the rank-based QBaseDamage, or could it be a stale/unused calculation branch?",
+   "options": [
+    "Apply the level-based flat bonus in addition to rank base damage (as sheet formula implies)",
+    "Ignore it as potentially unused/legacy, use only rank-based QBaseDamage + ratios"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "MordekaiserQ#QDamage = QBaseDamage=[80/115/150/185/220] + byLevelL[0/0/0/0/0/0/0/0/0/5/10/15/20/25/30/35/40/45] + (ADRatio=1.2)xbonus ad + (APRatio=0.7)xap"
+   ]
+  },
+  {
+   "question": "Does R's true-damage health reduction (10% of target max HP) apply meaningfully to the stationary dummy target in the damage fight, and should it be added to total damage output, given it 'ignores invulnerability, shields and resistances' and doesn't apply damage modifiers?",
+   "options": [
+    "Count the 10% max-HP true damage as part of Mordekaiser's damage output against the dummy",
+    "Exclude it since R's primary purpose/duration (7s Death Realm) may not fit within/interact normally with a 15s dummy fight, or its 'no damage event trigger' flag makes it not count toward kill-time tracking"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "This is the damage dealt by the reduction of {{as|10% of the target's pre-reduction '''maximum''' health}}.",
+    "dTriggerDamageEvents = false"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Pre-fight: assume Darkness Rise passive stacks are at zero (no prior combat) and Potential Shield (W) meter is empty at the start.",
+   "Open with Realm of Death (R) on the dummy if available, to secure the 10% max-HP true damage, the heal, and the stat-steal buff before committing to the rest of the burst (only usable once given ~140-100s cooldown, so it lands at most once in the 15s window).",
+   "Immediately follow with Death's Grasp (E) for its magic damage and to build a Darkness Rise stack.",
+   "Follow with Obliterate (Q) for its high-scaling magic damage (isolated bonus applies since dummy is the only enemy) and another Darkness Rise stack.",
+   "Weave in basic attacks throughout (each auto contributes on-hit Darkness Rise bonus damage and builds a stack toward the 3-stack Darkness Rise aura); once 3 stacks are reached, Darkness Rise's damaging aura ticks automatically each second while stacks are maintained by continuing to attack/cast.",
+   "Recast Q and E on cooldown for the rest of the 15s window (cooldowns 4-8s each at higher ranks), interspersed with autos to keep Darkness Rise active and maximize aura uptime.",
+   "Do not cast Indestructible (W) offensively in the damage fight — it produces no direct damage and its passive shield/heal conversion only matters for the survival fight; skip it entirely when optimizing damage output."
+  ],
+  "questions": [
+   "Should R be used at all in a single 15s damage-fight simulation given its long cooldown, or is it excluded on the assumption that ultimates are evaluated separately/not assumed available?",
+   "Is the assumed ability rank/level for a 15s dummy fight max rank on Q/W/E (5) and R (3), or should it match the champion's overall level progression (e.g. only some ranks available depending on level)?",
+   "Should the simulator assume Mordekaiser starts the fight already at 3 Darkness Rise stacks (from a hypothetical pre-fight instance) or strictly at 0 stacks, since stack ramp-up meaningfully changes early damage in a short 15s window?",
+   "Given E's cast time (0.25s) plus a further 0.5s delay before the claw deals damage, and Q's 0.5s cast time, how should ability queueing/animation cancels be modeled to determine the actual number of casts obtainable in 15 seconds?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,824 @@
+{
+ "champion": "pyke",
+ "abilities": {
+  "P": {
+   "name": "Gift of the Drowned Ones",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus attack damage gained per bonus health",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "bonusHp",
+       "coef": 0.07143
+      }
+     ],
+     "quote": "{{as|{{fd|7.143}}% of '''bonus''' health}}",
+     "bin": [
+      "PykePassive.HPPerBAD"
+     ],
+     "binNote": "wiki 7.143% = 1/14, matches HPPerBAD=14 inverted"
+    },
+    {
+     "id": "p_2",
+     "meaning": "percent of post-mitigation champion damage stored as grey health (single nearby enemy)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.09,
+     "terms": [
+      {
+       "stat": "lethality",
+       "coef": 0.002
+      }
+     ],
+     "quote": "'''Pyke''' stores 9% {{as|(+ {{fd|0.2}}% per 1 Lethality)}} of the {{tt|post-mitigation damage|Damage calculated after modifiers}} he takes from enemy {{tip|champions}}",
+     "bin": [
+      "PykePassive.OneEnemy",
+      "PykePassive#OneEnemyCalc"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "percent of post-mitigation champion damage stored as grey health (two or more nearby enemies)",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [
+      {
+       "stat": "lethality",
+       "coef": 0.004
+      }
+     ],
+     "quote": "increased to 40% {{as|(+ {{fd|0.4}}% per 1 Lethality)}} while there are two or more {{tip|sight|visible}} enemy champions nearby",
+     "bin": [
+      "PykePassive.AdditionalBonus",
+      "PykePassive#AdditionalBonusCalc"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "maximum grey health that can be stored",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 80,
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 8
+      }
+     ],
+     "quote": "He can store up to 80 {{as|(+ 800% '''bonus''' AD)}} [[Health#Grey health|grey health]]",
+     "bin": [
+      "PykePassive.DamageStoreMaxBonusADRatio",
+      "PykePassive#DamageStorageMax"
+     ]
+    },
+    {
+     "id": "p_5",
+     "meaning": "grey health storage cap as a percent of maximum health",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": 0.55,
+     "terms": [],
+     "quote": "with an upper cap of {{as|55% of his '''maximum''' health}}",
+     "bin": [],
+     "binNote": "this 0.55 value is not present among PykePassive's data rows in this slot's sheet; the sheet instead shows an identical PykeW.MaxHPHealCap=0.55, which appears to be the value actually driving this cap"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pyke's maximum health cannot increase except through growth (per level).",
+     "quote": "'''Pyke's''' {{sti|health|{{as|'''maximum''' health}}}} cannot increase except through [[Growth#Increasing_Statistics|growth (per level)]]",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Grey health is gained only from post-mitigation damage taken from enemy champions.",
+     "quote": "'''Pyke''' stores [[Health#Grey health|grey health]] when receiving damage from enemy {{tip|champions}}, increased if there are multiple nearby.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Grey health is consumed to heal Pyke only while he is not visible to enemies.",
+     "quote": "While '''Pyke''' is not {{tip|sight|visible}} to enemies, he rapidly consumes his [[Health#Grey health|grey health]] to {{tip|heal}} for the same amount.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Grey health has no time limit and persists until Pyke leaves enemy vision or dies.",
+     "quote": "'''Pyke's''' ''grey health'' does not have a time limit, and will stay on his {{as|health bar}} until '''Pyke''' leaves enemy vision or dies.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "If current health plus grey health would exceed maximum health, the excess grey health is lost.",
+     "quote": "if his combined {{as|'''current''' health}} and ''grey health'' would start to exceed {{as|100% of his '''maximum''' health}}, the excess ''grey health'' is lost",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Spirit Visage and Grievous Wounds apply their reductions after the grey-health healing cap is applied.",
+     "quote": "{{ii|Spirit Visage}} and {{tip|Grievous Wounds}} take effect after ''Gift of the Drowned Ones's'' healing cap.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PykePassive.CooldownPerChamp",
+     "reason": "unknown"
+    },
+    {
+     "ref": "PykePassive.AmmoCooldown",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Bone Skewer",
+   "cooldown": {
+    "values": [
+     10,
+     9.5,
+     9,
+     8.5,
+     8
+    ],
+    "quote": "{{ap|10 to 8}}"
+   },
+   "cost": {
+    "values": [
+     70,
+     75,
+     80,
+     85,
+     90
+    ],
+    "quote": "{{ap|70 to 90}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.25,
+    "quote": "{{tt|{{fd|0.25}}|Quick-release}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200,
+      250,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{ap|100 to 300}} {{as|(+ 75% '''bonus''' AD)}}",
+     "bin": [
+      "PykeQ#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "slow amount on empowered recast",
+     "role": "utility",
+     "damageType": null,
+     "by": "const",
+     "base": 0.9,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 90% for 1 second",
+     "bin": [
+      "PykeQ.SlowAmount"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "slow duration on empowered recast",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "{{tip|slow|slowing}} them by 90% for 1 second",
+     "bin": [
+      "PykeQ.SlowDuration"
+     ]
+    },
+    {
+     "id": "q_4",
+     "meaning": "mana refund fraction if channel is cancelled without recast",
+     "role": "resource",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "refunds {{sti|mana|{{as|75% of the mana cost}}}}",
+     "bin": [
+      "PykeQ.ManaRefund"
+     ]
+    },
+    {
+     "id": "q_5",
+     "meaning": "threshold to quick-release instead of charging",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.4,
+     "terms": [],
+     "quote": "Releasing the ability within {{fd|0.4}} seconds",
+     "bin": [
+      "PykeQ.MinChargeTime"
+     ],
+     "binNote": "Wiki states the quick-release threshold as 0.4s, but the bin's PykeQ.MinChargeTime is 0.5. The two sources disagree; the wiki's value is recorded here as it is the more current live-description, while the bin row may be stale relative to the current game version."
+    },
+    {
+     "id": "q_6",
+     "meaning": "maximum channel duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "'''Pyke''' {{tip|channel|charges}} while being {{tip|slow|slowed}} by 20% for up to 3 seconds",
+     "bin": [
+      "PykeQ.MaxChargeTime"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The recast (empowered harpoon) deals damage to the first enemy hit and pulls them; if released within 0.4s it instead thrusts and hits the closest enemy champion, or closest enemy otherwise, for the same damage.",
+     "quote": "dealing the same damage to the closest enemy {{tip|champion}}, or closest enemy otherwise",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pyke becomes unable to act while the empowered harpoon is in flight, and the lockout ends when it hits, reaches max range, or is intercepted.",
+     "quote": "becoming {{tip|lockout|unable to act}} while it is in flight",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's mana cost is refunded if the recast hits an enemy champion.",
+     "quote": "''Bone Skewer's'' {{as|mana cost}} is also refunded if it hits an enemy champion",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the charge is interrupted or completes without a recast, the ability is cancelled and put on full cooldown, refunding 75% of the mana cost.",
+     "quote": "the ability is put on {{sti|cd|full}} cooldown but refunds {{sti|mana|{{as|75% of the mana cost}}}}",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Cooldown begins after the recast/post-effect, not on initial cast.",
+     "quote": "post-effect",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PykeQ.SelfSlow",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PykeQ.PullDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PykeQ.MinRangeDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PykeQ.MaxRangeDistance",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "PykeQ.ChargeTimeToGetMaxRange",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Ghostwater Dive",
+   "cooldown": {
+    "values": [
+     14,
+     13,
+     12,
+     11,
+     10
+    ],
+    "quote": "{{ap|14 to 10}}"
+   },
+   "cost": {
+    "values": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ],
+    "quote": "65",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "duration of camouflage and decaying bonus move speed",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 5,
+     "terms": [],
+     "quote": "submerges into water for 5 seconds",
+     "bin": [
+      "PykeW.CamoDuration"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "bonus movement speed gained, decaying over the duration",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "const",
+     "base": 0.45,
+     "terms": [
+      {
+       "stat": "lethality",
+       "coef": 0.0002,
+       "coefScaling": [
+        {
+         "stat": "lethality",
+         "per": 1,
+         "coef": 0.02
+        }
+       ]
+      }
+     ],
+     "quote": "{{as|45%|ms}} {{as|(+ 2% per 1 Lethality)}} {{as|'''bonus''' movement speed}}",
+     "bin": [
+      "PykeW.BaseMoveSpeed"
+     ],
+     "binNote": "Wiki gives base bonus MS as 45% (percent of base move speed); bin's BaseMoveSpeed=45 matches as the flat percent value. The per-lethality scaling (2% per 1 Lethality) is not represented by a named bin row; PykeW#MoveSpeed is tooltip-only and its stat29 term likely encodes this but is unlabeled."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pyke enters camouflage while submerged.",
+     "quote": "entering {{tip|camouflage}}",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Attacking or casting abilities ends Ghostwater Dive immediately, removing camouflage and the move speed buff.",
+     "quote": "Attacking or casting abilities ends ''Ghostwater Dive'' immediately.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "A basic attack only breaks the stealth at the end of the attack windup, not immediately on cast.",
+     "quote": "Using a basic attack breaks the stealth at the end of the attack windup.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Nearby enemy champions within 1500 units are alerted to Pyke's presence and whether he can execute them with his ultimate, but this has no damage-fight effect.",
+     "quote": "Enemy champions within 1500 units of '''Pyke''' are alerted of his presence and whether he can execute them with {{ai|Death from Below|Pyke}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PykeW.BaseHealCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PykeW.MaxHPHealCap",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PykeW.HealADRatio",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PykeW.HealRampBase",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "PykeW.HealRampPerTick",
+     "reason": "not-in-a-dummy-fight"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Phantom Undertow",
+   "cooldown": {
+    "values": [
+     15,
+     14,
+     13,
+     12,
+     11
+    ],
+    "quote": "{{ap|15 to 11}}"
+   },
+   "cost": {
+    "values": [
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "quote": "40",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      100,
+      150,
+      200,
+      250,
+      300
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.0
+      }
+     ],
+     "quote": "{{ap|100 to 300}} {{as|(+ 100% '''bonus''' AD)}}",
+     "bin": [
+      "PykeE#TotalDamage",
+      "PykeE.BonusADRatio"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "stun duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1.25,
+     "terms": [
+      {
+       "stat": "lethality",
+       "coef": 0.01
+      }
+     ],
+     "quote": "{{fd|1.25}} {{as|(+ {{fd|0.1}} per 10 Lethality)}} seconds",
+     "bin": [
+      "PykeE#StunDuration",
+      "PykeE.BaseStunDuration",
+      "PykeE.ELethalityRatio"
+     ],
+     "binNote": "Wiki phrases the ratio as +0.1s per 10 Lethality (=0.01 per point), which matches PykeE.ELethalityRatio=0.01 exactly once expressed per-point; no true disagreement, just unit phrasing."
+    },
+    {
+     "id": "e_3",
+     "meaning": "delay before phantom homes back",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 1,
+     "terms": [],
+     "quote": "After 1 second, the ''Phantom'' homes back to '''Pyke'''",
+     "bin": [
+      "PykeE.StunDelay"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "queue/cast time before dash begins",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.275,
+     "terms": [],
+     "quote": "{{fd|0.275}}",
+     "bin": [],
+     "binNote": "The sheet lists a bare 'castTime: 0.275' attribute on the PykeE spell block (not a Spell.DataValue or Spell#Calculation row), so there is no named data value/calc to cite; the number matches that field directly."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Pyke dashes on cast, and the damage/stun occurs later when a separate phantom homes back through him, not on cast.",
+     "quote": "After 1 second, the ''Phantom'' homes back to '''Pyke''' to {{tip|stun}} enemies around it and those it passes through along the way",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Only enemy champions take the physical damage; other enemies hit are only stunned.",
+     "quote": "Enemy champions hit also take {{as|physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Pyke is ghosted while the Phantom is active (does not affect damage).",
+     "quote": "'''Pyke''' is {{tip|ghosted}} while the ''Phantom'' is active.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PykeE.DashDistance",
+     "reason": "range-or-geometry"
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Death from Below / Death from Below 2",
+   "cooldown": {
+    "values": [
+     100,
+     85,
+     70
+    ],
+    "quote": "{{ap|100 to 70}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.5,
+    "quote": "{{fd|0.5}}"
+   },
+   "values": [
+    {
+     "id": "r_threshold",
+     "meaning": "health threshold below which enemy champions are executed",
+     "role": "other",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      250,
+      250,
+      250,
+      250,
+      250,
+      250,
+      290,
+      330,
+      370,
+      400,
+      430,
+      450,
+      470,
+      490,
+      510,
+      530,
+      540,
+      550
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.8
+      },
+      {
+       "stat": "lethality",
+       "coef": 1.5
+      }
+     ],
+     "quote": "{{pp|250;290;330;370;400;430;450;470;490;510;530;540;550|6 to 18}}|health}} {{as|(+ 80% '''bonus''' AD)}} {{as|(+ {{fd|1.5}} per 1 Lethality)}}",
+     "bin": [
+      "PykeR#RDamage"
+     ]
+    },
+    {
+     "id": "r_damage",
+     "meaning": "physical damage to enemies hit who are not executed",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "level",
+     "base": [
+      125,
+      125,
+      125,
+      125,
+      125,
+      125,
+      145,
+      165,
+      185,
+      200,
+      215,
+      225,
+      235,
+      245,
+      255,
+      265,
+      270,
+      275
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.4
+      },
+      {
+       "stat": "lethality",
+       "coef": 0.75
+      }
+     ],
+     "quote": "{{pp|125;145;165;185;200;215;225;235;245;255;265;270;275|6 to 18}}|physical damage}} {{as|(+ 40% '''bonus''' AD)}} {{as|(+ {{fd|0.75}} per 1 Lethality)}}",
+     "bin": [
+      "PykeR#RDamage",
+      "PykeR.ReducedDamage"
+     ],
+     "binNote": "The wiki's non-execute damage (125-275, +0.4 bonus AD, +0.75 per lethality) is exactly half of PykeR#RDamage (250-550, +0.8 bonus AD, +1.5 per lethality), matching PykeR.ReducedDamage=0.5 applied to RDamage. No calculation row states the halved numbers directly; they are derived as RDamage * ReducedDamage, confirmed by the tooltip-only row PykeR#ReducedDamageFinal."
+    },
+    {
+     "id": "r_recast_window",
+     "meaning": "duration of the free recast window after a champion is killed inside the X",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 20,
+     "terms": [],
+     "quote": "can also recast the ability within 20 seconds at no cost",
+     "bin": [
+      "PykeR.RRecastDuration"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Death from Below applies raw damage (ignoring resistances) to executed targets and area damage (mitigated by resistances) to targets above the threshold.",
+     "quote": "Applies {{tip|raw damage}} to executed targets and {{tip|area damage}} to targets above the threshold.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death from Below cannot execute clones; they always take the 50% physical damage instead.",
+     "quote": "''Death from Below'' cannot execute {{tip|clone|clones}}. They are always dealt 50% {{as|physical damage}}.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Death from Below hits an enemy champion, or a champion is killed inside the X, Pyke blinks to the center of the X.",
+     "quote": "'''Pyke''' will {{tip|blink}} to the center of the ''X''",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The cooldown starts on cast, not after the effect resolves.",
+     "quote": "cdstart      = on-cast",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Death from Below cannot be interrupted, and Pyke will still strike/blink even if displaced during the cast time (unless suppressed).",
+     "quote": "''Death from Below'' cannot be {{tip|interrupt|interrupted}}; '''Pyke''' will always appear at the target location if enemy champions are caught inside the ''X'' even if he is moved",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell shields do not prevent Pyke from blinking to the location.",
+     "quote": "{{tip|Spell shield}} does not prevent '''Pyke''' from {{tip|blink|blinking}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "PykeR.DamageCap",
+     "reason": "unknown"
+    }
+   ],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "stat-conversion",
+   "abilities": [
+    "P"
+   ],
+   "note": "Passive converts bonus health into bonus AD (1 bonus AD per 14 bonus health), which feeds the bonus-AD ratios on Q, E, and R."
+  },
+  {
+   "id": "charge-or-channel",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Q channels for up to 3s (or a 0.4-0.5s quick-release) before its recast fires; Pyke is slowed/limited during the charge and then locked out while the harpoon is in flight."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "Q",
+    "R"
+   ],
+   "note": "Q's damage only happens on the recast (quick-release thrust or empowered harpoon) after the initial charge cast; R can be recast for free within 20s if it kills a champion inside the X."
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (70-90 for Q, 40 for E, 100 for R) can limit how many casts fit in a 15s window depending on mana pool/regen from the build."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "E"
+   ],
+   "note": "E's damage/stun resolves on a fixed 1s delay after cast (when the phantom returns), then goes on cooldown."
+  },
+  {
+   "id": "execute-or-threshold",
+   "abilities": [
+    "R"
+   ],
+   "note": "R deals a much larger 'raw' amount if the target is below a level-scaling health threshold (executed) versus a fixed 50% physical amount if above it."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (charged/recast Q, delayed E hit, execute-threshold R, passive stat conversion, mana costs) is expressible with the listed primitives; nothing requires bespoke logic beyond combining them."
+ },
+ "unsettled": [
+  {
+   "question": "What is the true minimum time to quick-release Bone Skewer (Q) instead of fully charging?",
+   "options": [
+    "0.4s, per the wiki description ('Releasing the ability within 0.4 seconds')",
+    "0.5s, per the bin's PykeQ.MinChargeTime value"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "Releasing the ability within {{fd|0.4}} seconds causes '''Pyke''' to instead thrust his blade",
+    "PykeQ.MinChargeTime = 0.5"
+   ]
+  },
+  {
+   "question": "Does the 15s damage-fight dummy ever cross Death from Below's execute health threshold, and if so does the simulator switch R's damage from the reduced/mitigated amount to the full 'raw' execute amount (plus grant a free recast)?",
+   "options": [
+    "Dummy HP never drops below the (high, level-scaling) threshold, so R always deals the reduced 50% physical amount",
+    "Dummy HP is tracked and can fall below the threshold late in the fight, triggering the full raw-damage execute and a free recast",
+    "Simulator ignores the execute branch entirely and always uses the non-execute physical formula"
+   ],
+   "impact": "high",
+   "quotes": [
+    "executing enemy {{tip|champions}} within the area that are below {{as|{{pp|250;290;330;370;400;430;450;470;490;510;530;540;550|6 to 18}}|health}}",
+    "Other enemies hit and enemy champions above the threshold are instead dealt 50% of the amount as physical damage.",
+    "Applies {{tip|raw damage}} to executed targets and {{tip|area damage}} to targets above the threshold."
+   ]
+  },
+  {
+   "question": "Should the simulated build be assumed to carry any Lethality, given P, W, E and R all have explicit per-Lethality scaling terms that are otherwise 0?",
+   "options": [
+    "Assume 0 Lethality (pure AD/other build) so these ratios contribute nothing",
+    "Assume some nonzero Lethality since Pyke is commonly itemized with it, materially changing R's threshold/damage and E's stun duration"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "{{as|(+ {{fd|1.5}} per 1 Lethality)}}",
+    "{{as|(+ {{fd|0.75}} per 1 Lethality)}}",
+    "{{as|(+ {{fd|0.1}} per 10 Lethality)}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Do not cast W: it deals no damage and its camouflage/movement-speed benefits are ignored under the fight's mobility rule, so casting it only wastes mana and a GCD.",
+   "Open with a quick-release Q (tap, ~0.4s) at point-blank range on the dummy for its physical damage, since a full 3s charge only extends range, which is irrelevant against a stationary adjacent dummy.",
+   "Cast E (Phantom Undertow) through the dummy; its damage and stun resolve 1s later when the phantom returns, during which Pyke can keep auto-attacking.",
+   "Cast R (Death from Below) on the dummy for its large upfront physical damage (using the non-execute 50% formula, since the dummy is assumed to stay above the execute threshold for most of the fight).",
+   "Fill all remaining time with basic attacks, and recast Q and E again each time they come off cooldown (Q every 8-10s, E every 11-15s depending on rank), since Pyke has no onhit rider or attack-reset to change basic-attack value.",
+   "Only consider a free R recast if the dummy is actually brought below the execute threshold and dies inside the X during the cast, which likely does not occur before the 15s window ends."
+  ],
+  "questions": [
+   "Is quick-releasing Q always strictly better for damage output than charging it, given the fight has no range requirement, or does charge time interact with cooldown/lockout in a way that changes optimal cast frequency?",
+   "Should R be cast immediately at the start of the fight for maximum early burst, or held later in case the dummy's HP is being tracked down toward the execute threshold?",
+   "Given R's long cooldown (70-100s), is more than one R cast ever expected within a single 15s fight, or should the rotation assume exactly one R cast?",
+   "Does the simulator model Pyke's own mana pool/regen enough that mana costs (Q 70-90, E 40, R 100) actually constrain how many Q/E casts fit into 15s, or is mana assumed unlimited for this fight?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,171 @@
+{
+ "name": "Bridge Between",
+ "cooldown": {
+  "values": [
+   50,
+   44,
+   38,
+   32,
+   26,
+   20
+  ],
+  "quote": "{{pp|50 to 20 for 4|1 to 16}}",
+  "binNote": "Bin's UdyrPassive#UltCD gives 50/50/50/50/50/40/40/40/40/40/30/30/30/30/30/20/20/20 by level (levels 1-18), which agrees at levels 1,6,11,16 with the wiki's 50/44/38/32/26/20 pplevel progression at listed breakpoints 1..16, but interpolation differs; both describe the same by-level cooldown reduction."
+ },
+ "cost": null,
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}} seconds and within the following 5 seconds"
+ },
+ "values": [
+  {
+   "id": "p_globalcd",
+   "meaning": "global cooldown incurred on other basic abilities when one is cast",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{fd|1.5}}-second global cooldown",
+   "bin": [
+    "UdyrPassive.GlobalCD"
+   ]
+  },
+  {
+   "id": "p_awaken_window",
+   "meaning": "time window after re-entering a stance during which it can be Awakened",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "within the following 5 seconds to ''Awaken'' it",
+   "bin": [],
+   "binNote": "No bin row in this sheet carries the 5-second Awaken window; it is described only in the wiki's ability text."
+  },
+  {
+   "id": "p_unawaken_cd",
+   "meaning": "cooldown incurred on the current stance's ability if the Awaken window is not consumed",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "incurs a {{fd|0.25}}-second cooldown",
+   "bin": [],
+   "binNote": "No bin row in this sheet carries this 0.25s fallback cooldown; only the wiki text states it."
+  },
+  {
+   "id": "p_monktraining_as",
+   "meaning": "bonus attack speed granted to next two empowered on-hit attacks after casting an ability",
+   "role": "onhit",
+   "damageType": null,
+   "by": "const",
+   "base": 0.3,
+   "terms": [],
+   "quote": "{{sti|{{as|30% '''bonus''' attack speed}}}}",
+   "bin": [],
+   "binNote": "Sheet prints 'UdyrPassive#AttackSpeed (percent) = 0.3' as a plain data value, not a resolvable calculation the checker recognizes by that name; the 0.3 value matches the wiki's 30% bonus attack speed but no citable calculation row is available, so bin is left empty."
+  },
+  {
+   "id": "p_monktraining_duration",
+   "meaning": "duration of Monk Training's on-hit attack window",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 4,
+   "terms": [],
+   "quote": "within 4 seconds",
+   "bin": [
+    "UdyrPassive.AttackSpeedDuration"
+   ]
+  },
+  {
+   "id": "p_monktraining_cdr",
+   "meaning": "percent of Awakened Spirit's total cooldown refunded per Monk Training proc",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.05,
+   "terms": [],
+   "quote": "refund 5% of ''Awakened Spirit's'' '''total''' cooldown",
+   "bin": [
+    "UdyrPassive.UltCDReduction"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Casting a basic ability puts Udyr's other basic abilities on a brief shared global cooldown.",
+   "quote": "incur a {{sti|cd|{{tt|{{fd|1.5}}-second global cooldown|Affected by ability haste}}}} when cast",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The global cooldown does not apply to abilities already on a longer individual cooldown.",
+   "quote": "The global cooldown will not incur on abilities that are currently on a greater cooldown.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Awakened Spirit's cooldown is affected by ultimate haste, not regular ability haste.",
+   "quote": "''Awakened Spirit's'' cooldown is affected by {{sti|ah|icononly=true}} {{as|ultimate haste|ah}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Switching stances does not end the effects granted by the previous stance's Monk Training proc early.",
+   "quote": "Switching ''Stances'' will not cause any additional effects granted by the previous one to end prematurely.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Monk Training's empowered attacks apply on-hit and grant attack speed for the next two basic attacks after casting any ability.",
+   "quote": "empowers his next two {{tip|basic attacks}} {{tip|on-hit}} within 4 seconds to gain {{sti|{{as|30% '''bonus''' attack speed}}}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown refund from Monk Training does not occur if Awakened Spirit's remaining cooldown is under 1 second.",
+   "quote": "though not if the remaining cooldown is less than 1 second",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "An Awaken cast also triggers Monk Training and empowers the next two attacks with the stance's unawakened on-hit effect as well.",
+   "quote": "''Awakened Spirit's'' cast also activates ''Monk Training'' and empowers the next 2 attacks by the stances unawakened effects as well, overriding unused unawakened stance attacks.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Empowered attacks are not consumed if they are parried.",
+   "quote": "The empowered attacks will not get consumed if they are parried.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Awakened Spirit is on full cooldown at game start.",
+   "quote": "''Awakened Spirit'' is placed on full cooldown at the start of the game.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "UdyrPassive.UdyrAHAmountPerCloudDragon",
+   "reason": "not-in-a-dummy-fight"
+  },
+  {
+   "ref": "UdyrPassive.SwapChargeBonus",
+   "reason": "unknown"
+  },
+  {
+   "ref": "UdyrPassive.MaxCharge",
+   "reason": "utility"
+  },
+  {
+   "ref": "UdyrPassive.UltCDMultiplier",
+   "reason": "tooltip-only"
+  },
+  {
+   "ref": "UdyrPassive.GlobalCDEmpowered",
+   "reason": "unknown"
+  },
+  {
+   "ref": "UdyrPassive#AttackSpeed (percent)",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,221 @@
+{
+ "name": "Precision Protocol / Precision Protocol 2 / Precision Protocol 3",
+ "cooldown": {
+  "values": [
+   9,
+   8,
+   7,
+   6,
+   5
+  ],
+  "quote": "{{ap|9 to 5}}"
+ },
+ "cost": {
+  "values": [
+   25,
+   25,
+   25,
+   25,
+   25
+  ],
+  "quote": "25",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": null,
+  "quote": "none"
+ },
+ "values": [
+  {
+   "id": "q_1",
+   "meaning": "Bonus Physical Damage on empowered attack",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|20 to 40}}% AD}}",
+   "bin": [
+    "CamilleQ.TADRatio",
+    "CamilleQ#BonusDamage"
+   ]
+  },
+  {
+   "id": "q_2",
+   "meaning": "Bonus Movement Speed",
+   "role": "self-buff",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45
+   ],
+   "terms": [],
+   "quote": "{{ap|25 to 45}}%",
+   "bin": [
+    "CamilleQ.MSBonus"
+   ]
+  },
+  {
+   "id": "q_3",
+   "meaning": "Increased Mixed Damage on delayed recast",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8
+     ]
+    }
+   ],
+   "quote": "{{as|{{ap|20*2 to 40*2}}% AD}}",
+   "bin": [
+    "CamilleQ.TADRatio",
+    "CamilleQ.QEmpoweredAmp",
+    "CamilleQ#EmpoweredBonusDamage"
+   ],
+   "binNote": "No single bin row states 0.4-0.8 directly; CamilleQ#EmpoweredBonusDamage computes BonusDamage (which uses TADRatio=[0.2..0.4]) multiplied by QEmpoweredAmp=2, giving 0.4 to 0.8, matching the wiki's stated 40 to 80% AD."
+  },
+  {
+   "id": "q_10",
+   "meaning": "portion of the delayed recast's total damage dealt as true damage",
+   "role": "other",
+   "damageType": "true",
+   "by": "level",
+   "base": [
+    0.4,
+    0.44,
+    0.48,
+    0.52,
+    0.56,
+    0.6,
+    0.64,
+    0.68,
+    0.72,
+    0.76,
+    0.8,
+    0.84,
+    0.88,
+    0.92,
+    0.96,
+    1,
+    1,
+    1
+   ],
+   "terms": [],
+   "quote": "{{pp|key=%|40 to 100 for 16|formula=36%+(4%*level). ''Capped at level 16''}}",
+   "bin": [
+    "CamilleQ#DamageConversionPercentage"
+   ],
+   "binNote": "Bin's byLevel array continues past level 16 to 1.04/1.08 at levels 17-18, but the wiki explicitly states the percentage is capped at level 16 (100%), so levels 17-18 are recorded as 1.0 per the wiki text, disagreeing with the bin's uncapped values."
+  },
+  {
+   "id": "q_11",
+   "meaning": "delay after the empowered attack before a recast doubles the damage",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1.5,
+   "terms": [],
+   "quote": "{{fd|1.5}}",
+   "bin": [
+    "CamilleQ.QRampUpTime"
+   ]
+  },
+  {
+   "id": "q_12",
+   "meaning": "window during which Precision Protocol can be recast at no additional cost",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 3.5,
+   "terms": [],
+   "quote": "{{fd|3.5}}",
+   "bin": [
+    "CamilleQ.QTotalRecastTime"
+   ]
+  },
+  {
+   "id": "q_13",
+   "meaning": "duration of the bonus movement speed",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 1,
+   "terms": [],
+   "quote": "for 1 second",
+   "bin": [
+    "CamilleQ.MSDuration"
+   ]
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Both casts of Precision Protocol reset Camille's basic attack timer.",
+   "quote": "Both casts of Precision Protocol reset Camille's basic attack timer.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The cooldown does not start until the first empowered attack lands.",
+   "quote": "cdstart      = Starts on first attack",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Neither the first empowered attack nor the recast can critically strike.",
+   "quote": "Both enhanced attacks '''cannot''' {{tip|critical strike|critically strike}}.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Both casts count as ability activations for on-cast effects such as Spellblade.",
+   "quote": "Both casts count as ability activations for the purposes of on-cast effects such as {{tip|Spellblade}} and triggering {{ais|Force Pulse|Kassadin}} passive.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The recast becomes empowered (dealing the doubled/true-damage version) as long as it starts after the 1.5-second delay, even if the recast input was made earlier.",
+   "quote": "The second attack will also become empowered if it simply starts after the {{fd|1.5}}-second delay, even if the recast was consumed earlier.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "On the delayed recast, the true damage portion is dealt just before the physical damage portion of the attack.",
+   "quote": "Is dealt just prior to the physical damage portion of the attack.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Camille can cast Tactical Sweep, Hookshot, or The Hextech Ultimatum during the empowered attack's windup without cancelling it.",
+   "quote": "'''Camille''' is able to cast {{ai|Tactical Sweep|Camille}}, {{ai|Hookshot|Camille}}, or {{ai|The Hextech Ultimatum|Camille}} during the windup of Precision Protocol's empowered attack without cancelling it.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "CamilleQ.BonusAARange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "CamilleQ.Q2Duration",
+   "reason": "unknown"
+  }
+ ],
+ "filledBy": "sonnet"
+}

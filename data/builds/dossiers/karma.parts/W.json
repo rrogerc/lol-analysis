@@ -1,0 +1,169 @@
+{
+ "name": "Focused Resolve / Renewal",
+ "cooldown": {
+  "values": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "quote": "12"
+ },
+ "cost": {
+  "values": [
+   50,
+   55,
+   60,
+   65,
+   70
+  ],
+  "quote": "{{ap|50 to 70}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic Damage",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [
+    40,
+    65,
+    90,
+    115,
+    140
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.45
+    }
+   ],
+   "quote": "{{ap|40 to 140}} {{as|(+ 45% AP)}}",
+   "bin": [
+    "KarmaSpiritBind#InitialDamage"
+   ]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Root Duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    1.6,
+    1.7,
+    1.8,
+    1.9,
+    2
+   ],
+   "terms": [],
+   "quote": "{{ap|1.6 to 2}} seconds",
+   "bin": [
+    "KarmaSpiritBind.RootDuration"
+   ]
+  },
+  {
+   "id": "w_tether",
+   "meaning": "Tether duration before aftereffect triggers",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 2,
+   "terms": [],
+   "quote": "forms a {{tip|tether}} between her and them for 2 seconds",
+   "bin": [
+    "KarmaSpiritBind.TetherDuration"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Root Duration Increase (Mantra)",
+   "role": "duration",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    0.5,
+    0.75,
+    1,
+    1.25
+   ],
+   "terms": [],
+   "quote": "{{ai|Mantra|Karma|{{ap|0.5 to 1.25 4}}}} seconds",
+   "bin": [
+    "KarmaMantra.RWBonusRoot"
+   ]
+  },
+  {
+   "id": "w_renewal_heal",
+   "meaning": "Renewal self-heal (% missing health), each of two triggers",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "const",
+   "base": 0.17,
+   "terms": [
+    {
+     "stat": "missingHp",
+     "coef": 0.17,
+     "coefScaling": [
+      {
+       "stat": "ap",
+       "per": 100,
+       "coef": 0.01
+      }
+     ]
+    }
+   ],
+   "quote": "heals for {{sti|health|{{as|17% {{as|(+ 1% per 100 AP)}} of her '''missing''' health}}}}",
+   "bin": [
+    "KarmaMantra#RWHealAmount"
+   ],
+   "binNote": "RWHealAmount computes (17 + 0.01xAP)*0.01, i.e. (0.17 + 0.0001xAP) as a fraction of missing health; matches wiki's 17% + 1% per 100 AP once expressed per-AP-point (0.01/100=0.0001)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The aftereffect damage/root only triggers if the tether is not broken by the end of its duration.",
+   "quote": "If the tether is not broken by the end of its duration, the target is dealt the same {{as|magic damage}} again and is {{tip|root|rooted}} for a duration",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Spell shield blocks the tether's application and initial damage but not the aftereffect if the tether was already applied.",
+   "quote": "{{tip|Spell shield}} will block the tether's application and damage but not the aftereffects of one already applied.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Renewal heals Karma once on cast and again when the tether completes or the target dies while tethered.",
+   "quote": "'''Karma''' {{tip|heal|heals}} herself once on-cast, and again once the target is ''bound'' or dies while tethered.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "If the target becomes untargetable, dies, or leaves sight during the cast time, the ability cancels without going on cooldown or paying its cost.",
+   "quote": "If the target becomes {{tip|untargetable}}, {{tip|death|dies}}, or is no longer in {{tip|sight}} during the cast time, this ability will cancel but does not go on {{sti|cooldown}} nor pay its cost.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "If the target moves out of range during the cast time, the ability still goes on cooldown and pays its cost despite cancelling.",
+   "quote": "If they move too far away during the cast time, however, the ability will cancel as normal but still go on cooldown and pay its cost.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Even when cast is cancelled by the target moving away, Karma is still healed on-cast under Renewal.",
+   "quote": "'''Karma''' is still healed on-cast.",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "KarmaSpiritBind.LeashBreakRange",
+   "reason": "range-or-geometry"
+  }
+ ],
+ "filledBy": "sonnet"
+}

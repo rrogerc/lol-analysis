@@ -1,0 +1,121 @@
+{
+ "name": "Moonlight Vigil",
+ "cooldown": {
+  "values": [120, 110, 100],
+  "quote": "{{pp|120 to 100 for 3|6 to 16}}"
+ },
+ "cost": {
+  "values": 100,
+  "quote": "100",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.6,
+  "quote": "{{fd|0.6}}",
+  "binNote": "The bin's ApheliosR spell reports castTime=0.5, not the wiki's 0.6."
+ },
+ "values": [
+  {
+   "id": "r_smite_dmg",
+   "meaning": "Initial smite physical damage to enemy champions struck",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [125, 175, 225],
+   "terms": [{"stat": "bonusAd", "coef": 0.2}, {"stat": "ap", "coef": 1.0}],
+   "quote": "dealing {{as|{{pp|125 to 225 for 3|6 to 16}}|physical damage}} {{as|(+ 20% '''bonus''' AD)}} {{as|(+ 100% AP)}} {{as|physical damage}} to enemy champions struck",
+   "bin": ["ApheliosR.RBaseDamage", "ApheliosR#MaxDamage"]
+  },
+  {
+   "id": "r_followup_dmg",
+   "meaning": "Sky-attack physical damage against each locked-on target (main weapon's basic attack, 0.3s after illumination)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [{"stat": "ad", "coef": 1.0}],
+   "quote": "attacks based on '''Aphelios' ''' current {{as|main weapon}} will launch from the sky against each locked-on target, dealing {{as|100% AD}} {{as|physical damage}} and applying {{tip|on-hit}} effects",
+   "bin": [],
+   "binNote": "100% AD is a plain attack's damage; no dedicated data row is expected for it in the sheet."
+  },
+  {
+   "id": "r_crit_dmg_bonus",
+   "meaning": "Extra critical-strike-damage modifier on R's locked-on attacks at max rank (wiki shows it growing 0 to 30 percentage points over R's 3 ranks; only the rank-3 endpoint has direct bin support, see binNote)",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 30,
+   "terms": [],
+   "quote": "These attacks can {{tip|critically strike}} for {{critical damage|100 to 130|0 to 30|critScaling=true}} damage.",
+   "bin": ["ApheliosR.CritDamageMod"],
+   "binNote": "CritDamageMod=0.3 matches only the wiki's rank-3 endpoint (+30 points); there is no separate bin row giving the rank-1/rank-2 values (0/15), so the by-rank interpolation stated in the wiki is not independently checkable. The calc that applies CritDamageMod, ApheliosR#CritDamageModCalc = 1 + 0.3*(critDamage? * (cooldownReduction? - 1)), references two stat hooks the sheet tool could not name; it is not clear this evaluates to a clean per-rank progression at all rather than something stat-dependent. The wiki separately documents an unexplained bug where Severum's and Crescendum's locked-on attacks crit for slightly more than 120% with 'unknown' origin -- this unresolved calc looks like a plausible source, but that is inference, not a confirmed mapping. See top.json unsettled."
+  },
+  {
+   "id": "r_calibrum_mark_bonus",
+   "meaning": "Calibrum weapon: bonus physical damage the empowered mark deals per mark consumed (in place of the passive's 15 + 15% bonus AD)",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [50, 80, 110],
+   "terms": [],
+   "quote": "Applies an empowered mark that deals {{as|{{pp|50 to 110 for 3|6 to 16}} {{as|'''bonus''' physical damage}}}} per ''mark'' consumed.",
+   "bin": ["ApheliosR.CalibrumRMarkBonusDamage"]
+  },
+  {
+   "id": "r_infernum_initial_bonus",
+   "meaning": "Infernum weapon: bonus physical damage added to the initial smite",
+   "role": "damage",
+   "damageType": "physical",
+   "by": "rank",
+   "base": [50, 100, 150],
+   "terms": [{"stat": "bonusAd", "coef": 0.25}],
+   "quote": "The initial blast deals {{as|{{pp|50 to 150 for 3|6 to 16}}|physical damage}} {{as|(+ 25% '''bonus''' AD)}} {{as|'''bonus''' physical damage}}.",
+   "bin": ["ApheliosR.InfernumRBonusDamageBase", "ApheliosR#InfernumRBonusDamage"]
+  },
+  {
+   "id": "r_infernum_bolt_secondary_pct",
+   "meaning": "Infernum weapon (current text per binNote): secondary targets of the follow-up bolt explosion take this fraction of Infernum's regular bolt damage",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": 0.9,
+   "terms": [],
+   "quote": "secondary targets are dealt 90% of ''Infernum's'' regular bolt damage",
+   "bin": ["ApheliosR#InfernumRPenalty"],
+   "binNote": "The wiki presents this as one of two alternatives inside an {{ft|...}} (former/current text) template for what Infernum's R follow-up does: (a) a flat 110% AD attack against the locked-on target, or (b) Infernum's normal attack plus its bolts exploding in a 400-radius circle, with secondary targets at 90% of the regular bolt damage. This value (0.9) matches alternative (b) exactly; I could not determine from the wikitext alone which of the two {{ft}} branches is the current one. See top.json unsettled."
+  },
+  {
+   "id": "r_crescendum_bonus_chakrams",
+   "meaning": "Crescendum weapon: additional spectral Chakrams generated from the first enemy champion hit by the initial smite",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "Generates 5 additional spectral ''Chakrams'' that return to '''Aphelios''' from the first enemy champion hit, for a total of 6",
+   "bin": ["ApheliosR.CrescendumRBonusMinis"]
+  }
+ ],
+ "mechanics": [
+  {"claim": "Which weapon's bonus effect Moonlight Vigil applies is locked in at cast time; changing weapons while it is in flight does not change the effect when it lands.",
+   "quote": "Changing weapons while ''Moonlight Vigil'' is in flight does not change the effect it has when it hits.",
+   "affectsDamageFight": true},
+  {"claim": "Each of R's locked-on sky-attacks critically strikes independently of the others and of the initial smite.",
+   "quote": "All attacks from ''Moonlight Vigil'' {{tip|critically strike}} independently from each other.",
+   "affectsDamageFight": true},
+  {"claim": "The sky-attacks do not apply normal on-attack effects (only the on-hit effects named in the description), and there is no range limit once a target is locked on.",
+   "quote": "Attacks do not apply [[on-attack effects]].",
+   "affectsDamageFight": true},
+  {"claim": "With Gravitum as main weapon, R raises the initial slow to 99% and empowers Binding Eclipse to root affected targets for 1.35 seconds; the slow/root sizes themselves are utility and are not scored as damage values here.",
+   "quote": "Increases the initial {{tip|slow}} to 99% and empowers ''{{ai|Binding Eclipse|Aphelios}}'' to {{tip|root}} targets affected by the enhanced slow for {{fd|1.35}} seconds.",
+   "affectsDamageFight": false},
+  {"claim": "The wiki's own worked example of the >120% crit bug is marked outdated as of patch V26.01; only the qualitative claim (Severum/Crescendum locked-on crits deal slightly more than 120%, cause unknown) is treated as current.",
+   "quote": "Values are outdated due to patch [[V26.01]].",
+   "affectsDamageFight": false}
+ ],
+ "binUnused": [
+  {"ref": "ApheliosR.SeverumRHealBonus", "reason": "defensive"},
+  {"ref": "ApheliosR.GravitumRBonusSlowBase", "reason": "utility"},
+  {"ref": "ApheliosR.GravitumRRootDuration", "reason": "utility"}
+ ]
+}

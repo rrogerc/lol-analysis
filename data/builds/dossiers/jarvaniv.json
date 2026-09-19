@@ -1,0 +1,761 @@
+{
+ "champion": "jarvaniv",
+ "abilities": {
+  "P": {
+   "name": "Martial Cadence",
+   "cooldown": null,
+   "cost": null,
+   "castTime": null,
+   "values": [
+    {
+     "id": "p_1",
+     "meaning": "bonus physical damage on empowered attack, percent of target's current health",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "targetCurrentHp",
+       "coef": 0.08
+      }
+     ],
+     "quote": "{{as|8% of the target's '''current''' health}}",
+     "bin": [
+      "JarvanIVMartialCadence.TooltipCurrentHealthDamage"
+     ]
+    },
+    {
+     "id": "p_2",
+     "meaning": "minimum bonus damage from Martial Cadence",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 20,
+     "terms": [],
+     "quote": "minimum threshold of 20",
+     "bin": [
+      "JarvanIVMartialCadence.MinimumCadenceDamage"
+     ]
+    },
+    {
+     "id": "p_3",
+     "meaning": "maximum bonus damage from Martial Cadence against non-champions",
+     "role": "onhit",
+     "damageType": "physical",
+     "by": "const",
+     "base": 400,
+     "terms": [],
+     "quote": "capped at 400 against non-{{tip|champion}} targets",
+     "bin": [
+      "JarvanIVMartialCadence.MaximumCadenceDamage"
+     ]
+    },
+    {
+     "id": "p_4",
+     "meaning": "cooldown before Martial Cadence can proc again on the same target",
+     "role": "interval",
+     "damageType": null,
+     "by": "level",
+     "base": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      5,
+      5,
+      5,
+      5,
+      5,
+      4,
+      4,
+      4,
+      4,
+      4,
+      3,
+      3,
+      3
+     ],
+     "terms": [],
+     "quote": "{{pp|6 to 3 for 4|1 to 16}}",
+     "bin": [
+      "JarvanIVMartialCadence#TooltipCooldown"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Martial Cadence's damage is based on the target's current health before the main attack's damage is applied.",
+     "quote": "''Martial Cadence's'' damage is based on the current health of the target before any damage of the attack has been dealt.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Martial Cadence damage is a separate instance dealt after the main attack damage, and will not occur if the target dies to the main attack.",
+     "quote": "''Martial Cadence's'' damage is dealt after the main attack damage.\n** If the target dies to the main attack damage, the additional damage will not be dealt.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The empowered attack does not proc against structures (irrelevant for a champion dummy target but noted).",
+     "quote": "The empowered attack will not trigger against {{tip|structures}}.",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "Q": {
+   "name": "Dragon Strike",
+   "cooldown": {
+    "values": [
+     10,
+     9,
+     8,
+     7,
+     6
+    ],
+    "quote": "{{ap|10 to 6}}"
+   },
+   "cost": {
+    "values": [
+     45,
+     50,
+     55,
+     60,
+     65
+    ],
+    "quote": "{{ap|45 to 65}}",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": 0.4,
+    "quote": "{{fd|0.4}}"
+   },
+   "values": [
+    {
+     "id": "q_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      90,
+      130,
+      170,
+      210,
+      250
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.45
+      }
+     ],
+     "quote": "{{ap|90 to 250}} {{as|(+ 145% '''bonus''' AD)}}",
+     "bin": [
+      "JarvanIVDragonStrike#TotalDamage"
+     ]
+    },
+    {
+     "id": "q_2",
+     "meaning": "Armor Reduction",
+     "role": "target-debuff",
+     "damageType": null,
+     "by": "rank",
+     "base": null,
+     "terms": [
+      {
+       "stat": "armor",
+       "coef": [
+        0.1,
+        0.14,
+        0.18,
+        0.22,
+        0.26
+       ]
+      }
+     ],
+     "quote": "{{as|{{ap|10 to 26}}% of target's armor}}",
+     "bin": [
+      "JarvanIVDragonStrike.BaseARShred"
+     ]
+    },
+    {
+     "id": "q_3",
+     "meaning": "duration of the armor reduction",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3,
+     "terms": [],
+     "quote": "inflicting them with {{sti|armor penetration|{{as|armor reduction}}}} for 3 seconds",
+     "bin": [],
+     "binNote": "duration not present as a separate data value in the sheet"
+    },
+    {
+     "id": "q_4",
+     "meaning": "knockup duration on flag dash",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}}",
+     "bin": [],
+     "binNote": "knockup duration not present in sheet's Q data values"
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The armor reduction is applied after the damage lands, so the initial hit does not benefit from the reduced armor.",
+     "quote": "The armor reduction is applied after the damage. The damage dealt does not benefit from it in this case.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Enemies already hit by this cast cannot be hit or damaged again by the same cast.",
+     "quote": "Enemies already hit by ''Dragon Strike'' cannot be affected more than once.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If the lance connects with a deployed Demacian Standard, Jarvan IV dashes to its location, knocking up nearby enemies (a separate effect from the initial hit damage).",
+     "quote": "If the lance connects with a deployed ''{{ai|Demacian Standard|Jarvan IV}}'', '''Jarvan IV''' {{tip|dashes}} to its location, {{tip|airborne|knocking up}} nearby enemies around him and along his path",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Jarvan IV can cast any of his abilities during the dash.",
+     "quote": "'''Jarvan IV''' can cast any of his [[champion ability|abilities]] during the dash.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "W": {
+   "name": "Golden Aegis",
+   "cooldown": {
+    "values": [
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "quote": "9"
+   },
+   "cost": {
+    "values": [
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "quote": "30",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "w_1",
+     "meaning": "Slow",
+     "role": "utility",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      15,
+      20,
+      25,
+      30,
+      35
+     ],
+     "terms": [],
+     "quote": "{{ap|15 to 35}}%",
+     "bin": [
+      "JarvanIVGoldenAegis.BaseSlowAmount"
+     ]
+    },
+    {
+     "id": "w_2",
+     "meaning": "Shield Strength",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      60,
+      80,
+      100,
+      120,
+      140
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 0.7
+      }
+     ],
+     "quote": "{{ap|60 to 140}} {{as|(+ 70% '''bonus''' AD)}}",
+     "bin": [
+      "JarvanIVGoldenAegis#TotalShield"
+     ]
+    },
+    {
+     "id": "w_3",
+     "meaning": "duration of the slow",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 2,
+     "terms": [],
+     "quote": "'''Jarvan IV''' {{tip|slow|slows}} all nearby enemies for 2 seconds.",
+     "bin": [],
+     "binNote": "Duration is not present as a separate data value in the bin excerpt; it is baked into the effect and only stated in the wiki description."
+    },
+    {
+     "id": "w_4",
+     "meaning": "duration of the shield",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 4,
+     "terms": [],
+     "quote": "grants himself a {{tip|shield}} for 4 seconds",
+     "bin": [],
+     "binNote": "Duration is not present as a separate data value in the bin excerpt; it is baked into the effect and only stated in the wiki description."
+    },
+    {
+     "id": "w_5",
+     "meaning": "shield strength bonus per enemy champion hit",
+     "role": "heal-shield",
+     "damageType": null,
+     "by": "const",
+     "base": null,
+     "terms": [
+      {
+       "stat": "maxHp",
+       "coef": 0.013
+      }
+     ],
+     "quote": "increased by {{as|{{fd|1.3}}% of his '''maximum''' health}} for each enemy {{tip|champion}} hit",
+     "bin": [
+      "JarvanIVGoldenAegis#BonusShield"
+     ]
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Golden Aegis deals no damage and thus does not trigger turret aggro or on-hit-damage-triggered effects.",
+     "quote": "deals no damage and thus does '''not''' trigger {{tip|turret}} aggro, or effects such as {{ii|Elixir of Sorcery}} and {{ris|Sudden Impact}} activation.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "Golden Aegis activates combat status despite dealing no damage.",
+     "quote": "''Golden Aegis'' will activate [[combat status]] despite not dealing any damage.",
+     "affectsDamageFight": false
+    },
+    {
+     "claim": "The shield's strength increases per enemy champion hit by the slow, at 1.3% of Jarvan's maximum health each.",
+     "quote": "increased by {{as|{{fd|1.3}}% of his '''maximum''' health}} for each enemy {{tip|champion}} hit by ''Golden Aegis''",
+     "affectsDamageFight": false
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  },
+  "E": {
+   "name": "Demacian Standard",
+   "cooldown": {
+    "values": [
+     12,
+     11.5,
+     11,
+     10.5,
+     10
+    ],
+    "quote": "{{ap|12 to 10}}"
+   },
+   "cost": {
+    "values": [
+     55,
+     55,
+     55,
+     55,
+     55
+    ],
+    "quote": "55",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "e_1",
+     "meaning": "Bonus Attack Speed",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.225,
+      0.25,
+      0.275,
+      0.3
+     ],
+     "terms": [],
+     "quote": "{{ap|20 to 30}}%",
+     "bin": [
+      "JarvanIVDemacianStandard.PermanentAttackSpeed"
+     ]
+    },
+    {
+     "id": "e_2",
+     "meaning": "Magic Damage",
+     "role": "damage",
+     "damageType": "magic",
+     "by": "rank",
+     "base": [
+      80,
+      120,
+      160,
+      200,
+      240
+     ],
+     "terms": [
+      {
+       "stat": "ap",
+       "coef": 0.8
+      }
+     ],
+     "quote": "{{ap|80 to 240}} {{as|(+ 80% AP)}}",
+     "bin": [
+      "JarvanIVDemacianStandard#TotalDamage"
+     ]
+    },
+    {
+     "id": "e_3",
+     "meaning": "aura bonus attack speed granted to Jarvan and allies near the deployed flag",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.2,
+      0.225,
+      0.25,
+      0.275,
+      0.3
+     ],
+     "terms": [],
+     "quote": "grants ''Demacian Standard's'' passive {{as|'''bonus''' attack speed}} to all nearby allied champions as well as '''Jarvan IV'''",
+     "bin": [
+      "JarvanIVDemacianStandard.BaseAuraAS"
+     ]
+    },
+    {
+     "id": "e_4",
+     "meaning": "total bonus attack speed Jarvan gains while near the flag (passive + aura stacked additively)",
+     "role": "self-buff",
+     "damageType": null,
+     "by": "rank",
+     "base": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+     ],
+     "terms": [],
+     "quote": "'''Jarvan IV''' gains a total of {{ap|20*2 to 30*2}}% bonus attack speed from ''Demacian Standard'' while near the flag.",
+     "bin": [],
+     "binNote": "This is the wiki-stated sum of PermanentAttackSpeed and BaseAuraAS (each 0.2-0.3 by rank), doubled since both stack additively; no single bin row carries the combined total."
+    },
+    {
+     "id": "e_5",
+     "meaning": "duration the flag remains, granting sight and the attack speed aura",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 8,
+     "terms": [],
+     "quote": "The flag then remains for 8 seconds",
+     "bin": [],
+     "binNote": "No bin row for the flag's lingering duration was found in the sheet; only the wall duration (R) and dash speed (E) are present, not this timer."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "The attack speed granted from a deployed Demacian Standard stacks additively with the passive permanent bonus attack speed to Jarvan IV, but the aura from multiple Demacian Standards does not stack.",
+     "quote": "The attack speed granted from a deployed ''Demacian Standard'' {{tip|stacks additively}} with ''Demacian Standard's'' passive permanent bonus attack speed to '''Jarvan IV''', but the aura from multiple ''Demacian Standards'' does not stack.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The flag can be blocked by a spell shield.",
+     "quote": "spellshield  = True",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability has no cast time.",
+     "quote": "cast time = none",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [
+    {
+     "ref": "JarvanIVDemacianStandard.EDashSpeed",
+     "reason": "not-in-a-dummy-fight"
+    },
+    {
+     "ref": "JarvanIVDemacianStandard.EBehindJarvanCheck",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "JarvanIVDemacianStandard.EKnockUpAoE",
+     "reason": "range-or-geometry"
+    },
+    {
+     "ref": "JarvanIVDemacianStandard.APRatio",
+     "reason": null
+    }
+   ],
+   "filledBy": "sonnet"
+  },
+  "R": {
+   "name": "Cataclysm",
+   "cooldown": {
+    "values": [
+     120,
+     105,
+     90
+    ],
+    "quote": "{{ap|120 to 90}}"
+   },
+   "cost": {
+    "values": [
+     100,
+     100,
+     100
+    ],
+    "quote": "100",
+    "resource": "mana"
+   },
+   "castTime": {
+    "value": null,
+    "quote": "none"
+   },
+   "values": [
+    {
+     "id": "r_1",
+     "meaning": "Physical Damage",
+     "role": "damage",
+     "damageType": "physical",
+     "by": "rank",
+     "base": [
+      200,
+      325,
+      450
+     ],
+     "terms": [
+      {
+       "stat": "bonusAd",
+       "coef": 1.8
+      }
+     ],
+     "quote": "{{ap|200 to 450}} {{as|(+ 180% '''bonus''' AD)}}",
+     "bin": [
+      "JarvanIVCataclysm#DamageCalc"
+     ]
+    },
+    {
+     "id": "r_2",
+     "meaning": "leap travel time",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.35,
+     "terms": [],
+     "quote": "{{fd|0.35}} seconds",
+     "bin": [],
+     "binNote": "Not a named data value in the sheet; travel time is implied by an unlisted dash-speed constant, so no bin row states 0.35 directly."
+    },
+    {
+     "id": "r_3",
+     "meaning": "terrain duration",
+     "role": "duration",
+     "damageType": null,
+     "by": "const",
+     "base": 3.5,
+     "terms": [],
+     "quote": "{{fd|3.5}} seconds",
+     "bin": [
+      "JarvanIVCataclysm.WallDuration"
+     ]
+    },
+    {
+     "id": "r_4",
+     "meaning": "earliest recast time after terrain creation",
+     "role": "other",
+     "damageType": null,
+     "by": "const",
+     "base": 0.75,
+     "terms": [],
+     "quote": "{{fd|0.75}} seconds",
+     "bin": [],
+     "binNote": "No data value in the sheet corresponds to this recast delay; it is not represented among the listed JarvanIVCataclysm fields."
+    }
+   ],
+   "mechanics": [
+    {
+     "claim": "Jarvan IV leaps unstoppably to the target champion's location and deals damage to nearby enemies upon arrival, not on cast.",
+     "quote": "leaps with displacement immunity to the target enemy champion's location over 0.35 seconds, dealing physical damage to all nearby enemies upon arrival.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The ability's cooldown does not start until after the effect resolves.",
+     "quote": "cdstart      = post-effect",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "The initial cast and manual recast both count as ability activations for on-cast effects.",
+     "quote": "The initial cast and the manual recast count as ability activations for the purposes of on-cast effects such as Spellblade and triggering Force Pulse Kassadin passive.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "Spell Shield blocks the impact damage but not the terrain generation.",
+     "quote": "Spell shield will block the damage but not the terrain generation.",
+     "affectsDamageFight": true
+    },
+    {
+     "claim": "If Jarvan IV is killed while leaping, Cataclysm deals no damage, generates no terrain, and does not refund its cooldown.",
+     "quote": "Cataclysm will not deal damage, generate terrain, nor refund its cooldown if Jarvan IV is killed while leaping.",
+     "affectsDamageFight": true
+    }
+   ],
+   "binUnused": [],
+   "filledBy": "sonnet"
+  }
+ },
+ "primitives": [
+  {
+   "id": "onhit-rider",
+   "abilities": [
+    "P"
+   ],
+   "note": "Martial Cadence adds bonus physical damage to every basic attack, gated by an internal per-target cooldown that scales by champion level (6s→3s)."
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Martial Cadence's bonus damage is 8% of the target's current health, floored at 20 and capped at 400 vs non-champions."
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Q deals damage on a 0.4s cast, E deals damage on cast with no cast time, R deals damage on impact after a 0.35s leap."
+  },
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Dragon Strike shreds the target's armor by 10-26% for 3 seconds, applied after the initial hit's own damage."
+  },
+  {
+   "id": "timed-self-buff",
+   "abilities": [
+    "E"
+   ],
+   "note": "Deployed flag grants an attack-speed aura (equal to the passive %) to Jarvan while near it for the flag's 8s duration, plus Jarvan's own permanent passive attack-speed bonus."
+  },
+  {
+   "id": "attack-speed-interaction",
+   "abilities": [
+    "E"
+   ],
+   "note": "Passive permanent attack speed stacks additively with the deployed flag's aura attack speed (up to double the listed value); multiple flags' auras do not stack with each other."
+  },
+  {
+   "id": "recast-or-multipart",
+   "abilities": [
+    "R"
+   ],
+   "note": "Cataclysm has an initial leap+damage+terrain-creation part and an optional manual recast (after 0.75s) that destroys the terrain; both count as ability activations for on-cast effects."
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "W"
+   ],
+   "note": "Golden Aegis deals no damage; it only slows enemies and shields Jarvan, relevant to the survival fight, not the damage fight."
+  }
+ ],
+ "needsBespoke": {
+  "value": false,
+  "why": "Every damage-relevant mechanic (onhit rider with health-based cap/floor, plain-cast burst damage, armor shred debuff, an attack-speed aura/passive stacking rule, and a recastable ultimate) maps onto existing primitives; nothing requires bespoke logic beyond combining them."
+ },
+ "unsettled": [
+  {
+   "question": "If Dragon Strike is cast more than once during the 15s fight (its cooldown of 6-10s allows this), does the second cast's armor-shred refresh/overwrite the first application, stack additively, or simply reapply the same debuff with no additional effect?",
+   "options": [
+    "Refreshes duration/magnitude to the latest cast's value (no stacking)",
+    "Stacks additively with the prior instance",
+    "Second application is redundant since duration (3s) is shorter than the cooldown and rarely overlaps"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "The armor reduction is applied after the damage. The damage dealt does not benefit from it in this case."
+   ]
+  },
+  {
+   "question": "Should the simulator assume Jarvan maintains continuous attack-speed-aura uptime from a deployed Demacian Standard flag throughout the 15s fight, or should uptime be gated realistically by the flag's 8s duration versus its ~10-12s (rank-dependent) recast cooldown, leaving gaps where only the base passive AS applies?",
+   "options": [
+    "Assume 100% uptime (always standing in aura range with a flag active)",
+    "Model actual uptime windows based on E's cooldown vs the flag's 8s duration, leaving gaps between casts",
+    "Assume the flag is only up during the opening cast and never recast within 15s"
+   ],
+   "impact": "high",
+   "quotes": [
+    "'''Jarvan IV''' gains a total of {{ap|20*2 to 30*2}}% bonus attack speed from ''Demacian Standard'' while near the flag.",
+    "The flag then remains for 8 seconds, granting {{tip|sight}} of its surroundings and providing an {{tip|aura}}"
+   ]
+  },
+  {
+   "question": "Dragon Strike's description says Jarvan can cast any ability during its dash, but it is unclear whether basic attacks can also be issued (and land) during the 0.4s cast + subsequent dash animation, which affects how many total auto-attacks (and thus Martial Cadence procs) fit into the 15s window.",
+   "options": [
+    "Basic attacks queue/land normally during the Q cast and dash with no lost attack time",
+    "The dash briefly blocks attack commands, costing a small amount of attack uptime each Q cast"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''''Jarvan IV''' can cast any of his [[champion ability|abilities]] during the dash.''"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Open with Dragon Strike (Q) on the dummy for immediate physical damage and to apply the armor shred before other physical damage lands.",
+   "Follow immediately with Cataclysm (R) on the dummy so its large physical-damage burst benefits from the reduced armor from Q.",
+   "Cast Demacian Standard (E) at the dummy's location for magic damage and to gain the attack-speed aura/passive bonus for the rest of the fight.",
+   "Auto-attack continuously between and after ability casts, letting Martial Cadence proc its bonus current-health-based physical damage on its internal cooldown.",
+   "Recast Dragon Strike (Q) every time it comes off cooldown (6-10s by rank) for repeated physical damage and to keep the armor shred active.",
+   "Recast Demacian Standard (E) every time it comes off cooldown (~10-12s) to add more magic damage and refresh the attack-speed aura.",
+   "Do not cast Golden Aegis (W) in the damage-fight rotation, since it deals no damage and only provides a shield/slow relevant to the survival fight.",
+   "Do not manually recast Cataclysm to destroy the terrain unless it is free of downside, since the recast itself adds no damage."
+  ],
+  "questions": [
+   "Is the dummy always within Cataclysm's 650-unit target range and Dragon Strike's dash/aoe range so R and Q can be cast on cooldown without repositioning delay?",
+   "At what champion level and item build is this rotation intended to be evaluated, since Martial Cadence's proc cooldown (3-6s) and Demacian Standard's rank both change how much value auto-attack weaving contributes?",
+   "Should Q be assumed to hit a pre-placed Demacian Standard flag (triggering the dash/knockup with no extra damage) as part of optimal play, or is that interaction irrelevant to the damage fight and should be ignored?",
+   "Is R best opened immediately at the start of the fight (for its long cooldown to begin ticking down early) even before Q's armor shred is up, trading some R damage for more total R casts over a longer window, or is a single 15s fight short enough that R's cooldown never matters and shred-before-R is strictly better?"
+  ]
+ },
+ "filledBy": "sonnet"
+}

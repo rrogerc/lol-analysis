@@ -1,0 +1,68 @@
+{
+ "name": "Miasma",
+ "cooldown": {
+  "values": [24, 22, 20, 18, 16],
+  "quote": "{{ap|24 to 16}}"
+ },
+ "cost": {
+  "values": [70, 75, 80, 85, 90],
+  "quote": "{{ap|70 to 90}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{fd|0.25}}"
+ },
+ "values": [
+  {
+   "id": "w_1",
+   "meaning": "Magic damage per second dealt to enemies standing in the poison cloud",
+   "role": "dot",
+   "damageType": "magic",
+   "by": "rank",
+   "base": [20, 25, 30, 35, 40],
+   "terms": [{"stat": "ap", "coef": 0.1}],
+   "quote": "{{ap|20 to 40}} {{as|(+ 10% AP)}}",
+   "bin": ["CassiopeiaW.BaseDamage", "CassiopeiaW#DamagePerSecond"]
+  },
+  {
+   "id": "w_2",
+   "meaning": "Duration the toxic clouds (and thus the poison damage window) persist at the target area",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 5,
+   "terms": [],
+   "quote": "creating toxic clouds at the area for 5 seconds",
+   "bin": ["CassiopeiaW.CloudDuration"]
+  },
+  {
+   "id": "w_3",
+   "meaning": "Actual number of damage ticks landing over the cloud's lifetime (the leveling table's Total Magic Damage assumes 20, giving 100-200; the wiki's own note says only 19 really land)",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 19,
+   "terms": [],
+   "quote": "there is 19 ticks and not 20 ticks",
+   "bin": [],
+   "binNote": "No bin data value gives Miasma's tick count (unlike Noxious Blast's explicit NumDamageTicks=7). The leveling table's Total Magic Damage (100 to 200, +50% AP) is exactly 5x the bin's per-second BaseDamage/DamagePerSecond calc, i.e. it assumes 20 ticks over the 5 s CloudDuration. The wiki's own note contradicts its own leveling table, stating only 19 ticks actually land, for a real total of 95 to 190 (+47.5% AP)."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The wiki's own leveling table overstates Miasma's total damage: because only 19 (not 20) ticks actually land over the 5 s cloud duration, the real total is 95 to 190 magic damage (+47.5% AP), not the listed 100 to 200 (+50% AP).",
+   "quote": "because there is 19 ticks and not 20 ticks, the {{as|'''total''' magic damage}} is currently not {{as|{{ap|100 to 200}} {{as|(+ 50% AP)}}|magic damage}} but {{as|{{ap|95 to 190}}|magic damage}} {{as|(+ {{fd|47.5}}% AP)}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Miasma's tick count is itself inconsistent: besides the 19-vs-20 discrepancy, the wiki notes it sometimes lands only 18 ticks.",
+   "quote": "Sometimes ''Miasma'' randomly inflicts only 18 ticks of damage.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {"ref": "CassiopeiaW.SlowPercent", "reason": "utility"},
+  {"ref": "CassiopeiaW.PoisonDuration", "reason": "unknown"}
+ ]
+}

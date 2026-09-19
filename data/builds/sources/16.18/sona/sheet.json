@@ -1,0 +1,603 @@
+{
+ "slots": {
+  "P": [
+   {
+    "script": "SonaPassive",
+    "key": "Characters/Sona/Spells/SonaPassiveAbility/SonaPassive",
+    "dataValues": {
+     "TempoDuration": 2,
+     "PowerChordPassiveCountMax": 3,
+     "AccelerandoAHPerStack": 0.5,
+     "AccelerandoCap": 60,
+     "AccelerandoUltCDR": 1.5
+    },
+    "calcs": {
+     "PowerChordDamage": {
+      "expr": "byLevelL[20/30/40/50/60/70/80/90/105/120/135/150/165/180/195/210/225/240] + 0.2xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        105,
+        120,
+        135,
+        150,
+        165,
+        180,
+        195,
+        210,
+        225,
+        240
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.2
+       }
+      ],
+      "refs": []
+     },
+     "AccelerandoAHCurrent": {
+      "expr": "(AccelerandoAHPerStack=0.5)xbuffStacks",
+      "flat": 0,
+      "terms": [
+       {
+        "stat": "buffStacks({1705b20f})",
+        "scope": "total",
+        "coef": 0.5,
+        "dataValue": "AccelerandoAHPerStack"
+       }
+      ],
+      "refs": [
+       "AccelerandoAHPerStack"
+      ]
+     }
+    }
+   }
+  ],
+  "Q": [
+   {
+    "script": "SonaQ",
+    "key": "Characters/Sona/Spells/SonaQAbility/SonaQ",
+    "cooldown": 8,
+    "cost": {
+     "axis": "rank",
+     "v": [
+      50,
+      55,
+      60,
+      65,
+      70
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       50,
+       85,
+       120,
+       155,
+       190
+      ]
+     },
+     "BaseOnHitDamage": {
+      "axis": "rank",
+      "v": [
+       10,
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "AuraRange": 400,
+     "OnHitDuration": 5,
+     "EnemiesToHit": 2,
+     "AuraDuration": 3,
+     "BaseGlobalCD": 0.5,
+     "OnHitProcs": 1,
+     "OnHitRatio": 0.1
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[50/85/120/155/190] + 0.4xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        50,
+        85,
+        120,
+        155,
+        190
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.4
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     },
+     "TotalOnHitDamage": {
+      "expr": "BaseOnHitDamage=[10/15/20/25/30] + (OnHitRatio=0.1)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        10,
+        15,
+        20,
+        25,
+        30
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.1,
+        "dataValue": "OnHitRatio"
+       }
+      ],
+      "refs": [
+       "BaseOnHitDamage",
+       "OnHitRatio"
+      ]
+     },
+     "TotalStaccatoDamage": {
+      "expr": "byLevelL[30/45/60/75/90/105/120/135/157.5/180/202.5/225/247.5/270/292.5/315/337.5/360] + 0.3xap",
+      "flat": {
+       "axis": "level",
+       "v": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        105,
+        120,
+        135,
+        157.5,
+        180,
+        202.5,
+        225,
+        247.5,
+        270,
+        292.5,
+        315,
+        337.5,
+        360
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3
+       }
+      ],
+      "refs": []
+     }
+    }
+   }
+  ],
+  "W": [
+   {
+    "script": "SonaW",
+    "key": "Characters/Sona/Spells/SonaWAbility/SonaW",
+    "cost": {
+     "axis": "rank",
+     "v": [
+      80,
+      85,
+      90,
+      95,
+      100
+     ]
+    },
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseHeal": {
+      "axis": "rank",
+      "v": [
+       30,
+       45,
+       60,
+       75,
+       90
+      ]
+     },
+     "BaseShield": {
+      "axis": "rank",
+      "v": [
+       25,
+       45,
+       65,
+       85,
+       105
+      ]
+     },
+     "AuraDuration": 3,
+     "AuraRange": 400,
+     "BaseGlobalCD": 0.5,
+     "DiminuendoDuration": 3,
+     "HealRange": 1000,
+     "ShieldDuration": 1.5,
+     "AccelerandoShieldBreakpoint": {
+      "axis": "rank",
+      "v": [
+       25,
+       45,
+       65,
+       85,
+       105
+      ]
+     },
+     "HealRatio": 0.3,
+     "ShieldRatio": 0.25
+    },
+    "calcs": {
+     "TotalHeal": {
+      "expr": "BaseHeal=[30/45/60/75/90] + (HealRatio=0.3)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        30,
+        45,
+        60,
+        75,
+        90
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.3,
+        "dataValue": "HealRatio"
+       }
+      ],
+      "refs": [
+       "BaseHeal",
+       "HealRatio"
+      ]
+     },
+     "TotalShield": {
+      "expr": "BaseShield=[25/45/65/85/105] + (ShieldRatio=0.25)xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        25,
+        45,
+        65,
+        85,
+        105
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.25,
+        "dataValue": "ShieldRatio"
+       }
+      ],
+      "refs": [
+       "BaseShield",
+       "ShieldRatio"
+      ]
+     },
+     "TotalDiminuendoWeakenPercent": {
+      "expr": "0.25 + 0.0004xap",
+      "flat": 0.25,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0004
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "E": [
+   {
+    "script": "SonaE",
+    "key": "Characters/Sona/Spells/SonaEAbility/SonaE",
+    "cooldown": 14,
+    "cost": 65,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "SelfBaseMovementSpeed": 0.2,
+     "AllyBaseMovementSpeed": {
+      "axis": "rank",
+      "v": [
+       0.1,
+       0.12,
+       0.14,
+       0.16,
+       0.18
+      ]
+     },
+     "SelfMovementSpeedDurationMin": 3,
+     "SelfMovementSpeedDurationMax": 7,
+     "AllyMovementSpeedDuration": 3,
+     "AuraRange": 400,
+     "AuraDuration": 3,
+     "BaseGlobalCD": 0.5,
+     "TempoDuration": 2
+    },
+    "calcs": {
+     "TotalSelfMovementSpeed": {
+      "expr": "SelfBaseMovementSpeed=0.2 + 0.0002xap",
+      "flat": 0.2,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0002
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "SelfBaseMovementSpeed"
+      ]
+     },
+     "TotalAllyMovementSpeed": {
+      "expr": "AllyBaseMovementSpeed=[0.1/0.12/0.14/0.16/0.18] + 0.0002xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        0.1,
+        0.12,
+        0.14,
+        0.16,
+        0.18
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0002
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": [
+       "AllyBaseMovementSpeed"
+      ]
+     },
+     "TotalTempoMoveSpeedSlow": {
+      "expr": "0.5 + 0.0004xap",
+      "flat": 0.5,
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.0004
+       }
+      ],
+      "displayAsPercent": true,
+      "refs": []
+     }
+    }
+   }
+  ],
+  "R": [
+   {
+    "script": "SonaR",
+    "key": "Characters/Sona/Spells/SonaRAbility/SonaR",
+    "cooldown": {
+     "axis": "rank",
+     "v": [
+      140,
+      120,
+      100
+     ]
+    },
+    "cost": 100,
+    "uncancellableWindup": true,
+    "dataValues": {
+     "BaseDamage": {
+      "axis": "rank",
+      "v": [
+       150,
+       250,
+       350
+      ]
+     },
+     "StunDuration": 1.5
+    },
+    "calcs": {
+     "TotalDamage": {
+      "expr": "BaseDamage=[150/250/350] + 0.5xap",
+      "flat": {
+       "axis": "rank",
+       "v": [
+        150,
+        250,
+        350
+       ]
+      },
+      "terms": [
+       {
+        "stat": "ap",
+        "scope": "total",
+        "coef": 0.5
+       }
+      ],
+      "refs": [
+       "BaseDamage"
+      ]
+     }
+    }
+   }
+  ],
+  "other": []
+ },
+ "roots": {
+  "Q": "SonaQ",
+  "W": "SonaW",
+  "E": "SonaE",
+  "R": "SonaR",
+  "P": "SonaPassive"
+ },
+ "resource": {
+  "arType": 0,
+  "values": {
+   "{726ee5cd}": 340,
+   "{6216bf7b}": 45,
+   "{c4ab3550}": 2.3,
+   "{3a509002}": 0.08
+  }
+ },
+ "attack": {
+  "attackDelayCastOffsetPercent": -0.1281787
+ },
+ "ddragon": {
+  "version": "16.18.1",
+  "id": "Sona",
+  "name": "Sona",
+  "partype": "Mana",
+  "passive": "Power Chord",
+  "spells": [
+   {
+    "id": "SonaQ",
+    "name": "Hymn of Valor",
+    "maxrank": 5,
+    "cooldown": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "cost": [
+     50,
+     55,
+     60,
+     65,
+     70
+    ]
+   },
+   {
+    "id": "SonaW",
+    "name": "Aria of Perseverance",
+    "maxrank": 5,
+    "cooldown": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "cost": [
+     80,
+     85,
+     90,
+     95,
+     100
+    ]
+   },
+   {
+    "id": "SonaE",
+    "name": "Song of Celerity",
+    "maxrank": 5,
+    "cooldown": [
+     14,
+     14,
+     14,
+     14,
+     14
+    ],
+    "cost": [
+     65,
+     65,
+     65,
+     65,
+     65
+    ]
+   },
+   {
+    "id": "SonaR",
+    "name": "Crescendo",
+    "maxrank": 3,
+    "cooldown": [
+     140,
+     120,
+     100
+    ],
+    "cost": [
+     100,
+     100,
+     100
+    ]
+   }
+  ]
+ },
+ "wikiFlags": {
+  "P": {
+   "Power Chord": {
+    "damagetype": "Magic",
+    "spelleffects": "proc",
+    "spellshield": "True",
+    "targeting": "Passive",
+    "affects": "Self"
+   }
+  },
+  "Q": {
+   "Hymn of Valor": {
+    "damagetype": "Magic",
+    "spelleffects": "special",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  },
+  "W": {
+   "Aria of Perseverance": {
+    "projectile": "True",
+    "targeting": "Auto",
+    "affects": "[[Self-targeted|Self]], Allies",
+    "costtype": "mana"
+   }
+  },
+  "E": {
+   "Song of Celerity": {
+    "targeting": "Auto",
+    "affects": "Self, Allies",
+    "costtype": "mana"
+   }
+  },
+  "R": {
+   "Crescendo": {
+    "damagetype": "Magic",
+    "spelleffects": "spellaoe",
+    "spellshield": "True",
+    "projectile": "True",
+    "targeting": "Direction",
+    "affects": "Enemies",
+    "costtype": "mana"
+   }
+  }
+ }
+}

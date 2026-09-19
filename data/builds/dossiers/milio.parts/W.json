@@ -1,0 +1,131 @@
+{
+ "name": "Cozy Campfire / Cozy Campfire 2",
+ "cooldown": {
+  "values": [
+   29,
+   27,
+   25,
+   23,
+   21
+  ],
+  "quote": "{{ap|29 to 21}}"
+ },
+ "cost": {
+  "values": [
+   90,
+   100,
+   110,
+   120,
+   130
+  ],
+  "quote": "{{ap|90 to 130}}",
+  "resource": "mana"
+ },
+ "castTime": {
+  "value": 0.25,
+  "quote": "{{dv|{{tt|{{fd|0.25}}|Initial cast}}|{{tt|None|Recast}}}}"
+ },
+ "values": [
+  {
+   "id": "w_3",
+   "meaning": "Total Heal over the zone's duration",
+   "role": "heal-shield",
+   "damageType": null,
+   "by": "rank",
+   "base": [
+    70,
+    90,
+    110,
+    130,
+    150
+   ],
+   "terms": [
+    {
+     "stat": "ap",
+     "coef": 0.15
+    }
+   ],
+   "quote": "{{ap|70 to 150}} {{as|(+ 15% AP)}}",
+   "bin": [
+    "MilioW#HealingOverTime"
+   ]
+  },
+  {
+   "id": "w_4",
+   "meaning": "Fuemigo zone duration",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "for 6 seconds that follows the nearest allied champion",
+   "bin": [
+    "MilioW.ZoneDuration"
+   ]
+  },
+  {
+   "id": "w_5",
+   "meaning": "Heal tick interval",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.25,
+   "terms": [],
+   "quote": "{{rutngt|0.25}}",
+   "bin": [
+    "MilioW.HealFrequencySeconds"
+   ],
+   "binNote": "Wiki tooltip states heal ticks every 0.25s (25 ticks over 6s: 70/25 to 150/25 per tick), while MilioW.HealFrequencySeconds = 3 in the bin; these disagree and the wiki text is used here since it directly describes the tick rate and matches the per-tick math shown in the leveling table."
+  },
+  {
+   "id": "w_6",
+   "meaning": "Recast static cooldown",
+   "role": "other",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "placing the recast on a {{sti|cd|{{fd|0.5}}}}-second {{tt|static|Unaffected by ability haste}} cooldown",
+   "bin": [],
+   "binNote": "No dedicated bin data value found for the recast's own cooldown; the wiki states it separately from the main W cooldown and from MilioW.DecayDelay-type fields, so it is recorded without a bin source."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "Cooldown begins only after the ability's effect resolves, not on cast.",
+   "quote": "cdstart      = post-effect",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Only allied champions near the fuemigo receive the heal and attack range bonus, and the range bonus persists even if they leave the zone.",
+   "quote": "The {{sti|attack range}} increase lingers on allies for the entire duration of ''Cozy Campfire'', even if they leave the zone.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Milio himself counts as an allied champion and can receive Cozy Campfire's heal and range bonus.",
+   "quote": "'''''Milio''' counts as an allied champion for this ability.",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "Casting or recasting Cozy Campfire can grant Milio's Fired Up! passive buff, at most once every 3 seconds.",
+   "quote": "Cozy Campfire may grant {{ai|Fired Up!|Milio}} upon being summoned and at most once every 3 seconds thereafter.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The ability can be recast within the duration to move the fuemigo to a target ally, on its own static 0.5s cooldown unaffected by ability haste.",
+   "quote": "placing the recast on a {{sti|cd|{{fd|0.5}}}}-second {{tt|static|Unaffected by ability haste}} cooldown",
+   "affectsDamageFight": false
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "MilioW.Radius",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "MilioW.RangePctIncrease",
+   "reason": "utility"
+  }
+ ],
+ "filledBy": "sonnet"
+}

@@ -1,0 +1,205 @@
+{
+ "name": "Daredevil Impulse / splash coin",
+ "cooldown": null,
+ "cost": null,
+ "castTime": null,
+ "values": [
+  {
+   "id": "p_1",
+   "meaning": "blade attack bonus magic damage based on target's missing health (base + AD ratio, scales by level)",
+   "role": "damage",
+   "damageType": "magic",
+   "by": "level",
+   "base": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": [
+      0.035,
+      0.039117647006231195,
+      0.04323529386345078,
+      0.04735294,
+      0.05147059,
+      0.05558823443510953,
+      0.05970588,
+      0.06382353,
+      0.06794117500676827,
+      0.07205882,
+      0.07617647,
+      0.08029412,
+      0.08441176,
+      0.08852941,
+      0.09264705615008578,
+      0.09676470300730537,
+      0.10088235,
+      0.105
+     ]
+    }
+   ],
+   "quote": "{{as|{{pp|2 + (19-2)/17*(x-1) for 20}} {{as|(+ {{pp|3.5 + (10.5-3.5)/17*(x-1) for 20|key=%}} AD)}} '''bonus''' magic damage|magic damage}}",
+   "bin": [
+    "SamiraPassive#BonusMeleeDamage"
+   ]
+  },
+  {
+   "id": "p_2",
+   "meaning": "duration of a Style stack before it expires",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "generate a {{tip|stack}} of ''Style'' for 6 seconds",
+   "bin": [
+    "SamiraPassive.DurationTOOLTIP"
+   ]
+  },
+  {
+   "id": "p_3",
+   "meaning": "maximum Style stacks",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "stacking up to 6 times",
+   "bin": [],
+   "binNote": "No SamiraPassive data value carries the stack cap; not present in the given bin rows."
+  },
+  {
+   "id": "p_4",
+   "meaning": "damage per bolt of the empowered attack against immobilized targets",
+   "role": "onhit",
+   "damageType": "physical",
+   "by": "const",
+   "base": null,
+   "terms": [
+    {
+     "stat": "ad",
+     "coef": 0.17
+    }
+   ],
+   "quote": "each dealing {{as|17% AD}} {{as|physical damage}}",
+   "bin": [
+    "SamiraPJuggle#DamagePerBullet"
+   ]
+  },
+  {
+   "id": "p_5",
+   "meaning": "number of bolts fired by the empowered attack",
+   "role": "count",
+   "damageType": null,
+   "by": "const",
+   "base": 6,
+   "terms": [],
+   "quote": "fire {{tt|6 bolts over {{fd|0.5}} seconds",
+   "bin": [
+    "SamiraPJuggle.NumShots"
+   ]
+  },
+  {
+   "id": "p_6",
+   "meaning": "total duration over which the empowered attack's bolts are fired",
+   "role": "duration",
+   "damageType": null,
+   "by": "const",
+   "base": 0.5,
+   "terms": [],
+   "quote": "6 bolts over {{fd|0.5}} seconds",
+   "bin": [
+    "SamiraPJuggle.Duration"
+   ]
+  },
+  {
+   "id": "p_7",
+   "meaning": "interval between bolts of the empowered attack",
+   "role": "interval",
+   "damageType": null,
+   "by": "const",
+   "base": 0.1,
+   "terms": [],
+   "quote": "First bolt at the time of cast then once every 0.1 seconds thereafter.",
+   "bin": [],
+   "binNote": "No SamiraPassive/SamiraPJuggle data value states the 0.1s tick interval directly; it is only given in the wiki's tooltip note."
+  }
+ ],
+ "mechanics": [
+  {
+   "claim": "The blade attack's bonus magic damage applies after the basic attack's primary damage and is not itself an on-hit effect (so it is not multiplied/blocked by on-hit interactions).",
+   "quote": "The blade attack bonus applies after the primary damage of the attack and is '''not''' an {{tip|on-hit}} effect.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The blade attack's bonus magic damage is increased the lower the target's current health is, up to double at 0 health, capping the scaling at 100% missing health.",
+   "quote": "increased by {{as|{{pp|0 to 100 by 5|0 to 100 by 5|formula=1% for every 1% missing health|key=%|key1=%|label1=target's '''missing''' health}}|health}}",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack against an immobilized target resets Samira's basic attack timer and is affected by critical strike modifiers, with each bolt rolling for crit separately.",
+   "quote": "resets '''Samira's''' basic attack timer, is affected by {{tip|critical strike}} modifiers, applies {{tip|on-hit}} effects only once, and cannot occur on the same target more than once every few seconds.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "Each bolt from the empowered attack rolls for a critical strike separately.",
+   "quote": "Each bolt from the empowered attack rolls for a {{tip|critical strike}} separately.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack's bolts deal basic damage for the first bolt (as a normal basic attack) and default damage for all subsequent bolts, which matters for damage amplification effects that check attack vs. spell damage.",
+   "quote": "{{tip|Basic damage}} for the first bolt, as a basic attack would.",
+   "affectsDamageFight": true
+  },
+  {
+   "claim": "The empowered attack applies lifesteal (a sustain source affecting the damage fight only insofar as it heals Samira, not relevant to damage dealt).",
+   "quote": "{{tip|applies lifesteal|applying}} {{as|{{sti|life steal}}}}",
+   "affectsDamageFight": false
+  },
+  {
+   "claim": "The empowered attack's bolt missile speed is unaffected by attack speed modifiers.",
+   "quote": "The empowered attack's speed is unaffected by {{as|{{sti|attack speed}}}} modifiers.",
+   "affectsDamageFight": true
+  }
+ ],
+ "binUnused": [
+  {
+   "ref": "SamiraPassive.SwordRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SamiraPassive.VisualBonusRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SamiraPassive#QueenMaxDashRange",
+   "reason": "range-or-geometry"
+  },
+  {
+   "ref": "SamiraPassive#EmpoweredMeleeDamageTooltip",
+   "reason": "stale-duplicate"
+  },
+  {
+   "ref": "SamiraPassive#MSBonusNew",
+   "reason": "not-in-a-dummy-fight"
+  }
+ ],
+ "filledBy": "sonnet"
+}

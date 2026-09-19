@@ -1,0 +1,135 @@
+{
+ "champion": "amumu",
+ "primitives": [
+  {
+   "id": "target-debuff",
+   "abilities": [
+    "P",
+    "Q",
+    "W",
+    "R"
+   ],
+   "note": "Cursed Touch mark applied by basic attacks and Curse of the Sad Mummy, refreshed by Despair per-tick damage; lasts 3s and gates the passive's bonus true damage on subsequent incoming magic damage"
+  },
+  {
+   "id": "conditional-damage",
+   "abilities": [
+    "P"
+   ],
+   "note": "Cursed targets take 10% bonus true damage on all incoming pre-mitigation magic damage (Q, W ticks, E, R) while marked"
+  },
+  {
+   "id": "plain-cast",
+   "abilities": [
+    "Q",
+    "E",
+    "R"
+   ],
+   "note": "Bandage Toss, Tantrum, and Curse of the Sad Mummy each deal a fixed magic damage instance on cast/dash-land/effect-resolve"
+  },
+  {
+   "id": "dot",
+   "abilities": [
+    "W"
+   ],
+   "note": "Despair toggle deals magic damage every 0.5s to nearby enemies (based on target max HP + AP) while active"
+  },
+  {
+   "id": "weapon-or-ammo-system",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Bandage Toss stocks a charge on a recharge timer, up to a max of 2, allowing back-to-back recasts independent of the base cooldown"
+  },
+  {
+   "id": "attack-reset",
+   "abilities": [
+    "Q"
+   ],
+   "note": "Amumu is ordered to basic-attack the target immediately upon completing the Bandage Toss dash"
+  },
+  {
+   "id": "resource-budget",
+   "abilities": [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ],
+   "note": "Mana costs (esp. W's continuous per-second cost and R's rank-scaling cost) can limit sustained casting/toggling within the 15s window"
+  },
+  {
+   "id": "cooldown-manipulation",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tantrum's current cooldown is reduced 0.75s per on-hit basic attack Amumu is hit by; only relevant in the survival fight where the enemy champion attacks Amumu"
+  },
+  {
+   "id": "defensive-only",
+   "abilities": [
+    "E"
+   ],
+   "note": "Tantrum's passive physical damage reduction (capped 50% per instance, scaling with bonus armor/MR) only matters for damage taken in the survival fight"
+  }
+ ],
+ "needsBespoke": {
+  "value": true,
+  "why": "Cursed Touch is a global damage-amplifying rider that applies to every subsequent instance of incoming magic damage against a marked target (from any of Amumu's own magic sources: Q, W ticks, E, R), not a normal on-hit or single-ability rider. It has explicit ordering rules the closed primitives don't express: an autoattack's own on-hit magic damage is NOT amplified by the mark that same attack just applied; R's own damage is amplified only if the target was already marked before R hit (R's own mark-refresh happens after R's damage); and R's mark application is negated entirely if blocked by a spell shield. Correctly simulating total damage requires custom sequencing logic (mark timestamp vs. each damage instance's resolution order) beyond what target-debuff/conditional-damage alone can encode."
+ },
+ "unsettled": [
+  {
+   "question": "Does each Despair tick's own magic damage benefit from the Cursed Touch bonus true damage if the target was already marked before that tick, given that the same tick also refreshes the mark?",
+   "options": [
+    "Tick damage resolves before the mark refresh, so it is amplified only if the target was already marked from a prior source (consistent with the R rule)",
+    "Tick damage and mark refresh are simultaneous/order-unspecified for W (unlike R, no explicit note is given), so every tick amplifies itself once marked at all",
+    "W ticks never trigger or benefit from the passive amp beyond the initial mark applied by an autoattack or R"
+   ],
+   "impact": "high",
+   "quotes": [
+    "refreshing on subsequent applications and ''{{ais|Despair|Amumu}}'' per-tick damage.",
+    "The ''Curse'' application from ''{{ai|Curse of the Sad Mummy|Amumu}}'' happens after the {{as|magic damage}} is dealt by it, therefore amplifying the damage only if the target was also already marked before the hit."
+   ]
+  },
+  {
+   "question": "Does Despair's first damage tick fire immediately on toggle-on, or only after the first 0.5s interval elapses?",
+   "options": [
+    "Tick fires at t=0 on toggle, then every 0.5s (31 ticks in 15s)",
+    "First tick fires at t=0.5s, then every 0.5s (30 ticks in 15s)"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "dealing {{as|magic damage}} every {{fd|0.5}} seconds to nearby enemies"
+   ]
+  },
+  {
+   "question": "Does Bandage Toss start the 15s damage fight with 0 or 2 stocked charges, and at what rate do they recharge relative to the listed 3s base cooldown?",
+   "options": [
+    "Fight starts with 2 charges stocked (max), allowing two immediate back-to-back casts before the recharge timer/base cooldown governs further casts",
+    "Fight starts with 0 charges stocked and Q is gated purely by the recharge time (16 to 12s by rank) for the first several seconds",
+    "Fight starts with 1 charge and the listed 3s cooldown is what actually gates recasts once at least one charge is available"
+   ],
+   "impact": "medium",
+   "quotes": [
+    "'''Amumu''' periodically [[stock]]s a ''Bandage Toss'' charge, up to a maximum of 2.",
+    "recharge     = {{ap|16 to 12}}"
+   ]
+  }
+ ],
+ "rotation": {
+  "proposal": [
+   "Toggle Despair (W) on at the start of the fight and leave it on for the duration, mana permitting, since it is a continuous aura dot.",
+   "Immediately cast Bandage Toss (Q) to apply the Cursed Touch mark and deal its magic damage, dashing to and auto-attacking the target on landing.",
+   "Cast Curse of the Sad Mummy (R) as soon as it is off cooldown/available (assumed champion level 6+) for its large magic damage burst, which also refreshes the Curse mark.",
+   "Cast Tantrum (E) on cooldown throughout the fight for repeated magic damage bursts.",
+   "Between ability casts, basic-attack the target continuously to keep the Curse mark refreshed and add auto-attack damage.",
+   "Recast Bandage Toss (Q) whenever a stocked charge is available for additional damage and a fresh mark refresh/attack-reset."
+  ],
+  "questions": [
+   "What champion level, ability ranks, and item build (mana pool, AP) should the 15s damage fight assume, since it determines whether R is available at all and how tight the mana budget is for keeping W toggled on continuously?",
+   "Is weaving basic attacks between every ability cast actually optimal for Amumu given his low base AD scaling, or should the rotation instead prioritize ability uptime and only auto-attack in dead time between casts?",
+   "Should the opener assume Bandage Toss is already stocked to its max 2 charges (as if the fight starts mid-combat) or empty (as if from a completely fresh state)?"
+  ]
+ },
+ "filledBy": "sonnet"
+}
