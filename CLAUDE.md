@@ -301,6 +301,45 @@
   on every status poll). `SHOW_GENERATED = False` takes the roster off the
   dashboard. Tests: `python3 -m unittest test_kit_driver test_kit_sources`,
   `node jobs/test-builds-generated-ui.cjs`.
+- Leaderboard (2026-09-20): the Builds tab's second view ("Champion builds" /
+  "Leaderboard") compares champions under one damage scenario: a row per
+  champion = the TOP ROW of its cell (its best build by that scenario's own
+  ranking), ranked across champions by the same metric — a target's board by
+  expected kill time, then most damage for champions that never kill; overall
+  by targets left standing, then the geometric mean. Only the rounded numbers
+  a cell keeps are available, so equal values share a rank (no
+  damage-to-spare tie-break across champions). It is read-only over saved
+  cells and lives in `builds_leaderboard.py`, NOT builds.py, on purpose:
+  builds.py's bytes are in every cell's key, so an edit there re-warms the
+  roster (~2 h) and the board needs nothing a cell lacks. Keep it that way; a
+  change that needs new cell fields is a builds.py edit and pays that warm.
+  `cached_leaderboard(key)` memoizes each cell's top row on (path, mtime,
+  size): ~0.8 s for a scenario's first request after a serve restart (172
+  half-megabyte cells), ~25 ms after; cold cells go under `pending` (ranks
+  provisional, the page polls), error cells under `failed`. Served at
+  `/api/builds/leaderboard/<scenario>.json` — the route must stay BEFORE the
+  cells' `/<slug>/<scenario>` route, which would read "leaderboard" as a
+  champion (an older serve answers 404 and the page says to restart) — and
+  written by `lol.py export`. The Survival tier has no board (one tank).
+  Page: selecting a row makes that champion the tab's (breakdown, the draft
+  banner in the breakdown card, pool and kit notes below follow it); its name
+  opens its ranked builds; Find and "Reviewed kits only" filter without
+  re-ranking; the hash carries `bview=leaderboard`, `lbq`, `lbrev`.
+  What the first board showed (2026-09-20): ten machine-written kits (Ahri,
+  Annie, Aurora, Cho'Gath, Heimerdinger, LeBlanc, Lee Sin, Malphite, Mel,
+  Nidalee; Blitzcrank too vs squishy) kill the squishy at 0.00 s — their
+  drivers land the whole opening combo at t=0 with no cast or travel time
+  (Ahri: E, Q, Q return and R, zero attacks, DPS 0) — which zeroes the
+  geometric mean and ties them at #1 overall; Ezreal (0.22/0.51/0.73 s, no
+  attacks) and others near the top are the same kind of draft. The board
+  shows these as they are, marked "instant" and "unreviewed": fix the
+  drivers (or teach `kit_driver.py check` to reject a t=0 kill), never the
+  board. The hand-encoded four rank 57 (Kassadin), 72 (Kayle), 99 (Twitch)
+  and 170 (Vladimir) of 172 overall. Also fixed here: `.item-icon` isolates
+  its stacking context, so buy-order badges no longer paint over the sticky
+  table header when a row scrolls under it (both tables). Tests: `python3 -m
+  unittest test_builds_leaderboard`, `node jobs/test-builds-leaderboard-ui.cjs
+  [--board saved-leaderboard.json]`.
 
 ## The One-tricks tab (onetricks.py)
 
@@ -1095,6 +1134,8 @@
 - `python3 -m unittest test_kit_driver test_kit_sources` (machine-written
   drivers and the dossier pipeline; hermetic, no model is called) and
   `node jobs/test-builds-generated-ui.cjs`.
+- `python3 -m unittest test_builds_leaderboard` (needs the built engine; ~1 s;
+  its own cells in a temp dir) and `node jobs/test-builds-leaderboard-ui.cjs`.
 - `python3 -m unittest test_tft` (needs the built TFT engine; ~2 s;
   `TFT_GOLDEN_ALL=1` recomputes every golden cell, ~30 s).
 - Theoretical compositions: `python3 -m unittest test_tft_unit_profiles

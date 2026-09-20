@@ -20,6 +20,7 @@ import threading
 import time
 
 import builds
+import builds_leaderboard
 import items
 import onetricks
 import scaling
@@ -214,6 +215,10 @@ def cmd_export(args):
     dump("api/builds/status.json",
          {"ready": {f"{slug}/{key}": True for slug, key in paths}, "warmer": "idle"})
     files += 1
+    for key in builds_leaderboard.leaderboard_scenarios():
+        dump(f"api/builds/leaderboard/{key}.json",
+             builds_leaderboard.cached_leaderboard(key, paths))
+        files += 1
     # the TFT cells likewise
     if tft.patch_dirs(tft.DEFAULT_SET):
         tsnap = tft.load_snapshot()
@@ -437,6 +442,13 @@ def cmd_serve(args):
                     return
                 if u.path == "/api/builds/status.json":
                     self._json({"ready": builds.cell_ready(), "warmer": warmer.state()})
+                    return
+                # before the cells' route, which would read "leaderboard" as a champion
+                if m := re.fullmatch(r"/api/builds/leaderboard/([a-z0-9-]+)\.json", u.path):
+                    try:
+                        self._json(builds_leaderboard.cached_leaderboard(m.group(1)))
+                    except ValueError as e:
+                        self._json({"error": str(e)}, 404)
                     return
                 if m := re.fullmatch(r"/api/builds/([a-z0-9]+)/([a-z0-9-]+)\.json", u.path):
                     try:

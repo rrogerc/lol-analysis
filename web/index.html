@@ -140,9 +140,22 @@
   #btbl th, #btbl td, #ttbl th, #ttbl td { text-align: right; }
   #btbl th:nth-child(2), #btbl td:nth-child(2), #ttbl th:nth-child(2), #ttbl td:nth-child(2) { text-align: left; }
   #btbl td:first-child, #ttbl td:first-child { color: var(--muted); text-align: left; }
-  #btbl tbody tr, #ttbl tbody tr { cursor: pointer; }
-  #btbl tbody tr:hover, #ttbl tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
-  #btbl tbody tr.sel, #ttbl tbody tr.sel { background: color-mix(in srgb, var(--s1) 10%, transparent); }
+  #btbl tbody tr, #ttbl tbody tr, #bboard-tbl tbody tr { cursor: pointer; }
+  #btbl tbody tr:hover, #ttbl tbody tr:hover, #bboard-tbl tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
+  #btbl tbody tr.sel, #ttbl tbody tr.sel, #bboard-tbl tbody tr.sel { background: color-mix(in srgb, var(--s1) 10%, transparent); }
+  #champion-seg[hidden] { display: none; }  /* .seg is a flex box: the attribute alone would not hide it */
+  /* the Builds leaderboard: a champion a row, its best build's icons third */
+  #bboard-tbl td { vertical-align: middle; }
+  #bboard-tbl td:first-child { color: var(--muted); }
+  #bboard-tbl th:nth-child(2), #bboard-tbl td:nth-child(2) { white-space: nowrap; }
+  #bboard-tbl th:nth-child(3), #bboard-tbl td:nth-child(3) { text-align: left; width: 1%; white-space: nowrap; padding-right: 22px; }
+  .bboard-champion { border: 0; border-radius: 0; padding: 4px 0; background: none; font-weight: 600; }
+  .bboard-champion:hover { text-decoration: underline; }
+  .bboard-tag { color: var(--muted); margin-left: 6px; font-size: 10px; }
+  .bboard-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 10px; }
+  .bboard-filters label { display: flex; align-items: center; gap: 7px; }
+  #bboard-search { width: 200px; min-width: 0; max-width: 100%; }
+  #bboard-status { flex: 1; min-width: 200px; text-align: right; }
   .chip .tag { color: var(--muted); margin-left: 5px; font-size: 11px; }
   .chip.dim { opacity: .6; }
   /* the ranked table's builds: one icon per item, details on hover/focus/tap */
@@ -152,7 +165,8 @@
   #btbl th:nth-child(2), #btbl td:nth-child(2) { width: 1%; white-space: nowrap; }
   #btbl td:nth-child(2) { padding-right: 22px; }
   .build-items { display: inline-flex; gap: 6px; vertical-align: middle; }
-  .item-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; overflow: hidden; border-radius: 5px; border: 1px solid var(--border); background: var(--page); color: var(--text-secondary); font-size: 10px; font-weight: 650; letter-spacing: .02em; cursor: default; }
+  /* isolate: the buy-order badge's z-index stays inside the icon, so a row scrolling under the sticky header cannot paint its badges over it */
+  .item-icon { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; overflow: hidden; border-radius: 5px; border: 1px solid var(--border); background: var(--page); color: var(--text-secondary); font-size: 10px; font-weight: 650; letter-spacing: .02em; cursor: default; }
   .item-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .item-icon.has-image .item-icon-fallback { visibility: hidden; }
   .item-icon:hover, .item-icon:focus-visible { border-color: var(--s1); }
@@ -653,6 +667,11 @@
 <section class="view" id="view-builds">
   <div class="card">
     <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
+    <div class="seg" id="builds-mode-seg" role="group" aria-label="Builds view">
+      <button data-key="champion" aria-pressed="true" class="active">Champion builds</button>
+      <button data-key="leaderboard" aria-pressed="false">Leaderboard</button>
+    </div>
+    <div class="hint" id="builds-note-board" hidden>Every champion's best build under the selected scenario, side by side: the top row of its own ranking, so each champion brings the boots and five items that kill this target fastest — or, overall, that do best on all three at once. Same level, same stat dummies and same fight lengths for everyone. Ranked by <em>expected</em> kill time, fastest first; a champion that never kills the target comes after every one that does, most damage first. Overall, champions that kill all three targets come before those that leave one standing, then the geometric mean of the three kill times decides, so each target counts equally in percentage terms. Equal times, to the hundredth of a second, share a rank. This compares damage on a stat dummy and nothing else: range, safety, crowd control, mobility, sustain and how hard a combo is to land count for nothing, so an assassin's burst and a marksman's sustained damage are compared as if both always connect. Most kits here were written by a model and reviewed by nobody (tagged <em>unreviewed</em>): their rotations can be wrong, and a kill at 0.00s means a draft lands its whole opening combo in the fight's first instant. Select a row for where that build's damage comes from and what its kit assumes; select the champion's name for its full build ranking.</div>
     <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
     <div class="hint" id="builds-note-survival" hidden>First-principles survival model for tanks, no match data. The tank takes the damage and never fights back. Each attacker is one of the modeled carries with its current best overall build, fought exactly as in the damage ranking; the target is the tank's build, with its health, armor, magic resist, and everything its items and kit do while it takes damage. That covers damage reductions, shields, Death's Dance's delay, Guardian Angel and Zhonya's stasis, resists that grow in combat, regeneration and heals. Every build of the tank pool is fought against each attacker and ranked by <em>time to die</em>, longest first; a build still standing when the fight ends ranks above every build that fell, by the time the damage it took would have needed. The <em>overall</em> scenario ranks on every attacker at once: builds that fewer attackers kill come first, then the geometric mean of the times. Maximum Dosage goes out at the health threshold (every 10%) that keeps the tank alive longest against that attacker, and always when a hit would otherwise kill him. Lifesteal, omnivamp and anything else that needs the tank's own hits count for nothing. Click a build to see what hit him and what kept him up.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
@@ -666,16 +685,32 @@
          style="border-left:3px solid var(--s3);padding-left:10px;margin-bottom:10px"></div>
     <div class="seg" id="scenario-seg"></div>
     <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
-    <div class="tablewrap">
+    <div class="tablewrap" id="btbl-wrap">
       <table id="btbl">
         <thead><tr></tr></thead>
         <tbody></tbody>
       </table>
     </div>
+    <div id="bboard" hidden>
+      <div class="bboard-filters">
+        <label class="tft-label" for="bboard-search">Find <input id="bboard-search" type="search" placeholder="Champion…" autocomplete="off" spellcheck="false" aria-controls="bboard-tbl"></label>
+        <label class="tft-label" for="bboard-reviewed"><input id="bboard-reviewed" type="checkbox"> Reviewed kits only</label>
+        <span class="sub" id="bboard-status" role="status"></span>
+      </div>
+      <div class="tablewrap" id="bboard-wrap">
+        <table id="bboard-tbl">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="hint" id="bboard-failed" hidden style="margin:10px 0 0"></div>
+    </div>
   </div>
   <div class="card">
     <h2 id="bd-title">Damage breakdown</h2>
     <div class="hint" id="bd-hint">Where the selected build's damage comes from over the whole fight (post-mitigation).</div>
+    <div class="hint" id="bd-generated" hidden
+         style="border-left:3px solid var(--s3);padding-left:10px"></div>
     <div id="bd-bars"></div>
   </div>
   <div class="card">
@@ -1385,8 +1420,10 @@ const SRC_COLOR = { auto: "--s3", onhit: "--s2", wave: "--s8", "E onhit": "--s5"
                     ludens: "--s5", muramana: "--s4", energized: "--s3",
                     shiv: "--s3", eclipse: "--s6", hullbreaker: "--s8",
                     titanic: "--s8", active: "--s4", umbral: "--s6" };
-const bstate = { meta: null, items: null, champion: null, scenario: null, data: null, sel: 0,
-                 status: null, req: 0, timer: null };
+// mode: "champion" (one champion's ranked builds) or "leaderboard" (every
+// champion's best build, side by side: see the leaderboard section below)
+const bstate = { mode: "champion", meta: null, items: null, champion: null, scenario: null,
+                 data: null, sel: 0, status: null, req: 0, timer: null };
 const fmtDur = s => s < 90 ? `${Math.round(s)}s` : `${Math.round(s / 60)} min`;
 
 // ---- the Survival tier: a tank's builds, ranked on how long they last ----
@@ -1473,7 +1510,7 @@ async function loadBuildsMeta() {
     const btn = document.createElement("button");
     btn.textContent = sc.label;
     btn.dataset.key = sc.key;
-    btn.addEventListener("click", () => { bstate.scenario = sc.key; loadScenario(); });
+    btn.addEventListener("click", () => { bstate.scenario = sc.key; loadBuildsView(); });
     return btn;
   }));
   syncScenarioSeg();
@@ -1538,10 +1575,12 @@ function renderChampionPicker() {
 }
 
 // What a machine-written kit is, beside its rankings: the reader decides from
-// the kit's own assumptions whether to trust them.
-function renderGeneratedBanner() {
-  const el = document.getElementById("builds-generated");
-  const champ = bstate.meta?.champions?.find(c => c.slug === bstate.champion);
+// the kit's own assumptions whether to trust them. The leaderboard shows it
+// with the selected row's breakdown instead (`id`), below the table, where
+// its changing height cannot move the rows under the pointer.
+function renderGeneratedBanner(id = "builds-generated", slug = bstate.champion) {
+  const el = document.getElementById(id);
+  const champ = bstate.meta?.champions?.find(c => c.slug === slug);
   el.hidden = !champ?.generated;
   if (el.hidden) return;
   const parts = [
@@ -1557,16 +1596,20 @@ function renderGeneratedBanner() {
 }
 
 // Show the selected champion's scenarios only (a tank's are the Survival
-// tier's), keeping the scenario if it is one of them.
+// tier's), keeping the scenario if it is one of them. The leaderboard shows
+// the scenarios it has a board for.
 function syncScenarioSeg() {
-  const keys = championScenarios(bstate.meta, bstate.champion);
+  const keys = bstate.mode === "leaderboard" ? leaderboardScenarios(bstate.meta)
+                                             : championScenarios(bstate.meta, bstate.champion);
   document.querySelectorAll("#scenario-seg button").forEach(b => {
     b.hidden = !keys.includes(b.dataset.key);
   });
   if (!keys.includes(bstate.scenario)) bstate.scenario = keys[0];
 }
 
-function renderPool() {
+// `slug`: the champion the card is about — the selected one, or in the
+// leaderboard the selected row's.
+function renderPool(slug = bstate.champion) {
   const m = bstate.meta;
   const chip = it => {
     const s = document.createElement("span");
@@ -1579,7 +1622,7 @@ function renderPool() {
     return s;
   };
   // the pool is per champion: a kit can rule items out (mana items on Vladimir)
-  const champ = m.champions.find(c => c.slug === bstate.champion);
+  const champ = m.champions.find(c => c.slug === slug);
   const ids = champ ? new Set(champ.pool) : null;
   const survival = champ?.objective === "survival";
   // a tank's pool is the Survival tier's (tank items, then the damage
@@ -1617,22 +1660,28 @@ async function loadStatus() {
   return bstate.status;
 }
 
-// Dim the scenario buttons whose cell isn't computed for the selected champion.
+// Dim the scenario buttons whose cell isn't computed for the selected champion
+// (the leaderboard says how many champions it is still waiting for instead).
 function markCold() {
   const ready = bstate.status?.ready;
   document.querySelectorAll("#scenario-seg button").forEach(b => {
-    const cold = !!ready && !ready[`${bstate.champion}/${b.dataset.key}`];
+    const cold = bstate.mode !== "leaderboard" && !!ready &&
+      !ready[`${bstate.champion}/${b.dataset.key}`];
     b.classList.toggle("cold", cold);
     b.title = cold ? "not computed yet" : "";
   });
 }
 
-function clearBuilds() {
-  bstate.data = null;
-  document.querySelector("#btbl tbody").replaceChildren();
+function clearBreakdown() {
   document.getElementById("bd-title").textContent = "Damage breakdown";
   document.getElementById("bd-hint").textContent = "";
   document.getElementById("bd-bars").replaceChildren();
+}
+
+function clearBuilds() {
+  bstate.data = null;
+  document.querySelector("#btbl tbody").replaceChildren();
+  clearBreakdown();
 }
 
 async function loadScenario() {
@@ -1716,6 +1765,13 @@ async function loadScenario() {
   renderBuildsTable();
 }
 
+// Why cells stay cold when no warm is running, by the status endpoint's word.
+const WARMER_WHY = {
+  idle: "no warmer is running — run `lol.py builds warm`, or restart serve without --no-warm",
+  failed: "the last warm failed or was killed — see .cache/builds/warm.log, then restart serve",
+  stale: "serve is running older code than is on disk — restart it (after jobs/build-engine.sh if engine/ changed)",
+};
+
 // Say why the selected cell is missing, and poll until it lands.
 async function showPending(req) {
   let st = null;
@@ -1726,9 +1782,7 @@ async function showPending(req) {
   const total = st ? Object.keys(st.ready).length : 0;
   const why = {
     running: `warming in the background, ${n} of ${total} scenarios ready — this one will appear when it lands`,
-    idle: "no warmer is running — run `lol.py builds warm`, or restart serve without --no-warm",
-    failed: "the last warm failed or was killed — see .cache/builds/warm.log, then restart serve",
-    stale: "serve is running older code than is on disk — restart it (after jobs/build-engine.sh if engine/ changed)",
+    ...WARMER_WHY,
   }[st?.warmer] || "status unavailable";
   document.getElementById("scenario-desc").textContent =
     `Not computed yet for the current code and data (${why}).`;
@@ -1968,13 +2022,14 @@ function bar(src, dmg, max, total, i) {
 }
 
 // The selected build's damage sources, one group per target of the tier:
-// every cell carries the build's fight against each of them.
-function renderBreakdown(r) {
+// every cell carries the build's fight against each of them. A leaderboard
+// row is a cell's top row and breaks down the same way: `sc` is then the
+// board's scenario and `who` the row's champion.
+function renderBreakdown(r, sc = bstate.data.scenario, who = "") {
   if (!r) return;
-  const sc = bstate.data.scenario;
   if (scenarioObjective(sc) === "survival") { renderSurvivalBreakdown(r); return; }
   document.getElementById("bd-title").textContent =
-    `Damage breakdown — #${r.rank}: ${r.items.join(", ")}`;
+    `Damage breakdown — #${r.rank}${who && " " + who}: ${r.items.join(", ")}`;
   document.getElementById("bd-hint").textContent =
     `${fmtInt(r.ap)} AP · ${fmtInt(r.ad)} AD · ${r.attackSpeed} attack speed · ${fmtInt(r.gold)}g · ` +
     "where the damage comes from over the whole fight (post-mitigation), against each target";
@@ -2083,10 +2138,290 @@ function renderSurvivalBreakdown(r) {
 
 async function openBuilds() {
   if (await loadBuildsMeta()) {
+    renderBuildsMode();
     loadStatus().catch(() => {});
-    loadScenario();
+    loadBuildsView();
   }
 }
+
+// ---- the leaderboard: every champion's best build under one scenario ----
+// A row per champion: the top row of its cell, ranked against the others'
+// (builds_leaderboard.py). Saved cells only, like everything on this tab.
+const bboard = { data: null, error: null, search: "", reviewedOnly: false, scroll: 0 };
+
+// The scenarios with a board: the damage tiers' (a single tank compares nothing).
+function leaderboardScenarios(meta) {
+  return (meta?.scenarios || []).filter(s => scenarioObjective(s) === "damage").map(s => s.key);
+}
+
+function loadBuildsView() {
+  return bstate.mode === "leaderboard" ? loadLeaderboard() : loadScenario();
+}
+
+// Which of the two views the first card shows.
+function renderBuildsMode() {
+  const board = bstate.mode === "leaderboard";
+  document.querySelectorAll("#builds-mode-seg button").forEach(b => {
+    const on = b.dataset.key === bstate.mode;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  const survival = !board &&
+    bstate.meta.champions.find(c => c.slug === bstate.champion)?.objective === "survival";
+  const hide = (id, hidden) => { document.getElementById(id).hidden = hidden; };
+  hide("builds-note-board", !board);
+  hide("builds-note", board || survival);
+  hide("builds-note-survival", !survival);
+  hide("champion-seg", board);
+  hide("btbl-wrap", board);
+  hide("bboard", !board);
+  if (board) {
+    hide("champion-more", true);
+    hide("builds-generated", true);  // the selected row's is with its breakdown
+    document.getElementById("bboard-search").value = bboard.search;
+    document.getElementById("bboard-reviewed").checked = bboard.reviewedOnly;
+  } else {
+    hide("bd-generated", true);
+    renderChampionPicker();  // a champion opened from the board joins the buttons
+    renderPool();
+  }
+}
+
+function setBuildsMode(mode) {
+  if (mode === bstate.mode || !["champion", "leaderboard"].includes(mode)) return;
+  const wrap = document.getElementById("bboard-wrap");
+  if (bstate.mode === "leaderboard") bboard.scroll = wrap.scrollTop;  // a hidden box forgets it
+  bstate.mode = mode;
+  if (!bstate.meta) { updateHash(); return; }  // openBuilds shows the mode once the meta is in
+  syncScenarioSeg();
+  if (mode === "champion") {
+    // while the cell loads: not another champion's rows under the board's title
+    if (bstate.data?.champion !== bstate.champion || bstate.data?.scenario?.key !== bstate.scenario)
+      clearBuilds();
+    const champ = bstate.meta.champions.find(c => c.slug === bstate.champion);
+    document.getElementById("builds-title").textContent = `${champ?.name || bstate.champion} — ` +
+      (champ?.objective === "survival" ? "tankiest builds" : "ranked builds");
+  }
+  renderBuildsMode();
+  loadBuildsView();  // the board renders what it holds before it asks again
+  if (mode === "leaderboard") wrap.scrollTop = bboard.scroll;
+}
+
+// A row's champion in the Champion builds view, under the board's scenario.
+function openBoardChampion(slug) {
+  bstate.champion = slug;
+  setBuildsMode("champion");
+}
+
+const BOARD_TIME_TITLE = "Ranking metric: the expected kill time of the champion's best build against this target (the kill time, unless the build relies on an execute). A ≈ time is extrapolated past the fight at its average DPS: the target survived.";
+const BOARD_MEAN_TITLE = "Ranking metric: the geometric mean of the best build's expected kill times against every target, so each target counts equally in percentage terms. Champions that kill every target rank above those that leave one standing.";
+const INSTANT_TITLE = "Dead at 0.00s: this kit lands its whole opening combo in the fight's first instant, with no cast or travel time between the hits. The time — and an overall mean built on it — says more about the draft kit than about the champion.";
+const UNREVIEWED_TITLE = "This kit and its rotation were written by a model and not reviewed by a person: treat the rank as a draft. Select the row for what the kit assumes.";
+
+// Whether any of the row's fights ends the instant it starts.
+function boardInstant(r) {
+  return Object.values(r.vs || {}).some(v => v.ttkExp === 0);
+}
+
+function boardInstantTag(td) {
+  td.append(tftText("span", " instant", "ci"));
+  td.title = INSTANT_TITLE;
+  return td;
+}
+
+// A best build's fight against one target: its expected kill time, ≈ when
+// extrapolated past a fight the target survived.
+function boardTimeCell(v, t) {
+  const td = document.createElement("td");
+  if (!v) { td.textContent = "—"; return td; }
+  if (v.ttkExp != null) {
+    td.append(v.ttkExp.toFixed(2) + "s");
+    if (v.ttkExp === 0) boardInstantTag(td);
+  } else if (v.killTime != null) {
+    td.append("≈" + v.killTime.toFixed(1) + "s");
+    td.title = `survives the ${t.duration}s fight (${fmtInt(v.total)} damage dealt) — ` +
+      "time extrapolated at the fight's average DPS";
+  } else td.append("—");
+  return td;
+}
+
+// The champion: its name opens its own ranked builds; a kit nobody has
+// reviewed says so.
+function boardChampionCell(r) {
+  const td = document.createElement("td");
+  const icon = document.createElement("img");
+  icon.className = "champ-icon";
+  icon.alt = "";
+  icon.loading = "lazy";
+  icon.onerror = () => { icon.style.visibility = "hidden"; };
+  icon.src = iconUrl(r.champion);
+  const open = document.createElement("button");
+  open.className = "bboard-champion";
+  open.dataset.champion = r.champion;
+  open.textContent = r.championName || r.champion;
+  open.title = "Open this champion's ranked builds";
+  open.addEventListener("click", e => { e.stopPropagation(); openBoardChampion(r.champion); });
+  td.append(icon, open);
+  if (!r.reviewed) {
+    const tag = tftText("span", "unreviewed", "bboard-tag");
+    tag.title = UNREVIEWED_TITLE;
+    td.append(tag);
+  }
+  return td;
+}
+
+// A target's board leads with that fight, then the same build against the
+// tier's other targets; the overall board shows every target and the mean.
+function boardColumns(sc) {
+  const targets = sc.targets || [];
+  const vs = t => ({ th: `vs ${t.target}`, td: r => boardTimeCell(r.vs?.[t.target], t),
+    title: `The same build's expected kill time against the ${t.target} (${fmtInt(t.targetHp)} HP, ` +
+           `${t.armor} armor, ${t.mr} MR, ${t.duration}s)` });
+  const cols = [
+    { th: "#", title: "Among every champion of this scenario; equal results share a rank", td: r => cell(String(r.rank)) },
+    { th: "Champion", td: r => boardChampionCell(r) },
+    { th: "Best build", title: "The top row of the champion's own ranking, numbered in its suggested buy order — hover, focus or tap an icon for the item",
+      td: r => buildCell(r) },
+  ];
+  if (sc.overall) {
+    targets.forEach(t => cols.push(vs(t)));
+    cols.push({ th: "Mean", title: BOARD_MEAN_TITLE, td: r => {
+      const td = cell(r.mean != null ? r.mean.toFixed(2) + "s" : "—");
+      return boardInstant(r) ? boardInstantTag(td) : td;
+    } });
+  } else {
+    cols.push({ th: "Kill time", title: BOARD_TIME_TITLE, td: r => boardTimeCell(r.vs?.[sc.target], sc) });
+    targets.filter(t => t.target !== sc.target).forEach(t => cols.push(vs(t)));
+    // a fight over at 0.00s has no length to average the damage over
+    cols.push({ th: "DPS", td: r => cell(r.ttkExp === 0 ? "—" : fmtInt(r.dps)) },
+              { th: "Damage", td: r => cell(fmtInt(r.total)) });
+  }
+  cols.push({ th: "Gold", td: r => cell(fmtInt(r.gold)) });
+  return cols;
+}
+
+// The rows the filters leave, in rank order (ranks stay the full board's).
+function boardRows(d) {
+  const q = bboard.search.trim().toLowerCase();
+  return (d?.rows || []).filter(r => (!bboard.reviewedOnly || r.reviewed) &&
+    (!q || (r.championName || "").toLowerCase().includes(q) || r.champion.includes(q.replace(/[^a-z0-9]/g, ""))));
+}
+
+// What the cards below the table show: the selected row's damage sources,
+// what its kit assumes, and its item pool with the rotation's notes.
+function renderBoardSelection(r) {
+  if (!r) {
+    clearBreakdown();
+    document.getElementById("bd-generated").hidden = true;
+    return;
+  }
+  renderBreakdown(r, bboard.data.scenario, r.championName || r.champion);
+  renderGeneratedBanner("bd-generated", r.champion);
+  renderPool(r.champion);
+}
+
+function renderLeaderboard() {
+  const d = bboard.data, sc = d?.scenario;
+  const label = bstate.meta?.scenarios?.find(s => s.key === bstate.scenario)?.label || bstate.scenario || "";
+  document.getElementById("builds-title").textContent = `Champion leaderboard, ${label.toLowerCase()}`;
+  const desc = document.getElementById("scenario-desc");
+  if (!d) desc.textContent = bboard.error ? "" : "Loading…";
+  else {
+    const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
+    const drafts = d.rows.filter(r => !r.reviewed).length;
+    desc.textContent = `Level ${sc.level} · ` + (sc.overall
+      ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
+        "by the geometric mean of expected kill times, champions that kill all of them first"
+      : `target ${dummy(sc)} · ranked by expected kill time`) +
+      ` · each champion with the best build of its own ranking` +
+      (drafts ? ` · ${fmtInt(drafts)} of ${fmtInt(d.rows.length)} kits machine-written and unreviewed` : "") +
+      ` · items patch ${bstate.meta.itemsPatch} · ${bstate.meta.note}`;
+  }
+  const rows = boardRows(d), cols = sc ? boardColumns(sc) : [];
+  const filtered = !!bboard.search.trim() || bboard.reviewedOnly;
+  let status = "";
+  if (bboard.error) status = bboard.error + (d ? " Showing the board as last loaded." : "");
+  else if (d) {
+    status = !rows.length && d.rows.length ? "No champion matches these filters."
+      : `${fmtInt(rows.length)}${filtered ? ` of ${fmtInt(d.rows.length)}` : ""} champions` +
+        (filtered ? " · ranks are from the full board" : "");
+    if (!d.complete) {
+      const why = { running: "the rest are warming in the background", ...WARMER_WHY }[bstate.status?.warmer];
+      status += ` · ${fmtInt(d.readyCount)} of ${fmtInt(d.expectedCount)} computed for the current code and data` +
+        `${why ? ` (${why})` : ""}: ranks are provisional`;
+    }
+  }
+  document.getElementById("bboard-status").textContent = status;
+  const failed = document.getElementById("bboard-failed");
+  failed.hidden = !d?.failed?.length;
+  failed.textContent = failed.hidden ? "" :
+    "Not ranked, because the machine-written driver failed in the enumeration: " +
+    d.failed.map(f => `${f.championName || f.champion} (${f.error})`).join("; ") + ".";
+  document.querySelector("#bboard-tbl thead tr").replaceChildren(...cols.map(c => {
+    const th = document.createElement("th");
+    th.textContent = c.th;
+    if (c.title) th.title = c.title;
+    return th;
+  }));
+  // the champion the rest of the tab is on, else the top of what is shown
+  const selected = rows.find(r => r.champion === bstate.champion) || rows[0];
+  const wrap = document.getElementById("bboard-wrap"), body = document.querySelector("#bboard-tbl tbody");
+  const top = wrap.scrollTop;  // refilling the body would reset it: a board filling in must not jump
+  body.replaceChildren(...rows.map(r => {
+    const tr = document.createElement("tr");
+    tr.dataset.champion = r.champion;
+    if (r === selected) tr.className = "sel";
+    tr.append(...cols.map(c => c.td(r)));
+    tr.addEventListener("click", () => {
+      bstate.champion = r.champion;
+      [...body.children].forEach(row => row.classList.toggle("sel", row === tr));
+      renderBoardSelection(r);
+      updateHash();
+    });
+    return tr;
+  }));
+  wrap.scrollTop = top;
+  renderBoardSelection(selected);
+}
+
+async function loadLeaderboard() {
+  const key = bstate.scenario, req = ++bstate.req;  // a newer click supersedes this load
+  clearTimeout(bstate.timer);
+  document.querySelectorAll("#scenario-seg button").forEach(b =>
+    b.classList.toggle("active", b.dataset.key === key));
+  markCold();
+  updateHash();
+  if (bboard.data?.scenario?.key !== key) bboard.data = null;  // another scenario's board
+  bboard.error = null;
+  renderLeaderboard();
+  let d = null;
+  try {
+    d = await api(`api/builds/leaderboard/${key}.json`);
+    if (!Array.isArray(d?.rows) || d.scenario?.key !== key) throw new Error("unexpected response");
+  } catch (e) {
+    if (req !== bstate.req) return;
+    // a serve from before the endpoint reads "leaderboard" as a champion: 404
+    bboard.error = `The leaderboard could not be loaded (${e.message}).` +
+      (e.message === "HTTP 404" ? " A dashboard started before the leaderboard existed needs a restart." : "");
+    d = null;
+  }
+  if (req !== bstate.req) return;
+  if (d) bboard.data = d;
+  if (d && !d.complete) await loadStatus().catch(() => {});  // why it is incomplete
+  if (req !== bstate.req) return;
+  renderLeaderboard();
+  // cells still to come (or a failed request): the board fills in as they land
+  if (!d || !d.complete) bstate.timer = setTimeout(() => { if (req === bstate.req) loadLeaderboard(); }, 10000);
+}
+
+document.querySelectorAll("#builds-mode-seg button").forEach(b =>
+  b.addEventListener("click", () => setBuildsMode(b.dataset.key)));
+document.getElementById("bboard-search").addEventListener("input", e => {
+  bboard.search = e.target.value; renderLeaderboard(); updateHash();
+});
+document.getElementById("bboard-reviewed").addEventListener("change", e => {
+  bboard.reviewedOnly = e.target.checked; renderLeaderboard(); updateHash();
+});
 
 // ---------------- tft view ----------------
 // Same shape as the builds tab: precomputed cells keyed by unit and
@@ -5559,6 +5894,11 @@ function updateHash() {
   if (state.view === "champion" && state.champion) parts.push(`name=${state.champion}`);
   if (state.view === "builds" && bstate.champion) parts.push(`champ=${bstate.champion}`);
   if (state.view === "builds" && bstate.scenario) parts.push(`sc=${bstate.scenario}`);
+  if (state.view === "builds" && bstate.mode === "leaderboard") {
+    parts.push("bview=leaderboard");
+    if (bboard.search.trim()) parts.push(`lbq=${encodeURIComponent(bboard.search.trim())}`);
+    if (bboard.reviewedOnly) parts.push("lbrev=1");
+  }
   if (state.view === "tft" && tstate.unit && tstate.mode !== "compositions") {
     parts.push(`unit=${tstate.unit}`, `star=${tstate.star}`, `geo=${tstate.geo}`, `tr=${tstate.traits}`);
     if (tstate.threat !== "mixed") parts.push(`threat=${tstate.threat}`);
@@ -5588,7 +5928,8 @@ function showView(v) {
   document.querySelectorAll(".view").forEach(s =>
     s.classList.toggle("active", s.id === "view-" + v));
   updateHash();
-  if (v === "builds" && !bstate.data) openBuilds();
+  // (re)load what the tab's view lacks: a champion's cell, or a complete board
+  if (v === "builds" && !(bstate.mode === "leaderboard" ? bboard.data?.complete : bstate.data)) openBuilds();
   if (v !== "builds") clearTimeout(bstate.timer);  // stop polling off-tab
   if (v === "tft") { renderTftMode(); openTft(); }
   if (v !== "tft") clearTimeout(tstate.timer);
@@ -5654,6 +5995,11 @@ async function init() {
   } else if (hash.tab && ["overview", "champion", "onetricks", "builds", "tft", "data"].includes(hash.tab)) {
     if (hash.tab === "builds" && hash.champ) bstate.champion = hash.champ;
     if (hash.tab === "builds" && hash.sc) bstate.scenario = hash.sc;
+    if (hash.tab === "builds" && hash.bview === "leaderboard") {
+      bstate.mode = "leaderboard";
+      if (hash.lbq) bboard.search = hash.lbq;
+      bboard.reviewedOnly = hash.lbrev === "1";
+    }
     if (hash.tab === "tft") {
       if (["leaderboard", "compositions"].includes(hash.tftview)) tstate.mode = hash.tftview;
       if (hash.cplan) tcomp.profile = hash.cplan;

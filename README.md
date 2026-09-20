@@ -202,7 +202,13 @@ The tabs:
   it and what kept it up. Restart serve after editing `builds.py` or `engine/`
   (rebuild first; on the server: commit, or `sudo systemctl restart
   lol-dashboard`) — the tab tells you when it is running older code than
-  is on disk.
+  is on disk. The **Leaderboard** view compares champions: each one's best
+  build under the selected scenario (the top row of its own ranking), ranked
+  by the same metric, equal times sharing a rank. It reads the saved cells
+  only (`builds_leaderboard.py`, `/api/builds/leaderboard/<scenario>.json`).
+  Most kits are machine-written drafts, tagged *unreviewed* with a filter to
+  hide them; a kill at 0.00s marks a draft that lands its whole combo in the
+  fight's first instant.
 - **Data** — systemd unit health, automation job status, and what's in the
   database, per tier and patch.
 
