@@ -1,0 +1,100 @@
+{
+  "_provenance": [
+    "Hand-encoded on 2026-09-19 from Riot's own 16.18 game files",
+    "(raw.communitydragon.org/16.18/game/data/characters/drmundo/drmundo.bin.json),",
+    "cross-checked against wiki.leagueoflegends.com/en-us/Dr._Mundo (V26.18 era):",
+    "every number below agrees between the two. The bin's DataValues and",
+    "cooldownTime carry a rank-0 entry ahead of ranks 1-5 (1-3 for R).",
+    "Innate regeneration: the bin's MaxHealthRegen calculation is 0.4% at level",
+    "1, +0.05 a level through 6, +0.1 from 7, +0.15 from 13, +0.2 from 16",
+    "(ByCharLevelBreakpoints), i.e. 0.4-2.3% of maximum health every 5 seconds,",
+    "the wiki's range. Heart Zapper: 8% current health, up to 3 s, stores",
+    "80-95% (by level, the bin's GrayHealthStorageInitial interpolation) of the",
+    "post-mitigation damage taken in the first 0.75 s and 25% after as grey",
+    "health, healed back at 100% if the detonation hits a champion (325",
+    "radius) and 50% if not; recast lockout 0.5 s. Maximum Dosage: base health",
+    "+15/20/25% of MISSING health at once and 20/40/60% of MAXIMUM health",
+    "healed over 10 s (1/2/3% every 0.5 s, scaling with his maximum health as",
+    "it changes); at rank 3 both are raised by 5 percentage points for each",
+    "enemy champion within 1200 units when it is cast (the wiki: 50% and 85%",
+    "against five). Blunt Force Trauma's passive AD (2/2.3/2.6/2.9/3.2% of",
+    "maximum health) only feeds Maw of Malmortius's shield here.",
+    "Skill order Q > E > W: the most played on 16.18 (u.gg, metasrc, Blitz,",
+    "2026-09-19). Mundo's character file carries no RecSpellRankUpInfo. At",
+    "level 16 that is Q5 E5 W3 R3.",
+    "This kit only takes damage: data/builds/drmundo.json is the first tank,",
+    "scored on how long he survives the modeled carries' best builds (the",
+    "Survival tier), not on damage dealt. Base stats are NOT duplicated here:",
+    "the stat layer reads data/builds/champions/<patch>/drmundo/."
+  ],
+  "champion": "drmundo",
+  "name": "Dr. Mundo",
+  "patch": "16.18",
+  "role": "tank",
+  "manaless": true,
+  "maxOrder": ["Q", "E", "W"],
+  "notes": [
+    "Survival only: Mundo takes damage and never deals it. Everything that heals or protects him without needing a hit of his own counts; lifesteal, omnivamp and on-hit healing don't.",
+    "Goes Where He Pleases regenerates 0.4-2.3% of his maximum health every 5 s (1.9% at 16), continuously, on top of his base regeneration.",
+    "Heart Zapper goes out when the fight starts and again on cooldown. It costs 8% of his current health, stores 93% (at 16) of the damage he takes in its first 0.75 s and 25% after that, and heals it back when it detonates at 3 s: all of it if the attacker stands within its 325 radius (Kassadin), half if not (Kayle at 625 range). He detonates early if that heal would keep a hit from killing him.",
+    "Maximum Dosage is cast at the health threshold that keeps him alive longest against each attacker, found by trying every 10% step (and at the last moment, when a hit would otherwise kill him). With one enemy champion near, rank 3 gives 30% of missing health as base health and heals 65% of maximum health over 10 s.",
+    "Infected Bonesaw refunds its whole health cost when it hits a champion, so casting it changes nothing about how long he lasts; Blunt Force Trauma only costs health. Neither is cast. The crowd-control immunity and its canister wait for crowd control, which nothing here applies."
+  ],
+  "attack": {
+    "never": true,
+    "windupFraction": 0.160313,
+    "ranged": false,
+    "note": "never: a Survival fight scores only the damage Mundo takes, so he never attacks and on-hit effects, lifesteal and omnivamp never fire. windup = 30% + Riot's attack cast offset -0.139687, kept for the record"
+  },
+  "passive": {
+    "name": "Goes Where He Pleases",
+    "maxHealthRegenPctPer5sByLevel": [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.75, 0.85, 0.95, 1.05, 1.15, 1.25, 1.4, 1.55, 1.7, 1.9, 2.1, 2.3],
+    "note": "percent of MAXIMUM health every 5 s, level 1 first: the bin's MaxHealthRegen breakpoints. The immobilize immunity (4% current health, a canister that heals 4% maximum health) needs crowd control, which no attacker here applies"
+  },
+  "abilities": {
+    "Q": {
+      "name": "Infected Bonesaw",
+      "cooldownS": [4, 4, 4, 4, 4],
+      "healthCost": [50, 60, 70, 80, 90],
+      "healthRefundOnChampionHitPct": 100,
+      "currentHealthDamagePct": [20, 22.5, 25, 27.5, 30],
+      "minimumDamage": [80, 130, 180, 230, 280],
+      "note": "not cast: a hit on a champion refunds the whole health cost, so the net is nothing (a Spirit Visage would make it +25% of the cost, about 6 health a second), and its damage is not scored"
+    },
+    "W": {
+      "name": "Heart Zapper",
+      "cooldownS": [17, 16.5, 16, 15.5, 15],
+      "currentHealthCostPct": 8,
+      "durationS": 3,
+      "radius": 325,
+      "grayHealth": {
+        "initialS": 0.75,
+        "initialPctByLevel": { "from": 80, "to": 95, "curve": "linear", "levels": [1, 18] },
+        "laterPct": 25,
+        "healPctChampionHit": 100,
+        "healPctNoHit": 50,
+        "recastLockoutS": 0.5
+      },
+      "note": "cast at the start and on cooldown (the cooldown starts at the cast). Grey health counts health lost after shields, Death's Dance's delayed damage included; the heal is a heal, so Spirit Visage amplifies it. The charge's damage ticks are not scored"
+    },
+    "E": {
+      "name": "Blunt Force Trauma",
+      "cooldownS": [9, 8.25, 7.5, 6.75, 6],
+      "healthCost": [10, 25, 40, 55, 70],
+      "passive": {
+        "bonusAdPctMaxHealth": [2, 2.3, 2.6, 2.9, 3.2],
+        "note": "bonus AD from his maximum health: only Maw of Malmortius's shield (200 + 150% bonus AD) reads it"
+      },
+      "note": "not cast: it only costs health in a fight scored on survival"
+    },
+    "R": {
+      "name": "Maximum Dosage",
+      "cooldownS": [120, 120, 120],
+      "durationS": 10,
+      "missingHealthPct": [15, 20, 25],
+      "maxHealthHealPct": [20, 40, 60],
+      "perNearbyChampion": { "rank": 3, "pct": 5, "radius": 1200 },
+      "note": "once a fight (120 s cooldown). The base health lands at the cast, as maximum AND current health (it is not a heal: Spirit Visage does not touch it); the heal runs 10 s at a rate that follows his maximum health and is amplified by Spirit Visage. A Guardian Angel revive ends it (the wiki)"
+    }
+  }
+}

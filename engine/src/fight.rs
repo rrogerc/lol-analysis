@@ -3,6 +3,7 @@
 //! floating-point operation happens in the same order with the same
 //! operands (the fixtures under data/builds/golden pin that).
 
+use crate::defense::{DefReport, Defender};
 use crate::fsum::fsum;
 use crate::fx::*;
 use crate::kit::Kit;
@@ -51,6 +52,9 @@ pub struct FightResult {
     /// (source, damage) best-first, ties in first-dealt order — the
     /// Python breakdown dict's order.
     pub breakdown: Vec<(SourceId, f64)>,
+    /// What the defending side did (the Survival tier); `None` against a
+    /// stat dummy, and then nothing about the result changes.
+    pub def: Option<Box<DefReport>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -198,6 +202,9 @@ const R_WCAST: u32 = 10 << 16;
 const R_ECAST: u32 = 11 << 16;
 const R_VENOM: u32 = 12 << 16;
 const R_RCAST: u32 = 13 << 16;
+/// The defender's own timed events (defense.rs): after every kind a driver
+/// can schedule, so at one instant the attacker's side goes first.
+const R_DEF: u32 = 14 << 16;
 
 #[inline(always)]
 fn rank_of(k: Kind) -> u32 {
@@ -392,6 +399,9 @@ pub struct Prep<'a> {
     /// The fight state before a target is known: each fight copies this and
     /// patches the two fields the target seeds (`hp` and `ev_hp0`).
     st0: St,
+    /// The driver's attack range: where the attacker fights from, which a
+    /// defender's radius-bound effects compare against.
+    pub atk_range: f64,
 }
 
 /// One fight in progress: the target's numbers, the state the fight moves,
@@ -400,14 +410,18 @@ pub struct Prep<'a> {
 pub struct Engine<'a, 'p> {
     pub p: &'p Prep<'a>,
     pub target_hp: f64,
-    target_armor: f64,
-    target_mr: f64,
-    target_bonus_hp: f64,
+    pub(crate) target_armor: f64,
+    pub(crate) target_mr: f64,
+    pub(crate) target_bonus_hp: f64,
     breakdown: bool,
     /// `Prep::flags` with `F_EXECUTE` cleared on the counterfactual leg.
     flags: u32,
     /// No bit `deal`'s body branches on is set and `amp_is_one`: `deal_simple`.
     simple_deal: bool,
+    /// The target defends (`dfd` is `Some`): `deal_full` turns off into the
+    /// defended copy. A plain flag beside `simple_deal`, so the test reads
+    /// nothing a dummy's fight does not already touch.
+    defended: bool,
     exec_hp: f64,
     /// `Prep::eclipse_frac * target.hp`.
     eclipse_amt: f64,
@@ -417,6 +431,11 @@ pub struct Engine<'a, 'p> {
     /// were filled for, `amp_have` which of them are filled.
     amp_secs: i64,
     amp_have: u8,
+    /// The target is a defending champion (the Survival tier): its items and
+    /// kit act on every instance (defense.rs). `None` against a dummy — and
+    /// everything a defended fight moves lives in here, so a dummy's `Engine`
+    /// carries one pointer more than it used to.
+    pub(crate) dfd: Option<Box<Defender>>,
     amp_cache: [f64; 3],
     /// `attack_speed` memo: the key, field by field, then the value and the
     /// two reciprocals callers take from it (each computed from the cached
@@ -866,6 +885,7 @@ impl<'a> Prep<'a> {
             r_dmg,
             mal_tick_amt,
             st0,
+            atk_range,
         })
     }
 }
@@ -878,9 +898,11 @@ impl<'a, 'p> Engine<'a, 'p> {
     /// execute guard in `deal` went false — so the flag reproduces both
     /// without deep-cloning the whole `Fx`.
     fn new(p: &'p Prep<'a>, target: &Target, breakdown: bool, no_execute: bool,
-           dmg_log: Vec<(f64, f64)>) -> Engine<'a, 'p> {
+           dmg_log: Vec<(f64, f64)>, dfd: Option<Box<Defender>>) -> Engine<'a, 'p> {
         let flags = if no_execute { p.flags & !F_EXECUTE } else { p.flags };
-        let simple_deal = p.amp_is_one && flags & DEAL_FLAGS == 0;
+        // a defender sees every instance, so the fast path is off for it
+        let defended = dfd.is_some();
+        let simple_deal = p.amp_is_one && flags & DEAL_FLAGS == 0 && !defended;
         #[cfg(debug_assertions)]
         fastpath_stats::note(simple_deal);
         let exec_hp = match p.exec_frac {
@@ -918,6 +940,7 @@ impl<'a, 'p> Engine<'a, 'p> {
             breakdown,
             flags,
             simple_deal,
+            defended,
             exec_hp,
             eclipse_amt: p.eclipse_frac * target.hp,
             burn_amts,
@@ -942,7 +965,37 @@ impl<'a, 'p> Engine<'a, 'p> {
             bd,
             bd_seen,
             bd_order: Vec::new(),
+            dfd,
         }
+    }
+
+    /// The target's maximum health moved (a defender's Maximum Dosage or
+    /// Protoplasm Harness): what was scaled off it follows, and the
+    /// Giant Slayer amp (bonus health) starts over. Never called against a
+    /// dummy.
+    pub(crate) fn retarget(&mut self) {
+        let hp = self.target_hp;
+        self.exec_hp = match self.p.exec_frac {
+            Some(f) if self.flags & F_EXECUTE != 0 => f * hp,
+            _ => 0.0,
+        };
+        self.eclipse_amt = self.p.eclipse_frac * hp;
+        for i in 0..self.p.n_burns {
+            if self.p.burn_hp_mask & (1 << i) != 0 {
+                self.burn_amts[i] = self.p.burn_amt[i] * hp;
+            }
+        }
+        self.amp_secs = i64::MIN;
+        self.amp_have = 0;
+    }
+
+    /// The target's resists moved (Jak'Sho, Force of Nature): the resist
+    /// memos were keyed on them being constant, so they start over.
+    pub(crate) fn set_target_resists(&mut self, armor: f64, mr: f64) {
+        self.target_armor = armor;
+        self.target_mr = mr;
+        self.phys_key = u64::MAX;
+        self.mag_key = u64::MAX;
     }
 
     /// Everything `attack_speed_slow` reads that a fight can move: the kit's
@@ -1032,6 +1085,13 @@ impl<'a, 'p> Engine<'a, 'p> {
             let u = s.ult_attack_steroid.as_ref().expect("ult_attack_steroid");
             if st.post_r_attacks < u.attacks {
                 bonus += u.as_pct;
+            }
+        }
+        if let Some(d) = &self.dfd {
+            if d.as_mult != 1.0 {
+                // a defender's Frozen Heart: the total, then the cap
+                return pymin((self.p.base_as + self.p.as_ratio * bonus / 100.0) * d.as_mult,
+                             AS_CAP);
             }
         }
         pymin(self.p.base_as + self.p.as_ratio * bonus / 100.0, AS_CAP)
@@ -1190,8 +1250,33 @@ impl<'a, 'p> Engine<'a, 'p> {
         }
     }
 
+    /// The general path. A defended fight (the Survival tier) turns off at
+    /// the door into its own copy: `deal` keeps its two-way shape at every
+    /// call site it is inlined into, and a dummy's instance pays one
+    /// predictable test.
     fn deal_full(&mut self, amount: f64, dtype: DType, source: SourceId, crit_mod: bool,
                  ability: bool, ev_floor: f64) {
+        if self.defended {
+            return self.deal_defended(amount, dtype, source, crit_mod, ability, ev_floor);
+        }
+        self.deal_body::<false>(amount, dtype, source, crit_mod, ability, ev_floor);
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn deal_defended(&mut self, amount: f64, dtype: DType, source: SourceId, crit_mod: bool,
+                     ability: bool, ev_floor: f64) {
+        self.deal_body::<true>(amount, dtype, source, crit_mod, ability, ev_floor);
+    }
+
+    /// One instance of damage. `DEF` is a defending target (defense.rs): the
+    /// instance goes through its reductions, shields and saves before the
+    /// health bar, and the batch and kill bookkeeping count health actually
+    /// lost. With `DEF` false every added line compiles away and this is the
+    /// dummy fight it always was.
+    #[inline(always)]
+    fn deal_body<const DEF: bool>(&mut self, amount: f64, dtype: DType, source: SourceId,
+                                  crit_mod: bool, ability: bool, ev_floor: f64) {
         let fx: &'a Fx = self.p.fx;
         let s = &fx.s;
         let t = self.st.t;
@@ -1252,7 +1337,35 @@ impl<'a, 'p> Engine<'a, 'p> {
         } else if below {
             ev = self.p.crit_below_ev;
         }
+        if DEF && crit_mod {
+            // Randuin's Omen: the crit share of an expected-value hit
+            let r = self.dfd.as_deref().expect("a defended fight").crit_dr();
+            if r != 0.0 {
+                let normal = 1.0 - self.p.crit_c;
+                let before = ev;
+                ev = normal + (ev - normal) * (1.0 - r);
+                let cut = amount * amp * mult * (before - ev);
+                self.dfd.as_deref_mut().unwrap().s.rep.reduced_crit += cut;
+            }
+        }
         let dmg = amount * amp * mult * ev;
+        // what reached the target, and what came off its health: the same
+        // number against a dummy
+        let (dmg, loss) = if DEF {
+            match self.def_absorb(dmg, dtype, source, ability) {
+                Some(x) => x,
+                None => return, // a spell shield or stasis: it never landed
+            }
+        } else {
+            (dmg, dmg)
+        };
+        if DEF {
+            // a lifeline or a save may have moved health on the way in; what
+            // comes off it now (the killing blow only takes what was left)
+            hp = self.st.hp;
+            let lost = pymin(loss, pymax(hp, 0.0));
+            self.dfd.as_deref_mut().expect("a defended fight").s.rep.hp_lost += lost;
+        }
         // Damage arrives in batches at discrete times; track each batch so
         // the killing blow is credited only for the share actually needed.
         if t != self.st.ev_t {
@@ -1261,8 +1374,8 @@ impl<'a, 'p> Engine<'a, 'p> {
             self.st.ev_hp0 = hp;
             self.st.ev_dmg = 0.0;
         }
-        self.st.ev_dmg += dmg;
-        hp -= dmg;
+        self.st.ev_dmg += loss;
+        hp -= loss;
         self.st.hp = hp;
         self.st.total += dmg;
         if self.breakdown {
@@ -1340,6 +1453,10 @@ impl<'a, 'p> Engine<'a, 'p> {
             hp = 0.0;
         }
         if hp <= 0.0 && self.st.set & S_TTK == 0 {
+            if DEF && self.def_revive(t) {
+                // Guardian Angel: stasis, then half the base health back
+                return;
+            }
             self.st.ttk = t;
             self.st.set |= S_TTK;
             // Effective (ranking) kill time: interpolate back over the gap
@@ -1356,6 +1473,13 @@ impl<'a, 'p> Engine<'a, 'p> {
                 self.st.exec_p = if batch > 0.0 { pymin(1.0, self.exec_hp / batch) } else { 1.0 };
                 self.st.set |= S_EXEC_P;
             }
+            if DEF {
+                self.dfd.as_deref_mut().unwrap().s.dead = true;
+            }
+            return;
+        }
+        if DEF && self.st.hp > 0.0 {
+            self.def_after_hit(dtype, loss);
         }
     }
 
@@ -1708,21 +1832,53 @@ impl<'a> Prep<'a> {
                             log: &mut Vec<(f64, f64)>)
         -> Result<Option<FightResult>, String> {
         drv.reset();
-        self.fight_ex::<D>(drv, target, opts, false, log)
+        self.fight_ex::<D, false>(drv, target, opts, false, log, None)
+    }
+
+    /// `fight` against a defending champion (defense.rs): `target` carries
+    /// its health, bonus health and resists at the start, `dfd` the rest (a
+    /// fresh copy runs each fight, so `dfd` is left as it came).
+    pub fn fight_defended<D: Driver>(&self, drv: &mut D, target: &Target, dfd: &Defender,
+                                     opts: Opts, log: &mut Vec<(f64, f64)>)
+        -> Result<Option<FightResult>, String> {
+        drv.reset();
+        self.fight_ex::<D, true>(drv, target, opts, false, log, Some(dfd))
     }
 
     /// `no_execute` is the blend's counterfactual leg (see `Engine::new`). It
     /// is deliberately not a field of `Opts`: `Opts` is the shape the Python
     /// wrapper and the enumerator construct, and neither should have to know
     /// about it. `drv` arrives already reset.
-    fn fight_ex<D: Driver>(&self, drv: &mut D, target: &Target, opts: Opts, no_execute: bool,
-                           log: &mut Vec<(f64, f64)>)
+    ///
+    /// `DEF` is a defended fight (`dfd` is then `Some`): a compile-time flag
+    /// rather than a test in the loop, so a dummy's fight — the damage tier's
+    /// hot path — compiles to the loop it always was.
+    fn fight_ex<D: Driver, const DEF: bool>(&self, drv: &mut D, target: &Target, opts: Opts,
+                                            no_execute: bool, log: &mut Vec<(f64, f64)>,
+                                            dfd: Option<&Defender>)
         -> Result<Option<FightResult>, String> {
+        debug_assert_eq!(DEF, dfd.is_some());
         #[cfg(debug_assertions)]
         check_rank_order();
         let fx: &'a Fx = self.fx;
         log.clear();
-        let mut e = Engine::new(self, target, opts.breakdown, no_execute, std::mem::take(log));
+        let boxed = if DEF {
+            dfd.map(|d| {
+                let mut d = Box::new(d.clone());
+                d.reset();
+                d
+            })
+        } else {
+            None
+        };
+        let mut e = Engine::new(self, target, opts.breakdown, no_execute, std::mem::take(log),
+                                boxed);
+        let defended = DEF;
+        if defended {
+            // the defender moves first: Heart Zapper is out before the
+            // attacker's opening lands
+            e.def_start();
+        }
         // opening casts at t=0, before the first auto
         if opts.use_ult && self.ranks.r > 0 {
             if self.r_dmg.is_some() {
@@ -1768,6 +1924,10 @@ impl<'a> Prep<'a> {
             // compare rather than a 16-byte enum one; the two float comparisons
             // are exactly the ones this loop always made.
             let mut t_next = e.st.next_attack;
+            if defended {
+                // a defender in stasis: the next attack waits it out
+                t_next = pymax(t_next, e.hold_until());
+            }
             let mut best = R_ATTACK;
             if has_mal {
                 // Without Malignance `next_mal` is INF for the whole fight, so
@@ -1801,18 +1961,34 @@ impl<'a> Prep<'a> {
                 best = R_R;
             }
             // so Q casts the moment it's ready, not at the next event
-            let q_at = drv.q_at(&e);
+            let mut q_at = drv.q_at(&e);
+            if defended {
+                q_at = pymax(q_at, e.hold_until());
+            }
             if q_at < t_next || (q_at == t_next && R_Q < best) {
                 t_next = q_at;
                 best = R_Q;
             }
             let n = drv.events(&e, &mut evs);
             for &(x, k) in &evs[..n] {
+                // a cast waits out a defender's stasis like an attack does;
+                // ticks and impacts already on their way do not
+                let x = if defended && is_cast(k) { pymax(x, e.hold_until()) } else { x };
                 let k = rank_of(k);
                 if x < t_next || (x == t_next && k < best) {
                     t_next = x;
                     best = k;
                 }
+            }
+            if defended {
+                let x = e.def_next();
+                if x < t_next || (x == t_next && R_DEF < best) {
+                    t_next = x;
+                    best = R_DEF;
+                }
+                // regeneration, heals over time and bleeds up to the event
+                // (or the end): a bleed can kill in between
+                e.def_advance(pymin(t_next, duration));
             }
             if t_next > duration || e.st.hp <= 0.0 {
                 break;
@@ -1867,6 +2043,7 @@ impl<'a> Prep<'a> {
                     }
                 }
                 R_Q => {}
+                R_DEF => e.def_event(),
                 _ => drv.on_event(&mut e, kind_of(best)),
             }
         }
@@ -1889,11 +2066,11 @@ impl<'a> Prep<'a> {
             // the same build, run with the execute switched off: nulling
             // `fx.s.execute_pct` only ever reached `exec_hp` and `deal`'s guard
             drv.reset();
-            let alt = self.fight_ex::<D>(drv, target,
+            let alt = self.fight_ex::<D, DEF>(drv, target,
                                          Opts { use_ult: opts.use_ult,
                                                 prestacked: opts.prestacked,
                                                 stop_after: INF, breakdown: false, blend: false },
-                                         true, log)?
+                                         true, log, dfd)?
                 .expect("an unbounded fight always returns");
             let p = st_exec_p.unwrap();
             ttk_exp = Some(p * st_ttk.unwrap()
@@ -1904,6 +2081,7 @@ impl<'a> Prep<'a> {
             None => duration,
         };
         let total = e.st.total;
+        let def = if DEF { e.dfd.as_deref().map(|d| Box::new(d.s.rep.clone())) } else { None };
         Ok(Some(FightResult {
             total,
             dps: if fight != 0.0 { total / fight } else { 0.0 },
@@ -1914,8 +2092,16 @@ impl<'a> Prep<'a> {
             phantom_hits: e.st.phantom_hits,
             hp_left: pymax(e.st.hp, 0.0),
             breakdown: e.breakdown_out(),
+            def,
         }))
     }
+}
+
+/// The driver kinds that are the attacker's own casts (they wait out a
+/// defender's stasis); the rest are ticks and impacts already scheduled.
+#[inline(always)]
+fn is_cast(k: Kind) -> bool {
+    matches!(k, Kind::ECharge | Kind::ERelease | Kind::WCast | Kind::ECast | Kind::RCast)
 }
 
 /// A build's driver and its `Prep`, built together: the driver settles
@@ -2002,6 +2188,27 @@ impl<'a> Sim<'a> {
         #[cfg(debug_assertions)]
         self.check_reset();
         r
+    }
+
+    /// One fight against a defending champion (see `Prep::fight_defended`).
+    pub fn fight_defended(&mut self, target: &Target, dfd: &Defender, opts: Opts,
+                          log: &mut Vec<(f64, f64)>)
+        -> Result<Option<FightResult>, String> {
+        let prep = &self.prep;
+        let r = match &mut self.drv {
+            Rotation::Kayle(d) => prep.fight_defended(d, target, dfd, opts, log),
+            Rotation::Vladimir(d) => prep.fight_defended(d, target, dfd, opts, log),
+            Rotation::Twitch(d) => prep.fight_defended(d, target, dfd, opts, log),
+            Rotation::Kassadin(d) => prep.fight_defended(d, target, dfd, opts, log),
+        };
+        #[cfg(debug_assertions)]
+        self.check_reset();
+        r
+    }
+
+    /// The attacker's setup: its sheet, and where it fights from.
+    pub fn prep(&self) -> &Prep<'a> {
+        &self.prep
     }
 
     /// Debug-only: the fight just moved the driver, so resetting it here and

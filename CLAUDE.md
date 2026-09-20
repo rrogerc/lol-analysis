@@ -183,6 +183,62 @@
   every Kayle/Vladimir/Twitch case replayed bit-identical at 16.17 and
   again at 16.18. Kassadin's tier warmed in 15–28 s (two cold runs). Tests:
   `test_builds.TestKassadinKit`, `TestKassadinEngine`.
+- Survival tier and Dr. Mundo (2026-09-19): tanks rank on how long they
+  last, not on damage. Roger's calls: the tank only takes damage (it never
+  fights back, so lifesteal, omnivamp, Heartsteel's stacks, Thornmail's
+  wounds and Unending Despair's damage count for nothing); the attackers
+  are Kayle and Kassadin with their current best builds (the top row of
+  their `SURVIVAL_ATTACKER_CELL`, full-overall); Mundo is the first tank
+  (`data/builds/drmundo.json`, "role": "tank", numbers from Riot's 16.18
+  bin cross-checked on the wiki). Scenarios `survive-kayle`,
+  `survive-kassadin`, `survive-overall`: 30 s fights ranked by time to die
+  (the kill time; past a survived fight, 30 s + health left / DPS taken);
+  overall = fewer attackers that kill it, then the geometric mean. A
+  survival cell's hash includes its attackers' cell paths, and `tiers()`
+  puts damage tiers first so a warm fills them before it. Engine:
+  `engine/src/defense.rs` is the defender (item `defense` objects in
+  item-effects.json, never read by a damage fight or the damage boots
+  classes; `Guard` = the kit's defenses), wired into `deal` through a
+  `#[cold]` `deal_defended` and into a second copy of the fight loop per
+  driver (`fight_ex<D, const DEF>`); regeneration, heals over time and
+  Death's Dance's bleed are integrated continuously between events with
+  the exact death crossing; stasis holds the attacker's attacks and casts
+  (`hold_until`); resist changes reset the resist memos and max-health
+  changes re-derive what the attacker scaled off it. Mundo: innate regen
+  0.4–2.3% max health/5 s, W at the start and on cooldown (8% current
+  health; 93%/25% grey storage at 16, healed back whole within 325 —
+  Kassadin — or half — Kayle at 625), R at the best of `R_THRESHOLDS`
+  (every 10%, and always to survive a killing blow; +5 points per nearby
+  champion at rank 3, so 30%/65%); Q and E are not cast. The threshold
+  search is exact but runs a probe fight first: thresholds first crossed by
+  the same hit share one fight. `survive.rs` (`SurvCtx`) enumerates on std
+  threads: 45-item `TANK_POOL` (every item with health, armor, MR or a
+  `defense` effect) x 4 defensive boots classes, 7,588,392 builds in about
+  21 s on 16 threads. Modeling choices open to revision: Heartsteel zero
+  stacks; Zhonya's pressed only against a killing blow; Jak'Sho one stack a
+  second (the wiki's strategy line says the first combat grants all five);
+  Frozen Heart multiplies the attacker's total attack speed before the cap
+  (old forum testing); Death's Dance as an even bleed; a spell shield eats
+  the first ability instance; Sterak's decays at a steady rate after 0.75 s.
+  Kassadin keeps no mana regeneration, so many builds outlast his mana — his
+  cell is largely "does he run dry first". Not modeled: crowd control and
+  tenacity, movement, several attackers at once, counter-building. Items'
+  "Base Health Regen" now parses (`hp_regen_pct`, in `ENGINE_IGNORES`).
+  Damage path cost, pinned A/B against the pre-change engine (CPU 2, one
+  thread, a 30-item pool, five interleaved runs): Kayle +0.1%, Kassadin
+  −0.8%, Twitch −2.2%, Vladimir +2.4% — the defended copy of the loop gives
+  each driver's rotation methods a second caller, which costs Vladimir's
+  single-call-site inlining (a runtime flag instead measured +4–7%);
+  damage goldens unchanged. Editing item-effects.json re-keys every cell,
+  so a serve still running unchanged code re-warms (it did during this
+  work). Tests: `TestSurvivalEngine` (every mechanic hand-computed against
+  a clean level-1 Kassadin), `TestSurvivalSearch` (probe = grid),
+  `TestSurvivalEnumeration` (pass = one fight per build),
+  `TestScenarioCache.test_survival_cells`, `TestSurvivalGolden`
+  (`data/builds/golden/survival.json`, `jobs/gen_golden.py --only
+  survival`), `node jobs/test-builds-survival-ui.cjs [--cell file]`.
+  `lol.py builds survive drmundo --items ... --attacker kayle` prints one
+  fight.
 
 ## The One-tricks tab (onetricks.py)
 
@@ -971,7 +1027,9 @@
 - `python3 -m unittest test_scaling` (the Overview rankings payload, whose
   game floors must reach the page's lowest min-games option; in-memory DB).
 - `python3 -m unittest test_onetricks` (pyarrow; builds a small fake crawl).
-- `python3 -m unittest test_builds` (needs the built engine; ~2 s).
+- `python3 -m unittest test_builds` (needs the built engine; ~3 s; the
+  Survival tier's tests included) and `node jobs/test-builds-item-ui.cjs`,
+  `node jobs/test-builds-survival-ui.cjs`.
 - `python3 -m unittest test_tft` (needs the built TFT engine; ~2 s;
   `TFT_GOLDEN_ALL=1` recomputes every golden cell, ~30 s).
 - Theoretical compositions: `python3 -m unittest test_tft_unit_profiles

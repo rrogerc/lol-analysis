@@ -1,11 +1,14 @@
 //! The builds engine: stat sheets, the combat simulation and the
 //! enumeration's inner loop, compiled. builds.py keeps the data loading,
 //! the parent process of the enumeration, the cache and the CLI, and calls
-//! in here through `simulate`, `resolve_sheet`, `geo_mean` and `Ctx`.
+//! in here through `simulate`, `resolve_sheet`, `geo_mean` and `Ctx` — and,
+//! for the Survival tier (a build that takes the damage), `survive` and
+//! `SurvCtx`.
 //!
 //! `SOURCE_HASH` is a sha256 over these sources (build.rs), part of every
 //! cache key: a result is only valid for the code that produced it.
 
+mod defense;
 mod drivers;
 mod enumerate;
 mod fight;
@@ -15,6 +18,7 @@ mod kit;
 mod num;
 mod pyget;
 mod sheet;
+mod survive;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -92,6 +96,10 @@ fn fsum_py(xs: Vec<f64>) -> f64 {
     fsum::fsum(xs)
 }
 
+/// The tank kits whose defensive mechanics defense.rs models (the Survival
+/// tier's defenders): a kit with "role": "tank" needs its slug here.
+const DEFENDERS: [&str; 1] = ["drmundo"];
+
 #[pymodule]
 fn lol_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(simulate, m)?)?;
@@ -99,7 +107,10 @@ fn lol_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(geo_mean, m)?)?;
     m.add_function(wrap_pyfunction!(fsum_py, m)?)?;
     m.add_class::<enumerate::Ctx>()?;
+    m.add_function(wrap_pyfunction!(survive::survive, m)?)?;
+    m.add_class::<survive::SurvCtx>()?;
     m.add("DRIVERS", fight::DRIVERS.to_vec())?;
+    m.add("DEFENDERS", DEFENDERS.to_vec())?;
     m.add("SOURCE_HASH", env!("LOL_ENGINE_SOURCE_HASH"))?;
     m.add("VERSION", env!("CARGO_PKG_VERSION"))?;
     Ok(())

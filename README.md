@@ -91,6 +91,21 @@ module and committed JSON archive:
   `.cache/builds/` (gitignored) under a hash of every input, and `serve`
   runs it in the background whenever a cell is cold, so a code or data
   change just makes cells recompute. Runes are not modeled yet.
+  Tanks rank on the other side of the fight: the **Survival tier**
+  (`builds survive`, `data/builds/drmundo.json`, `engine/src/defense.rs`)
+  turns a tank's build into the target and lets the modeled carries attack
+  it with their current best overall builds — Kayle and Kassadin so far,
+  each run exactly as against a dummy — ranking every build of a 45-item
+  tank pool (every item with health, armor, magic resist or a modeled
+  defensive effect) by how long it lasts. The defender's items act on the
+  damage on its way in (Steelcaps, Randuin's, shields and lifelines,
+  Death's Dance's delay, Jak'Sho and Force of Nature's growing resists,
+  Guardian Angel and Zhonya's stasis, Frozen Heart's slow on the
+  attacker, Spirit Visage, Unending Despair), and its kit's defenses run
+  on its own clock (Dr. Mundo's regeneration, Heart Zapper, and Maximum
+  Dosage at the health threshold that keeps him alive longest). The tank
+  never fights back: lifesteal and omnivamp count for nothing. Dr. Mundo's
+  7.6M builds take about 21 s on 16 cores.
   Math is pinned by hand-computed tests: `python3 -m unittest
   test_builds`.
 
@@ -181,7 +196,10 @@ The tabs:
   warm`, which
   `serve` runs in the background whenever something is cold — `--no-warm`
   turns that off); a cell that isn't computed yet says so and fills in
-  when it lands. Restart serve after editing `builds.py` or `engine/`
+  when it lands. A tank (Dr. Mundo) shows the Survival tier instead:
+  every build's time to die against each attacker's best build, the
+  overall ranking by their geometric mean, and a breakdown of what hit
+  it and what kept it up. Restart serve after editing `builds.py` or `engine/`
   (rebuild first; on the server: commit, or `sudo systemctl restart
   lol-dashboard`) — the tab tells you when it is running older code than
   is on disk.

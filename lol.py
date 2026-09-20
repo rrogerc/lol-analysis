@@ -204,6 +204,20 @@ def main():
                     help="item names, meraki nicknames, or ids")
     sp.set_defaults(func=builds.cmd_sim)
 
+    sp = bdsub.add_parser("survive",
+                          help="how long a tank build lasts against a modeled carry's build")
+    sp.add_argument("name", help="tank champion with a kit encoding: drmundo")
+    sp.add_argument("--items", nargs="*", default=[],
+                    help="the tank's items, boots first (names, nicknames, or ids)")
+    sp.add_argument("--attacker", default="kayle",
+                    help="the attacking champion (default kayle)")
+    sp.add_argument("--attacker-items", nargs="*",
+                    help="its build (default: its best overall build from the dashboard's cache)")
+    sp.add_argument("--level", type=int, default=16)
+    sp.add_argument("--duration", type=float, default=30,
+                    help="fight length in seconds (default 30)")
+    sp.set_defaults(func=builds.cmd_survive)
+
     sp = bdsub.add_parser("warm",
                           help="precompute every dashboard scenario that is cold, cheapest first")
     sp.set_defaults(func=builds.cmd_warm)

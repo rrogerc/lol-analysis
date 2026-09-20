@@ -10,7 +10,9 @@ in the same commit, from the live engine:
 Every build is drawn with fixed seeds, so an unchanged model reproduces the
 files byte for byte. Writes engine-fights.json (a few hundred builds — every
 pool item at least twice, every effect key, hand-picked interactions, five
-targets, the flag variants) and enumerate.json (three enumeration passes).
+targets, the flag variants), enumerate.json (three enumeration passes) and
+survival.json (the Survival tier: Dr. Mundo builds against pinned Kayle and
+Kassadin builds, one fight each with the defender's report, and one pass).
 """
 import argparse
 import json
@@ -70,6 +72,7 @@ SEED_RANDOM = 20260904      # the 150 random legal builds
 SEED_COVERAGE = 20260905    # >=2 builds per pool item
 SEED_LOWLEVEL = 20260906    # level 9 / 11 / 13 builds
 SEED_ENUM_POOL = 20260907   # the 12-item pools for enumerate runs B and C
+SEED_SURVIVAL = 20260919    # the Survival tier's random tank builds
 
 CHAMPIONS = ("kayle", "vladimir", "twitch", "kassadin")
 LOW_LEVELS = (9, 11, 13)
@@ -451,6 +454,97 @@ def gen_enumerate(ctxs, patch):
                 seed_pool=SEED_ENUM_POOL, targets=tg, runs=runs)
 
 
+# ------------------------------------------------------------ survival ----
+# The attackers are pinned here rather than read from the dashboard's cache,
+# so the fixture stands alone: the damage tier's overall winners on
+# 2026-09-19 (item patch 16.18).
+SURVIVAL_ATTACKERS = {
+    "survive-kayle": ("kayle", ["Berserker's Greaves", "Infinity Edge", "Yun Tal Wildarrows",
+                                "Lord Dominik's Regards", "Hexoptics C44", "Umbral Glaive"]),
+    "survive-kassadin": ("kassadin", ["Ionian Boots of Lucidity", "Malignance",
+                                      "Seraph's Embrace", "Cryptbloom", "Actualizer",
+                                      "Muramana"]),
+}
+SURVIVAL_RANDOM = 60
+SURVIVAL_HANDPICKED = [
+    # the tankiest builds of the first warm, then one of every save
+    ["Plated Steelcaps", "Randuin's Omen", "Spirit Visage", "Jak'Sho, The Protean",
+     "Force of Nature", "Protoplasm Harness"],
+    ["Plated Steelcaps", "Randuin's Omen", "Spirit Visage", "Jak'Sho, The Protean",
+     "Frozen Heart", "Guardian Angel"],
+    ["Mercury's Treads", "Warmog's Armor", "Spirit Visage", "Jak'Sho, The Protean",
+     "Kaenic Rookern", "Guardian Angel"],
+    ["Plated Steelcaps", "Warmog's Armor", "Heartsteel", "Death's Dance",
+     "Zhonya's Hourglass", "Sterak's Gage"],
+    ["Mercury's Treads", "Maw of Malmortius", "Banshee's Veil", "Unending Despair",
+     "Thornmail", "Dead Man's Plate"],
+    ["Ionian Boots of Lucidity", "Immortal Shieldbow", "Edge of Night", "Sunfire Aegis",
+     "Titanic Hydra", "Overlord's Bloodmail"],
+    ["Berserker's Greaves"],
+]
+SURVIVAL_ENUM_POOL = ["Warmog's Armor", "Randuin's Omen", "Spirit Visage",
+                      "Jak'Sho, The Protean", "Force of Nature", "Guardian Angel",
+                      "Protoplasm Harness", "Death's Dance", "Kaenic Rookern"]
+
+
+def gen_survival(patch):
+    """Every Survival fight of ~100 Mundo builds (each tank-pool item at least
+    twice, the hand-picked ones, the rest random and legal) against both
+    pinned attackers, with Maximum Dosage searched over R_THRESHOLDS, and one
+    SurvCtx pass over a nine-item pool."""
+    _, pool = B.load_items()
+    effects = B.load_item_effects()
+    groups, caps = B.load_exclusive_groups()
+    idx = B.item_index(pool)
+    rid = lambda n: B.resolve_item(pool, idx, n)
+    kit, champ = B.load_kit("drmundo"), B.load_champion("drmundo")
+    ranks = B.skill_ranks(16, B.kit_max_order(kit))
+    attackers = {}
+    for key, (slug, names) in SURVIVAL_ATTACKERS.items():
+        akit, achamp = B.load_kit(slug), B.load_champion(slug)
+        aids = [rid(n) for n in names]
+        attackers[key] = dict(
+            sheet=B.resolve_stats(achamp, 16, aids, pool, effects, kit=akit), kit=akit,
+            fx=B.merge_effects(aids, effects), level=16,
+            ranks=B.skill_ranks(16, B.kit_max_order(akit)),
+            duration=B.SCENARIOS[key]["duration"])
+    cands = B.tank_pool(kit, effects)
+    rng = random.Random(SEED_SURVIVAL)
+    legal = lambda ids: B.build_is_legal(ids, groups, caps)
+    builds = [[rid(n) for n in names] for names in SURVIVAL_HANDPICKED]
+    for item in cands:  # each item at least twice
+        got = 0
+        while got < 2:
+            rest = rng.sample([i for i in cands if i != item], 4)
+            ids = [rng.choice(B.BOOTS), item, *rest]
+            if legal(ids):
+                builds.append(ids)
+                got += 1
+    while len(builds) < len(SURVIVAL_HANDPICKED) + 2 * len(cands) + SURVIVAL_RANDOM:
+        ids = [rng.choice(B.BOOTS), *rng.sample(cands, 5)]
+        if legal(ids):
+            builds.append(ids)
+    cases = []
+    for n, ids in enumerate(builds):
+        for key, a in attackers.items():
+            r = B.survive(champ, kit, 16, ranks, ids, pool, effects, a)
+            cases.append(dict(id=n, attacker=key, ids=ids,
+                              items=[pool[i]["name"] for i in ids], result=enc(r)))
+    sys.stderr.write("  %d builds x %d attackers\n" % (len(builds), len(attackers)))
+    ecands = [rid(n) for n in SURVIVAL_ENUM_POOL]
+    lists, count = B.enumerate_survival(champ, pool, effects, kit, 16, ranks, attackers,
+                                        ecands, "survive-overall", keep=150, workers=2)
+    run = dict(pool=ecands, keep=150, count=count, overall="survive-overall",
+               lists={k: [dict(key=enc(list(sk)), ids=list(ids),
+                               ttd={a: enc(f[a]["time_to_die"]) for a in f})
+                          for sk, ids, f in rows] for k, rows in lists.items()})
+    return dict(kind="survival", patch=patch, **provenance(),
+                generated_by="jobs/gen_golden.py", seed=SEED_SURVIVAL,
+                thresholds=B.R_THRESHOLDS,
+                attackers={k: dict(champion=s, items=n) for k, (s, n) in SURVIVAL_ATTACKERS.items()},
+                cases=cases, enumerate=run)
+
+
 # ---------------------------------------------------------------- main ----
 def dump(path, obj):
     with open(path, "w") as fh:
@@ -465,12 +559,18 @@ def main():
                     help="random builds per champion; 56 kept the two-champion "
                          "fixture just under 6 MB (three make it 9 MB)")
     ap.add_argument("--out", default=GOLDEN_DIR)
-    ap.add_argument("--only", choices=("fights", "enumerate"))
+    ap.add_argument("--only", choices=("fights", "enumerate", "survival"))
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
     patch, pool, effects, ctxs = contexts()
-    if args.only != "enumerate":
+    if args.only in (None, "survival"):
+        t0 = time.time()
+        obj = gen_survival(patch)
+        size = dump(os.path.join(args.out, "survival.json"), obj)
+        sys.stderr.write("survival.json: %d cases, %.2f MB, %.1fs\n"
+                         % (len(obj["cases"]), size / 1e6, time.time() - t0))
+    if args.only in (None, "fights"):
         t0 = time.time()
         obj, per_kind, per_champ = gen_fights(ctxs, patch, args.random)
         size = dump(os.path.join(args.out, "engine-fights.json"), obj)
@@ -487,7 +587,7 @@ def main():
                          % (len(set(effects) & covered), len(effects), miss))
         sys.stderr.write("  boots seen: %r\n"
                          % sorted(covered & set(B.BOOTS)))
-    if args.only != "fights":
+    if args.only in (None, "enumerate"):
         t0 = time.time()
         obj = gen_enumerate(ctxs, patch)
         size = dump(os.path.join(args.out, "enumerate.json"), obj)

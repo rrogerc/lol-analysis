@@ -40,6 +40,23 @@
     "                   from engage; costIncreasePct is what that window adds to mana costs,",
     "                   paid only by a kit that keeps a mana pool (Kassadin)",
     "  needsMana        stacks or scales on mana: dropped from a manaless champion's pool",
+    "  hpFromItemHpPct  bonus health equal to this % of the health items grant (Warmog's)",
+    "  defense          what the item does for its holder while it TAKES damage — read only",
+    "                   by the Survival tier's defender (engine/src/defense.rs); the damage",
+    "                   fights and the damage-side boots classes never see it:",
+    "    attackDamageReductionPct   basic attacks deal this much less (Steelcaps)",
+    "    critDamageReductionPct     critical strikes deal this much less (Randuin's)",
+    "    deferPct {melee, ranged}, deferS   Death's Dance: share of physical and magic",
+    "                               damage taken as true damage over deferS instead",
+    "    lifeline {thresholdPct, durationS, shield... | bonusHealthByLevel, heal...}",
+    "                               a once-a-fight shield or heal when damage would take",
+    "                               the holder below thresholdPct (magicOnly: Maw)",
+    "    magicShieldMaxHpPct        a magic shield up at the start (Kaenic Rookern)",
+    "    steadfast / voidborn       resists that grow in combat (Force of Nature, Jak'Sho)",
+    "    healShieldAmpPct, regenAmpPct   Spirit Visage",
+    "    drain                      Unending Despair's periodic drain heal",
+    "    attackSpeedSlowPct         Frozen Heart's aura on the attacker",
+    "    revive / stasis / spellShield   Guardian Angel / Zhonya's / Annul",
     "  covers           passive names accounted for (or knowingly irrelevant to",
     "                   damage, per the note), so stat sheets stop listing them"
   ],
@@ -226,9 +243,11 @@
     },
 
     "3157": { "name": "Zhonya's Hourglass", "covers": [],
-              "note": "Stasis is defensive — stats only" },
+              "defense": { "stasis": { "durationS": 2.5 } },
+              "note": "Time Stop (Survival tier): 2.5 s of stasis, pressed the moment a hit would otherwise kill the holder, which it then misses (120 s cooldown: once a fight). Stasis holds the attacker's attacks and casts" },
     "3102": { "name": "Banshee's Veil", "covers": ["Annul"],
-              "note": "spell shield is defensive — stats only" },
+              "defense": { "spellShield": true },
+              "note": "Annul (Survival tier): blocks the first ability damage instance aimed at the holder; its 40 s recharge never comes round inside a fight" },
     "3165": { "name": "Morellonomicon", "covers": ["Grievous Wounds"],
               "note": "anti-heal — no damage vs a dummy" },
     "3137": { "name": "Cryptbloom", "covers": ["Life From Death"],
@@ -316,7 +335,10 @@
       "note": "mana refund not modeled"
     },
     "6673": { "name": "Immortal Shieldbow", "covers": ["Lifeline"],
-              "note": "Lifeline is defensive — stats only" },
+              "defense": { "lifeline": { "thresholdPct": 30, "shieldBase": 400,
+                                         "shieldPerLevelFrom": [9, 30],
+                                         "rangedMult": 0.8, "durationS": 3 } },
+              "note": "Lifeline (Survival tier): damage that would take the holder below 30% health first raises a shield of 400, +30 a level from 9 (640 at 16; 80% for ranged), for 3 s, once a fight (90 s cooldown)" },
     "3139": { "name": "Mercurial Scimitar", "covers": [],
               "note": "Quicksilver active is cleanse — stats only" },
 
@@ -348,7 +370,8 @@
     "6696": { "name": "Axiom Arc", "covers": ["Flux"],
               "note": "ult CD refund is out-of-fight economy — stats only" },
     "3814": { "name": "Edge of Night", "covers": ["Annul"],
-              "note": "spell shield is defensive — stats only" },
+              "defense": { "spellShield": true },
+              "note": "Annul (Survival tier): blocks the first ability damage instance aimed at the holder; its 40 s recharge never comes round inside a fight" },
     "6695": { "name": "Serpent's Fang", "covers": ["Shield Reaver"],
               "note": "the dummy has no shields — stats only" },
     "3179": {
@@ -405,9 +428,13 @@
       "note": "cone splash hits other enemies only; primary-target on-hit modeled"
     },
     "6333": { "name": "Death's Dance", "covers": ["Ignore Pain", "Defy"],
-              "note": "defensive — stats only" },
+              "defense": { "deferPct": { "melee": 30, "ranged": 10 }, "deferS": 3 },
+              "note": "Ignore Pain (Survival tier): 30% (melee holder) / 10% (ranged) of post-mitigation physical and magic damage is taken as true damage over the next 3 s instead, modeled as an even bleed; Defy needs a takedown — nobody dies but the holder here" },
     "3156": { "name": "Maw of Malmortius", "covers": ["Lifeline"],
-              "note": "defensive — stats only" },
+              "defense": { "lifeline": { "thresholdPct": 30, "magicOnly": true,
+                                         "shieldBase": 200, "shieldBonusAdRatio": 1.5,
+                                         "rangedMult": 0.75, "durationS": 3 } },
+              "note": "Lifeline (Survival tier): magic damage that would take the holder below 30% health first raises a 200 (+150% bonus AD; 75% for ranged) magic shield for 3 s, once a fight (90 s cooldown); its omnivamp needs the holder to deal damage" },
     "3073": {
       "name": "Experimental Hexplate",
       "ultimateAbilityHaste": 30,
@@ -452,22 +479,99 @@
       "note": "Feast omnivamp is sustain"
     },
     "3026": { "name": "Guardian Angel", "covers": ["Rebirth"],
-              "note": "defensive — stats only" },
+              "defense": { "revive": { "stasisS": 4, "baseHpPct": 50 } },
+              "note": "Rebirth (Survival tier): lethal damage puts the holder in 4 s of stasis, then back at 50% of base health (300 s cooldown: once a fight). Stasis holds the attacker's attacks and casts; damage-over-time ticks land on nothing" },
     "3158": { "name": "Ionian Boots of Lucidity", "covers": ["Ionian Insight"],
               "note": "summoner spell haste — not damage; the ability haste is a stat" },
     "3009": { "name": "Boots of Swiftness", "covers": ["Fleetfooted"],
               "note": "slow resistance — mobility, not damage" },
     "3047": { "name": "Plated Steelcaps", "covers": ["Plating"],
-              "note": "defensive — stats only" },
+              "defense": { "attackDamageReductionPct": 10 },
+              "note": "Plating: 10% less damage from basic attacks (Riot's bin; the attack itself, not its on-hit riders) — Survival tier only" },
     "3008": { "name": "Gluttonous Greaves", "covers": ["Slay"],
-              "note": "heal on takedown — not damage" }
+              "note": "heal on takedown — not damage" },
+
+    "3083": {
+      "name": "Warmog's Armor",
+      "hpFromItemHpPct": 12,
+      "covers": ["Warmog's Heart", "Warmog's Vitality"],
+      "note": "Vitality: +12% of the health items grant (itself included); Heart only regenerates after 8 s without champion damage — never inside a fight"
+    },
+    "3084": { "name": "Heartsteel", "covers": ["Colossal Consumption", "Goliath"],
+              "note": "assumed ZERO Colossal Consumption stacks (like Mejai's and Hubris); the procs need the holder's own attacks, which a Survival fight never makes; Goliath is size" },
+    "3068": { "name": "Sunfire Aegis", "covers": ["Immolate"],
+              "note": "Immolate deals damage — the Survival tier scores none" },
+    "6664": { "name": "Hollow Radiance", "covers": ["Immolate", "Desolate"],
+              "note": "Immolate and Desolate deal damage — the Survival tier scores none" },
+    "3075": { "name": "Thornmail", "covers": ["Thorns"],
+              "note": "Thorns' reflected damage and Grievous Wounds do nothing to an attacker that neither dies nor heals here" },
+    "3742": { "name": "Dead Man's Plate", "covers": ["Shipwrecker", "Unsinkable"],
+              "note": "Shipwrecker is attack damage, Unsinkable slow resistance — stats only" },
+    "3143": {
+      "name": "Randuin's Omen",
+      "defense": { "critDamageReductionPct": 30 },
+      "covers": ["Resilience"],
+      "note": "Resilience: critical strikes deal 30% less, applied to the crit share of an expected-value hit. Humility (the active slow) is not modeled"
+    },
+    "3065": {
+      "name": "Spirit Visage",
+      "defense": { "healShieldAmpPct": 25, "regenAmpPct": 25 },
+      "covers": ["Boundless Vitality"],
+      "note": "+25% to heals, shields and health regeneration on the holder"
+    },
+    "2502": {
+      "name": "Unending Despair",
+      "defense": { "drain": { "periodS": 4, "bonusHpPct": 3, "healPct": 250, "radius": 650 } },
+      "covers": ["Anguish"],
+      "note": "Anguish: every 4 s of champion combat (first at 4 s), 3% of bonus health as magic damage to each enemy champion within 650 and a heal of 250% of what it dealt after the enemy's magic resist. The damage itself is not scored"
+    },
+    "6665": {
+      "name": "Jak'Sho, The Protean",
+      "defense": { "voidborn": { "afterS": 5, "bonusResistPct": 30 } },
+      "covers": ["Voidborn Resilience"],
+      "note": "a stack per second of champion combat; at 5 the holder's BONUS armor and MR rise 30% until combat ends. The wiki's strategy line says the first instance of combat grants every stack at once — the item text and Riot's MaxStacks 5 say one a second, which is what is modeled"
+    },
+    "4401": {
+      "name": "Force of Nature",
+      "defense": { "steadfast": { "stacks": 8, "stackDurationS": 7, "stackIcdS": 1, "bonusMr": 70 } },
+      "covers": ["Steadfast"],
+      "note": "a stack for magic damage from the champion, at most one a second, each lasting 7 s (refreshed by the next); at 8 stacks +70 MR while they last. The 6% move speed is mobility"
+    },
+    "2504": {
+      "name": "Kaenic Rookern",
+      "defense": { "magicShieldMaxHpPct": 15 },
+      "covers": ["Magebane"],
+      "note": "Magebane: a magic shield of 15% maximum health, up at the start (it rebuilds after 15 s without magic damage — never inside a fight against a magic-damage attacker)"
+    },
+    "2525": {
+      "name": "Protoplasm Harness",
+      "defense": { "lifeline": { "thresholdPct": 30, "durationS": 5,
+                                 "bonusHealthByLevel": { "from": 100, "to": 300, "curve": "linear", "levels": [1, 18] },
+                                 "healByLevel": { "from": 100, "to": 400, "curve": "linear", "levels": [1, 18] },
+                                 "healBonusArmorRatio": 1.75, "healBonusMrRatio": 1.75 } },
+      "covers": ["Lifeline"],
+      "note": "Lifeline: damage that would take the holder below 30% health first grants 100-300 (by level) maximum health for 5 s and heals 100-400 (by level) +175% bonus armor +175% bonus MR over those 5 s, once a fight (90 s cooldown). Riot's 16.18 bin; meraki's text still says 200-300 / 200-400"
+    },
+    "3110": {
+      "name": "Frozen Heart",
+      "defense": { "attackSpeedSlowPct": 20, "radius": 700 },
+      "covers": ["Winter's Caress"],
+      "note": "Winter's Caress: enemy champions within 700 attack 20% slower — the attacker's total attack speed times 0.8 before the 2.5 cap (attack speed debuffs multiply the total, per the old Riot forum testing the wiki cites)"
+    },
+    "3053": {
+      "name": "Sterak's Gage",
+      "defense": { "lifeline": { "thresholdPct": 30, "shieldBonusHpPct": 60,
+                                 "durationS": 4.5, "decayAfterS": 0.75 } },
+      "covers": ["The Claws that Catch", "Lifeline"],
+      "note": "Lifeline: damage that would take the holder below 30% health first raises a shield of 60% bonus health that holds 0.75 s, then decays at a steady rate to nothing at 4.5 s, once a fight (90 s cooldown). The Claws that Catch is attack damage"
+    }
   },
   "excluded": {
     "3172": "Zephyr \u2014 an upgraded boot (builds from Berserker's); excluded with the other tier-3 boots, and the game's Boots group forbids it alongside them anyway",
     "2520": "Bastionbreaker — Shaped Charge's proc cadence isn't published in our sources",
     "2524": "Bandlepipes — CC-conditional team attack-speed aura; support item",
     "4005": "Support items (Imperial Mandate, Ardent Censer, Staff of Flowing Water, Echoes of Helia, Moonstone, Dawncore, Shurelya's, Redemption, Mikael's, Knight's Vow, Zeke's, Locket, Whispering Circlet) — ally-triggered passives; a solo dummy sim gives them nothing",
-    "3068": "Tank items (Sunfire Aegis, Hollow Radiance, Unending Despair, Frozen Heart, Spirit Visage, Protoplasm Harness ...) — out of scope for damage-carry pools; Immolate auras are modelable later",
+    "3068": "Tank items (Sunfire Aegis, Hollow Radiance, Unending Despair, Frozen Heart, Spirit Visage, Protoplasm Harness ...) — not in the damage pool: they rank in the Survival tier's tank pool (TANK_POOL), whose fights score only damage taken; Immolate auras are modelable later",
     "3170": "Swiftmarch — Adaptive Force is rune-layer, not yet modeled",
     "3175": "Spellslinger's Shoes — tier-3 boots need the team-wide Feats of Strength; modeled builds assume no upgraded boots (same for Armored Advance, Chainlaced Crushers, Crimson Lucidity)",
     "3004": "Manamune / 3003 Archangel's — pre-transform tear items; the pool carries their stacked forms (Muramana 3042, Seraph's 3040)"

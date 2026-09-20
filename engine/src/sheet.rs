@@ -34,9 +34,12 @@ pub enum SK {
     MsPct,
     Omnivamp,
     Tenacity,
+    /// "+100% Base Health Regen" (Warmog's, Heartsteel, Kaenic Rookern...):
+    /// read only by a defender (defense.rs), never by a damage fight.
+    HpRegenPct,
 }
 
-pub const SK_COUNT: usize = 20;
+pub const SK_COUNT: usize = 21;
 
 impl SK {
     pub fn parse(name: &str) -> Option<SK> {
@@ -61,6 +64,7 @@ impl SK {
             "ms_pct" => SK::MsPct,
             "omnivamp" => SK::Omnivamp,
             "tenacity" => SK::Tenacity,
+            "hp_regen_pct" => SK::HpRegenPct,
             _ => return None,
         })
     }
@@ -86,6 +90,9 @@ pub struct ChampBase {
     pub crit_damage_base: f64,
     pub move_speed: f64,
     pub attack_range: f64,
+    /// Base health regeneration per 5 s and its growth (a defender's only).
+    pub hp_regen: f64,
+    pub hp_regen_per: f64,
 }
 
 impl ChampBase {
@@ -107,6 +114,8 @@ impl ChampBase {
             crit_damage_base: reqf(d, "crit_damage_base")?,
             move_speed: reqf(d, "move_speed")?,
             attack_range: reqf(d, "attack_range")?,
+            hp_regen: getf(d, "hp_regen", 0.0)?,
+            hp_regen_per: getf(d, "hp_regen_per", 0.0)?,
         })
     }
 }
@@ -163,6 +172,9 @@ pub struct Sheet {
     pub heal_shield_power: f64,
     pub move_speed: f64,
     pub base_attack_range: f64,
+    /// Items' "base health regen" percentages: a defender's only, so it is
+    /// never part of the sheet dict Python sees (`to_py`).
+    pub hp_regen_pct: f64,
 }
 
 impl Sheet {
@@ -202,6 +214,7 @@ impl Sheet {
             heal_shield_power: getf(d, "heal_shield_power", 0.0)?,
             move_speed: reqf(d, "move_speed")?,
             base_attack_range: reqf(d, "base_attack_range")?,
+            hp_regen_pct: getf(d, "hp_regen_pct", 0.0)?,
         })
     }
 
@@ -249,6 +262,8 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
                pact: Option<Pact>) -> Sheet {
     let mut agg = [0.0f64; SK_COUNT];
     let mut ap_mult = 1.0f64;
+    // Warmog's Vitality, gathered on the way (applied below, only if any)
+    let mut hp_amp_pct = 0.0f64;
     let mut pen_armor = 0.0f64;
     let mut pen_magic = 0.0f64;
     for (stats, fx) in items {
@@ -269,11 +284,19 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
         for &(k, v) in &fx.stacked {
             agg[k as usize] += v;
         }
+        hp_amp_pct += fx.hp_from_item_hp_pct;
     }
     agg[SK::ArmorPenPct as usize] = pen_armor;
     agg[SK::MagicPenPct as usize] = pen_magic;
     // Stat-granting passives that need the item totals; all land before the
     // AP multiplier, matching the in-game order.
+    // Warmog's Vitality: bonus health from the health items grant (itself
+    // included), before anything that reads bonus health. Skipped outright
+    // when no item carries it (see the skip-zero note below); one item can,
+    // so the sum is that item's own number.
+    if hp_amp_pct != 0.0 {
+        agg[SK::Hp as usize] += hp_amp_pct / 100.0 * agg[SK::Hp as usize];
+    }
     let base_mana = stat_at(base.mp, base.mp_per, level);
     let mut basic_haste = 0.0f64;
     let mut ult_haste = 0.0f64;
@@ -380,5 +403,6 @@ pub fn resolve(base: &ChampBase, level: i64, items: &[(&[(SK, f64)], &ItemFx)],
         move_speed: (base.move_speed + agg[SK::MsFlat as usize])
             * (1.0 + agg[SK::MsPct as usize] / 100.0),
         base_attack_range: base.attack_range,
+        hp_regen_pct: agg[SK::HpRegenPct as usize],
     }
 }

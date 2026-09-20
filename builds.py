@@ -10,7 +10,9 @@ The plan for this domain, built up in phases:
 
 The numbers (the sheet, the fight, the enumeration's inner loop) are computed
 by the compiled engine in engine/ (Rust, imported as lol_engine — build it
-with jobs/build-engine.sh). This module keeps the data, the parent side of
+with jobs/build-engine.sh). Tanks rank the other way round, in the Survival
+tier: their build is the target and the modeled carries attack it (see the
+Survival section below and engine/src/defense.rs). This module keeps the data, the parent side of
 the enumeration, the cache and the CLI, and wraps the engine's entry points
 with the Python-facing contracts (resolve_stats, simulate, enumerate_builds).
 The fixtures under data/builds/golden pin the engine's output bit for bit.
@@ -241,8 +243,11 @@ DD_STAT_NAMES = {
     ("Tenacity", True): ("tenacity", "percent"),
     ("Heal and Shield Power", False): ("healAndShieldPower", "flat"),
     ("Heal and Shield Power", True): ("healAndShieldPower", "flat"),
+    # "+100% Base Health Regen" (Warmog's, Heartsteel, Kaenic Rookern, ...):
+    # the Survival tier's defender regenerates; no damage fight reads it
+    ("Base Health Regen", True): ("healthRegen", "percent"),
 }
-DD_STAT_IGNORED = ("Base Health Regen", "Base Mana Regen", "Gold Per 10")
+DD_STAT_IGNORED = ("Base Mana Regen", "Gold Per 10")
 
 
 def parse_dd_stats(description):
@@ -592,9 +597,10 @@ ITEM_STAT_MAP = {
     ("movespeed", "percent"): "ms_pct",
     ("omnivamp", "percent"): "omnivamp",
     ("tenacity", "percent"): "tenacity",
+    ("healthRegen", "percent"): "hp_regen_pct",
 }
 IGNORED_ITEM_STATS = {("goldPer10", "flat"), ("healthRegen", "flat"),
-                      ("healthRegen", "percent"), ("manaRegen", "percent")}
+                      ("manaRegen", "percent")}
 
 
 def champ_base(champ):
@@ -625,7 +631,9 @@ def champ_base(champ):
         as_ratio=mk.get("attackSpeedRatio", {}).get("flat", dd["attackspeed"]),
         # 175% base crit damage; items with criticalStrikeDamage add to it
         crit_damage_base=mk.get("criticalStrikeDamage", {}).get("flat", 175.0),
-        move_speed=dd["movespeed"], attack_range=dd["attackrange"])
+        move_speed=dd["movespeed"], attack_range=dd["attackrange"],
+        # per 5 s: only a defender (the Survival tier) regenerates
+        hp_regen=dd.get("hpregen", 0.0), hp_regen_per=dd.get("hpregenperlevel", 0.0))
 
 
 def stat_pairs(item):
@@ -784,7 +792,25 @@ SCENARIOS = {
                       targetBonusHp=1500),
     "full-overall": dict(label="Full build — overall", tier="full",
                          overall=True, level=16),
+    # The Survival tier: a tank's build takes the damage instead. Each
+    # scenario is one of the modeled carries attacking with its current best
+    # build (the top row of its SURVIVAL_ATTACKER_CELL); the tank is ranked
+    # on how long it lasts. Mundo only takes damage here (no fighting back):
+    # see data/builds/drmundo.json and engine/src/defense.rs.
+    "survive-kayle": dict(label="Survive Kayle", tier="survive",
+                          attacker="kayle", level=16, duration=30),
+    "survive-kassadin": dict(label="Survive Kassadin", tier="survive",
+                             attacker="kassadin", level=16, duration=30),
+    "survive-overall": dict(label="Survival — overall", tier="survive",
+                            overall=True, level=16),
 }
+
+# the damage cell whose top row is a Survival attacker's build
+SURVIVAL_ATTACKER_CELL = "full-overall"
+# Maximum Dosage-style ults are cast at the health threshold that keeps the
+# tank alive longest: each of these (share of maximum health a hit leaves
+# it at or below), and always when a hit would otherwise kill it
+R_THRESHOLDS = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 
 
 def tier_scenarios(tier):
@@ -793,38 +819,82 @@ def tier_scenarios(tier):
 
 
 def tier_targets(tier):
-    """The scenario keys a tier's builds are simulated against."""
+    """The scenario keys a tier's builds are simulated against (for the
+    Survival tier: the attackers they face)."""
     return [k for k in tier_scenarios(tier) if not SCENARIOS[k].get("overall")]
+
+
+def tier_objective(tier):
+    """'survival' for a tier whose scenarios attack the build (tank kits,
+    ranked on how long they last), else 'damage'."""
+    return ("survival" if any("attacker" in SCENARIOS[k] for k in tier_targets(tier))
+            else "damage")
+
+
+def tier_champions(tier):
+    """The champions a tier ranks builds for: tank kits on a survival tier,
+    damage kits everywhere else."""
+    return tank_champions() if tier_objective(tier) == "survival" else kit_champions()
 
 
 def tiers():
     """Tier keys cheapest first: budget presets before full builds (they
     reject nearly every combination before simulating it), shorter total
-    fight length first."""
+    fight length first — and every damage tier before any survival tier,
+    whose attackers are damage cells' winners."""
     def cost(tier):
         ts = tier_targets(tier)
-        return (SCENARIOS[ts[0]].get("budget") is None,
+        return (tier_objective(tier) == "survival",
+                SCENARIOS[ts[0]].get("budget") is None,
                 sum(SCENARIOS[k]["duration"] for k in ts))
     return sorted(dict.fromkeys(sc["tier"] for sc in SCENARIOS.values()),
                   key=cost)
 
 
-def kit_champions():
-    """Slugs with a hand-encoded kit (data/builds/<slug>.json) and the
-    rotation logic that drives it (KIT_DRIVERS)."""
-    slugs = []
+def _kits(role):
+    """(slug, kit) for every hand-encoded kit (data/builds/<slug>.json) of
+    one role: "carry" (the default — scored on the damage it deals) or
+    "tank" (scored on how long it survives, the Survival tier)."""
+    out = []
     if os.path.isdir(BUILDS_DATA_DIR):
         for fn in sorted(os.listdir(BUILDS_DATA_DIR)):
             if not fn.endswith(".json"):
                 continue
             with open(os.path.join(BUILDS_DATA_DIR, fn)) as f:
-                if "abilities" not in json.load(f):
-                    continue
-            if fn[:-5] not in KIT_DRIVERS:
-                print(f"Warning: data/builds/{fn} has no engine driver — add "
-                      f"one in engine/src/drivers.rs to simulate it", file=sys.stderr)
-                continue
-            slugs.append(fn[:-5])
+                kit = json.load(f)
+            if "abilities" in kit and kit.get("role", "carry") == role:
+                out.append((fn[:-5], kit))
+    return out
+
+
+def kit_champions():
+    """Slugs with a hand-encoded damage kit (data/builds/<slug>.json) and
+    the rotation logic that drives it (KIT_DRIVERS)."""
+    slugs = []
+    for slug, _ in _kits("carry"):
+        if slug not in KIT_DRIVERS:
+            print(f"Warning: data/builds/{slug}.json has no engine driver — add "
+                  f"one in engine/src/drivers.rs to simulate it", file=sys.stderr)
+            continue
+        slugs.append(slug)
+    return slugs
+
+
+# the tank kits whose defensive mechanics the engine models (defense.rs)
+TANK_KITS = tuple(lol_engine.DEFENDERS)
+
+
+def tank_champions():
+    """Slugs with a hand-encoded tank kit ("role": "tank") the engine can
+    defend with (TANK_KITS): the Survival tier's champions."""
+    slugs = []
+    for slug, _ in _kits("tank"):
+        if slug not in TANK_KITS:
+            print(f"Warning: data/builds/{slug}.json is a tank kit the engine "
+                  f"cannot defend with — add it to engine/src/defense.rs",
+                  file=sys.stderr)
+            continue
+        slugs.append(slug)
     return slugs
 
 
@@ -840,6 +910,8 @@ def api_builds_meta():
     patch, pool = load_items()
     effects = load_item_effects()
     champs = []
+    damage_tiers = [t for t in tiers() if tier_objective(t) == "damage"]
+    survival_tiers = [t for t in tiers() if tier_objective(t) == "survival"]
     for slug in kit_champions():
         kit = load_kit(slug)
         ids = champion_pool(kit, effects)
@@ -855,12 +927,28 @@ def api_builds_meta():
                          "fire, so those items rank on their raw stats alone.")
         champs.append({
             "slug": slug, "name": name, "kitPatch": kit.get("patch"),
+            "objective": "damage",
+            "scenarios": [k for t in damage_tiers for k in tier_scenarios(t)],
             "pool": ids,
             "excluded": [f"{', '.join(dropped)} — need mana to stack or "
                          f"scale; {name} has none"] if dropped else [],
             "notes": notes,
         })
 
+    for slug in tank_champions():
+        kit = load_kit(slug)
+        ids = tank_pool(kit, effects)
+        name = kit.get("name", slug)
+        dropped = [pool[i]["name"] for i in TANK_POOL if i not in ids and i in pool]
+        champs.append({
+            "slug": slug, "name": name, "kitPatch": kit.get("patch"),
+            "objective": "survival",
+            "scenarios": [k for t in survival_tiers for k in tier_scenarios(t)],
+            "pool": ids,
+            "excluded": [f"{', '.join(dropped)} — need mana to stack or "
+                         f"scale; {name} has none"] if dropped else [],
+            "notes": list(kit.get("notes", [])),
+        })
     def entry(iid):
         return {"id": iid, "name": pool[iid]["name"],
                 "gold": pool[iid]["shop"]["prices"]["total"]}
@@ -885,16 +973,24 @@ def api_builds_meta():
                         f"ddragon still carries the data")
     return {
         "champions": champs,
-        "scenarios": [{"key": k, **v} for k, v in SCENARIOS.items()],
+        "scenarios": [{"key": k, **v, "objective": tier_objective(v["tier"])}
+                      for k, v in SCENARIOS.items()],
         "pool": sorted((entry(i) for i in DEFAULT_POOL),
                        key=lambda e: e["name"]),
+        "tankPool": sorted((entry(i) for i in TANK_POOL if i in pool),
+                           key=lambda e: e["name"]),
         "boots": [entry(i) for i in BOOTS],
         # icons and tooltips for every item a row can carry
-        "items": item_catalog(patch, pool, effects, DEFAULT_POOL + BOOTS),
+        "items": item_catalog(patch, pool, effects,
+                              list(dict.fromkeys(DEFAULT_POOL + TANK_POOL + BOOTS))),
         "excluded": excluded,
         "itemsPatch": patch,
         "note": "Theoretical damage model — deterministic sim, expected-value "
                 "crit, damage only. Runes are not modeled yet.",
+        "survivalNote": "Survival model — the tank takes the damage and never "
+                        "fights back: each attacker is a modeled carry with its "
+                        "current best build, and a build ranks on how long it "
+                        "lasts. Runes are not modeled yet.",
     }
 
 
@@ -961,8 +1057,7 @@ def cells():
     builds against each of its targets (three to five fights per item
     combination and target: boots that fight alike share one, and most
     fights stop early once the build can't place)."""
-    champs = kit_champions()
-    return [(slug, key) for tier in tiers() for slug in champs
+    return [(slug, key) for tier in tiers() for slug in tier_champions(tier)
             for key in tier_scenarios(tier)]
 
 
@@ -983,16 +1078,26 @@ def cell_paths():
     base.update(json.dumps([patch, DEFAULT_POOL, BOOTS, pool],
                            sort_keys=True).encode())
     paths = {}
-    for slug in kit_champions():
-        h_champ = base.copy()
-        with open(os.path.join(BUILDS_DATA_DIR, f"{slug}.json"), "rb") as f:
-            h_champ.update(f.read())
-        h_champ.update(json.dumps(load_champion(slug), sort_keys=True).encode())
-        for tier in tiers():
-            keys = tier_scenarios(tier)
-            h = h_champ.copy()
+    champs = {}
+    # damage tiers come first (tiers()): a survival cell keys on the paths of
+    # its attackers' cells, which name everything their top build depends on
+    for tier in tiers():
+        keys = tier_scenarios(tier)
+        for slug in tier_champions(tier):
+            if slug not in champs:
+                h_champ = base.copy()
+                with open(os.path.join(BUILDS_DATA_DIR, f"{slug}.json"), "rb") as f:
+                    h_champ.update(f.read())
+                h_champ.update(json.dumps(load_champion(slug), sort_keys=True).encode())
+                champs[slug] = h_champ
+            h = champs[slug].copy()
             h.update(json.dumps([[k, SCENARIOS[k]] for k in keys],
                                 sort_keys=True).encode())
+            if tier_objective(tier) == "survival":
+                h.update(json.dumps([TANK_POOL, R_THRESHOLDS]).encode())
+                for k in tier_targets(tier):
+                    h.update(paths[(SCENARIOS[k]["attacker"],
+                                    SURVIVAL_ATTACKER_CELL)].encode())
             for key in keys:
                 paths[(slug, key)] = os.path.join(
                     SCENARIO_CACHE_DIR,
@@ -1202,6 +1307,8 @@ def compute_tier(slug, tier, paths, log=None):
     their own fight's numbers flat, and the overall cell adds `mean` (the
     geometric mean it is ranked by) and `kills`."""
     import time
+    if tier_objective(tier) == "survival":
+        return compute_survival_tier(slug, tier, paths, log=log)
     t0 = time.time()
     keys = tier_scenarios(tier)
     targets = {k: SCENARIOS[k] for k in tier_targets(tier)}
@@ -1360,8 +1467,7 @@ def warm(log=_say):
                              os.path.basename(path))
             if m and (m.group(1), m.group(2)) not in paths:
                 os.remove(path)
-        champs = kit_champions()
-        cold = [(slug, tier) for tier in tiers() for slug in champs
+        cold = [(slug, tier) for tier in tiers() for slug in tier_champions(tier)
                 if any(not os.path.exists(paths[(slug, k)])
                        for k in tier_scenarios(tier))]
         done = 0
@@ -1688,9 +1794,13 @@ _ENUM_CTX = None  # set before forking workers; children inherit via fork
 # fight is the same whatever they are. Move speed is NOT one of them —
 # Energized items charge with movement.
 ENGINE_IGNORES = frozenset({"armor", "mr", "tenacity", "lifesteal", "omnivamp",
-                            "heal_shield_power"})
+                            "heal_shield_power", "hp_regen_pct"})
 # item-effects.json fields that describe an entry rather than model anything
 EFFECT_META = ("name", "covers", "note")
+# fields only the Survival tier's defender reads (engine/src/defense.rs):
+# what an item does while its holder takes damage. A damage fight never sees
+# them, so they never tell the damage tier's boots apart
+DEFENSE_ONLY_FX = ("defense", "hpFromItemHpPct")
 
 
 def boots_classes(pool, effects, boots=None, ignores=ENGINE_IGNORES):
@@ -1710,7 +1820,7 @@ def boots_classes(pool, effects, boots=None, ignores=ENGINE_IGNORES):
             for key in [ITEM_STAT_MAP.get((stat, field))]
             if key and key not in ignores))
         modeled = {k: v for k, v in effects.get(b, {}).items()
-                   if k not in EFFECT_META}
+                   if k not in EFFECT_META and k not in DEFENSE_ONLY_FX}
         sig = (stats, json.dumps(modeled, sort_keys=True))
         classes.setdefault(sig, []).append(b)
     return list(classes.values())
@@ -2090,6 +2200,352 @@ def enumerate_builds(champ, pool, effects, kit, level, ranks, targets,
             rows.append((ids, sheets[t_ids], fought[id(rs)]))
         lists[k] = rows
     return lists, count
+
+
+# ---------------------------------------------------------------------------
+# the Survival tier: a tank build takes the damage
+#
+# The attackers are the modeled carries with their current best builds (the
+# top row of their SURVIVAL_ATTACKER_CELL), fought exactly as against a
+# dummy; the target is the tank's build instead — its health and resists,
+# and everything its items and kit do while it takes damage
+# (engine/src/defense.rs). Builds rank on the attacker's kill time, longest
+# first; the overall cell on how many attackers kill the build, then the
+# geometric mean of the times (the damage tier's overall key, turned
+# around). The tank never fights back: lifesteal, omnivamp and anything else
+# that needs its own hits count for nothing.
+# ---------------------------------------------------------------------------
+
+# The Survival tier's pool: every item that does something for its holder
+# while it takes damage — health, armor or magic resist, or a modeled
+# defensive effect (item-effects.json's `defense`). An item with none of
+# those adds nothing to how long a build lasts, so it can't make a tankiest
+# build: every such build loses to the same one with a defensive item in
+# its place.
+TANK_POOL = [
+    # --- tank items (not in the damage pool) ---
+    3083,  # Warmog's Armor
+    3084,  # Heartsteel (assumed zero stacks)
+    3068,  # Sunfire Aegis
+    6664,  # Hollow Radiance
+    3075,  # Thornmail
+    3742,  # Dead Man's Plate
+    3143,  # Randuin's Omen
+    3065,  # Spirit Visage
+    2502,  # Unending Despair
+    6665,  # Jak'Sho, The Protean
+    4401,  # Force of Nature
+    2504,  # Kaenic Rookern
+    2525,  # Protoplasm Harness
+    3110,  # Frozen Heart
+    3053,  # Sterak's Gage
+    # --- from the damage pool: defensive stats or effects ---
+    8020,  # Abyssal Mask
+    3102,  # Banshee's Veil (spell shield)
+    3071,  # Black Cleaver
+    8010,  # Bloodletter's Curse
+    6609,  # Chempunk Chainsword
+    4629,  # Cosmic Drive
+    6333,  # Death's Dance (Ignore Pain)
+    2510,  # Dusk and Dawn
+    3814,  # Edge of Night (spell shield)
+    3073,  # Experimental Hexplate
+    3026,  # Guardian Angel (revive)
+    3152,  # Hextech Rocketbelt
+    3181,  # Hullbreaker
+    6662,  # Iceborn Gauntlet
+    6653,  # Liandry's Torment
+    3156,  # Maw of Malmortius (lifeline)
+    3139,  # Mercurial Scimitar
+    3165,  # Morellonomicon
+    2501,  # Overlord's Bloodmail
+    4633,  # Riftmaker
+    6657,  # Rod of Ages (assumed fully stacked)
+    3116,  # Rylai's Crystal Scepter
+    3161,  # Spear of Shojin
+    6631,  # Stridebreaker
+    6610,  # Sundered Sky
+    3748,  # Titanic Hydra
+    3078,  # Trinity Force
+    3091,  # Wit's End
+    3157,  # Zhonya's Hourglass (stasis)
+    6673,  # Immortal Shieldbow (lifeline)
+]
+# the stats a Survival fight reads off the tank's own sheet (with the
+# `defense` overlay): boots that differ in nothing else fight alike
+DEFENSE_STATS = frozenset({"hp", "armor", "mr", "haste", "hp_regen_pct"})
+
+
+def tank_pool(kit, effects):
+    """The Survival pool for one tank: TANK_POOL minus the items the kit
+    can't use (mana-stacking items on a manaless champion)."""
+    return [i for i in TANK_POOL
+            if not (kit.get("manaless") and effects.get(i, {}).get("needsMana"))]
+
+
+def survival_boots_classes(pool, effects, boots=None):
+    """BOOTS grouped by what a Survival fight reads of them: defensive
+    stats and the `defense` overlay. Everything else (attack speed, move
+    speed, penetration, omnivamp) does nothing for a tank that never
+    attacks, so Berserker's, Sorcerer's, Swiftness and Gluttonous fight
+    alike."""
+    classes = {}
+    for b in (BOOTS if boots is None else boots):
+        stats = tuple(sorted((k, v) for k, v in stat_pairs(pool[b])
+                             if k in DEFENSE_STATS))
+        sig = (stats, json.dumps(effects.get(b, {}).get("defense"), sort_keys=True))
+        classes.setdefault(sig, []).append(b)
+    return list(classes.values())
+
+
+def survival_attacker(key, paths, pool, effects):
+    """The attacker of Survival scenario `key`, as the engine fights it —
+    its sheet, kit, effects, level, ranks and the fight's length — and what
+    the dashboard says about it. Its build is the top row of its
+    SURVIVAL_ATTACKER_CELL, which has to be computed already (damage tiers
+    warm first)."""
+    sc = SCENARIOS[key]
+    slug = sc["attacker"]
+    cell = cached_scenario(slug, SURVIVAL_ATTACKER_CELL, paths)
+    if cell is None or not cell.get("rows"):
+        raise RuntimeError(f"{slug}/{SURVIVAL_ATTACKER_CELL} is not computed yet: "
+                           f"the Survival tier fights its top build")
+    kit = load_kit(slug)
+    champ = load_champion(slug)
+    by_name = {pool[i]["name"]: i for i in [*champion_pool(kit, effects), *BOOTS]
+               if i in pool}
+    names = cell["rows"][0]["items"]
+    ids = [by_name[n] for n in names]
+    level = SCENARIOS[SURVIVAL_ATTACKER_CELL]["level"]
+    ranks = skill_ranks(level, kit_max_order(kit))
+    sheet = resolve_stats(champ, level, ids, pool, effects, kit=kit)
+    fight = dict(sheet=sheet, kit=kit, fx=merge_effects(ids, effects), level=level,
+                 ranks=ranks, duration=sc["duration"])
+    meta = dict(key=key, champion=slug, name=kit.get("name", slug), items=names,
+                level=level, duration=sc["duration"],
+                mean=cell["rows"][0].get("mean"))
+    return fight, meta
+
+
+def survival_defender(champ, kit, level, ranks):
+    """The tank as the engine's defender takes it: base stats, level, ranks
+    and kit (its items come per build)."""
+    return dict(base=champ_base(champ), level=level, ranks=ranks, kit=kit)
+
+
+def survive(champ, kit, level, ranks, ids, pool, effects, attacker,
+            thresholds=None, breakdown=True):
+    """One Survival fight: `attacker` (survival_attacker's fight dict)
+    against the tank `champ`/`kit` holding `ids` (boots first). Returns the
+    fight dict — `simulate`'s keys, plus `time_to_die`, `defense` (what the
+    tank's side did) and `sheet` — with Maximum Dosage at the best of
+    `thresholds` (default R_THRESHOLDS)."""
+    items = [(stat_pairs(pool[i]), effects.get(i, {})) for i in ids]
+    return lol_engine.survive(
+        attacker, survival_defender(champ, kit, level, ranks), items,
+        list(R_THRESHOLDS if thresholds is None else thresholds), breakdown)
+
+
+def enumerate_survival(champ, pool, effects, kit, level, ranks, attackers,
+                       candidates, overall, keep=CACHED_ROWS, workers=0,
+                       thresholds=None):
+    """Rank every boots + five-item build of `candidates` on how long it
+    lasts against each of `attackers` ({scenario key: survival_attacker
+    fight dict}), in one pass on the engine's threads. Returns ({key:
+    [(sort key, ids, {attacker key: fight dict})]}, builds ranked): one list
+    per attacker and one under `overall`, best (longest-lived) first, the
+    kept rows fought again in full. Boots of one survival_boots_classes
+    class share their fights."""
+    free = list(candidates)
+    ids = set(free) | set(BOOTS)
+    items = {i: (stat_pairs(pool[i]), effects.get(i, {}),
+                 pool[i]["shop"]["prices"]["total"]) for i in ids}
+    groups, caps = load_exclusive_groups()
+    ctx = lol_engine.SurvCtx(
+        survival_defender(champ, kit, level, ranks), items,
+        {i: list(groups.get(i, ())) for i in ids}, dict(caps), free,
+        survival_boots_classes(pool, effects), _enum_order(free),
+        list(attackers.items()), keep, 6,
+        list(R_THRESHOLDS if thresholds is None else thresholds))
+    return ctx.run(overall, workers)
+
+
+def time_to_die(f):
+    """A Survival fight's ranking time: the kill time, or past a fight the
+    tank survived, the time the damage it took would have needed."""
+    return f["time_to_die"]
+
+
+def _surv_row(f, best):
+    """One Survival fight's numbers for a row's `vs` map. `share` is the
+    time to die as a share of the attacker's longest-lived build's (1.0 =
+    the tankiest)."""
+    ttd = time_to_die(f)
+    d = f.get("defense") or {}
+    return {
+        "ttd": round(ttd, 2) if math.isfinite(ttd) else None,
+        "died": f["ttk"] is not None,
+        "ttkEff": round(f["ttk_eff"], 3) if f["ttk_eff"] is not None else None,
+        "share": round(ttd / best, 4) if best and math.isfinite(ttd) and math.isfinite(best) else None,
+        "hpLeft": round(f["hp_left"]),
+        "taken": round(f["total"]), "dps": round(f["dps"]),
+        "attacks": f["attacks"],
+        "breakdown": {k: round(v) for k, v in f["breakdown"].items()},
+        "threshold": f.get("threshold"),
+        "defense": {k: (round(v, 2) if isinstance(v, float) and k.endswith("At")
+                        else round(v) if isinstance(v, float) else v)
+                    for k, v in d.items() if k != "rThreshold"},
+    }
+
+
+def compute_survival_tier(slug, tier, paths, log=None):
+    """compute_tier for a Survival tier: every build of the tank's pool
+    against each attacker in one pass, written to every cell of the tier.
+    Rows carry the build's fight against every attacker under `vs` (keyed by
+    the attacker's slug); per-attacker cells also keep their own fight's
+    numbers flat, and the overall cell adds `mean` (the geometric mean of
+    the times to die it is ranked by) and `survived`."""
+    import time
+    t0 = time.time()
+    keys = tier_scenarios(tier)
+    targets = tier_targets(tier)
+    overall = next(k for k in keys if SCENARIOS[k].get("overall"))
+    level = SCENARIOS[keys[0]]["level"]
+    champ = load_champion(slug)
+    patch, pool = load_items()
+    effects = load_item_effects()
+    kit = load_kit(slug)
+    ranks = skill_ranks(level, kit_max_order(kit))
+    attackers, meta = {}, []
+    for k in targets:
+        fight, m = survival_attacker(k, paths, pool, effects)
+        attackers[k] = fight
+        meta.append(m)
+    if log:
+        log("  vs " + "; ".join(f"{m['name']}: {', '.join(m['items'])}" for m in meta))
+    lists, count = enumerate_survival(champ, pool, effects, kit, level, ranks,
+                                      attackers, tank_pool(kit, effects), overall)
+    secs = round(time.time() - t0, 1)
+    best = {}
+    for k in targets:
+        ttds = [time_to_die(fs[k]) for lst in lists.values() for _, _, fs in lst]
+        best[k] = max(ttds) if ttds else None
+    when = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    sheets = {}
+    outs = {}
+    for key in keys:
+        sc = SCENARIOS[key]
+        rows = []
+        for n, (_, ids, fights) in enumerate(lists[key][:CACHED_ROWS], 1):
+            # the TANK's own sheet, for the row's health and resists (the
+            # damage tier's fights never read a target's sheet)
+            if tuple(ids) not in sheets:
+                sheets[tuple(ids)] = resolve_stats(champ, level, ids, pool, effects, kit=kit)
+            tank = sheets[tuple(ids)]
+            row = {"rank": n, "items": [pool[i]["name"] for i in ids],
+                   "gold": tank["gold"], "hp": round(tank["hp"]),
+                   "armor": round(tank["armor"]), "mr": round(tank["mr"]),
+                   "vs": {SCENARIOS[k]["attacker"]: _surv_row(fights[k], best[k])
+                          for k in targets}}
+            if sc.get("overall"):
+                ttds = [time_to_die(fights[k]) for k in targets]
+                row["survived"] = sum(fights[k]["ttk"] is None for k in targets)
+                row["mean"] = (round(geo_mean(ttds), 2)
+                               if all(math.isfinite(x) for x in ttds) else None)
+            else:
+                row.update({k: v for k, v in
+                            _surv_row(fights[key], best[key]).items()
+                            if k in ("ttd", "died", "ttkEff", "hpLeft", "taken",
+                                     "dps", "breakdown", "threshold", "defense")})
+            rows.append(row)
+        outs[key] = {
+            "champion": slug, "championName": kit.get("name", slug),
+            "objective": "survival",
+            "scenario": {"key": key, **sc, "objective": "survival",
+                         "attackers": meta},
+            "itemsPatch": patch, "championPatch": champ["meta"]["patch"],
+            "kitPatch": kit.get("patch"), "buildsEvaluated": count,
+            "ranks": ranks, "rows": rows,
+            "computedAt": when, "computeSeconds": secs}
+    os.makedirs(SCENARIO_CACHE_DIR, exist_ok=True)
+    for key, out in outs.items():
+        path = paths[(slug, key)]
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(out, f, separators=(",", ":"), allow_nan=False)
+        os.replace(tmp, path)
+        for old in glob.glob(os.path.join(SCENARIO_CACHE_DIR,
+                                          f"{slug}-{key}-*.json")):
+            if old != path:
+                os.remove(old)
+    return outs
+
+
+def cmd_survive(args):
+    slug = norm_name(args.name)
+    kit = load_kit(slug)
+    if kit.get("role") != "tank":
+        sys.exit(f"{kit.get('name', slug)} is not a tank kit — `builds sim` "
+                 f"scores the damage a build deals")
+    champ = load_champion(slug)
+    patch, pool = load_items()
+    effects = load_item_effects()
+    idx = item_index(pool)
+    ids = [resolve_item(pool, idx, t) for t in args.items]
+    ranks = skill_ranks(args.level, kit_max_order(kit))
+    aslug = norm_name(args.attacker)
+    akit, achamp = load_kit(aslug), load_champion(aslug)
+    if args.attacker_items:
+        aids = [resolve_item(pool, idx, t) for t in args.attacker_items]
+    else:
+        cell = cached_scenario(aslug, SURVIVAL_ATTACKER_CELL)
+        if cell is None:
+            sys.exit(f"{aslug}/{SURVIVAL_ATTACKER_CELL} is not computed — run "
+                     f"`lol.py builds warm`, or pass --attacker-items")
+        by_name = {pool[i]["name"]: i for i in [*champion_pool(akit, effects), *BOOTS]}
+        aids = [by_name[n] for n in cell["rows"][0]["items"]]
+    alevel = SCENARIOS[SURVIVAL_ATTACKER_CELL]["level"]
+    attacker = dict(
+        sheet=resolve_stats(achamp, alevel, aids, pool, effects, kit=akit), kit=akit,
+        fx=merge_effects(aids, effects), level=alevel,
+        ranks=skill_ranks(alevel, kit_max_order(akit)), duration=args.duration)
+    r = survive(champ, kit, args.level, ranks, ids, pool, effects, attacker)
+    s, d = r["sheet"], r["defense"]
+    print(f"{kit.get('name', slug)} lvl {args.level} "
+          f"(Q{ranks['Q']} W{ranks['W']} E{ranks['E']} R{ranks['R']}): "
+          f"{s['hp']:.0f} hp, {s['armor']:.0f} armor, {s['mr']:.0f} mr")
+    if ids:
+        print(f"Items: {', '.join(pool[i]['name'] for i in ids)}")
+    print(f"vs {akit.get('name', aslug)} lvl {alevel}: "
+          f"{', '.join(pool[i]['name'] for i in aids)}\n")
+    if r["ttk"] is not None:
+        print(f"  dies at {r['ttk']:.2f}s")
+    else:
+        print(f"  alive at {args.duration:g}s with {r['hp_left']:.0f} hp "
+              f"(≈{r['time_to_die']:.1f}s at the pace it took damage)")
+    if d.get("rAt") is not None:
+        why = (f"at or below {d['rThreshold']:.0%} health" if d.get("rThreshold")
+               else "when a hit would have killed")
+        print(f"  Maximum Dosage at {d['rAt']:.2f}s ({why}): +{d['rBaseHealth']:.0f} "
+              f"base health, {d['healedR']:.0f} healed")
+    lines = [("taken", "damage taken (after reductions)"), ("hpLost", "health lost"),
+             ("hpSpent", "health spent on casts"), ("regen", "regenerated"),
+             ("healedW", "Heart Zapper healed"), ("healedDrain", "Unending Despair healed"),
+             ("healedLifeline", "Protoplasm healed"), ("shieldMagic", "magic shield absorbed"),
+             ("shieldLifeline", "lifeline shield absorbed"), ("deferred", "deferred (Death's Dance)"),
+             ("blocked", "blocked (spell shield)"), ("negated", "negated in stasis"),
+             ("reducedAttack", "Steelcaps took off"), ("reducedCrit", "Randuin's took off")]
+    for key, label in lines:
+        if d.get(key):
+            print(f"  {label:<32} {d[key]:>8.0f}")
+    for key, label in (("lifelineAt", "lifeline"), ("zhonyaAt", "Zhonya's"),
+                       ("reviveAt", "Guardian Angel"), ("voidbornAt", "Jak'Sho"),
+                       ("steadfastAt", "Force of Nature")):
+        if d.get(key) is not None:
+            print(f"  {label} at {d[key]:.2f}s")
+    print(f"\n  what hit {kit.get('name', slug)}:")
+    for src, dmg in r["breakdown"].items():
+        print(f"  {src:<12} {dmg:>8.0f}  {dmg / r['total'] * 100:>5.1f}%")
 
 
 def cmd_optimize(args):

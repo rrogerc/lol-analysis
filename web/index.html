@@ -654,6 +654,7 @@
   <div class="card">
     <h2 id="builds-title">Ranked builds — theoretical damage model</h2>
     <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
+    <div class="hint" id="builds-note-survival" hidden>First-principles survival model for tanks, no match data. The tank takes the damage and never fights back. Each attacker is one of the modeled carries with its current best overall build, fought exactly as in the damage ranking; the target is the tank's build, with its health, armor, magic resist, and everything its items and kit do while it takes damage. That covers damage reductions, shields, Death's Dance's delay, Guardian Angel and Zhonya's stasis, resists that grow in combat, regeneration and heals. Every build of the tank pool is fought against each attacker and ranked by <em>time to die</em>, longest first; a build still standing when the fight ends ranks above every build that fell, by the time the damage it took would have needed. The <em>overall</em> scenario ranks on every attacker at once: builds that fewer attackers kill come first, then the geometric mean of the times. Maximum Dosage goes out at the health threshold (every 10%) that keeps the tank alive longest against that attacker, and always when a hit would otherwise kill him. Lifesteal, omnivamp and anything else that needs the tank's own hits count for nothing. Click a build to see what hit him and what kept him up.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
     <div class="seg" id="scenario-seg"></div>
     <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
@@ -672,7 +673,8 @@
   <div class="card">
     <h2 id="pool-title">Item pool</h2>
     <div class="hint" id="pool-notes" hidden></div>
-    <div class="hint">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated — anything else would be ranked on raw stats alone and land too low. In-game "Limited to 1" groups (Last Whisper, Hydra, Tear, Spellblade, Energized, Lifeline, Annul) are enforced — no build carries two of a group.</div>
+    <div class="hint" id="pool-hint-damage">Every ranked build is one boots choice plus five of these. Only items whose damage passives the engine models faithfully are enumerated — anything else would be ranked on raw stats alone and land too low. In-game "Limited to 1" groups (Last Whisper, Hydra, Tear, Spellblade, Energized, Lifeline, Annul) are enforced — no build carries two of a group.</div>
+    <div class="hint" id="pool-hint-survival" hidden>Every ranked build is one boots choice plus five of these: every item that does something for its holder while it takes damage — health, armor or magic resist, or a modeled defensive effect. An item that only adds damage can't make a tankiest build. In-game "Limited to 1" groups (Lifeline, Immolate, Annul, Hydra, Spellblade ...) are enforced.</div>
     <div class="chips" id="pool-chips"></div>
     <div class="hint" style="margin:10px 0 0">Boots (one per build):</div>
     <div class="chips" id="boots-chips"></div>
@@ -1379,6 +1381,70 @@ const bstate = { meta: null, items: null, champion: null, scenario: null, data: 
                  status: null, req: 0, timer: null };
 const fmtDur = s => s < 90 ? `${Math.round(s)}s` : `${Math.round(s / 60)} min`;
 
+// ---- the Survival tier: a tank's builds, ranked on how long they last ----
+// A champion's own scenarios: a tank sees the Survival tier, a carry the
+// damage tiers. A serve older than the field lists every scenario.
+function championScenarios(meta, slug) {
+  const all = (meta?.scenarios || []).map(s => s.key);
+  const champ = meta?.champions?.find(c => c.slug === slug);
+  return champ?.scenarios?.length ? champ.scenarios.filter(k => all.includes(k)) : all;
+}
+
+// "survival" for a Survival cell (and for a tank's scenarios), else "damage".
+function scenarioObjective(sc) {
+  return sc?.objective === "survival" ? "survival" : "damage";
+}
+
+// A Survival fight's time to die: the kill time, or ≈ the time the damage
+// taken would have needed when the tank outlived the fight.
+function ttdText(v) {
+  if (!v || v.ttd == null) return "—";
+  return v.died ? `${v.ttd.toFixed(2)}s` : `≈${v.ttd.toFixed(1)}s`;
+}
+
+// How far short of the attacker's longest-lived build this one falls.
+function shareText(share) {
+  if (share == null) return "";
+  return share > 0.995 ? " best" : ` −${Math.round((1 - share) * 100)}%`;
+}
+
+// What kept the tank up, largest first: heals, shields and damage kept off.
+const DEFENSE_LABELS = [
+  ["healedR", "Maximum Dosage heal"], ["rBaseHealth", "Maximum Dosage base health"],
+  ["healedW", "Heart Zapper heal"], ["regen", "Regeneration"],
+  ["healedLifeline", "Protoplasm heal"], ["lifelineHealth", "Protoplasm bonus health"],
+  ["healedDrain", "Unending Despair"], ["reviveHealth", "Guardian Angel revive"],
+  ["shieldMagic", "Magic shield (Kaenic)"], ["shieldLifeline", "Lifeline shield"],
+  ["reducedCrit", "Randuin's (crits)"], ["reducedAttack", "Steelcaps (attacks)"],
+  ["blocked", "Spell shield"], ["negated", "Stasis"],
+  ["deferred", "Death's Dance (delayed)"],
+];
+function defenseRows(d) {
+  return DEFENSE_LABELS.filter(([k]) => d?.[k] > 0).map(([k, label]) => [label, d[k]])
+    .sort((a, b) => b[1] - a[1]);
+}
+
+// The moments that decided a fight, in the order they happened. `v` is a
+// row's fight against one attacker (its `defense` report and threshold).
+function defenseEvents(v) {
+  const d = v?.defense;
+  if (!d) return [];
+  const at = (t, what) => [t, `${what} at ${t.toFixed(2)}s`];
+  const out = [];
+  if (d.rAt != null) {
+    const [, text] = at(d.rAt, "Maximum Dosage");
+    out.push([d.rAt, text + (v.threshold ? ` (at or below ${Math.round(v.threshold * 100)}% health)`
+                                         : " (to live through a killing blow)")]);
+  }
+  if (d.lifelineAt != null) out.push(at(d.lifelineAt, "lifeline"));
+  if (d.zhonyaAt != null) out.push(at(d.zhonyaAt, "Zhonya's"));
+  if (d.reviveAt != null) out.push(at(d.reviveAt, "Guardian Angel"));
+  if (d.voidbornAt != null) out.push(at(d.voidbornAt, "Jak'Sho's resists"));
+  if (d.steadfastAt != null) out.push(at(d.steadfastAt, "Force of Nature's 70 MR"));
+  if (d.wCasts) out.push([Infinity, `Heart Zapper ×${d.wCasts}`]);
+  return out.sort((a, b) => a[0] - b[0]).map(([, text]) => text);
+}
+
 async function loadBuildsMeta() {
   if (bstate.meta) return true;
   try {
@@ -1400,6 +1466,7 @@ async function loadBuildsMeta() {
     btn.dataset.key = c.slug;
     btn.addEventListener("click", () => {
       bstate.champion = c.slug;
+      syncScenarioSeg();
       renderPool();
       loadScenario();
     });
@@ -1413,8 +1480,19 @@ async function loadBuildsMeta() {
     btn.addEventListener("click", () => { bstate.scenario = sc.key; loadScenario(); });
     return btn;
   }));
+  syncScenarioSeg();
   renderPool();
   return true;
+}
+
+// Show the selected champion's scenarios only (a tank's are the Survival
+// tier's), keeping the scenario if it is one of them.
+function syncScenarioSeg() {
+  const keys = championScenarios(bstate.meta, bstate.champion);
+  document.querySelectorAll("#scenario-seg button").forEach(b => {
+    b.hidden = !keys.includes(b.dataset.key);
+  });
+  if (!keys.includes(bstate.scenario)) bstate.scenario = keys[0];
 }
 
 function renderPool() {
@@ -1432,7 +1510,14 @@ function renderPool() {
   // the pool is per champion: a kit can rule items out (mana items on Vladimir)
   const champ = m.champions.find(c => c.slug === bstate.champion);
   const ids = champ ? new Set(champ.pool) : null;
-  const pool = ids ? m.pool.filter(it => ids.has(it.id)) : m.pool;
+  const survival = champ?.objective === "survival";
+  // a tank's pool is the Survival tier's (tank items, then the damage
+  // pool's defensive ones)
+  const every = [...m.pool, ...(m.tankPool || []).filter(t => !m.pool.some(p => p.id === t.id))]
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const pool = ids ? every.filter(it => ids.has(it.id)) : m.pool;
+  document.getElementById("pool-hint-damage").hidden = survival;
+  document.getElementById("pool-hint-survival").hidden = !survival;
   const excluded = [...(champ?.excluded || []), ...m.excluded];
   document.getElementById("pool-title").textContent =
     `Item pool${champ ? " for " + (champ.name || champ.slug) : ""} — ` +
@@ -1513,11 +1598,30 @@ async function loadScenario() {
   bstate.data = d;
   bstate.sel = 0;
   const sc = d.scenario, rk = d.ranks;
+  const survival = scenarioObjective(sc) === "survival";
+  document.getElementById("builds-note").hidden = survival;
+  document.getElementById("builds-note-survival").hidden = !survival;
   document.getElementById("builds-title").textContent =
-    `${d.championName || d.champion} — ranked builds, ${sc.label.toLowerCase()}`;
+    `${d.championName || d.champion} — ${survival ? "tankiest builds" : "ranked builds"}, ` +
+    sc.label.toLowerCase();
   const when = d.computedAt
     ? new Date(d.computedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
     : null;
+  if (survival) {
+    const foe = a => `${a.name}'s best build (${a.items.join(", ")}), ${a.duration}s fight`;
+    const me = (sc.attackers || []).find(a => a.key === sc.key);
+    const what = sc.overall
+      ? `ranked on every attacker at once — ${(sc.attackers || []).map(foe).join("; ")} — ` +
+        "by the geometric mean of the times to die, builds fewer attackers kill first"
+      : `vs ${me ? foe(me) : sc.attacker} · ranked by time to die, longest first`;
+    desc.textContent =
+      `Level ${sc.level} (Q${rk.Q}/W${rk.W}/E${rk.E}/R${rk.R}) · ${what}` +
+      ` · ${fmtInt(d.buildsEvaluated)} builds ranked` +
+      (when ? ` · computed ${when} in ${fmtDur(d.computeSeconds)}` : "") +
+      ` · items patch ${d.itemsPatch}, kit ${d.kitPatch} · ${bstate.meta.survivalNote || ""}`;
+    renderBuildsTable();
+    return;
+  }
   const dummy = t => `${fmtInt(t.targetHp)} HP, ${t.armor} armor, ${t.mr} MR, ${t.duration}s fight`;
   const what = sc.overall
     ? `ranked on every target at once — ${sc.targets.map(t => `${t.target} (${dummy(t)})`).join("; ")} — ` +
@@ -1715,6 +1819,7 @@ function buildCell(row) {
 // adds the build's kill time against the tier's other targets; the overall
 // cell shows every target, then the mean it is ranked by.
 function buildColumns(sc) {
+  if (scenarioObjective(sc) === "survival") return survivalColumns(sc);
   const targets = sc.targets || [];
   const cols = [
     { th: "#", td: r => cell(String(r.rank)) },
@@ -1787,6 +1892,7 @@ function bar(src, dmg, max, total, i) {
 function renderBreakdown(r) {
   if (!r) return;
   const sc = bstate.data.scenario;
+  if (scenarioObjective(sc) === "survival") { renderSurvivalBreakdown(r); return; }
   document.getElementById("bd-title").textContent =
     `Damage breakdown — #${r.rank}: ${r.items.join(", ")}`;
   document.getElementById("bd-hint").textContent =
@@ -1805,6 +1911,93 @@ function renderBreakdown(r) {
     const entries = Object.entries(v.breakdown);
     const max = Math.max(...entries.map(([, x]) => x));
     return [head, ...entries.map(([src, dmg], i) => bar(src, dmg, max, v.total, i))];
+  }));
+}
+
+const TTD_TITLE = "Ranking metric: how long the build lasts against this attacker — the kill time, or ≈ the time the damage it took would have needed when it is still standing at the end of the fight — and how far short of the longest-lived build it falls";
+const SURV_MEAN_TITLE = "Ranking metric: the geometric mean of the times to die against every attacker, so each counts equally in percentage terms. Builds fewer attackers kill rank first.";
+
+// One build's fight against one attacker: its time to die and its distance
+// from that attacker's longest-lived build.
+function survCell(v, a) {
+  const td = document.createElement("td");
+  if (!v) { td.textContent = "—"; return td; }
+  td.append(ttdText(v));
+  if (!v.died) td.title = `still standing after the ${a?.duration ?? ""}s fight with ` +
+    `${fmtInt(v.hpLeft)} health — the time the damage it took would have needed`;
+  const s = document.createElement("span");
+  s.className = "ci";
+  s.textContent = shareText(v.share);
+  td.append(s);
+  return td;
+}
+
+// A Survival cell's columns: the cell's own attacker (or every attacker and
+// the mean, overall), then the build's defenses.
+function survivalColumns(sc) {
+  const attackers = sc.attackers || [];
+  const cols = [
+    { th: "#", td: r => cell(String(r.rank)) },
+    { th: "Build", title: "One icon per item — hover, focus or tap an icon for its name and details",
+      td: r => buildCell(r) },
+  ];
+  const vs = a => ({ th: `vs ${a.name}`, title: `${TTD_TITLE} — ${a.name}: ${a.items.join(", ")}`,
+                     td: r => survCell(r.vs?.[a.champion], a) });
+  if (sc.overall) {
+    attackers.forEach(a => cols.push(vs(a)));
+    cols.push({ th: "Mean", title: SURV_MEAN_TITLE,
+                td: r => cell(r.mean != null ? r.mean.toFixed(2) + "s" : "—") });
+  } else {
+    const me = attackers.find(a => a.key === sc.key);
+    cols.push({ th: "Time to die", title: TTD_TITLE, td: r => survCell(r.vs?.[sc.attacker], me) });
+    attackers.filter(a => a.key !== sc.key).forEach(a => cols.push(vs(a)));
+  }
+  cols.push({ th: "Health", td: r => cell(fmtInt(r.hp)) },
+            { th: "Armor", td: r => cell(fmtInt(r.armor)) },
+            { th: "MR", td: r => cell(fmtInt(r.mr)) },
+            { th: "Gold", td: r => cell(fmtInt(r.gold)) });
+  return cols;
+}
+
+// The selected tank build against each attacker: what hit it, and what kept
+// it up (heals, shields, damage kept off), with the moments that decided it.
+function renderSurvivalBreakdown(r) {
+  const sc = bstate.data.scenario;
+  document.getElementById("bd-title").textContent =
+    `Survival breakdown — #${r.rank}: ${r.items.join(", ")}`;
+  document.getElementById("bd-hint").textContent =
+    `${fmtInt(r.hp)} health · ${fmtInt(r.armor)} armor · ${fmtInt(r.mr)} MR · ${fmtInt(r.gold)}g · ` +
+    "what hit it (post-mitigation) and what kept it up, against each attacker";
+  const groups = (sc.attackers || []).filter(a => r.vs?.[a.champion]);
+  document.getElementById("bd-bars").replaceChildren(...groups.flatMap(a => {
+    const v = r.vs[a.champion];
+    const head = document.createElement("div");
+    head.className = "bd-group";
+    const b = document.createElement("b");
+    b.textContent = `vs ${a.name}`;
+    const fate = v.died ? `dies at ${v.ttd.toFixed(2)}s`
+                        : `still standing at ${a.duration}s with ${fmtInt(v.hpLeft)} health`;
+    head.append(b, ` (${a.items.join(", ")}) — ${fate} · ${fmtInt(v.taken)} damage taken`);
+    const events = defenseEvents(v);
+    const when = document.createElement("div");
+    when.className = "hint";
+    when.textContent = events.join(" · ");
+    const taken = Object.entries(v.breakdown);
+    const kept = defenseRows(v.defense);
+    const max = Math.max(1, ...taken.map(([, x]) => x), ...kept.map(([, x]) => x));
+    const sub = text => {
+      const el = document.createElement("div");
+      el.className = "hint";
+      el.textContent = text;
+      return el;
+    };
+    const keptTotal = kept.reduce((s, [, x]) => s + x, 0);
+    return [head, ...(events.length ? [when] : []),
+            sub("Damage taken, by source"),
+            ...taken.map(([src, dmg], i) => bar(src, dmg, max, v.taken, i)),
+            ...(kept.length ? [sub("Kept off and healed"),
+                               ...kept.map(([label, x], i) => bar(label, x, max, keptTotal, i + 3))]
+                            : [])];
   }));
 }
 

@@ -169,7 +169,8 @@ class TestRealSnapshot(unittest.TestCase):
         version = next(m for m in items_mod.snapshots()
                        if m["patch"] == self.patch)["ddragonVersion"]
         effects = builds.load_item_effects()
-        for iid in builds.DEFAULT_POOL + builds.BOOTS:
+        every = list(dict.fromkeys(builds.DEFAULT_POOL + builds.TANK_POOL + builds.BOOTS))
+        for iid in every:
             it = by_name[self.pool[iid]["name"]]
             self.assertEqual(it["id"], iid)
             self.assertEqual(it["icon"],
@@ -185,7 +186,7 @@ class TestRealSnapshot(unittest.TestCase):
             sheet = builds.resolve_stats(fake_champ(), 18, [iid], self.pool)
             self.assertEqual([f"{p} ({it['name']})" for p in it["modeled"]["unmodeled"]],
                              sheet["uncovered"])
-        self.assertEqual(len(meta["items"]), len(set(builds.DEFAULT_POOL + builds.BOOTS)))
+        self.assertEqual(len(meta["items"]), len(every))
         json.dumps(meta)  # the whole payload serialises
 
     def test_no_unmapped_stats_in_whole_pool(self):
@@ -1588,6 +1589,9 @@ class TestScenarioCache(unittest.TestCase):
     touched."""
     # Rabadon, Void Staff, Shadowflame, Liandry, Riftmaker, Nashor, Muramana
     TINY_POOL = [3089, 3135, 4645, 6653, 4633, 3115, 3042]
+    # Warmog's, Randuin's, Spirit Visage, Jak'Sho, Force of Nature, Guardian
+    # Angel, Protoplasm Harness: the Survival tier's pool, as small
+    TINY_TANK_POOL = [3083, 3143, 3065, 6665, 4401, 3026, 2525]
     # a budget tier that doesn't ship, to exercise the multi-tier paths:
     # warm order (cheap before full) and per-tier cache invalidation
     PROBE = {"probe-squishy": dict(label="Probe vs squishy", tier="probe",
@@ -1599,7 +1603,8 @@ class TestScenarioCache(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
         for name, value in (("SCENARIO_CACHE_DIR", self.tmp),
-                            ("DEFAULT_POOL", self.TINY_POOL)):
+                            ("DEFAULT_POOL", self.TINY_POOL),
+                            ("TANK_POOL", self.TINY_TANK_POOL)):
             patcher = mock.patch.object(builds, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -1609,13 +1614,24 @@ class TestScenarioCache(unittest.TestCase):
         # and budget its overall cell carries (one pass = one stat sheet per
         # build), and an overall cell only exists where there is something
         # to average — two or more targets — and is listed last
+        # (a Survival tier's "targets" are its attackers)
         for key, sc in builds.SCENARIOS.items():
             self.assertIn("tier", sc, key)
-            self.assertEqual("target" in sc, not sc.get("overall"), key)
+            self.assertEqual("target" in sc or "attacker" in sc,
+                             not sc.get("overall"), key)
         self.assertEqual(list(builds.SCENARIOS),
                          ["full-squishy", "full-bruiser", "full-tank",
-                          "full-overall"])
-        self.assertEqual(builds.tiers(), ["full"])
+                          "full-overall", "survive-kayle", "survive-kassadin",
+                          "survive-overall"])
+        # damage tiers first: a survival tier fights their winners
+        self.assertEqual(builds.tiers(), ["full", "survive"])
+        self.assertEqual([builds.tier_objective(t) for t in builds.tiers()],
+                         ["damage", "survival"])
+        self.assertEqual(builds.tier_champions("survive"), ["drmundo"])
+        self.assertNotIn("drmundo", builds.tier_champions("full"))
+        for k in builds.tier_targets("survive"):
+            self.assertIn(builds.SCENARIOS[k]["attacker"],
+                          builds.tier_champions("full"))
         for tier in builds.tiers():
             keys = builds.tier_scenarios(tier)
             targets = builds.tier_targets(tier)
@@ -1637,18 +1653,23 @@ class TestScenarioCache(unittest.TestCase):
     def test_cells_cheapest_first(self):
         champs = builds.kit_champions()
         cs = builds.cells()
-        self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
+        per_tier = lambda: sum(len(builds.tier_champions(t)) * len(builds.tier_scenarios(t))
+                               for t in builds.tiers())
+        self.assertEqual(len(cs), per_tier())
         self.assertEqual(len(set(cs)), len(cs))
         self.assertEqual(cs[0], (champs[0], "full-squishy"))
+        # the tanks' cells come after every damage cell
+        kinds = [builds.tier_objective(builds.SCENARIOS[k]["tier"]) for _, k in cs]
+        self.assertEqual(kinds, sorted(kinds))
         # with a budget tier in the mix: tier by tier, budget presets before
         # full builds (seconds, not half an hour), shorter total fights
         # first; every champion gets a tier's cells before anyone gets a
         # costlier tier's; and one champion's cells of a tier are adjacent,
         # since they come from one pass
         with mock.patch.dict(builds.SCENARIOS, self.PROBE):
-            self.assertEqual(builds.tiers(), ["probe", "full"])
+            self.assertEqual(builds.tiers(), ["probe", "full", "survive"])
             cs = builds.cells()
-            self.assertEqual(len(cs), len(champs) * len(builds.SCENARIOS))
+            self.assertEqual(len(cs), per_tier())
             def cost(key):
                 ts = builds.tier_targets(builds.SCENARIOS[key]["tier"])
                 return (builds.SCENARIOS[ts[0]].get("budget") is None,
@@ -1660,7 +1681,8 @@ class TestScenarioCache(unittest.TestCase):
             self.assertEqual(runs, len(set(groups)))
             for tier in builds.tiers():
                 self.assertEqual(
-                    [s for s, t in dict.fromkeys(groups) if t == tier], champs)
+                    [s for s, t in dict.fromkeys(groups) if t == tier],
+                    builds.tier_champions(tier))
             self.assertEqual(cs[:len(champs)],
                              [(s, "probe-squishy") for s in champs])
 
@@ -1690,8 +1712,17 @@ class TestScenarioCache(unittest.TestCase):
             with mock.patch.dict(builds.SCENARIOS["full-squishy"],
                                  {"armor": 111}):
                 changed = builds.cell_paths()
+            # ... and the Survival tier's too: its attackers' builds are the
+            # full tier's overall winners
             for cell in both:
-                same = builds.SCENARIOS[cell[1]]["tier"] != "full"
+                same = builds.SCENARIOS[cell[1]]["tier"] not in ("full", "survive")
+                self.assertEqual(changed[cell] == both[cell], same, cell)
+            # an attacker's own scenario reaches only the Survival tier
+            with mock.patch.dict(builds.SCENARIOS["survive-kayle"],
+                                 {"duration": 31}):
+                changed = builds.cell_paths()
+            for cell in both:
+                same = builds.SCENARIOS[cell[1]]["tier"] != "survive"
                 self.assertEqual(changed[cell] == both[cell], same, cell)
 
     def test_read_only_then_compute(self):
@@ -1788,6 +1819,56 @@ class TestScenarioCache(unittest.TestCase):
                 chosen = score([ids_of[n] for n in r["buyOrder"]])
                 self.assertLessEqual(chosen, min(map(score, allowed)) * (1 + 1e-9))
 
+    def test_survival_cells(self):
+        paths = builds.cell_paths()
+        # a survival cell fights its attackers' damage winners: not before
+        with self.assertRaises(RuntimeError):
+            builds.compute_tier("drmundo", "survive", paths)
+        full = {slug: builds.compute_tier(slug, "full", paths)
+                for slug in ("kayle", "kassadin")}
+        outs = builds.compute_tier("drmundo", "survive", paths)
+        self.assertEqual(set(outs), {"survive-kayle", "survive-kassadin",
+                                     "survive-overall"})
+        for key, d in outs.items():
+            self.assertEqual(builds.cached_scenario("drmundo", key), d)
+            self.assertEqual(d["objective"], "survival")
+            self.assertEqual(d["scenario"]["objective"], "survival")
+            self.assertEqual(d["championName"], "Dr. Mundo")
+            # every boots x five of the seven tank items; Mundo has no mana
+            # item to lose
+            self.assertEqual(d["buildsEvaluated"], len(builds.BOOTS) * math.comb(7, 5))
+            # the attackers are the damage cells' overall winners
+            for m in d["scenario"]["attackers"]:
+                top = full[m["champion"]]["full-overall"]["rows"][0]
+                self.assertEqual(m["items"], top["items"])
+            rows = d["rows"]
+            self.assertEqual(len(rows), len(builds.BOOTS) * math.comb(7, 5))
+            self.assertEqual([r["rank"] for r in rows], list(range(1, len(rows) + 1)))
+            for r in rows:
+                self.assertEqual(list(r["vs"]), ["kayle", "kassadin"])
+                for v in r["vs"].values():
+                    self.assertLessEqual(v["share"], 1.0)
+                    self.assertGreater(v["ttd"], 0)
+                    self.assertIn("rAt", v["defense"])
+            if d["scenario"].get("overall"):
+                order = [(-r["survived"], -r["mean"]) for r in rows]
+                self.assertEqual(order, sorted(order))
+                geo = lambda xs: math.prod(xs) ** (1 / len(xs))
+                for r in rows:
+                    self.assertAlmostEqual(
+                        r["mean"], geo([v["ttd"] for v in r["vs"].values()]), delta=0.02)
+            else:
+                me = builds.SCENARIOS[key]["attacker"]
+                for r in rows:
+                    self.assertEqual(r["ttd"], r["vs"][me]["ttd"])
+                # the longest-lived first, and it is the yardstick
+                self.assertEqual(rows[0]["vs"][me]["share"], 1.0)
+                alive = [r["ttd"] for r in rows if not r["died"]]
+                dead = [r["ttd"] for r in rows if r["died"]]
+                self.assertEqual(alive + dead, [r["ttd"] for r in rows])
+                self.assertEqual(dead, sorted(dead, reverse=True))
+        json.dumps(builds.api_builds_meta())
+
     def test_warm_computes_cold_cells_once_and_respects_lock(self):
         # a cell of a scenario that no longer ships is swept, not kept forever
         stray = os.path.join(self.tmp, "kayle-mid-squishy-0123456789abcdef.json")
@@ -1798,9 +1879,11 @@ class TestScenarioCache(unittest.TestCase):
         self.assertTrue(all(builds.cell_ready().values()))
         # one pass per (champion, tier), announced with the cells it fills
         heads = [l for l in log if l.startswith("[")]
-        self.assertEqual(len(heads),
-                         len(builds.tiers()) * len(builds.kit_champions()))
+        self.assertEqual(len(heads), sum(len(builds.tier_champions(t))
+                                         for t in builds.tiers()))
         self.assertTrue(any("full-overall" in h for h in heads))
+        self.assertTrue(heads[-1].endswith("drmundo/survive (survive-kayle, "
+                                           "survive-kassadin, survive-overall) …"))
         self.assertEqual(builds.warm(log=log.append), 0)  # nothing cold now
         lock = builds.warm_lock()
         try:
@@ -2020,7 +2103,9 @@ class TestBootsClasses(unittest.TestCase):
 
     def test_engine_never_reads_an_ignored_stat(self):
         # the merge is only sound while the engine (and every kit driver)
-        # leaves these sheet fields alone; move speed it does read
+        # leaves these sheet fields alone; move speed it does read. The
+        # Survival tier's defender (defense.rs, survive.rs) reads the TANK's
+        # sheet — armor, resists, regeneration — which no damage fight has
         read = set()
         for name in ("fight.rs", "drivers.rs", "num.rs"):
             with open(os.path.join(builds.ENGINE_DIR, "src", name)) as f:
@@ -2334,6 +2419,393 @@ class TestGolden(unittest.TestCase):
                     self.assertIsNone(
                         self.first_diff(r["fights"], fights, "fights"),
                         (run["name"], key, n, r["ids"]))
+
+
+class TestSurvivalEngine(unittest.TestCase):
+    """The Survival tier's defender, mechanic by mechanic, against a clean
+    attacker — level-1 Kassadin with every rank at 0: nothing but 59-damage
+    physical autos every 1.5625 s from t=0 — and a bare test tank (no kit
+    mechanics, 590 health, no resists or regeneration unless given), so
+    each number here is worked out by hand."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.pool = builds.load_items()
+        cls.effects = builds.load_item_effects()
+        cls.idx = builds.item_index(cls.pool)
+
+    def item(self, name):
+        return builds.resolve_item(self.pool, self.idx, name)
+
+    def attacker(self, names=(), level=1, duration=30.0, slug="kassadin", ranks=None):
+        kit, champ = builds.load_kit(slug), builds.load_champion(slug)
+        ids = [self.item(n) for n in names]
+        sheet = builds.resolve_stats(champ, level, ids, self.pool, self.effects, kit=kit)
+        return dict(sheet=sheet, kit=kit, fx=builds.merge_effects(ids, self.effects),
+                    level=level, duration=duration,
+                    ranks=ranks or {"Q": 0, "W": 0, "E": 0, "R": 0})
+
+    @staticmethod
+    def base(hp=590.0, armor=0.0, mr=0.0, regen=0.0):
+        return dict(hp=hp, hp_per=0, mp=0, mp_per=0, armor=armor, armor_per=0, mr=mr,
+                    mr_per=0, ad=50, ad_per=0, base_as=0.625, as_per=0, as_ratio=0.625,
+                    crit_damage_base=175, move_speed=340, attack_range=125,
+                    hp_regen=regen, hp_regen_per=0)
+
+    TANK = {"champion": "testtank", "name": "Test Tank", "role": "tank", "abilities": {}}
+
+    def fight(self, att, names=(), base=None, kit=None, level=1, ranks=None,
+              thresholds=()):
+        ids = [self.item(n) for n in names]
+        defender = dict(base=base or self.base(), level=level, kit=kit or self.TANK,
+                        ranks=ranks or {"Q": 0, "W": 0, "E": 0, "R": 0})
+        return builds.lol_engine.survive(att, defender,
+                                  [(builds.stat_pairs(self.pool[i]),
+                                    self.effects.get(i, {})) for i in ids],
+                                  list(thresholds))
+
+    P = 1 / 0.64  # the clean attacker's attack period
+
+    def test_bare_tank_dies_to_the_tenth_auto(self):
+        r = self.fight(self.attacker())
+        self.assertEqual(r["attacks"], 10)
+        self.assertEqual(r["ttk"], 9 * self.P)          # 590 / 59
+        self.assertEqual(r["time_to_die"], r["ttk"])
+        self.assertEqual(r["total"], 590.0)
+        self.assertEqual(r["defense"]["hpLost"], 590.0)
+
+    def test_steelcaps_take_a_tenth_off_attacks(self):
+        r = self.fight(self.attacker(), ["Plated Steelcaps"])
+        per = 59 * 100 / 125 * 0.9                      # 25 armor, then Plating
+        self.assertEqual(r["attacks"], math.ceil(590 / per))
+        self.assertEqual(r["ttk"], (math.ceil(590 / per) - 1) * self.P)
+        self.assertAlmostEqual(r["defense"]["reducedAttack"],
+                               r["attacks"] * 59 * 100 / 125 * 0.1)
+
+    def test_randuins_cuts_the_crit_share(self):
+        # Infinity Edge: 134 AD, 25% crit at 205% -> expected 1.2625 a hit;
+        # Randuin's leaves the normal 75% alone and takes 30% off the crits
+        att = self.attacker(["Infinity Edge"])
+        self.assertEqual((att["sheet"]["ad"], att["sheet"]["crit_chance"],
+                          att["sheet"]["crit_damage"]), (134.0, 25.0, 205.0))
+        r = self.fight(att, ["Randuin's Omen"], base=self.base(hp=1000))
+        ev = 0.75 + 0.25 * 2.05 * 0.7
+        per = 134 * 100 / 175 * ev
+        n = math.ceil(1350 / per)
+        self.assertEqual(r["attacks"], n)
+        self.assertAlmostEqual(r["ttk"], (n - 1) * self.P)
+        self.assertAlmostEqual(r["defense"]["reducedCrit"],
+                               n * 134 * 100 / 175 * 0.25 * 2.05 * 0.3)
+
+    def test_jaksho_raises_bonus_resists_after_five_seconds(self):
+        r = self.fight(self.attacker(duration=10.0), ["Jak'Sho, The Protean"],
+                       base=self.base(hp=100000))
+        self.assertEqual(r["defense"]["voidbornAt"], 5.0)
+        # autos at 0, 1.56, 3.13, 4.69 against 45 armor; 6.25, 7.81, 9.38
+        # against 45 x 1.3
+        self.assertAlmostEqual(r["total"], 4 * 59 * 100 / 145 + 3 * 59 * 100 / 158.5)
+        self.assertIsNone(r["ttk"])
+        self.assertAlmostEqual(r["hp_left"], 100350 - r["total"])
+
+    def test_force_of_nature_stacks_on_magic_hits(self):
+        # Nashor's: 27 magic on-hit (15 + 15% of 80 AP) and 50% attack speed
+        att = self.attacker(["Nashor's Tooth"])
+        period = 1 / att["sheet"]["attack_speed"]
+        r = self.fight(att, ["Force of Nature"], base=self.base(hp=100000))
+        # a stack an on-hit (they are 1.04 s apart, past the 1 s limit):
+        # the eighth auto's on-hit completes them, and 70 MR joins the 55
+        self.assertAlmostEqual(r["defense"]["steadfastAt"], 7 * period)
+        n = r["attacks"]
+        self.assertAlmostEqual(r["breakdown"]["onhit"],
+                               8 * 27 * 100 / 155 + (n - 8) * 27 * 100 / 225)
+
+    def test_kaenic_shield_takes_magic_only(self):
+        att = self.attacker(["Nashor's Tooth"])
+        r = self.fight(att, ["Kaenic Rookern"], base=self.base(hp=100000))
+        # 15 magic an on-hit through 80 MR, all of it into a 15,060 shield
+        # that outlasts the fight; the autos (physical) go straight to health
+        self.assertAlmostEqual(r["breakdown"]["onhit"], r["attacks"] * 27 * 100 / 180)
+        self.assertAlmostEqual(r["defense"]["shieldMagic"], r["breakdown"]["onhit"])
+        self.assertAlmostEqual(r["defense"]["hpLost"], r["breakdown"]["auto"])
+        short = self.fight(att, ["Kaenic Rookern"], base=self.base(hp=1000))
+        self.assertAlmostEqual(short["defense"]["shieldMagic"], 0.15 * 1400)
+        self.assertAlmostEqual(short["defense"]["hpLost"], 1400)  # to the last point
+
+    def test_sterak_shield_on_the_threshold_blow_then_decays(self):
+        r = self.fight(self.attacker(), ["Sterak's Gage"], base=self.base(hp=1000))
+        d = r["defense"]
+        # 1,400 health: the 17th auto (at 25 s) would leave 397 < 420 (30%);
+        # a 240 shield (60% of 400 bonus) takes it whole and holds 0.75 s,
+        # then decays 64 a second: 129 left for the 18th, gone by the 19th
+        self.assertEqual(d["lifelineAt"], 16 * self.P)
+        self.assertAlmostEqual(d["shieldLifeline"], 2 * 59)
+        self.assertIsNone(r["ttk"])  # the 25th auto would be at 37.5 s
+
+    def test_guardian_angel_revives_after_four_seconds(self):
+        r = self.fight(self.attacker(duration=40.0), ["Guardian Angel"])
+        per = 59 * 100 / 145
+        first = (math.ceil(590 / per) - 1) * self.P
+        self.assertEqual(r["defense"]["reviveAt"], first)
+        self.assertEqual(r["defense"]["reviveHealth"], 295.0)  # half of base
+        # the attacker waits out the stasis, then needs 295 more
+        self.assertAlmostEqual(r["ttk"], first + 4 + (math.ceil(295 / per) - 1) * self.P)
+
+    def test_zhonyas_takes_the_killing_blow(self):
+        r = self.fight(self.attacker(duration=40.0), ["Zhonya's Hourglass"],
+                       base=self.base(hp=600))
+        per = 59 * 100 / 150
+        lethal = math.ceil(600 / per) - 1          # 0-based: the 16th auto
+        self.assertEqual(r["defense"]["zhonyaAt"], lethal * self.P)
+        self.assertAlmostEqual(r["defense"]["negated"], per)
+        # the next auto waits for the stasis to end, and kills
+        self.assertEqual(r["ttk"], lethal * self.P + 2.5)
+
+    def test_frozen_heart_slows_the_attacker(self):
+        r = self.fight(self.attacker(duration=40.0), ["Frozen Heart"])
+        per = 59 * 100 / 175
+        self.assertEqual(r["ttk"], (math.ceil(590 / per) - 1) / (0.64 * 0.8))
+
+    def test_death_dance_defers_a_share_as_a_bleed(self):
+        r = self.fight(self.attacker(duration=40.0), ["Death's Dance"],
+                       base=self.base(hp=600))
+        per = 59 * 100 / 150
+        # a reference: 70% at each auto, 30% bled evenly over the next 3 s
+        hits = [k * self.P for k in range(40)]
+        edges = sorted(set(hits) | {h + 3 for h in hits})
+        hp, t, death = 600.0, 0.0, None
+        for e in edges:
+            if e > t:
+                rate = sum(0.3 * per / 3 for h in hits if h <= t < h + 3)
+                if rate and hp - rate * (e - t) <= 0:
+                    death = t + hp / rate
+                    break
+                hp -= rate * (e - t)
+                t = e
+            if e in hits:
+                hp -= 0.7 * per
+                if hp <= 0:
+                    death = e
+                    break
+        self.assertIsNotNone(death)
+        self.assertAlmostEqual(r["ttk"], death, places=9)
+        self.assertAlmostEqual(r["defense"]["deferred"], 0.3 * r["total"])
+
+    def test_spirit_visage_regeneration(self):
+        # 50 health per 5 s, +100% (the item) +25% (Boundless Vitality): 25
+        # a second, never capped — every auto opens a bigger deficit
+        r = self.fight(self.attacker(duration=10.0), ["Spirit Visage"],
+                       base=self.base(hp=100000, regen=50))
+        self.assertAlmostEqual(r["defense"]["regen"], 25 * 10)
+        self.assertAlmostEqual(r["hp_left"], 100400 - 7 * 59 + 250)
+
+    def test_unending_despair_drains_every_four_seconds(self):
+        r = self.fight(self.attacker(duration=10.0), ["Unending Despair"],
+                       base=self.base(hp=100000))
+        # 3% of 400 bonus health through the attacker's 30 MR, healed 250%
+        per = 2.5 * 0.03 * 400 * 100 / 130
+        self.assertAlmostEqual(r["defense"]["healedDrain"], 2 * per)  # at 4 and 8
+
+    def test_warmogs_vitality_counts_item_health(self):
+        r = self.fight(self.attacker(), ["Warmog's Armor"])
+        self.assertAlmostEqual(r["sheet"]["hp"], 590 + 1000 * 1.12)
+
+    def test_mundo_heart_zapper_and_maximum_dosage(self):
+        # level-16 Mundo, no items, against the clean attacker at 16
+        att = self.attacker(level=16)
+        kit, champ = builds.load_kit("drmundo"), builds.load_champion("drmundo")
+        ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
+        self.assertEqual(ranks, {"Q": 5, "W": 3, "E": 5, "R": 3})
+        defender = dict(base=builds.champ_base(champ), level=16, ranks=ranks, kit=kit)
+        survive = builds.lol_engine.survive
+        r = survive(att, defender, [], [1.0])
+        d, sheet = r["defense"], r["sheet"]
+        hp = sheet["hp"]
+        self.assertAlmostEqual(hp, 640 + 103 * builds.growth(16))
+        per = att["sheet"]["ad"] * 100 / (100 + sheet["armor"])
+        period = 1 / att["sheet"]["attack_speed"]
+        # Heart Zapper at 0 and again 16 s later (rank 3, no haste)
+        self.assertEqual(d["wCasts"], 2)
+        # Maximum Dosage right after the first hit (threshold 1.0): 30% of
+        # the missing health (25% + 5% for one champion near) as base
+        # health — the zapper's 8% and the hit
+        self.assertEqual(d["rAt"], 0.0)
+        self.assertEqual(d["rThreshold"], 1.0)
+        self.assertAlmostEqual(d["rBaseHealth"], 0.30 * (0.08 * hp + per))
+        # the first three seconds alone, Maximum Dosage never cast: autos
+        # at 0 (stored at 80-95% by level, 93.24% at 16), 1.02 and 2.04
+        # (25%), all of it back at 3 s — Kassadin stands inside 325
+        self.assertLess(2 * period, 3.0)
+        self.assertGreater(3 * period, 3.0)
+        first = survive(dict(att, duration=3.5), defender, [], [])
+        f = first["defense"]
+        self.assertIsNone(f["rAt"])
+        self.assertAlmostEqual(f["hpSpent"], 0.08 * hp)
+        frac = (80 + 15 * 15 / 17) / 100
+        self.assertAlmostEqual(f["healedW"], per * (frac + 0.25 + 0.25))
+        # and regeneration: 1.9% of maximum health every 5 s at 16, on top
+        # of the base 7 (+0.5 a level) — never capped here
+        regen = (0.019 * hp + 7 + 0.5 * builds.growth(16)) / 5
+        self.assertAlmostEqual(f["regen"], regen * 3.5)
+
+
+class TestSurvivalSearch(unittest.TestCase):
+    """Maximum Dosage's timing: the grid search is exactly its best cell,
+    though it fights only the thresholds whose casts differ."""
+
+    @classmethod
+    def setUpClass(cls):
+        _, cls.pool = builds.load_items()
+        cls.effects = builds.load_item_effects()
+        idx = builds.item_index(cls.pool)
+        cls.item = lambda self, n: builds.resolve_item(self.pool, idx, n)
+        cls.kit, cls.champ = builds.load_kit("drmundo"), builds.load_champion("drmundo")
+        cls.ranks = builds.skill_ranks(16, builds.kit_max_order(cls.kit))
+        cls.att = {}
+        for slug, names in (("kayle", ["Berserker's Greaves", "Infinity Edge",
+                                       "Yun Tal Wildarrows", "Lord Dominik's Regards",
+                                       "Hexoptics C44", "Umbral Glaive"]),
+                            ("kassadin", ["Ionian Boots of Lucidity", "Malignance",
+                                          "Seraph's Embrace", "Cryptbloom", "Actualizer",
+                                          "Muramana"])):
+            kit, champ = builds.load_kit(slug), builds.load_champion(slug)
+            ids = [builds.resolve_item(cls.pool, idx, n) for n in names]
+            cls.att[slug] = dict(
+                sheet=builds.resolve_stats(champ, 16, ids, cls.pool, cls.effects, kit=kit),
+                kit=kit, fx=builds.merge_effects(ids, cls.effects), level=16,
+                ranks=builds.skill_ranks(16, builds.kit_max_order(kit)), duration=30.0)
+
+    BUILDS = [
+        ["Mercury's Treads"],
+        ["Plated Steelcaps", "Warmog's Armor", "Heartsteel", "Jak'Sho, The Protean",
+         "Randuin's Omen", "Force of Nature"],
+        ["Mercury's Treads", "Warmog's Armor", "Spirit Visage", "Jak'Sho, The Protean",
+         "Force of Nature", "Kaenic Rookern"],
+        ["Plated Steelcaps", "Warmog's Armor", "Heartsteel", "Guardian Angel",
+         "Randuin's Omen", "Sterak's Gage"],
+        ["Plated Steelcaps", "Spirit Visage", "Protoplasm Harness", "Death's Dance",
+         "Zhonya's Hourglass", "Unending Despair"],
+    ]
+
+    def survive(self, slug, names, thresholds):
+        ids = [self.item(n) for n in names]
+        return builds.survive(self.champ, self.kit, 16, self.ranks, ids, self.pool,
+                              self.effects, self.att[slug], thresholds=thresholds)
+
+    def test_probe_search_is_the_grid_best(self):
+        grid = builds.R_THRESHOLDS
+        for slug in self.att:
+            for names in self.BUILDS:
+                full = self.survive(slug, names, grid)
+                # each single-threshold call fights that threshold and the
+                # lethal-only cast: together, every point of the grid
+                singles = [self.survive(slug, names, [x]) for x in grid]
+                best = max(s["time_to_die"] for s in singles)
+                self.assertEqual(full["time_to_die"], best, (slug, names))
+                # and the threshold it reports reproduces it
+                x = full["defense"]["rThreshold"]
+                again = self.survive(slug, names, [x] if x else [])
+                self.assertEqual(again["time_to_die"], full["time_to_die"])
+
+    def test_survival_never_beats_its_components(self):
+        # sanity on the model's direction: a tank item never shortens a life
+        for slug in self.att:
+            bare = self.survive(slug, ["Mercury's Treads"], builds.R_THRESHOLDS)
+            for extra in ("Warmog's Armor", "Jak'Sho, The Protean", "Randuin's Omen",
+                          "Force of Nature", "Spirit Visage", "Guardian Angel"):
+                more = self.survive(slug, ["Mercury's Treads", extra], builds.R_THRESHOLDS)
+                self.assertGreater(more["time_to_die"], bare["time_to_die"], (slug, extra))
+
+
+class TestSurvivalEnumeration(unittest.TestCase):
+    """The Survival tier's pass ranks exactly what fighting every build of
+    the pool one by one ranks."""
+
+    def test_pass_ranks_like_one_fight_per_build(self):
+        _, pool = builds.load_items()
+        effects = builds.load_item_effects()
+        kit, champ = builds.load_kit("drmundo"), builds.load_champion("drmundo")
+        ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
+        att = TestSurvivalSearch.att if hasattr(TestSurvivalSearch, "att") else None
+        if att is None:
+            TestSurvivalSearch.setUpClass()
+            att = TestSurvivalSearch.att
+        attackers = {"survive-kayle": att["kayle"], "survive-kassadin": att["kassadin"]}
+        cands = [3083, 3143, 3065, 6665, 4401, 3026, 2525]   # seven tank items
+        lists, count = builds.enumerate_survival(
+            champ, pool, effects, kit, 16, ranks, attackers, cands, "overall",
+            keep=1000, workers=3)
+        # every boots x five of seven, minus what Riot's groups forbid
+        self.assertEqual(count, len(builds.BOOTS) * math.comb(7, 5))
+        order = builds._enum_order(cands)
+        rows = []
+        for combo in itertools.combinations(cands, 5):
+            for b in builds.BOOTS:
+                ids = [b, *combo]
+                fs = {k: builds.survive(champ, kit, 16, ranks, ids, pool, effects, a)
+                      for k, a in attackers.items()}
+                rows.append((ids, fs))
+        place = lambda ids: ([order[i] for i in ids[1:]], order[ids[0]])
+        for key in attackers:
+            def k(row):
+                f = row[1][key]
+                return ((0, -f["time_to_die"], -f["hp_left"]) if f["ttk"] is None
+                        else (1, -f["ttk_exp"], -f["ttk_eff"]), place(row[0]))
+            want = [ids for ids, _ in sorted(rows, key=k)]
+            self.assertEqual([ids for _, ids, _ in lists[key]], want, key)
+            for (_, ids, fs), (wids, wfs) in zip(lists[key], sorted(rows, key=k)):
+                self.assertEqual(fs[key]["time_to_die"], wfs[key]["time_to_die"])
+        def ok(row):
+            fs = [row[1][k] for k in attackers]
+            killed = sum(f["ttk"] is not None for f in fs)
+            effs = [f["ttk_eff"] if f["ttk"] is not None else f["time_to_die"] for f in fs]
+            return ((killed, -builds.geo_mean([f["time_to_die"] for f in fs]),
+                     -builds.geo_mean(effs)), place(row[0]))
+        self.assertEqual([ids for _, ids, _ in lists["overall"]],
+                         [ids for ids, _ in sorted(rows, key=ok)])
+
+
+class TestSurvivalGolden(unittest.TestCase):
+    """The Survival tier's fights pinned bit for bit (data/builds/golden/
+    survival.json): ~150 Dr. Mundo builds against pinned Kayle and Kassadin
+    builds, every number of the fight and the defender's report, and one
+    enumeration pass. A deliberate model change regenerates it with
+    `jobs/gen_golden.py --only survival` in the same commit."""
+
+    def test_survival(self):
+        with open(os.path.join(TestGolden.GOLDEN, "survival.json")) as f:
+            doc = json.load(f)
+        _, pool = builds.load_items()
+        effects = builds.load_item_effects()
+        self.assertEqual(doc["patch"], builds.load_items()[0])
+        self.assertEqual(doc["thresholds"], builds.R_THRESHOLDS)
+        idx = builds.item_index(pool)
+        kit, champ = builds.load_kit("drmundo"), builds.load_champion("drmundo")
+        ranks = builds.skill_ranks(16, builds.kit_max_order(kit))
+        attackers = {}
+        for key, a in doc["attackers"].items():
+            akit, achamp = builds.load_kit(a["champion"]), builds.load_champion(a["champion"])
+            aids = [builds.resolve_item(pool, idx, n) for n in a["items"]]
+            attackers[key] = dict(
+                sheet=builds.resolve_stats(achamp, 16, aids, pool, effects, kit=akit),
+                kit=akit, fx=builds.merge_effects(aids, effects), level=16,
+                ranks=builds.skill_ranks(16, builds.kit_max_order(akit)),
+                duration=builds.SCENARIOS[key]["duration"])
+        for case in doc["cases"]:
+            got = builds.survive(champ, kit, 16, ranks, case["ids"], pool, effects,
+                                 attackers[case["attacker"]])
+            self.assertIsNone(TestGolden.first_diff(case["result"], got, "result"),
+                              (case["id"], case["items"], case["attacker"]))
+        run = doc["enumerate"]
+        lists, count = builds.enumerate_survival(
+            champ, pool, effects, kit, 16, ranks, attackers, run["pool"],
+            run["overall"], keep=run["keep"], workers=2)
+        self.assertEqual(count, run["count"])
+        for key, rows in run["lists"].items():
+            self.assertEqual([r["ids"] for r in rows], [list(ids) for _, ids, _ in lists[key]], key)
+            for r, (sk, _, fights) in zip(rows, lists[key]):
+                self.assertIsNone(TestGolden.first_diff(r["key"], list(sk), "key"))
+                self.assertIsNone(TestGolden.first_diff(
+                    r["ttd"], {a: f["time_to_die"] for a, f in fights.items()}, "ttd"))
 
 
 class TestBootsPartitions(unittest.TestCase):

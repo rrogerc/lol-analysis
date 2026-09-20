@@ -41,3 +41,15 @@ the clock as `4`, the Rust engine says `4.0`). Regenerate with
 `jobs/gen_golden.py`. **These files are not regenerated on a whim: any
 deliberate model change must regenerate them in the same commit** — a silent
 drift means the golden files no longer describe the engine.
+
+`survival.json` (added 2026-09-19 with the Survival tier) pins the other
+side of a fight: 157 Dr. Mundo builds from the tank pool — the hand-picked
+tankiest builds and one of every save, each pool item at least twice, the
+rest random and legal — each fought by Kayle's and Kassadin's pinned 16.18
+overall winners (314 cases: every number of `builds.survive`'s result,
+the defender's report and the tank's sheet included), and one
+`enumerate_survival` pass over a nine-item pool. Replayed by
+`test_builds.TestSurvivalGolden`; regenerate with
+`jobs/gen_golden.py --only survival` after a deliberate change to the
+Survival model. The damage fixtures above did not move when it was added:
+the defender only exists in a Survival fight.
