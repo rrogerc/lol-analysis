@@ -1,0 +1,149 @@
+{
+ "champion": "tahmkench",
+ "name": "Tahm Kench",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opening: Tahm Kench auto-attacks and casts Tongue Lash (Q) on cooldown, and casts Abyssal Dive (W) on cooldown as soon as it is up.",
+  "Every basic attack and every Tongue Lash hit carries An Acquired Taste's bonus magic damage (a fixed number for the fight, computed once from the build's bonus health and AP) and adds a stack of it to the target.",
+  "Attacks and Tongue Lash land well inside An Acquired Taste's 5 s stack duration for the whole fight, so stacks never lapse; the driver does not model the per-stack decay once the duration ends, since it is never reached.",
+  "As soon as the target holds 3 stacks of An Acquired Taste, Devour (R) is cast on it, consuming the stacks; Regurgitate is then cast at the earliest legal moment (1 s later, rather than waiting for the automatic 3 s cast) to land its target-max-health magic damage as soon as possible and minimize the window where the target is swallowed and untargetable. Tahm Kench cannot attack or cast Q/W during the swallow or the 0.4 s lockout after Regurgitate.",
+  "Abyssal Dive's 1.35 s channel, 0.15 s pre-blink delay and 0.65 s post-blink lockout are all treated as time Tahm Kench cannot attack or cast; its damage lands at the end of the delay. Its cooldown starts on cast; since the dummy counts as an enemy champion it is always hit, so the cooldown (and, unmodeled, 40% of the mana cost) is refunded by the same per-rank percentage every cast.",
+  "An Acquired Taste's flat per-level base uses the dossier's reconciled level-by-level array (matching the wiki's stated progression) rather than the raw sheet byLevel array, which did not match the wiki's plateau shape; this is the open reading picked.",
+  "An Acquired Taste's per-stack decay interval (0.67 s wiki vs 1 s sheet PerStackDecayTimer) is left unmodeled entirely, since stacks never lapse in this rotation regardless of which is correct.",
+  "Tongue Lash's damage is treated as landing on cast; its missile travel time beyond the usual 0.25 s cast lockout is not modeled, since every cast is assumed to hit.",
+  "Devour's cooldown uses the ddragon/wiki array [120, 100, 80] directly, since the bin's cooldown-multiplier term (CooldownMultiplierCalculationPart) could not be resolved.",
+  "Thick Skin (E) is purely defensive (grey health storage, decay-heal, shield) and deals no damage, so it is never cast; it is maxed last.",
+  "Mana is not modeled: at level 16 the pool comfortably covers this cadence of Q/W/R, especially with Abyssal Dive's mana refund on every cast."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Tongue Lash",
+   "cooldownS": [
+    7,
+    6.5,
+    6,
+    5.5,
+    5
+   ]
+  },
+  "W": {
+   "name": "Abyssal Dive",
+   "cooldownS": [
+    21,
+    20,
+    19,
+    18,
+    17
+   ]
+  },
+  "E": {
+   "name": "Thick Skin",
+   "cooldownS": [
+    3,
+    3,
+    3,
+    3,
+    3
+   ]
+  },
+  "R": {
+   "name": "Devour / Regurgitate",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "baseByLevel": [
+    5,
+    5,
+    5,
+    5,
+    10,
+    10,
+    10,
+    10,
+    10,
+    15,
+    15,
+    20,
+    20,
+    25,
+    30,
+    35,
+    40,
+    60
+   ],
+   "bonusHpCoef": 0.04,
+   "apRatioPer100BonusHp": 0.0125,
+   "apRatioPer100BonusHpDivisor": 100,
+   "maxStacks": 3,
+   "stackDurationS": 5,
+   "perStackDecayS": 1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     75,
+     120,
+     165,
+     210,
+     255
+    ],
+    "apRatio": 1.0
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     100,
+     135,
+     170,
+     205,
+     240
+    ],
+    "apRatio": 1.5
+   },
+   "championRefundPct": [
+    0.4,
+    0.425,
+    0.45,
+    0.475,
+    0.5
+   ],
+   "channelS": 1.35,
+   "postChannelDelayS": 0.15,
+   "postBlinkLockoutS": 0.65
+  },
+  "R": {
+   "baseDamage": [
+    100,
+    250,
+    400
+   ],
+   "targetMaxHpBaseRatio": 0.15,
+   "targetMaxHpRatioPerAp": 0.0007,
+   "recastDelayS": 1,
+   "postRegurgitateLockoutS": 0.4,
+   "stacksNeeded": 3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.25016,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/tahmkench.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/tahmkench.rs."
+ ]
+}

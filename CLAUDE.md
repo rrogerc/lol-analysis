@@ -240,6 +240,68 @@
   `lol.py builds survive drmundo --items ... --attacker kayle` prints one
   fight.
 
+- Machine-written champions (2026-09-19): every champion without a
+  hand-encoded kit has a kit and a rotation driver written by Claude Sonnet
+  (`jobs/kit_driver.py write <slug>... | --all`), from its dossier
+  (`data/builds/dossiers/<slug>.json`, written by `jobs/kit_dossier.py` and
+  checked by `jobs/kit_sources.py` against the archived bin and wiki under
+  `data/builds/sources/`; that README has the whole pipeline and its
+  measurements). They are UNREVIEWED drafts: the kit says `"generated": true,
+  "reviewed": false`, the Builds tab finds them through a search box (the
+  hand-encoded champions stay buttons), tags the selected one "unreviewed" and
+  shows a banner with the kit's `assumed` numbers and `unused` abilities; the
+  kit's `notes` spell out the rotation it plays. Written blind for the four
+  hand-modeled champions, such drivers ranked 120 random builds like the
+  hand-written ones where the rotation agreed (Spearman 0.90-0.97 for Kayle,
+  Twitch, Kassadin, kill times 0-15% slower) and unlike them where a ruling
+  differed (Vladimir 0.26-0.51: the blind driver basic-attacks, the hand kit
+  rules `attack.never`). Known weak spots: pets (Naafiri's driver fights
+  without her Packmates), max orders (Garen's maxes Q over E), and anything
+  under `assumed`. Reviewing one = reading its notes, fixing the kit or the
+  driver by hand (or `write <slug> --force`), and setting `"reviewed": true`.
+  How it is built: a generated driver is ONE file,
+  `engine/src/generated/<slug>.rs`, exporting `pub struct GenDriver` that
+  implements the same `Driver` trait as the hand-written ones; it reads its
+  numbers from the kit by dotted path (`Kit::num/at_rank/at_level/hit`, the
+  kit keeps them under `gen.*`; no per-champion parsing code), schedules its
+  own events as `Kind::Ev(i)` (ranked after every named kind, before the
+  defender's `R_DEF`; `MAX_EVENTS` 8), and runs behind one vtable
+  (`dyn_driver.rs`, `Rotation::Generated`) so the fight is monomorphised once
+  for all of them, not 170 times. `generated/mod.rs` is rewritten from the
+  directory by `kit_driver.py registry`: never edit it. `generated/jax.rs` +
+  `data/builds/jax.json` are the hand-written reference the model is shown,
+  `jobs/kit-driver-guide.md` what it is told. A candidate is linted (no game
+  number in the Rust, no std, no unsafe, state in `s`/`s0` with `reset` =
+  `self.s = self.s0`; every kit number traceable to the dossier, the sheet or
+  the wiki, or listed under `assumed`), compiled in a private copy of the
+  engine, then fought (`kit_driver.py check`): five levels, five item sets
+  against the three presets, with and without the ult, no panic, no endless
+  event (the fight loop aborts one that keeps coming due: a generated driver's
+  classic bug), the breakdown adds up, damage never falls as the fight
+  lengthens or an item is added, every damaging ability shows up or is waived
+  under `unused`. Failures go back to the model with the history of earlier
+  rounds (without it Yunara relabeled one damage source back and forth for
+  five rounds). Of 172 drivers 129 passed on the first round and not one round
+  failed to compile; about $100 cost-equivalent on the Claude plan through
+  `claude -p` (no API key), $0.25 for a simple kit, $4.87 for Aphelios.
+  `kit_driver.py compare <slug>` is the blind-vs-hand measurement, `annotate`
+  sets `manaless` from the wiki's resource. Dr. Mundo is reserved (his
+  hand-written tank kit). The hand-written drivers and both golden sets are
+  untouched by all of this.
+  Cache keys: a cell keys on `CORE_HASH` (builds.py + the engine WITHOUT
+  `src/generated/`, stamped by build.rs) plus, for a generated champion, its
+  own driver's hash (`GENERATED_HASHES`): writing or rewriting one driver
+  leaves every other champion's cells warm, while an edit to builds.py or the
+  engine core still recomputes everything — with the roster that is about two
+  hours on this box (20-70 s a champion), so expect it after any such commit.
+  The warm computes the hand-encoded champions of every tier first, then the
+  roster; a generated driver that errors in the enumeration gets an error cell
+  (the page says so) instead of staying cold and respawning the warm.
+  `cell_paths()` is memoized on the files and settings it reads (it is asked
+  on every status poll). `SHOW_GENERATED = False` takes the roster off the
+  dashboard. Tests: `python3 -m unittest test_kit_driver test_kit_sources`,
+  `node jobs/test-builds-generated-ui.cjs`.
+
 ## The One-tricks tab (onetricks.py)
 
 - Counts, per champion, the players on each crawled region's latest Master+
@@ -1030,6 +1092,9 @@
 - `python3 -m unittest test_builds` (needs the built engine; ~3 s; the
   Survival tier's tests included) and `node jobs/test-builds-item-ui.cjs`,
   `node jobs/test-builds-survival-ui.cjs`.
+- `python3 -m unittest test_kit_driver test_kit_sources` (machine-written
+  drivers and the dossier pipeline; hermetic, no model is called) and
+  `node jobs/test-builds-generated-ui.cjs`.
 - `python3 -m unittest test_tft` (needs the built TFT engine; ~2 s;
   `TFT_GOLDEN_ALL=1` recomputes every golden cell, ~30 s).
 - Theoretical compositions: `python3 -m unittest test_tft_unit_profiles

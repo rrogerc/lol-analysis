@@ -1,0 +1,134 @@
+{
+ "champion": "garen",
+ "name": "Garen",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Demacian Justice (R) is cast immediately at the opening (t=0) for guaranteed inclusion: the driver has no knowledge of the total fight length, so delaying it to benefit from the target's missing-health scaling risks it never landing in a short fight; missing health is therefore 0 at the moment it lands.",
+  "Demacian Justice's cooldown (80-120s, reduced only by ability haste) exceeds every tested fight length even under heavy haste, so only the opening cast is modeled; recasting it is not implemented.",
+  "Judgment (E) is cast the instant it comes off cooldown and always runs its full duration and tick count rather than being recast early, per the wiki's own guidance not to cancel it; its cooldown (post-effect) starts only once the last spin lands, and Garen cannot attack while spinning.",
+  "Decisive Strike (Q) is cast on cooldown (no cast time); it arms the next basic attack and resets Garen's attack timer immediately on cast, clamped so it cannot pull an attack out of an active Judgment channel. If the 4.5s empower window lapses (e.g. because Judgment keeps locking out attacks) before an attack lands, the bonus is lost silently rather than applied.",
+  "Decisive Strike's bonus damage uses the numbers sheet's tADRatio of 150% AD (GarenQ#TotalDamage) rather than the wiki tooltip text's stated 50% AD, since the two sources explicitly disagree and the sheet's formula is treated as the authoritative live value; the ratio is read as total AD, matching the plain '(+X% AD)' wording rather than 'bonus AD'. The bonus damage itself never critically strikes, but the attack it rides applies its own crit normally.",
+  "Judgment's per-spin AD ratio is likewise read as total AD. Judgment always deals its 25%-increased 'nearest enemy' damage since the dummy is the sole (and thus nearest) target, so the dossier's already nearest-adjusted per-spin base/AD-ratio values are used directly.",
+  "Judgment's spin (tick) count is base 7 plus 1 per 25% bonus attack speed from items/level growth, computed once from the build's static bonus attack speed since nothing in this fight changes it mid-fight.",
+  "Judgment's damage can critically strike for only 30% of the normal crit bonus; this is folded into a single expected-value multiplier computed once from the build's crit chance/damage rather than through the engine's full crit_mod flag.",
+  "Judgment's armor-reduction debuff is treated as triggering on the 6th, 12th, 18th, ... cumulative spin-hit on the target (a persistent hit counter across the whole fight, not reset between separate Judgment casts), the most natural reading of the wiki's 6-hit trigger text.",
+  "Courage (W) and Perseverance (P) are never cast or relevant: Courage's damage reduction only affects incoming damage on Garen, and Perseverance is a pure self-heal; neither can affect a target dummy that never attacks, so no numbers for them are read.",
+  "Mana is not modeled: every one of Garen's abilities has a 0 cost in the data."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Decisive Strike",
+   "cooldownS": [
+    8,
+    8,
+    8,
+    8,
+    8
+   ],
+   "shred": {
+    "pct": 25,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 6
+   }
+  },
+  "W": {
+   "name": "Courage",
+   "cooldownS": [
+    22,
+    19.5,
+    17,
+    14.5,
+    12
+   ]
+  },
+  "E": {
+   "name": "Judgment",
+   "cooldownS": [
+    9,
+    8.25,
+    7.5,
+    6.75,
+    6
+   ]
+  },
+  "R": {
+   "name": "Demacian Justice",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     30,
+     60,
+     90,
+     120,
+     150
+    ],
+    "adRatio": 1.5
+   },
+   "attackWindowS": 4.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     5,
+     8.75,
+     12.5,
+     16.25,
+     20
+    ],
+    "adRatio": [
+     0.5,
+     0.5375,
+     0.575,
+     0.6125,
+     0.65
+    ]
+   },
+   "numTicksBase": 7,
+   "asPerTickPct": 25,
+   "durationS": 3,
+   "critMod": 0.3,
+   "hitsForShred": 6
+  },
+  "R": {
+   "damage": {
+    "base": [
+     125,
+     200,
+     275
+    ]
+   },
+   "missingHpRatio": [
+    0.25,
+    0.3,
+    0.35
+   ],
+   "castTimeS": 0.435
+  }
+ },
+ "attack": {
+  "windupFraction": 0.18,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/garen.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/garen.rs."
+ ],
+ "manaless": true
+}

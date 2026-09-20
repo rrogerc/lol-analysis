@@ -37,7 +37,15 @@ pub enum Kind {
     /// engine makes that one at t=0). Last at an instant, so the cheaper
     /// casts due then go first.
     RCast,
+    /// A generated driver's own timed event (engine/src/generated/): it numbers
+    /// its events itself, and at one instant the lower number goes first.
+    /// After every named kind, so no hand-written fight can see one.
+    Ev(u8),
 }
+
+/// How many timed events a driver may have pending at once.
+pub const MAX_EVENTS: usize = 8;
+pub type Events = [(f64, Kind); MAX_EVENTS];
 
 #[derive(Clone, Debug)]
 pub struct FightResult {
@@ -202,9 +210,11 @@ const R_WCAST: u32 = 10 << 16;
 const R_ECAST: u32 = 11 << 16;
 const R_VENOM: u32 = 12 << 16;
 const R_RCAST: u32 = 13 << 16;
+const R_EV: u32 = 14 << 16;
 /// The defender's own timed events (defense.rs): after every kind a driver
-/// can schedule, so at one instant the attacker's side goes first.
-const R_DEF: u32 = 14 << 16;
+/// can schedule (a generated driver's `Kind::Ev` included), so at one instant
+/// the attacker's side goes first.
+const R_DEF: u32 = 15 << 16;
 
 #[inline(always)]
 fn rank_of(k: Kind) -> u32 {
@@ -226,6 +236,7 @@ fn rank_of(k: Kind) -> u32 {
         Kind::ECast => R_ECAST,
         Kind::Venom => R_VENOM,
         Kind::RCast => R_RCAST,
+        Kind::Ev(i) => R_EV | i as u32,
     }
 }
 
@@ -245,7 +256,8 @@ fn kind_of(rank: u32) -> Kind {
         10 => Kind::WCast,
         11 => Kind::ECast,
         12 => Kind::Venom,
-        _ => Kind::RCast,
+        13 => Kind::RCast,
+        _ => Kind::Ev((rank & 0xFFFF) as u8),
     }
 }
 
@@ -260,6 +272,7 @@ fn check_rank_order() {
                               Kind::ECast, Kind::Venom, Kind::RCast]
             .into_iter()
             .chain((0..9).map(Kind::Burn))
+            .chain((0..9).map(Kind::Ev))
             .collect();
         for &a in &all {
             assert_eq!(kind_of(rank_of(a)), a, "{a:?} round-trip");
@@ -301,6 +314,8 @@ pub struct Prep<'a> {
     pub sheet: &'a Sheet,
     pub fx: &'a Fx,
     pub ranks: Ranks,
+    /// The kit's champion, for error messages.
+    kit_name: &'a str,
     crit_c: f64,
     crit_ev: f64,
     auto_amp: f64,
@@ -511,8 +526,8 @@ pub trait Driver: Sized {
     }
     fn cast_q(&mut self, e: &mut Engine);
     fn cast_r(&mut self, _e: &mut Engine) {}
-    /// Extra timed events, at most four, written into `out`.
-    fn events(&self, _e: &Engine, _out: &mut [(f64, Kind); 4]) -> usize {
+    /// Extra timed events, at most `MAX_EVENTS`, written into `out`.
+    fn events(&self, _e: &Engine, _out: &mut Events) -> usize {
         0
     }
     fn on_event(&mut self, _e: &mut Engine, kind: Kind) {
@@ -822,6 +837,7 @@ impl<'a> Prep<'a> {
         let amp_is_one =
             fx.dmg_amps.is_empty() && fx.flat_amps.is_empty() && fx.s.giant_slayer.is_none();
         Ok(Prep {
+            kit_name: &kit.champion,
             sheet,
             fx,
             ranks,
@@ -1916,8 +1932,18 @@ impl<'a> Prep<'a> {
         let has_mal = e.flags & F_ULT_BURN != 0;
         let has_ss = e.flags & F_STORMSURGE != 0;
         let n_burns = self.n_burns;
-        let mut evs = [(INF, Kind::ECharge); 4];
+        let mut evs: Events = [(INF, Kind::ECharge); MAX_EVENTS];
+        // a driver whose event keeps coming due at the same instant without
+        // changing anything would spin here for ever: a fight of seconds has
+        // hundreds of events, so millions of them is a bug, reported as one
+        let mut spins: u32 = 0;
         loop {
+            spins += 1;
+            if spins > 2_000_000 {
+                return Err(format!("the fight did not end: at t={} an event of '{}' keeps coming \
+                                    due without moving the clock or the driver's state",
+                                   e.st.t, self.kit_name));
+            }
             // the next event: the earliest of everything scheduled; at the same
             // instant, the kind that sorts first, then the earlier burn. The
             // ordinal is packed (see `rank_of`) so the tie-break is an integer
@@ -2122,6 +2148,9 @@ enum Rotation {
     Vladimir(crate::drivers::VladimirDriver),
     Twitch(crate::drivers::TwitchDriver),
     Kassadin(crate::drivers::KassadinDriver),
+    /// Any driver under engine/src/generated/, behind one vtable: a copy of
+    /// the fight per generated champion would cost minutes of compile time.
+    Generated(crate::dyn_driver::DynDriver),
 }
 
 /// One build's fights: the target-independent setup and its driver, built
@@ -2159,6 +2188,11 @@ impl<'a> Sim<'a> {
                                                                        ranks, prestacked)?;
                 (p, Rotation::Kassadin(d))
             }
+            Some(crate::kit::DriverId::Generated) => {
+                let (p, d) = prepare::<crate::dyn_driver::DynDriver>(sheet, kit, fx, level, ranks,
+                                                                     prestacked)?;
+                (p, Rotation::Generated(d))
+            }
             None => return Err(no_driver(kit)),
         };
         #[cfg(debug_assertions)]
@@ -2184,6 +2218,7 @@ impl<'a> Sim<'a> {
             Rotation::Vladimir(d) => prep.fight(d, target, opts, log),
             Rotation::Twitch(d) => prep.fight(d, target, opts, log),
             Rotation::Kassadin(d) => prep.fight(d, target, opts, log),
+            Rotation::Generated(d) => prep.fight(d, target, opts, log),
         };
         #[cfg(debug_assertions)]
         self.check_reset();
@@ -2200,6 +2235,7 @@ impl<'a> Sim<'a> {
             Rotation::Vladimir(d) => prep.fight_defended(d, target, dfd, opts, log),
             Rotation::Twitch(d) => prep.fight_defended(d, target, dfd, opts, log),
             Rotation::Kassadin(d) => prep.fight_defended(d, target, dfd, opts, log),
+            Rotation::Generated(d) => prep.fight_defended(d, target, dfd, opts, log),
         };
         #[cfg(debug_assertions)]
         self.check_reset();
@@ -2234,6 +2270,11 @@ impl<'a> Sim<'a> {
                 d.reset();
                 debug_assert!(d == f, "KassadinDriver::reset left a field behind:\n{d:?}\n{f:?}");
             }
+            (Rotation::Generated(d), Rotation::Generated(f)) => {
+                d.reset();
+                debug_assert!(d.same_as(f), "a generated driver's reset left a field behind:\n\
+                                             {}\n{}", d.describe(), f.describe());
+            }
             _ => unreachable!("the rotation never changes"),
         }
     }
@@ -2261,6 +2302,9 @@ pub fn simulate(sheet: &Sheet, kit: &Kit, fx: &Fx, level: i64, ranks: Ranks, tar
         Some(crate::kit::DriverId::Kassadin) =>
             simulate_with::<crate::drivers::KassadinDriver>(sheet, kit, fx, level, ranks, target,
                                                             opts),
+        Some(crate::kit::DriverId::Generated) =>
+            simulate_with::<crate::dyn_driver::DynDriver>(sheet, kit, fx, level, ranks, target,
+                                                          opts),
         None => Err(no_driver(kit)),
     }
 }

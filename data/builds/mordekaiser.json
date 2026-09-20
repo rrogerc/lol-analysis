@@ -1,0 +1,177 @@
+{
+ "champion": "mordekaiser",
+ "name": "Mordekaiser",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Realm of Death (R) at t = 0: its true damage (10% of the dummy's maximum health) and the target's 10% armor/magic resistance reduction (modeled with the engine's shred slot, declared under Q as the engine requires) land when the 0.5 s cast completes; the rest of R's stat theft (AP/attack speed/health gained by Mordekaiser, the target's base AD reduced) is not modeled since it does not translate into measurable extra damage against a stationary dummy with unspecified own AP/attack speed.",
+  "R's true damage ignores mitigation and does not trigger on-ability-damage item effects (Muramana, Eclipse), per the wiki's damage flags (dApplyDamageModifier = false).",
+  "Obliterate (Q) and Death's Grasp (E) are cast on cooldown for the whole fight; Q's isolated-hit multiplier is always applied because the dummy is the only enemy present.",
+  "Q's flat level-based bonus damage (0 through level 9, +5 per level from 10 to 18) is included per the wiki's reconstructed formula for MordekaiserQ#QDamage.",
+  "Death's Grasp's claw damage lands 0.5 s after the cast starts (the dossier's stated delay before it hits); its 0.25 s cast time only costs the usual 0.25 s attack lockout. Death's Grasp's passive magic penetration (5-15%) is not modeled: the engine exposes no caster-penetration path to the driver.",
+  "Darkness Rise (Passive) gains a stack (capped at 3, refreshing a 4 s window) from basic attacks, Obliterate and Death's Grasp; at 3 stacks it deals its magic-damage aura to the dummy every 1 second until the stack window lapses without a refresh. The dummy is treated as a champion, so the aura's monster damage cap never applies. Darkness Rise's on-hit bonus magic damage (40% AP) applies on every basic attack.",
+  "Indestructible (W) is never cast: it produces no damage, only a defensive shield/heal that the damage fight ignores.",
+  "Mana is not modeled: every Mordekaiser ability costs 0 per the numbers sheet.",
+  "Death's Grasp's cooldown uses the wiki's value (16/14/12/10/8) rather than the mismatched ddragon/bin value (18/16/14/12/10), per the dossier's resolution."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.delayS",
+   "why": "Death's Grasp's 0.5 s pre-damage delay is modeled as measured from the start of the cast rather than as additional time after the 0.25 s cast time completes; the dossier does not distinguish the two readings."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Obliterate",
+   "cooldownS": [
+    8,
+    7,
+    6,
+    5,
+    4
+   ],
+   "shred": {
+    "pct": 10,
+    "appliesTo": [
+     "armor",
+     "mr"
+    ],
+    "durationS": 7
+   }
+  },
+  "W": {
+   "name": "Indestructible",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "E": {
+   "name": "Death's Grasp",
+   "cooldownS": [
+    16,
+    14,
+    12,
+    10,
+    8
+   ]
+  },
+  "R": {
+   "name": "Realm of Death",
+   "cooldownS": [
+    140,
+    120,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "onhit": {
+    "apRatio": 0.4
+   },
+   "stackDurationS": 4,
+   "stackCap": 3,
+   "aura": {
+    "baseFlat": 5,
+    "apRatio": 0.3,
+    "targetHpFracByLevel": [
+     0.01,
+     0.012352941,
+     0.014705882,
+     0.017058823,
+     0.0194117647,
+     0.021764706,
+     0.024117647,
+     0.026470588,
+     0.028823529,
+     0.031176471,
+     0.033529412,
+     0.035882353,
+     0.038235294,
+     0.040588235,
+     0.042941176,
+     0.04529412,
+     0.0476470588,
+     0.05
+    ]
+   }
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     115,
+     150,
+     185,
+     220
+    ],
+    "bonusAdRatio": 1.2,
+    "apRatio": 0.7
+   },
+   "levelBonusByLevel": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45
+   ],
+   "isolationScalar": [
+    1.3,
+    1.35,
+    1.4,
+    1.45,
+    1.5
+   ]
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     80,
+     100,
+     120,
+     140
+    ],
+    "apRatio": 0.45
+   },
+   "delayS": 0.5
+  },
+  "R": {
+   "castTimeS": 0.5,
+   "trueDamage": {
+    "targetMaxHpFrac": 0.1
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.21133,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/mordekaiser.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/mordekaiser.rs."
+ ],
+ "manaless": true
+}

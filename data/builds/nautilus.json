@@ -1,0 +1,167 @@
+{
+ "champion": "nautilus",
+ "name": "Nautilus",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with R (Depth Charge) at t=0 since its 80-120s cooldown means it can be cast only once inside the fight.",
+  "Depth Charge is modeled as one underway eruption (secondary damage) followed by the final eruption (primary/increased damage), assuming a melee-range ~125-unit engagement so the charge reaches the target in about 0.35s per its stated acceleration formula (275 + 466.67/s); this is an assumption because the true distance depends on where R is cast from.",
+  "Q (Dredge Line) is cast on cooldown; its damage lands on cast and the drag/dash and root are not modeled beyond the standard 0.25s cast lockout, the same simplification used for other dash/skillshot abilities.",
+  "W (Titan's Wrath) is cast on cooldown, immediately raising its 6s shield; per the wiki, reapplying Pain of Wrath while one is already ticking adds a stack but deals no extra damage, so only the first attack landing during each shield window deals Pain of Wrath's damage (half instantly, half 1.25s later) — but every attack landing during the shield window still resets Nautilus' attack timer, so attacks chain much faster while it is up.",
+  "E (Riptide) is cast on cooldown; all three of its waves (at 0, 0.297s and 0.561s after the cast completes) are assumed to hit the stationary dummy, with the second and third waves reduced to 50% damage as stated.",
+  "Staggering Blow (P) adds its bonus physical damage to a basic attack landing on the dummy at most once every 6 seconds, since the dummy is the only target.",
+  "Mana is not modeled: nothing here realistically binds inside a 15s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.assumedRangeUnits",
+   "why": "Depth Charge's chase distance to a stationary dummy depends on cast range; assumed a melee-range 125-unit engagement since Nautilus typically closes in with Q/auto-attacks before casting R"
+  },
+  {
+   "path": "gen.R.reachTimeS",
+   "why": "travel time for the charge to cover the assumed 125-unit distance, derived from the ability's stated speed formula 275 + 466.67 units/s"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Dredge Line",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "W": {
+   "name": "Titan's Wrath",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "E": {
+   "name": "Riptide",
+   "cooldownS": [
+    7,
+    6.5,
+    6,
+    5.5,
+    5
+   ]
+  },
+  "R": {
+   "name": "Depth Charge",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "bonusDamageByLevel": [
+    14,
+    20,
+    26,
+    32,
+    38,
+    44,
+    50,
+    56,
+    62,
+    68,
+    74,
+    80,
+    86,
+    92,
+    98,
+    104,
+    110,
+    116
+   ],
+   "perTargetCdS": 6
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     85,
+     125,
+     165,
+     205,
+     245
+    ],
+    "apRatio": 0.9
+   }
+  },
+  "W": {
+   "durationS": 6,
+   "dot": {
+    "base": [
+     30,
+     40,
+     50,
+     60,
+     70
+    ],
+    "apRatio": 0.4
+   },
+   "dotDelayS": 1.25,
+   "dotSplitFraction": 0.5
+  },
+  "E": {
+   "wave1": {
+    "base": [
+     55,
+     90,
+     125,
+     160,
+     195
+    ],
+    "apRatio": 0.5
+   },
+   "reductionRatio": 0.5,
+   "wave2OffsetS": 0.297,
+   "wave3OffsetS": 0.561
+  },
+  "R": {
+   "secondary": {
+    "base": [
+     125,
+     175,
+     225
+    ],
+    "apRatio": 0.4
+   },
+   "primary": {
+    "base": [
+     150,
+     275,
+     400
+    ],
+    "apRatio": 0.8
+   },
+   "castTimeS": 0.46,
+   "eruptionIntervalS": 0.25,
+   "reachTimeS": 0.3504,
+   "assumedRangeUnits": 125
+  }
+ },
+ "attack": {
+  "windupFraction": 0.30637,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nautilus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nautilus.rs."
+ ]
+}

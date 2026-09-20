@@ -1,0 +1,166 @@
+{
+ "champion": "nidalee",
+ "name": "Nidalee",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens by casting Primal Surge (E) on herself at t=0 for its 30-70% bonus attack speed (7 s, persists through the form swap); this is modeled as an event rather than tied to the R hook, since R itself deals no damage.",
+  "Immediately casts Javelin Toss (Q, Human Form), assumed at the full 1300+ unit travel distance for the maximum +225% distance damage bonus (DamageMulti 3.25) and to apply the Hunted mark for 4 s.",
+  "Swaps into Cougar Form right after Javelin Toss lands (the Hunted mark resets Aspect of the Cougar's cooldown, so the swap is free) and stays in Cougar Form for the rest of the fight; repeatedly cycling back to Human Form to reapply Hunted and re-poke with Javelin Toss is an open question in the dossier and is not modeled.",
+  "In Cougar Form, Takedown (Q), Pounce (W) and Swipe (E) all scale off Aspect of the Cougar's (R) own rank, per the wiki, not off the individual Q/W/E ranks; the Q/W/E ranks only need to be at least 1 to unlock access to each Cougar ability.",
+  "Takedown's cooldown is treated as available immediately at the moment of the swap, since it was never previously cast (it has its own, separate cooldown tracker from Javelin Toss in the real game).",
+  "Takedown arms on cast and pays out on the following basic attack (post-effect cooldown, attack-timer reset onto that attack); its missing-health damage modifier is evaluated against the dummy's current health at that moment, and it keeps the +30% Hunted bonus only while the opening Hunted mark is still up.",
+  "Takedown's separate 'bonus damage from a critical strike is converted to magic damage' interaction is not modeled: the engine deals the attack's own AD/crit damage internally with no hook to change its type, so only Takedown's own scaling bonus is dealt.",
+  "Pounce and Swipe are cast on cooldown for the rest of the fight at their flat 6 s base cooldown, not the reduced value from a kill or a fresh Hunted application, since the dummy never dies and Hunted is applied only once.",
+  "Bushwhack (Human W) is skipped entirely: its trap must be walked into by a moving unit and the stationary dummy never triggers it.",
+  "Mana is not modeled: Cougar-Form Q/W/E cost 0 mana, and the two Human-Form casts (Javelin Toss, Primal Surge) each happen only once in the fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.human.rangeMultiplierAssumed",
+   "why": "Javelin Toss's distance-based damage bonus is assumed at its maximum (a full 1300+ unit travel) rather than whatever range a real cast against the dummy would land at."
+  },
+  {
+   "path": "gen.Q.cougar.huntedBonusPct",
+   "why": "Prowl's blurb says only the 'first cast' of Takedown against a Hunted target is enhanced, but Takedown's own tooltip states the +30% bonus applies whenever the struck target is Hunted with no first-cast restriction; the latter, unconditional reading (Takedown's own ability text) is used."
+  }
+ ],
+ "unused": {
+  "R": "Aspect of the Cougar is a pure stance swap (Human/Cougar Form) with no damage, cost or cast time of its own; per the wiki its only combat-relevant effects are letting a Hunted mark reset its own cooldown and setting the rank that Cougar Form's Takedown/Pounce/Swipe scale from. Those three abilities' damage is dealt and attributed under their own Q/W/E sources, so no separate 'R' source exists."
+ },
+ "abilities": {
+  "Q": {
+   "name": "Javelin Toss / Takedown",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "W": {
+   "name": "Bushwhack / Pounce",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "E": {
+   "name": "Primal Surge / Swipe",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "R": {
+   "name": "Aspect of the Cougar",
+   "cooldownS": [
+    3,
+    3,
+    3,
+    3
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "huntedDurationS": 4
+  },
+  "Q": {
+   "human": {
+    "damage": {
+     "base": [
+      70,
+      90,
+      110,
+      130,
+      150
+     ],
+     "apRatio": 0.5
+    },
+    "rangeMultiplierAssumed": 3.25
+   },
+   "cougar": {
+    "damage": {
+     "base": [
+      5,
+      30,
+      55,
+      80
+     ],
+     "adRatio": 0.75,
+     "apRatio": 0.4
+    },
+    "missingHpAmpCoef": [
+     1,
+     1.25,
+     1.5,
+     1.75
+    ],
+    "huntedBonusPct": 30,
+    "cooldownS": 6
+   }
+  },
+  "W": {
+   "cougar": {
+    "damage": {
+     "base": [
+      55,
+      100,
+      145,
+      190
+     ],
+     "bonusAdRatio": 0.5,
+     "apRatio": 0.3
+    },
+    "cooldownS": 6
+   }
+  },
+  "E": {
+   "human": {
+    "bonusAsPct": [
+     0.3,
+     0.4,
+     0.5,
+     0.6,
+     0.7
+    ],
+    "durationS": 7
+   },
+   "cougar": {
+    "damage": {
+     "base": [
+      70,
+      130,
+      190,
+      250
+     ],
+     "bonusAdRatio": 0.7,
+     "apRatio": 0.55
+    },
+    "cooldownS": 6
+   }
+  },
+  "R": {}
+ },
+ "attack": {
+  "windupFraction": 0.15,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nidalee.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nidalee.rs."
+ ]
+}

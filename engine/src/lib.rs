@@ -10,10 +10,12 @@
 
 mod defense;
 mod drivers;
+mod dyn_driver;
 mod enumerate;
 mod fight;
 mod fsum;
 mod fx;
+mod generated;
 mod kit;
 mod num;
 mod pyget;
@@ -110,8 +112,19 @@ fn lol_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(survive::survive, m)?)?;
     m.add_class::<survive::SurvCtx>()?;
     m.add("DRIVERS", fight::DRIVERS.to_vec())?;
+    m.add("GENERATED_DRIVERS", generated::NAMES.to_vec())?;
     m.add("DEFENDERS", DEFENDERS.to_vec())?;
     m.add("SOURCE_HASH", env!("LOL_ENGINE_SOURCE_HASH"))?;
+    // the cache keys' handles (build.rs): the engine without its machine-written
+    // drivers, and each of those on its own
+    m.add("CORE_HASH", env!("LOL_ENGINE_CORE_HASH"))?;
+    let generated = PyDict::new(m.py());
+    for pair in env!("LOL_ENGINE_GENERATED_HASHES").split(';').filter(|p| !p.is_empty()) {
+        if let Some((name, hash)) = pair.split_once('=') {
+            generated.set_item(name, hash)?;
+        }
+    }
+    m.add("GENERATED_HASHES", generated)?;
     m.add("VERSION", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

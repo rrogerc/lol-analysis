@@ -1,0 +1,153 @@
+{
+ "champion": "akshan",
+ "name": "Akshan",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens by casting Comeuppance (R) at t=0 to begin its 2.5s channel; the volley fires automatically when the channel ends (or on immediate recast for any later channel), maximizing stored bullets each time, while basic attacks continue uninterrupted through the channel.",
+  "Avengerang (Q) is cast as soon as it is off cooldown throughout the fight.",
+  "Going Rogue (W) deals no damage and ends immediately on any attack or cast, so it is never used.",
+  "Heroic Swing (E) needs terrain to embed its hook, which this arena has none of; it is modeled as a compressed two-shot sequence instead of being skipped: the mandatory first shot at the start of the swing and the mandatory final shot while dismounting, with no repeating 0.2s tick shots in between, on the assumption that the swing collides with the adjacent, stationary dummy almost immediately (the most conservative of the dossier's unsettled options for shot count). The 0.5s minimum delay before the third cast (E3LockoutDuration) is kept as the gap between the two shots; the cooldown starts post-effect, after the second shot lands. The 25%-effectiveness on-hit-item reduction during the swing is not modeled since no on-hit items apply through this path in the simplified sequence.",
+  "The dummy counts as an enemy champion per the fight rules, so Dirty Fighting's second shot always deals the 50% AD champion rate (not the 100% anti-minion rate), and Avengerang's non-champion damage reduction never applies.",
+  "Dirty Fighting's second shot is modeled as landing immediately after the primary attack, since no numeric travel delay is given in the sources; it deals its own independently-critting physical damage and applies its own stack of Dirty Fighting, in addition to the stack applied by the primary attack itself, so a single attack cycle can add up to two stacks.",
+  "Dirty Fighting's stack duration is given as 5 seconds in the wiki's prose but 4.5 seconds in the bin data (AkshanPassive.DebuffDuration); the bin's 4.5s value is used.",
+  "Dirty Fighting's shield-grant cooldown only gates the shield (which does nothing in a fight with no return damage or healing), not the third-stack magic damage, so it is not modeled.",
+  "Avengerang's homing return pass is assumed to hit the stationary dummy for a second full damage instance; since its cooldown starts only once the boomerang returns, an assumed 0.9s round-trip travel time is added before the cooldown begins.",
+  "Comeuppance's per-bullet critical-strike bonus and missing-health scaling are computed directly from the bin's formulas (a deterministic partial crit-chance bonus, and up to +200% damage at 100% missing health) rather than as a random crit roll, evaluated dynamically against the dummy's current health at the moment the volley fires.",
+  "Heroic Swing's shots use the same deterministic partial-crit formula (its own reduced 50% bonus-crit-damage modifier), computed once from the build's stats rather than through the engine's standard crit_mod flag, since its crit modifier differs from a normal attack's.",
+  "The second shot's own on-hit damage is dealt as a direct extra instance rather than replaying the engine's full on-hit item pipeline a second time, similar to how other kits' bonus attack instances are modeled.",
+  "Mana costs are not modeled; none would meaningfully gate Q, E or R casts within a 15s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.travelTimeS",
+   "why": "round-trip travel time for Avengerang's boomerang before its post-return cooldown starts; not stated numerically in the sources"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Avengerang",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "W": {
+   "name": "Going Rogue",
+   "cooldownS": [
+    18,
+    14,
+    10,
+    6,
+    2
+   ]
+  },
+  "E": {
+   "name": "Heroic Swing",
+   "cooldownS": [
+    18,
+    16.5,
+    15,
+    13.5,
+    12
+   ]
+  },
+  "R": {
+   "name": "Comeuppance",
+   "cooldownS": [
+    100,
+    85,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "secondShotAdRatio": 0.5,
+   "magicProcBase": [
+    15,
+    15,
+    15,
+    15,
+    15,
+    40,
+    40,
+    40,
+    40,
+    40,
+    80,
+    80,
+    80,
+    80,
+    80,
+    150,
+    150,
+    150
+   ],
+   "magicProcApRatio": 0.6,
+   "maxStacks": 3,
+   "stackDurationS": 4.5
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     45,
+     75,
+     105,
+     135,
+     165
+    ],
+    "bonusAdRatio": 0.7
+   },
+   "travelTimeS": 0.9
+  },
+  "E": {
+   "damage": {
+    "base": [
+     8,
+     16,
+     24,
+     32,
+     40
+    ],
+    "adRatio": 0.25
+   },
+   "attackSpeedCoefficient": 0.3,
+   "critDamageMod": 0.5,
+   "thirdCastDelayS": 0.5
+  },
+  "R": {
+   "perBullet": {
+    "base": [
+     25,
+     35,
+     45
+    ],
+    "bonusAdRatio": 0.15
+   },
+   "critDamageMod": 0.3,
+   "channelDurationS": 2.5,
+   "bulletCount": [
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ "attack": {
+  "windupFraction": 0.13333,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/akshan.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/akshan.rs."
+ ]
+}

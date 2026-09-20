@@ -1,0 +1,181 @@
+{
+ "champion": "samira",
+ "name": "Samira",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Samira is assumed to stay within her 200-unit blade range for the whole fight, so every basic attack is a blade attack, Flair always slashes (not the ranged shot) and every Flair, Blade Whirl and Wild Rush cast also triggers Daredevil Impulse's bonus magic damage; the dossier leaves this an open question and this is the most common in-game reading for a champion fighting a stationary target.",
+  "Flair's damage (shot or slash, or the Wild-Rush explosive variant) is identical per the wiki, so the driver deals the same amount regardless of which visual variant would occur; it uses Flair's own halved crit-damage formula (1 + critChance * 0.5 * (critDamage-1)) baked into a precomputed expected value, since the engine's crit_mod flag only applies the full crit multiplier.",
+  "Blade Whirl is cast on cooldown for maximum damage even though it blocks basic attacks and Flair for its 0.75s spin; its first slash lands on cast and its second 0.75s later, both carrying the Daredevil Impulse bonus.",
+  "Wild Rush is cast on cooldown for its magic damage, its bonus AD ratio, and its 5s bonus attack speed window; it does not lock out attacks, Flair or Inferno Trigger.",
+  "Inferno Trigger requires 6 Style stacks: this driver builds Style on every basic attack, Flair, Blade Whirl slash and Wild Rush cast (and, once firing, on its own shots), and casts Inferno Trigger as soon as 6 stacks and its 5s cooldown both allow, checked right after each such hit rather than on a continuous timer -- with attacks landing every well under a second this fires promptly. Style stacks are treated as consumed at the moment Inferno Trigger is cast rather than at the end of its 2.25s effect, which only matters while the ultimate is already active and unable to be recast anyway.",
+  "Inferno Trigger fires its 10 shots at a flat 0.2s interval (the wiki's stated average), rather than the exact alternating 0.231s/0.198s pattern, since the target never moves; Inferno Trigger also blocks basic attacks and Flair for its 2.25s duration, and its shots do not trigger the Daredevil Impulse blade bonus since they are gun, not blade, damage.",
+  "The empowered 6-bolt basic attack against an immobilized target never fires, since the fight framework defines crowd control as not occurring.",
+  "Mana is not modeled: Flair/Blade Whirl/Wild Rush's costs are small relative to Samira's mana pool and regeneration and do not bind within a 15 s fight.",
+  "The opening at t=0 casts nothing: Samira starts with 0 Style stacks and Inferno Trigger cannot be cast until 6 are built."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.shotIntervalS",
+   "why": "the wiki states only a 0.2s average interval for Inferno Trigger's alternating 0.231/0.198s shot timing; a uniform 0.2s interval is used since the target never moves."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Flair",
+   "cooldownS": [
+    6,
+    5,
+    4,
+    3,
+    2
+   ]
+  },
+  "W": {
+   "name": "Blade Whirl",
+   "cooldownS": [
+    30,
+    28,
+    26,
+    24,
+    22
+   ]
+  },
+  "E": {
+   "name": "Wild Rush",
+   "cooldownS": [
+    20,
+    18,
+    16,
+    14,
+    12
+   ]
+  },
+  "R": {
+   "name": "Inferno Trigger",
+   "cooldownS": [
+    5,
+    5,
+    5
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "bonusDamageBaseByLevel": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "bonusDamageAdRatioByLevel": [
+    0.035,
+    0.039117647006231195,
+    0.04323529386345078,
+    0.04735294,
+    0.05147059,
+    0.05558823443510953,
+    0.05970588,
+    0.06382353,
+    0.06794117500676827,
+    0.07205882,
+    0.07617647,
+    0.08029412,
+    0.08441176,
+    0.08852941,
+    0.09264705615008578,
+    0.09676470300730537,
+    0.10088235,
+    0.105
+   ],
+   "styleDurationS": 6,
+   "styleMaxStacks": 6
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     0,
+     5,
+     10,
+     15,
+     20
+    ],
+    "adRatio": 1.1
+   },
+   "critDamageMod": 0.5
+  },
+  "W": {
+   "damage": {
+    "base": [
+     20,
+     35,
+     50,
+     65,
+     80
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "spinDurationS": 0.75
+  },
+  "E": {
+   "damage": {
+    "base": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "bonusAdRatio": 0.2
+   },
+   "bonusAsPct": [
+    20,
+    25,
+    30,
+    35,
+    40
+   ],
+   "bonusAsDurationS": 5
+  },
+  "R": {
+   "damage": {
+    "base": [
+     20,
+     40,
+     60
+    ],
+    "adRatio": 0.3
+   },
+   "numShots": 10,
+   "activeDurationS": 2.25,
+   "shotIntervalS": 0.2
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/samira.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/samira.rs."
+ ]
+}

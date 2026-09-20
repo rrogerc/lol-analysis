@@ -1,0 +1,134 @@
+{
+ "champion": "aurelionsol",
+ "name": "Aurelion Sol",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Aurelion Sol never attacks: his damage is entirely abilities and a channel that fills the fight, so attack.never is set and items that key on attacks or attack speed get no value.",
+  "Cosmic Creator's Stardust count is held at a fixed assumed value (gen.P.assumedStacks) for the whole fight rather than tracked live, since it feeds three formulas at once and its growth within a single 8-15s fight is small next to a realistic level-16 total.",
+  "Breath of Light's target-max-health burst bonus is dealt as true damage, per the bin's field and function names (QMaxHealthTrueDamagePerStack, BurstBonusTrueDamageToChamps), separately from the burst's flat+AP magic damage, even though the ability-wide tooltip calls the whole ability 'magic damage'.",
+  "Breath of Light is cast once at the start and its channel is treated as never-ending and never-interrupted for the whole fight: the beam ticks every 0.125s and its burst fires every full second, reading the ranked 3.25s channel cap and its automatic recast as a seamless, zero-downtime continuation (the more common in-game reading) so it never actually matters.",
+  "Singularity (E) is cast as soon as it is off cooldown and is assumed not to interrupt Breath of Light's channel, since the wiki's interrupt-on-cast rule is only stated for casts made during Astral Flight's dash; its cooldown starts when its 5s duration ends (post-effect).",
+  "Falling Star is cast once at t=0; with the assumed Stardust count already past 75, it is cast as its empowered form, The Skies Descend, and only its star-impact damage is dealt, since the wiki states a target hit by the impact is immune to the shockwave, so the dummy (always hit by the impact) never takes shockwave damage.",
+  "Astral Flight (W) is never cast: on a stationary dummy its only combat effect is a temporary buff to Breath of Light's flat damage while dashing, which needs a dash duration/distance the engine does not model, and its cooldown-reset-and-extend effect on Breath of Light is worthless since the channel is already continuous.",
+  "Singularity's and Falling Star's execute thresholds are not modeled: the engine has no execute primitive and this dummy fight only checks total damage dealt.",
+  "Mana costs are not modeled; nothing here would actually stall casts within a 15s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.assumedStacks",
+   "why": "permanent Stardust stacks a level-16 champion plausibly has accumulated by this point in a game; held fixed through the fight since in-fight growth (roughly 5-15 stacks over 15s) is negligible against this baseline, and Q's true-damage term, E's execution threshold and R's Skies Descend unlock all key off of it"
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.15333,
+  "ranged": true,
+  "never": true
+ },
+ "abilities": {
+  "Q": {
+   "name": "Breath of Light",
+   "cooldownS": [
+    3,
+    3,
+    3,
+    3,
+    3
+   ]
+  },
+  "W": {
+   "name": "Astral Flight",
+   "cooldownS": [
+    22,
+    20.5,
+    19,
+    17.5,
+    16
+   ]
+  },
+  "E": {
+   "name": "Singularity",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "R": {
+   "name": "Falling Star / The Skies Descend",
+   "cooldownS": [
+    120,
+    110,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "trueDmgPerStackOfTargetMaxHp": 0.00031,
+   "assumedStacks": 100
+  },
+  "Q": {
+   "dps": {
+    "base": [
+     45,
+     60,
+     75,
+     90,
+     105
+    ],
+    "apRatio": 0.55
+   },
+   "burst": {
+    "base": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "apRatio": 0.3
+   },
+   "beamTickIntervalS": 0.125,
+   "burstIntervalS": 1
+  },
+  "E": {
+   "tick": {
+    "base": [
+     2.5,
+     3.75,
+     5,
+     6.25,
+     7.5
+    ],
+    "apRatio": 0.03
+   },
+   "tickIntervalS": 0.25,
+   "delayS": 0.5,
+   "durationS": 5,
+   "tickCount": 20
+  },
+  "R": {
+   "impact": {
+    "base": [
+     187.5,
+     312.5,
+     437.5
+    ],
+    "apRatio": 0.9375
+   },
+   "delayS": 2
+  }
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aurelionsol.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aurelionsol.rs."
+ ]
+}

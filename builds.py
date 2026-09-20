@@ -751,6 +751,8 @@ def merge_effects(item_ids, effects):
 
 # the champions the engine has a driver for (engine/src/drivers.rs)
 KIT_DRIVERS = tuple(lol_engine.DRIVERS)
+# machine-written drivers (engine/src/generated/, jobs/kit_driver.py): unreviewed
+GENERATED_DRIVERS = tuple(getattr(lol_engine, "GENERATED_DRIVERS", ()))
 
 
 def simulate(sheet, kit, fx, level, ranks, target_hp, target_armor, target_mr,
@@ -834,7 +836,7 @@ def tier_objective(tier):
 def tier_champions(tier):
     """The champions a tier ranks builds for: tank kits on a survival tier,
     damage kits everywhere else."""
-    return tank_champions() if tier_objective(tier) == "survival" else kit_champions()
+    return tank_champions() if tier_objective(tier) == "survival" else damage_champions()
 
 
 def tiers():
@@ -851,10 +853,12 @@ def tiers():
                   key=cost)
 
 
-def _kits(role):
-    """(slug, kit) for every hand-encoded kit (data/builds/<slug>.json) of
-    one role: "carry" (the default — scored on the damage it deals) or
-    "tank" (scored on how long it survives, the Survival tier)."""
+def _kits(role, include_generated=False):
+    """(slug, kit) for every kit (data/builds/<slug>.json) of one role: "carry"
+    (the default — scored on the damage it deals) or "tank" (scored on how
+    long it survives, the Survival tier). Machine-written kits
+    ("generated": true, jobs/kit_driver.py) are unreviewed and only listed
+    when asked for."""
     out = []
     if os.path.isdir(BUILDS_DATA_DIR):
         for fn in sorted(os.listdir(BUILDS_DATA_DIR)):
@@ -862,22 +866,43 @@ def _kits(role):
                 continue
             with open(os.path.join(BUILDS_DATA_DIR, fn)) as f:
                 kit = json.load(f)
+            if kit.get("generated") and not include_generated:
+                continue
+            if fn[:-5].endswith("_blind"):
+                # a driver written blind beside a hand-written one, to compare
+                # the two (jobs/kit_driver.py compare): never a champion
+                continue
             if "abilities" in kit and kit.get("role", "carry") == role:
                 out.append((fn[:-5], kit))
     return out
 
 
-def kit_champions():
-    """Slugs with a hand-encoded damage kit (data/builds/<slug>.json) and
-    the rotation logic that drives it (KIT_DRIVERS)."""
+def kit_champions(include_generated=False):
+    """Slugs with a damage kit (data/builds/<slug>.json) and the rotation
+    logic that drives it: the hand-encoded ones (KIT_DRIVERS), and with
+    `include_generated` the machine-written ones too (GENERATED_DRIVERS)."""
     slugs = []
-    for slug, _ in _kits("carry"):
-        if slug not in KIT_DRIVERS:
+    for slug, _ in _kits("carry", include_generated):
+        if slug not in KIT_DRIVERS + GENERATED_DRIVERS:
             print(f"Warning: data/builds/{slug}.json has no engine driver — add "
                   f"one in engine/src/drivers.rs to simulate it", file=sys.stderr)
             continue
         slugs.append(slug)
     return slugs
+
+
+# whether the dashboard's damage tiers rank the machine-written champions too
+SHOW_GENERATED = True
+
+
+def damage_champions():
+    """Every champion the damage tiers rank: the hand-encoded kits first (the
+    warm computes in this order, so they are never stuck behind the roster),
+    then the machine-written, unreviewed ones (SHOW_GENERATED)."""
+    hand = kit_champions()
+    if not SHOW_GENERATED:
+        return hand
+    return hand + [s for s in kit_champions(include_generated=True) if s not in hand]
 
 
 # the tank kits whose defensive mechanics the engine models (defense.rs)
@@ -912,7 +937,7 @@ def api_builds_meta():
     champs = []
     damage_tiers = [t for t in tiers() if tier_objective(t) == "damage"]
     survival_tiers = [t for t in tiers() if tier_objective(t) == "survival"]
-    for slug in kit_champions():
+    for slug in damage_champions():
         kit = load_kit(slug)
         ids = champion_pool(kit, effects)
         name = kit.get("name", slug)
@@ -933,6 +958,13 @@ def api_builds_meta():
             "excluded": [f"{', '.join(dropped)} — need mana to stack or "
                          f"scale; {name} has none"] if dropped else [],
             "notes": notes,
+            # a machine-written kit and driver (jobs/kit_driver.py): compiled and
+            # sanity-checked, not reviewed — the page says so beside its rankings
+            "generated": bool(kit.get("generated")),
+            "reviewed": bool(kit.get("reviewed", not kit.get("generated"))),
+            "assumed": [f"{a.get('path')}: {a.get('why')}" for a in kit.get("assumed") or []
+                        if isinstance(a, dict)],
+            "unused": [f"{slot}: {why}" for slot, why in (kit.get("unused") or {}).items()],
         })
 
     for slug in tank_champions():
@@ -1019,7 +1051,24 @@ def _code_hash(py_bytes, engine_hash):
 
 
 with open(os.path.abspath(__file__), "rb") as _f:
-    SOURCE_HASH = _code_hash(_f.read(), lol_engine.SOURCE_HASH)
+    _PY_BYTES = _f.read()
+SOURCE_HASH = _code_hash(_PY_BYTES, lol_engine.SOURCE_HASH)
+# What a cell's key holds of the code. A machine-written driver
+# (engine/src/generated/<slug>.rs) only ever runs for its own champion, so a
+# cell keys on this module and the engine's CORE (everything but that
+# directory; engine/build.rs stamps it) plus, for a generated champion, its
+# own driver: writing or rewriting one driver leaves every other champion's
+# cells warm. SOURCE_HASH, the hash of everything, still answers "is the
+# running code what is on disk".
+CORE_HASH = _code_hash(_PY_BYTES, getattr(lol_engine, "CORE_HASH", lol_engine.SOURCE_HASH))
+GENERATED_HASHES = dict(getattr(lol_engine, "GENERATED_HASHES", {}))
+
+
+def champion_code_hash(slug):
+    driver = GENERATED_HASHES.get(slug)
+    if driver is None:
+        return CORE_HASH
+    return hashlib.sha256((CORE_HASH + driver).encode()).hexdigest()
 
 
 def engine_source_hash():
@@ -1069,8 +1118,11 @@ def cell_paths():
     patch labels, since the daily refresh rewrites a patch's snapshot in
     place), the kit encoding, the hand-curated item passives, and the
     item-bin rules that decide which builds are legal."""
+    stamp = _paths_stamp()
+    if _PATHS_MEMO.get("stamp") == stamp:
+        return dict(_PATHS_MEMO["paths"])
     patch, pool = load_items()
-    base = hashlib.sha256(SOURCE_HASH.encode())
+    base = hashlib.sha256()
     for path in (ITEM_EFFECTS_PATH, groups_path()):
         if path and os.path.exists(path):
             with open(path, "rb") as f:
@@ -1086,6 +1138,7 @@ def cell_paths():
         for slug in tier_champions(tier):
             if slug not in champs:
                 h_champ = base.copy()
+                h_champ.update(champion_code_hash(slug).encode())
                 with open(os.path.join(BUILDS_DATA_DIR, f"{slug}.json"), "rb") as f:
                     h_champ.update(f.read())
                 h_champ.update(json.dumps(load_champion(slug), sort_keys=True).encode())
@@ -1102,7 +1155,48 @@ def cell_paths():
                 paths[(slug, key)] = os.path.join(
                     SCENARIO_CACHE_DIR,
                     f"{slug}-{key}-{h.hexdigest()[:16]}.json")
+    _PATHS_MEMO.update(stamp=stamp, paths=dict(paths))
     return paths
+
+
+# cell_paths() reads every kit and champion snapshot: a second or more with
+# the whole roster, and the dashboard asks on every status poll. Its answer
+# only changes when one of the files it reads does, so it is kept until their
+# names, sizes or modification times move.
+_PATHS_MEMO = {}
+
+
+def _paths_stamp():
+    # what the answer is computed from besides files: the code handles, where
+    # the cells live, the scenarios and the pools
+    settings = json.dumps([CORE_HASH, sorted(GENERATED_HASHES.items()), SCENARIO_CACHE_DIR,
+                           SCENARIOS, DEFAULT_POOL, BOOTS, TANK_POOL, R_THRESHOLDS,
+                           KIT_DRIVERS, GENERATED_DRIVERS, TANK_KITS, SHOW_GENERATED],
+                          sort_keys=True,
+                          default=str)
+    watched = [ITEM_EFFECTS_PATH, groups_path() or ""]
+    for root in (BUILDS_DATA_DIR, items.ITEMS_DATA_DIR):
+        if os.path.isdir(root):
+            watched += [os.path.join(root, n) for n in sorted(os.listdir(root))]
+    if os.path.isdir(CHAMPIONS_DIR):
+        for patch in sorted(os.listdir(CHAMPIONS_DIR)):
+            pdir = os.path.join(CHAMPIONS_DIR, patch)
+            for slug in sorted(os.listdir(pdir)):
+                cdir = os.path.join(pdir, slug)
+                watched += [os.path.join(cdir, n) for n in sorted(os.listdir(cdir))]
+    if os.path.isdir(items.ITEMS_DATA_DIR):  # the item snapshots, a few files a patch
+        for patch in sorted(os.listdir(items.ITEMS_DATA_DIR)):
+            pdir = os.path.join(items.ITEMS_DATA_DIR, patch)
+            if os.path.isdir(pdir):
+                watched += [os.path.join(pdir, n) for n in sorted(os.listdir(pdir))]
+    out = []
+    for path in watched:
+        try:
+            st = os.stat(path)
+            out.append((path, st.st_mtime_ns, st.st_size))
+        except OSError:
+            out.append((path, 0, 0))
+    return settings, tuple(out)
 
 
 def cell_ready():
@@ -1470,11 +1564,31 @@ def warm(log=_say):
         cold = [(slug, tier) for tier in tiers() for slug in tier_champions(tier)
                 if any(not os.path.exists(paths[(slug, k)])
                        for k in tier_scenarios(tier))]
+        # the hand-encoded champions of every tier before the machine-written
+        # roster (an hour or more of it): the Survival tier's attackers are
+        # hand-encoded, so its cells never wait on a generated one
+        cold.sort(key=lambda st: st[0] in GENERATED_HASHES)
         done = 0
         for n, (slug, tier) in enumerate(cold, 1):
             keys = tier_scenarios(tier)
             log(f"[{n}/{len(cold)}] {slug}/{tier} ({', '.join(keys)}) …")
-            outs = compute_tier(slug, tier, paths, log=log)
+            try:
+                outs = compute_tier(slug, tier, paths, log=log)
+            except Exception as e:
+                if slug not in GENERATED_HASHES:
+                    raise
+                # a machine-written driver that errors in the enumeration: the
+                # cell records it (the page shows it) instead of staying cold,
+                # which would respawn this warm for ever
+                log(f"  FAILED: {type(e).__name__}: {e}")
+                for key in keys:
+                    tmp = paths[(slug, key)] + ".tmp"
+                    with open(tmp, "w") as f:
+                        json.dump({"champion": slug, "scenario": key, "rows": [],
+                                   "error": f"{type(e).__name__}: {e}"[:600]}, f)
+                    os.replace(tmp, paths[(slug, key)])
+                done += len(keys)
+                continue
             first = outs[keys[0]]
             log(f"  {first['buildsEvaluated']:,} builds in "
                 f"{first['computeSeconds']}s")

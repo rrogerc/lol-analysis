@@ -1,0 +1,151 @@
+{
+ "champion": "caitlyn",
+ "name": "Caitlyn",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "The fight's dummy counts as an enemy champion, so Headshot uses the champion-rate bonus (0.6/0.8/1.0 AD by level) rather than the 110% flat non-champion rate.",
+  "No brush is assumed at the dummy's location, so Headshot needs the full 5 attacks to charge rather than the brush-halved 4.",
+  "Piltover Peacemaker's 60%-damage falloff on later targets never triggers because the fight has only one target; every Q cast deals the full first-hit damage.",
+  "Piltover Peacemaker resets Caitlyn's attack timer on hit: modeled by setting the next attack to one windup after the cast completes, per the documented attack-timer reset.",
+  "Yordle Snap Trap is cast once, right after Ace in the Hole's channel ends (or at t=0 if Ace in the Hole is not yet ranked): it is placed directly on the dummy's own stationary location, so it arms 1 second later and springs immediately since the dummy never steps away, granting its bonus Headshot damage as a single instance. A sprung trap makes its target immune to further traps for 3 seconds and the dummy never re-triggers one on its own, so only this single application is modeled rather than repeated casts on cooldown; this is a low-impact, best-effort reading of an ability whose ground-trap design does not map cleanly onto a stationary dummy.",
+  "Ace in the Hole channels for 1 second before the bullet lands; attacks and Q/E casts are held until the channel ends. It opens the fight at t=0 (the engine's own opening cast) and would recast on cooldown if a fight/haste combination ever brought it under the fight length.",
+  "Ace in the Hole's and Headshot's crit-chance/crit-damage scaling terms are pre-computed from the build's static crit chance and crit damage as their own formulas state, so those damage instances are dealt with crit_mod=false to avoid double-applying the engine's own crit roll.",
+  "Only the ordinary attack-damage portion of a Headshot attack can crit, handled automatically by the engine's own basic-attack damage; the Headshot bonus itself is a separate, non-crit instance added after.",
+  "Mana costs (Q 55-75, E 75, W 20, R 100) are not modeled: they are well within a level 16 Caitlyn's mana pool over an 8-15 s fight."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Piltover Peacemaker",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "W": {
+   "name": "Yordle Snap Trap",
+   "cooldownS": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "E": {
+   "name": "90 Caliber Net",
+   "cooldownS": [
+    16,
+    14,
+    12,
+    10,
+    8
+   ]
+  },
+  "R": {
+   "name": "Ace in the Hole",
+   "cooldownS": [
+    90,
+    90,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "attacksPerHeadshot": 5,
+   "headshotAdRatioByLevel": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     50,
+     90,
+     130,
+     170,
+     210
+    ],
+    "adRatio": [
+     1.25,
+     1.45,
+     1.65,
+     1.85,
+     2.05
+    ]
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     35,
+     80,
+     125,
+     170,
+     215
+    ],
+    "bonusAdRatio": 0.3
+   },
+   "armTimeS": 1
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     130,
+     180,
+     230,
+     280
+    ],
+    "apRatio": 0.8
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     300,
+     475,
+     650
+    ],
+    "bonusAdRatio": 1.0
+   },
+   "critChanceCoef": 0.3,
+   "channelDurationS": 1.0
+  }
+ },
+ "attack": {
+  "windupFraction": 0.17708,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/caitlyn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/caitlyn.rs."
+ ]
+}

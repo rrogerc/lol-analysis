@@ -1,0 +1,210 @@
+{
+ "champion": "ksante",
+ "name": "K'Sante",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opening: cast All Out (R) immediately at t=0; it is treated as a one-time opening cast (its cooldown, ~80-120s reduced by haste, is not expected to come back up inside a normal fight length, so no recast is modeled).",
+  "Ntofo Strikes (Q) is cast on cooldown continuously. The wiki states the empowered (2-stack) cast 'applies the same effects... but also pulls/stuns', so it is modeled with the same damage as the normal cast; stack tracking therefore has no effect on damage and is omitted.",
+  "Q's 'resets K'Sante's basic attack timer' mechanic is not modeled; the standard 0.25s cast lockout already governs cast-to-attack tempo, and the reset's effect on top of that is minor.",
+  "Path Maker (W) is charged to its full ~0.9s window every cast (per the dossier's recommendation) to maximize its All-Out bonus true-damage percentage, then recasts automatically; its cooldown starts when the recast lands. K'Sante cannot attack while charging.",
+  "Because R is cast first and All Out lasts 15s (covering essentially the whole fight), W almost always lands its All-Out true-damage variant; the pre-All-Out physical-damage variant is still implemented for completeness (e.g. fights run past 15s).",
+  "R's damage assumes the no-terrain, single-strike case (only the base 'Physical Damage' hit): a stationary-dummy fight has no terrain, resolving the dossier's open question.",
+  "R's -85% base armor/MR self-debuff, 50% bonus-armor-pen lethality against the target, and 20% omnivamp have no corresponding engine hook (defensive-stat mutation and enemy-facing penetration aren't exposed to the driver) and are not modeled; only R's attack-speed buff and its enabling of All Out's ability-damage bonus are applied.",
+  "All Out's 'bonus physical damage' (Dauntless Instinct) is modeled as a separate physical damage instance on every basic attack, every ability cast, and the mark's own proc while All Out is active, rather than literally amplifying the existing instance (the engine has no 'amplify this instance' hook); total damage magnitude matches the tooltip, but on-hit trigger-count effects (e.g. Bone Plating) that key on instance count are not replicated.",
+  "K'Sante's own base armor/MR growth (needed to derive his 'bonus' armor/MR for Q/W/P's resistance-scaling terms) are not present in the provided dossier or numbers sheet; standard live-client base stats (34 armor +4.7/level, 32 MR +2.05/level, Riot's per-level growth formula) were used and are listed under `assumed`.",
+  "Ntofo Strikes' cooldown uses the wiki's bonus-resistance formula (3.5 - 0.0125 x min(bonus armor + bonus MR, 120), floored at 2s), further cut 33% while All Out is active, before ability haste is applied via the engine.",
+  "Mana is not modeled: All Out restores 100% mana and makes Q/W/E free for its 15s duration, which covers the fight.",
+  "Footwork (E) is never cast: it deals no damage and is a pure mobility/shield tool, irrelevant to a stationary damage-dummy fight.",
+  "Every basic attack in this fight always lands (no dodge/block/blind), so a mark applied by the previous ability cast is consumed by the very next attack as long as it lands within the mark's 4s duration."
+ ],
+ "assumed": [
+  {
+   "path": "gen.stats.baseArmorByLevel",
+   "why": "K'Sante's base armor per level is not present in the provided dossier or numbers sheet; standard live-client base armor (34, +4.7/level via Riot's growth formula) is used to derive his own 'bonus' armor for Q/W/P's resistance-scaling terms."
+  },
+  {
+   "path": "gen.stats.baseMrByLevel",
+   "why": "K'Sante's base magic resistance per level is not present in the provided dossier or numbers sheet; standard live-client base MR (32, +2.05/level via Riot's growth formula) is used to derive his own 'bonus' MR for Q/W/P's resistance-scaling terms."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Ntofo Strikes",
+   "cooldownS": [
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5
+   ]
+  },
+  "W": {
+   "name": "Path Maker",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "E": {
+   "name": "Footwork",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "R": {
+   "name": "All Out",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "stats": {
+   "baseArmorByLevel": [
+    34,
+    37.384,
+    40.933,
+    44.646,
+    48.523,
+    52.565,
+    56.772,
+    61.143,
+    65.678,
+    70.378,
+    75.243,
+    80.272,
+    85.465,
+    90.823,
+    96.346,
+    102.033,
+    107.884,
+    113.9
+   ],
+   "baseMrByLevel": [
+    32,
+    33.476,
+    35.024,
+    36.643,
+    38.335,
+    40.098,
+    41.932,
+    43.839,
+    45.817,
+    47.867,
+    49.989,
+    52.182,
+    54.448,
+    56.785,
+    59.193,
+    61.674,
+    64.226,
+    66.85
+   ]
+  },
+  "P": {
+   "flatDamage": 12,
+   "markDurationS": 4,
+   "markPctByLevel": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.13,
+    0.13,
+    0.13,
+    0.13,
+    0.13,
+    0.16,
+    0.16,
+    0.16,
+    0.16,
+    0.16,
+    0.19,
+    0.19,
+    0.19
+   ],
+   "allOutBase": 0.01,
+   "allOutResistRatio": 0.0001
+  },
+  "Q": {
+   "baseDamage": [
+    70,
+    100,
+    130,
+    160,
+    190
+   ],
+   "bonusArmorRatio": 0.4,
+   "bonusMrRatio": 0.4,
+   "cooldownResistSlope": 0.0125,
+   "cooldownResistCap": 120,
+   "cooldownMin": 2,
+   "allOutCdrPct": 0.33333
+  },
+  "W": {
+   "physDamage": {
+    "base": [
+     45,
+     75,
+     105,
+     135,
+     165
+    ],
+    "hpRatio": 0.08,
+    "bonusArmorRatio": 0.02,
+    "bonusMrRatio": 0.02
+   },
+   "trueDamage": {
+    "base": [
+     36,
+     60,
+     84,
+     108,
+     132
+    ],
+    "hpRatio": 0.064,
+    "bonusArmorRatio": 0.016,
+    "bonusMrRatio": 0.016
+   },
+   "maxChargeS": 0.9
+  },
+  "R": {
+   "baseDamage": [
+    80,
+    115,
+    150
+   ],
+   "attackSpeedPct": [
+    0.4,
+    0.6,
+    0.8
+   ],
+   "allOutDurationS": 15,
+   "castTimeS": 0.4
+  }
+ },
+ "attack": {
+  "windupFraction": 0.19531,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ksante.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ksante.rs."
+ ]
+}

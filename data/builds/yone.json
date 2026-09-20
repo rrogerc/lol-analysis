@@ -1,0 +1,134 @@
+{
+ "champion": "yone",
+ "name": "Yone",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opening: Fate Sealed is cast at t=0; its mixed-damage gust lands after the 0.75 s cast time plus the 0.3 s travel delay, once, since its minimum 80 s cooldown will not come off cooldown again inside the fight.",
+  "Basic attacks permanently alternate Steel (100% physical) and Azakana (50% AD physical + 50% AD magic, dealt as two same-swing instances); the driver toggles this every attack starting with Steel, with no timeout.",
+  "Yone's passive doubles total crit chance (capped at 100%) and multiplies bonus crit damage by 0.95, and converts crit chance in excess of 100% (after doubling) into 0.5 bonus AD per 1% excess; because the engine's own crit modelling only knows the sheet's un-doubled crit chance and un-reduced crit damage, the driver compensates the AD it feeds into each basic attack so its expected damage matches Yone's true passive, and separately applies the same expected-crit multiplier by hand to Mortal Steel's AD-scaling portion, the only ability whose damage the wiki states can critically strike.",
+  "Mortal Steel's Gathering Storm empowerment (dash + whirlwind) cannot hit the same target twice, so against a single stationary dummy it always lands exactly one hit, identical in total damage to an unempowered cast; the driver therefore does not track Gathering Storm stacks and simply casts Mortal Steel on cooldown.",
+  "Mortal Steel and Spirit Cleave each have their own bonus-attack-speed-based cooldown reduction (from the numbers sheet's static formulas), applied before ability haste's normal reduction via e.basic_cd; their attack-speed-based cast time reduction is not modelled since the engine only ever applies the fixed 0.25 s cast lockout regardless of the true cast time.",
+  "Spirit Cleave's damage is taken as base + percent of the target's maximum health only (the wiki's leveling table), split evenly physical/magic; the sheet's extra flat 1x AD term on WDamage is treated as stale per the dossier's binNote and is not used.",
+  "Soul Unbound is cast as soon as it is off cooldown and held for its full 5 s Spirit Form duration before recasting, to maximize the damage it marks. The engine does not expose post-mitigation damage to the driver, so the stored mark is approximated from the expected pre-mitigation damage of Yone's basic attacks, Mortal Steel, Spirit Cleave and Fate Sealed landed while Spirit Form is active, at the dossier's percent-of-damage-dealt reading (25-35% by rank); item and rune procs are not tracked, matching the ability's own text.",
+  "Mana is not modeled: every cost in the numbers sheet is 0."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Mortal Steel",
+   "cooldownS": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "W": {
+   "name": "Spirit Cleave",
+   "cooldownS": [
+    14,
+    14,
+    14,
+    14,
+    14
+   ]
+  },
+  "E": {
+   "name": "Soul Unbound",
+   "cooldownS": [
+    22,
+    19,
+    16,
+    13,
+    10
+   ]
+  },
+  "R": {
+   "name": "Fate Sealed",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "critChanceMultiplier": 2,
+   "critToAdPerPercent": 0.5,
+   "critDamageMod": 0.95,
+   "magicDamageSplit": 0.5
+  },
+  "Q": {
+   "damageBase": [
+    25,
+    50,
+    75,
+    100,
+    125
+   ],
+   "adRatio": 1.1,
+   "asCdPercent": 0.6,
+   "asCdMax": 0.66667
+  },
+  "W": {
+   "halfBase": [
+    5,
+    10,
+    15,
+    20,
+    25
+   ],
+   "halfTargetMaxHpRatio": [
+    0.04,
+    0.045,
+    0.05,
+    0.055,
+    0.06
+   ],
+   "asCdPercent": 0.6,
+   "asCdMax": 0.57142
+  },
+  "E": {
+   "markPercent": [
+    0.25,
+    0.275,
+    0.3,
+    0.325,
+    0.35
+   ],
+   "spiritFormDurationS": 5
+  },
+  "R": {
+   "physicalBase": [
+    100,
+    200,
+    300
+   ],
+   "physicalBonusAdRatio": 0.4,
+   "magicBase": [
+    100,
+    200,
+    300
+   ],
+   "magicBonusAdRatio": 0.4,
+   "castTimeS": 0.75,
+   "gustDelayS": 0.3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.22,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yone.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yone.rs."
+ ],
+ "manaless": true
+}

@@ -1,0 +1,188 @@
+{
+ "champion": "graves",
+ "name": "Graves",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Collateral Damage (R) at t=0; the shell-hit and cone-explosion damage are both assumed to land on the single dummy target, the most common in-game reading when a champion stands point-blank in the cone (an open question in the dossier).",
+  "Basic attacks are New Destiny's 4-pellet spray (6 pellets on crit): the first pellet deals the full per-level AD ratio and each further pellet deals 0.333x of it, and a crit applies a reduced bonus multiplier (1 + 0.5*(critDamage-1)) to every pellet instead of the normal crit multiplier; because the engine models crit as an expected value, this is computed as a single blended expected-value hit per attack (attack_damage is overridden to 0 and the whole pellet instance is dealt in before_attack) rather than as discrete pellets or a discrete crit roll.",
+  "The per-level base pellet AD ratio is not resolvable from the bin (unresolved ByCharLevelFormulaCalculationPart) so it is computed directly from the wiki's stated formula 100*(0.6895+0.01765*x*(0.595+0.0225*(x-1)))% AD for levels 1-18 and stored as a by-level table.",
+  "The ammo system is modeled as: 2 shells, each attack spends one, and emptying the clip starts a flat 2.08 s reload during which Graves cannot attack; the 1-shell idle-then-1.3s-reload path never triggers because the rotation always attacks the instant it can. Reload speed's stated (and explicitly 'confusing', non-monotonic) scaling with bonus attack speed is not modeled; the flat base time is used throughout, per the dossier's own fallback option.",
+  "Quickdraw (E) is cast the instant it is off cooldown purely for its attack-reset and reload-1-shell effect (it deals no damage): if cast while reloading it cancels the reload and leaves 1 shell instead of 2, otherwise it tops the clip up by 1; either way it resets the attack timer. Its own cooldown ticks down 0.5 s per expected pellet landed (4 normal / 6 on crit, blended the same way as the passive) while it is on cooldown.",
+  "Q (End of the Line) is cast on cooldown: the initial pass deals its damage on cast, and the powder trail is assumed to detonate on the same stationary dummy 2 seconds later for its separate damage instance.",
+  "W (Smoke Screen) is cast on cooldown for its impact damage; travel time is not modeled beyond the usual 0.25 s cast lockout.",
+  "Mana is modeled as a single pool starting at the level-16 sheet's mana value with no regeneration (the fight is short); once a cast's cost cannot be paid, that ability stops being cast for the rest of the fight instead of looping. This is because Graves' four costed abilities can plausibly drain a level-16 mana pool inside 15 s.",
+  "True Grit's bonus armor/MR from Quickdraw only affects damage taken, not dealt, and is omitted."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.pelletAdRatioByLevel",
+   "why": "the bin's per-level AD ratio formula is unresolved; the 18 values are computed directly from the wiki's quoted closed-form formula instead"
+  },
+  {
+   "path": "gen.R.falloffDamage",
+   "why": "assumes the cone explosion also lands on the same single dummy already hit by the direct shell, since the dossier leaves this open and a point-blank single target is the common reading"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "End of the Line",
+   "cooldownS": [
+    13,
+    11.25,
+    9.5,
+    7.75,
+    6
+   ]
+  },
+  "W": {
+   "name": "Smoke Screen",
+   "cooldownS": [
+    26,
+    24,
+    22,
+    20,
+    18
+   ]
+  },
+  "E": {
+   "name": "Quickdraw",
+   "cooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "R": {
+   "name": "Collateral Damage",
+   "cooldownS": [
+    100,
+    80,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "pelletAdRatioByLevel": [
+    0.7000018,
+    0.7112978,
+    0.723388,
+    0.7362725,
+    0.7499513,
+    0.7644243,
+    0.7796915,
+    0.795753,
+    0.8126088,
+    0.8302588,
+    0.848703,
+    0.8679265,
+    0.8879743,
+    0.9087988,
+    0.9304225,
+    0.952838,
+    0.9761478,
+    1.0000518
+   ],
+   "multiPelletRatio": 0.333,
+   "pelletCountNormal": 4,
+   "pelletCountCrit": 6,
+   "critDamageCoef": 0.5,
+   "reload2ShellsS": 2.08
+  },
+  "Q": {
+   "initialDamage": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "bonusAdRatio": 0.55
+   },
+   "detonationDamage": {
+    "base": [
+     80,
+     125,
+     170,
+     215,
+     260
+    ],
+    "bonusAdRatio": [
+     0.45,
+     0.6,
+     0.75,
+     0.9,
+     1.05
+    ]
+   },
+   "detonationDelayS": 2,
+   "costMana": [
+    80,
+    80,
+    80,
+    80,
+    80
+   ]
+  },
+  "W": {
+   "damage": {
+    "base": [
+     60,
+     110,
+     160,
+     210,
+     260
+    ],
+    "apRatio": 0.6
+   },
+   "costMana": [
+    70,
+    75,
+    80,
+    85,
+    90
+   ]
+  },
+  "E": {
+   "cdrPerPelletS": 0.5,
+   "costMana": 40
+  },
+  "R": {
+   "damage": {
+    "base": [
+     275,
+     425,
+     575
+    ],
+    "bonusAdRatio": 1.5
+   },
+   "falloffDamage": {
+    "base": [
+     200,
+     320,
+     440
+    ],
+    "bonusAdRatio": 1.2
+   },
+   "castTimeS": 0.25,
+   "costMana": 100
+  }
+ },
+ "attack": {
+  "windupFraction": 0.005,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/graves.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/graves.rs."
+ ]
+}

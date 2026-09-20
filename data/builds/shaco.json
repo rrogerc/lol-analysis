@@ -1,0 +1,202 @@
+{
+ "champion": "shaco",
+ "name": "Shaco",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Deceive (Q) at t=0 to blink and go invisible; its empowered-attack bonus is applied to the very next basic attack, treating that attack as always landing inside the 0.25 s window since the driver casts Q right before an attack lands.",
+  "Backstab (P), and the from-behind bonuses on Deceive and Two-Shiv Poison, are assumed to apply for the whole fight (the dummy is treated as being attacked from behind throughout), the most common in-game reading and the one that maximizes a well-played Shaco's damage.",
+  "Deceive's empowered attack always deals its guaranteed critical strike: the multiplier is computed as an expected value blending the fixed 1 + 0.6*(critDamage-1) non-rolled modifier with the full critDamage multiplier, weighted by the build's crit chance, per the bin's QCritDamageMod note.",
+  "Deceive's cooldown starts post-effect (after its stealth duration ends), so the true gap between casts is stealth duration plus the listed cooldown.",
+  "Jack in the Box (W) is thrown at the dummy's feet and assumed to spring the instant it finishes arming (2 s) since the dummy stands in its detection range; it then fires the single-target tick (only one enemy is ever present) every 0.5 s for 5 s (10 ticks) before expiring, and is recast on cooldown.",
+  "Two-Shiv Poison (E) is cast on cooldown (8 s); its dagger damage and its Backstab bonus are each multiplied 1.5x whenever the dummy's current health is below 30% of its maximum.",
+  "Hallucinate (R) is cast once at t=0 (its 80-100 s cooldown never comes back up in a fight this short). Its real payoff (the clone's explosion and three mini-boxes) only resolves when the clone dies or expires at 18 s, which a stationary, non-retaliating dummy will never cause inside an 8-15 s fight; per the dossier's own unsettled-question options, this kit assumes the simulator's dummy fight forces that payoff to resolve immediately after the 0.25 s cast completes, so R's damage is counted rather than wasted. The three mini-boxes are modeled as one combined magic-damage tick (three simultaneous single-target hits) every 0.5 s for their 6 s lifetime, since R's boxes 'possess Jack in the Box effects' and no separate interval is given for them.",
+  "Two conflicting sources exist for R's single-target mini-box base damage (bin HallucinateFull.STBaseDamage=[25,50,75] vs. the ability JSON's recorded [25,75,75]); this kit uses the bin's [25,50,75], which also matches a literal arithmetic reading of the wiki's '25 to 75' over 3 ranks.",
+  "Mana is not modeled: Q/E/W/R costs (40/70-50/75/100) stay well under a level-16 mana pool across a 15 s fight and never gate a cast."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.explosionDetonatesOnCast",
+   "why": "the clone's 18 s natural lifetime exceeds every fight window and the dummy cannot kill it, so R's explosion and mini-boxes are assumed to resolve immediately after the 0.25 s cast rather than never triggering, so this real damage source is actually exercised."
+  },
+  {
+   "path": "gen.R.tickIntervalS",
+   "why": "R's mini-boxes are stated to inherit Jack in the Box's effects, but no separate tick interval is given for R specifically; the 0.5 s value is carried over from W's quoted interval."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Deceive",
+   "cooldownS": [
+    13,
+    12.5,
+    12,
+    11.5,
+    11
+   ]
+  },
+  "W": {
+   "name": "Jack in the Box",
+   "cooldownS": [
+    15,
+    15,
+    15,
+    15,
+    15
+   ]
+  },
+  "E": {
+   "name": "Two-Shiv Poison",
+   "cooldownS": [
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "R": {
+   "name": "Hallucinate",
+   "cooldownS": [
+    100,
+    90,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "damage": {
+    "baseByLevel": [
+     20,
+     20.59,
+     21.18,
+     21.76,
+     22.35,
+     22.94,
+     23.53,
+     24.12,
+     24.71,
+     25.29,
+     25.88,
+     26.47,
+     27.06,
+     27.65,
+     28.24,
+     28.82,
+     29.41,
+     30
+    ],
+    "bonusAdRatio": 0.2
+   }
+  },
+  "Q": {
+   "stealthDurationS": [
+    2.5,
+    2.75,
+    3,
+    3.25,
+    3.5
+   ],
+   "damage": {
+    "base": [
+     25,
+     35,
+     45,
+     55,
+     65
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "nonCritBackstabMod": 0.6
+  },
+  "W": {
+   "damage": {
+    "base": [
+     25,
+     40,
+     55,
+     70,
+     85
+    ],
+    "apRatio": 0.18
+   },
+   "armTimeS": 2,
+   "activeDurationS": 5,
+   "tickIntervalS": 0.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     95,
+     120,
+     145,
+     170
+    ],
+    "bonusAdRatio": 0.8,
+    "apRatio": 0.6
+   },
+   "backstabDamage": {
+    "baseByLevel": [
+     15.0,
+     17.06,
+     19.12,
+     21.18,
+     23.24,
+     25.29,
+     27.35,
+     29.41,
+     31.47,
+     33.53,
+     35.59,
+     37.65,
+     39.71,
+     41.76,
+     43.82,
+     45.88,
+     47.94,
+     50.0
+    ],
+    "apRatio": 0.1
+   },
+   "executeThreshold": 0.3,
+   "executeMult": 1.5
+  },
+  "R": {
+   "explosion": {
+    "base": [
+     150,
+     225,
+     300
+    ],
+    "apRatio": 0.7
+   },
+   "boxDamage": {
+    "base": [
+     25,
+     50,
+     75
+    ],
+    "apRatio": 0.15
+   },
+   "numBoxes": 3,
+   "boxLifetimeS": 6,
+   "tickIntervalS": 0.5,
+   "castTimeS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2215,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/shaco.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/shaco.rs."
+ ]
+}

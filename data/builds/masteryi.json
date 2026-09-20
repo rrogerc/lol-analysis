@@ -1,0 +1,128 @@
+{
+ "champion": "masteryi",
+ "name": "Master Yi",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with R (Highlander) and E (Wuju Style) at t=0 for their buff windows, then Master Yi attacks continuously and casts Q (Alpha Strike) every time it is off cooldown; E is recast on cooldown for the rest of the fight.",
+  "Meditate (W) is never cast: it interrupts attacking and its heal/damage-reduction do nothing against a dummy that never attacks back, so it is pure lost DPS uptime here.",
+  "Double Strike is read as requiring 3 stacks to trigger the second strike (the wiki's stated cap and leveling text), not the bin's MasterYiPassive.AttackCount=4, since the wiki text is the more direct statement of the trigger count; this is a real, unresolved source disagreement.",
+  "Alpha Strike is modeled against the single dummy target as: the primary mark is placed 0.2s after cast and detonates for full damage 1.087s after cast (on reappearance, per the wiki's stated total cast duration with 4 bounces); the other three marks are placed every 0.2s after that (0.4s/0.6s/0.8s) and each detonate instantly for 25% damage, since with only the dummy available every mark re-marks it. Master Yi cannot attack for the full 1.087s.",
+  "Alpha Strike's on-hit application (75% effectiveness on the primary detonation, 18.75% on each of the three instant marks) is read as triggering Wuju Style's true damage on-hit, since the wiki says every detonation 'applies on-hit effects'; per the wiki's explicit carve-out it does not generate a Double Strike stack nor reduce Alpha Strike's own cooldown.",
+  "Only the first (chronologically earliest) damage instance of an Alpha Strike cast is treated as the hit that counts for Eclipse-style effects, per the wiki's note that only the first instance of Alpha Strike's damage counts as a hit for such effects; that is the first of the three instantly-detonating marks, not the later primary detonation.",
+  "Each Alpha Strike detonation refreshes Wuju Style's and Highlander's current durations while they are active, per the wiki.",
+  "Alpha Strike's and Double Strike's second strike critical-strike modifiers use the engine's standard crit multiplier: the wiki's BonusCritDamageRatio=1 formula for Alpha Strike reduces exactly to a normal attack's critical damage.",
+  "Basic attacks on-hit (including Double Strike's second strike, which itself applies on-hit effects) reduce Alpha Strike's current cooldown by 1 base second, scaled down by ability haste like any other cooldown.",
+  "Highlander's 85s cooldown means only the opening cast happens within the modeled fight length; its passive takedown cooldown refund is irrelevant against a dummy that is never killed mid-fight.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Alpha Strike",
+   "cooldownS": [
+    20,
+    19.5,
+    19,
+    18.5,
+    18
+   ]
+  },
+  "W": {
+   "name": "Meditate",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "E": {
+   "name": "Wuju Style",
+   "cooldownS": [
+    14,
+    14,
+    14,
+    14,
+    14
+   ]
+  },
+  "R": {
+   "name": "Highlander",
+   "cooldownS": [
+    85,
+    85,
+    85
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "maxStacks": 3,
+   "stackDurationS": 4,
+   "secondStrikeAdRatio": 0.5
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     20,
+     40,
+     60,
+     80,
+     100
+    ],
+    "adRatio": 0.7
+   },
+   "reducedDamage": {
+    "base": [
+     5,
+     10,
+     15,
+     20,
+     25
+    ],
+    "adRatio": 0.175
+   },
+   "onHitPrimary": 0.75,
+   "onHitSubsequent": 0.1875,
+   "markIntervalS": 0.2,
+   "totalCastDurationS": 1.087,
+   "cdrOnHitS": 1
+  },
+  "E": {
+   "damage": {
+    "base": [
+     20,
+     25,
+     30,
+     35,
+     40
+    ],
+    "bonusAdRatio": 0.35
+   },
+   "durationS": 5
+  },
+  "R": {
+   "asBonus": [
+    0.25,
+    0.45,
+    0.65
+   ],
+   "durationS": 7
+  }
+ },
+ "attack": {
+  "windupFraction": 0.244,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/masteryi.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/masteryi.rs."
+ ]
+}

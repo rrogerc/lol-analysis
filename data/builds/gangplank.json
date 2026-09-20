@@ -1,0 +1,132 @@
+{
+ "champion": "gangplank",
+ "name": "Gangplank",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Cannon Barrage (R) at t=0: 12 magic-damage waves in 4 clusters of 3, clusters 2s apart, waves within a cluster 0.25s apart; this uses the wiki's stated intra-cluster delay of 0.25s rather than the disagreeing bin field GangplankR.CannonDelay=0.5, since the wiki explicitly describes the cadence in prose.",
+  "Parrrley (Q) is cast every time it is off cooldown (4.5s) throughout the fight; its physical damage can critically strike and is dealt as ability damage.",
+  "Trial by Fire (P) automatically empowers the next basic attack once its 15s cooldown (reduced by ability haste) is up; the empowered attack deals its true-damage burn as 10 ticks of 0.25s over 2.5s, using the byLevel array already linearly interpolated between the wiki's confirmed level 1 (50) and level 18 (250) endpoints.",
+  "Powder Keg (E) is deliberately not modeled as a damage source: see the top-level 'unused' entry for why.",
+  "Remove Scurvy (W) is never cast: it is a pure self-heal/cleanse with no damage-fight relevance.",
+  "Mana is not modeled: at level 16 Gangplank's mana pool and item sustain comfortably cover a 4.5s-cooldown Q and a single 15s+ cooldown R inside an 8-15s fight.",
+  "Gangplank is treated as melee per the supplied base attack stats."
+ ],
+ "unused": {
+  "E": "Powder Keg is a two-stage place-then-destroy trap: Gangplank places a keg (a separate destructible entity, 3 health) and must then hit it with a basic attack or Parrrley to detonate it, at which point the explosion deals the TRIGGERING ATTACK's own damage (plus a flat champion-only bonus and its own armor pen) to nearby enemies - it is not a fixed spell-damage instance of its own. Modeling this against a single stationary dummy would require inventing unsourced assumptions the dossier itself flags as unsettled: whether the triggering attack hits the dummy AND is separately re-dealt as the explosion (double-counting), how many kegs are placed/detonated inside a short fight, and how often Trial by Fire's cooldown is reset by keg explosions. Since every reasonable choice here is a guess rather than a number the sources state, Powder Keg is left out of the damage-fight rotation rather than approximated; the dossier notes this likely undercounts Gangplank's total damage somewhat."
+ },
+ "assumed": [
+  {
+   "path": "gen.P.baseByLevel",
+   "why": "levels 2-17 are linearly interpolated by the source dossier between the wiki's confirmed level 1 (50) and level 18 (250) endpoints; neither the sheet nor the wiki give intermediate per-level values directly"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Parrrley",
+   "cooldownS": [
+    4.5,
+    4.5,
+    4.5,
+    4.5,
+    4.5
+   ]
+  },
+  "W": {
+   "name": "Remove Scurvy",
+   "cooldownS": [
+    22,
+    20,
+    18,
+    16,
+    14
+   ]
+  },
+  "E": {
+   "name": "Powder Keg",
+   "cooldownS": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "R": {
+   "name": "Cannon Barrage",
+   "cooldownS": [
+    160,
+    140,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "cooldownS": 15,
+   "durationS": 2.5,
+   "tickIntervalS": 0.25,
+   "adRatio": 1.0,
+   "baseByLevel": [
+    50,
+    61.76,
+    73.53,
+    85.29,
+    97.06,
+    108.82,
+    120.59,
+    132.35,
+    144.12,
+    155.88,
+    167.65,
+    179.41,
+    191.18,
+    202.94,
+    214.71,
+    226.47,
+    238.24,
+    250
+   ]
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     10,
+     40,
+     70,
+     100,
+     130
+    ],
+    "adRatio": 1.0
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     40,
+     70,
+     100
+    ],
+    "apRatio": 0.1
+   },
+   "castTimeS": 0.25,
+   "clusterIntervalS": 2,
+   "intraClusterDelayS": 0.25,
+   "totalWaves": 12,
+   "clusterSize": 3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.16447,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/gangplank.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/gangplank.rs."
+ ]
+}

@@ -1,0 +1,162 @@
+{
+ "champion": "kayle_blind",
+ "name": "Kayle",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "E",
+  "Q",
+  "W"
+ ],
+ "notes": [
+  "Divine Judgment is self-cast at t=0 for its unconditional burst; its invulnerability has no use against a dummy that never attacks, and its damage lands 2.5s after the start of the cast (KayleR.InvulnDuration), which is also when its long cooldown starts (irrelevant here since it is never off cooldown again inside a 15s fight).",
+  "Radiant Blast is cast on cooldown; its damage lands on the fixed 0.25s cast delay from the start of the cast (KayleQ.CastDelay), independent of the wiki's disputed windup-scaling-vs-flat cast time question - the engine's uniform 0.25s post-cast attack lockout already models the follow-up delay, so that debate does not change any timing here. Armor/MR shred (Sundered) is applied the instant the sword's damage lands.",
+  "Starfire Spellblade's active is activated the instant it comes off cooldown, always right before the next attack (its reset means the next swing lands only one windup later); its cooldown starts when that empowered attack lands (post-effect), per the wiki. The wiki's stated 6s empowerment window (bin says 5s) is used, but is moot here since the empowered attack always lands well inside either window.",
+  "Starfire Spellblade's passive on-hit damage and, while armed, its active's missing-health on-hit damage both land on every basic attack (both are separate proc instances sharing one cast/attack instance, as the wiki states). While Exalted (level 16: permanently; otherwise at 5 Zeal stacks) and level 11+, the same attack also launches P's Aflame fire wave - all three are treated as independently triggered by 'a basic attack while the condition holds' and so all fire together on that swing.",
+  "Against a single dummy, Aflame's explosion on the Starfire Spellblade active (level 11+) is assumed to only ever reach additional enemies beyond the main target, so it adds no further damage instance here (the main target already received the active's on-hit damage from the base attack).",
+  "Zeal is modeled as: +1 stack (capped at 5) with a fresh 5s expiry on every attack, lost together if 5s pass without an attack; continuous auto-attacking in this fight never lets it lapse in practice, so the wiki's extra 0.5s attack-animation grace period is not separately modeled. At level 16 (Transcendent) Kayle is instead permanently at max stacks (30% bonus AS, always Exalted), per the passive.",
+  "Attack range/type follows the passive's level gates: melee base range below level 6, 525 ranged from level 6 (Arisen), 625 from level 16 (Transcendent).",
+  "Celestial Blessing (W) is never cast: it only heals and speeds up allied champions, who do not exist and would not matter in this dummy fight.",
+  "Mana is not modeled: nothing here plausibly binds inside a 15s fight at level 16, so Q's cost and its undocumented 50% mana refund are both ignored."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Radiant Blast",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ],
+   "shred": {
+    "pct": 15,
+    "appliesTo": [
+     "armor",
+     "mr"
+    ],
+    "durationS": 4
+   }
+  },
+  "W": {
+   "name": "Celestial Blessing",
+   "cooldownS": [
+    15,
+    15,
+    15,
+    15,
+    15
+   ]
+  },
+  "E": {
+   "name": "Starfire Spellblade",
+   "cooldownS": [
+    8,
+    7.5,
+    7,
+    6.5,
+    6
+   ]
+  },
+  "R": {
+   "name": "Divine Judgment",
+   "cooldownS": [
+    160,
+    120,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "asPerStack": 6,
+   "maxStacks": 5,
+   "stackDurationS": 5,
+   "levelArisen": 6,
+   "levelAflame": 11,
+   "levelTranscendent": 16,
+   "rangeArisen": 525,
+   "rangeTranscendent": 625,
+   "fireWaveDamageByLevel": [
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    23,
+    26,
+    29,
+    32,
+    35,
+    38,
+    41
+   ],
+   "fireWaveApRatio": 0.25,
+   "fireWaveBonusAdRatio": 0.1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "apRatio": 0.5,
+    "bonusAdRatio": 0.6
+   },
+   "castDelayS": 0.25
+  },
+  "W": {},
+  "E": {
+   "passiveDamage": {
+    "base": [
+     15,
+     20,
+     25,
+     30,
+     35
+    ],
+    "apRatio": 0.2,
+    "bonusAdRatio": 0.1
+   },
+   "activeExecutePercent": [
+    8,
+    8.5,
+    9,
+    9.5,
+    10
+   ],
+   "activeApCoefPct": 1.5,
+   "buffDurationS": 6
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     300,
+     400
+    ],
+    "apRatio": 0.7,
+    "bonusAdRatio": 1.0
+   },
+   "invulnDurationS": 2.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.19355,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kayle.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kayle_blind.rs."
+ ]
+}

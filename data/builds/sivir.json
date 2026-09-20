@@ -1,0 +1,138 @@
+{
+ "champion": "sivir",
+ "name": "Sivir",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opening: Sivir casts R (On the Hunt) at t=0 for its passive on-attack cooldown refund (its 8-12s duration covers most or all of an 8-15s fight and its own 80-120s cooldown is never up again), immediately followed by W (Ricochet, no cast time) to start the attack-speed buff and arm the bounce.",
+  "We follow the wiki ability text for R's cast time ('cast time = none') rather than the numbers sheet's header value of 0.25s, which looks like a stale copy of Q's cast time; the engine's own universal 0.25s opening-cast delay still applies regardless.",
+  "Boomerang Blade (Q) is cast on cooldown. The dummy is assumed engaged at Q's maximum range (1250 units) so the blade travels out, turns around exactly at the target, and returns immediately, landing two full-damage hits per cast; the 15%-per-unit falloff never applies since no other unit is ever hit.",
+  "Q's cast time shrinks with total bonus attack speed (0.5s reduction per 100% bonus AS, capped at 60% at 120% bonus AS), delaying when its damage lands but not its cooldown, which starts on cast.",
+  "Q's damage partially scales with crit chance/crit damage per Riot's own formula; this is folded into a fixed per-cast damage value (crit chance and crit damage do not change during a fight) rather than modeled through the engine's crit-strike multiplier.",
+  "W (Ricochet) is recast as soon as it is off cooldown for the whole fight, refreshing the attack-speed buff and rearming the bounce; per the wiki, Sivir's attack timer only resets from casting W if the buff was not already active.",
+  "Every basic attack landed while Ricochet is active bounces once onto the dummy (the only enemy present) for on-hit physical damage that crits when the triggering attack crits; 'can target each enemy up to one additional time' is read as allowing a lone target to take that extra bounce.",
+  "We ignore the sheet's SivirW.BounceAttacks=3 field and instead follow the ability text's plain 4-second empowerment window with no attack-count cap.",
+  "While On the Hunt is active, each basic attack shaves 0.5s off Q's and W's current cooldowns, applied on every attack landed; R itself deals no damage and is cast only once (its cooldown vastly exceeds the fight).",
+  "The sheet's SivirR.HuntAttackSpeed field is not modeled: no wiki text describes On the Hunt granting attack speed, only bonus movement speed and the on-attack cooldown refund.",
+  "Mana costs are ignored: Sivir's level-16 mana pool comfortably covers Q/W/R for a 15s fight.",
+  "Spell Shield (E) and Fleet of Foot (P) grant no damage and never trigger against a stationary, non-attacking dummy, so they are omitted from the rotation; E's cooldown is listed for completeness but never cast."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.maxRangeUnits",
+   "why": "positional assumption: the dummy is engaged at Boomerang Blade's maximum range so the blade returns through it for a second hit, per the dossier's proposed rotation"
+  },
+  {
+   "path": "gen.Q.outgoingMissileSpeed",
+   "why": "used with maxRangeUnits to derive the travel time before Q's damage lands, since no explicit travel-time value is given"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Boomerang Blade",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "W": {
+   "name": "Ricochet",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "E": {
+   "name": "Spell Shield",
+   "cooldownS": [
+    24,
+    22.5,
+    21,
+    19.5,
+    18
+   ]
+  },
+  "R": {
+   "name": "On the Hunt",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     85,
+     110,
+     135,
+     160
+    ],
+    "bonusAdRatio": 0.7,
+    "apRatio": 0.6
+   },
+   "critRatio": 0.4,
+   "castTimeS": 0.25,
+   "asCastReductionPerBonusAS": 0.5,
+   "asCastReductionCap": 0.6,
+   "maxRangeUnits": 1250,
+   "outgoingMissileSpeed": 1450
+  },
+  "W": {
+   "bonusAttackSpeed": [
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4
+   ],
+   "buffDurationS": 4,
+   "damage": {
+    "base": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adRatio": [
+     0.4,
+     0.425,
+     0.45,
+     0.475,
+     0.5
+    ]
+   }
+  },
+  "R": {
+   "durationS": [
+    8,
+    10,
+    12
+   ],
+   "attackCdrS": 0.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.12,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/sivir.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/sivir.rs."
+ ]
+}

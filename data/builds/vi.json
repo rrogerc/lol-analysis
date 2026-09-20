@@ -1,0 +1,142 @@
+{
+ "champion": "vi",
+ "name": "Vi",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Blast Shield (P) is a pure self-shield with no damage component, so it is left out of the kit entirely.",
+  "The opening cast is Cease and Desist (R); it lands castTimeS + grabDelayS after the cast (the dummy is assumed close enough that the dash itself takes no extra time), and blocks attacks for that whole window.",
+  "Relentless Force (E) is armed right after an attack lands (as in Jax's Empower) so its attack-reset only costs one windup instead of a full attack period; its bonus damage is modeled with crit_mod=true since the ability itself can critically strike against the primary target.",
+  "Relentless Force's per-rank recharge time is read from the wiki-quoted values (which match Vault Breaker's array, [12, 10.5, 9, 7.5, 6]) rather than the bin's flat cooldown=1 field: that field is read here as ViE.StaticCooldown, the minimum gap between two casts made from stocked charges, not the recharge time. Vi starts the fight with both charges stocked.",
+  "Vault Breaker (Q) is always charged to the full 1.25 s that caps its damage/range/speed scaling (charging to the 4-6 s auto-cancel point is never worth it): the charge blocks attacks, the recast's damage lands automatically at 1.25 s (min damage x2.5 max-charge multiplier), and its cooldown starts there (post-effect), not at the initial cast.",
+  "Denting Blows (W): basic attacks (including the Relentless Force-empowered one) and Vault Breaker's dash each apply one stack; the 3rd stack-applying hit consumes all three for bonus physical damage (percent of the dummy's maximum health, uncapped since the dummy counts as an enemy champion) plus a 20% armor shred and a self attack-speed buff, both 4 s.",
+  "Mana costs are not tracked: Q/E/R cooldowns and E's charge system already gate casting well inside a 15 s fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.maxCharges",
+   "why": "assume Vi begins the fight with both Relentless Force charges stocked, as normal at the start of a fight."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Vault Breaker",
+   "cooldownS": [
+    12,
+    10.5,
+    9,
+    7.5,
+    6
+   ],
+   "shred": {
+    "pct": 20,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 4
+   }
+  },
+  "W": {
+   "name": "Denting Blows",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "E": {
+   "name": "Relentless Force",
+   "cooldownS": [
+    12,
+    10.5,
+    9,
+    7.5,
+    6
+   ]
+  },
+  "R": {
+   "name": "Cease and Desist",
+   "cooldownS": [
+    140,
+    115,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     40,
+     60,
+     80,
+     100,
+     120
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "maxDamageMult": 2.5,
+   "chargeCapS": 1.25
+  },
+  "W": {
+   "baseDamagePct": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "adCoefficient": 0.035,
+   "asPctByRank": [
+    30,
+    35,
+    40,
+    45,
+    50
+   ],
+   "buffDurationS": 4
+  },
+  "E": {
+   "damage": {
+    "base": [
+     10,
+     30,
+     50,
+     70,
+     90
+    ],
+    "adRatio": 1.1,
+    "apRatio": 1.0
+   },
+   "staticCooldownS": 1,
+   "maxCharges": 2
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "bonusAdRatio": 0.9
+   },
+   "castTimeS": 0.25,
+   "grabDelayS": 0.75
+  }
+ },
+ "attack": {
+  "windupFraction": 0.225,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/vi.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/vi.rs."
+ ]
+}

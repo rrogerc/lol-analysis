@@ -1,0 +1,122 @@
+{
+ "champion": "kalista",
+ "name": "Kalista",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Pierce (Q) at t=0: it deals its own damage and, like every basic attack, applies a stack of Rend to the target.",
+  "Every basic attack applies/refreshes a Rend stack on-hit, and Pierce applies one on cast; a single stack counter is kept, refreshing to a fresh 4 s window on each application and falling off entirely if 4 s pass with no hit (never happens here since attacks and Pierce land far more often than that).",
+  "Rend (E) is cast every time it is off cooldown, as long as the target carries at least one stack (always true given the constant attacking), consuming all current stacks for its base hit plus the per-stack bonus on the rest, matching the dossier's 'cast on cooldown rather than bank stacks' reading.",
+  "Rend's cooldown is read from KalistaExpungeWrapper.FakedCooldown ([10, 9.5, 9, 8.5, 8] by rank) - the value shown in the in-game tooltip and the wiki's cooldown field. The ddragon 0 only reflects that Rend is technically gated by needing a stacked target in range rather than by a hidden timer, and that gate is always satisfied here.",
+  "Sentinel (W)'s only damage (both the percent-max-health bonus and the non-champion cap) fires when BOTH Kalista's Soul-Mark and her Oathsworn ally's Soul-Mark land on the same target; there is no ally in this fight, so that damage can never occur no matter when W is cast - see 'unused'.",
+  "Fate's Call (R) deals no damage at all per the dossier (its own mechanics list no damage type); it only retrieves/knocks up with an Oathsworn ally present, so it is never cast.",
+  "Martial Poise's note that Kalista 'cannot keep up with attack speed values greater than 2.1' is modeled as a hard cap on her effective total attack speed: any bonus attack speed pushing her past 2.1 attacks/second adds no further attack rate.",
+  "Pierce's ratio is explicitly Riot's TotalADRatio (scales off total AD); Rend's ratios are plain AD/AP fields (read as bonus AD, matching the convention that only fields named 'Total' scale off total AD).",
+  "Mana costs are not modeled: at level 16 neither Pierce's nor Rend's cadence is bound by mana within a 15 s fight.",
+  "Pierce's Rend-stack transfer on a kill and Rend's own cooldown reset/mana refund on a kill are not modeled, since the dummy is not expected to die from this rotation."
+ ],
+ "assumed": [],
+ "unused": {
+  "W": "Sentinel's bonus damage (both the % max health hit and its non-champion cap) only triggers when Kalista's Soul-Mark and her Oathsworn ally's Soul-Mark both land on the same target; there is no ally in a solo dummy fight, so casting W can never deal damage here regardless of timing."
+ },
+ "abilities": {
+  "Q": {
+   "name": "Pierce",
+   "cooldownS": [
+    9,
+    9,
+    9,
+    9,
+    9
+   ]
+  },
+  "W": {
+   "name": "Sentinel",
+   "cooldownS": [
+    30,
+    30,
+    30,
+    30,
+    30
+   ]
+  },
+  "E": {
+   "name": "Rend",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "R": {
+   "name": "Fate's Call",
+   "cooldownS": [
+    160,
+    140,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "asCap": 2.1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     10,
+     75,
+     140,
+     205,
+     270
+    ],
+    "adRatio": 1.05
+   }
+  },
+  "E": {
+   "damage": {
+    "base": [
+     5,
+     15,
+     25,
+     35,
+     45
+    ],
+    "bonusAdRatio": 0.7,
+    "apRatio": 0.65
+   },
+   "additionalBase": [
+    7,
+    14,
+    21,
+    28,
+    35
+   ],
+   "additionalBonusAdRatio": [
+    0.2,
+    0.275,
+    0.35,
+    0.425,
+    0.5
+   ],
+   "additionalApRatio": 0.5,
+   "stackDurationS": 4,
+   "maxStacks": 254
+  }
+ },
+ "attack": {
+  "windupFraction": 0.36,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kalista.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kalista.rs."
+ ]
+}

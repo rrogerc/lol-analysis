@@ -1,0 +1,184 @@
+{
+ "champion": "kaisa",
+ "name": "Kai'Sa",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Living Weapon evolutions are assumed active on all three basic abilities for the whole fight (a six-item level-16 build plausibly meets every stat threshold): Icathian Rain fires 12 missiles, Void Seeker applies 3 Plasma stacks and refunds 75% of its remaining cooldown on hitting the (champion-type) dummy, and Supercharge's evolution (brief invisibility) has no damage effect and is ignored.",
+  "Icathian Rain has no cast time per the wiki (the numbers sheet's 0.25s is not used); all of its missiles are modeled landing together as one damage instance 0.4s after cast rather than spreading across the up-to-1s convergence window.",
+  "Void Seeker has a 0.4s cast time; its Plasma applications, its own bolt damage, and any Caustic Wounds detonation it triggers all resolve together when the cast ends, then its cooldown is refunded.",
+  "Supercharge's cast time uses the wiki's dynamic formula 1.2s/(1+bonus AS/100), floor 0.6s, recomputed from current bonus attack speed at each cast, instead of the numbers sheet's flat 1.5s field (the two conflict and only the wiki gives the by-AS breakdown). Attack commands are fully converted to movement for the whole charge, not just the standard 0.25s cast lockout, and Supercharge is cast on cooldown throughout the fight.",
+  "Each basic attack applies 1 Plasma stack (Caustic Wounds magic damage); Void Seeker applies 3 stacks successively, each dealing its own Caustic Wounds instance. The 5th stack detonates all stacks for bonus missing-health magic damage, computed after the triggering Caustic Wounds damage (and after Void Seeker's own bolt damage when Void Seeker is the trigger); the 400 monster cap does not apply since the dummy counts as an enemy champion. Plasma decays after 4s without reapplication.",
+  "Killer Instinct (R) deals no damage and its only combat effect (an attack-timer reset) is worthless before any attack has been queued, so it is never cast.",
+  "Mana costs are not modeled: nothing here plausibly runs out of mana inside a short fight.",
+  "Supercharge's extra windup reduction and increased missile speed during its post-charge buff are not modeled (the underlying formula is unresolved in the sheet); only its attack-speed percentage buff is applied."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.damage",
+   "why": "assumes Icathian Rain is evolved (12 missiles) from item AD thresholds met by the build"
+  },
+  {
+   "path": "gen.P.voidSeekerStacksEvolved",
+   "why": "assumes Void Seeker is evolved (3 Plasma stacks, 75% cooldown refund on champion hit) from item AP thresholds met by the build"
+  },
+  {
+   "path": "gen.E.castTimeBaseS",
+   "why": "chooses the wiki's dynamic cast-time formula over the numbers sheet's flat 1.5s, which conflicts with the by-AS tooltip values"
+  },
+  {
+   "path": "abilities.W.cooldownS",
+   "why": "chooses the wiki's Void Seeker cooldown array (20 to 14) over the numbers sheet ddragon field (22 to 14), which the dossier flags as conflicting"
+  },
+  {
+   "path": "gen.Q.missileDelayS",
+   "why": "simplifies Icathian Rain's up-to-1s missile convergence into one instant landing 0.4s after cast"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Icathian Rain",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "W": {
+   "name": "Void Seeker",
+   "cooldownS": [
+    20,
+    18.5,
+    17,
+    15.5,
+    14
+   ]
+  },
+  "E": {
+   "name": "Supercharge",
+   "cooldownS": [
+    16,
+    14.5,
+    13,
+    11.5,
+    10
+   ]
+  },
+  "R": {
+   "name": "Killer Instinct",
+   "cooldownS": [
+    130,
+    100,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "baseDamageByLevel": [
+    4.0,
+    5.529412,
+    7.0588235,
+    8.588235,
+    10.117647,
+    11.6470588,
+    13.176471,
+    14.705882,
+    16.235294,
+    17.764706,
+    19.2941176,
+    20.82353,
+    22.352941,
+    23.882353,
+    25.411765,
+    26.941177,
+    28.470588,
+    30.0
+   ],
+   "perStackDamageByLevel": [
+    1.0,
+    1.4117647,
+    1.8235294,
+    2.235294,
+    2.6470588,
+    3.0588235,
+    3.4705882,
+    3.8823529,
+    4.2941176,
+    4.7058824,
+    5.117647,
+    5.529412,
+    5.9411765,
+    6.352941,
+    6.76470588,
+    7.1764706,
+    7.5882353,
+    8.0
+   ],
+   "apRatioBase": 0.12,
+   "apRatioPerStack": 0.03,
+   "maxStacks": 4,
+   "durationS": 4,
+   "executeRatio": 0.15,
+   "executeApRatio": 0.0006,
+   "voidSeekerStacksEvolved": 3
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     150,
+     206.25,
+     262.5,
+     318.75,
+     375
+    ],
+    "bonusAdRatio": 2.0625,
+    "apRatio": 0.75
+   },
+   "missileDelayS": 0.4
+  },
+  "W": {
+   "damage": {
+    "base": [
+     30,
+     55,
+     80,
+     105,
+     130
+    ],
+    "adRatio": 1.3,
+    "apRatio": 0.45
+   },
+   "castTimeS": 0.4,
+   "cooldownRefundPct": 75
+  },
+  "E": {
+   "bonusAsPctByRank": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "buffDurationS": 4,
+   "cdrPerAttackS": 0.5,
+   "castTimeBaseS": 1.2,
+   "castTimeFloorS": 0.6
+  }
+ },
+ "attack": {
+  "windupFraction": 0.16108,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kaisa.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kaisa.rs."
+ ]
+}

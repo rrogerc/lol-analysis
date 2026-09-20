@@ -1,0 +1,141 @@
+{
+ "champion": "nunu",
+ "name": "Nunu & Willump",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "The dummy always counts as an enemy champion, so Consume, Snowball Barrage and Absolute Zero always use their champion-facing magic-damage branches; Consume's non-champion true-damage branch never applies.",
+  "Absolute Zero is cast at t=0 and channeled the full 3 seconds to maximize both its damage and shield, since its long cooldown (90-110s) means it is realistically cast only once in the fight; its explosion damage lands automatically when the channel ends.",
+  "Biggest Snowball Ever! is channeled to its 5-second damage cap (NunuW.MaxDamageTime) before being released, rather than held longer for no extra damage; it and Absolute Zero are treated as real channels that hold the next attack until they end.",
+  "Snowball Barrage is cast on cooldown and its two free recasts are fired back-to-back using the bin's NunuESnowballBurstFire cooldown of 0.9s (the wiki states 1s; the bin value is used as the actual in-game timing), landing all 3 volleys, followed by the Snowbound root-damage tick 3 seconds after the first volley of that cast.",
+  "Because the wiki's channel-interaction tables do not identify which spell slot is exempted from interrupting Biggest Snowball Ever! or Absolute Zero, this driver conservatively treats both channels, and the short Snowball Barrage volley sequence, as mutually exclusive with each other and with Consume: none of them may start while another is in progress.",
+  "Consume is cast whenever it is off cooldown and none of the above is in progress.",
+  "Call of the Freljord's attack-speed buff (20% bonus AS for 4s, extendable to a 44s remaining cap, once per 10s from the same target) triggers whenever Nunu/Willump deal damage to the dummy; its basic-attack cleave to secondary targets never applies since the dummy fight has only one target.",
+  "Biggest Snowball Ever!'s per-rank explosion base damage uses the bin's literal NunuW.BaseDamage array ([180,225,270,315,360]) rather than the wiki's linear-interpolation display values, since the bin should reflect the live tooltip values.",
+  "Mana is not modeled per the engine's rules; the dossier flags Nunu's total mana cost as a plausible constraint but this is not confirmed to bind within a 15s fight, so it is ignored."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Consume",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "W": {
+   "name": "Biggest Snowball Ever!",
+   "cooldownS": [
+    14,
+    14,
+    14,
+    14,
+    14
+   ]
+  },
+  "E": {
+   "name": "Snowball Barrage",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "R": {
+   "name": "Absolute Zero",
+   "cooldownS": [
+    110,
+    100,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "asIncrease": 0.2,
+   "buffDurationS": 4,
+   "maxRemainingDurationS": 44,
+   "retriggerCooldownS": 10
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     100,
+     140,
+     180,
+     220
+    ],
+    "apRatio": 0.65,
+    "bonusHpRatio": 5
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     180,
+     225,
+     270,
+     315,
+     360
+    ],
+    "apRatio": 1.5
+   },
+   "maxDamageTimeS": 5
+  },
+  "E": {
+   "volleyDamage": {
+    "base": [
+     15,
+     22.5,
+     30,
+     37.5,
+     45
+    ],
+    "apRatio": 0.12
+   },
+   "rootDamage": {
+    "base": [
+     20,
+     30,
+     40,
+     50,
+     60
+    ],
+    "apRatio": 0.8
+   },
+   "recastIntervalS": 0.9,
+   "rootDelayS": 3,
+   "maxBursts": 3
+  },
+  "R": {
+   "damage": {
+    "base": [
+     625,
+     925,
+     1275
+    ],
+    "apRatio": 3.0
+   },
+   "channelDurationS": 3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.19359,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nunu.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nunu.rs."
+ ]
+}

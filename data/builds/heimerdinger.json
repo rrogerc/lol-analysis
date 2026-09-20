@@ -1,0 +1,174 @@
+{
+ "champion": "heimerdinger",
+ "name": "Heimerdinger",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "W",
+  "E",
+  "Q"
+ ],
+ "notes": [
+  "Heimerdinger auto-attacks normally (ranged, windup 0.2) whenever no cast is due; his kit adds no on-hit or attack-speed effect of its own, so this only fills the gaps between casts.",
+  "UPGRADE!!! is toggled once at t=0 (no cast time, no on-cast procs per the wiki's note that toggling does not count as an ability activation) and its empowerment is spent on the very next Hextech Micro-Rockets cast, turning it into Hextech Rocket Swarm; UPGRADE!!!'s own cooldown (70-100s) is far longer than the fight so it is never toggled again, and Q and E are left in their base forms since Rocket Swarm returns far more damage than upgrading either of those for a single use.",
+  "All 3 Turret Kit charges are assumed already banked at the start of the fight (an established level-16 Heimerdinger plausibly has them); H-28G Evolution Turret is deployed on Q's own 1s cooldown until 3 turrets are up, after which Q is never cast again.",
+  "H-28G Evolution Turret 'lasts until destroyed' and the dummy never fights back, so once 3 turrets are deployed they persist for the whole fight; no turret redeploy or duration logic is modeled beyond that.",
+  "The turret's beam only charges from Hextech Micro-Rockets hits (20% per rocket, both in normal and Rocket Swarm form) and from CH-2 Electron Storm Grenade hits (100%): the sources give no passive charge rate, so no passive charging is assumed, and every point of charge past 100% immediately fires one beam per active turret.",
+  "The turret's own rapid-fire attack interval is not stated anywhere in the sources; a 1-second tick per active turret is assumed as a representative 'rapid-fire' cadence (see assumed).",
+  "All 5 Hextech Micro-Rockets (and all 20 rockets of Rocket Swarm) are assumed to converge on the single stationary dummy, taking the full graduated-damage sequence (initial + reduced subsequent hits) each cast.",
+  "Mana is not modeled: nothing here reliably runs out of mana inside a short fight given the assumed cast cadence.",
+  "Hextech Affinity's movement speed near turrets is irrelevant to a stationary dummy fight and is not used by the driver."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.assumedTickIntervalS",
+   "why": "no turret basic-attack interval is given by any source; assumed a 1s rapid-fire tick as a representative cadence"
+  },
+  {
+   "path": "gen.Q.maxKits",
+   "why": "assumed all 3 turret kit charges are already banked at the fight's start rather than waiting on the ~20s recharge, plausible for an established level-16 Heimerdinger"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "H-28G Evolution Turret",
+   "cooldownS": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "W": {
+   "name": "Hextech Micro-Rockets",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "E": {
+   "name": "CH-2 Electron Storm Grenade",
+   "cooldownS": [
+    11,
+    11,
+    11,
+    11,
+    11
+   ]
+  },
+  "R": {
+   "name": "UPGRADE!!!",
+   "cooldownS": [
+    100,
+    85,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "moveSpeedBonusPct": 20
+  },
+  "Q": {
+   "rapidfireDamage": {
+    "base": [
+     7,
+     11,
+     15,
+     19,
+     23
+    ],
+    "apRatio": 0.35
+   },
+   "beamDamage": {
+    "base": [
+     40,
+     60,
+     80,
+     100,
+     120
+    ],
+    "apRatio": 0.55
+   },
+   "maxTurrets": 3,
+   "assumedTickIntervalS": 1
+  },
+  "W": {
+   "initialDamage": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "apRatio": 0.55
+   },
+   "subsequentDamage": {
+    "base": [
+     10,
+     15,
+     20,
+     25,
+     30
+    ],
+    "apRatio": 0.12
+   },
+   "rocketsPerCast": 5,
+   "beamChargePerRocketPct": 20
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     100,
+     140,
+     180,
+     220
+    ],
+    "apRatio": 0.6
+   },
+   "beamChargeOnHitPct": 100
+  },
+  "R": {
+   "swarmInitialDamage": {
+    "base": [
+     135,
+     180,
+     225
+    ],
+    "apRatio": 0.45
+   },
+   "swarmTier1Damage": {
+    "base": [
+     32,
+     45,
+     58
+    ],
+    "apRatio": 0.12
+   },
+   "swarmTier2Damage": {
+    "base": [
+     16,
+     22.5,
+     29
+    ],
+    "apRatio": 0.06
+   },
+   "swarmTier1Count": 4,
+   "swarmTier2Count": 15
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/heimerdinger.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/heimerdinger.rs."
+ ]
+}

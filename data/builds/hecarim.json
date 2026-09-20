@@ -1,0 +1,157 @@
+{
+ "champion": "hecarim",
+ "name": "Hecarim",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opening: Onslaught of Shadows is cast at t=0 (its cast time is negligible, no lockout), then Devastating Charge and Spirit of Dread go out on cooldown while Rampage is cast on cooldown and autos run continuously.",
+  "Onslaught of Shadows is assumed to strike the point-target dummy with a single spectral rider's damage instance rather than several overlapping riders, since the sources leave the arrow-formation geometry against a single target unsettled.",
+  "Devastating Charge's damage-by-distance-traveled is assumed to be 0 distance: the dummy is stationary and already in melee range, so Hecarim has no reason to disengage and re-close to build bonus range/damage, and its minimum base values are used.",
+  "Devastating Charge's ramping bonus movement speed ends the instant its empowered attack lands, per the wiki mechanic that the ghost/speed buff ends prematurely once the target is hit while nearby; the empowered attack itself deals its bonus damage in after_attack and resets the attack timer via one windup, matching the stated basic-attack-timer reset.",
+  "Warpath's bonus AD is recomputed continuously from Hecarim's current bonus movement speed (equipment MS plus, briefly, Devastating Charge's ramp), using Hecarim's known base movement speed of 335 (not present in the provided sheet, listed under assumed) since only movement speed above base counts.",
+  "Rampage's stacking damage bonus and cooldown reduction are computed from the stack count going into each cast; because its 4s (later reduced) cooldown is well under the 8s stack duration, stacks are assumed to never lapse once cast on cooldown.",
+  "Spirit of Dread's damage-over-time is modeled at the numbers sheet's 0.5s tick interval (8 ticks over its 4s duration) rather than the wiki text's 'every second' phrasing; the total damage dealt across the duration is identical either way.",
+  "Mana costs are not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.baseMoveSpeed",
+   "why": "Hecarim's base movement speed (335) is not present in the provided sheet or dossier, but is needed to isolate bonus movement speed for Warpath since only bonus MS grants bonus AD."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Rampage",
+   "cooldownS": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "W": {
+   "name": "Spirit of Dread",
+   "cooldownS": [
+    14,
+    14,
+    14,
+    14,
+    14
+   ]
+  },
+  "E": {
+   "name": "Devastating Charge",
+   "cooldownS": [
+    20,
+    19,
+    18,
+    17,
+    16
+   ]
+  },
+  "R": {
+   "name": "Onslaught of Shadows",
+   "cooldownS": [
+    140,
+    120,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "adPerBonusMsByLevel": [
+    0.12,
+    0.12,
+    0.14,
+    0.14,
+    0.14,
+    0.16,
+    0.16,
+    0.16,
+    0.18,
+    0.18,
+    0.18,
+    0.2,
+    0.2,
+    0.2,
+    0.22,
+    0.22,
+    0.22,
+    0.24
+   ],
+   "baseMoveSpeed": 335,
+   "refreshIntervalS": 0.25
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "bonusAdRatio": 0.9
+   },
+   "stackPct": 0.03,
+   "maxStacks": 3,
+   "stackDurationS": 8,
+   "cdReductionPerStackS": 0.75
+  },
+  "W": {
+   "damage": {
+    "base": [
+     80,
+     120,
+     160,
+     200,
+     240
+    ],
+    "apRatio": 0.8
+   },
+   "tickIntervalS": 0.5,
+   "durationS": 4
+  },
+  "E": {
+   "minDamage": {
+    "base": [
+     30,
+     45,
+     60,
+     75,
+     90
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "msMin": 0.25,
+   "msMax": 0.65,
+   "msTimeToMaxS": 2.5,
+   "msDurationS": 4
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 1.0
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.25,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/hecarim.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/hecarim.rs."
+ ]
+}

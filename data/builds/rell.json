@@ -1,0 +1,148 @@
+{
+ "champion": "rell",
+ "name": "Rell",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Rell opens Mounted and casts Magnet Storm (R) immediately at t=0 for its pull and its 8-tick, 2-second damage-over-time field, since its 80-120 s cooldown means it is realistically only cast once in a short fight.",
+  "Ferromancy is modeled as a single ability slot with one shared 10 s cooldown regardless of form: whenever it comes off cooldown Rell casts whichever form is currently available, alternating Crash Down (dismount) and Mount Up (mount).",
+  "Crash Down's landing damage is dealt as soon as the cast resolves (the engine treats a cast time as instant plus the standard 0.25 s post-cast attack lockout, so the dash/cast time itself is not separately modeled) and applies a Break the Mold stack; its subsequent 320-unit slide is not modeled as a second hit on the already-landed-upon, stationary dummy.",
+  "Mount Up arms Rell's next basic attack: that attack's cast time is fixed at 0.2 s (overriding the normal windup) and, once it lands, deals Mount Up's bonus magic damage and resets the following attack to normal timing; if the 3.5 s arming window lapses before an attack fires the arm is simply dropped.",
+  "Shattering Strike (Q) is cast on cooldown for its flat magic damage and applies a Break the Mold stack; its extra 0.35 s post-cast lockout beyond the engine's standard 0.25 s attack lockout is not separately modeled, matching how the engine treats ability cast times elsewhere.",
+  "Full Tilt (E) has no ally to target in a solo dummy fight; with no valid ally it is read as self-cast, which the wiki says still arms Rell's next basic attack or Shattering Strike with the max-health explosion. Since that explosion's whole purpose is to land on an enemy, it is modeled as landing on whichever enemy (the dummy) the qualifying attack or Q actually hits, and E is cast on cooldown to keep it armed.",
+  "Full Tilt's percent-max-health explosion damage uses the target's maximum health (not current) per the tooltip, scaling with a flat 3%-per-100-AP bonus on top of the by-rank base percent; its separate monster/structure damage cap does not apply against a champion-type dummy and is not modeled.",
+  "Break the Mold's target debuff (3% armor/MR reduction per stack, up to 5 stacks for 15%) is approximated with the engine's single flat armor/MR shred slot: it is switched on only once Rell has landed enough hits to reach the 5-stack cap, and refreshed on every later hit. The wiki's separate per-level flat-minimum-reduction floor is not modeled because the driver has no access to the target's actual armor/MR values.",
+  "Break the Mold's on-hit bonus magic damage uses Rell's own total armor and magic resistance from the item build; while Dismounted its +15% bonus armor/MR passive is approximated as +15% of that total (rather than of the bonus-only portion, since base/bonus splits for resistances are not exposed to the driver). Rell's own bonus resistances gained from stolen enemy resistances are not modeled since they only affect survivability, not damage dealt.",
+  "Mana costs are not modeled: nothing here binds inside a short fight at level 16."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Shattering Strike",
+   "cooldownS": [
+    11,
+    10.5,
+    10,
+    9.5,
+    9
+   ],
+   "shred": {
+    "pct": 15,
+    "appliesTo": [
+     "armor",
+     "mr"
+    ],
+    "durationS": 5
+   }
+  },
+  "W": {
+   "name": "Ferromancy",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "E": {
+   "name": "Full Tilt",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "R": {
+   "name": "Magnet Storm",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "onhitArmorCoef": 0.05,
+   "onhitMrCoef": 0.05,
+   "maxStacks": 5,
+   "stackDurationS": 5
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     100,
+     140,
+     180,
+     220
+    ],
+    "apRatio": 0.6
+   }
+  },
+  "W": {
+   "crashDownDamage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "apRatio": 0.6
+   },
+   "mountUpDamage": {
+    "base": [
+     10,
+     25,
+     40,
+     55,
+     70
+    ],
+    "apRatio": 0.4
+   },
+   "dismountResistPct": 15,
+   "dismountAsPct": 20,
+   "mountUpCastTimeS": 0.2,
+   "mountUpWindowS": 3.5
+  },
+  "E": {
+   "percentHealthDamage": [
+    0.05,
+    0.055,
+    0.06,
+    0.065,
+    0.07
+   ],
+   "apPerHundredCoef": 0.03,
+   "windowS": 5
+  },
+  "R": {
+   "tickDamage": {
+    "base": [
+     18.75,
+     31.25,
+     43.75
+    ],
+    "apRatio": 0.1375
+   },
+   "durationS": 2,
+   "tickIntervalS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1875,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rell.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rell.rs."
+ ]
+}

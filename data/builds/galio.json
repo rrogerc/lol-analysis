@@ -1,0 +1,182 @@
+{
+ "champion": "galio",
+ "name": "Galio",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Hero's Entrance (R) at t=0, self-targeted: Galio counts as his own ally for the ult's landing-spot designation, since a fight with no allies otherwise leaves it uncastable. The 2.75s channel blocks basic attacks and every other cast, and the impact damage lands the instant the channel ends.",
+  "Colossal Smash's unresolved cooldown-multiplier term is read as a flat 5 seconds between empowered-attack procs (not shortened by ability haste, since it is an innate, not a basic ability). It is cut short by 3 seconds, down to the current time, whenever Q, E, a W recast, or R's impact lands on the dummy (once per cast); Galio is assumed to start the fight with it already charged.",
+  "Colossal Smash's bonus magic resistance ratio, and Hero's Entrance's identical ratio, are applied against the TARGET/Galio's TOTAL magic resistance because the engine's stat sheet exposes only total MR, not a base/bonus split; this overstates their contribution by roughly base MR times the ratio and is flagged as an approximation.",
+  "Only Colossal Smash's AD-ratio portion is dealt as crit-eligible, per the wiki; every other instance (its base+AP+MR portion, Q, E, W, R) cannot critically strike.",
+  "Winds of War is always cast directly onto the dummy so both windblasts converge immediately: the gust deals its damage on cast, then the tornado ticks 4 times every 0.5s over 2s for a percent of the dummy's maximum health each tick. The monster damage cap on the tornado is not applied since the dummy counts as an enemy champion, not a monster.",
+  "Justice Punch's dash damage uses the full champion-damage value (not the 80% non-champion value) since the dummy counts as an enemy champion; the short step-back-then-dash is abstracted into its 0.4s cast, landing the damage on cast, same as the reference approach for short dashes.",
+  "Shield of Durand is always charged to its 1.25s damage/radius/taunt scaling cap before being manually recast right at that mark, since 1.25s is small next to its 14-18s cooldown and always yields the maximum (x3 minimum) recast damage; the following 0.4s post-recast lockout blocks attacks and casts, per the wiki, and the cooldown itself starts on the initial cast.",
+  "Colossal Smash's documented (and bug-flagged) double application of on-hit effects to its primary target is not modeled; on-hit items apply once per attack as usual.",
+  "Mana costs are not modeled: nothing in this kit binds within a 15s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.cooldownS",
+   "why": "the bin's Colossal Smash cooldown-multiplier term is unresolved in the data; a flat 5s reading between procs is used"
+  },
+  {
+   "path": "gen.P.bonusMrRatio",
+   "why": "the engine's stat sheet has no base-vs-bonus MR split, so the ratio is applied to total MR as an approximation"
+  },
+  {
+   "path": "gen.R.bonusMrRatio",
+   "why": "same missing base-MR data as Colossal Smash's identical ratio"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Winds of War",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "W": {
+   "name": "Shield of Durand",
+   "cooldownS": [
+    18,
+    17,
+    16,
+    15,
+    14
+   ]
+  },
+  "E": {
+   "name": "Justice Punch",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "R": {
+   "name": "Hero's Entrance",
+   "cooldownS": [
+    180,
+    160,
+    140
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "damageByLevel": [
+    15,
+    21,
+    27,
+    32,
+    38,
+    44,
+    50,
+    56,
+    62,
+    68,
+    74,
+    79,
+    85,
+    91,
+    97,
+    103,
+    109,
+    115
+   ],
+   "adRatio": 1.0,
+   "apRatio": 0.4,
+   "bonusMrRatio": 0.6,
+   "asBonusPct": 40,
+   "cooldownS": 5,
+   "cdrOnAbilityHitS": 3
+  },
+  "Q": {
+   "gustDamage": {
+    "base": [
+     70,
+     105,
+     140,
+     175,
+     210
+    ],
+    "apRatio": 0.7
+   },
+   "tornadoTickBasePct": 2,
+   "tornadoTickApPctPer100": 1,
+   "tornadoTicks": 4,
+   "tornadoTickIntervalS": 0.5,
+   "tornadoDurationS": 2,
+   "castTimeS": 0.25
+  },
+  "W": {
+   "maxDamage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "apRatio": 0.9
+   },
+   "minDamage": {
+    "base": [
+     20,
+     30,
+     40,
+     50,
+     60
+    ],
+    "apRatio": 0.3
+   },
+   "chargeCapS": 1.25,
+   "maxChannelS": 2,
+   "postRecastLockoutS": 0.4
+  },
+  "E": {
+   "damage": {
+    "base": [
+     100,
+     135,
+     170,
+     205,
+     240
+    ],
+    "apRatio": 1.0
+   },
+   "castTimeS": 0.4
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 0.7
+   },
+   "bonusMrRatio": 1.0,
+   "channelS": 2.75
+  }
+ },
+ "attack": {
+  "windupFraction": 0.20625,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/galio.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/galio.rs."
+ ]
+}

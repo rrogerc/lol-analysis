@@ -1,0 +1,162 @@
+{
+ "champion": "xerath",
+ "name": "Xerath",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "The opening cast is Rite of the Arcane (R), forced by the engine at t=0; its channel blocks Q, W and E from being cast until all available Arcane Barrage recasts are used, after which Q, W and E are cast on cooldown for the rest of the fight.",
+  "Arcanopulse (Q) is cast and immediately recast at the shortest possible charge, so its only modeled delay is the 0.5s unable-to-act window before the beam fires; its cooldown starts when the beam lands (post-effect).",
+  "Eye of Destruction (W) is assumed to always land in its inner epicenter against the stationary dummy, applying the 1.667x increased-damage multiplier every cast, matching the dossier's damage-maximizing rotation.",
+  "Eye of Destruction's stated 0.5s cast-to-impact delay is read as measured from the press (inclusive of the 0.25s cast time), not additional on top of it.",
+  "Shocking Orb (E)'s damage instance is dealt when its 0.25s cast time ends, per the wiki's 'effect at cast time end' note.",
+  "Rite of the Arcane's Arcane Barrage recasts are modeled with the 0.6s static per-cast cooldown and the 0.6s missile travel delay treated as the same interval, so recasts land back to back every 0.6s starting 0.5s into the channel; this is the higher-DPS common reading of an ambiguous mechanic.",
+  "Each Arcane Barrage after the first benefits from the Arcane Perfection stack(s) granted by the previous hit(s) on the dummy (which counts as an enemy champion), up to the rank's stack cap; the cast that grants a stack does not itself benefit from it.",
+  "Rite of the Arcane's own cooldown (100-130s) is never relevant since only one cast fits in an 8-15s fight; it is kept in the kit for completeness but unused by the driver.",
+  "Mana is not modeled: none of the costs plausibly stall casts within a 15s fight at level 16, and Mana Surge (P) only restores mana with no damage effect, so it is omitted entirely."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.recastDelayS",
+   "why": "modeled as the sole time between Q's cast and its beam landing, treating the charge-up itself as instant (minimum charge), matching the dossier's fastest-recast rotation."
+  },
+  {
+   "path": "gen.W.impactDelayS",
+   "why": "read as the total time from press to impact including the 0.25s cast time, not additional travel on top of it (unsettled in the dossier)."
+  },
+  {
+   "path": "gen.W.sweetSpotMult",
+   "why": "assumes the stationary dummy is always struck in Eye of Destruction's inner epicenter, the damage-maximizing and dossier-proposed read."
+  },
+  {
+   "path": "gen.R.recastIntervalS",
+   "why": "assumes the 0.6s static per-cast cooldown and 0.6s missile travel delay are the same interval rather than additive, so Arcane Barrage recasts land back-to-back every 0.6s (unsettled in the dossier, higher-DPS common reading)."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Arcanopulse",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "W": {
+   "name": "Eye of Destruction",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "E": {
+   "name": "Shocking Orb",
+   "cooldownS": [
+    13,
+    12.5,
+    12,
+    11.5,
+    11
+   ]
+  },
+  "R": {
+   "name": "Rite of the Arcane",
+   "cooldownS": [
+    130,
+    115,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     70,
+     110,
+     150,
+     190,
+     230
+    ],
+    "apRatio": 0.9
+   },
+   "recastDelayS": 0.5
+  },
+  "W": {
+   "damage": {
+    "base": [
+     50,
+     85,
+     120,
+     155,
+     190
+    ],
+    "apRatio": 0.65
+   },
+   "sweetSpotMult": 1.667,
+   "castTimeS": 0.25,
+   "impactDelayS": 0.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     100,
+     130,
+     160,
+     190
+    ],
+    "apRatio": 0.45
+   },
+   "castTimeS": 0.25
+  },
+  "R": {
+   "damage": {
+    "base": [
+     170,
+     220,
+     270
+    ],
+    "apRatio": 0.45
+   },
+   "stackBonus": {
+    "base": [
+     20,
+     25,
+     30
+    ],
+    "apRatio": 0.05
+   },
+   "numShots": [
+    4,
+    5,
+    6
+   ],
+   "maxStacks": [
+    3,
+    4,
+    5
+   ],
+   "recastIntervalS": 0.6,
+   "firstRecastDelayS": 0.5,
+   "channelDurationS": 10
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/xerath.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/xerath.rs."
+ ]
+}

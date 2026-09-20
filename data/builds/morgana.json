@@ -1,0 +1,131 @@
+{
+ "champion": "morgana",
+ "name": "Morgana",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens with Soul Shackles (R) at t=0, assuming it is available: its huge cooldown (100-120s) means only one cast fits inside a short fight, so this reads as a full-cooldown burst check rather than a sustained-ult scenario.",
+  "Soul Shackles' initial hit lands after its 0.35s cast; because the stationary dummy can never break the 3s tether, the identical aftereffect hit and its stun always land automatically 3s later. Both hits call the ult's hatefog hook.",
+  "Tormented Shadow (W) is cast the instant it is off cooldown: it deals its on-cast hit plus 9 further ticks every 0.5s (10 hits total, matching the wiki's own '9*10'/'35*10' total-damage math, i.e. ticks at the cast and every 0.5s up to 4.5s later).",
+  "The wiki lists two contradictory readings of W's per-tick damage: the tooltip text ('Minimum Damage Per Tick' = half BaseDamage +10% AP, doubling to the full BaseDamage +20% AP at 100% missing health) versus the bin's literal 'TotalMinDamage' (full BaseDamage, no missing-health term) and 'TotalMaxDamage' (that doubled). This kit uses the tooltip reading (half BaseDamage as the 0%-missing floor, doubling at 100% missing) because it alone reproduces both wiki-quoted numeric ranges exactly.",
+  "Each W tick's missing-health amplifier is recomputed live against the dummy's current (falling) health at the moment that tick lands, not fixed once at cast.",
+  "Every landed Morgana ability hit (Q, each W tick, both R hits) triggers Soul Siphon; here that is modeled as immediately shaving 5% of Tormented Shadow's total (post-haste) cooldown off its live, currently-counting cooldown, per the wiki's explicit note that it can shorten the ability's own cooldown mid-cycle.",
+  "If Tormented Shadow comes off cooldown again while its own ticks are still resolving, the new cast simply restarts the 10-tick cycle, since 'damage from multiple Tormented Shadows does not stack.'",
+  "Dark Binding (Q) is cast on cooldown throughout the fight for its flat magic damage; its root is crowd control and ignored.",
+  "Black Shield (E) is never cast: it deals no damage and only matters in a survival scenario. Soul Siphon's self-heal is likewise not modeled since it doesn't affect the dummy's damage taken.",
+  "Morgana still auto-attacks (ranged, base windup 0.14) whenever no cast is pending; her kit has no on-hit, attack-speed, or reset interaction so default attack behavior is used.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Dark Binding",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "W": {
+   "name": "Tormented Shadow",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "E": {
+   "name": "Black Shield",
+   "cooldownS": [
+    26,
+    23.5,
+    21,
+    18.5,
+    16
+   ]
+  },
+  "R": {
+   "name": "Soul Shackles",
+   "cooldownS": [
+    120,
+    110,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "healPercent": 0.18
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     135,
+     190,
+     245,
+     300
+    ],
+    "apRatio": 0.9
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     9,
+     15.5,
+     22,
+     28.5,
+     35
+    ],
+    "apRatio": 0.1
+   },
+   "tickIntervalS": 0.5,
+   "tickCount": 10,
+   "missingHealthAmpMax": 1.0,
+   "cdRefundFrac": 0.05
+  },
+  "E": {
+   "shield": {
+    "base": [
+     100,
+     155,
+     210,
+     265,
+     320
+    ],
+    "apRatio": 0.7
+   },
+   "shieldDurationS": 5
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     275,
+     350
+    ],
+    "apRatio": 0.8
+   },
+   "castTimeS": 0.35,
+   "chainDurationS": 3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.14,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/morgana.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/morgana.rs."
+ ]
+}

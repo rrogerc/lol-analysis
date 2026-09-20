@@ -1,0 +1,163 @@
+{
+ "champion": "senna",
+ "name": "Senna",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "W",
+  "Q",
+  "E"
+ ],
+ "notes": [
+  "Opening: Dawning Shadow (R) is cast at t=0 since its 100-140s cooldown far exceeds any fight length, so it is cast once as early as possible; its 1s cast time delays the first basic attack accordingly.",
+  "Piercing Darkness (Q) is cast on cooldown; its cooldown is refunded 1s per basic attack landed, but not by Q's own cast, for simplicity.",
+  "Last Embrace (W) is cast on cooldown; its damage is treated as landing on cast (travel/attach time not modeled beyond the cast time itself).",
+  "Basic attacks are woven continuously throughout the fight.",
+  "The Mist mark/consume cycle is modeled as a state machine on the dummy: an unmarked, non-immune target is marked by the next attack or ability hit; a marked target's next hit consumes the mark, dealing the current-health-percent bonus damage, granting a Mist stack, and rendering the target immune to being re-marked for a level-scaled duration; an unconsumed mark expires after 4s. This rate-limits current-health procs and Mist-stack growth independent of attack speed, per the wiki's description.",
+  "Mist marks/consumption are assumed to trigger from basic attacks and from Q, W and R hits alike, per Absolution's broad 'basic attacks on-hit and abilities' wording.",
+  "The current-health-percent mark-consume damage is capped at 10% of current health from level 10 onward, per the wiki; the kit's byLevel array bakes this cap in directly.",
+  "Relic Cannon's on-hit bonus physical damage (20% AD) applies on every basic attack and on every Piercing Darkness cast, since the wiki states Piercing Darkness also applies on-hit effects against champions hit; it is not applied for Last Embrace or Dawning Shadow, which are not stated to apply on-hit effects.",
+  "Mist stacks grant permanent bonus AD (0.75/stack), which feeds basic-attack damage and every bonus-AD ability ratio. The crit chance and attack range granted every 20 stacks are not modeled: the engine has no hook to add dynamic crit chance mid-fight, and the crit-to-lifesteal conversion is not modeled since lifesteal/healing is outside the fight's scope.",
+  "Starting Mist stacks are assumed to be 0 (no prior kills before the fight begins).",
+  "Curse of the Black Mist (E) is never cast: it deals no damage, and its camouflage/movement-speed effects are ignored by a stationary-dummy damage fight.",
+  "Mana costs are not modeled: none of Q/W/E/R's costs plausibly bind Senna's mana pool within a 15s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.markDamagePctByLevel",
+   "why": "the raw sheet byLevel array continues linearly past level 10 to 18, but the wiki's pp formula caps the value at 10 from level 10 onward; used the wiki's capped reading as the more common in-game description"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Piercing Darkness",
+   "cooldownS": [
+    15,
+    15,
+    15,
+    15,
+    15
+   ]
+  },
+  "W": {
+   "name": "Last Embrace",
+   "cooldownS": [
+    11,
+    11,
+    11,
+    11,
+    11
+   ]
+  },
+  "E": {
+   "name": "Curse of the Black Mist",
+   "cooldownS": [
+    26,
+    24.5,
+    23,
+    21.5,
+    20
+   ]
+  },
+  "R": {
+   "name": "Dawning Shadow",
+   "cooldownS": [
+    140,
+    120,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "adPerStack": 0.75,
+   "relicRatio": 0.2,
+   "markDurationS": 4,
+   "markDamagePctByLevel": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+   ],
+   "markImmunityByLevel": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    5,
+    5,
+    5,
+    5,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     30,
+     55,
+     80,
+     105,
+     130
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "cdReductionOnHitS": 1
+  },
+  "W": {
+   "damage": {
+    "base": [
+     70,
+     110,
+     150,
+     190,
+     230
+    ],
+    "bonusAdRatio": 0.9
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     250,
+     400,
+     550
+    ],
+    "apRatio": 0.7,
+    "bonusAdRatio": 1.15
+   },
+   "castTimeS": 1
+  }
+ },
+ "attack": {
+  "windupFraction": 0.34375,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/senna.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/senna.rs."
+ ]
+}

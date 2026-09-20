@@ -1,0 +1,142 @@
+{
+ "champion": "swain",
+ "name": "Swain",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Demonic Ascension (R) at t=0, entering the drain stance; the stationary dummy counts as a drained enemy champion, so Demonic Energy regen (10 per 0.5s while draining a champion) always outpaces its decay (5 per 0.5s, 7.5 after 5s), so the stance never lapses and R is cast only once for the whole fight.",
+  "Death's Hand (Q) is resolved as a single damage instance using the sheet's own 'total damage when all five bolts land' figure (base*2, AP ratio 0.9): the dummy is stationary and always takes all five bolts, and this total matches exactly what you get by taking the wiki's 25%-bonus-per-subsequent-bolt escalation to its 5th bolt, so the two documented models agree at this target.",
+  "Vision of Empire (W) is cast on cooldown; its damage lands 1.5 s after cast, as stated.",
+  "Nevermove (E) is assumed cast at maximum range every time, so the wave always homes back and detonates on the dummy; there is no single stated detonation delay, so the outgoing-then-return missile travel described on the wiki is approximated as a flat 1.0 s from cast to the detonation's damage (an assumption, see 'assumed').",
+  "Nevermove's recast (the pull) deals no damage and only grants a Soul Fragment (self-heal/health, irrelevant here), so it is never cast.",
+  "Demonflare becomes castable 2 s after Demonic Ascension begins and is then recast manually every time it comes off cooldown; the only cooldown value in the files (8 s) is flagged by the wiki as possibly tooltip-only, but it is the only number available, so it is used (see 'assumed').",
+  "Ravenous Flock (passive) only grants bonus health and self-healing on Soul Fragment pickup, never damage, so it is omitted entirely.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16 given this rotation.",
+  "Swain still auto-attacks with basic attacks between casts (no on-hit or attack-speed steroid in his kit), since his ability cooldowns leave idle time in a longer fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.travelDelayS",
+   "why": "Nevermove's cast-to-detonation delay is not given as a single number; approximated from the wiki's described outgoing (~0.585s to max range) and return (~0.4s) missile travel times."
+  },
+  {
+   "path": "gen.R.demonflareCooldownS",
+   "why": "the only Demonflare cooldown value present (8s) is flagged by the wiki as possibly tooltip-only/unused, but it is needed to model repeated manual Demonflare casts during the permanent Ascension stance."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Death's Hand",
+   "cooldownS": [
+    7,
+    6,
+    5,
+    4,
+    3
+   ]
+  },
+  "W": {
+   "name": "Vision of Empire",
+   "cooldownS": [
+    22,
+    21,
+    20,
+    19,
+    18
+   ]
+  },
+  "E": {
+   "name": "Nevermove",
+   "cooldownS": [
+    12,
+    11.5,
+    11,
+    10.5,
+    10
+   ]
+  },
+  "R": {
+   "name": "Demonic Ascension",
+   "cooldownS": [
+    120,
+    120,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     120,
+     180,
+     240,
+     300,
+     360
+    ],
+    "apRatio": 0.9
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     70,
+     105,
+     140,
+     175,
+     210
+    ],
+    "apRatio": 0.6
+   },
+   "explodeDelayS": 1.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     90,
+     130,
+     170,
+     210,
+     250
+    ],
+    "apRatio": 0.7
+   },
+   "travelDelayS": 1.0
+  },
+  "R": {
+   "tickDamage": {
+    "base": [
+     7.5,
+     12.5,
+     17.5
+    ],
+    "apRatio": 0.02
+   },
+   "tickIntervalS": 0.5,
+   "demonflareDamage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 0.4
+   },
+   "castTimeS": 0.5,
+   "demonflareCastDelayS": 2,
+   "demonflareCooldownS": 8
+  }
+ },
+ "attack": {
+  "windupFraction": 0.14,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/swain.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/swain.rs."
+ ]
+}

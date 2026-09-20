@@ -1,0 +1,148 @@
+{
+ "champion": "reksai",
+ "name": "Rek'Sai",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "We use Rek'Sai's Unburrowed kit throughout: Queen's Wrath (Q), Furious Bite (E), and Unburrow's damage burst (W). Prey Seeker, Tunnel and the Burrowed form of Q are never used since they trade damage for utility this fight has no use for.",
+  "Fury starts at 0 and accumulates during the fight: 25 per basic-attack hit and 25 per damaging ability hit (Unburrow, Furious Bite, Void Rush), capped at 100; Queen's Wrath itself grants no Fury, per the wiki. Out-of-combat Fury decay (after 8s) never triggers since Rek'Sai is attacking or casting continuously.",
+  "Furious Bite's 1.2x true-damage conversion is read as binary: it only applies once Fury is exactly at its 100 cap, matching the wiki's 'at maximum Fury' wording; below that it is plain physical damage.",
+  "Queen's Wrath (Q) carries no flat base damage: the sheet's RekSaiQ#TotalDamageTooltip formula and the wiki's own damage line both give only the AD-ratio term, so UnburrowedBaseDamage is treated as unused data.",
+  "Queen's Wrath is cast on cooldown; it grants 35% bonus attack speed and empowers up to 3 subsequent basic attacks (refreshing a 3s window each time one lands), and resets Rek'Sai's attack timer on cast. Its cooldown starts only once that window ends (post-effect), matching the sheet's cdstart.",
+  "Queen's Wrath's bonus damage to the primary target is crit-eligible; there is no second target in a single-dummy fight so only the primary hit is modeled.",
+  "W bundles the Burrow->Unburrow toggle into one instant action on Unburrow's 4s cooldown: Burrow itself has no cast time or damage and its cooldown only starts once Unburrow is subsequently cast, so the pair is treated as a single cooldown-gated burst. Unburrow does not count as an ability activation, so it does not trigger Spellblade/Muramana/Eclipse-style on-cast procs, per the wiki, though its hit still deals magic ability damage and generates Fury. It also applies a short 0.15s attack/move lockout after landing.",
+  "Furious Bite is cast on cooldown (6s, 0.25s cast time) targeting the dummy.",
+  "Void Rush requires a target Marked as Prey, which only exists once Rek'Sai has already damaged the dummy; the fight opens with no mark, so Void Rush is held until the first hit lands (almost immediately, from the opening auto-attack) and then cast as soon as its long cooldown allows. Its 0.9s delay between cast-end and impact is a wiki estimate with no corresponding bin value; Rek'Sai cannot attack during the cast plus this delay (she is vanished).",
+  "Mana is not modeled: none of Rek'Sai's abilities have a real cost that would bind inside a 15s fight."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Queen's Wrath",
+   "cooldownS": [
+    4,
+    3.5,
+    3,
+    2.5,
+    2
+   ]
+  },
+  "W": {
+   "name": "Unburrow",
+   "cooldownS": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "E": {
+   "name": "Furious Bite",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "R": {
+   "name": "Void Rush",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "furyPerAttack": 25,
+   "furyPerAbility": 25
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adRatio": [
+     0.3,
+     0.35,
+     0.4,
+     0.45,
+     0.5
+    ]
+   },
+   "attackSpeedPct": 35,
+   "buffDurationS": 3,
+   "maxEmpoweredAttacks": 3
+  },
+  "W": {
+   "damage": {
+    "base": [
+     30,
+     55,
+     80,
+     105,
+     130
+    ],
+    "apRatio": 0.8
+   },
+   "lockoutS": 0.15
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     95,
+     120,
+     145,
+     170
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "empoweredRatio": 1.2
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "bonusAdRatio": 1.0
+   },
+   "targetMaxHpRatio": [
+    0.15,
+    0.2,
+    0.25
+   ],
+   "castTimeS": 0.35,
+   "delayAfterCastS": 0.9
+  }
+ },
+ "assumed": [
+  {
+   "path": "gen.R.delayAfterCastS",
+   "why": "the pounce delay after Void Rush's cast time has no bin value; using the wiki's estimated 0.9 seconds"
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/reksai.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/reksai.rs."
+ ],
+ "manaless": true
+}

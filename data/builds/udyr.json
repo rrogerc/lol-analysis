@@ -1,0 +1,273 @@
+{
+ "champion": "udyr",
+ "name": "Udyr",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Udyr has no true ultimate: Q/W/E/R are four interchangeable Stances, each with its own 6s cooldown, cast instantly (no cast time), that arm his next basic attacks with an on-hit rider and share a 1.5s global cooldown with each other.",
+  "The opening: the engine's built-in t=0 opening cast is used for R (Storm Stance), so its blizzard starts ticking immediately; the rotation then respects the 1.5s global cooldown by casting Q at 1.5s, W at 3.0s and E at 4.5s, after which each ability's own 6s cooldown lines up so the cycle (R, Q, W, E) repeats every 6 seconds for the rest of the fight.",
+  "Only Wilding Claw (Q) is ever recast to Awaken it: Iron Mantle (W) only grants lifesteal/heal/shield (no damage, ignored) and Blazing Stampede (E)'s only offensive effect is a stun (crowd control is ignored by this simulator), so neither is worth spending the shared Awakened Spirit charge on; W and E are still cast on cooldown purely to keep Monk Training's attack-speed buff and the 1.5s cadence going.",
+  "Awakened Spirit (the passive charge that lets a Stance be Awaken-recast) is assumed to be off cooldown at t=0, since in a real game it is very rarely at the game-start full-cooldown state by the time a player is doing a 6-item damage check; its ~20s (at level 16) cooldown is reduced by ultimate haste, modeled here with e.ult_cd.",
+  "Each Q cast checks once for an Awaken at the earliest legal instant (0.25s after cast, or when Awakened Spirit becomes ready if that is later), as long as that instant still falls within the 5s Awaken window; if the charge is not ready in time that cycle's Awaken is skipped rather than re-polled continuously.",
+  "Monk Training's 'next two attacks' attack-speed buff is modeled as a flat 30% bonus AS for the 4 seconds following any Stance cast (rather than gating it to exactly two attacks), since with a Stance cast roughly every 1.5s the buff is refreshed continuously in practice; this is a simplification for tractability.",
+  "Wilding Claw's two on-hit riders are modeled precisely as 'next two attacks' (the %max-health physical burst, and, once Awakened, the extra %max-health burst and the 6-bounce lightning chain); Wingborne Storm's on-hit magic burst is likewise the next two attacks. Wilding Claw's separate 'bonus attack speed and on-hit physical damage for 4 seconds' effect is a genuine time window per the wiki text and is modeled as such.",
+  "Because the dummy is the only target, all 6 lightning bounces per empowered attack (up to 12 total across both empowered attacks) are assumed to land on it, per the wiki's own text that lightning 'can bounce to the same enemy multiple times for a lack of targets.'",
+  "Wilding Claw's Awaken AD-scaling on its extra on-hit damage uses the wiki's stated +1.5% max-health damage per 100 bonus AD rather than the numbers sheet's Q2MaxHPADRatio field, which implies +5% and looks like a data-entry outlier next to the wiki's fully-cited formula.",
+  "Wingborne Storm's per-tick blizzard damage uses the wiki's cited per-tick base/AP-ratio (which halves the sheet's 'StormDamage' field); the sheet's own note treats StormDamage as ambiguous, so the explicitly-quoted per-tick number is used and doubled over 8 ticks for the full-duration total.",
+  "Wingborne Storm's Awaken (the mobile glacial storm) is not modeled: it does not change target-single-dummy behavior meaningfully differently from continuing to recast the base blizzard, and modeling its detached-unit tracking is out of scope; only the base Storm Stance (empowered on-hit burst + blizzard DoT) is cast on every recast.",
+  "Muramana/Eclipse-style 'once per cast' triggers (ability_cast_proc, eclipse_hit) are applied once at the moment Wingborne Storm is cast, not once per blizzard tick, since the tick damage is a delayed continuation of that single cast rather than a fresh cast.",
+  "None of Udyr's on-hit or ability riders here are stated to critically strike, so all are dealt as non-crit.",
+  "Mana is not modeled: Udyr's level-16 mana pool comfortably covers the modest costs (20 for Q, ~20-40 for W/E/R) of this cadence over a 15s fight.",
+  "Q's Awaken-level arrays (bonus attack speed, extra max-health physical damage, and lightning per-hit max-health damage) are copied directly from the dossier's stated per-level fractions, multiplied by 100 to express them as percent; no interpolation formula of our own is used."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.awakenCdByLevel",
+   "why": "Awakened Spirit is assumed to be off full cooldown at the start of the fight rather than in its true game-start state, since a level-16 six-item fight represents a point well into a real game."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Wilding Claw",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "W": {
+   "name": "Iron Mantle",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "E": {
+   "name": "Blazing Stampede",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "R": {
+   "name": "Wingborne Storm",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "globalCdS": 1.5,
+   "monkAsPct": 30,
+   "monkDurationS": 4,
+   "awakenCastDelayS": 0.25,
+   "awakenWindowS": 5,
+   "awakenCdByLevel": [
+    50,
+    50,
+    50,
+    50,
+    50,
+    40,
+    40,
+    40,
+    40,
+    40,
+    30,
+    30,
+    30,
+    30,
+    30,
+    20,
+    20,
+    20
+   ]
+  },
+  "Q": {
+   "onHit1": {
+    "baseByRankPct": [
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    "adPctPer100": 3.5
+   },
+   "onHitFlat": {
+    "base": [
+     6,
+     12,
+     18,
+     24,
+     30,
+     36
+    ],
+    "adRatio": 0.2,
+    "bonusHpRatioPctByRank": [
+     1,
+     1.2,
+     1.4,
+     1.6,
+     1.8,
+     2
+    ]
+   },
+   "asBuff": {
+    "baseByRankPct": [
+     20,
+     32,
+     44,
+     56,
+     68,
+     80
+    ],
+    "durationS": 4
+   },
+   "chargeCount": 2,
+   "awaken": {
+    "asBonusByLevelPct": [
+     20,
+     22.94,
+     25.88,
+     28.82,
+     31.76,
+     34.71,
+     37.65,
+     40.59,
+     43.53,
+     46.47,
+     49.41,
+     52.35,
+     55.29,
+     58.24,
+     61.18,
+     64.12,
+     67.06,
+     70
+    ],
+    "asBuffDurationS": 4,
+    "maxHpBonusByLevelPct": [
+     2,
+     2.118,
+     2.235,
+     2.353,
+     2.471,
+     2.588,
+     2.706,
+     2.824,
+     2.941,
+     3.059,
+     3.176,
+     3.294,
+     3.412,
+     3.529,
+     3.647,
+     3.765,
+     3.882,
+     4
+    ],
+    "adPctPer100": 1.5,
+    "hpPctPer100": 0.1,
+    "lightning": {
+     "perHitByLevelPct": [
+      1.5,
+      1.588,
+      1.676,
+      1.765,
+      1.853,
+      1.941,
+      2.029,
+      2.118,
+      2.206,
+      2.294,
+      2.382,
+      2.471,
+      2.559,
+      2.647,
+      2.735,
+      2.824,
+      2.912,
+      3.0
+     ],
+     "apPctPer100": 0.6,
+     "bounces": 6,
+     "bounceIntervalS": 0.2
+    }
+   }
+  },
+  "W": {},
+  "E": {},
+  "R": {
+   "onHitByLevel": [
+    10.0,
+    11.764706,
+    13.52941176,
+    15.294118,
+    17.058823,
+    18.82353,
+    20.588235,
+    22.352941,
+    24.117647,
+    25.882353,
+    27.647059,
+    29.411765,
+    31.17647,
+    32.941176,
+    34.705882,
+    36.47059,
+    38.235294,
+    40.0
+   ],
+   "onHitApRatio": 0.35,
+   "blizzard": {
+    "damage": {
+     "base": [
+      10,
+      18,
+      26,
+      34,
+      42,
+      50
+     ],
+     "apRatio": 0.175
+    },
+    "tickIntervalS": 0.5,
+    "durationS": 4,
+    "ticks": 8
+   },
+   "chargeCount": 2
+  }
+ },
+ "attack": {
+  "windupFraction": 0.198,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/udyr.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/udyr.rs."
+ ]
+}

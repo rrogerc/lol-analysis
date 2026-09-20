@@ -1,0 +1,208 @@
+{
+ "champion": "rengar",
+ "name": "Rengar",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "The fight opens with Thrill of the Hunt (R): it has no cast time of its own but the engine's opening 0.25s lockout still applies; it arms Rengar's next basic attack for 100% AD bonus physical damage, dealt once that attack lands.",
+  "Thrill of the Hunt's target armor reduction is a flat armor value, not a percent, and the engine's target-debuff hook only supports a percent armor/MR shred, so it is not modeled; only R's 100% AD bonus damage on the next attack is counted. R's cooldown (80-100s) means it is cast only once, at the opener.",
+  "There is no brush in the dummy fight, so Unseen Predator's leap-attack (bonus range, leap, its own Ferocity generation) never triggers; this is the standard assumption for a stationary 1v1 fight against a dummy.",
+  "Bonetooth Necklace trophies are assumed at 0, since a 1v1 dummy fight offers no champion takedowns to earn them, so it contributes no bonus AD and is left out of the kit entirely.",
+  "Ferocity is a shared 0-4 counter: casting a basic ability (Q/W/E/R) or landing Savagery's stab generates one stack (capped at 4); a cast made at 4 stacks consumes them all, uses the Ferocity-empowered damage instead, and immediately grants a free extra cast of the same ability, which then generates its own stack normally. The passive's 10s in-combat grace period keeps stacks from expiring once Rengar is dealing or landing damage every few seconds, which happens continuously in this fight, so the 1s per-stack expiry timer and its documented non-refresh bug are not modeled.",
+  "Savagery (Q) deals no damage on cast: it arms the next basic attack with a bonus physical stab (assumed to be able to critically strike at both damage tiers, per the wiki's statement for the base tier) and grants 40% bonus attack speed for the next two attacks; a Ferocity-empowered cast also grants a separate 5s attack-speed buff. Its cooldown is post-effect, modeled as starting when the 3s attack-speed window ends. The pending-stab queue holds at most two entries (matching 'next two attacks'); a third stab arriving before earlier ones land would be dropped, which does not happen at normal attack cadence.",
+  "Battle Roar (W) and Bola Strike (E) are cast on cooldown and deal their damage immediately on cast; Bola Strike's 0.25s cast time is modeled only as the standard 0.25s attack lockout, its short travel time is not modeled separately. A Ferocity-empowered cast of either is immediately followed by its granted free extra cast.",
+  "Mana/cost is not modeled: Rengar's resource is Ferocity, tracked as kit state; none of his abilities have a mana cost."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Savagery",
+   "cooldownS": [
+    6,
+    5.5,
+    5,
+    4.5,
+    4
+   ]
+  },
+  "W": {
+   "name": "Battle Roar",
+   "cooldownS": [
+    16,
+    14.5,
+    13,
+    11.5,
+    10
+   ]
+  },
+  "E": {
+   "name": "Bola Strike",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "R": {
+   "name": "Thrill of the Hunt",
+   "cooldownS": [
+    100,
+    90,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "maxFerocity": 4
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     20,
+     55,
+     90,
+     125,
+     160
+    ],
+    "adRatio": 0.05
+   },
+   "empDamage": {
+    "baseByLevel": [
+     35,
+     50,
+     65,
+     80,
+     95,
+     110,
+     125,
+     140,
+     150,
+     160,
+     170,
+     180,
+     190,
+     200,
+     210,
+     220,
+     230,
+     240
+    ],
+    "adRatio": 0.2
+   },
+   "asBonusPct": 40,
+   "asBonusDurationS": 3,
+   "empAsPctByLevel": [
+    50,
+    53,
+    56,
+    59,
+    62,
+    65,
+    68,
+    71,
+    74,
+    77,
+    80,
+    83,
+    86,
+    89,
+    92,
+    95,
+    98,
+    101
+   ],
+   "empAsDurationS": 5
+  },
+  "W": {
+   "damage": {
+    "base": [
+     50,
+     80,
+     110,
+     140,
+     170
+    ],
+    "apRatio": 0.8
+   },
+   "empDamage": {
+    "baseByLevel": [
+     50,
+     60,
+     70,
+     80,
+     90,
+     100,
+     110,
+     120,
+     130,
+     140,
+     150,
+     160,
+     170,
+     180,
+     190,
+     200,
+     210,
+     220
+    ],
+    "apRatio": 0.8
+   }
+  },
+  "E": {
+   "damage": {
+    "base": [
+     55,
+     100,
+     145,
+     190,
+     235
+    ],
+    "bonusAdRatio": 0.8
+   },
+   "empDamage": {
+    "baseByLevel": [
+     50,
+     65,
+     80,
+     95,
+     110,
+     125,
+     140,
+     155,
+     170,
+     185,
+     200,
+     215,
+     230,
+     245,
+     260,
+     275,
+     290,
+     305
+    ],
+    "bonusAdRatio": 0.8
+   }
+  },
+  "R": {
+   "bonusDamage": {
+    "adRatio": 1.0
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rengar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rengar.rs."
+ ],
+ "manaless": true
+}

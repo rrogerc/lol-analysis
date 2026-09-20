@@ -2,6 +2,8 @@
 //! numbers the drivers read. Everything is optional at parse time; a driver
 //! demands what its rotation needs when it is built.
 
+use std::collections::HashMap;
+
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -144,6 +146,8 @@ pub enum DriverId {
     Vladimir,
     Twitch,
     Kassadin,
+    /// A driver under engine/src/generated/, looked up by the champion's slug.
+    Generated,
 }
 
 impl DriverId {
@@ -155,13 +159,50 @@ impl DriverId {
             "vladimir" => Some(DriverId::Vladimir),
             "twitch" => Some(DriverId::Twitch),
             "kassadin" => Some(DriverId::Kassadin),
+            other if crate::generated::NAMES.contains(&other) => Some(DriverId::Generated),
             _ => None,
         }
     }
 }
 
+/// One leaf of a kit encoding, for the generated drivers: they read the kit
+/// by dotted path ("abilities.Q.damage.base") instead of through typed
+/// fields, so a new champion adds no parsing code.
+#[derive(Clone, Debug, PartialEq)]
+pub enum KitValue {
+    Num(f64),
+    List(Vec<f64>),
+    Text(String),
+    Flag(bool),
+}
+
+fn flatten(prefix: &str, v: &Bound<'_, PyAny>, out: &mut HashMap<String, KitValue>) -> PyResult<()> {
+    if let Ok(d) = v.cast::<PyDict>() {
+        for (k, item) in d.iter() {
+            let key: String = k.extract()?;
+            let path = if prefix.is_empty() { key } else { format!("{prefix}.{key}") };
+            flatten(&path, &item, out)?;
+        }
+    } else if let Ok(b) = v.extract::<bool>() {
+        if v.is_instance_of::<pyo3::types::PyBool>() {
+            out.insert(prefix.to_string(), KitValue::Flag(b));
+        } else if let Ok(x) = v.extract::<f64>() {
+            out.insert(prefix.to_string(), KitValue::Num(x));
+        }
+    } else if let Ok(x) = v.extract::<f64>() {
+        out.insert(prefix.to_string(), KitValue::Num(x));
+    } else if let Ok(xs) = v.extract::<Vec<f64>>() {
+        out.insert(prefix.to_string(), KitValue::List(xs));
+    } else if let Ok(t) = v.extract::<String>() {
+        out.insert(prefix.to_string(), KitValue::Text(t));
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug)]
 pub struct Kit {
+    /// Every leaf of the encoding by dotted path (see `KitValue`).
+    pub values: HashMap<String, KitValue>,
     pub champion: String,
     pub driver: Option<DriverId>,
     pub attack_never: bool,
@@ -361,7 +402,10 @@ impl Kit {
         }
         let abilities = reqd(d, "abilities")?;
         let champion = reqs(d, "champion")?;
+        let mut values = HashMap::new();
+        flatten("", d.as_any(), &mut values)?;
         Ok(Kit {
+            values,
             driver: DriverId::of(&champion),
             champion,
             attack_never,
@@ -376,6 +420,100 @@ impl Kit {
             w: parse_ability(getd(&abilities, "W")?)?,
             e: parse_ability(getd(&abilities, "E")?)?,
             r: parse_ability(getd(&abilities, "R")?)?,
+        })
+    }
+}
+
+/// The generated drivers' view of a kit: values by dotted path, with errors
+/// that name the path. All of it runs in `Driver::new`, never inside a fight.
+impl Kit {
+    pub fn has(&self, path: &str) -> bool {
+        self.values.contains_key(path)
+    }
+
+    /// A number; a missing path is an error that names it.
+    pub fn num(&self, path: &str) -> Result<f64, String> {
+        match self.values.get(path) {
+            Some(KitValue::Num(x)) => Ok(*x),
+            Some(other) => Err(format!("kit value {path} is {other:?}, not a number")),
+            None => Err(format!("kit has no value {path}")),
+        }
+    }
+
+    /// A number, or `default` when the kit does not state it.
+    pub fn num_or(&self, path: &str, default: f64) -> f64 {
+        self.num(path).unwrap_or(default)
+    }
+
+    /// A list of numbers; a single number reads as a list of one.
+    pub fn list(&self, path: &str) -> Result<Vec<f64>, String> {
+        match self.values.get(path) {
+            Some(KitValue::List(xs)) => Ok(xs.clone()),
+            Some(KitValue::Num(x)) => Ok(vec![*x]),
+            Some(other) => Err(format!("kit value {path} is {other:?}, not a list")),
+            None => Err(format!("kit has no value {path}")),
+        }
+    }
+
+    /// The value at an ability rank (1-based): a list is indexed (its last
+    /// entry stands for any rank past its end), a number is the same at every
+    /// rank. Rank 0 (the ability is not learned) reads 0.
+    pub fn at_rank(&self, path: &str, rank: i64) -> Result<f64, String> {
+        let xs = self.list(path)?;
+        if rank <= 0 || xs.is_empty() {
+            return Ok(0.0);
+        }
+        Ok(xs[((rank - 1) as usize).min(xs.len() - 1)])
+    }
+
+    /// The value at a champion level (1-18) of an 18-entry list (a shorter
+    /// list reads its last entry past its end; a number is level-independent).
+    pub fn at_level(&self, path: &str, level: i64) -> Result<f64, String> {
+        self.at_rank(path, level.max(1))
+    }
+
+    pub fn flag(&self, path: &str) -> bool {
+        matches!(self.values.get(path), Some(KitValue::Flag(true)))
+    }
+
+    pub fn text(&self, path: &str) -> Option<&str> {
+        match self.values.get(path) {
+            Some(KitValue::Text(t)) => Some(t.as_str()),
+            _ => None,
+        }
+    }
+
+    /// The damage block at `path` evaluated at an ability rank on a sheet:
+    /// `damage(path)?.hit(rank, sheet)`, and 0 for an ability not learned.
+    pub fn hit(&self, path: &str, rank: i64, sheet: &crate::sheet::Sheet) -> Result<f64, String> {
+        if rank <= 0 {
+            return Ok(0.0);
+        }
+        Ok(self.damage(path)?.hit(rank, sheet))
+    }
+
+    /// The `{base, apRatio, adRatio, bonusAdRatio, maxHpRatio, bonusHpRatio,
+    /// maxManaRatio}` block at `path` as a `DamageSpec` (`hit(rank, sheet)`
+    /// evaluates it; the three health and mana ratios are PERCENT of the
+    /// caster's own stat, the others are fractions). A missing `base` is 0.
+    pub fn damage(&self, path: &str) -> Result<DamageSpec, String> {
+        let known = ["base", "apRatio", "adRatio", "bonusAdRatio", "maxHpRatio", "bonusHpRatio",
+                     "maxManaRatio"];
+        if !known.iter().any(|k| self.has(&format!("{path}.{k}"))) {
+            return Err(format!("kit has no damage block {path}"));
+        }
+        let mut base = self.list(&format!("{path}.base")).unwrap_or_else(|_| vec![0.0]);
+        let last = *base.last().unwrap_or(&0.0);
+        base.resize(base.len().max(6), last);
+        let opt = |k: &str| self.num(&format!("{path}.{k}")).ok();
+        Ok(DamageSpec {
+            base,
+            bonus_ad_ratio: opt("bonusAdRatio").unwrap_or(0.0),
+            ad_ratio: opt("adRatio").unwrap_or(0.0),
+            ap_ratio: opt("apRatio").unwrap_or(0.0),
+            max_hp_ratio: opt("maxHpRatio"),
+            bonus_hp_ratio: opt("bonusHpRatio"),
+            max_mana_ratio: opt("maxManaRatio"),
         })
     }
 }

@@ -1,0 +1,164 @@
+{
+ "champion": "smolder",
+ "name": "Smolder",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens with MMOOOMMMM! (R) at t=0; the dummy is assumed to stand in the wave's 125-unit center sweetspot (the natural placement for a single stationary target directly ahead), so R's physical damage uses the 1.5x sweetspot multiplier. R's self heal is ignored since it never changes damage dealt to the dummy.",
+  "Dragon Practice (P) stacks start at 0 and accumulate only from hits actually landed during the fight: Q, W, E and R each grant a stack the first time they hit the dummy, capped as the dossier states (one stack per Q cast since Q can only hit once per cast anyway, one stack ever from W since it only grants a stack on its first hit against a given champion, and one stack per E cast regardless of bolt count). Q's kill-related bonus-stack text is not modeled since the dummy is never treated as dying.",
+  "Because stacks start at 0 and only a handful of casts fit in an 8-15s fight, Q's stack-gated tiers (25/125/225 stacks) are effectively unreachable; the tier 1/2/3 logic is implemented for correctness but will almost never fire in a short dummy fight.",
+  "The crit-scaling term in Dragon Practice's Q/E bonus damage and in Q's own physical damage is applied exactly as Riot's extracted formula strings show it: an additive bonus of ratio x critChance x (critDamage-1), not a multiplicative crit strike. This is the resolved reading of an ambiguous formula.",
+  "If Q ever reaches tier 2 (125 stacks), all of its arc bolts are assumed to land on the single dummy (a multi-hit reading), each dealing 50% of the fireball's damage (physical and Dragon Practice bonus alike) per the wiki's stated multiplier.",
+  "W's repeat-explosion decay (75% of the previous explosion's damage) is treated as persisting for the whole fight against the one dummy target, since there is nowhere else for it to reset.",
+  "E is a 1.25s channel: it is cast on cooldown whenever off cooldown and Smolder is not locked into R's 0.75s cast; casting Q or W is paused for its duration (per the dossier, another cast would end it early) and Smolder's attacks are held until it ends. All of its bolts (5 + stacks/100, rounded down) are resolved as a single batch when the channel ends; its cooldown starts at the cast, per the wiki's cdstart note.",
+  "Q and W are cast on cooldown whenever not blocked by E's channel or R's cast lock; basic attacks fill every other window.",
+  "Q's tier-3 true-damage burn (unreachable in-fight, see above) is modeled, if ever triggered, as an instant application of its full 3-second total rather than three separate ticks, and the 6.5% execute threshold is not modeled, since this code path cannot actually be reached inside the simulated fight length.",
+  "Mana is not modeled: no base mana or regen values were available, and Smolder's costs are small relative to an 8-15s fight."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Super Scorcher Breath",
+   "cooldownS": [
+    5.5,
+    5,
+    4.5,
+    4,
+    3.5
+   ]
+  },
+  "W": {
+   "name": "Achooo!",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "E": {
+   "name": "Flap, Flap, Flap",
+   "cooldownS": [
+    24,
+    22,
+    20,
+    18,
+    16
+   ]
+  },
+  "R": {
+   "name": "MMOOOMMMM!",
+   "cooldownS": [
+    120,
+    110,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "QDamagePerStack": 0.25,
+   "QCritRatio": 1.2,
+   "WDamagePerStack": 0.55,
+   "EDamagePerStack": 0.08,
+   "ECritRatio": 0.6,
+   "startingStacks": 0
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "bonusAdRatio": 1.3
+   },
+   "critRatio": 0.75,
+   "tier1Stacks": 25,
+   "tier2Stacks": 125,
+   "tier3Stacks": 225,
+   "tier2Mod": 0.5,
+   "tier2BoltsBase": 2,
+   "tier2BoltsPerStack": 0.008,
+   "tier3BurnAdCoef": 0.00025,
+   "tier3BurnStackCoef": 5e-05
+  },
+  "W": {
+   "damage1": {
+    "base": [
+     60,
+     70,
+     80,
+     90,
+     100
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "damage2": {
+    "base": [
+     10,
+     35,
+     60,
+     85,
+     110
+    ],
+    "bonusAdRatio": 0.5,
+    "apRatio": 0.8
+   },
+   "decayFactor": 0.75
+  },
+  "E": {
+   "damage": {
+    "base": [
+     10,
+     15,
+     20,
+     25,
+     30
+    ],
+    "adRatio": 0.3
+   },
+   "boltsBase": 5,
+   "boltsPerStack": 0.01,
+   "durationS": 1.25
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "bonusAdRatio": 1.0,
+    "apRatio": 1.0
+   },
+   "sweetspotMult": 1.5,
+   "castTimeS": 0.75
+  }
+ },
+ "assumed": [
+  {
+   "path": "gen.P.startingStacks",
+   "why": "Dragon Practice has no stated starting value and is uncapped; a fresh fight is assumed to start at 0 stacks, accumulated only from hits landed during the simulated window"
+  },
+  {
+   "path": "gen.R.sweetspotMult",
+   "why": "the dummy is assumed to stand in MMOOOMMMM!'s center sweetspot, the natural placement for a single stationary target directly ahead in a fight with no positioning"
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.15954,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/smolder.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/smolder.rs."
+ ]
+}

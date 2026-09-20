@@ -1,0 +1,160 @@
+{
+ "champion": "akali",
+ "name": "Akali",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Five Point Strike (Q) is cast the instant it comes off its flat 1.5s cooldown; its damage is dealt on cast rather than modeling the ~0.19s delay into the cast, since that offset is well inside Q's own cast lockout and does not change total damage output.",
+  "Assassin's Mark (P)'s Swinging Kama empowered attack is never triggered: it requires Akali to physically leave the ring created around a damaged champion and come back, but Q's 1.5s cooldown is far shorter than the ring's 4s duration, so casting Q on cooldown (the highest-damage use of that cooldown) keeps refreshing the ring indefinitely and Akali never exits it. P's on-hit bonus is therefore excluded from the rotation.",
+  "Shuriken Flip (E) is cast on cooldown, and its recast is used immediately to consume the mark at the first opportunity, matching the proposed rotation. The numbers sheet gives only one cast time (0.25s, the initial cast) with no separate recast value, so the recast is treated as instant with no attack lockout, landing back-to-back with the initial cast.",
+  "The forced basic attack the game orders after Shuriken Flip's recast dash lands is modeled as an attack reset: the next attack becomes available immediately once the recast's damage lands.",
+  "Perfect Execution (R) opens the fight (the engine's t=0 cast) for its initial dash damage, then is recast as soon as the 2.5s static cooldown between casts allows (rather than delayed toward the end of the 10s window) so the recast reliably lands across every tested fight length; its recast damage scales with the target's missing health at the moment it lands, from 1x at 0% missing up to 3x at 70%+ missing, per the wiki's 0-to-200% bonus formula.",
+  "Twilight Shroud (W) deals no damage and its only fight-relevant effects (energy restore, +100 max energy, movement speed) do not matter here: mana/energy is not tracked (the sheet gives no base energy pool or regen rate), and movement/stealth do not affect a stationary dummy fight, so W is never cast.",
+  "Every ability cast (both casts of E and R) triggers on-cast item effects (Spellblade priming, Muramana, Eclipse) separately, per the wiki's note that both casts of E and R count as distinct ability activations."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Five Point Strike",
+   "cooldownS": [
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5
+   ]
+  },
+  "W": {
+   "name": "Twilight Shroud",
+   "cooldownS": [
+    20,
+    19,
+    18,
+    17,
+    16
+   ]
+  },
+  "E": {
+   "name": "Shuriken Flip",
+   "cooldownS": [
+    16,
+    14.5,
+    13,
+    11.5,
+    10
+   ]
+  },
+  "R": {
+   "name": "Perfect Execution",
+   "cooldownS": [
+    120,
+    90,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "note": "Assassin's Mark: unused by the driver, see notes.",
+   "damageByLevel": [
+    35,
+    38,
+    41,
+    44,
+    47,
+    50,
+    53,
+    62,
+    71,
+    80,
+    89,
+    98,
+    107,
+    122,
+    137,
+    152,
+    167,
+    182
+   ],
+   "bonusAdRatio": 0.6,
+   "apRatio": 0.55
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     45,
+     70,
+     95,
+     120,
+     145
+    ],
+    "adRatio": 0.65,
+    "apRatio": 0.6
+   }
+  },
+  "W": {
+   "note": "Twilight Shroud: unused by the driver (no damage), see notes."
+  },
+  "E": {
+   "e1": {
+    "base": [
+     21,
+     42,
+     63,
+     84,
+     105
+    ],
+    "adRatio": 0.3,
+    "apRatio": 0.33
+   },
+   "e2": {
+    "base": [
+     49,
+     98,
+     147,
+     196,
+     245
+    ],
+    "adRatio": 0.7,
+    "apRatio": 0.77
+   }
+  },
+  "R": {
+   "r1": {
+    "base": [
+     110,
+     220,
+     330
+    ],
+    "bonusAdRatio": 0.5,
+    "apRatio": 0.3
+   },
+   "r2min": {
+    "base": [
+     70,
+     140,
+     210
+    ],
+    "apRatio": 0.3
+   },
+   "missingHealthCap": 0.7,
+   "bonusMultCap": 2.0,
+   "castTimeS": 0.25,
+   "recastDelayS": 2.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.139,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/akali.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/akali.rs."
+ ],
+ "manaless": true
+}

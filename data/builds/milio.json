@@ -1,0 +1,155 @@
+{
+ "champion": "milio",
+ "name": "Milio",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Fired Up! is granted by Milio's own ability hits on himself (he counts as an allied champion for W, and the passive text says ability hits on himself and allied champions grant the enchantment); with no other ally present he self-casts E and W purely to arm the passive.",
+  "The rotation opens by burning both Warm Hugs charges (0.5 s static cooldown apart) and casting Cozy Campfire on himself, each granting Fired Up!, then keeps recasting E on its charge recharge and W on cooldown; every basic attack consumes an armed Fired Up! immediately (attacks land far more often than casts), and Ultra Mega Fire Kick's explosion consumes it too if it is still armed when the explosion lands.",
+  "Ultra Mega Fire Kick's 0.25 s pre-fire delay and its bounce-then-explode travel are folded into a single 0.25 s delay before the explosion's damage lands, matching the only quantified number (the pre-fire delay) and the rule that Milio cannot cast other abilities during it: E and W are held off until that delay ends.",
+  "Cozy Campfire's own 0.25 s cast time is resolved instantly (like the usual cast lockout) rather than as a separate travel event: casting it immediately grants Fired Up!, schedules the wiki's second grant 3 s later (still within the 6 s zone), and starts its cooldown when the 6 s zone ends (cdstart = post-effect).",
+  "Warm Hugs is modeled as a 2-charge ammo system (wiki: recharge 17 to 21 by rank, read here as the wiki's literal '17 to 13' text interpolated by rank) with the sheet's flat 0.5 s static cooldown between casts; it is assumed Milio starts the fight with both charges already stocked, as ammo abilities do at spawn.",
+  "Fired Up!'s burst uses the enchanted target's (Milio's own) total AD, and its burn deals its 1.5 s total in six 0.25 s ticks; at most two burn instances are tracked concurrently (overlap is only plausible right at the opening when both Warm Hugs charges fire close together) - if a third would overlap, its full total is dealt as a single instance instead of losing the tail ticks.",
+  "Breath of Life deals no damage and briefly locks out Milio's other casts, so it is never cast in this damage-only fight.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.rechargeS",
+   "why": "the numbers sheet has no explicit recharge field for Warm Hugs' 2-charge ammo system; the wiki template's '17 to 13' by-rank text is read as the standard linear interpolation [17,16,15,14,13]."
+  },
+  {
+   "path": "gen.E.maxCharges",
+   "why": "assumed Milio begins the fight with both Warm Hugs charges already stocked, as ammo-style abilities normally start full."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Ultra Mega Fire Kick",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "W": {
+   "name": "Cozy Campfire",
+   "cooldownS": [
+    29,
+    27,
+    25,
+    23,
+    21
+   ]
+  },
+  "E": {
+   "name": "Warm Hugs",
+   "cooldownS": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "R": {
+   "name": "Breath of Life",
+   "cooldownS": [
+    160,
+    145,
+    130
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "burstAdRatioByLevel": [
+    0.07,
+    0.07,
+    0.07,
+    0.07,
+    0.07,
+    0.11,
+    0.11,
+    0.11,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15
+   ],
+   "burnBaseByLevel": [
+    10,
+    12.35,
+    14.71,
+    17.06,
+    19.41,
+    21.76,
+    24.12,
+    26.47,
+    28.82,
+    31.18,
+    33.53,
+    35.88,
+    38.24,
+    40.59,
+    42.94,
+    45.29,
+    47.65,
+    50
+   ],
+   "burnApRatio": 0.2,
+   "burnDurationS": 1.5,
+   "burnTickIntervalS": 0.25,
+   "enchantDurationS": 4
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     140,
+     200,
+     260,
+     320
+    ],
+    "apRatio": 1.2
+   },
+   "castDelayS": 0.25
+  },
+  "W": {
+   "castTimeS": 0.25,
+   "activeDurationS": 6,
+   "secondGrantOffsetS": 3
+  },
+  "E": {
+   "rechargeS": [
+    17,
+    16,
+    15,
+    14,
+    13
+   ],
+   "maxCharges": 2
+  }
+ },
+ "attack": {
+  "windupFraction": 0.17143,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/milio.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/milio.rs."
+ ]
+}

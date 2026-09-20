@@ -1,0 +1,131 @@
+{
+ "champion": "draven",
+ "name": "Draven",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens at t=0 with Whirling Death (R) for its cast-time-gated damage, casts Spinning Axe (Q, instant) and Stand Aside (E) the moment each is off cooldown, and casts Blood Rush (W) the moment it is off cooldown for its attack-speed window; the rest of the time is spent auto-attacking, since attacks carry most of Draven's damage.",
+  "Spinning Axe has no cast time and is recast every time it is off cooldown, holding up to two charges at once; each basic attack consumes one charge for a single instance of bonus physical basic damage, which the wiki states crits and applies like normal basic damage.",
+  "The axe's empowered-attack window (the bin's AxeDuration=5.75s is used here; the wiki's fd-formatted 5.8s and the tooltip's 6s do not exactly match it) is never modeled expiring unconsumed, since Draven's attack period is far shorter than Q's 8-12s cooldown, so every charge is always consumed by the very next attack well inside that window.",
+  "No Spinning Axe catches are assumed against a single stationary dummy (there is nothing to catch in this fight), so Blood Rush's catch-triggered cooldown reset never fires; Blood Rush is simply recast on its flat 12s cooldown for its attack-speed buff.",
+  "Stand Aside's cooldown is read as the wiki/ddragon top-level value (16 to 12) rather than the DravenDoubleShot bin block's disagreeing 18-to-14 array, since ddragon's own top-level listing matches the wiki text.",
+  "Whirling Death is cast once, at t=0: its outbound pass lands when the 0.5s cast time ends, and it is recast at the earliest opportunity (1s after the original cast, per the wiki) for a second full-damage return pass through the dummy; the return pass's own travel time back to Draven is not separately modeled, so its damage is applied at the recast moment.",
+  "Whirling Death's per-enemy-hit damage falloff never reduces damage here because only the single dummy is ever hit per pass, and the falloff resets on the reversal anyway.",
+  "The execute from League of Draven's Adoration stacks is not modeled: Adoration is built from minion/turret kills and axe catches outside this fight and is assumed at 0 stacks, so Whirling Death never executes the dummy.",
+  "Mana costs on all four abilities are not modeled: nothing here binds inside a 15s fight at level 16."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Spinning Axe",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "W": {
+   "name": "Blood Rush",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "E": {
+   "name": "Stand Aside",
+   "cooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "R": {
+   "name": "Whirling Death",
+   "cooldownS": [
+    100,
+    90,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     40,
+     45,
+     50,
+     55,
+     60
+    ],
+    "bonusAdRatio": [
+     0.75,
+     0.85,
+     0.95,
+     1.05,
+     1.15
+    ]
+   },
+   "maxCharges": 2
+  },
+  "W": {
+   "asPctByRank": [
+    20,
+    25,
+    30,
+    35,
+    40
+   ],
+   "durationS": 3
+  },
+  "E": {
+   "damage": {
+    "base": [
+     75,
+     110,
+     145,
+     180,
+     215
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "castTimeS": 0.25
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     300,
+     400
+    ],
+    "bonusAdRatio": [
+     1.1,
+     1.3,
+     1.5
+    ]
+   },
+   "castTimeS": 0.5,
+   "recastMinDelayS": 1
+  }
+ },
+ "attack": {
+  "windupFraction": 0.18116,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/draven.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/draven.rs."
+ ]
+}

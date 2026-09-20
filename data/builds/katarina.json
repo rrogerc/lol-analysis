@@ -1,0 +1,119 @@
+{
+ "champion": "katarina",
+ "name": "Katarina",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Sinister Steel (P) only procs when Katarina physically walks over one of her own dropped daggers, a positional mechanic the stationary, terrain-free dummy fight has no way to represent; it is treated as never triggering, so its magic damage, its on-hit application, and its Shunpo cooldown refund are all omitted.",
+  "Voracity's 15s current-cooldown refund on all abilities requires a champion takedown; the dummy is never killed by this driver's own damage accounting in a way that matters (and the ranking fight is about sustained damage, not a kill), so it never applies.",
+  "Preparation (W) deals no damage and only grants movement speed and ghosting, which is worthless in a fight with no terrain and a stationary target, so it is never cast; its rank is still leveled last since it contributes nothing here.",
+  "Death Lotus (R) is cast the instant it is available (opening at t=0, and again if its cooldown ever completes inside the fight): its bonus-AD ratio only depends on static bonus attack speed from the build, so there is no benefit to delaying it, and delaying it would only risk losing ticks if the fight window were short.",
+  "Death Lotus channels for its full ~15-tick duration, throwing a dagger roughly every 0.166s (the wiki's per-tick interval, truncated against the 2.5s duration); attacks and Bouncing Blade/Shunpo casts are held for the whole channel, matching that basics are disabled and other casts are buffered until it ends.",
+  "Each Death Lotus tick deals its own listed magic and physical damage as two separate instances (matching the bin's two separate calculation nodes and the wiki's 'each dagger counts as a separate hit' language for per-hit effects); its 25-35% on-hit/on-attack effectiveness modifier only throttles other on-hit effects (e.g. item procs) it triggers, and the engine has no generic hook to fire arbitrary item on-hit effects from a non-attack ability tick, so that reduced-effectiveness on-hit application is not modeled.",
+  "Grievous Wounds inflicted by Death Lotus is ignored since the stat dummy never heals.",
+  "Outside Death Lotus, Bouncing Blade and Shunpo are cast on cooldown for the rest of the fight, interleaved with basic attacks; against a single dummy Bouncing Blade never finds a second bounce target, so only its primary hit lands.",
+  "Shunpo's basic-attack-timer reset is modeled, but the engine's fixed 0.25s cast-time lockout is at least as long as the reset's own windup, so in this model the reset never actually moves the next attack earlier.",
+  "Mana is not modeled: every Katarina ability has a listed cost of 0 in Riot's file, so nothing binds inside a 15s fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.tickIntervalS",
+   "why": "the wiki states 0.166s per dagger while the bin's TicksPerSecond=6 implies 0.1667s; the wiki's rounded value is used directly, and the resulting tick count (~15) is derived by truncating duration/interval rather than being separately stated."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Bouncing Blade",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "W": {
+   "name": "Preparation",
+   "cooldownS": [
+    15,
+    14,
+    13,
+    12,
+    11
+   ]
+  },
+  "E": {
+   "name": "Shunpo",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "R": {
+   "name": "Death Lotus",
+   "cooldownS": [
+    75,
+    60,
+    45
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     115,
+     150,
+     185,
+     220
+    ],
+    "apRatio": 0.4
+   }
+  },
+  "E": {
+   "damage": {
+    "base": [
+     20,
+     30,
+     40,
+     50,
+     60
+    ],
+    "bonusAdRatio": 0.4,
+    "apRatio": 0.25
+   }
+  },
+  "R": {
+   "magicDamage": {
+    "base": [
+     25,
+     37.5,
+     50
+    ],
+    "apRatio": 0.19
+   },
+   "adRatio": 0.16,
+   "asRatioPer100Pct": 0.5,
+   "tickIntervalS": 0.166,
+   "durationS": 2.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/katarina.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/katarina.rs."
+ ],
+ "manaless": true
+}

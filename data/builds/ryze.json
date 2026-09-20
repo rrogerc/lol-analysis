@@ -1,0 +1,125 @@
+{
+ "champion": "ryze",
+ "name": "Ryze",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Rotation: whenever Overload is off cooldown it is cast immediately (its cooldown is instantly reset to ready by every Rune Prison or Spell Flux cast, per Arcane Mastery's other-basic-ability-cast interaction), so the driver's real scheduling problem is only when to cast Spell Flux and Rune Prison.",
+  "Spell Flux is cast on cooldown, applying the Flux mark; the very next Overload consumes that mark for its damage amplification before anything else can waste it.",
+  "Rune Prison is only cast when the Flux mark is not currently active and unconsumed, so it never spends the mark on its own (damage-irrelevant) root/slow effect instead of letting Overload consume it for bonus damage; it is otherwise cast on cooldown to reset Overload again.",
+  "Each cast (Overload, Rune Prison, Spell Flux) has a 0.25 s cast time; the driver lets the next cast begin exactly when the previous one's cast time ends, matching the wiki's note that Overload 'can be buffered while casting either Spell Flux or Rune Prison to cast immediately after the previous spell's cast time.'",
+  "Overload's Flux-amplified damage uses the data bin's RyzeQWrapper.DamageAmp array indexed by Overload's own rank (40-80%); the wiki's conflicting Realm-Warp-rank-indexed reading, and Realm Warp's own separate passive amplification, are not additionally applied, to avoid double-counting an already-disputed bonus.",
+  "Realm Warp is never cast: it deals no direct damage itself, only a long channel and defensive/utility effects that do not matter against a stationary dummy, so casting it would only forfeit Q/W/E casts for no damage gain.",
+  "Recasting Spell Flux on an already-Flux-marked target is read as a plain refresh of the debuff (per the wiki note), not as an extra damage instance, in a single-target scene with no bounce spread to model.",
+  "Arcane Mastery's mana-power feedback is modeled: bonus mana used by Overload/Rune Prison/Spell Flux's ratios includes both the sheet's bonus mana and the extra maximum mana Arcane Mastery grants (10% of the champion's total mana per 100 AP), which per the wiki is itself treated as bonus mana.",
+  "Mana costs are not modeled: the sheet does not carry Ryze's base mana/regen values needed to build a real pool, and per the brief costs are ignored unless they would demonstrably stop casts inside the fight window."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Overload",
+   "cooldownS": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ]
+  },
+  "W": {
+   "name": "Rune Prison",
+   "cooldownS": [
+    11,
+    10.5,
+    10,
+    9.5,
+    9
+   ]
+  },
+  "E": {
+   "name": "Spell Flux",
+   "cooldownS": [
+    3.5,
+    3.25,
+    3,
+    2.75,
+    2.5
+   ]
+  },
+  "R": {
+   "name": "Realm Warp",
+   "cooldownS": [
+    180,
+    160,
+    140
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "bonusManaPctPer100Ap": 10
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     75,
+     95,
+     115,
+     135,
+     155
+    ],
+    "apRatio": 0.55
+   },
+   "bonusManaRatio": 0.02,
+   "fluxDamageAmpPct": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "castTimeS": 0.25
+  },
+  "W": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "apRatio": 0.6
+   },
+   "bonusManaRatio": 0.03,
+   "castTimeS": 0.25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "apRatio": 0.5
+   },
+   "bonusManaRatio": 0.02,
+   "fluxDurationS": 4,
+   "castTimeS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ryze.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ryze.rs."
+ ]
+}

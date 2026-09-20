@@ -1,0 +1,135 @@
+{
+ "champion": "ahri",
+ "name": "Ahri",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opening: Spirit Rush is cast at t=0 and recast twice more at the 1 s static interval between casts (its cooldown is 100-140 s so it never becomes available a second time inside a fight this short).",
+  "Orb of Deception's outbound (magic) and return (true) passes are both resolved at the moment the cast completes: no separate travel time is modeled for a stationary target that sits at the return point.",
+  "Fox-Fire's three flames are assumed to land together, at the 0.25 s priority-acquisition delay (AhriW.InitialDelay), since the dummy is the only enemy champion present and is therefore always the top-priority target for all three flames; its cooldown starts at that landing time, per the wiki's 'starts post-effect'.",
+  "Charm's damage, stated to snapshot 'at the time of its application', is taken at cast completion (0.25 s after cast start) and dealt then, since no separate travel delay is modeled elsewhere either.",
+  "Q, W and E are each recast as soon as they come off cooldown for the whole fight; auto-attacks fill the remaining time between casts.",
+  "Essence Theft (P) only heals Ahri and never changes damage dealt to a stationary dummy, so it is not modeled.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.W.postEffectDelayS",
+   "why": "the wiki gives only the 0.25 s priority-acquisition delay, not individual per-flame timing, so all three Fox-Fire flames are assumed to land together at that instant against the lone target, and the post-effect cooldown starts there."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Orb of Deception",
+   "cooldownS": [
+    7,
+    7,
+    7,
+    7,
+    7
+   ]
+  },
+  "W": {
+   "name": "Fox-Fire",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "E": {
+   "name": "Charm",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "R": {
+   "name": "Spirit Rush",
+   "cooldownS": [
+    140,
+    120,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     35,
+     60,
+     85,
+     110,
+     135
+    ],
+    "apRatio": 0.5
+   }
+  },
+  "W": {
+   "primary": {
+    "base": [
+     40,
+     60,
+     80,
+     100,
+     120
+    ],
+    "apRatio": 0.4
+   },
+   "subsequent": {
+    "base": [
+     16,
+     24,
+     32,
+     40,
+     48
+    ],
+    "apRatio": 0.16
+   },
+   "postEffectDelayS": 0.25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     120,
+     160,
+     200,
+     240
+    ],
+    "apRatio": 0.85
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     75,
+     125,
+     175
+    ],
+    "apRatio": 0.35
+   },
+   "recastIntervalS": 1,
+   "maxCasts": 3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ahri.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ahri.rs."
+ ]
+}

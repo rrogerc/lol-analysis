@@ -1,0 +1,146 @@
+{
+ "champion": "renekton",
+ "name": "Renekton",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens by casting Dominus (R) at t=0 for the full 15 s of aura ticks and its 20 Fury on cast; Renekton then attacks continuously and casts Q, W and E on cooldown.",
+  "Fury starts the fight at 0 (no pre-fight stacking is modeled) and is never capped except for Dominus' own passive generation, which is capped at 75 Fury as stated.",
+  "At 50+ Fury, whichever of Q or W is cast next consumes 50 Fury for its empowered effect and generates no Fury from that cast; we do not hold either ability's cast to bias which one gets the empowerment, since both cooldowns are short enough that Fury banks up roughly every cycle regardless of order.",
+  "The dummy never damages Renekton, so his health never drops below the 50% threshold: Reign of Anger's bonus Fury generation while low never triggers, and Slice and Dice's recast never gets the 'Reign of Anger Bonus' (extra damage + armor shred), since Reign of Anger's own text explicitly excludes Slice and Dice from Fury-empowerment and the only other documented trigger (low health) never occurs. Slice and Dice's damage is therefore always its base value on both the dash and the recast.",
+  "Ruthless Predator (W) is cast on cooldown; it arms the next basic attack to strike twice (thrice if it consumes 50 Fury) instead of dealing the engine's normal auto-attack damage, and resets the attack timer on cast. Only the first strike can critically strike and is tagged as ability damage; the cooldown starts when the empowered attack lands ('post-effect').",
+  "Slice and Dice (E) is cast on cooldown and its free recast (Dice) is taken immediately after the dash lands, since nothing is gained by delaying it within its 4 s window; each of the two instances generates its own Fury.",
+  "Dominus' per-tick magic damage uses the numbers-sheet-derived base [30/75/120] (AuraDamagePerSecond [60/150/240] halved for the 0.5 s tick rate) rather than the wiki's mismatched 4-value listing, since it reconciles exactly with the wiki's own +5% bonus AD / +5% AP per-tick ratios.",
+  "Ruthless Predator's buff-duration disagreement (6 s bin vs 7 s wiki) is not modeled explicitly: the ability resets the attack timer, so the empowered attack always lands within a fraction of a second of the cast, well inside either window.",
+  "The documented Fury-clawback bug on empowered Ruthless Predator's third strike is not modeled; Fury accrues normally.",
+  "Cull the Meek's 0.25 s post-cast lockout on attacks is modeled with the engine's standard cast-lockout; its extra 0.25 s lockout on casting Slice and Dice/Dominus is not modeled separately since it is far shorter than either ability's cooldown and essentially never binds.",
+  "The estimated 0.2 s cast time on Ruthless Predator's empowered attack and its follow-up 0.525 s lockout on Q/E are not modeled: both are unconfirmed ('Estimated') and small relative to the fight.",
+  "Fury's 12 s out-of-combat decay never triggers since Renekton is always in combat (continuously attacking) during the fight. Mana/cost is not modeled since every ability costs 0."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Cull the Meek",
+   "cooldownS": [
+    7,
+    7,
+    7,
+    7,
+    7
+   ]
+  },
+  "W": {
+   "name": "Ruthless Predator",
+   "cooldownS": [
+    16,
+    14,
+    12,
+    10,
+    8
+   ]
+  },
+  "E": {
+   "name": "Slice and Dice",
+   "cooldownS": [
+    16,
+    14.5,
+    13,
+    11.5,
+    10
+   ]
+  },
+  "R": {
+   "name": "Dominus",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "furyPerAttack": 5,
+   "furyCost": 50
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "bonusAdRatio": 1.0
+   },
+   "empDamage": {
+    "base": [
+     90,
+     135,
+     180,
+     225,
+     270
+    ],
+    "bonusAdRatio": 1.4
+   },
+   "furyPerChampHit": 10
+  },
+  "W": {
+   "hitDamage": {
+    "base": [
+     5,
+     20,
+     35,
+     50,
+     65
+    ],
+    "adRatio": 0.75
+   },
+   "champFuryBonus": 10
+  },
+  "E": {
+   "damage": {
+    "base": [
+     40,
+     70,
+     100,
+     130,
+     160
+    ],
+    "bonusAdRatio": 0.9
+   },
+   "furyPerChampHit": 10
+  },
+  "R": {
+   "tickDamage": {
+    "base": [
+     30,
+     75,
+     120
+    ],
+    "apRatio": 0.05,
+    "bonusAdRatio": 0.05
+   },
+   "tickIntervalS": 0.5,
+   "durationS": 15,
+   "castTimeS": 0.25,
+   "furyOnCast": 20,
+   "furyPerSecond": 5,
+   "furyCap": 75
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1773,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/renekton.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/renekton.rs."
+ ],
+ "manaless": true
+}

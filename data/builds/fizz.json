@@ -1,0 +1,165 @@
+{
+ "champion": "fizz",
+ "name": "Fizz",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Chum the Waters (R) is cast automatically at t = 0 (the engine's opening cast) and is thrown at maximum range (1300 units) so its lure always travels far enough to attract a Gigalodon-tier shark, the highest damage tier; the eruption lands after the 0.25s cast, the lure's ~1.0s flight time (1300 range / 1300 speed), and the 2s detonation delay.",
+  "Urchin Strike (Q) is cast on cooldown and its magic + 100% AD physical damage lands instantly; the short dash is modeled only as the usual 0.25s cast lockout, same as the Jax driver treats Leap Strike. The automatic basic attack the wiki says follows Urchin Strike is treated as flavor text, not a genuinely extra scheduled attack, since Fizz is already attacking on cadence.",
+  "Seastone Trident (W) is armed as soon as it comes off cooldown, right after an attack lands, mirroring an Empower: the next attack consumes it for the bonus magic damage and its attack-timer reset, and opens the 5s on-hit bonus-damage window (the dummy is assumed never to die, so the kill-refund branch never triggers). The passive bleed applies on every basic attack, including the empowered one, refreshing its 6 ticks over 3 seconds rather than stacking as a separate instance.",
+  "E is always cast as Playful and canceled into Trickster ~0.15s later for the identical splash damage on a faster timer. Per the wiki this early cancel does not count as an ability activation, so it triggers no Spellblade/Muramana on-cast procs. Playful also cannot be cast for about 0.5s after Urchin Strike; that gate is modeled.",
+  "Nimble Fighter (P) only reduces pre-mitigation damage Fizz takes, so it has no effect on this damage-dealing fight and is left out of gen.",
+  "Mana is not modeled: none of the costs (Q 50, W 30-70, E 75-95, R 100) bind inside an 8-15s fight at level 16 with this cast frequency."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.damage",
+   "why": "Chum the Waters is assumed cast at maximum range so the lure always attaches for the Gigalodon damage tier (the highest of Guppy/Chomper/Gigalodon), since casting beyond max range simply caps distance with no downside in a stationary-dummy fight."
+  },
+  {
+   "path": "gen.E.qLockoutS",
+   "why": "the wiki states Playful is locked out for 'approximately 0.5 seconds' after Urchin Strike; taken as exactly 0.5s since no more precise number is given."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Urchin Strike",
+   "cooldownS": [
+    8,
+    7.5,
+    7,
+    6.5,
+    6
+   ]
+  },
+  "W": {
+   "name": "Seastone Trident",
+   "cooldownS": [
+    7,
+    6,
+    5,
+    4,
+    3
+   ]
+  },
+  "E": {
+   "name": "Playful / Trickster",
+   "cooldownS": [
+    16,
+    14,
+    12,
+    10,
+    8
+   ]
+  },
+  "R": {
+   "name": "Chum the Waters",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "magicDamage": {
+    "base": [
+     10,
+     25,
+     40,
+     55,
+     70
+    ],
+    "apRatio": 0.55
+   },
+   "physicalDamage": {
+    "base": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adRatio": 1.0
+   }
+  },
+  "W": {
+   "bleed": {
+    "base": [
+     30,
+     45,
+     60,
+     75,
+     90
+    ],
+    "apRatio": 0.25
+   },
+   "active": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "apRatio": 0.45
+   },
+   "onhitBuff": {
+    "base": [
+     20,
+     25,
+     30,
+     35,
+     40
+    ],
+    "apRatio": 0.3
+   },
+   "bleedDurationS": 3,
+   "tickIntervalS": 0.5,
+   "ticksCount": 6,
+   "onHitBuffDurationS": 5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     130,
+     180,
+     230,
+     280
+    ],
+    "apRatio": 0.95
+   },
+   "trickCastDelayS": 0.15,
+   "qLockoutS": 0.5
+  },
+  "R": {
+   "damage": {
+    "base": [
+     270,
+     450,
+     630
+    ],
+    "apRatio": 0.9
+   },
+   "castTimeS": 0.25,
+   "detonationDelayS": 2,
+   "maxDistance": 1300,
+   "missileSpeed": 1300
+  }
+ },
+ "attack": {
+  "windupFraction": 0.203,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/fizz.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/fizz.rs."
+ ]
+}

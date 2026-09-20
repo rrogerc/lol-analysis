@@ -1,0 +1,149 @@
+{
+ "champion": "nasus",
+ "name": "Nasus",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Soul Eater is life steal only (a heal), it never reduces the dummy's effective health, so it is not modeled in this damage fight.",
+  "Wither is never cast: its slow and attack-speed cripple only matter against a target that moves or attacks back, which the stationary dummy never does.",
+  "Fury of the Sands is cast at t=0: it starts its 0.5s-interval, 15s aura DoT on the dummy immediately, and halves Siphoning Strike's cooldown for its duration; the bonus health/resist/size are defensive-only and not modeled.",
+  "Siphoning Strike is cast the instant it is off cooldown and unarmed: casting it arms the next basic attack (no direct damage on cast) and resets the attack timer to one windup away, matching 'resets Nasus' basic attack timer'; the empowered attack's bonus damage lands with that attack and the cooldown then starts (post-effect), halved while Fury of the Sands is active.",
+  "Siphoning Strike's bonus damage is read as base (crit-affected, per the wiki's explicit crit note) plus a flat, non-crit amount equal to the assumed permanent Siphoning Strike stack count; the bin's extra '1xad' term in its total-damage formula is read as the tooltip folding in the attack's own AD (already dealt by the engine's normal attack), not a second AD scaling, since the wiki's own leveling text lists no AD ratio.",
+  "Because the dummy never dies, Siphoning Strike's permanent stacks cannot grow in-fight; a fixed pre-fight stack count is assumed (see 'assumed').",
+  "Spirit Fire is cast on cooldown throughout the fight: its initial hit lands 0.25s after cast, then its lingering zone deals 10 ticks at 0.5s intervals (matching the tooltip's 10x-per-tick total) over its 5s duration, and applies its percent armor shred for that duration plus its stated 1s lingering.",
+  "The engine's shred slot is a single flat number under abilities.Q even though Spirit Fire (E) is the ability that actually shreds armor in-game; because the engine reads that one value directly rather than by rank, the value used is Spirit Fire's rank-5 armor shred (50%), matching E's rank at the fight's default level 16 where Q and E are both maxed.",
+  "Mana is not modeled: none of Nasus' costs are large enough relative to a single-target 8-15s level 16 fight to plausibly stop a cast."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.assumedStacks",
+   "why": "a stationary dummy never dies to grant new Siphoning Strike stacks, so a fixed late-game permanent stack count (100) is assumed for the fight"
+  },
+  {
+   "path": "gen.E.numTicks",
+   "why": "the wiki description says Spirit Fire's zone ticks 'each second' but its own tooltip total (10x the listed per-tick value) only matches a 0.5s tick rate over the 5s duration, so 10 ticks is used"
+  },
+  {
+   "path": "abilities.Q.shred.durationS",
+   "why": "Spirit Fire's armor reduction is stated to last its 5s zone duration plus an extra 1s of lingering, so 6s is used"
+  },
+  {
+   "path": "abilities.Q.shred.pct",
+   "why": "the engine reads a single flat shred percentage rather than one by ability rank, so Spirit Fire's rank-5 armor shred (50%, NasusE.ArmorShredPercent at max rank) is used, matching E's rank at the fight's default level 16"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Siphoning Strike",
+   "cooldownS": [
+    7.5,
+    6.5,
+    5.5,
+    4.5,
+    3.5
+   ],
+   "shred": {
+    "pct": 50,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 6
+   }
+  },
+  "W": {
+   "name": "Wither",
+   "cooldownS": [
+    15,
+    14,
+    13,
+    12,
+    11
+   ]
+  },
+  "E": {
+   "name": "Spirit Fire",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "R": {
+   "name": "Fury of the Sands",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     40,
+     60,
+     80,
+     100,
+     120
+    ]
+   },
+   "assumedStacks": 100
+  },
+  "E": {
+   "initial": {
+    "base": [
+     50,
+     80,
+     110,
+     140,
+     170
+    ],
+    "apRatio": 0.6
+   },
+   "tick": {
+    "base": [
+     10,
+     16,
+     22,
+     28,
+     34
+    ],
+    "apRatio": 0.12
+   },
+   "tickIntervalS": 0.5,
+   "numTicks": 10,
+   "castTimeS": 0.25
+  },
+  "R": {
+   "tick": {
+    "base": [
+     0.015,
+     0.02,
+     0.025
+    ]
+   },
+   "apCoefPer100": 0.005,
+   "capPerSecond": 240,
+   "tickIntervalS": 0.5,
+   "durationS": 15,
+   "qCdrMult": 0.5,
+   "castTimeS": 0.2
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2014,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/nasus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/nasus.rs."
+ ]
+}

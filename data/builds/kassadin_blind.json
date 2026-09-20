@@ -1,0 +1,161 @@
+{
+ "champion": "kassadin_blind",
+ "name": "Kassadin",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Riftwalk (R) at t=0: its 0.25s cast is the engine's opening cast, its blink damage lands on arrival (modeled as landing 0.25s after cast, like Jax's ult swing), and it grants the first Riftwalk stack only once that damage lands.",
+  "Null Sphere (Q) and Force Pulse (E) are cast on cooldown whenever mana allows; their 0.25s cast time is treated only as the usual attack lockout, with damage landing immediately on cast (the projectile/cone travel itself is not separately modeled, matching how Leap Strike's dash is treated in the reference driver).",
+  "Riftwalk is recast whenever it is off cooldown and its growing mana cost (40 x 2^held stacks, up to 640 at 4 stacks) can still be paid; a cast's own bonus damage and mana cost use the stacks held BEFORE that cast (an open question in the dossier), and the new stack is only gained once that cast's damage actually lands.",
+  "Nether Blade's active is re-armed right after every basic attack once its post-effect cooldown has elapsed, so it lands on the very next swing well within its 5s window; landing it deals its own spell-damage bonus INSTEAD of the always-on 25 (+10% AP) on-hit proc damage (the dossier leaves this open; treated here as a replacement, not an addition), and its landing resets Kassadin's attack timer to a bare windup, matching the wiki's 'resets Kassadin's basic attack timer'.",
+  "Every ability cast (Q, W's active arming, E, R) shaves 0.75s off Force Pulse's current cooldown, including Force Pulse's own cast (the dossier leaves this open; the more inclusive reading is used).",
+  "Void Stone's 10% reduced incoming magic damage and Null Sphere's shield never matter: the dummy never attacks back.",
+  "Mana is tracked as a real budget because Riftwalk's cost scaling makes it bind: the pool is assumed to start full (no regeneration is modeled), and casts are skipped once they can no longer be afforded, never returning since the pool never refills."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.manaStartFullPct",
+   "why": "mana regeneration is not modeled by the engine, so the fight is assumed to start with a full mana bar for a level-16 Kassadin who has not just been fighting"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Null Sphere",
+   "cooldownS": [
+    9,
+    8.5,
+    8,
+    7.5,
+    7
+   ]
+  },
+  "W": {
+   "name": "Nether Blade",
+   "cooldownS": [
+    7,
+    7,
+    7,
+    7,
+    7
+   ]
+  },
+  "E": {
+   "name": "Force Pulse",
+   "cooldownS": [
+    21,
+    20,
+    19,
+    18,
+    17
+   ]
+  },
+  "R": {
+   "name": "Riftwalk",
+   "cooldownS": [
+    5,
+    3.5,
+    2
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "damageReductionPct": 10,
+   "manaStartFullPct": 100
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     65,
+     95,
+     125,
+     155,
+     185
+    ],
+    "apRatio": 0.8
+   },
+   "costMana": [
+    60,
+    65,
+    70,
+    75,
+    80
+   ]
+  },
+  "W": {
+   "activeDamage": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "apRatio": 0.8
+   },
+   "onhitDamage": {
+    "base": 25,
+    "apRatio": 0.1
+   },
+   "windowS": 5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     100,
+     130,
+     160,
+     190
+    ],
+    "apRatio": 0.7
+   },
+   "costMana": [
+    60,
+    65,
+    70,
+    75,
+    80
+   ],
+   "cdrPerCastS": 0.75
+  },
+  "R": {
+   "baseDamage": {
+    "base": [
+     80,
+     95,
+     110
+    ],
+    "apRatio": 0.5,
+    "maxManaRatio": 2
+   },
+   "stackDamage": {
+    "base": [
+     35,
+     45,
+     55
+    ],
+    "apRatio": 0.07,
+    "maxManaRatio": 1
+   },
+   "castTimeS": 0.25,
+   "stackDurationS": 15,
+   "maxStacks": 4,
+   "baseCostMana": 40,
+   "costRatio": 2
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kassadin.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kassadin_blind.rs."
+ ]
+}

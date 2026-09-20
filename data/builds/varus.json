@@ -1,0 +1,146 @@
+{
+ "champion": "varus",
+ "name": "Varus",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Living Vengeance (P) only grants its buff on a unit kill; the stationary dummy never dies during the fight, so the passive never triggers and is excluded from the rotation entirely.",
+  "Piercing Arrow (Q) is always charged to its 1.25s effect cap for maximum damage and detonation bonus: its post-effect cooldown is reduced by exactly the charge duration, so full-charging never delays Q's own cadence, it only holds Varus' attacks for the 1.25s of the channel (modeled as an instant hit for damage timing, with the next attack held back by 1.25s).",
+  "Blighted Quiver's active (the missing-health nuke) is consumed by the very next Piercing Arrow cast whenever its own 40s cooldown is up, and always gets the 1.5x full-charge bonus since Q is always fully charged.",
+  "Blight stacks, whether applied by on-hit attacks or by Chain of Corruption, are detonated by the next Q, E, or R hit for magic damage based on the target's maximum health, and (since the dummy counts as an enemy champion) reduce the remaining cooldowns of Q, Blighted Quiver's active, and Hail of Arrows by 13% of each ability's full cooldown per stack consumed (19.5% per stack if consumed via a fully-charged Q); the reduction is applied to all three basic abilities including the one that just triggered the consumption, since the wiki text does not exclude it.",
+  "Chain of Corruption's three separate Blight-stack applications over its ~1.75s root window are modeled as a single application of the full 3 stacks at 1.75s after cast, since the stationary dummy can never leave the root/tether area and would receive all three regardless.",
+  "Hail of Arrows' documented second Blight consumption (~0.3s after the first) is not modeled; only its initial landing consumes and deals stack-detonation damage, a minor, deliberate undercount.",
+  "The opening cast is Chain of Corruption (R); thereafter Piercing Arrow (Q, always full-charged) and Hail of Arrows (E) are each cast on cooldown, and Varus auto-attacks in every gap, keeping Blighted Quiver's on-hit and stacks up.",
+  "Mana costs are not modeled: none of Varus' costs realistically stop casting within a 15s fight at level 16.",
+  "Piercing Arrow's max-charge 'cosmetic critical strike' text is explicitly stated to have no gameplay effect, so none of Varus' damage (Q, on-hit, or Blight detonation) is treated as capable of critically striking.",
+  "If Blighted Quiver is unranked, Chain of Corruption can still generate Blight stacks detonated at a rank-0 base value; this is not modeled since the assumed max order (Q > E > W) has W ranked well before level 16."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Piercing Arrow",
+   "cooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "W": {
+   "name": "Blighted Quiver",
+   "cooldownS": [
+    40,
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "E": {
+   "name": "Hail of Arrows",
+   "cooldownS": [
+    18,
+    16,
+    14,
+    12,
+    10
+   ]
+  },
+  "R": {
+   "name": "Chain of Corruption",
+   "cooldownS": [
+    100,
+    80,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     150,
+     220,
+     290,
+     360
+    ],
+    "bonusAdRatio": 1.2
+   },
+   "chargeDurationS": 1.25
+  },
+  "W": {
+   "onhit": {
+    "base": [
+     4,
+     13,
+     22,
+     31,
+     40
+    ],
+    "apRatio": 0.25,
+    "bonusAdRatio": 0.15
+   },
+   "detonation": {
+    "baseHpPct": [
+     0.03,
+     0.035,
+     0.04,
+     0.045,
+     0.05
+    ],
+    "apCoefPerAp": 0.00013
+   },
+   "active": {
+    "missingHpPct": [
+     0.06,
+     0.08,
+     0.1,
+     0.12,
+     0.14
+    ]
+   },
+   "maxStacks": 3,
+   "stackDurationS": 6,
+   "cdrPerStack": 0.13,
+   "chargeBonusMult": 1.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "bonusAdRatio": 0.9
+   },
+   "landDelayS": 0.5
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 1.0
+   },
+   "stackDelayS": 1.75
+  }
+ },
+ "attack": {
+  "windupFraction": 0.17544,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/varus.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/varus.rs."
+ ]
+}

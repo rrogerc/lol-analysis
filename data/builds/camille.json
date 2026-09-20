@@ -1,0 +1,177 @@
+{
+ "champion": "camille",
+ "name": "Camille",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with R at t=0 (its dash then opens the zone after 0.5 s) and Q as soon as its own readiness allows, effectively also at t=0.",
+  "Precision Protocol (Q) arms the next basic attack; when it lands, its bonus physical damage is dealt, then the recast is always delayed until exactly 1.5 s after that landing (never sooner) to get the doubled bonus damage and the true-damage conversion, matching the highest-damage line of play; Q's real cooldown only starts once the second (recast) empowered attack lands.",
+  "The true-damage conversion percentage is applied only to Precision Protocol's own bonus-damage instance (the wiki's 'Increased Mixed Damage' / total of that instance), not to the attack's separate base auto-attack damage, since the engine deals the base attack instance independently of the driver and there is no hook to split it.",
+  "Neither empowered attack's Precision Protocol bonus can critically strike (modeled with crit_mod=false); the game engine's own base auto-attack damage on that same swing is handled outside the driver and may still average in a crit, an approximation of the 'this attack cannot crit' rule.",
+  "The true-damage percentage is capped at 100% for levels 17-18 as the wiki states, rather than the numbers sheet's literal uncapped 104%/108% tail.",
+  "Tactical Sweep (W) is cast on cooldown; its 1.1 s sweep animation blocks basic attacks (but not other ability casts) and its damage - the base cone hit plus the outer-cone additional hit, assumed to land in the outer half for maximum damage - lands when the animation ends.",
+  "Tactical Sweep's outer-cone additional damage uses only the flat percent-of-target-maximum-health scaling from the numbers sheet; the wiki's stated +2.5% per 100 bonus AD on top of it is flagged in the numbers sheet as a tooltip-only constant with no backing calculation, so it is not applied.",
+  "Hookshot/Wall Dive (E) is cast on cooldown, assuming terrain is always in range to hook onto; its dash and wall-attach time are not modeled beyond the usual 0.25 s cast lockout, so its damage and attack-speed buff land immediately on cast.",
+  "The Hextech Ultimatum (R) is cast once at the opening: after its 0.5 s dash, the zone opens and Camille's basic attacks deal bonus magic damage against the target for the zone's full duration (the dummy can never leave it); its cooldown (90-140 s) is far longer than the fight, so it is never recast.",
+  "Adaptive Defenses (the passive shield) is purely defensive and deals no damage, so it is not modeled.",
+  "Mana costs are not modeled: Camille's mana pool at level 16 comfortably covers every cast used in a 15 s fight given Q/W/E/R's costs."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.damage",
+   "why": "Hookshot/Wall Dive requires terrain to hook onto; assumed available every cast so its damage can be used each cooldown against the stationary dummy, per the dossier's rotation proposal."
+  },
+  {
+   "path": "gen.Q.trueDmgPctByLevel",
+   "why": "levels 17-18 are capped at 100% per the wiki text rather than the numbers sheet's uncapped 104%/108% tail values."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Precision Protocol",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "W": {
+   "name": "Tactical Sweep",
+   "cooldownS": [
+    12,
+    11.5,
+    11,
+    10.5,
+    10
+   ]
+  },
+  "E": {
+   "name": "Hookshot / Wall Dive",
+   "cooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "R": {
+   "name": "The Hextech Ultimatum",
+   "cooldownS": [
+    140,
+    115,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adRatio": [
+     0.2,
+     0.25,
+     0.3,
+     0.35,
+     0.4
+    ]
+   },
+   "empoweredAmp": 2,
+   "trueDmgPctByLevel": [
+    0.4,
+    0.44,
+    0.48,
+    0.52,
+    0.56,
+    0.6,
+    0.64,
+    0.68,
+    0.72,
+    0.76,
+    0.8,
+    0.84,
+    0.88,
+    0.92,
+    0.96,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "rampUpS": 1.5
+  },
+  "W": {
+   "damage": {
+    "base": [
+     60,
+     85,
+     110,
+     135,
+     160
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "outerHpRatio": [
+    0.07,
+    0.075,
+    0.08,
+    0.085,
+    0.09
+   ],
+   "channelS": 1.1
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "bonusAdRatio": 0.75
+   },
+   "asBuffByRank": [
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6
+   ],
+   "asDurationS": 5
+  },
+  "R": {
+   "dashS": 0.5,
+   "zoneDurationS": [
+    2.5,
+    3.25,
+    4
+   ],
+   "onhitCurrentHpRatio": [
+    0.04,
+    0.06,
+    0.08
+   ]
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1933,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/camille.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/camille.rs."
+ ]
+}

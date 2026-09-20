@@ -1,0 +1,140 @@
+{
+ "champion": "fiora",
+ "name": "Fiora",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opening: Grand Challenge (R) is cast at t=0, revealing all four Vitals 0.5s later; Lunge (Q) and Bladework (E) are cast the instant they are off cooldown throughout the fight; Riposte (W) is cast once (its 16-24s cooldown exceeds the fight) purely for its guaranteed magic-damage shock and a further Vital-trigger chance, since the dummy never attacks so the parry itself is wasted; basic attacks fill every other moment.",
+  "Duelist's Dance (P) is modeled assuming the exposed Vital's facing is always satisfied (the simpler of the two open readings), so it procs on the first qualifying hit at least 1.75s after the previous proc; the 13.25s linger never matters since Fiora is always landing qualifying hits well inside that window.",
+  "Grand Challenge (R) deals no direct damage of its own: it reveals all four of the target's Vitals 0.5s after cast, letting up to four Duelist's Dance procs land back-to-back, and per its own text normal single-Vital cycling is paused for its full 8s duration before resuming with a fresh 1.75s delay.",
+  "Lunge (Q) is assumed not to critically strike (its 'basic damage' tag is read as being for Vital-triggering/on-hit purposes only, not for enabling crit); its 50% cooldown-refund on a landed stab always applies since the dummy never dodges or blocks it, effectively halving the ability-haste cooldown on every cast.",
+  "Bladework (E)'s first empowered attack is left eligible for the build's normal crit chance (a small overestimate) because there is no hook to exclude a single attack from crit; its second, guaranteed-crit attack is corrected onto the ability's own crit-damage value via an added on-hit-style damage delta computed against the build's expected crit multiplier. Both empowered attacks are assumed to always land well inside the 4s buff window given Fiora's attack speed, so buff expiry is not expected to occur in practice (though it is handled safely if it did).",
+  "The empowered-attack window is read as the wiki's 4 seconds rather than the bin's conflicting 3 seconds; both values comfortably fit two attacks given the attack-speed buff, so this choice has little practical effect.",
+  "On-hit item effects that would normally trigger from a true basic attack are not modeled for Lunge's stated on-hit application, since the driver has no hook to invoke them from an ability cast.",
+  "Riposte's parry (100% incoming damage negation), its slow/cripple/stun, Bladework's slow, and every heal or movement-speed burst from Duelist's Dance and Grand Challenge are ignored: they do not affect damage dealt to a stationary, non-attacking dummy.",
+  "Mana is not modeled; nothing here binds inside a 15s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.buffDurationS",
+   "why": "the wiki text states the empowered-attack window lasts 4 seconds while the bin's BuffDuration field disagrees at 3; either is well within reach of landing two attacks at Fiora's attack speed, so 4s (the wiki value) is used."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Lunge",
+   "cooldownS": [
+    13,
+    11.25,
+    9.5,
+    7.75,
+    6
+   ]
+  },
+  "W": {
+   "name": "Riposte",
+   "cooldownS": [
+    24,
+    22,
+    20,
+    18,
+    16
+   ]
+  },
+  "E": {
+   "name": "Bladework",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "R": {
+   "name": "Grand Challenge",
+   "cooldownS": [
+    110,
+    90,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "vitalDelayS": 1.75,
+   "damage": {
+    "base": 0.03,
+    "adRatio": 0.0004
+   }
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     70,
+     80,
+     90,
+     100,
+     110
+    ],
+    "bonusAdRatio": [
+     0.9,
+     0.95,
+     1.0,
+     1.05,
+     1.1
+    ]
+   },
+   "cdRefundPercent": 0.5
+  },
+  "W": {
+   "damage": {
+    "base": [
+     110,
+     150,
+     190,
+     230,
+     270
+    ],
+    "apRatio": 1.0
+   },
+   "parryDurationS": 0.75,
+   "shockDelayS": 0.5
+  },
+  "E": {
+   "asPercent": [
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9
+   ],
+   "critMult": [
+    1.6,
+    1.7,
+    1.8,
+    1.9,
+    2.0
+   ],
+   "buffDurationS": 4
+  },
+  "R": {
+   "vitalsCount": 4,
+   "revealDelayS": 0.5,
+   "markDurationS": 8
+  }
+ },
+ "attack": {
+  "windupFraction": 0.13793,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/fiora.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/fiora.rs."
+ ]
+}

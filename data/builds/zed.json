@@ -1,0 +1,144 @@
+{
+ "champion": "zed",
+ "name": "Zed",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Death Mark opens the fight at t=0: Zed is held from attacking during the 0.6s cast delay plus the 0.35s dash, the mark applies to the dummy the instant the dash ends, and its 100% AD + stored-damage detonation lands 3 seconds later.",
+  "Death Mark's Shadow is used to persist 8s, computed from the sheet's RShadowDurationDisplayed (7.5s) + RReactivateCD (0.5s); this disagrees with the wiki's stated 9s text, and the sheet's calculated figure is used instead (see assumed).",
+  "Living Shadow (W) is cast on cooldown purely for its 5.25s Shadow: like Death Mark's Shadow, it automatically mimics every Razor Shuriken cast against the target as a full, un-reduced hit, so up to two mimicked Q instances (one from each Shadow) can land per Q cast.",
+  "Shadow Slash does not multiply with mimicry: per the wiki, only one slash's damage lands per E cast no matter how many Shadows also slash the target, so E deals a single damage instance each cast regardless of active Shadows.",
+  "Shadow Slash reduces Living Shadow's current (remaining) cooldown by 3s per champion hit, applied to W's remaining cooldown on every E cast against the dummy.",
+  "Death Mark's stored-damage detonation totals Zed's own Q, E and Contempt for the Weak instances (including mimicked Q casts) that land during the 3s Marked for Death window; basic-attack damage during the mark is not included in the store, a conservative simplification since the engine does not expose per-attack damage amounts to the driver.",
+  "Contempt for the Weak triggers on a basic attack landing while the dummy is below 50% max health, on a 10s internal cooldown; its bonus magic damage does not critically strike.",
+  "Energy costs are not modeled: no source here gives Zed's max energy or regen, and the rotation (R once, Q/E/W on cooldown) is judged plausible within an 8-15s fight.",
+  "Razor Shuriken's reduced pass-through damage to targets beyond the first only matters with multiple enemies; against the single dummy every hit (Zed's or a Shadow's) is a full first hit, so the reduction is unused here.",
+  "Living Shadow's and Death Mark's Shadow Swap recast is a repositioning blink with no damage effect on a stationary target and is not modeled."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.shadowDurationS",
+   "why": "the sheet's calculated field (RShadowDurationDisplayed 7.5 + RReactivateCD 0.5 = 8s) is used over the wiki's stated 9s prose, since the two disagree and the sheet's computed value is treated as authoritative"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Razor Shuriken",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "W": {
+   "name": "Living Shadow",
+   "cooldownS": [
+    20,
+    19,
+    18,
+    17,
+    16
+   ]
+  },
+  "E": {
+   "name": "Shadow Slash",
+   "cooldownS": [
+    5,
+    4.5,
+    4,
+    3.5,
+    3
+   ]
+  },
+  "R": {
+   "name": "Death Mark",
+   "cooldownS": [
+    120,
+    110,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "pctByLevel": [
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.075,
+    0.1,
+    0.1
+   ],
+   "thresholdPct": 0.5,
+   "icdS": 10
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     120,
+     160,
+     200,
+     240
+    ],
+    "bonusAdRatio": 1.0
+   }
+  },
+  "W": {
+   "shadowDurationS": 5.25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     92.5,
+     115,
+     137.5,
+     160
+    ],
+    "bonusAdRatio": 0.7
+   },
+   "shadowHitCdrS": 3
+  },
+  "R": {
+   "adRatio": 1.0,
+   "storedDamageRatio": [
+    0.25,
+    0.4,
+    0.55
+   ],
+   "dashDelayS": 0.6,
+   "dashTravelS": 0.35,
+   "markDurationS": 3,
+   "shadowDurationS": 8
+  }
+ },
+ "attack": {
+  "windupFraction": 0.19759,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zed.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zed.rs."
+ ],
+ "manaless": true
+}

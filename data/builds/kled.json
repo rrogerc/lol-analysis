@@ -1,0 +1,143 @@
+{
+ "champion": "kled",
+ "name": "Kled",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "The dummy never damages Kled, so he stays Mounted for the whole fight; every Dismounted-only mechanic (the reduced attack damage to champions, the resist/movement-speed bonuses, Pocket Pistol, the ability lockouts) never triggers and is left out of this kit.",
+  "Bear Trap on a Rope is cast on cooldown: its first hit lands on cast, and the tether automatically pulls 1.75 s later for the second, larger damage instance; the pull 'recalculates dynamically based on current AD' but bonus AD does not change during a fight, so both instances are precomputed once.",
+  "Violent Tendencies is treated as already active whenever it is off cooldown (matching 'Kled periodically gains Violent Tendencies'): it grants 150% bonus attack speed until consumed. The 4th basic attack landed while it is up deals the extra physical damage as a separate instance applied before that attack's own damage (it does not trigger on-hit effects), and only then does the ability go on cooldown; every subsequent on-hit attack against the target (a champion) refunds 1.5 s of that cooldown, matching the champion refund rate.",
+  "Jousting is cast on cooldown and always recast at the minimum 0.5 s delay, landing both dash's damage instances; the cooldown starts at the first dash (no travel time is modeled) and both casts separately trigger on-cast effects.",
+  "Chaaaaaaaarge!!! is cast once at t = 0. Its collision damage scales with charge time up to a cap at 4 seconds; since the dummy fight defines no travel distance, the fully-ramped (maximum) damage tier is assumed, matching typical use of charging in from range before colliding. Its shield is ignored since it does not affect damage output, and with a 110-140 s cooldown it is never cast a second time inside the fight.",
+  "None of Kled's abilities have a listed mana cost, so mana is not modeled.",
+  "Bear Trap on a Rope's slow and Violent Tendencies' Grievous Wounds-adjacent utility do not affect a stationary dummy's damage output and are omitted."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.pctBase",
+   "why": "Chaaaaaaaarge!!!'s collision damage ramps from a minimum to 3x that minimum over 4 seconds of charge time; against a stationary dummy with no defined travel distance, the maximum (fully-ramped) tier is assumed, matching typical use of charging in from range"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Bear Trap on a Rope",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "W": {
+   "name": "Violent Tendencies",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "E": {
+   "name": "Jousting",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "R": {
+   "name": "Chaaaaaaaarge!!!",
+   "cooldownS": [
+    140,
+    125,
+    110
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "firstDamage": {
+    "base": [
+     30,
+     55,
+     80,
+     105,
+     130
+    ],
+    "bonusAdRatio": 0.6
+   },
+   "pullDamage": {
+    "base": [
+     60,
+     110,
+     160,
+     210,
+     260
+    ],
+    "bonusAdRatio": 1.2
+   },
+   "tetherPopTimeS": 1.75
+  },
+  "W": {
+   "flatBase": [
+    20,
+    30,
+    40,
+    50,
+    60
+   ],
+   "pctBase": [
+    4.5,
+    5,
+    5.5,
+    6,
+    6.5
+   ],
+   "pctPerBonusAD100": 2,
+   "pctPerBonusHP100": 0.4,
+   "windowDurationS": 4,
+   "champCooldownRefundS": 1.5,
+   "attackSpeedPct": 150,
+   "attacksToEmpower": 4
+  },
+  "E": {
+   "damage": {
+    "base": [
+     35,
+     60,
+     85,
+     110,
+     135
+    ],
+    "bonusAdRatio": 0.55
+   },
+   "recastDelayS": 0.5
+  },
+  "R": {
+   "pctBase": [
+    0.12,
+    0.18,
+    0.24
+   ],
+   "adCoefPer100": 0.09
+  }
+ },
+ "attack": {
+  "windupFraction": 0.175,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kled.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kled.rs."
+ ],
+ "manaless": true
+}

@@ -1,0 +1,140 @@
+{
+ "champion": "monkeyking",
+ "name": "Wukong",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "The fight opens with Cyclone (R) at t=0 rather than at the end of the rotation: each of its 16 ticks shaves 0.5s off Crushing Blow's cooldown, and casting it first lets that cooldown reduction benefit the whole fight instead of only the tail end.",
+  "Cyclone's first 2-second spin (8 ticks every 0.25s) is always recast at the earliest opportunity, the 1s post-spin lockout, for a second 2-second spin (8 more ticks), since the dummy never fights back and the recast is strictly beneficial; the 8s recast window is never at risk. A further recast never becomes available inside a 15s fight given the 90-130s base cooldown.",
+  "Wukong keeps auto-attacking through Cyclone: only casting Q/W/E interrupts the spin, and Cyclone itself has no cast time, so the two run in parallel.",
+  "Crushing Blow (Q) has no cast time per the wiki description ('cast time = none'); the numbers sheet's castTime:0.5 for Q is treated as stale tooltip data and ignored.",
+  "Crushing Blow arms Wukong's next basic attack rather than dealing damage itself; its bonus damage and 3s armor shred land when that attack connects, Q's cooldown then starts (post-effect) and Wukong's attack timer resets for an immediate follow-up attack, exactly as described.",
+  "Crushing Blow's bonus damage is treated as non-crit, matching the wiki's note that the bonus portion is tagged as proc damage rather than basic-attack damage.",
+  "Every landed instance of Wukong's damage (plain attacks, Crushing Blow's bonus, Nimbus Strike, each Cyclone tick) shaves 0.5s off Crushing Blow's cooldown, per its own description; the empowerment window itself (5s per the wiki prose, vs a 6s BuffDuration in the bin) is never at risk of expiring unused given how often Wukong attacks, so it is not separately timed.",
+  "Nimbus Strike is cast on cooldown for its magic damage and its own 5s bonus attack speed; its two additional clone-strike targets are skipped since no other enemies exist near the dummy for them to hit.",
+  "Crushing Blow's bonus attack range is not modeled: it changes reach, not damage, and every attack in this fight lands regardless of range.",
+  "Warrior Trickster (W) is never cast: its clone is an independent auto-attacker that also mirrors Q/E/R at a reduced (40-60%) damage modifier, which would need a second attack timeline the engine does not provide. That real damage is out of scope here, so Wukong's numbers below understate his true fight damage; this is flagged rather than approximated.",
+  "Stone Skin (passive) only grants bonus armor and health regeneration, neither of which affects Wukong's outgoing damage, so it is not modeled.",
+  "Mana is not modeled: none of the costs (20/60-40/30-50/100) bind inside a 15s fight at level 16.",
+  "The engine's armor-shred field only accepts a single percentage regardless of ability rank, so the maxed rank-5 value (30%) is used at every rank tested; this understates the shred at lower ranks, which the champion rarely reaches by the levels this simulator uses (6, 11, 16)."
+ ],
+ "assumed": [
+  {
+   "path": "abilities.Q.shred.pct",
+   "why": "the engine's shred slot reads one flat percentage, not a by-rank list, so the maxed rank-5 value is used for every fight regardless of Q's actual rank"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Crushing Blow",
+   "cooldownS": [
+    8,
+    7.5,
+    7,
+    6.5,
+    6
+   ],
+   "shred": {
+    "pct": 30,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 3
+   }
+  },
+  "W": {
+   "name": "Warrior Trickster",
+   "cooldownS": [
+    22,
+    21,
+    20,
+    19,
+    18
+   ]
+  },
+  "E": {
+   "name": "Nimbus Strike",
+   "cooldownS": [
+    10,
+    9.25,
+    8.5,
+    7.75,
+    7
+   ]
+  },
+  "R": {
+   "name": "Cyclone",
+   "cooldownS": [
+    130,
+    110,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     20,
+     45,
+     70,
+     95,
+     120
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "cdrPerHitS": 0.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     120,
+     160,
+     200,
+     240
+    ],
+    "apRatio": 1.0
+   },
+   "attackSpeedBonusPct": [
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6
+   ],
+   "attackSpeedDurationS": 5
+  },
+  "R": {
+   "tickDamage": {
+    "base": [
+     0,
+     0,
+     0
+    ],
+    "adRatio": 0.34375
+   },
+   "tickMaxHpRatio": [
+    0.01,
+    0.015,
+    0.02
+   ],
+   "tickIntervalS": 0.25,
+   "spinDurationS": 2,
+   "recastLockoutS": 1
+  }
+ },
+ "attack": {
+  "windupFraction": 0.20833,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/monkeyking.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/monkeyking.rs."
+ ]
+}

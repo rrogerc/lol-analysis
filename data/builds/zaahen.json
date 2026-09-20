@@ -1,0 +1,202 @@
+{
+ "champion": "zaahen",
+ "name": "Zaahen",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opening: Grim Deliverance (R) is cast at t=0 since it is already off cooldown; its shockwave lands after the 0.5 s cast plus the 0.6 s slam delay. Its cooldown (80-110 s) never comes back up inside a 15 s fight, so it casts exactly once.",
+  "The Darkin Glaive (Q) is cast to arm the empowered attack as soon as it is off cooldown. When the armed attack lands, its ability-side bonus (base + bonus-AD ratio) is dealt on top of the engine's own normal attack damage: per the bin's ZaahenQ#InitialDamage formula (base + bonus-AD ratio only, no separate 100% AD term), the wiki's stated '+100% AD' is read as the underlying basic attack's own AD damage riding along, not an additional ability term, so it is not added again here.",
+  "The recast is always taken: 1.5 s after the first empowered attack lands the next attack is auto-armed for the knockup bonus damage, and Q's real cooldown (post-effect) starts only once that attack lands, or once the 4 s recast window expires unused, whichever comes first.",
+  "Only the first cast's double-strike is stated to be able to critically strike; that crit note is approximated by marking its ability-side bonus damage as crit-eligible under the engine's expected-value crit model. The recast's bonus damage, Dreaded Return, Aureate Rush and Grim Deliverance are not stated to crit and are not marked crit-eligible.",
+  "Dreaded Return (W) is cast on cooldown; both damage passes (initial and max-range) are assumed to land on the dummy, applied together right when the 0.5 s cast completes since no separate travel time is given for the second pass.",
+  "Aureate Rush (E) is cast on cooldown, dashing so the dummy is caught on the outer 'sweet spot' edge of the flourish for the increased physical damage plus the bonus %-max-health magic damage, per the proposed rotation; damage lands after the dash's travel time (350 / 900 units-per-second, from the sheet).",
+  "Determination (P): every landed attack or ability hit on the dummy adds a stack (capped at 12); because the rotation keeps hitting the dummy well inside the 5 s fall-off window throughout the fight, stacks are assumed never to decay and this is not modeled. The bonus AD it grants (a level-scaling percent of Zaahen's other bonus AD, doubled at 12 stacks) is recomputed at every hit and added both to Zaahen's attack damage and to every bonus-AD-ratio ability term.",
+  "Dreaded Return's cooldown uses ddragon's live values (14/13.5/13/12.5/12s) rather than the wiki text (14 to 12s) or the game-file bin note (16/15/14/13/12s) quoted in the dossier, since these three disagree and ddragon is Riot's own current data.",
+  "Grim Deliverance's permanent percent armor-penetration passive is not modeled: the engine exposes no percent-armor-penetration hook to drivers (only the target-debuff shred slot and the sheet's own flat lethality), and it only affects mitigation, not the pre-mitigation amounts dealt here.",
+  "Healing (Q's self-heal, R's heal-per-champion) and the passive's resurrection are ignored: healing and survival mechanics do not matter in this fight.",
+  "Mana is not modeled: nothing here plausibly binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.bonusAdPctByLevel",
+   "why": "the bin's exact per-level interpolation formula (ZaahenPassive#PercentBonusADCalc) is unresolved; the wiki's stated linear interpolation from 1.5% at level 1 to 2.8% at level 18 is used instead"
+  },
+  {
+   "path": "gen.E.outerBase",
+   "why": "assume Aureate Rush lands on the outer 'sweet spot' edge against the stationary dummy for maximum damage, per the proposed rotation"
+  },
+  {
+   "path": "gen.W.castTimeS",
+   "why": "Dreaded Return's missile travel time to its second (max-range) pass has no stated data value, so both damage instances are applied together right after the 0.5s cast completes"
+  },
+  {
+   "path": "gen.P.fallOffDurationS",
+   "why": "Determination's stack decay/fall-off timing is not modeled; the rotation's frequent attacks and casts are assumed to keep it refreshed within its 5s window for the whole fight"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "The Darkin Glaive",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "W": {
+   "name": "Dreaded Return",
+   "cooldownS": [
+    14,
+    13.5,
+    13,
+    12.5,
+    12
+   ]
+  },
+  "E": {
+   "name": "Aureate Rush",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "R": {
+   "name": "Grim Deliverance",
+   "cooldownS": [
+    110,
+    95,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "bonusAdPctByLevel": [
+    1.5,
+    1.576470588,
+    1.652941176,
+    1.729411765,
+    1.805882353,
+    1.882352941,
+    1.958823529,
+    2.035294118,
+    2.111764706,
+    2.188235294,
+    2.264705882,
+    2.341176471,
+    2.417647059,
+    2.494117647,
+    2.570588235,
+    2.647058824,
+    2.723529412,
+    2.8
+   ],
+   "maxStacks": 12,
+   "maxStacksMultiplier": 2,
+   "fallOffDurationS": 5
+  },
+  "Q": {
+   "q1Base": [
+    15,
+    30,
+    45,
+    60,
+    75
+   ],
+   "qCoeff": [
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4
+   ],
+   "q2Base": [
+    30,
+    60,
+    90,
+    120,
+    150
+   ],
+   "recastDelayS": 1.5,
+   "recastWindowS": 4,
+   "healPercent": [
+    0.05,
+    0.06,
+    0.07,
+    0.08,
+    0.09
+   ]
+  },
+  "W": {
+   "initialBase": [
+    40,
+    60,
+    80,
+    100,
+    120
+   ],
+   "initialCoeff": 0.5,
+   "secondaryBase": [
+    30,
+    50,
+    70,
+    90,
+    110
+   ],
+   "secondaryCoeff": 0.3,
+   "castTimeS": 0.5
+  },
+  "E": {
+   "outerBase": [
+    60,
+    90,
+    120,
+    150,
+    180
+   ],
+   "outerCoeff": 0.75,
+   "targetMaxHpRatio": [
+    0.04,
+    0.045,
+    0.05,
+    0.055,
+    0.06
+   ],
+   "dashDistance": 350,
+   "dashSpeed": 900
+  },
+  "R": {
+   "base": [
+    250,
+    400,
+    550
+   ],
+   "coeff": 2.0,
+   "castTimeS": 0.5,
+   "slamDelayS": 0.6,
+   "armorPenPct": [
+    0.1,
+    0.2,
+    0.3
+   ]
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15625,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zaahen.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zaahen.rs."
+ ]
+}

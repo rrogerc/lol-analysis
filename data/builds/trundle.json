@@ -1,0 +1,167 @@
+{
+ "champion": "trundle",
+ "name": "Trundle",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "The opening casts Subjugate (R) first for the longest possible drain window, then Chomp (Q) to arm the next attack and reset the attack timer, then Frozen Domain (W) for its attack-speed buff; Trundle then attacks continuously, weaving Chomp back in the instant it comes off cooldown.",
+  "Chomp's bonus damage is modeled as the wiki's separate on-hit instance (base + 15-55% of total AD) added on top of the attack's own normal AD damage, per the dossier's resolution of the ADScaling-vs-separate-instance open question; it is assumed not to critically strike since the wiki never describes it as able to.",
+  "Chomp's bonus damage scales with Trundle's total AD (as the wiki states), not bonus AD.",
+  "Chomp's cooldown starts only when the empowered attack actually lands (post-effect), so it is recast the instant that happens; with Trundle attacking continuously the 7 s arming window never lapses.",
+  "The bonus AD Chomp grants for 5 s after the empowered attack lands is applied to Trundle's own damage (later Chomp casts and basic attacks); the matching reduction to the target's bonus AD only matters if the target attacks back, so it is not modeled.",
+  "Frozen Domain has no cast time and is cast the instant it is off cooldown to maximize uptime on its attack-speed buff; its movement-speed and increased-healing-received effects have no bearing on damage dealt and are ignored.",
+  "Subjugate's damage is applied half when its 0.25 s cast completes and half over 4 ticks one second apart, against the dummy's (constant) maximum health, matching the wiki's timing; its equal self-heal is defense-only and not modeled.",
+  "Subjugate's armor/magic resist shred actually ramps from 20% to 40% over the drain and then lingers at 40% for 4 s, but the engine only supports one flat percent-shred for one duration, so it is modeled as a flat 40% for the whole 8 s window from cast to the end of the linger; this slightly overstates the shred during the drain's first three seconds, the closest single-number reading given the engine's model.",
+  "Only Subjugate's initial (on-cast) application is treated as a spell-hit for cast-triggered item/rune effects (Muramana, Eclipse); the 4 follow-up ticks are periodic ability damage (so they still count for burn-type amp effects) but do not re-trigger those cast procs, resolving the dossier's open question in the more common direction for a damage-over-time effect.",
+  "Pillar of Ice (E) is never cast: it deals no damage of its own and its knockback/slow have no effect on a stationary, non-reacting dummy.",
+  "Mana costs are not modeled: Trundle's level-16 mana pool comfortably covers Chomp, Frozen Domain and Subjugate over a 15 s fight.",
+  "King's Tribute (P) only heals Trundle when a nearby enemy dies; it never affects damage dealt and is not modeled."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Chomp",
+   "cooldownS": [
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5
+   ]
+  },
+  "W": {
+   "name": "Frozen Domain",
+   "cooldownS": [
+    18,
+    17,
+    16,
+    15,
+    14
+   ]
+  },
+  "E": {
+   "name": "Pillar of Ice",
+   "cooldownS": [
+    21,
+    19.5,
+    18,
+    16.5,
+    15
+   ]
+  },
+  "R": {
+   "name": "Subjugate",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "healPctByLevel": [
+    0.018,
+    0.0202,
+    0.0224,
+    0.0245,
+    0.0267,
+    0.0289,
+    0.0311,
+    0.0332,
+    0.0354,
+    0.0376,
+    0.0398,
+    0.0419,
+    0.0441,
+    0.0463,
+    0.0485,
+    0.0506,
+    0.0528,
+    0.055
+   ]
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     10,
+     30,
+     50,
+     70,
+     90
+    ],
+    "adRatio": [
+     0.15,
+     0.25,
+     0.35,
+     0.45,
+     0.55
+    ]
+   },
+   "selfAdBuff": {
+    "base": [
+     20,
+     25,
+     30,
+     35,
+     40
+    ]
+   },
+   "adBuffDurationS": 5,
+   "prepDurationS": 7
+  },
+  "W": {
+   "bonusAsPct": [
+    30,
+    50,
+    70,
+    90,
+    110
+   ],
+   "durationS": 8
+  },
+  "E": {
+   "slowPct": [
+    34,
+    38,
+    42,
+    46,
+    50
+   ],
+   "durationS": 6
+  },
+  "R": {
+   "pctHpBase": [
+    0.2,
+    0.25,
+    0.3
+   ],
+   "apRatioTotal": 0.0002,
+   "upfrontFrac": 0.5,
+   "drainDurationS": 4,
+   "tickCount": 4,
+   "castTimeS": 0.25,
+   "shred": {
+    "pct": 40,
+    "appliesTo": [
+     "armor",
+     "mr"
+    ],
+    "durationS": 8
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.20833,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/trundle.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/trundle.rs."
+ ]
+}

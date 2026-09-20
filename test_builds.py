@@ -1602,9 +1602,13 @@ class TestScenarioCache(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
+        # the hand-encoded champions only: the machine-written roster has its
+        # own enumeration test (test_kit_driver) and would make every warm
+        # here a hundred and seventy champions long
         for name, value in (("SCENARIO_CACHE_DIR", self.tmp),
                             ("DEFAULT_POOL", self.TINY_POOL),
-                            ("TANK_POOL", self.TINY_TANK_POOL)):
+                            ("TANK_POOL", self.TINY_TANK_POOL),
+                            ("SHOW_GENERATED", False)):
             patcher = mock.patch.object(builds, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -1694,8 +1698,20 @@ class TestScenarioCache(unittest.TestCase):
         self.assertFalse(builds.source_stale())
         with mock.patch.object(builds, "SOURCE_HASH", "0" * 64):
             self.assertTrue(builds.source_stale())
+        # the cells key on the engine's core (and this module), not on the
+        # machine-written drivers: a change to it reaches every cell ...
+        with mock.patch.object(builds, "CORE_HASH", "0" * 64):
             other = builds.cell_paths()
         self.assertTrue(set(other.values()).isdisjoint(paths.values()))
+        # ... and a change to one machine-written driver only its champion's
+        if builds.GENERATED_HASHES:
+            slug = sorted(s for s in builds.GENERATED_HASHES if not s.endswith("_blind"))[0]
+            with mock.patch.object(builds, "SHOW_GENERATED", True):
+                roster = builds.cell_paths()
+                self.assertEqual({c: roster[c] for c in paths}, paths)  # the others' cells stay
+                with mock.patch.dict(builds.GENERATED_HASHES, {slug: "0" * 64}):
+                    other = builds.cell_paths()
+            self.assertEqual({c[0] for c in roster if other[c] != roster[c]}, {slug})
         # a target's change reaches every cell of its tier — they come from
         # the same pass, and the overall cell depends on all of them — and
         # no cell of any other tier; and the shipped cells don't care
@@ -1732,7 +1748,7 @@ class TestScenarioCache(unittest.TestCase):
                                side_effect=AssertionError("simulated on read")):
             self.assertIsNone(builds.cached_scenario(*cell))
         self.assertRaises(ValueError, builds.cached_scenario, "kayle", "nope")
-        self.assertRaises(ValueError, builds.cached_scenario, "teemo", "full-squishy")
+        self.assertRaises(ValueError, builds.cached_scenario, "notachampion", "full-squishy")
         self.assertRaises(ValueError, builds.cached_scenario, "kayle", "first-item")
         stale = os.path.join(self.tmp, "kayle-full-squishy-0000000000000000.json")
         open(stale, "w").close()

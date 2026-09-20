@@ -1,0 +1,197 @@
+{
+ "champion": "jhin",
+ "name": "Jhin",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Dancing Grenade's bounce needs an additional nearby enemy that has not been hit; against a lone stationary dummy (per the fight's general rule that anything needing another unit does nothing) it never bounces, so Q always lands as a single hit and its on-kill/stacking amplification never triggers.",
+  "Lotus Trap is assumed to bloom as soon as it finishes arming, since the stationary dummy is already standing in its radius; this is an assumption noted because the wiki's mechanic describes an enemy 'crossing' the trap.",
+  "Captive Audience is assumed to start the fight with both Lotus Trap charges banked (a level-16 champion arriving at a fight plausibly has its passive charges stocked); each detonation lands more than 1 second apart in this rotation so the 65% reduced-damage-vs-recently-hit case never applies.",
+  "Curtain Call's 3%-per-1%-missing-health amplification is applied to all four bullets, including the doubled fourth bullet (amp multiplies the fourth bullet's already-doubled base), which is the reading used here for the dossier's open question.",
+  "Curtain Call's channel is treated as ending once its fourth bullet lands (rather than occupying the full 10 seconds), so Jhin's attacks resume immediately after; basic attacks are held for the whole channel via the attack timer.",
+  "Jhin's attack speed cannot be increased by items (only by leveling): the build's bonus attack speed is cancelled out of his attack timing entirely and, together with his crit chance, is instead read by Every Moment Matters to grant bonus attack damage - this bonus AD is folded into every ability's and attack's AD scaling.",
+  "The engine centrally computes crit as an expected value from the build's crit chance/crit damage for every basic attack, which this framework's hooks cannot suppress per-shot; Jhin's fourth shot's guaranteed, reduced-multiplier critical strike is therefore approximated as a flat +50% (Riot's FourthShotDamageMult) rider added on top of whatever the engine's own attack computation already produced for that shot. This is a known simplification.",
+  "The fourth shot's missing-health execute bonus is added as its own physical rider (not itself treated as critically striking) and is not capped, since the dummy is champion-classified and the 800 cap only applies to monsters.",
+  "Q, W and E's short travel/cast delay is collapsed to landing at the moment of cast for damage purposes; the cast time is still honored by holding Jhin's next basic attack until the cast completes. Lotus Trap's arm time and detonation delay are modeled as real delays since they matter for timing near the edges of a fight.",
+  "Mana costs are not modeled; nothing here is expected to bind a level-16 Jhin across a 15 s fight, and out-of-combat reload is irrelevant since Jhin is always attacking or casting."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Dancing Grenade",
+   "cooldownS": [
+    7,
+    6.5,
+    6,
+    5.5,
+    5
+   ]
+  },
+  "W": {
+   "name": "Deadly Flourish",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "E": {
+   "name": "Captive Audience",
+   "cooldownS": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "R": {
+   "name": "Curtain Call",
+   "cooldownS": [
+    120,
+    105,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "maxAmmo": 4,
+   "reloadTimeS": 2.5,
+   "fourthShotDamageMult": 1.5,
+   "executePctByLevel": [
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "bonusAdPctByLevel": [
+    0.04,
+    0.05,
+    0.06,
+    0.07,
+    0.08,
+    0.09,
+    0.1,
+    0.11,
+    0.12,
+    0.14,
+    0.16,
+    0.2,
+    0.24,
+    0.28,
+    0.32,
+    0.36,
+    0.4,
+    0.44
+   ],
+   "critChanceCoef": 0.35,
+   "bonusAsCoef": 0.3
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     44,
+     69,
+     94,
+     119,
+     144
+    ],
+    "adRatio": [
+     0.44,
+     0.515,
+     0.59,
+     0.665,
+     0.74
+    ],
+    "apRatio": 0.6
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     70,
+     105,
+     140,
+     175,
+     210
+    ],
+    "adRatio": 0.5
+   },
+   "castTimeS": 0.75
+  },
+  "E": {
+   "damage": {
+    "base": [
+     20,
+     80,
+     140,
+     200,
+     260
+    ],
+    "adRatio": 1.2,
+    "apRatio": 1.0
+   },
+   "castTimeS": 0.25,
+   "armTimeS": 0.75,
+   "detonationDelayS": 2,
+   "maxCharges": 2,
+   "rechargeS": [
+    24,
+    21.5,
+    19,
+    16.5,
+    14
+   ]
+  },
+  "R": {
+   "damage": {
+    "base": [
+     64,
+     128,
+     192
+    ],
+    "adRatio": 0.25
+   },
+   "fourthShotMult": 2,
+   "missingHpAmpCoef": 3,
+   "channelCastTimeS": 1,
+   "shotDelayS": 1,
+   "shotFireDelayS": 0.2
+  }
+ },
+ "assumed": [
+  {
+   "path": "gen.E.maxCharges",
+   "why": "used also as the number of Lotus Trap charges Jhin has banked at the start of the fight (a level-16 champion plausibly enters a fight with a full charge bank)"
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.15625,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jhin.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jhin.rs."
+ ]
+}

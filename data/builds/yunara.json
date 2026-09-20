@@ -1,0 +1,152 @@
+{
+ "champion": "yunara",
+ "name": "Yunara",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "The opening cast is Transcend One's Self (R) at t = 0: it has no cast time, sets Cultivation of Spirit (Q) active for R's full 15 s duration (covering the whole fight at any tested length), upgrades Arc of Judgment into the free, ultimate-tagged Arc of Ruin, and upgrades Kanmei's Steps into Untouchable Shadow; R is never recast (its cooldown exceeds any fight length and it cannot be recast while active anyway).",
+  "Once Transcendent State is active, Arc of Judgment's damage instance is Arc of Ruin, whose damage the dossier states is treated as ultimate damage for effects keying on the ultimate (Malignance, Axiom Arcanist); it is dealt under source R accordingly, using Transcend One's Self's own base-damage-by-rank numbers. Before R is learned (e.g. level 1) the same cast instead deals the plain Arc of Judgment initial-hit-plus-linger damage under source W.",
+  "Because W (Arc of Judgment) is entirely replaced by R's Arc of Ruin for the whole of any fight where Transcend One's Self is learned (the normal level-16 build), W never deals damage under its own name in that build; see 'unused' below. It only fires under source W when R has not been learned.",
+  "Because the dummy is the only unit on the field, Cultivation of Spirit's empowered spread attacks (which hit enemies near, but excluding, the attacked target) never have anything to hit and are omitted entirely; their damage and on-hit/lifesteal application would be zero in this fight regardless.",
+  "Vow of the First Lands' bonus magic damage is modeled as its expected value every basic attack: crit chance x (10% + 0.1% per AP) x the attack's pre-mitigation crit total (AD x crit damage multiplier), dealt as its own magic instance. The wiki notes that if this new instance itself crits it can recursively re-trigger the amp on itself; Riot's own bug tag on that behavior is read as it being unintended, so only the single application is modeled here.",
+  "Cultivation of Spirit's on-hit magic damage (passive, and the additional active amount while Unleash is active) is dealt as plain magic on-hit damage that does not itself get amplified by a crit, matching the wiki's explicit '0% bonus damage' note for that interaction.",
+  "If Transcend One's Self is not yet learned (e.g. level 1), Cultivation of Spirit instead builds Unleash stacks manually: every attack grants 2 stacks (the dummy counts as an enemy champion), and on reaching the 8-stack cap it self-activates for 5 s (granting the attack-speed buff, the extra on-hit damage, the 40%-reduced windup, and an attack reset), then resumes stacking from 0. Mana/stack cost for the manual activation is not modeled since nothing binds it inside a 15 s fight.",
+  "Without Transcend One's Self, Arc of Judgment's initial hit and its lingering damage (summed over its 4 ticks, per the wiki's stated total) are both dealt on cast, since the dossier leaves open whether a stationary target keeps resetting the linger via re-collision; the simpler 'one full lingering episode per cast' reading is used and noted as an open question.",
+  "Untouchable Shadow (E) deals no damage; its sole purpose here is the attack reset, so it is cast the instant it comes off cooldown, right after an attack lands, so the next attack follows one (possibly Unleash-reduced) windup later instead of a full attack period.",
+  "Arc of Ruin / Arc of Judgment's cast time (0.45-0.6 s scaling with the caster's own bonus attack speed) is modeled only as the engine's standard 0.25 s post-cast attack lockout, with its damage dealt on cast, matching how the reference driver treats other short-cast actives; the note that its cooldown can also be cut by ultimate haste is not modeled since the engine only exposes one cooldown-haste path for a basic-slot ability.",
+  "Mana costs for Q/W/E/R are not modeled: R is cast once, W/E costs are removed for the whole fight once Transcendent State is entered, and Q has no cooldown or mana bottleneck relevant within 15 s."
+ ],
+ "assumed": [],
+ "unused": {
+  "W": "Once Transcend One's Self (R) is learned it permanently upgrades Arc of Judgment into Arc of Ruin for the rest of the fight (Transcendent State's 15 s duration covers any tested fight length); Arc of Ruin's damage is dealt and sourced under R, per the dossier's statement that it counts as ultimate damage for ultimate-keyed item effects. W therefore never deals damage under its own name in a level-16 (or any R-learned) fight; it only fires under source W when R has not been learned (e.g. at level 1)."
+ },
+ "abilities": {
+  "Q": {
+   "name": "Cultivation of Spirit",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "W": {
+   "name": "Arc of Judgment",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "E": {
+   "name": "Kanmei's Steps",
+   "cooldownS": [
+    9,
+    9,
+    9,
+    9,
+    9
+   ]
+  },
+  "R": {
+   "name": "Transcend One's Self",
+   "cooldownS": [
+    100,
+    90,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "ampBaseFrac": 0.1,
+   "ampPerApFrac": 0.001
+  },
+  "Q": {
+   "passiveDamage": {
+    "base": [
+     5,
+     10,
+     15,
+     20,
+     25
+    ],
+    "apRatio": 0.2
+   },
+   "activeDamage": {
+    "base": [
+     5,
+     10,
+     15,
+     20,
+     25
+    ],
+    "apRatio": 0.2
+   },
+   "activeAsPct": [
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6
+   ],
+   "activeDurationS": 5,
+   "stackCap": 8,
+   "stackPerAttackChampion": 2,
+   "windupReductionFrac": 0.4
+  },
+  "W": {
+   "initialDamage": {
+    "base": [
+     55,
+     95,
+     135,
+     175,
+     215
+    ],
+    "bonusAdRatio": 0.85,
+    "apRatio": 0.5
+   },
+   "lingerTotalDamage": {
+    "base": [
+     33,
+     57,
+     81,
+     105,
+     129
+    ],
+    "bonusAdRatio": 0.51,
+    "apRatio": 0.3
+   }
+  },
+  "E": {},
+  "R": {
+   "ruinDamage": {
+    "base": [
+     160,
+     320,
+     480
+    ],
+    "bonusAdRatio": 1.2,
+    "apRatio": 0.75
+   },
+   "durationS": 15
+  }
+ },
+ "attack": {
+  "windupFraction": 0.16255,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yunara.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yunara.rs."
+ ]
+}

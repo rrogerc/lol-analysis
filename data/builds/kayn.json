@@ -1,0 +1,144 @@
+{
+ "champion": "kayn",
+ "name": "Kayn",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Simulates Kayn in Shadow Assassin form (the more commonly played form): Blade's Reach loses its cast time, the passive Shadow Assassin Bonus is active, and emerging from Umbral Trespass resets Reaping Slash's cooldown. Rhaast's alternate Q/R formulas and heals are not modeled.",
+  "The fight begins with Kayn already in combat with the dummy, so the Shadow Assassin Bonus's 3-second window is treated as active from t=0; since Kayn never leaves combat with the dummy for the required 8 seconds, it never retriggers for the rest of the fight.",
+  "The Shadow Assassin Bonus's magic damage is modeled as a percentage of the pre-mitigation amount of each ABILITY damage instance Kayn deals (an approximation of the wiki's 'post-mitigation' wording, since the engine does not return realized post-mitigation damage to the driver) rather than on his basic attacks, since the blurb text is ambiguous between the two and the engine gives no per-attack damage figure to a driver hook.",
+  "Reaping Slash (Q) deals its dash and its swing as two identical physical damage instances on cast, followed by the ability's documented 0.25s post-swing lockout.",
+  "Blade's Reach (W) is cast on cooldown with no cast time (Shadow Assassin removes it) and lands immediately.",
+  "Umbral Trespass (R) can only be cast once Kayn has already damaged the dummy (the passive mark); since the dummy is fought continuously, once the mark is first earned it is treated as permanently available for the rest of the fight. The opening cast itself (the engine's cast_r hook) deals no damage and is left a no-op; the vanish, 0.25s dash, 0.5s attach delay, 0.1s minimum channel and recast delay are modeled through the driver's own event queue, with the damage landing (and Reaping Slash's cooldown reset) at the recast.",
+  "The recast is fired at the earliest legal moment to maximize damage output, per the rotation's stated goal.",
+  "Shadow Step (E) is never cast: it deals no damage to the dummy and is purely defensive/mobility.",
+  "Mana is not modeled: none of Kayn's costs meaningfully bind inside a 15s fight at level 16.",
+  "Basic attacks fill all remaining time between casts; Kayn has no on-hit, attack-speed steroid or attack-modifying effect, so attacks use the plain default."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.recastDelayS",
+   "why": "the wiki gives an inconsistent 0.5s-0.75s recast delay (flagged as a bug); the lower bound is used for a deterministic simulation"
+  },
+  {
+   "path": "gen.R.minChannelS",
+   "why": "the wiki states a 0.1s minimum time before recast is allowed while the bin's KaynR.MinimumInfestTime disagrees at 0.5s; the wiki's 0.1s is used to model the earliest legal recast, per the rotation's goal of maximizing damage"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Reaping Slash",
+   "cooldownS": [
+    7,
+    6.5,
+    6,
+    5.5,
+    5
+   ]
+  },
+  "W": {
+   "name": "Blade's Reach",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "E": {
+   "name": "Shadow Step",
+   "cooldownS": [
+    21,
+    19,
+    17,
+    15,
+    13
+   ]
+  },
+  "R": {
+   "name": "Umbral Trespass",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "percentByLevel": [
+    20,
+    20.63,
+    21.26,
+    21.89,
+    22.53,
+    23.16,
+    23.79,
+    24.42,
+    25.05,
+    25.68,
+    26.32,
+    26.95,
+    27.58,
+    28.21,
+    28.84,
+    29.47,
+    30.11,
+    40
+   ],
+   "durationS": 3
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     75,
+     105,
+     135,
+     165,
+     195
+    ],
+    "bonusAdRatio": 0.85
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     85,
+     130,
+     175,
+     220,
+     265
+    ],
+    "bonusAdRatio": 1.1
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "bonusAdRatio": 1.5
+   },
+   "dashInS": 0.25,
+   "attachDelayS": 0.5,
+   "minChannelS": 0.1,
+   "recastDelayS": 0.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kayn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kayn.rs."
+ ]
+}

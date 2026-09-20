@@ -1,0 +1,154 @@
+{
+ "champion": "quinn",
+ "name": "Quinn",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens with Behind Enemy Lines (R) at t=0: its 2 s channel blocks attacks and Q/E casts (both are read as ending/holding the channel, so nothing else is cast during it); the dossier's separate 0.25 s cast time is treated as included within that 2 s channel, not additive, since the channel is the visible wind-up to uniting with Valor.",
+  "Once the channel completes Quinn is united with Valor; her very next basic attack both lands its own damage and 'declares', automatically triggering Skystrike (R's damage) at the same instant, per the reading that a triggering attack still deals its own separate damage instance alongside Skystrike's.",
+  "Skystrike ends Behind Enemy Lines and starts its 3 s cooldown (post-effect); the driver recasts Behind Enemy Lines the moment that cooldown expires, so R cycles for the whole fight (~2 s channel + one attack + 3 s cooldown per cycle) rather than being cast once.",
+  "Skystrike also marks the target with Harrier for 4.5 s (its own, longer mark duration), consumed by the next attack that lands on it for the P on-hit bonus, exactly like Q/E's 4 s marks.",
+  "Spellblade/on-cast procs (prime_spellblade) are only triggered once per R cycle, at the channel's start; Skystrike's auto-trigger is not treated as a second ability cast for that purpose.",
+  "Outside R's channel windows, Blinding Assault (Q) and Vault (E) are cast on cooldown and Quinn attacks continuously; Q, E and Skystrike all apply a Harrier mark, and whichever attack lands on a still-marked target consumes it for Harrier's on-hit bonus physical damage (byLevel base + 40% bonus AD) plus Heightened Senses' 2 s attack-speed buff.",
+  "Heightened Senses' movement-speed component and its separate vision-only active cast are never used since neither deals damage and there is no movement in a stationary dummy fight.",
+  "Vault's short attack-reset after its dash is not modeled: the driver architecture only allows writing next_attack from inside schedule_attack or as a channel-hold, neither of which fits an ability-triggered speed-up mid-attack-cycle, so this slightly undercounts Vault's true value; Vault's own cast damage and mark application are still fully modeled.",
+  "Harrier's 1-second reapplication lockout is modeled for marks that are consumed or time out unconsumed.",
+  "Harrier's flat bonus vs monsters and Blinding Assault's 200% monster multiplier are never used because the dummy counts as an enemy champion, not a monster.",
+  "Neither Blinding Assault's, Vault's nor Skystrike's damage, nor Harrier's on-hit bonus, are stated to critically strike, so none of them use the crit multiplier.",
+  "Mana is not modeled: Q/E costs are small and R's mana cost is 0 at its max rank (reached by level 16), so nothing binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Blinding Assault",
+   "cooldownS": [
+    11,
+    10.5,
+    10,
+    9.5,
+    9
+   ]
+  },
+  "W": {
+   "name": "Heightened Senses",
+   "cooldownS": [
+    50,
+    45,
+    40,
+    35,
+    30
+   ]
+  },
+  "E": {
+   "name": "Vault",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "R": {
+   "name": "Behind Enemy Lines",
+   "cooldownS": [
+    3,
+    3,
+    3
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "byLevel": [
+    15,
+    21.18,
+    27.35,
+    33.53,
+    39.71,
+    45.88,
+    52.06,
+    58.24,
+    64.41,
+    70.59,
+    76.76,
+    82.94,
+    89.12,
+    95.29,
+    101.47,
+    107.65,
+    113.82,
+    120
+   ],
+   "bonusAdRatio": 0.4,
+   "markDurationS": 4,
+   "harrierLockoutS": 1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     65,
+     100,
+     135,
+     170,
+     205
+    ],
+    "bonusAdRatio": [
+     0.8,
+     0.85,
+     0.9,
+     0.95,
+     1
+    ],
+    "apRatio": 0.5
+   }
+  },
+  "W": {
+   "asBonus": [
+    0.28,
+    0.41,
+    0.54,
+    0.67,
+    0.8
+   ],
+   "buffDurationS": 2
+  },
+  "E": {
+   "damage": {
+    "base": [
+     40,
+     65,
+     90,
+     115,
+     140
+    ],
+    "bonusAdRatio": 0.2
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120
+    ],
+    "bonusAdRatio": 0.35
+   },
+   "channelS": 2,
+   "markDurationS": 4.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.17544,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/quinn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/quinn.rs."
+ ]
+}

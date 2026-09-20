@@ -1,0 +1,167 @@
+{
+ "champion": "sett",
+ "name": "Sett",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens with R (The Show Stopper) at t=0, since its 80-120s cooldown fits only one cast in the fight; its slam damage lands after the wiki's own ~1.23s estimated travel time, taken as an assumption since the dummy's distance from Sett is unspecified.",
+  "Q (Knuckle Down) is cast whenever off cooldown; it deals no damage on cast, instead arming the next two basic attacks (guaranteed Left then Right Punch, resetting the punch alternation) with bonus damage scaling off the target's maximum health and Sett's AD, and it resets the attack timer so the empowered swings land immediately; its cooldown begins once both empowered attacks land (or the empower window lapses).",
+  "The wiki text states a 5-second empower window for Q while the game's own SettQ.Duration value reads 4; the wiki's 5 seconds is used here (matching the dossier's own choice), though this disagreement is unresolved.",
+  "The wiki lists Q's cast time as none while the numbers sheet lists 0.33s; Q is modeled with no cast time (no cast lockout), matching the wiki text and its 'basic attack reset' mechanic.",
+  "Pit Grit's Left/Right Punch alternation is modeled as a simple continuous toggle without the 2-second idle-reset window, since Sett attacks continuously throughout the fight and that reset is never reached.",
+  "Right Punch's windup is fixed at 12.5% of a Left Punch's windup per the wiki; this is modeled by scheduling the Right Punch shortly after a Left Punch lands, with the following Left Punch resuming the normal attack cadence.",
+  "Right Punch's bonus physical damage (base-by-level + 55% bonus AD) is dealt as a plain on-hit rider; the life steal it can trigger is not modeled since healing does not affect this fight.",
+  "Haymaker (W) and Facebreaker (E) are cast on cooldown, each with its own cast time delaying the next attack by the engine's standard 0.25s cast lockout, with their damage landing when the cast ends.",
+  "Haymaker's Grit resource is always 0 in this one-sided fight, since the stationary dummy never damages Sett to generate Grit, so only Haymaker's flat base damage is dealt and its Grit-scaling term is omitted.",
+  "Haymaker is assumed to hit the dummy through its inner true-damage line rather than the wider physical-damage area, since a target aimed directly in front of Sett sits on that centerline; the wiki leaves the two overlapping hitboxes' relationship open.",
+  "Facebreaker's 0.25s self-lockout after its cast is modeled as an added delay to the next attack; the guaranteed follow-up basic attack on the pulled target is not modeled as a separate free attack, since the engine's hooks don't support a bonus attack outside the normal timer.",
+  "The Show Stopper's health-scaling term uses the target's total maximum health (via the engine's target_hp), since the engine exposes no separate bonus-health figure for the dummy, even though the wiki text calls it 'bonus' health; the dummy is assumed to land in the full-damage epicenter rather than the reduced-damage shockwave edge.",
+  "Pit Grit's health regeneration and the slows/shield/stun from Q/W/E/R are ignored since they don't affect damage output per the fight rules.",
+  "None of Sett's abilities have a mana or energy cost per the numbers sheet, so no resource pool is modeled."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.travelDelayS",
+   "why": "wiki's own estimated time (at max cast range) from cast to the slam's impact, since the dummy's distance from Sett is not specified"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Knuckle Down",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "W": {
+   "name": "Haymaker",
+   "cooldownS": [
+    18,
+    16.5,
+    15,
+    13.5,
+    12
+   ]
+  },
+  "E": {
+   "name": "Facebreaker",
+   "cooldownS": [
+    16,
+    14.5,
+    13,
+    11.5,
+    10
+   ]
+  },
+  "R": {
+   "name": "The Show Stopper",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "rightPunchBaseByLevel": [
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90
+   ],
+   "rightPunchBonusAdRatio": 0.55,
+   "rightPunchWindupFraction": 0.125
+  },
+  "Q": {
+   "baseDamage": [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   "targetMaxHpFlat": 0.01,
+   "targetMaxHpPerAd": [
+    0.0001,
+    0.00015,
+    0.0002,
+    0.00025,
+    0.0003
+   ],
+   "empowerWindowS": 5,
+   "numEmpowered": 2
+  },
+  "W": {
+   "baseDamage": [
+    80,
+    100,
+    120,
+    140,
+    160
+   ],
+   "castTimeS": 0.75
+  },
+  "E": {
+   "damage": {
+    "base": [
+     50,
+     70,
+     90,
+     110,
+     130
+    ],
+    "adRatio": 0.6
+   },
+   "castTimeS": 0.25,
+   "selfLockoutS": 0.25
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     300,
+     400
+    ],
+    "bonusAdRatio": 1.2
+   },
+   "targetMaxHpRatio": [
+    0.4,
+    0.5,
+    0.6
+   ],
+   "travelDelayS": 1.23
+  }
+ },
+ "attack": {
+  "windupFraction": 0.21429,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/sett.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/sett.rs."
+ ],
+ "manaless": true
+}

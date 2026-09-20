@@ -1,0 +1,192 @@
+{
+ "champion": "rumble",
+ "name": "Rumble",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opening: The Equalizer (R) is cast at t=0; it deploys over its stated cast delay (0.5833 s) and then ticks 18 times every 0.25 s (its 4.5 s field duration / 0.25 s tick rate), assuming the stationary target sits inside the field the whole time so the burn never lapses.",
+  "Heat: Flamespitter (Q) and Electro Harpoon (E) each generate/cost 20 Heat per cast. A cast made at 50 Heat or more (Danger Zone) has that cast's damage increased 50%. A cast that pushes Heat to 150 forces a 4 s Overheat during which Q/W/E/R cannot be cast, but basic attacks gain the passive's by-level bonus attack speed and bonus on-hit magic damage; Heat resets to 0 when Overheat ends.",
+  "Heat decays 10/s once 4 s pass without a Q/W/E cast; The Equalizer's separate 2 s decay-grace window is not modeled since R does not itself generate Heat and is only cast once in this fight.",
+  "Scrap Shield (W) is never cast: it deals no damage and its shield/move-speed effects are not modeled by the engine, so spending a cast (and Heat) on it has no measurable benefit here.",
+  "Flamespitter's ambiguous 'extra debuff instance on first application' is read as already included in the stated 12 ticks over its 3 s duration (the simpler of the two dossier readings), so each cast delivers exactly 12 ticks.",
+  "Flamespitter is cast whenever off cooldown and not Overheated; whether that cast is Danger-Zone-empowered is fixed at the moment of casting and applies to all 12 of that cast's ticks.",
+  "Electro Harpoon is fired with both of its assumed 2 starting charges immediately, then recast whenever a charge is available, its own 0.5 s cooldown is up, and Rumble is not Overheated; its stacking magic-resist shred (up to 2 stacks, further empowered in Danger Zone) is approximated with the engine's single flat shred slot, fixed at rank-5's non-empowered 18% for 4 s, refreshed on every cast.",
+  "The passive's Overheat on-hit bonus and attack speed do not apply against structures per the wiki; irrelevant here since the dummy counts as a champion.",
+  "Mana/energy are not modeled; Rumble's resource is Heat, already tracked above."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.startingCharges",
+   "why": "Rumble stocks an Electro Harpoon charge even before the ability is learned; assumed the plausible level-16 starting stock is the full 2 charges."
+  },
+  {
+   "path": "abilities.Q.shred.pct",
+   "why": "Fixed to Electro Harpoon's rank-5 (max, non-empowered) magic resistance reduction since the engine's shred slot accepts only one flat value and E is assumed maxed by level 16 under this maxOrder."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Flamespitter",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ],
+   "shred": {
+    "pct": 18,
+    "appliesTo": [
+     "mr"
+    ],
+    "durationS": 4
+   }
+  },
+  "W": {
+   "name": "Scrap Shield",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "E": {
+   "name": "Electro Harpoon",
+   "cooldownS": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "R": {
+   "name": "The Equalizer",
+   "cooldownS": [
+    130,
+    105,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "heatDecayPerS": 10,
+   "heatGraceS": 4,
+   "heatPerCast": 20,
+   "dangerZoneHeat": 50,
+   "overheatHeat": 150,
+   "overheatDurationS": 4,
+   "bonusAsByLevel": [
+    0.5,
+    0.5470588,
+    0.59411764,
+    0.64117646,
+    0.6882353,
+    0.7352941,
+    0.7823529,
+    0.82941175,
+    0.87647057,
+    0.9235294,
+    0.9705882,
+    1.017647,
+    1.0647058,
+    1.1117647,
+    1.1588235,
+    1.2058823,
+    1.2529411,
+    1.3
+   ],
+   "onhitByLevel": [
+    5,
+    7.059,
+    9.118,
+    11.176,
+    13.235,
+    15.294,
+    17.353,
+    19.412,
+    21.471,
+    23.529,
+    25.588,
+    27.647,
+    29.706,
+    31.765,
+    33.824,
+    35.882,
+    37.941,
+    40
+   ],
+   "onhitApRatio": 0.25,
+   "onhitTargetMaxHpRatio": 0.04
+  },
+  "Q": {
+   "tickDamage": {
+    "base": [
+     4.167,
+     6.25,
+     8.333,
+     10.417,
+     12.5
+    ],
+    "apRatio": 0.0875
+   },
+   "tickTargetMaxHpRatio": [
+    0.005,
+    0.005417,
+    0.005833,
+    0.00625,
+    0.006667
+   ],
+   "ticks": 12,
+   "tickRateS": 0.25,
+   "overheatMulti": 1.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     55,
+     80,
+     105,
+     130,
+     155
+    ],
+    "apRatio": 0.5
+   },
+   "overheatMulti": 1.5,
+   "chargesMax": 2,
+   "startingCharges": 2,
+   "rechargeS": 6,
+   "shredDurationS": 4
+  },
+  "R": {
+   "tickDamage": {
+    "base": [
+     30,
+     50,
+     70
+    ],
+    "apRatio": 0.0875
+   },
+   "ticks": 18,
+   "tickRateS": 0.25,
+   "castDelayS": 0.5833
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/rumble.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/rumble.rs."
+ ],
+ "manaless": true
+}

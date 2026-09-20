@@ -1,0 +1,182 @@
+{
+ "champion": "illaoi",
+ "name": "Illaoi",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Leap of Faith (R) at t=0 for its own damage, to spawn one extra Tentacle (only the dummy is present to be hit) and halve Harsh Lesson's cooldown for its 8 s window; R is recast on cooldown afterward, though at typical haste it rarely comes off cooldown again inside a short fight.",
+  "Tentacle Smash (Q) is cast on cooldown; Harsh Lesson (W) is armed right after a landing attack (an attack reset) and its cooldown starts when that empowered attack lands, matching its post-effect cooldown start, then rearmed as soon as it is next ready.",
+  "Every tentacle slam (Q's own slam, and the slam(s) Harsh Lesson commands) uses the passive's shared slam formula, amplified by Tentacle Smash's rank bonus, and shares one 0.66 s stacking damage-reduction window against the dummy (50% less per recent slam, capped at 75% less), tracked across all of Illaoi's slams.",
+  "One Tentacle is assumed already up near terrain at t=0 so Q/W can command it immediately (see assumed); Leap of Faith adds a second Tentacle for its 8 s duration, so Harsh Lesson commands two simultaneous slams while it is active.",
+  "Test of Spirit's echo needs a second health pool (the Spirit) that this engine cannot represent, since it never exposes the target's armor/MR to the driver. We assume Illaoi's own first tentacle-equivalent hit kills the Spirit almost immediately, so Test of Spirit is modeled as: on cast, one echo hit equal to its rank's damage-transfer percent of a representative tentacle slam, followed by one autonomous Vessel-phase tentacle slam at the level-based interval, then recast on cooldown. This is a simplification of a mechanic the dossier itself flags as needing bespoke, currently-unresolved simulation (see the dossier's 'needsBespoke' and first 'unsettled' entry).",
+  "Tentacle Smash's and Test of Spirit's real cast times (0.75 s / 0.25 s) are not modeled as separate damage delays: like Jax's Leap Strike, their damage is treated as landing on cast, gated only by the usual 0.25 s attack lockout. Leap of Faith's 0.5 s cast time is modeled as a real delay since its damage explicitly lands after the leap completes.",
+  "Harsh Lesson's bonus damage is the higher of its %max-health scaling and its flat minimum, the common reading of 'additional damage, with a minimum threshold'; its 300 damage cap against non-champions is ignored since the fight's dummy counts as a champion.",
+  "Mana is not modeled: Illaoi's costs are modest relative to a level-16 mana pool and are unlikely to bind inside a short fight.",
+  "The passive's missing-health heal and all non-damage Vessel/Spirit mechanics (slow, sight, gold, tether visuals) are ignored since they do not change damage dealt."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.startingTentacles",
+   "why": "the passive Tentacle spawns on a level-based timer near any terrain; assume one is already up at the start of the fight so Q/W can command it immediately, as is typical near any lane terrain"
+  },
+  {
+   "path": "gen.E.spiritInstantKillAssumed",
+   "why": "the engine cannot simulate the Spirit's own health/armor/MR pool, so we assume Illaoi's own first hit kills it almost instantly, letting Test of Spirit resolve as a single echo instance on cast rather than a multi-hit burst-down sequence"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Tentacle Smash",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "W": {
+   "name": "Harsh Lesson",
+   "cooldownS": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "E": {
+   "name": "Test of Spirit",
+   "cooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "R": {
+   "name": "Leap of Faith",
+   "cooldownS": [
+    120,
+    95,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "slamBaseByLevel": [
+    9,
+    19.06,
+    29.12,
+    39.18,
+    49.24,
+    59.29,
+    69.35,
+    79.41,
+    89.47,
+    99.53,
+    109.59,
+    119.65,
+    129.71,
+    139.76,
+    149.82,
+    159.88,
+    169.94,
+    180
+   ],
+   "slamAdRatio": 1.1,
+   "slamApRatio": 0.4,
+   "slamReductionPerHit": 0.5,
+   "slamReductionCapPct": 0.75,
+   "slamReductionWindowS": 0.66,
+   "startingTentacles": 1
+  },
+  "Q": {
+   "tentacleDamageAmp": [
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3
+   ]
+  },
+  "W": {
+   "healthPercentDamage": [
+    3,
+    3.5,
+    4,
+    4.5,
+    5
+   ],
+   "healthDamageAdRatio": 0.035,
+   "minDamage": [
+    20,
+    30,
+    40,
+    50,
+    60
+   ],
+   "cooldownDuringR": 2,
+   "percentToFractionDivisor": 100
+  },
+  "E": {
+   "damageTransferPercent": [
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45
+   ],
+   "echoTadScalar": 0.0008,
+   "vesselDuration": 4,
+   "vesselSlamIntervalByLevel": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "spiritInstantKillAssumed": true
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "castTimeS": 0.5,
+   "activeDurationS": 8
+  }
+ },
+ "attack": {
+  "windupFraction": 0.21429,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/illaoi.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/illaoi.rs."
+ ]
+}

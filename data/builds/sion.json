@@ -1,0 +1,149 @@
+{
+ "champion": "sion",
+ "name": "Sion",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Roar of the Slayer (E) opens the fight for its 0.25 s cast and its 25% armor shred, then Decimating Smash (Q), Soul Furnace (W) and basic attacks fill the rest of the window on cooldown/readiness; the engine casts Unstoppable Onslaught (R) automatically at t = 0 since it is learned.",
+  "Decimating Smash (Q) is held for its full damage ramp before releasing: this is read as 1 second of charge, since the ability's own range/knock-up/stun data table only extends to a 1 s charge time, resolving an unsettled ramp-cap question in favour of the better-documented, shorter reading rather than assuming the ramp continues across the full 2 s charge window.",
+  "Unstoppable Onslaught (R) is held for its full 3-second damage ramp before ending in a slam, which lands after the ending leap's 0.55 s travel time; the stationary dummy is assumed not to force an earlier collision, matching the dossier's proposed rotation of holding for maximum damage.",
+  "While Decimating Smash charges or Unstoppable Onslaught channels/leaps, Sion's basic attacks and his other non-Soul-Furnace abilities are locked out, per the wiki's channel-interaction tables (only Soul Furnace remains castable throughout either).",
+  "Soul Furnace (W) is cast for its shield and recast at the minimum 3 s delay to detonate immediately for magic damage, since nothing damages the shield in this fight and holding it longer adds nothing; its target-max-health damage ratio is read from the numbers sheet's ranked SionW.DamagePercentHealthTooltip array (10% to 14% by rank) rather than the ability text's single flat '14%' figure, since the by-rank sheet data is the more precise source.",
+  "Only the initial press of Decimating Smash, Soul Furnace and Unstoppable Onslaught counts as an ability activation for on-cast effects (Spellblade, Muramana, Eclipse); their damage-dealing recast/detonation/slam does not, per the wiki's explicit notes for Soul Furnace and Unstoppable Onslaught, extended here to Decimating Smash for consistency across the champion's three charge-then-release abilities.",
+  "Glory in Death (passive) and Death Surge are not modeled: the dummy never damages Sion, so he never dies and the zombie-state effects (attack speed, life steal, on-hit max-health damage) never trigger.",
+  "Soul Furnace's shield, and the slows/knock-ups/stuns on Q, E and R, are not modeled since the dummy never attacks and is never displaced; only each ability's damage instance is dealt.",
+  "Mana costs are not modeled: nothing here is mana-gated within a short level-16 dummy fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.rampS",
+   "why": "Decimating Smash's own range/knock-up/stun data table only lists charge times from 0 to 1 second in 0.25 s steps, so its damage ramp is read as completing at 1 second of hold rather than continuing across the full 2-second charge window; the dossier flags this as an open question and this is the better-supported reading."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Decimating Smash",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ],
+   "shred": {
+    "pct": 25,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 4
+   }
+  },
+  "W": {
+   "name": "Soul Furnace",
+   "cooldownS": [
+    15,
+    14,
+    13,
+    12,
+    11
+   ]
+  },
+  "E": {
+   "name": "Roar of the Slayer",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "R": {
+   "name": "Unstoppable Onslaught",
+   "cooldownS": [
+    140,
+    100,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     90,
+     155,
+     220,
+     285,
+     350
+    ],
+    "adRatio": [
+     1.2,
+     1.5,
+     1.8,
+     2.1,
+     2.4
+    ]
+   },
+   "rampS": 1
+  },
+  "W": {
+   "damage": {
+    "base": [
+     40,
+     65,
+     90,
+     115,
+     140
+    ],
+    "apRatio": 0.4
+   },
+   "targetMaxHpRatio": [
+    0.1,
+    0.11,
+    0.12,
+    0.13,
+    0.14
+   ],
+   "recastDelayS": 3
+  },
+  "E": {
+   "damage": {
+    "base": [
+     65,
+     100,
+     135,
+     170,
+     205
+    ],
+    "apRatio": 0.55
+   },
+   "castTimeS": 0.25
+  },
+  "R": {
+   "damage": {
+    "base": [
+     400,
+     800,
+     1200
+    ],
+    "bonusAdRatio": 1.2
+   },
+   "rampS": 3,
+   "leapDelayS": 0.55
+  }
+ },
+ "attack": {
+  "windupFraction": 0.24909,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/sion.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/sion.rs."
+ ]
+}

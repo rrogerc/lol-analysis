@@ -2,7 +2,7 @@
 //! the champion does with its attacks and abilities. The engine calls these
 //! hooks at each point of the fight (see fight::Driver).
 
-use crate::fight::{shave, Driver, Engine, Kind, St};
+use crate::fight::{shave, Driver, Engine, Events, Kind, St};
 use crate::fx::*;
 use crate::kit::Kit;
 use crate::num::*;
@@ -360,7 +360,7 @@ impl Driver for VladimirDriver {
         self.s.busy_until = t + ABILITY_LOCKOUT_S;
     }
 
-    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 4]) -> usize {
+    fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let mut n = 0;
         if self.ranks.e > 0 {
             if self.s.charge_until != INF {
@@ -661,7 +661,7 @@ impl Driver for TwitchDriver {
         self.s.r_until = e.st.t + self.r_duration;
     }
 
-    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 4]) -> usize {
+    fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let t = e.st.t;
         let mut n = 0;
         if self.s.venom_next != INF {
@@ -1007,7 +1007,7 @@ impl Driver for KassadinDriver {
         self.riftwalk(e);
     }
 
-    fn events(&self, e: &Engine, out: &mut [(f64, Kind); 4]) -> usize {
+    fn events(&self, e: &Engine, out: &mut Events) -> usize {
         let t = e.st.t;
         let m = e.mana_cost_mult();
         let mut n = 0;

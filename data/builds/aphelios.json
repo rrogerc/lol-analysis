@@ -1,0 +1,363 @@
+{
+ "champion": "aphelios",
+ "name": "Aphelios",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Aphelios opens with Calibrum as his main weapon and Severum in his off-hand (his fixed starting loadout); Moonlight Vigil is cast at t=0 while Calibrum is main, so its weapon-specific bonus always resolves as Calibrum's empowered mark bonus.",
+  "The main weapon is modeled cycling Calibrum -> Gravitum -> Infernum -> Crescendum -> Calibrum... as its 50-Moonlight magazine is spent by attacks (1 Moonlight) and Q casts (10 Moonlight), each depletion causing a 1 s assembly (no attacks) and a 1.5 s lock on the new weapon's Q, exactly as described.",
+  "Off-hand is modeled as staying Severum for the entire fight: off-hand Moonlight is only spent by ability-triggered attacks (Calibrum's snipe, Duskwave's volley, Sentry's copy), which are comparatively rare, so the off-hand weapon is assumed never to exhaust inside this fight. A direct consequence is that Severum never becomes the main weapon, so Onslaught is never cast in this simulation -- a documented simplification, not a claim that Onslaught has no value in real play.",
+  "Because the off-hand never becomes Crescendum, Crescendum never accumulates spectral Chakrams (those are generated only by other weapons' triggered attacks while Crescendum is off-hand, or by Moonlight Vigil while Crescendum is main); Crescendum's own basic attack is therefore modeled as a plain 100% AD hit with no stacking bonus, and its throw-and-return attack lock is not modeled (assumed point-blank engagement, per one of the dossier's own proposed readings, so travel time is treated as negligible).",
+  "Binding Eclipse (Gravitum's Q) can only be cast once a Gravitum basic attack has landed and its slow is still active; it is cast the instant that becomes true and is recast whenever both its own cooldown and a fresh slow window allow it.",
+  "Duskwave's off-hand volley is modeled as crit-affected and applying on-hit effects, following the ability's headline description rather than its self-contradicting note that the automatic attacks trigger no on-attack effects at all -- the higher-damage, more commonly cited reading.",
+  "Sentry is deployed on cooldown while Crescendum is main; it is assumed to arm and immediately find the target (point-blank placement), then attacks at Aphelios' own attack speed for its 4 s active window at full crit-chance effectiveness.",
+  "Weapon Master's bonus stats are modeled on a fixed schedule that matches maxOrder: attack-damage points cap out by champion level 6, then attack-speed points cap out by level 12 (both capped at 6 points); its bonus lethality is not modeled since the engine exposes no hook to add bonus lethality to damage mitigation.",
+  "Moonlight Vigil's extra crit-damage-modifier scaling (0 to 30 percentage points across its ranks) is not applied: its formula references stat hooks the numbers sheet could not resolve, and the wiki itself documents an unexplained bug in this exact area, so ordinary crit damage is used instead.",
+  "Calibrum's mark is treated as a single consumable flag per target (never stacking) and is consumed by the very next basic attack after Moonshot lands; Moonshot is recast on cooldown whenever Calibrum is main.",
+  "Infernum's cone and secondary bolts require other enemies behind the primary target to hit anything, so against a single dummy only the primary 110% AD hit is dealt.",
+  "W and E have no combat effect in this fight (Phase is a pure weapon-order toggle we do not use since the main-weapon cycle already matches the intended order, and the Weapon Queue System is a display-only slot); their cooldownS lists are copied flat from the numbers sheet/ddragon at every rank purely to satisfy the by-rank format, and neither is ever cast by the driver.",
+  "Mana costs are not modeled: nothing here binds inside an 8-15 s fight at level 16."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Weapons of the Faithful (Moonshot cooldown shown)",
+   "cooldownS": [
+    10,
+    10,
+    9.667,
+    9.667,
+    9.334,
+    9.334,
+    9.001,
+    9.001,
+    8.668,
+    8.668,
+    8.335,
+    8.335,
+    8.002,
+    8.002,
+    8.002,
+    8.002,
+    8.002,
+    8.002
+   ]
+  },
+  "W": {
+   "name": "Phase",
+   "cooldownS": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ]
+  },
+  "E": {
+   "name": "Weapon Queue System",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "R": {
+   "name": "Moonlight Vigil",
+   "cooldownS": [
+    120,
+    110,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "maxStacks": 6,
+   "adPerRank": 4,
+   "asPerRank": 0.09,
+   "lethalityPerRank": 4.5,
+   "ammoCapacity": 50,
+   "ammoPerQCast": 10,
+   "assemblyTimeS": 1,
+   "qLockoutS": 1.5,
+   "calibrumMarkDurationS": 4.5,
+   "calibrumSnipe": {
+    "base": 15,
+    "bonusAdRatio": 0.15
+   },
+   "infernumAttackMultiplier": 1.1
+  },
+  "Q": {
+   "calibrum": {
+    "base": [
+     70,
+     70,
+     85,
+     85,
+     100,
+     100,
+     115,
+     115,
+     130,
+     130,
+     145,
+     145,
+     160,
+     160,
+     160,
+     160,
+     160,
+     160
+    ],
+    "bonusAdRatio": [
+     0.42,
+     0.42,
+     0.45,
+     0.45,
+     0.48,
+     0.48,
+     0.51,
+     0.51,
+     0.54,
+     0.54,
+     0.57,
+     0.57,
+     0.6,
+     0.6,
+     0.6,
+     0.6,
+     0.6,
+     0.6
+    ],
+    "apRatio": 1.0
+   },
+   "gravitum": {
+    "base": [
+     50,
+     50,
+     65,
+     65,
+     80,
+     80,
+     95,
+     95,
+     110,
+     110,
+     125,
+     125,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140
+    ],
+    "bonusAdRatio": [
+     0.32,
+     0.32,
+     0.35,
+     0.35,
+     0.38,
+     0.38,
+     0.41,
+     0.41,
+     0.44,
+     0.44,
+     0.47,
+     0.47,
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "apRatio": 0.7
+   },
+   "infernum": {
+    "base": [
+     20,
+     20,
+     35,
+     35,
+     50,
+     50,
+     65,
+     65,
+     80,
+     80,
+     95,
+     95,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "bonusAdRatio": [
+     0.15,
+     0.15,
+     0.16,
+     0.16,
+     0.17,
+     0.17,
+     0.18,
+     0.18,
+     0.19,
+     0.19,
+     0.2,
+     0.2,
+     0.21,
+     0.21,
+     0.21,
+     0.21,
+     0.21,
+     0.21
+    ],
+    "apRatio": 0.7
+   },
+   "crescendum": {
+    "base": [
+     35,
+     35,
+     50,
+     50,
+     65,
+     65,
+     80,
+     80,
+     95,
+     95,
+     110,
+     110,
+     125,
+     125,
+     125,
+     125,
+     125,
+     125
+    ],
+    "bonusAdRatio": [
+     0.34,
+     0.34,
+     0.37,
+     0.37,
+     0.4,
+     0.4,
+     0.43,
+     0.43,
+     0.46,
+     0.46,
+     0.49,
+     0.49,
+     0.52,
+     0.52,
+     0.52,
+     0.52,
+     0.52,
+     0.52
+    ],
+    "apRatio": 0.5
+   },
+   "gravitumCooldownS": [
+    12,
+    12,
+    11.667,
+    11.667,
+    11.334,
+    11.334,
+    11.001,
+    11.001,
+    10.668,
+    10.668,
+    10.335,
+    10.335,
+    10.002,
+    10.002,
+    10.002,
+    10.002,
+    10.002,
+    10.002
+   ],
+   "infernumCooldownS": [
+    9,
+    9,
+    8.5,
+    8.5,
+    8,
+    8,
+    7.5,
+    7.5,
+    7,
+    7,
+    6.5,
+    6.5,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "crescendumCooldownS": [
+    9,
+    9,
+    8.5,
+    8.5,
+    8,
+    8,
+    7.5,
+    7.5,
+    7,
+    7,
+    6.5,
+    6.5,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "gravitumSlowDurationS": 2.5,
+   "duskwaveVolleyDelayS": 0.25,
+   "sentryArmDelayS": 0.35,
+   "sentryActiveDurationS": 4
+  },
+  "R": {
+   "castTimeS": 0.6,
+   "smite": {
+    "base": [
+     125,
+     175,
+     225
+    ],
+    "bonusAdRatio": 0.2,
+    "apRatio": 1.0
+   },
+   "calibrumMarkBonus": [
+    50,
+    80,
+    110
+   ]
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15333,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/aphelios.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/aphelios.rs."
+ ]
+}

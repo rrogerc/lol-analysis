@@ -1,0 +1,167 @@
+{
+ "champion": "braum",
+ "name": "Braum",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Braum opens with Glacial Fissure (R) at t=0 for its magic damage, then attacks continuously and casts Winter's Bite (Q) on cooldown; both attacks and Q apply a stack of Concussive Blows on hit.",
+  "Concussive Blows: stacks cap at 4 and refresh their own 4s timer on each application; the 4th stack consumes them all for a burst of magic damage, then opens a level-gated immunity window (4s at level 16) during which no new stacks apply but Braum's basic attacks deal bonus magic damage on-hit.",
+  "The passive's burst damage and its on-hit bonus are modeled as their own proc damage instances (dtype magic, not counted as an ability cast), per the dossier's open question on whether the proc is separate from the triggering attack/spell.",
+  "The passive's by-level damage values (26 to 196, and its 40% on-hit follow-up) come from the wiki tooltip because the bin's own formula (ByCharLevelFormulaCalculationPart) is unresolved in the numbers sheet; both are listed under assumed.",
+  "Glacial Fissure's damage lands when its 0.5s cast ends; the driver holds the next attack until then (the automatic opening 0.25s lockout is not long enough on its own).",
+  "Stand Behind Me (W) and Unbreakable (E) are purely defensive/self-buff and add no damage against a stationary, non-retaliating dummy, so they are never cast in this fight.",
+  "Mana is not modeled: Q and R's costs are modest against a tank's base mana and nothing here would stall a short fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.stunDamageByLevel",
+   "why": "the bin's TotalDamage formula is unresolved (ByCharLevelFormulaCalculationPart); the wiki's by-level tooltip values (26 to 196) are used instead"
+  },
+  {
+   "path": "gen.P.onhitBonusByLevel",
+   "why": "derived the same unresolved bin formula (OnHitDamage = TotalDamage x 0.4); the wiki's by-level tooltip values (10.4 to 78.4) are used instead"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Winter's Bite",
+   "cooldownS": [
+    8,
+    7.5,
+    7,
+    6.5,
+    6
+   ]
+  },
+  "W": {
+   "name": "Stand Behind Me",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "E": {
+   "name": "Unbreakable",
+   "cooldownS": [
+    16,
+    14,
+    12,
+    10,
+    8
+   ]
+  },
+  "R": {
+   "name": "Glacial Fissure",
+   "cooldownS": [
+    130,
+    115,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "stunDamageByLevel": [
+    26,
+    36,
+    46,
+    56,
+    66,
+    76,
+    86,
+    96,
+    106,
+    116,
+    126,
+    136,
+    146,
+    156,
+    166,
+    176,
+    186,
+    196
+   ],
+   "onhitBonusByLevel": [
+    10.4,
+    14.4,
+    18.4,
+    22.4,
+    26.4,
+    30.4,
+    34.4,
+    38.4,
+    42.4,
+    46.4,
+    50.4,
+    54.4,
+    58.4,
+    62.4,
+    66.4,
+    70.4,
+    74.4,
+    78.4
+   ],
+   "immunityDurationByLevel": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    6,
+    6,
+    6,
+    6,
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "stackDurationS": 4,
+   "stackCap": 4
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     75,
+     120,
+     165,
+     210,
+     255
+    ],
+    "maxHpRatio": 2.5
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 0.6
+   },
+   "castTimeS": 0.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.23,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/braum.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/braum.rs."
+ ]
+}

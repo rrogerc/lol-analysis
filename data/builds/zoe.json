@@ -1,0 +1,185 @@
+{
+ "champion": "zoe",
+ "name": "Zoe",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opening and loop: Sleepy Trouble Bubble (E) and Paddle Star! (Q) are each cast the instant they come off cooldown, Spell Thief (W) is cast continuously (its 0.25 s cooldown is not a real gate), and Zoe auto-attacks in every gap; Portal Jump (R) is never cast.",
+  "Paddle Star!'s total damage scales 0% to ~150% (bugged to 146.6%) with distance travelled before impact. Because the dummy is stationary and always in range, the star is assumed to hit it immediately at the moment of cast, so the distance bonus is fixed at 0% and the recast (which needs the star to reach and linger at max range without hitting anyone) never becomes available and is not modeled.",
+  "Sleepy Trouble Bubble's cast time is taken from the wiki's explicit 0.25 s rather than the bin's conflicting 0.3 s.",
+  "Ability damage is treated as landing on the cast (missile travel time is not modeled), matching the engine's usual simplification for Q and E.",
+  "Spell Thief is assumed to trigger its Wheeeee proc (movement speed + three bolts) on every cast even without a held Spell Shard, since the stat dummy fight offers no shards to pick up and this is the well-established baseline use of the button.",
+  "The three bolts from a Spell Thief cast are assumed to fire one every 0.5 s at the always-in-range dummy (no cadence number is given in the sources); once a set's three bolts have all fired, the next cast is folded in immediately, so recasting replaces rather than stacks bolt sets.",
+  "More Sparkles! arms on every Q, E, or W cast (a 5 s window) and is consumed by whichever lands first, an attack or a bolt; it does not stack.",
+  "Sleepy Trouble Bubble's wake-up bonus true damage (equal to the post-mitigation damage of the next qualifying hit, capped at the bubble's own damage) is modeled as always dealing its full capped value on the next attack, bolt, or Q cast that lands while the target is asleep or within 1 s after, because the engine does not expose a hit's post-mitigation result back to the driver.",
+  "Sleepy Trouble Bubble's percent cooldown refund is applied on every cast since the stat dummy counts as an enemy champion and the bubble always hits it.",
+  "The magic resistance shred applied while the target sleeps is declared under abilities.Q.shred only because that is the one slot the engine reads; it is actually Sleepy Trouble Bubble's (E's) effect.",
+  "Portal Jump is omitted: it deals no damage itself, and its cast-time lockout plus the lockout on blinking back would cost more attack/cast time in a short single-target fight than its attack-reset is worth.",
+  "Mana costs are not modeled; nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.W.boltIntervalS",
+   "why": "approximate delay between successive Spell Thief bolts firing at an always-in-range dummy; the sources give no cadence number for this"
+  },
+  {
+   "path": "gen.Q.distanceBonusPct",
+   "why": "Paddle Star!'s distance-based damage bonus is fixed at 0% because the star is assumed to hit the stationary, always-in-range dummy immediately, never reaching the lingering/recast range"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Paddle Star!",
+   "cooldownS": [
+    8.5,
+    8,
+    7.5,
+    7,
+    6.5
+   ],
+   "shred": {
+    "pct": 30,
+    "appliesTo": [
+     "mr"
+    ],
+    "durationS": 2.25
+   }
+  },
+  "W": {
+   "name": "Spell Thief",
+   "cooldownS": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ]
+  },
+  "E": {
+   "name": "Sleepy Trouble Bubble",
+   "cooldownS": [
+    18,
+    17,
+    16,
+    15,
+    14
+   ]
+  },
+  "R": {
+   "name": "Portal Jump",
+   "cooldownS": [
+    11,
+    8,
+    5
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "damageBase": [
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    74,
+    82,
+    90,
+    100,
+    110,
+    120,
+    130
+   ],
+   "apRatio": 0.2,
+   "armDurationS": 5
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     50,
+     80,
+     110,
+     140,
+     170
+    ],
+    "apRatio": 0.6
+   },
+   "perLevelDamage": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    21,
+    24,
+    27,
+    30,
+    34,
+    38,
+    42,
+    46,
+    50
+   ],
+   "distanceBonusPct": 0
+  },
+  "W": {
+   "boltDamage": {
+    "base": [
+     15,
+     25,
+     35,
+     45,
+     55
+    ],
+    "apRatio": 0.1
+   },
+   "boltsPerCast": 3,
+   "boltIntervalS": 0.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     110,
+     150,
+     190,
+     230
+    ],
+    "apRatio": 0.45
+   },
+   "refundFrac": [
+    0.16,
+    0.195,
+    0.23,
+    0.265,
+    0.3
+   ],
+   "drowsyDurationS": 1.4,
+   "sleepDurationS": 2.25,
+   "wakeLingerS": 1
+  }
+ },
+ "attack": {
+  "windupFraction": 0.16146,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zoe.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zoe.rs."
+ ]
+}

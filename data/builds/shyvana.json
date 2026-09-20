@@ -1,0 +1,204 @@
+{
+ "champion": "shyvana",
+ "name": "Shyvana",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens by auto-attacking immediately while casting Emberstrike (Q) on cooldown; Dragon's Descent (R) is cast automatically at t=0 using the 100 Dragon Fury Shyvana gains upon learning it, entering Dragon Form right away.",
+  "Emberstrike is modeled as: casting Q arms the next basic attack (the cast itself deals no damage) and immediately pulls that attack's timer forward to just its windup, matching 'all casts reset Shyvana's basic attack timer'; only the final cast of a chain (2 casts in Human Form, 3 in Dragon Form, the last being true damage) starts Q's real cooldown, earlier casts in the chain are free resets.",
+  "The chain length/form (2-cast physical vs 3-cast-with-true-damage-finisher) is locked in at the moment the first cast of that chain is made, so a chain that starts in Dragon Form always finishes its bite even if Dragon Form ends mid-chain.",
+  "The recast window between chained Q casts is modeled as a fixed 1.5s delay (LockoutDuration) after the empowered attack lands; the alternate 'recast is available immediately after a basic attack' branch is not modeled separately, for simplicity.",
+  "Every basic attack, empowered or not, applies Emberstrike's passive on-hit magic damage (1% + 0.011% per bonus AD of the target's maximum health) and reduces Q's current cooldown by 0.5s; the 10/200 damage clamp on this effect does not apply since the dummy counts as a champion.",
+  "Emberstrike's secondary-target cone/slam damage and its monster-only bonus damage are ignored (single dummy target, and the dummy counts as a champion, not a monster).",
+  "Dragon Fury is modeled explicitly: 100 Fury at t=0 from learning Dragon's Descent, draining at 6.6666/s while in Dragon Form, regenerating at the rank's per-second rate only in Human Form, and every landed basic attack, Emberstrike attack, Molten Burst cast, Inferno Aegis recast and Dragon's Descent cast granting 1.25 Fury (tripled to 3.75 in Dragon Form, since the dummy counts as a champion); whenever Fury reaches 100 in Human Form, Dragon's Descent is recast immediately.",
+  "Ultimate haste's bonus Fury generation is not modeled since the engine exposes only generic ability haste, not a separate ultimate-haste stat.",
+  "Molten Burst (E) is cast on cooldown; in Dragon Form it deals 1.25x damage and additionally applies a 2s scorched-field DoT (8 ticks of the level-based tick damage). Because E's cooldown (8-12s) always exceeds the field's 2s duration, the field always fully expires before the next cast, so the 40% 'subsequent explosion' damage penalty never applies to the dummy.",
+  "Inferno Aegis (W) is cast on cooldown and recast for its damage explosion as soon as possible (1s after cast, its stated recast delay); the shield strength, move speed and Dragon Form heal do not affect a damage-only fight and are ignored.",
+  "Scalemail (P) grants armor/MR from takedowns, which are unobtainable against a stationary dummy, so it never applies and is omitted from the driver's behavior.",
+  "Emberstrike's first/second cast physical damage can critically strike; its Dragon Form third-cast true damage cannot; the passive on-hit magic damage and Molten Burst/Inferno Aegis/Dragon's Descent magic damage do not crit either."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.fury.startingFury",
+   "why": "Dragon Fury Shyvana plausibly has immediately upon learning Dragon's Descent, letting her cast it right away at the start of the fight"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Emberstrike",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "W": {
+   "name": "Inferno Aegis",
+   "cooldownS": [
+    13,
+    12.25,
+    11.5,
+    10.75,
+    10
+   ]
+  },
+  "E": {
+   "name": "Molten Burst",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "R": {
+   "name": "Dragon's Descent",
+   "cooldownS": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "bonusArmorPerStack": 0.3,
+   "bonusMrPerStack": 0.3
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     10,
+     15,
+     20,
+     25,
+     30
+    ],
+    "adRatio": 1.1,
+    "apRatio": 0.3
+   },
+   "trueDamage": {
+    "base": [
+     15,
+     22.5,
+     30,
+     37.5,
+     45
+    ],
+    "adRatio": 1.65,
+    "apRatio": 0.45
+   },
+   "onhit": {
+    "maxHpBase": 0.01,
+    "maxHpPerBonusAd": 0.00011
+   },
+   "cdrOnHitS": 0.5,
+   "lockoutDurationS": 1.5,
+   "recastDurationS": 4,
+   "enhanceDurationS": 6,
+   "maxCastsHuman": 2,
+   "maxCastsDragon": 3,
+   "monsterBonusDamage": 10
+  },
+  "W": {
+   "damage": {
+    "base": [
+     80,
+     100,
+     120,
+     140,
+     160
+    ],
+    "apRatio": 0.65
+   },
+   "recastDelayS": 1
+  },
+  "E": {
+   "damage": {
+    "baseByRank": [
+     50,
+     65,
+     80,
+     95,
+     110
+    ],
+    "apRatioByRank": [
+     0.6,
+     0.65,
+     0.7,
+     0.75,
+     0.8
+    ],
+    "targetMaxHpRatio": 0.05,
+    "dragonMult": 1.25
+   },
+   "castTimeHumanS": 0.25,
+   "castTimeDragonS": 0.3333,
+   "dot": {
+    "perSecondByLevel": [
+     15,
+     15,
+     15,
+     15,
+     15,
+     15,
+     15,
+     15,
+     15,
+     15,
+     20,
+     20,
+     20,
+     20,
+     20,
+     25,
+     25,
+     25
+    ],
+    "apRatio": 0.05,
+    "tickIntervalS": 0.25,
+    "durationS": 2
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 1.0
+   },
+   "castTimeS": 0.25,
+   "fury": {
+    "regenPerSecondByRank": [
+     0.5,
+     0.75,
+     1
+    ],
+    "drainPerSecondS": 6.66666,
+    "gainPerHit": 1.25,
+    "dragonMult": 3,
+    "startingFury": 100,
+    "fullFury": 100
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15625,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/shyvana.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/shyvana.rs."
+ ],
+ "manaless": true
+}

@@ -1,0 +1,114 @@
+{
+ "champion": "singed",
+ "name": "Singed",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Poison Trail is toggled on before the fight starts and Singed is assumed to stand on the stationary dummy the whole time, so its cloud has 100% uptime on the target for the whole fight; this settles the dossier's uptime question in favor of full uptime.",
+  "Poison Trail's tick damage (base/4 per tick, AP ratio 0.10625 per tick) is dealt every 0.25 s continuously; the wiki's 'extra instance on first application' is applied exactly once, at the very start of the fight, since every later tick is a refresh of the same debuff rather than a fresh application.",
+  "Toggling Poison Trail is not an ability activation (the wiki states this explicitly), so its ticks do not call ability_cast_proc, eclipse_hit or prime_spellblade, and never trigger the 0.25 s cast lockout.",
+  "Insanity Potion is cast immediately at t = 0 for its 25 s buff, which covers the entire fight; only its AP term is modeled since it also boosts Poison Trail and Fling, while its armor/MR/movement speed/regen do not change damage dealt to a stationary dummy.",
+  "Fling is cast on cooldown for its burst magic damage (flat + AP ratio + target max-health ratio); the wiki's note that a basic attack can land on the airborne target is treated as a positional corner case and not modeled as a bonus attack.",
+  "Mega Adhesive is never cast: it deals no damage and only slows/grounds, which is irrelevant against a target that never moves or acts.",
+  "Grievous Wounds applied by Poison Trail while Insanity Potion is active is ignored: the dummy never heals, so it never changes damage dealt.",
+  "Noxious Slipstream (passive) only grants Singed movement speed and never affects damage dealt or taken, so it is not modeled.",
+  "Mana is not modeled: Poison Trail's per-second cost and Fling/Insanity Potion's flat costs are assumed sustainable for the fight window at level 16.",
+  "Basic attacks are otherwise plain: Singed has no on-hit, attack-speed steroid, or attack reset, so attacks use engine defaults and are woven in between Fling casts."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Poison Trail",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "W": {
+   "name": "Mega Adhesive",
+   "cooldownS": [
+    17,
+    16,
+    15,
+    14,
+    13
+   ]
+  },
+  "E": {
+   "name": "Fling",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "R": {
+   "name": "Insanity Potion",
+   "cooldownS": [
+    100,
+    100,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "tickDamage": {
+    "base": [
+     5,
+     7.5,
+     10,
+     12.5,
+     15
+    ],
+    "apRatio": 0.10625
+   },
+   "tickIntervalS": 0.25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     50,
+     60,
+     70,
+     80,
+     90
+    ],
+    "apRatio": 0.55
+   },
+   "targetMaxHpRatio": [
+    0.06,
+    0.065,
+    0.07,
+    0.075,
+    0.08
+   ]
+  },
+  "R": {
+   "bonusAP": [
+    25,
+    55,
+    85
+   ],
+   "durationS": 25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/singed.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/singed.rs."
+ ]
+}

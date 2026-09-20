@@ -1,0 +1,153 @@
+{
+ "champion": "riven",
+ "name": "Riven",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opens with R (Blade of the Exile) at t=0: its 20% bonus AD is computed once from the sheet's AD (it is locked in at cast and does not change afterward), and it plus Wind Slash access apply 0.5 s later, per the wiki's separate 'bonuses apply after 0.5s' note (distinct from the 0.25s cast time).",
+  "R's cooldown only starts after its 15 s effect ends and its minimum value (60 s at rank 3) is far longer than any fight modeled here, so R is cast exactly once, at the opening.",
+  "Immediately chains all three Broken Wings (Q) casts 0.3125 s apart (the static inter-cast gap, unaffected by haste); each sub-cast deals its own damage, resets the attack timer (Riven is ordered to attack the target), and generates/refreshes a Runic Blade Charge. Recasts again whenever the 13 s main cooldown (started on the first sub-cast) is next available.",
+  "Assumes each of the three Broken Wings sub-casts is its own ability activation that generates a Runic Blade Charge (the wiki explicitly calls each sub-cast 'a single ability activation for on-cast effects'), settling the dossier's open question about stack generation in favor of the higher-uptime reading.",
+  "The 4 s window in which Broken Wings' sub-casts must be chained is never modeled explicitly since the driver always recasts within the static 0.3125 s gap.",
+  "Ki Burst (W) is cast every time it comes off cooldown for its AoE hit and to refresh a Charge stack; its damage and stun are treated as landing on cast (the wiki says its effects apply before the cast time finishes).",
+  "Wind Slash is cast once both the 0.5 s Blade of the Exile delay has passed and the opening Broken Wings combo has landed, to bank some of its missing-health amplification without waiting on an unknown total fight length. Its damage is read as interpolating linearly between the minimum and maximum tooltip values by the target's missing health, capped at 75% missing health -- the most common reading of the wiki's percent-per-percent text, since the bin carries no explicit interpolation formula.",
+  "Runic Blade's bonus on-hit damage is treated as triggering once per basic attack (the wiki notes it is 'not on-hit', i.e. not a generic on-hit proc that could double-trigger), consuming and refreshing a Charge stack (max 3, 6 s duration); it is crit-modified and counted as proc damage, not ability damage.",
+  "Only Runic Blade's on-hit damage is treated as able to critically strike; Broken Wings, Ki Burst and Wind Slash are plain ability damage per the wiki text, which only calls out crit for Runic Blade.",
+  "Valor (E) is never cast: it deals no damage, and this is a stationary fight where its shield and dash have no value.",
+  "Mana is not modeled: none of Riven's abilities cost mana."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Broken Wings",
+   "cooldownS": [
+    13,
+    13,
+    13,
+    13,
+    13
+   ]
+  },
+  "W": {
+   "name": "Ki Burst",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "E": {
+   "name": "Valor",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "R": {
+   "name": "Blade of the Exile",
+   "cooldownS": [
+    120,
+    90,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "damagePctByLevel": [
+    0.3,
+    0.30882354,
+    0.31764707,
+    0.3264705959488364,
+    0.33529412,
+    0.34411765,
+    0.3529412,
+    0.3617647,
+    0.37058824,
+    0.37941176,
+    0.3882353,
+    0.3970588,
+    0.40588235,
+    0.41470588,
+    0.4235294040511636,
+    0.43235293,
+    0.44117646,
+    0.45
+   ],
+   "maxStacks": 3,
+   "stackDurationS": 6
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     45,
+     75,
+     105,
+     135,
+     165
+    ],
+    "bonusAdRatio": [
+     0.6,
+     0.65,
+     0.7,
+     0.75,
+     0.8
+    ]
+   },
+   "interCastS": 0.3125
+  },
+  "W": {
+   "damage": {
+    "base": [
+     65,
+     95,
+     125,
+     155,
+     185
+    ],
+    "bonusAdRatio": 1.0
+   }
+  },
+  "R": {
+   "bonusAdPct": 0.2,
+   "bonusDelayS": 0.5,
+   "durationS": 15,
+   "minDamage": {
+    "base": [
+     100,
+     150,
+     200
+    ],
+    "bonusAdRatio": 0.55
+   },
+   "maxDamage": {
+    "base": [
+     300,
+     450,
+     600
+    ],
+    "bonusAdRatio": 1.65
+   },
+   "missingHpCapPct": 75
+  }
+ },
+ "attack": {
+  "windupFraction": 0.16667,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/riven.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/riven.rs."
+ ],
+ "manaless": true
+}

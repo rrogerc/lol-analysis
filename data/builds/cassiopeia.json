@@ -1,0 +1,177 @@
+{
+ "champion": "cassiopeia",
+ "name": "Cassiopeia",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "E",
+  "Q",
+  "W"
+ ],
+ "notes": [
+  "Cassiopeia never attacks: her kit has no on-hit, no attack-speed steroid and no attack reset, and every point of damage comes from casting Noxious Blast, Miasma, Twin Fang and Petrifying Gaze, so `attack.never` is set and attack-speed/on-hit items get no value in this fight.",
+  "Petrifying Gaze (R) is cast at t = 0 if learned and affordable: its 80-120 s cooldown means at most one cast ever fits inside the simulated fight lengths regardless of level.",
+  "Noxious Blast (Q), Miasma (W) and Twin Fang (E) are each cast as soon as their own cooldown and a shared casting lock allow: a cast occupies that lock for its own cast time (0.25 s for Q and W, 0.125 s for E) so two casts never land at the exact same instant.",
+  "Noxious Blast's poison begins 0.4 s after its cast completes and deals its total (base + 75% AP) split evenly across 7 ticks over its 3 s duration; the 1-point-per-tick flooring the wiki describes is a display quirk of the tooltip, not modeled here, so ticks split the total exactly.",
+  "Miasma is read as landing 19 of a nominal 20 ticks (tick interval fixed at cloud duration / 20 = 0.25 s), per the wiki's own correction that the headline 100-200 total (which implies 20 full ticks) overstates the real total by dropping the last tick; this is chosen over the headline number and over the further-noted 18-tick bug.",
+  "Twin Fang's bonus damage applies only while the target counts as poisoned, tracked here as: poisoned until 3 s after a Noxious Blast explosion, or until 5 s (cloud duration) + 1 s (poison grace) after a Miasma cast, whichever is later; its heal is not modeled since healing does not affect the fight.",
+  "The dossier's cross-ability wait ('Twin Fang waits for an unexploded Noxious Blast before dealing damage') never triggers under this rotation, because Noxious Blast's 0.4 s explosion delay is always shorter than the gap until Twin Fang's next free cast slot, so it is not modeled.",
+  "Twin Fang's basic damage scales by champion level (not by its own rank) per the wiki and bin; only its bonus damage against poisoned targets scales with rank, which is why it is prioritized in maxOrder alongside Q.",
+  "Mana is modeled as a single non-regenerating pool starting at the champion's mana stat (base plus any mana from items): Twin Fang's 0.75 s cooldown against its cost will exhaust this pool well inside 15 s, and once an ability becomes unaffordable it is simply never cast again for the rest of the fight, matching a real Cassiopeia going OOM.",
+  "Twin Fang's mana cost is taken as the wiki's stated 45 (matching ddragon's public spell data) rather than the raw game-file field of 40, per the dossier's open question."
+ ],
+ "assumed": [
+  {
+   "path": "gen.W.ticksReal",
+   "why": "the wiki's own correction says only 19 of the nominal 20 ticks actually land; chosen over the headline leveling-table total and the further-noted 18-tick bug"
+  },
+  {
+   "path": "gen.E.costMana",
+   "why": "wiki text and ddragon state 45 mana for Twin Fang; the raw character-bin field disagrees at 40 and is not adopted"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Noxious Blast",
+   "cooldownS": [
+    3.5,
+    3.5,
+    3.5,
+    3.5,
+    3.5
+   ]
+  },
+  "W": {
+   "name": "Miasma",
+   "cooldownS": [
+    24,
+    22,
+    20,
+    18,
+    16
+   ]
+  },
+  "E": {
+   "name": "Twin Fang",
+   "cooldownS": [
+    0.75,
+    0.75,
+    0.75,
+    0.75,
+    0.75
+   ]
+  },
+  "R": {
+   "name": "Petrifying Gaze",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     65,
+     100,
+     135,
+     170,
+     205
+    ],
+    "apRatio": 0.75
+   },
+   "numTicks": 7,
+   "poisonDurationS": 3,
+   "explodeDelayS": 0.4,
+   "castTimeS": 0.25,
+   "costMana": [
+    50,
+    55,
+    60,
+    65,
+    70
+   ]
+  },
+  "W": {
+   "damage": {
+    "base": [
+     20,
+     25,
+     30,
+     35,
+     40
+    ],
+    "apRatio": 0.1
+   },
+   "cloudDurationS": 5,
+   "ticksNominal": 20,
+   "ticksReal": 19,
+   "poisonGraceS": 1,
+   "castTimeS": 0.25,
+   "costMana": [
+    70,
+    75,
+    80,
+    85,
+    90
+   ]
+  },
+  "E": {
+   "basicByLevel": [
+    50,
+    54.1176,
+    58.2352,
+    62.3528,
+    66.4704,
+    70.588,
+    74.7056,
+    78.8232,
+    82.9408,
+    87.0584,
+    91.176,
+    95.2936,
+    99.4112,
+    103.529,
+    107.646,
+    111.764,
+    115.882,
+    119.999
+   ],
+   "basicApRatio": 0.2,
+   "bonusDamage": {
+    "base": [
+     20,
+     45,
+     70,
+     95,
+     120
+    ],
+    "apRatio": 0.45
+   },
+   "castTimeS": 0.125,
+   "costMana": 45
+  },
+  "R": {
+   "damage": {
+    "base": [
+     125,
+     225,
+     325
+    ],
+    "apRatio": 0.75
+   },
+   "castTimeS": 0.5,
+   "costMana": 100
+  }
+ },
+ "attack": {
+  "windupFraction": 0.192,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/cassiopeia.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/cassiopeia.rs."
+ ]
+}

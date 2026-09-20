@@ -1,0 +1,142 @@
+{
+ "champion": "zac",
+ "name": "Zac",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Let's Bounce! (R) at t=0, assumed off cooldown; it bounces once after its 0.3s cast then 3 more times, 1s apart, and all four bounces are assumed to land on the stationary, adjacent dummy — bounces 2-4 at the 50% 'subsequent bounce' damage per Riot's DamageReductionBounce.",
+  "While Let's Bounce! is resolving (its interaction table marks Q and E as disabled and basic attacks as unusable, with W still usable), the driver holds Zac's next attack and blocks Q/E casts until the final bounce lands; W is still woven in during this window.",
+  "Elastic Slingshot is modeled as an immediate press-and-instant-recast with no held channel: charging only extends range, which never matters against an already-adjacent, stationary dummy, so its cooldown (using the wiki's 21-9s value; see 'assumed' for the bin's 22-10s discrepancy) starts right on this instant recast.",
+  "Stretching Strikes' tether always finds the dummy as its only target, so per the wiki's 'same target dealt both hits' ruling both instances of its damage land on the dummy: the initial cast, then the empowered attack (0.25s cast) that replaces Zac's next basic attack. The empowered attack deals no basic-attack damage, cannot critically strike, and Q's cooldown (post-effect) starts only once it lands.",
+  "Unstable Matter has no cast time and is woven on cooldown throughout the fight, including during Let's Bounce!; its target-max-health-ratio damage is not capped, since the wiki's 200 cap only applies to minions/monsters, not champions (or this dummy).",
+  "Cell Division's chunk-drop/pickup loop is approximated as uncontestable and instantaneous: every ability hit (Q once per cast, W once per cast, E once per cast, and each Let's Bounce! bounce) is assumed to immediately shed a chunk that Zac instantly collects, shaving 1 second off Unstable Matter's current cooldown per chunk, per the wiki's stated default ('uncontestable') chunk behaviour.",
+  "Q/W/E's health costs are paid from current health (as the wiki's costtype states) and so asymptotically never fully drain Zac; they are otherwise not modeled since they never block a cast within the fight window.",
+  "Cell Division's resurrection, its chunk self-heal, and the passive's size changes are purely defensive/cosmetic and add no damage dealt, so they are not modeled here."
+ ],
+ "assumed": [
+  {
+   "path": "abilities.E.cooldownS",
+   "why": "the wiki lists 21-9s while the bin lists 22-10s at every rank; the dossier judged the wiki value authoritative, so it is used here"
+  },
+  {
+   "path": "gen.E",
+   "why": "Elastic Slingshot's charge (0.9-1.3s ChannelTime by rank, extending range) is assumed held for 0 seconds and recast immediately, since extra range gives no benefit against an already-in-range stationary dummy"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Stretching Strikes",
+   "cooldownS": [
+    14,
+    12.5,
+    11,
+    9.5,
+    8
+   ]
+  },
+  "W": {
+   "name": "Unstable Matter",
+   "cooldownS": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ]
+  },
+  "E": {
+   "name": "Elastic Slingshot",
+   "cooldownS": [
+    21,
+    18,
+    15,
+    12,
+    9
+   ]
+  },
+  "R": {
+   "name": "Let's Bounce!",
+   "cooldownS": [
+    120,
+    105,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "chunkCdrS": 1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "apRatio": 0.3,
+    "bonusHpRatio": 3
+   },
+   "empoweredCastTimeS": 0.25
+  },
+  "W": {
+   "baseDamage": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "percentMaxHp": [
+    0.04,
+    0.05,
+    0.06,
+    0.07,
+    0.08
+   ],
+   "apPercentPer100": 0.03
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     105,
+     150,
+     195,
+     240
+    ],
+    "apRatio": 0.8
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     120,
+     190,
+     260
+    ],
+    "apRatio": 0.4
+   },
+   "subsequentFactor": 0.5,
+   "bounces": 4,
+   "intervalS": 1,
+   "castTimeS": 0.3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.23151,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zac.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zac.rs."
+ ],
+ "manaless": true
+}

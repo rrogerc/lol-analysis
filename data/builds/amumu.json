@@ -1,0 +1,151 @@
+{
+ "champion": "amumu",
+ "name": "Amumu",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opening: Despair (W) is toggled on at t=0 and left on for the whole fight (its mana-per-second cost is not modeled, matching the dossier's note that nothing here binds inside a 15 s fight); its first tick is assumed to land at t=0 (gen.W.tickOffsetS), then every 0.5 s.",
+  "Curse of the Sad Mummy (R) is cast at t=0 as the opening cast (its own damage lands at the end of its 0.25 s cast time), Bandage Toss (Q) is cast immediately and again whenever a charge is available, and Tantrum (E) is cast on cooldown throughout.",
+  "Bandage Toss is assumed to start the fight with both charges stocked (gen.Q.startCharges = 2), the common reading for a champion entering combat rather than from a completely fresh recall; its per-rank recharge time is assumed to interpolate linearly between the wiki's stated endpoints (16 at rank 1, 12 at rank 5) since only the endpoints are given (gen.Q.rechargeS).",
+  "Bandage Toss's forced basic attack when the dash lands is not modeled as a separate attack instance (only the usual 0.25 s cast lockout is applied): Amumu already attacks continuously on his own schedule between casts, so this keeps the attack timeline simple without double-counting a hit.",
+  "Cursed Touch's 10% bonus true damage on incoming pre-mitigation magic damage is applied consistently the way the wiki documents it for Curse of the Sad Mummy: each of Amumu's own magic hits (Q, a Despair tick, E, R) is amplified only if the target was already marked with Curse from an earlier hit, and only afterward does that hit itself (re)apply the 3 s mark; a basic attack deals no magic damage in this kit so it only (re)applies the mark, never triggers the bonus itself.",
+  "Tantrum's passive physical-damage reduction and its cooldown reduction from being hit by an on-hit attack are ignored: the stationary dummy never attacks, so neither ever applies.",
+  "Mana costs are not modeled: nothing here would actually stall casting inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.startCharges",
+   "why": "assumes Amumu enters the fight with both Bandage Toss charges already stocked, the common in-game reading rather than a completely fresh 0/2"
+  },
+  {
+   "path": "gen.Q.rechargeS",
+   "why": "the wiki only gives the rank-1 and rank-5 recharge times (16 and 12); the three middle ranks are assumed to step down by 1s per rank like Amumu's other by-rank lists"
+  },
+  {
+   "path": "gen.W.tickOffsetS",
+   "why": "the wiki does not say whether Despair's first tick lands at the moment of toggling on or 0.5s later; the first-tick-immediate reading is assumed"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Bandage Toss",
+   "cooldownS": [
+    3,
+    3,
+    3,
+    3,
+    3
+   ]
+  },
+  "W": {
+   "name": "Despair",
+   "cooldownS": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "E": {
+   "name": "Tantrum",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "R": {
+   "name": "Curse of the Sad Mummy",
+   "cooldownS": [
+    150,
+    125,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "curseDurationS": 3,
+   "damageAmpFrac": 0.1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     70,
+     95,
+     120,
+     145,
+     170
+    ],
+    "apRatio": 0.85
+   },
+   "maxCharges": 2,
+   "startCharges": 2,
+   "rechargeS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "W": {
+   "tickBase": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "tickHpFracByRank": [
+    0.005,
+    0.00625,
+    0.0075,
+    0.00875,
+    0.01
+   ],
+   "hpFracPerApOver100": 0.0025,
+   "tickIntervalS": 0.5,
+   "tickOffsetS": 0
+  },
+  "E": {
+   "damage": {
+    "base": [
+     65,
+     95,
+     125,
+     155,
+     185
+    ],
+    "apRatio": 0.5
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     300,
+     400
+    ],
+    "apRatio": 0.8
+   },
+   "castTimeS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.23384,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/amumu.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/amumu.rs."
+ ]
+}

@@ -1,0 +1,144 @@
+{
+ "champion": "xayah",
+ "name": "Xayah",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Clean Cuts' pass-through (secondary target) damage from an empowered attack never triggers in this fight because there is no second enemy for a feather to pass through onto; only the primary hit (identical to a normal attack) lands, so Clean Cuts contributes no extra damage on its own and only matters for planting feathers that feed Bladecaller.",
+  "Every basic attack consumes a Clean Cuts stack when one is available (and not expired) and plants a feather on the ground; Clean Cuts' 5-stack pool is treated as one shared timer that resets to 8 seconds on every ability cast (Q, W, E or R), matching 'lasting for 8 seconds, refreshing on subsequent casts'.",
+  "Double Daggers' two missiles are both read as landing on the single dummy (first hit full damage, second hit the stated 50%-reduced damage), the common in-game reading for a lone, centered target; each missile also plants a feather on the ground at its stated delay (0.334s / 0.584s after cast) rather than at the moment of cast.",
+  "Double Daggers' cast time (and the matching attack lockout) shrinks with total bonus attack speed at 0.07s per 100%, floored at 0.1s, per the wiki's stated formula.",
+  "Bladecaller is cast as soon as it is off cooldown and at least one feather is currently planted (feathers persist 6 seconds, XayahPassive.PFeatherDuration); its damage uses the disclosed diminishing-returns formula over however many feathers are live at that moment, all of which are then cleared. The feather queue tracked here is capped at 8 concurrent feathers, comfortably above what attack speed and Q casts can plant within one 6-second window, so the formula's n<=19 branch always applies.",
+  "Bladecaller's per-feather damage is scaled once by (1 + 0.5 * critChance * (critDamage - 1)) using the champion's current crit stats, matching the ability's stated crit-chance/crit-damage scaling; this scaling is baked in manually rather than through the engine's standard crit multiplier since it uses a reduced (0.5) coefficient.",
+  "Deadly Plumage is cast for its attack-speed frenzy as soon as it is off cooldown; the extra on-hit feather it grants deals 25% of the triggering attack's damage and is modeled with the same expected crit scaling as the triggering attack, per the wiki.",
+  "Featherstorm is cast once at t=0, since its 100-140s cooldown far exceeds the fight length and casting immediately minimizes lost attack/cast time later; Xayah cannot attack or cast Q/W/E during its leap. The wiki text states the untargetable window is 1.5 seconds while the game's data value reads 1.25 seconds; the wiki's 1.5s is used here and the discrepancy is flagged.",
+  "Bladecaller's root and Deadly Plumage's movement speed bonus are ignored: crowd control and mobility do not matter in this fight.",
+  "Mana costs are not modeled: Xayah's level-16 mana pool and regen comfortably cover casting Q/W/E on cooldown plus one R over an 8-15s fight."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Double Daggers",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "W": {
+   "name": "Deadly Plumage",
+   "cooldownS": [
+    18,
+    17,
+    16,
+    15,
+    14
+   ]
+  },
+  "E": {
+   "name": "Bladecaller",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "R": {
+   "name": "Featherstorm",
+   "cooldownS": [
+    140,
+    120,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "stacksPerCast": 3,
+   "stackMax": 5,
+   "stackDurationS": 8,
+   "featherDurationS": 6
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     45,
+     60,
+     75,
+     90,
+     105
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "damage2": {
+    "base": [
+     22.5,
+     30,
+     37.5,
+     45,
+     52.5
+    ],
+    "bonusAdRatio": 0.25
+   },
+   "castTimeStartS": 0.25,
+   "castTimeMinS": 0.1,
+   "castTimeScalarPer100AS": 0.07,
+   "missile1DelayS": 0.334,
+   "missile2DelayS": 0.584
+  },
+  "W": {
+   "asPctByRank": [
+    35,
+    40,
+    45,
+    50,
+    55
+   ],
+   "asDurationS": 4,
+   "onhitPct": 25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     50,
+     65,
+     80,
+     95,
+     110
+    ],
+    "bonusAdRatio": 0.4
+   },
+   "critRatio": 0.5,
+   "falloffPerHit": 0.05
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     300,
+     400
+    ],
+    "bonusAdRatio": 1.0
+   },
+   "attackDelayS": 1,
+   "untargetableS": 1.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.17687,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/xayah.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/xayah.rs."
+ ]
+}

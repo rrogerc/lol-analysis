@@ -1,0 +1,88 @@
+{
+ "champion": "zilean",
+ "name": "Zilean",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Zilean's only damage is Time Bomb; he never auto-attacks in this rotation (no on-hit, no attack-speed steroid, no reset), so \"attack\": {\"never\": true} is set and attack-speed/crit items get no value here, as intended.",
+  "Opening and rotation: cast Time Bomb the instant it is off cooldown, and cast Rewind the instant it is off cooldown once Time Bomb has been cast at least once (Rewind requires Time Bomb or Time Warp to be on cooldown, which is treated as true for the whole fight since Time Bomb is kept on cooldown almost continuously).",
+  "Rewind cuts Time Bomb's REMAINING cooldown by a flat 10 s; since Time Bomb's cooldown (10-8 s) is at or below that flat reduction, casting Rewind right after Time Bomb effectively zeroes Time Bomb's cooldown, so the real cadence of Time Bomb is gated by Rewind's own cooldown, not Time Bomb's.",
+  "A Time Bomb cast on a target that already carries one of Zilean's bombs instantly detonates the earlier bomb for its full damage (this is automatic game behavior, not an optional trick) and the new bomb then starts its own 3 s fuse; this is modeled directly: a second cast before the first bomb's fuse elapses deals the first bomb's damage immediately instead of waiting.",
+  "A bomb that is not popped by a follow-up cast detonates on its own after the 3 s fuse from when it lands; the short travel time to the target is not modeled, matching how the dummy fight treats every skillshot as hitting on cast (after the 0.25 s cast time).",
+  "Time Bomb's zero-damage initial-attach proc (which can trigger on-hit-like item effects such as Sudden Impact) is not modeled as a separate damage instance since it deals no damage itself.",
+  "Time Warp (E) never deals damage (it only grants movement speed to an ally or slows an enemy) and is never cast, so its ranks are wasted rotation time; Chronoshift (R) only heals/revives an ally and never affects the target dummy, so it is never cast; Time in a Bottle (P) only grants experience and never affects combat.",
+  "Mana is not modeled: no base mana value is given in the sources, and per the rules a cost is only tracked when it would really bind inside a 15 s fight."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Time Bomb",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "W": {
+   "name": "Rewind",
+   "cooldownS": [
+    14,
+    12,
+    10,
+    8,
+    6
+   ]
+  },
+  "E": {
+   "name": "Time Warp",
+   "cooldownS": [
+    15,
+    15,
+    15,
+    15,
+    15
+   ]
+  },
+  "R": {
+   "name": "Chronoshift",
+   "cooldownS": [
+    120,
+    90,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     75,
+     115,
+     165,
+     230,
+     300
+    ],
+    "apRatio": 0.9
+   },
+   "fuseDurationS": 3
+  },
+  "W": {
+   "cdrS": 10
+  }
+ },
+ "attack": {
+  "windupFraction": 0.18,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zilean.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zilean.rs."
+ ]
+}

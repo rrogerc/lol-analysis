@@ -1,0 +1,200 @@
+{
+ "champion": "xinzhao",
+ "name": "Xin Zhao",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Crescent Guard (R) is cast at t=0 as the engine's forced opening ultimate, which is also optimal since its 15%-of-current-health term is largest against a full-health dummy.",
+  "Wind Becomes Lightning (W) and Audacious Charge (E) are then cast as soon as each comes off cooldown, with W preferred on simultaneous readiness, and recast on cooldown for the rest of the fight.",
+  "Three Talon Strike (Q) is cast the instant it is off cooldown and not already armed; its post-effect cooldown starts when the third empowered attack lands, or, if the 5s window lapses before that happens, when the window expires (so the cooldown timer always advances even against a slow-attacking build).",
+  "Each empowered Three Talon Strike attack resets Xin Zhao's basic attack timer and shaves 1 second off W's and E's current cooldowns; the identical 1 second shave to Crescent Guard's 100+ second cooldown is omitted since it can never come off cooldown again within a single fight.",
+  "Determination's bonus physical damage (every third stack, from basic-attack on-hit or W's first slash/thrust) is modeled as non-crit proc damage that does not itself count as ability damage, per the wiki's explicit description; its life-steal-based heal is not modeled since healing is irrelevant to the dummy fight.",
+  "Wind Becomes Lightning's first slash lands instantly on cast, the next three slashes follow every 0.05 s, and the thrust lands at the end of the 0.5 s cast time (see assumed for the cast-time discrepancy); the thrust's damage is amplified by 0.333x Xin Zhao's crit chance rather than critically striking.",
+  "Audacious Charge's bonus attack speed uses the wiki's literal '+1% attack speed per 5% of Xin Zhao's own non-buff bonus attack speed' reading (see assumed) applied to the build's static bonus attack speed, since it and the AP-to-AS term don't change mid-fight.",
+  "Mana costs are not modeled: none of Xin Zhao's costs bind within an 8-15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.W.castTimeS",
+   "why": "wiki states 0.5s cast time while Riot's bin field for W lists 0.6s; the wiki figure lines up with the documented 0.15s slash window plus remaining cast, so it is used, per the dossier's open question"
+  },
+  {
+   "path": "gen.E.permanentAsToAsRatio",
+   "why": "the bin's PermanentASToASRatio=5 doesn't obviously match the wiki's literal '+1% AS per 5% bonus AS from non-buff sources'; the wiki's literal reading (coefficient 0.2) is used as the more directly documented number"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Three Talon Strike",
+   "cooldownS": [
+    7,
+    6.5,
+    6,
+    5.5,
+    5
+   ]
+  },
+  "W": {
+   "name": "Wind Becomes Lightning",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "E": {
+   "name": "Audacious Charge",
+   "cooldownS": [
+    11,
+    11,
+    11,
+    11,
+    11
+   ]
+  },
+  "R": {
+   "name": "Crescent Guard",
+   "cooldownS": [
+    120,
+    110,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "stackCap": 3,
+   "dmgAdCoefByLevel": [
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.45,
+    0.45,
+    0.45,
+    0.45,
+    0.45,
+    0.6,
+    0.6,
+    0.6
+   ],
+   "dmgApCoefByLevel": [
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.2,
+    0.2,
+    0.2
+   ]
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     15,
+     30,
+     45,
+     60,
+     75
+    ],
+    "bonusAdRatio": 0.4
+   },
+   "windowS": 5,
+   "otherCdReductionS": 1
+  },
+  "W": {
+   "slashDamage": {
+    "base": [
+     7.5,
+     10,
+     12.5,
+     15,
+     17.5
+    ],
+    "adRatio": 0.075
+   },
+   "thrustDamage": {
+    "base": [
+     50,
+     85,
+     120,
+     155,
+     190
+    ],
+    "adRatio": 0.9,
+    "apRatio": 0.65
+   },
+   "critChanceAmp": 0.333,
+   "castTimeS": 0.5,
+   "slashIntervalS": 0.05,
+   "slashCount": 4
+  },
+  "E": {
+   "damage": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "apRatio": 1.2
+   },
+   "asBase": [
+    0.38,
+    0.46,
+    0.54,
+    0.62,
+    0.7
+   ],
+   "apToAsRatio": 0.001,
+   "permanentAsToAsRatio": 0.2,
+   "asDurationS": 5
+  },
+  "R": {
+   "damage": {
+    "base": [
+     75,
+     175,
+     275
+    ],
+    "bonusAdRatio": 1.0,
+    "apRatio": 1.1
+   },
+   "targetCurrentHpRatio": 0.15,
+   "castTimeS": 0.35
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1871,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/xinzhao.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/xinzhao.rs."
+ ]
+}

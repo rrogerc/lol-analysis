@@ -1,0 +1,148 @@
+{
+ "champion": "sejuani",
+ "name": "Sejuani",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Sejuani opens at range so Glacial Prison's bola travels at least 425 units before it lands, so R always deals the empowered damage tier (200-400 +0.8AP) rather than the base tier.",
+  "R's frost storm and its shatter never deal damage in this fight: the wiki states the enemy hit by the bola is excluded from the storm's effects, and the dummy is the only unit present, so only the bola's own hit is scored.",
+  "Arctic Assault (Q) is held until Glacial Prison's 0.25s cast time ends so it lands on the newly Frozen dummy and consumes the Icebreaker mark, then Q is recast on cooldown for the rest of the fight; its dash-collision basic-attack order is modeled as an attack reset.",
+  "Icebreaker's bonus magic damage (10% of the target's maximum health) is scored as its own separate damage instance whenever a Frozen mark (from Glacial Prison's or Permafrost's stun) is consumed by the next attack or ability, resolving the dossier's low-impact unsettled question toward the simplest reading.",
+  "Frost stacks (from Sejuani's basic attacks and Winter's Wrath's two hits, capped at 4) start pre-stacked to 4 when the engine's prestacked flag is set, so Permafrost can be cast as soon as it is off cooldown and the target's 8s post-consumption lockout allows; otherwise stacks build from attacks alone.",
+  "Permafrost is cast the instant it has 4 Frost stacks on the dummy and is off cooldown; its cast commits (consuming stacks and starting the 8s lockout) at the start of its 0.25s cast, with damage, the stun/Frozen mark, and the basic-attack-timer reset landing at the end of it.",
+  "Winter's Wrath is cast on cooldown; its cone swing lands 0.25s into the 1s cast and its line lash lands at the cast's end, each a separate physical damage instance able to apply a Frost stack or consume an active Icebreaker mark.",
+  "Frost stack duration (5s) is not modeled explicitly because Sejuani's attacks and abilities land far more often than that during the rotation, so stacks never lapse in practice.",
+  "Mana costs are not modeled: nothing here would actually run out of mana inside a 15s fight at level 16.",
+  "Winter's Wrath's two damage instances scale off Sejuani's own maximum health, not the target's."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.damageEmpowered",
+   "why": "the fight is assumed to start at a range where the opening bola travels at least 425 units, so R always lands its empowered damage tier rather than the base tier"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Arctic Assault",
+   "cooldownS": [
+    18,
+    16.5,
+    15,
+    13.5,
+    12
+   ]
+  },
+  "W": {
+   "name": "Winter's Wrath",
+   "cooldownS": [
+    9,
+    8,
+    7,
+    6,
+    5
+   ]
+  },
+  "E": {
+   "name": "Permafrost",
+   "cooldownS": [
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5
+   ]
+  },
+  "R": {
+   "name": "Glacial Prison",
+   "cooldownS": [
+    120,
+    105,
+    90
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "icebreakerTargetHpRatio": 0.1
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     90,
+     140,
+     190,
+     240,
+     290
+    ],
+    "apRatio": 0.75
+   }
+  },
+  "W": {
+   "damage1": {
+    "base": [
+     5,
+     15,
+     25,
+     35,
+     45
+    ],
+    "apRatio": 0.3,
+    "maxHpRatio": 4
+   },
+   "damage2": {
+    "base": [
+     5,
+     25,
+     45,
+     65,
+     85
+    ],
+    "apRatio": 0.6,
+    "maxHpRatio": 8
+   },
+   "castTimeS": 1,
+   "swingDelayS": 0.25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     55,
+     105,
+     155,
+     205,
+     255
+    ],
+    "apRatio": 0.7
+   },
+   "castTimeS": 0.25,
+   "maxStacks": 4,
+   "stunS": 1,
+   "perChampionLockoutS": 8
+  },
+  "R": {
+   "damageEmpowered": {
+    "base": [
+     200,
+     300,
+     400
+    ],
+    "apRatio": 0.8
+   },
+   "castTimeS": 0.25,
+   "stunEmpoweredS": 1.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1875,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/sejuani.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/sejuani.rs."
+ ]
+}

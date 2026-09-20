@@ -1,0 +1,154 @@
+{
+ "champion": "evelynn",
+ "name": "Evelynn",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Evelynn is assumed to begin the fight out of combat under Demon Shade, so her opening Whiplash cast is the empowered version; attacking or casting ends Demon Shade for the rest of the fight, so no later Whiplash cast is empowered.",
+  "Hate Spike's 3 free recasts are fired back to back every 0.5 s right after the initial dart, and its mark's 3 bonus-damage charges are modeled as always consumed by those 3 recasts (matching the wiki's stated total-damage formula for a full combo); basic attacks are not modeled as consuming the mark.",
+  "Allure deals no direct damage against a champion target (its bonus damage in the leveling table is monster-only, and the dummy counts as a champion). It is still cast on cooldown purely to reach the mark's 2.5 s maturity, which is modeled as automatically applying the magic resist shred 2.5 s after cast, since the engine has no generic 'next hit consumes a mark' hook; see `unused.W`.",
+  "The magic resist shred is declared under Q because the engine reads shred from a single fixed slot regardless of which ability applies it; see 'assumed' for the rank it uses.",
+  "Whiplash's damage is base plus a percentage of the TARGET's maximum health, and that percentage itself scales with Evelynn's AP per the numbers sheet's formula; the AP used is the build's static level-16 value, computed once. Its 25 minimum and 450 monster-only cap never bind against a champion-type target and are omitted.",
+  "Last Caress's 240% damage below 30% target health is modeled as a flat conditional multiplier, not a true critical strike, so it is unaffected by crit-damage items; the dossier flags this reading as unsettled and the other option (true crit) was not chosen.",
+  "Last Caress is cast the instant it is off cooldown; its cooldown vastly exceeds a single fight so normally only one cast lands, but the driver will fire a second if a build's ability haste brings it back up in time.",
+  "Mana costs are not modeled: nothing here plausibly empties Evelynn's level-16 mana pool within a 15 s fight.",
+  "Evelynn attacks normally between ability casts; her kit has no on-hit damage of its own tied to basic attacks, so a build's own on-hit/attack-speed items apply through the engine as usual.",
+  "Hate Spike's and Allure's disputed bin-vs-wiki cast times (0.25 s vs 0.3 s, 0.15 s vs 0.25 s) do not change the engine's fixed 0.25 s attack-lockout, so the discrepancy has no effect on the result."
+ ],
+ "assumed": [
+  {
+   "path": "abilities.Q.shred.pct",
+   "why": "Allure's magic resist shred scales 35-45% with its own rank, but the engine's shred slot reads a single flat number regardless of which ability applies it; the max-rank 45% value is used."
+  }
+ ],
+ "unused": {
+  "W": "Allure's leveling table gives it a bonus-magic-damage term only against monsters ('Monster Damage'/'MonsterDamageTotalTOOLTIP'); against the champion-type dummy the empowered consume applies only the magic resist shred (modeled under Q's shred slot) with no damage of its own, so W never appears as a damage source even though it is cast every time it is off cooldown."
+ },
+ "abilities": {
+  "Q": {
+   "name": "Hate Spike",
+   "cooldownS": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "shred": {
+    "pct": 45,
+    "appliesTo": [
+     "mr"
+    ],
+    "durationS": 4
+   }
+  },
+  "W": {
+   "name": "Allure",
+   "cooldownS": [
+    15,
+    14,
+    13,
+    12,
+    11
+   ]
+  },
+  "E": {
+   "name": "Whiplash",
+   "cooldownS": [
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "R": {
+   "name": "Last Caress",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "dartDamage": {
+    "base": [
+     25,
+     30,
+     35,
+     40,
+     45
+    ],
+    "apRatio": 0.25
+   },
+   "bonusDamage": {
+    "base": [
+     15,
+     25,
+     35,
+     45,
+     55
+    ],
+    "apRatio": 0.25
+   },
+   "recastCount": 3,
+   "recastIntervalS": 0.5,
+   "markDurationS": 4
+  },
+  "W": {
+   "matureS": 2.5
+  },
+  "E": {
+   "baseDamage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ]
+   },
+   "basePercentHealth": 3,
+   "baseApCoef": 0.015,
+   "empoweredDamage": {
+    "base": [
+     80,
+     120,
+     160,
+     200,
+     240
+    ]
+   },
+   "empoweredPercentHealth": 4,
+   "empoweredApCoef": 0.025
+  },
+  "R": {
+   "damage": {
+    "base": [
+     125,
+     250,
+     375
+    ],
+    "apRatio": 0.75
+   },
+   "critMultiplier": 2.4,
+   "critThreshold": 0.3,
+   "castTimeS": 0.35
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15333,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/evelynn.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/evelynn.rs."
+ ]
+}

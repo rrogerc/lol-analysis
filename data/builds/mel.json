@@ -1,0 +1,187 @@
+{
+ "champion": "mel",
+ "name": "Mel",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens by auto-attacking (applying the first Overwhelm stack), then fires Radiant Volley (Q) and Solar Snare (E) as soon as each comes off cooldown, weaving attacks between casts; Golden Eclipse (R) is held until Q and E have each landed once so it detonates against a meaningfully stacked target, then fired as soon as legal and never again (its cooldown far exceeds the fight length).",
+  "Rebuttal (W) is never cast: see \"unused\".W below.",
+  "Radiant Volley's 0.5s bolt channel and Solar Snare's orb travel time are treated as landing instantly on cast (only the usual 0.25s cast-time lockout applies), matching how a single stationary hitbox receives every bolt/orb regardless of travel; each of Q's several explosions and each of E's field ticks is still dealt as its own damage instance, each applying its own Overwhelm stack.",
+  "Solar Snare's field is modeled as 4 ticks (its 0.5s DoT duration over the 0.125s tick interval from the numbers sheet), starting immediately on the orb's impact; the 0.5s expansion delay only affects radius, not tick timing, and is not modeled.",
+  "Overwhelm's stored-damage figures (flat + per-stack) are read from the numbers-sheet bin (MelR.BasePassiveFlatDamage/BasePassiveStackDamage, ranks 1-3) plus the wiki's rank-0 values (50 flat / 2 per stack, active even before Golden Eclipse is ranked); these two sources agree once combined (e.g. 50+10=60), resolving the dossier's flagged discrepancy rather than leaving it open.",
+  "Overwhelm's burst-release condition ('stored post-mitigation damage exceeds the target's current health') is approximated by comparing the raw (pre-mitigation) stored magic damage against the dummy's current health, since the driver has no access to the engine's internal mitigation math; this can only ever add extra true-to-source magic damage, never remove any.",
+  "Searing Brilliance's bonus blazing projectiles from an empowered attack are each treated as their own Overwhelm-stacking damage instance (one interpretation of an unsettled dossier question), since they are direct hits from Mel rather than an itemized on-hit effect.",
+  "Mana costs are not modeled: nothing here binds inside a 15s fight at level 16."
+ ],
+ "assumed": [],
+ "unused": {
+  "W": "Rebuttal's only offensive effect is reflecting an enemy champion's projectile back at them as magic damage; a stationary target dummy never casts anything or fires a projectile at Mel, so W can never trigger its damage component in this fight. Its shield and move speed are pure survival/positioning and irrelevant to a damage race. Casting it would only spend mana (unmodeled) for zero damage, so the driver never casts it."
+ },
+ "abilities": {
+  "Q": {
+   "name": "Radiant Volley",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "W": {
+   "name": "Rebuttal",
+   "cooldownS": [
+    38,
+    35,
+    33,
+    29,
+    26
+   ]
+  },
+  "E": {
+   "name": "Solar Snare",
+   "cooldownS": [
+    11,
+    10.5,
+    10,
+    9.5,
+    9
+   ]
+  },
+  "R": {
+   "name": "Golden Eclipse",
+   "cooldownS": [
+    120,
+    100,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "flatDamageRank0": 50,
+   "flatDamage": [
+    60,
+    70,
+    80
+   ],
+   "flatApRatio": 0.1,
+   "stackDamageRank0": 2,
+   "stackDamage": [
+    3,
+    4,
+    5
+   ],
+   "stackApRatio": 0.0075,
+   "bonusMissileDamageByLevel": [
+    8,
+    9.294118,
+    10.588235,
+    11.882353,
+    13.176471,
+    14.47058824,
+    15.764706,
+    17.058823,
+    18.352941,
+    19.647059,
+    20.941177,
+    22.235294,
+    23.529412,
+    24.82353,
+    26.117647,
+    27.411765,
+    28.7058824,
+    30
+   ],
+   "bonusMissileApRatio": 0.04,
+   "overwhelmDurationS": 5,
+   "sbDurationS": 5,
+   "sbStacksPerCast": 3,
+   "sbMaxStacks": 9
+  },
+  "Q": {
+   "initialDamage": {
+    "base": [
+     60,
+     85,
+     110,
+     135,
+     160
+    ],
+    "apRatio": 0.55
+   },
+   "subDamage": {
+    "base": [
+     5,
+     7,
+     9,
+     11,
+     13
+    ],
+    "apRatio": 0.05
+   },
+   "explosionCount": [
+    6,
+    7,
+    8,
+    9,
+    10
+   ]
+  },
+  "E": {
+   "orbDamage": {
+    "base": [
+     60,
+     105,
+     150,
+     195,
+     240
+    ],
+    "apRatio": 0.7
+   },
+   "tickDamage": {
+    "base": [
+     2,
+     3.5,
+     5,
+     6.5,
+     8
+    ],
+    "apRatio": 0.01
+   },
+   "dotDurationS": 0.5,
+   "tickIntervalS": 0.125
+  },
+  "R": {
+   "ultBaseDamage": {
+    "base": [
+     125,
+     200,
+     275
+    ],
+    "apRatio": 0.3
+   },
+   "ultPerStackDamage": {
+    "base": [
+     4,
+     7,
+     10
+    ],
+    "apRatio": 0.04
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.156,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/mel.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/mel.rs."
+ ]
+}

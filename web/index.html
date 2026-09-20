@@ -656,6 +656,14 @@
     <div class="hint" id="builds-note">First-principles simulation: exact stat sheets, ability formulas, item procs, expected-value crit — no match data. Pick a scenario; every item-pool combination is simulated against that stat dummy and ranked by <em>expected</em> kill time. That differs from raw kill time only for builds carrying an execute: crit here is an expected value, so the health curve is fixed and an execute window always catches the target — real crit would land in it only some of the time, so the two timelines are blended by that probability. Ties on the same attack are broken by how much damage the build had to spare. The three targets are simulated together, so each row also shows the same build's kill time against the other two; the <em>overall</em> scenario ranks the builds on all three at once, by the geometric mean of those kill times — each target counts equally in percentage terms, and a build has to kill every target to rank above one that leaves any standing. Click a build to see where its damage comes from against each target. The top 10 builds of each scenario number their items in a suggested buy order, boots bought early: the order whose partial builds kill fastest along the way, each fought at an earlier level against an earlier-game target and weighted by the gold to the next item. Rod of Ages always goes first (its stacks need time owned); Seraph's and Muramana never do (their Tear needs time to stack). Damage only: lane safety and defense don't count.</div>
     <div class="hint" id="builds-note-survival" hidden>First-principles survival model for tanks, no match data. The tank takes the damage and never fights back. Each attacker is one of the modeled carries with its current best overall build, fought exactly as in the damage ranking; the target is the tank's build, with its health, armor, magic resist, and everything its items and kit do while it takes damage. That covers damage reductions, shields, Death's Dance's delay, Guardian Angel and Zhonya's stasis, resists that grow in combat, regeneration and heals. Every build of the tank pool is fought against each attacker and ranked by <em>time to die</em>, longest first; a build still standing when the fight ends ranks above every build that fell, by the time the damage it took would have needed. The <em>overall</em> scenario ranks on every attacker at once: builds that fewer attackers kill come first, then the geometric mean of the times. Maximum Dosage goes out at the health threshold (every 10%) that keeps the tank alive longest against that attacker, and always when a hit would otherwise kill him. Lifesteal, omnivamp and anything else that needs the tank's own hits count for nothing. Click a build to see what hit him and what kept him up.</div>
     <div class="seg" id="champion-seg" style="margin-bottom:8px"></div>
+    <div id="champion-more" hidden style="margin:0 0 10px">
+      <input id="champion-search" type="search" list="champion-list" autocomplete="off"
+             spellcheck="false" aria-label="Machine-written champions"
+             style="width:min(460px,100%)">
+      <datalist id="champion-list"></datalist>
+    </div>
+    <div class="hint" id="builds-generated" hidden
+         style="border-left:3px solid var(--s3);padding-left:10px;margin-bottom:10px"></div>
     <div class="seg" id="scenario-seg"></div>
     <div class="sub" id="scenario-desc" style="margin-bottom:10px"></div>
     <div class="tablewrap">
@@ -1459,19 +1467,7 @@ async function loadBuildsMeta() {
     bstate.champion = bstate.meta.champions[0]?.slug;
   if (!bstate.meta.scenarios.some(s => s.key === bstate.scenario))
     bstate.scenario = bstate.meta.scenarios[0]?.key;
-  const cseg = document.getElementById("champion-seg");
-  cseg.replaceChildren(...bstate.meta.champions.map(c => {
-    const btn = document.createElement("button");
-    btn.textContent = c.name || c.slug;
-    btn.dataset.key = c.slug;
-    btn.addEventListener("click", () => {
-      bstate.champion = c.slug;
-      syncScenarioSeg();
-      renderPool();
-      loadScenario();
-    });
-    return btn;
-  }));
+  renderChampionPicker();
   const seg = document.getElementById("scenario-seg");
   seg.replaceChildren(...bstate.meta.scenarios.map(sc => {
     const btn = document.createElement("button");
@@ -1483,6 +1479,81 @@ async function loadBuildsMeta() {
   syncScenarioSeg();
   renderPool();
   return true;
+}
+
+function pickChampion(slug) {
+  bstate.champion = slug;
+  renderChampionPicker();
+  syncScenarioSeg();
+  renderPool();
+  loadScenario();
+}
+
+// The hand-encoded, reviewed champions are buttons. The machine-written ones
+// (jobs/kit_driver.py: a kit and a rotation driver written by a model, compiled
+// and sanity-checked but not reviewed) are too many for that: they are found
+// by name, and the one selected joins the buttons with an "unreviewed" tag.
+function renderChampionPicker() {
+  const champs = bstate.meta.champions;
+  const generated = champs.filter(c => c.generated);
+  const shown = champs.filter(c => !c.generated || c.slug === bstate.champion);
+  document.getElementById("champion-seg").replaceChildren(...shown.map(c => {
+    const btn = document.createElement("button");
+    btn.textContent = c.name || c.slug;
+    btn.dataset.key = c.slug;
+    btn.classList.toggle("active", c.slug === bstate.champion);
+    if (c.generated) {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = "unreviewed";
+      btn.append(tag);
+    }
+    btn.addEventListener("click", () => pickChampion(c.slug));
+    return btn;
+  }));
+  const more = document.getElementById("champion-more");
+  more.hidden = !generated.length;
+  if (!generated.length) return;
+  const input = document.getElementById("champion-search");
+  input.placeholder = `${generated.length} more champions, machine-written and unreviewed — type a name…`;
+  document.getElementById("champion-list").replaceChildren(...generated.map(c => {
+    const o = document.createElement("option");
+    o.value = c.name || c.slug;
+    return o;
+  }));
+  if (!input.dataset.wired) {
+    input.dataset.wired = "1";
+    const choose = () => {
+      const q = input.value.trim().toLowerCase();
+      const hit = bstate.meta.champions.find(c => c.generated &&
+        ((c.name || "").toLowerCase() === q || c.slug === q.replace(/[^a-z0-9]/g, "")));
+      if (!hit) return;
+      input.value = "";
+      input.blur();
+      pickChampion(hit.slug);
+    };
+    input.addEventListener("change", choose);
+    input.addEventListener("input", choose);
+  }
+}
+
+// What a machine-written kit is, beside its rankings: the reader decides from
+// the kit's own assumptions whether to trust them.
+function renderGeneratedBanner() {
+  const el = document.getElementById("builds-generated");
+  const champ = bstate.meta?.champions?.find(c => c.slug === bstate.champion);
+  el.hidden = !champ?.generated;
+  if (el.hidden) return;
+  const parts = [
+    `${champ.name || champ.slug}'s kit and rotation were written by a model from the wiki and ` +
+    "Riot's game file, compiled and sanity-checked, and NOT reviewed by a person: treat this " +
+    "ranking as a draft. A driver written this way for a hand-modeled champion ranked builds " +
+    "much like the hand-written one when its rotation agreed, and very differently when it did " +
+    "not, so read the rotation it assumes (the notes under the item pool).",
+  ];
+  if (champ.assumed?.length) parts.push(`Assumed numbers: ${champ.assumed.join("; ")}.`);
+  if (champ.unused?.length) parts.push(`Abilities it does not use: ${champ.unused.join("; ")}.`);
+  el.textContent = parts.join(" ");
 }
 
 // Show the selected champion's scenarios only (a tank's are the Survival
@@ -1570,10 +1641,13 @@ async function loadScenario() {
       "No champion kit encodings yet — add data/builds/<champ>.json.";
     return;
   }
+  if (!document.querySelector(`#champion-seg button[data-key="${bstate.champion}"]`))
+    renderChampionPicker();  // a machine-written champion arriving by URL
   document.querySelectorAll("#champion-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.champion));
   document.querySelectorAll("#scenario-seg button").forEach(b =>
     b.classList.toggle("active", b.dataset.key === bstate.scenario));
+  renderGeneratedBanner();
   markCold();
   updateHash();
   const req = ++bstate.req;  // a newer click supersedes this load
@@ -1593,6 +1667,12 @@ async function loadScenario() {
   if (d.pending) {
     clearBuilds();
     showPending(req);
+    return;
+  }
+  if (d.error) {
+    // a machine-written driver that failed in the enumeration (builds.warm)
+    clearBuilds();
+    desc.textContent = `This champion's machine-written driver failed, so nothing is ranked: ${d.error}`;
     return;
   }
   bstate.data = d;

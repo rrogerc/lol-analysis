@@ -1,0 +1,155 @@
+{
+ "champion": "kennen",
+ "name": "Kennen",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Mark of the Storm's stun and its 25-energy refund do not change the damage math against a stationary, non-acting dummy, so only the mark's presence/duration is modeled, purely to gate Electrical Surge's active cast.",
+  "Unsettled: assumed only ability hits (Q, W active, E, R ticks) apply Mark of the Storm, not plain basic attacks, per the passive's 'Kennen's abilities apply a stack' wording.",
+  "Unsettled: assumed Electrical Surge's cycle is 4 stack-building attacks followed by a 5th consuming attack; the consuming attack does not also generate a fresh stack.",
+  "Unsettled: assumed Slicing Maelstrom's periodic bolts count as ability hits and refresh Mark of the Storm on the target, which only matters for whether Electrical Surge's active is castable after the storm ends.",
+  "Opens with Slicing Maelstrom at t=0 (its only cast, 120s cooldown); Thundering Shuriken is cast on cooldown; Lightning Rush is cast on cooldown and recast at the earliest 0.5s to end the dash and pick up its attack-speed buff sooner, holding basic attacks during the 0.5s window it cannot attack; Electrical Surge's active is cast whenever off cooldown and the dummy is marked or still inside the storm; basic attacks are woven continuously so the 5th attack consumes Electrical Surge's stacks for its bonus on-hit damage.",
+  "Lightning Rush deals its full (champion-tier, not the 65% non-champion) damage once per cast, immediately on cast, since the dummy counts as an enemy champion and is stationary and adjacent.",
+  "Slicing Maelstrom's bonus armor/MR and its 10%-per-strike damage ramp (only relevant within a single 3-second, 6-tick cast, capped well before the stated 150% ceiling) are otherwise as given; the ramp does not reach its cap within one cast.",
+  "Energy costs are not modeled: none of Kennen's per-cast costs are large enough relative to his energy pool and regeneration to actually stall the rotation inside a 15s fight."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Thundering Shuriken",
+   "cooldownS": [
+    7,
+    6.25,
+    5.5,
+    4.75,
+    4
+   ]
+  },
+  "W": {
+   "name": "Electrical Surge",
+   "cooldownS": [
+    13,
+    11.25,
+    9.5,
+    7.75,
+    6
+   ]
+  },
+  "E": {
+   "name": "Lightning Rush",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "R": {
+   "name": "Slicing Maelstrom",
+   "cooldownS": [
+    120,
+    120,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "markDurationS": 6
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     75,
+     125,
+     175,
+     225,
+     275
+    ],
+    "apRatio": 0.75
+   }
+  },
+  "W": {
+   "onhit": {
+    "base": [
+     35,
+     45,
+     55,
+     65,
+     75
+    ],
+    "apRatio": 0.35,
+    "bonusAdRatioByRank": [
+     0.8,
+     0.9,
+     1.0,
+     1.1,
+     1.2
+    ]
+   },
+   "active": {
+    "damage": {
+     "base": [
+      70,
+      95,
+      120,
+      145,
+      170
+     ],
+     "apRatio": 0.8
+    }
+   },
+   "stackCap": 4
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     120,
+     160,
+     200,
+     240
+    ],
+    "apRatio": 0.8
+   },
+   "recastDelayS": 0.5,
+   "asBonusPctByRank": [
+    40,
+    50,
+    60,
+    70,
+    80
+   ],
+   "asBuffDurationS": 4
+  },
+  "R": {
+   "perBolt": {
+    "base": [
+     40,
+     80,
+     120
+    ],
+    "apRatio": 0.25
+   },
+   "damageAmpPerStrike": 0.1,
+   "tickRateS": 0.5,
+   "durationS": 3,
+   "castTimeS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kennen.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kennen.rs."
+ ],
+ "manaless": true
+}

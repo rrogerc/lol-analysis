@@ -1,0 +1,146 @@
+{
+ "champion": "lillia",
+ "name": "Lillia",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Swirlseed (E) purely to put a Dream Dust mark on the dummy, then casts Lilting Lullaby (R) the instant that mark exists, since R cannot be cast without one.",
+  "After that, Blooming Blows (Q) is cast on cooldown as the highest priority (shortest cooldown, cheapest), Swirlseed (E) and Watch Out! Eep! (W) are cast on their own cooldowns, and basic attacks fill every remaining gap.",
+  "Dream-Laden Bough (Passive) is modeled as a single Dream Dust instance: any Lillia ability hit refreshes it to a fresh 3s/6-tick cycle rather than stacking a second concurrent instance (the sources leave stacking vs. refresh open; refresh-only is used here).",
+  "The dummy counts as an enemy champion, so Dream Dust's monster damage cap never applies, and Lilting Lullaby's wake-up bonus (which requires a champion/large-monster/turret hit) is always eligible once the target is asleep.",
+  "Lilting Lullaby deals no damage itself: its missile lands after a 0.3s travel, the target is drowsy for 1.5s, then asleep for 2s; the driver checks after every Q, every W impact, every E, and every basic attack whether that hit lands inside the asleep window, and if so consumes the debuff for the bonus magic damage (and that triggering damage re-applies Dream Dust, per the source text).",
+  "Blooming Blows is assumed to always catch the dummy in the outer ring, so both its magic damage and its equal bonus true damage are dealt on every cast; Watch Out! Eep! is assumed to always land its epicenter sweet spot, so the 3x/105% AP damage values are used.",
+  "Watch Out! Eep!'s actual pre-impact delay is taken as the bin's flat 0.75s cap (rather than the wiki's variable 0.6-0.75s by dash distance); Lillia is held from attacking until the strike lands, matching the note that she 'cannot move before the strike goes off... regardless'.",
+  "Swirlseed's cast time uses the wiki's stated 0.4s (the bin disagrees at 0.35s); the seed's travel time to a stationary nearby target is assumed negligible (0s), so its damage is treated as landing at the end of the cast.",
+  "Prance's movement speed bonus and Dream Dust's self-heal do not affect damage dealt to a stationary dummy and are not modeled; mana costs are not modeled, per the engine default, since nothing here is expected to actually cap casts inside a 15s fight."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.travelS",
+   "why": "Swirlseed's seed travel time to a stationary target at ordinary engagement range is not given a value in the dossier or sheet; assumed negligible (0s) so its damage lands at the end of the 0.4s cast."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Blooming Blows",
+   "cooldownS": [
+    6,
+    5.5,
+    5,
+    4.5,
+    4
+   ]
+  },
+  "W": {
+   "name": "Watch Out! Eep!",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ]
+  },
+  "E": {
+   "name": "Swirlseed",
+   "cooldownS": [
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "R": {
+   "name": "Lilting Lullaby",
+   "cooldownS": [
+    150,
+    130,
+    110
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "dotBasePct": 5,
+   "dotApPctPer100": 1.25,
+   "ticks": 6,
+   "intervalS": 0.5,
+   "durationS": 3
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     35,
+     45,
+     55,
+     65,
+     75
+    ],
+    "apRatio": 0.35
+   },
+   "trueDamage": {
+    "base": [
+     35,
+     45,
+     55,
+     65,
+     75
+    ],
+    "apRatio": 0.35
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     240,
+     300,
+     360,
+     420,
+     480
+    ],
+    "apRatio": 1.05
+   },
+   "impactDelayS": 0.75
+  },
+  "E": {
+   "damage": {
+    "base": [
+     60,
+     85,
+     110,
+     135,
+     160
+    ],
+    "apRatio": 0.5
+   },
+   "travelS": 0
+  },
+  "R": {
+   "wakeDamage": {
+    "base": [
+     100,
+     150,
+     200
+    ],
+    "apRatio": 0.4
+   },
+   "travelS": 0.3,
+   "drowsyS": 1.5,
+   "sleepS": 2.0
+  }
+ },
+ "attack": {
+  "windupFraction": 0.14706,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/lillia.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/lillia.rs."
+ ]
+}

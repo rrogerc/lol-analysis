@@ -1,0 +1,238 @@
+{
+ "champion": "zeri",
+ "name": "Zeri",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Zeri is assumed to start the fight at full (100) Living Battery charge, per 'Zeri gains maximum charge when the game starts and upon respawning'.",
+  "Opening: cast Lightning Crash (R) immediately for its nova damage and to enter Overcharged, then Spark Surge (E) for Lightning Rounds; for the rest of the fight Burst Fire (Q) is cast every time its attack-speed-gated cooldown allows (it has no base cooldown or cost), independently of and interleaved with normal Living Battery basic attacks; Ultrashock Laser (W) and Spark Surge (E) are recast every time they come off cooldown.",
+  "Living Battery's basic attacks deal magic damage instead of physical, cannot critically strike, and do not apply on-hit/on-attack effects; this is modeled by zeroing the engine's normal attack damage and dealing the zap or full-charge magic damage directly, still flagged as ability damage since the wiki calls it 'spell damage' that 'triggers on-cast effects'.",
+  "A regular zap executes the target (deals its full remaining health instead of normal zap damage) if the target's current health is below the level+AP scaling threshold when it lands.",
+  "Burst Fire's rounds are basic-attack-like physical hits that can crit and are not flagged as ability damage (matching the wiki's 'deals basic damage, does not trigger spell effects'), but a Burst Fire cast still counts as an ability activation for on-cast effects like Muramana (just not for Spellblade, which it explicitly does not trigger) and is not given the generic 0.25s cast-time lockout since casting it does not cancel a previous attack order.",
+  "Burst Fire's true cooldown is 1 / Zeri's attack speed, capped at 1.5 casts/second outside Overcharged; 60% of bonus attack speed beyond the cap converts into bonus AD, computed once from the build's static bonus attack speed (Overcharged's own +30% bonus AS is excluded from this conversion per the wiki).",
+  "While Overcharged (after Lightning Crash lands), Burst Fire fires 3 rounds instead of 7 at the same per-round damage, and its chain-lightning bonus is skipped entirely since it needs a second visible enemy within 650 units, unreachable with a single dummy target.",
+  "Overcharged's stated increase to Burst Fire's attack-speed cap needs Zeri's base attack-speed ratio stat, which is not given anywhere in the sources, so the 1.5 attacks/second cap is kept unchanged in both states.",
+  "Landing a Burst Fire cast or a full-charge attack refreshes Overcharged's remaining duration up by 2.5s (capped at the original 5s from that moment), which keeps Overcharged effectively active for the rest of the fight once triggered, since Burst Fire lands roughly every 0.6-0.7s.",
+  "Spark Surge resets Zeri's basic attack timer and Burst Fire's cooldown on cast; its own remaining cooldown is further reduced by 0.5s whenever a full-charge attack or Burst Fire lands, or 1.5s if that Burst Fire cast crits, modeled here as an expected-value blend using the build's crit chance.",
+  "While Lightning Rounds (from Spark Surge) is active, each Burst Fire cast adds one instance of bonus magic damage to the target, scaled by the build's expected crit chance/damage per the wiki's formula; the pierce-damage-to-further-targets clause never applies since there is only one target.",
+  "Ultrashock Laser's terrain-triggered laser (which can crit and hit multiple targets) requires terrain, unavailable in this fight, so only its base non-critical single-target pulse is modeled; its cast time shortens with bonus attack speed down to its stated minimum.",
+  "Movement-based charge generation for Living Battery is not modeled (the dummy fight has no movement); charge only comes from Burst Fire casts (+10) and is spent by attacks (10 for a zap, all of it for a full-charge attack).",
+  "Mana costs are assumed non-binding for a fully itemized level 16 Zeri and are not modeled.",
+  "maxOrder is Q > W > E: Burst Fire is Zeri's core scaling damage tool, Ultrashock Laser deals a large single hit per rank, and Spark Surge's rank mostly affects its small Lightning Rounds bonus."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.startCharge",
+   "why": "the wiki states Zeri starts at maximum charge on spawn/respawn; picked as the standard reading for a level-16 mid-fight simulation rather than starting from 0."
+  },
+  {
+   "path": "gen.Q.attackSpeedCap",
+   "why": "Overcharged's higher attack-speed cap depends on Zeri's base attack-speed ratio stat, which is not present in the sheet or dossier text, so the base 1.5 cap is kept for both states."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Burst Fire",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "W": {
+   "name": "Ultrashock Laser",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "E": {
+   "name": "Spark Surge",
+   "cooldownS": [
+    24,
+    22.5,
+    21,
+    19.5,
+    18
+   ]
+  },
+  "R": {
+   "name": "Lightning Crash",
+   "cooldownS": [
+    80,
+    75,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "maxCharge": 100,
+   "chargePerAttack": 10,
+   "chargePerQCast": 10,
+   "startCharge": 100,
+   "zapBaseByLevel": [
+    10,
+    10.635,
+    11.302,
+    11.999,
+    12.726,
+    13.485,
+    14.276,
+    15.096,
+    15.946,
+    16.829,
+    17.743,
+    18.687,
+    19.662,
+    20.668,
+    21.704,
+    22.772,
+    23.871,
+    25
+   ],
+   "zapApRatio": 0.03,
+   "executeThresholdByLevel": [
+    70,
+    75.29,
+    80.59,
+    85.88,
+    91.18,
+    96.47,
+    101.76,
+    107.06,
+    112.35,
+    117.65,
+    122.94,
+    128.24,
+    133.53,
+    138.82,
+    144.12,
+    149.41,
+    154.71,
+    160
+   ],
+   "executeApRatio": 0.2,
+   "fullChargeBaseByLevel": [
+    75,
+    80,
+    85,
+    90,
+    95,
+    100,
+    105,
+    110,
+    115,
+    120,
+    125,
+    130,
+    135,
+    140,
+    145,
+    150,
+    155,
+    160
+   ],
+   "fullChargeApRatio": 1.1,
+   "fullChargeTargetHpPctByLevel": [
+    0.01,
+    0.0158824,
+    0.0217647,
+    0.0276471,
+    0.0335294,
+    0.0394118,
+    0.0452941,
+    0.0511765,
+    0.0570588,
+    0.0629412,
+    0.0688235,
+    0.0747059,
+    0.0805882,
+    0.0864706,
+    0.0923529,
+    0.0982353,
+    0.1041176,
+    0.11
+   ]
+  },
+  "Q": {
+   "baseByRank": [
+    22,
+    26,
+    30,
+    34,
+    38
+   ],
+   "adRatioByRank": [
+    1.02,
+    1.04,
+    1.06,
+    1.08,
+    1.1
+   ],
+   "numberOfMissiles": 7,
+   "energizedMissiles": 3,
+   "attackSpeedCap": 1.5,
+   "excessAsToAdMult": 0.6
+  },
+  "W": {
+   "baseByRank": [
+    30,
+    70,
+    110,
+    150,
+    190
+   ],
+   "adRatio": 1.0,
+   "apRatio": 0.5,
+   "castTimeBase": 0.55,
+   "castTimeMin": 0.3,
+   "castTimeASScalar": 0.09
+  },
+  "E": {
+   "bonusDamageBaseByRank": [
+    22,
+    24,
+    26,
+    28,
+    30
+   ],
+   "bonusApRatio": 0.2,
+   "buffDurationS": 5,
+   "cdReductionPerHit": 0.5,
+   "cdReductionPerCritHit": 1.5
+  },
+  "R": {
+   "novaBaseByRank": [
+    150,
+    250,
+    350
+   ],
+   "bonusAdRatio": 0.6,
+   "apRatio": 1.1,
+   "castTimeS": 0.25,
+   "overchargedDurationS": 5,
+   "extendPerHitS": 2.5,
+   "bonusASPct": 0.3,
+   "chainAdRatio": 0.4
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15625,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/zeri.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/zeri.rs."
+ ]
+}

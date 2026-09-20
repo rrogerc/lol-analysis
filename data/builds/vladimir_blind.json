@@ -1,0 +1,153 @@
+{
+ "champion": "vladimir_blind",
+ "name": "Vladimir",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Hemoplague (R) at t=0: it applies the 10% damage-taken debuff for its 4 s duration (read by the engine's generic damage-amp mechanism, so it also buffs any Q/W/E cast inside that window) and its self-amplified burst (base x1.1, i.e. the wiki's 150*1.1..350*1.1 / +77% AP figure) lands as a scheduled event at t=4s; R is only cast once since its 120 s cooldown exceeds every fight length tested.",
+  "Transfusion (Q) is cast every time it is off cooldown. Crimson Rush is modelled as a simple 0/1/2 counter: it starts at 0 (the more common reading — stacks only accrue after a cast, not on an independent timer) and gains one point right after each cast, resolving over that cast's cooldown; because Q is always recast immediately on cooldown, the 2.5 s surge window is always used the instant it opens, so a cast is empowered (+85% damage) whenever the counter already reads 2, which lands roughly every second cast.",
+  "Sanguine Pool (W) and Tides of Blood (E) are both treated as full action locks (no attacks, no other ability) for simplicity, and are never deliberately overlapped with each other or with Transfusion, even though the wiki notes some of these can coexist (e.g. Sanguine Pool doesn't interrupt a charging Tides of Blood); this sequential-only rotation is a simplification.",
+  "Sanguine Pool is cast on cooldown: its 4 ticks (0, 0.5, 1.0, 1.5 s after cast, each a quarter of the total tooltip damage) are dealt, and the 2 s action lock is enforced directly on the next attack and on Q/E availability; the 5th, 0-damage tick at the 2 s mark is not modelled since it deals no damage.",
+  "Tides of Blood is charged for exactly 1 s (the time to reach maximum damage) and then released, rather than held to the full 1.5 s cap, since damage does not increase further after the 1 s ramp; its cooldown starts on cast, matching the wiki.",
+  "Crimson Pact's mutual bonus-health/AP conversion is applied non-recursively with the wiki's flat ratios (3.333% of bonus health as AP, 160% of AP as bonus health, computed once each from the pre-conversion item/level stats) rather than the bin's coupled recursion-avoiding approximation; the resulting bonus AP and bonus health are added into every other ability's AP/bonus-health scaling.",
+  "Health costs (Sanguine Pool's 15% current health, Tides of Blood's ramping up-to-8% max health) and mana are not modelled: the engine does not track Vladimir's own current health and these costs do not change dealt damage in a stationary-target fight."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Transfusion",
+   "cooldownS": [
+    9,
+    7.9,
+    6.8,
+    5.7,
+    4.6
+   ]
+  },
+  "W": {
+   "name": "Sanguine Pool",
+   "cooldownS": [
+    28,
+    25,
+    22,
+    19,
+    16
+   ]
+  },
+  "E": {
+   "name": "Tides of Blood",
+   "cooldownS": [
+    13,
+    11,
+    9,
+    7,
+    5
+   ]
+  },
+  "R": {
+   "name": "Hemoplague",
+   "cooldownS": [
+    120,
+    120,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "hpForApPct": 3.333,
+   "apToHpPct": 160
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     100,
+     120,
+     140,
+     160
+    ],
+    "apRatio": 0.6
+   },
+   "empoweredDamage": {
+    "base": [
+     148,
+     185,
+     222,
+     259,
+     296
+    ],
+    "apRatio": 1.11
+   },
+   "surgeStacksNeeded": 2,
+   "frenzyDurationS": 2.5
+  },
+  "W": {
+   "damage": {
+    "base": [
+     80,
+     135,
+     190,
+     245,
+     300
+    ],
+    "bonusHpRatio": 15
+   },
+   "lockDurationS": 2,
+   "tickIntervalS": 0.5,
+   "ticksCount": 4,
+   "healthCostPct": 15
+  },
+  "E": {
+   "minDamage": {
+    "base": [
+     30,
+     45,
+     60,
+     75,
+     90
+    ],
+    "maxHpRatio": 1.5,
+    "apRatio": 0.35
+   },
+   "maxDamage": {
+    "base": [
+     60,
+     90,
+     120,
+     150,
+     180
+    ],
+    "maxHpRatio": 6,
+    "apRatio": 0.8
+   },
+   "rampToMaxS": 1,
+   "maxChannelS": 1.5,
+   "healthCostMaxPct": 8
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "apRatio": 0.7
+   },
+   "ampPct": 10,
+   "durationS": 4
+  }
+ },
+ "attack": {
+  "windupFraction": 0.19737,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/vladimir.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/vladimir_blind.rs."
+ ]
+}

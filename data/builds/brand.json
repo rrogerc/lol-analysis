@@ -1,0 +1,150 @@
+{
+ "champion": "brand",
+ "name": "Brand",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Opening: the engine casts Pyroclasm (R) at t=0 as the opening hook; thereafter Sear (Q), Conflagration (E) and Pillar of Flame (W) are each cast the instant their cooldown is up, and R is recast on cooldown too (its 80-100s cooldown means it will realistically land only once in a 15s fight).",
+  "Ablaze is modeled as a single merged stack counter (0-3) with one shared expiry time that every ability hit extends by 4s, ticking on a fixed 0.25s cadence for 2%/16 of the target's maximum health per active stack per tick; this approximates the wiki's per-stack independently-timed ticks (each stack really ticks on its own schedule even through a refresh), which is not worth tracking exactly for a short, high-uptime fight.",
+  "Reaching 3 Ablaze stacks arms the ring explosion 2s later: it deals its own magic-damage instance (level% of the target's max health + 0.02%/AP), then consumes the stacks and reapplies exactly 1 stack, during which (4s) the target cannot restack above 1.",
+  "Pillar of Flame's 25% bonus is checked when its damage actually lands (0.25s cast + 0.625s eruption delay after the cast), against whatever Ablaze state exists at that moment, before its own hit applies a new stack.",
+  "Conflagration's blast 'spreads to nearby enemies' but the dummy is the only enemy present, so each E cast deals exactly one damage instance (the spread never finds a second target).",
+  "Pyroclasm bounces between the dummy and Brand (the only two valid bounce recipients); Riot's own tooltip states the total single-target damage of the up-to-four bounces is 3x the base+AP value, so each R cast is modeled as 3 separate hits on the dummy, landing at the cast, then 0.3s and 0.6s later (2 and 4 bounce-delay increments of 0.15s), each applying its own Ablaze stack.",
+  "Sear's ablaze bonus (a stun) and Pyroclasm's ablaze bonus (a slow) have no effect on damage and are ignored.",
+  "Mana is not modeled: at level 16 the rotation's costs are comfortably sustained for a 15s fight."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Sear",
+   "cooldownS": [
+    8,
+    7.5,
+    7,
+    6.5,
+    6
+   ]
+  },
+  "W": {
+   "name": "Pillar of Flame",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "E": {
+   "name": "Conflagration",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "R": {
+   "name": "Pyroclasm",
+   "cooldownS": [
+    100,
+    90,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "ablazeDotPct": 2,
+   "ablazeDurationS": 4,
+   "ablazeTickIntervalS": 0.25,
+   "ablazeMaxStacks": 3,
+   "explosionDelayS": 2,
+   "explosionImmuneS": 4,
+   "explosionPctByLevel": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
+   ],
+   "explosionApPctPer100Ap": 2
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     70,
+     100,
+     130,
+     160,
+     190
+    ],
+    "apRatio": 0.65
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     75,
+     120,
+     165,
+     210,
+     255
+    ],
+    "apRatio": 0.7
+   },
+   "empoweredBonusPct": 25,
+   "castTimeS": 0.25,
+   "eruptionDelayS": 0.625
+  },
+  "E": {
+   "damage": {
+    "base": [
+     55,
+     80,
+     105,
+     130,
+     155
+    ],
+    "apRatio": 0.6
+   }
+  },
+  "R": {
+   "damage": {
+    "base": [
+     100,
+     175,
+     250
+    ],
+    "apRatio": 0.3
+   },
+   "bounceDelayS": 0.15
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1875,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/brand.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/brand.rs."
+ ]
+}

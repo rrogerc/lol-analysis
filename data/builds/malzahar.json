@@ -1,0 +1,165 @@
+{
+ "champion": "malzahar",
+ "name": "Malzahar",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Malzahar never auto-attacks in this rotation: he is a caster whose damage is entirely his abilities, so attack.never is set and items that key on attacks or attack speed give him no value.",
+  "Opening: Nether Grasp (R) is cast first at t=0 since its 80-140s cooldown means it can only be cast once in the fight window; Malefic Visions (E) is cast immediately after to start its DoT as early as possible, then Call of the Void (Q) and Void Swarm (W) are cast on cooldown for the rest of the fight.",
+  "Call of the Void's damage and silence land 0.4 seconds after the cast completes, modeled as a delayed hit; when it lands on a target already infected by Malefic Visions it refreshes that DoT to a fresh 4-second window (the chosen reading of the 'refreshes' mechanic, since Malefic Visions' own cooldown is always longer than its 4s duration so it would otherwise never overlap itself).",
+  "Casting Q, E or R grants a Zz'Rot Swarm stack (capped at 2); casting W consumes all stacks, summoning one base Voidling plus one additional Voidling per stack consumed, each staggered 0.5s after the previous.",
+  "Voidling attack cadence is not given by any source (only its damage formula and duration are); it is assumed to attack once per second with instant engagement on the stationary dummy (no travel time modeled), consistent with the engine's rule that every hit connects.",
+  "Nether Grasp's tether beam (10 ticks over 2.5s) and its Null Zone (10 ticks over 5s, dealing a percent of the target's maximum health) are both modeled as their own periodic damage; the Null Zone's percent-max-health total is read from the wiki's stated 10/15/20% (+2.5% per 100 AP) leveling text, since the dossier's own coefficient field is flagged by the dossier as inconsistent with that stated total.",
+  "Muramana's on-cast proc and Eclipse's hit-stacking are triggered once at the moment of each ability cast rather than at the delayed/DoT damage instances that follow it, a simplification.",
+  "Mana is not modeled: none of Malzahar's costs are expected to meaningfully gate casts within a 15s fight at level 16 given the assumed cast frequency."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Call of the Void",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "W": {
+   "name": "Void Swarm",
+   "cooldownS": [
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "E": {
+   "name": "Malefic Visions",
+   "cooldownS": [
+    11,
+    10,
+    9,
+    8,
+    7
+   ]
+  },
+  "R": {
+   "name": "Nether Grasp",
+   "cooldownS": [
+    140,
+    110,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     70,
+     105,
+     140,
+     175,
+     210
+    ],
+    "apRatio": 0.55
+   },
+   "postCastDelayS": 0.4
+  },
+  "W": {
+   "voidlingBaseDamage": [
+    12,
+    14,
+    16,
+    18,
+    20
+   ],
+   "byLevel": [
+    5.0,
+    8.5,
+    12.0,
+    15.5,
+    19.0,
+    22.5,
+    26.0,
+    29.5,
+    33.0,
+    36.5,
+    40.0,
+    43.5,
+    47.0,
+    50.5,
+    54.0,
+    57.5,
+    61.0,
+    64.5
+   ],
+   "apRatio": 0.2,
+   "adRatio": 0.4,
+   "durationByRank": [
+    8,
+    8,
+    9,
+    9,
+    10
+   ],
+   "summonDelayS": 0.5,
+   "stackCap": 2,
+   "assumedAttackIntervalS": 1.0
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     115,
+     150,
+     185,
+     220
+    ],
+    "apRatio": 0.8
+   },
+   "durationS": 4,
+   "tickIntervalS": 0.25
+  },
+  "R": {
+   "beamDamage": {
+    "base": [
+     125,
+     200,
+     275
+    ],
+    "apRatio": 0.8
+   },
+   "beamTicks": 10,
+   "beamTickIntervalS": 0.25,
+   "zoneMaxHpPctByRank": [
+    10,
+    15,
+    20
+   ],
+   "zoneApPctPer100": 2.5,
+   "zoneDurationS": 5,
+   "zoneTickIntervalS": 0.5
+  }
+ },
+ "assumed": [
+  {
+   "path": "gen.W.assumedAttackIntervalS",
+   "why": "Voidling attack speed/cadence is not stated by any source; assumed a plausible 1 attack per second for the summoned pet."
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.19,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/malzahar.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/malzahar.rs."
+ ]
+}

@@ -1,0 +1,165 @@
+{
+ "champion": "belveth",
+ "name": "Bel'Veth",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Void Surge's four independent cardinal-direction cooldowns are approximated as a single averaged cooldown (the reduced per-side cooldown divided by 4), since a static single-target fight has no real directionality; Q is cast on cooldown.",
+  "Above and Below's champion-hit Q-cooldown reset is approximated by immediately readying the averaged Q cooldown the instant W lands, since the dummy is champion-flagged and always hit.",
+  "Royal Maelstrom's bonus-slash count from attack speed uses the wiki's literal '+1 slash per 40% bonus attack speed' reading rather than the sheet's unresolved/mismatched AttackSpeedMult=8 value; the resulting slashes are spaced evenly across the 1.5s channel.",
+  "Royal Maelstrom is always run to its full duration rather than cancelled early: this blocks Q, W and normal attacks for that duration, matching the dossier's proposed rotation and the mechanic that casting another ability ends Maelstrom early.",
+  "Endless Banquet's active cast is never used: it requires an existing Void Coral, which only spawns from a takedown, and the dummy is never killed; only its always-on passive (stacking bonus true damage on each on-hit application, uncapped against a champion target) is modeled.",
+  "The passive's bonus true damage applies at full effectiveness on basic attacks and on Void Surge's hit to the first target, and at reduced effectiveness (12% x the target's missing-health fraction) during Royal Maelstrom's slashes, per the wiki's on-hit reduction during that ability.",
+  "Lavender's permanent attack-speed stacks require takedowns unobtainable in a static dummy fight; an assumed starting count of 10 stacks is used (see `assumed`). The dossier's per-level, per-stack progression (0.1 to 2.0) is already expressed directly in percent (its own quote spells this out as '0.1%; then +0.05*x...'), so it is used as-is without an extra x100 conversion.",
+  "Casting any ability refreshes 20% bonus attack speed for 3 seconds (Death in Lavender's ghosting buff); this is the kit's own attack-speed contribution, on top of whatever bonus attack speed the engine already grants from items.",
+  "Mana/cost is not modeled: none of Bel'Veth's abilities have a listed cost.",
+  "Item on-hit riders (attack_riders) are only triggered on genuine basic attacks; Void Surge's and Royal Maelstrom's hits deal Bel'Veth's own kit damage (including the Endless Banquet passive) but are not modeled as triggering generic item on-hit procs, since the engine's on-hit hook is attack-specific."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.assumedStacks",
+   "why": "permanent Lavender attack-speed stacks come only from takedowns, unobtainable in a static dummy fight; assumes a plausible level-16 mid/late-game stack count"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Void Surge",
+   "cooldownS": [
+    4,
+    3.25,
+    2.5,
+    1.75,
+    1
+   ]
+  },
+  "W": {
+   "name": "Above and Below",
+   "cooldownS": [
+    12,
+    11,
+    10,
+    9,
+    8
+   ]
+  },
+  "E": {
+   "name": "Royal Maelstrom",
+   "cooldownS": [
+    24,
+    21,
+    18,
+    15,
+    12
+   ]
+  },
+  "R": {
+   "name": "Endless Banquet",
+   "cooldownS": [
+    1,
+    1,
+    1
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "asPerStackByLevel": [
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.95,
+    1.1,
+    1.25,
+    1.4,
+    1.55,
+    1.7,
+    1.85,
+    2.0
+   ],
+   "sheenAsPct": 0.2,
+   "sheenDurationS": 3,
+   "assumedStacks": 10
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     12,
+     14,
+     16,
+     18,
+     20
+    ],
+    "adRatio": 1.05
+   },
+   "perSideCooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ],
+   "perSideCdAsMult": 0.2
+  },
+  "W": {
+   "damage": {
+    "base": [
+     80,
+     140,
+     200,
+     260,
+     320
+    ],
+    "apRatio": 1.5
+   },
+   "castTimeS": 0.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     10,
+     12,
+     14,
+     16,
+     18
+    ],
+    "adRatio": 0.12
+   },
+   "missingHealthMult": 1,
+   "durationS": 1.5,
+   "baseSlashes": 6,
+   "bonusAsPerSlash": 40,
+   "onHitRatio": 0.12
+  },
+  "R": {
+   "onhit": {
+    "base": [
+     2,
+     4,
+     6
+    ],
+    "bonusAdRatio": 0.03
+   }
+  }
+ },
+ "attack": {
+  "windupFraction": 0.14735,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/belveth.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/belveth.rs."
+ ],
+ "manaless": true
+}

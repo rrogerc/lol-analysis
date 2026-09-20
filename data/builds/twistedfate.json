@@ -1,0 +1,128 @@
+{
+ "champion": "twistedfate",
+ "name": "Twisted Fate",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Destiny (R) is cast once at t=0 purely so it registers as an ability activation for on-cast item effects; it deals no damage of its own and its Gate recast is a pure repositioning blink with no offensive value against a stationary dummy, so it is never recast.",
+  "Pick a Card (W) is cast on cooldown: the initial cast has no cast time and only counts as an ability activation (no damage), and it is always followed by a recast on the Blue Card, the highest single-target damage option, rather than Red or Gold.",
+  "The wait before recasting on Blue Card is assumed to average 0.5 s, the mean of the 0 / 0.5 / 1.0 s delay to reach Blue depending on which of the three cards happens to be hovered first when the cycle starts.",
+  "The recast resets Twisted Fate's attack timer and arms his next basic attack with a 0.25 s cast time that deals Blue Card's own magic damage instead of normal AD damage; that attack cannot critically strike but its damage is boosted by a flat fraction of crit chance instead. This is modeled by zeroing the attack's own AD for that swing (via attack_damage) and dealing Blue Card's damage separately once it lands.",
+  "Wild Cards (Q) is cast on cooldown for its magic damage.",
+  "Stacked Deck (E) generates a stack on every landed basic attack, including an empowered Pick a Card attack, up to 3; the following attack then consumes the stacks for bonus magic damage. The sources do not say the two on-hit effects are mutually exclusive, so both are allowed to land on the same swing if their timing coincides.",
+  "Twisted Fate auto-attacks continuously between casts, both to build Stacked Deck stacks and to deliver the Pick a Card recast's empowered attack.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.W.blueWaitS",
+   "why": "average delay to hover Blue Card given a random starting card among Blue/Red/Gold cycling every 0.5s; the sim deterministically always recasts on Blue so a fixed average wait stands in for the random start"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Wild Cards",
+   "cooldownS": [
+    6,
+    5.75,
+    5.5,
+    5.25,
+    5
+   ]
+  },
+  "W": {
+   "name": "Pick a Card",
+   "cooldownS": [
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "E": {
+   "name": "Stacked Deck",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "R": {
+   "name": "Destiny",
+   "cooldownS": [
+    170,
+    140,
+    110
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "damage": {
+    "base": [
+     60,
+     105,
+     150,
+     195,
+     240
+    ],
+    "bonusAdRatio": 0.5,
+    "apRatio": 0.85
+   },
+   "castTimeS": 0.25
+  },
+  "W": {
+   "blueDamage": {
+    "base": [
+     40,
+     60,
+     80,
+     100,
+     120
+    ],
+    "adRatio": 1.0,
+    "apRatio": 1.0
+   },
+   "blueCritMult": 0.575,
+   "blueWaitS": 0.5,
+   "empoweredCastTimeS": 0.25
+  },
+  "E": {
+   "damage": {
+    "base": [
+     65,
+     90,
+     115,
+     140,
+     165
+    ],
+    "apRatio": 0.4,
+    "bonusAdRatio": 0.2
+   },
+   "attackSpeedBonus": [
+    0.15,
+    0.25,
+    0.35,
+    0.45,
+    0.55
+   ],
+   "stacksNeeded": 3
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/twistedfate.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/twistedfate.rs."
+ ]
+}

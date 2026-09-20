@@ -1,0 +1,210 @@
+{
+ "champion": "ambessa",
+ "name": "Ambessa",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens with Public Execution (R) at t=0: its 0.7s cast time plus 0.75s suppression are modeled as one continuous lockout during which Ambessa cannot attack or cast, ending with the damage landing; R's passive armor penetration is treated as a permanent armor shred switched on for the whole fight the moment R is cast.",
+  "The engine's shred slot only accepts one flat percentage under abilities.Q.shred; R's permanent armor penetration is stored there instead of a real Q effect, using the rank-3 value (30%) since a level-16 Ambessa can only have taken R at ranks 1, 2 or 3 (levels 6/11/16).",
+  "Cunning Sweep is cast on cooldown and always immediately followed (one 0.25s engine lockout later) by Sundering Slam, matching the proposed Q1-into-Q2 combo; the real 4s link window is never binding because the follow-up is always cast right away.",
+  "Against the single stationary dummy, Cunning Sweep is read as landing its inner (non-doubled) hit, since the outer-edge double requires distance inconsistent with staying at melee attack range between casts, while Sundering Slam always doubles since the dummy, being the only enemy struck, is necessarily the 'first hit'; this is the kit's resolution of an explicitly unsettled question.",
+  "Repudiation's 50% damage bonus (its shield mitigating champion/monster/turret damage before the smash) can never trigger since the stationary dummy never attacks, so only the base (Low) damage value is used; the smash lands 0.5s after cast, the full bracing time, not just the 0.225s lockout.",
+  "Lacerate's free second spin is scheduled 0.3s after the first, reusing Ambessa's generic dash-buffer travel time (AmbessaPassive.Buffer_Dash_Time) since Lacerate's own second-spin timing is not separately quoted, and deals the identical spin damage again at no extra cost.",
+  "Medarda Maxim stacks (granted by every Q/W/E/R cast, capped at 3, refreshing 4s) are modeled, but the grant is approximated as landing immediately on cast rather than after each ability's short real lockout, consistent with those lockouts otherwise being treated as instant; empowered basic attacks consume a stack for bonus physical on-hit damage and 50% bonus attack speed for that swing.",
+  "The empowered attack's bonus physical damage is applied as capable of critically striking, per the numbers sheet's Calc_OnHit_Damage_Flat x crit damage multiplier, even though the wiki's own prose does not explicitly say so.",
+  "Energy costs and Medarda Maxim's energy refund are not modeled: no energy regeneration figure is given in the sources, and the dossier's own proposal is to assume the rotation is not meaningfully energy-bound at level 16.",
+  "maxOrder is Q, E, W, matching common play and the fact that Q and E scale the most per rank among the basics; P and R are maxed automatically by level."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.armorPenPct",
+   "why": "a level-16 Ambessa can only have taken R at rank 1, 2 or 3 (levels 6/11/16), so the rank-3 (30%) value is stored as a flat permanent armor-penetration figure for the engine's single shred slot"
+  },
+  {
+   "path": "gen.E.secondSpinDelayS",
+   "why": "Lacerate's own second-spin timing after the dash is not separately quoted; Ambessa's generic dash-buffer travel time (AmbessaPassive.Buffer_Dash_Time = 0.3s) is reused as the delay estimate"
+  },
+  {
+   "path": "abilities.Q.shred.durationS",
+   "why": "R's armor penetration passive is a permanent self-buff, not a timed debuff; a large placeholder duration is stored here for schema completeness since the driver sets e.st.shred_until directly to cover the whole fight"
+  },
+  {
+   "path": "gen.Q.cunningSweep.damage",
+   "why": "assumed the stationary dummy takes Cunning Sweep's inner (non-doubled) hit rather than the outer-edge doubled hit, since the outer edge requires distance inconsistent with staying in melee attack range between casts"
+  },
+  {
+   "path": "gen.Q.sunderingSlam.damage",
+   "why": "assumed the stationary dummy, being the only target struck, always counts as Sundering Slam's first (doubled) hit"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Cunning Sweep / Sundering Slam",
+   "cooldownS": [
+    14,
+    13,
+    12,
+    11,
+    10
+   ],
+   "shred": {
+    "pct": 30,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 999
+   }
+  },
+  "W": {
+   "name": "Repudiation",
+   "cooldownS": [
+    18,
+    17,
+    16,
+    15,
+    14
+   ]
+  },
+  "E": {
+   "name": "Lacerate",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "R": {
+   "name": "Public Execution",
+   "cooldownS": [
+    130,
+    115,
+    100
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "onhitBaseByLevel": [
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    15,
+    15,
+    15,
+    15,
+    15,
+    30
+   ],
+   "onhitBonusAdRatio": 0.25,
+   "onhitBonusAsPct": 0.5,
+   "stackDurationS": 4,
+   "maxStacks": 3
+  },
+  "Q": {
+   "cunningSweep": {
+    "damage": {
+     "base": [
+      20,
+      30,
+      40,
+      50,
+      60
+     ],
+     "bonusAdRatio": 0.3
+    },
+    "targetHpPct": [
+     0.02,
+     0.0225,
+     0.025,
+     0.0275,
+     0.03
+    ],
+    "targetHpPctPerBonusAd100": 0.015
+   },
+   "sunderingSlam": {
+    "damage": {
+     "base": [
+      50,
+      75,
+      100,
+      125,
+      150
+     ],
+     "bonusAdRatio": 0.9
+    },
+    "targetHpPct": [
+     0.04,
+     0.045,
+     0.05,
+     0.055,
+     0.06
+    ],
+    "targetHpPctPerBonusAd100": 0.04
+   },
+   "slamWindowS": 4
+  },
+  "W": {
+   "damageLow": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "braceDurationS": 0.5
+  },
+  "E": {
+   "damage": {
+    "base": [
+     40,
+     60,
+     80,
+     100,
+     120
+    ],
+    "bonusAdRatio": 0.5
+   },
+   "secondSpinDelayS": 0.3
+  },
+  "R": {
+   "damage": {
+    "base": [
+     150,
+     250,
+     350
+    ],
+    "bonusAdRatio": 0.8
+   },
+   "castTimeS": 0.7,
+   "suppressDurationS": 0.75
+  }
+ },
+ "attack": {
+  "windupFraction": 0.15625,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ambessa.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ambessa.rs."
+ ],
+ "manaless": true
+}

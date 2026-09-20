@@ -1,0 +1,149 @@
+{
+ "champion": "fiddlesticks",
+ "name": "Fiddlesticks",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Fiddlesticks is played as a pure caster here: his damage is entirely abilities, so attack.never is set and items keyed on basic attacks (on-hit, attack speed, resets) get no value.",
+  "The opening cast is Crowstorm: it channels 1.5 s, then blinks in and ticks every 0.25 s for 5 s (20 ticks); Fiddlesticks is free to cast Q/W/E during the 5 s tick window but not during the 1.5 s channel.",
+  "Terrify's crow travel time (0.35 s) is folded into its cast: the damage is applied at the moment of cast (as the reference driver does for other champions' short travel times) but the 0.35 s still occupies Fiddlesticks and blocks starting another ability during it.",
+  "Terrify's feared-target double-damage bonus is not modeled: it requires the target to already be 'recently feared', which itself requires Fiddlesticks to be unseen/out of combat when the fear-applying ability lands. Once Fiddlesticks casts anything it is in combat for the rest of the fight, so this never lines up again in a continuous damage-fight rotation; Terrify always deals its single (non-doubled) damage here, and this is a deliberate simplification, not an oversight.",
+  "Terrify's damage cap (400) only applies against monsters; the dummy counts as a champion, so it is not capped.",
+  "Bountiful Harvest channels its full 2 s uninterrupted against the stationary dummy (8 ticks of 0.25 s); the last tick adds bonus damage from the dummy's missing health, and completing the channel refunds 60% of the remaining cooldown.",
+  "Reap's damage lands at the end of its 0.4 s cast; hitting the center for the silence has no damage effect and is not modeled.",
+  "Crowstorm's cooldown starts at the moment of cast (its channel), per the ability's own cdstart flag.",
+  "When free to act, the rotation priority is Crowstorm > Bountiful Harvest > Reap, with Terrify woven in automatically whenever it is off cooldown and Fiddlesticks isn't mid-cast of something else.",
+  "Mana costs are not modeled: nothing in this rotation is expected to bind on mana within a 15 s window at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.R.tickIntervalS",
+   "why": "the wiki states Crowstorm deals damage every 0.25 s but Riot's bin has no explicit tick-interval field for it (only the per-tick damage formula implies the 0.25 s multiplier)"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Terrify",
+   "cooldownS": [
+    15,
+    14.5,
+    14,
+    13.5,
+    13
+   ]
+  },
+  "W": {
+   "name": "Bountiful Harvest",
+   "cooldownS": [
+    10,
+    9.5,
+    9,
+    8.5,
+    8
+   ]
+  },
+  "E": {
+   "name": "Reap",
+   "cooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ]
+  },
+  "R": {
+   "name": "Crowstorm",
+   "cooldownS": [
+    140,
+    110,
+    80
+   ]
+  }
+ },
+ "gen": {
+  "P": {},
+  "Q": {
+   "minDamage": [
+    40,
+    60,
+    80,
+    100,
+    120
+   ],
+   "percentOfCurrentHp": {
+    "base": [
+     0.04,
+     0.045,
+     0.05,
+     0.055,
+     0.06
+    ],
+    "apRatio": 0.0003
+   },
+   "castTimeS": 0.35
+  },
+  "W": {
+   "perTick": {
+    "base": [
+     15,
+     22.5,
+     30,
+     37.5,
+     45
+    ],
+    "apRatio": 0.1125
+   },
+   "missingHpRatio": [
+    0.12,
+    0.145,
+    0.17,
+    0.195,
+    0.22
+   ],
+   "castTimeS": 0.25,
+   "drainDurationS": 2,
+   "tickIntervalS": 0.25,
+   "cdRefundFraction": 0.6
+  },
+  "E": {
+   "damage": {
+    "base": [
+     70,
+     105,
+     140,
+     175,
+     210
+    ],
+    "apRatio": 0.5
+   },
+   "castTimeS": 0.4
+  },
+  "R": {
+   "perTick": {
+    "base": [
+     37.5,
+     62.5,
+     87.5
+    ],
+    "apRatio": 0.125
+   },
+   "channelTimeS": 1.5,
+   "durationS": 5,
+   "tickIntervalS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.3,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/fiddlesticks.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/fiddlesticks.rs."
+ ]
+}

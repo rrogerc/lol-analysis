@@ -1,0 +1,211 @@
+{
+ "champion": "jayce",
+ "name": "Jayce",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Jayce opens already in Cannon Stance: the t=0 R cast (Transform) is read as the initial press that leaves default Hammer Stance for Cannon Stance, arming Cannon's on-attack armor/MR shred.",
+  "Transform (R) is then recast every time its flat 6s cooldown is up, toggling stance for the rest of the fight, so both stances' kits (Shock Blast/Hyper Charge/Acceleration Gate in Cannon, To the Skies!/Lightning Field/Thundering Blow in Hammer) get real playtime; a swap is delayed until an active Hyper Charge window finishes so its 3 attacks are not wasted.",
+  "The dossier leaves open whether switching stances applies or discards a still-pending Transform empowered attack (Cannon's shred / Hammer's bonus magic damage); this driver discards it unused on a swap, the simpler reading.",
+  "Shock Blast is read as landing on cast (its 0.2143 s cast time only drives the usual 0.25 s post-cast attack lockout, not a separate travel delay) and is always assumed to pass through a freshly-placed Acceleration Gate for the 1.4x supercharge, since Jayce stands on his own gate; Acceleration Gate itself deals no damage and is recast on cooldown purely to keep that window up.",
+  "Thundering Blow's damage lands 0.25 s after its cast (its stated cast time), and for 0.4 s after that Jayce cannot cast Shock Blast/To the Skies!, modeled as a shared lockout on the Q hook regardless of current stance.",
+  "Shock Blast's own flat 8 s cooldown (numbers sheet 'other JayceShockBlast') is used for the Cannon-Stance Q instead of the by-rank array shared with To the Skies! in ddragon; that by-rank array is used for To the Skies! itself. Likewise Acceleration Gate's own flat 16 s cooldown is used instead of the by-rank E array, which is kept for Thundering Blow.",
+  "Hyper Charge's empowered-attack window is taken as the bin's 3.6 s (JayceHyperCharge.Duration) rather than the wiki text's rounded 4 s; its total damage is explicitly stated to crit and is applied once per empowered attack landed, and it resets Jayce's attack timer on cast. Its cooldown starts post-effect (when the window/attacks end), matching the sheet.",
+  "Lightning Field's total base+AP damage is split evenly across its 4 one-second ticks; the field keeps ticking after a stance swap since it is already active in the world, independent of Jayce's current form.",
+  "Jayce is treated as ranged with Cannon Stance's 500 attack range for the entire fight (even during Hammer-Stance windows), since the driver cannot vary attack range mid-fight; this slightly understates Hammer Stance's melee reality but keeps the model simple.",
+  "The armor/MR shred and Hammer's bonus on-hit magic damage from Transform scale by champion level; the shred is a single static value read by the engine so it is fixed at the level-16 figure (35%), while the Hammer bonus damage is computed from the actual fight level.",
+  "The dossier notes the last Hyper Charge attack is checked on-hit rather than on-attack (so a prior on-hit effect like Runaan's/Guinsoo's could suppress it); this driver applies all 3 empowered instances uniformly and does not model that edge case.",
+  "Mana is not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "abilities.Q.shred.pct",
+   "why": "Cannon Stance's armor/MR shred scales by level (20-35%); the engine reads a single static percent from the kit, so the level-16 figure is used since fights run at level 16."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Shock Blast / To the Skies!",
+   "cooldownS": [
+    16,
+    14,
+    12,
+    10,
+    8,
+    6
+   ],
+   "shred": {
+    "pct": 35,
+    "appliesTo": [
+     "armor",
+     "mr"
+    ],
+    "durationS": 5
+   }
+  },
+  "W": {
+   "name": "Lightning Field / Hyper Charge",
+   "cooldownS": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "E": {
+   "name": "Thundering Blow / Acceleration Gate",
+   "cooldownS": [
+    20,
+    18,
+    16,
+    14,
+    12,
+    10
+   ]
+  },
+  "R": {
+   "name": "Transform (Mercury Cannon / Mercury Hammer)",
+   "cooldownS": [
+    6
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "cannon": {
+    "damage": {
+     "base": [
+      80,
+      121,
+      162,
+      203,
+      244,
+      285
+     ],
+     "bonusAdRatio": 1.3
+    },
+    "cooldownS": 8,
+    "empowerMultiplier": 1.4
+   },
+   "hammer": {
+    "damage": {
+     "base": [
+      60,
+      110,
+      160,
+      210,
+      260,
+      310
+     ],
+     "bonusAdRatio": 1.35
+    }
+   }
+  },
+  "W": {
+   "hyperCharge": {
+    "damage": {
+     "base": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adRatio": [
+      0.7,
+      0.78,
+      0.86,
+      0.94,
+      1.02,
+      1.1
+     ]
+    },
+    "numAttacks": 3,
+    "windowS": 3.6,
+    "bonusAsPct": 360,
+    "cooldownS": [
+     13,
+     11.4,
+     9.8,
+     8.2,
+     6.6,
+     5
+    ]
+   },
+   "lightningField": {
+    "damage": {
+     "base": [
+      140,
+      200,
+      260,
+      320,
+      380,
+      440
+     ],
+     "apRatio": 1.0
+    },
+    "ticks": 4,
+    "tickIntervalS": 1
+   }
+  },
+  "E": {
+   "hammer": {
+    "targetMaxHpRatio": [
+     0.08,
+     0.108,
+     0.136,
+     0.164,
+     0.192,
+     0.22
+    ],
+    "bonusAdRatio": 1.0,
+    "castTimeS": 0.25,
+    "postLockoutS": 0.4
+   },
+   "cannon": {
+    "gateDurationS": 4,
+    "cooldownS": 16
+   }
+  },
+  "R": {
+   "hammerDamageByLevel": [
+    25,
+    25,
+    25,
+    25,
+    25,
+    60,
+    60,
+    60,
+    60,
+    60,
+    95,
+    95,
+    95,
+    95,
+    95,
+    130,
+    130,
+    130
+   ],
+   "hammerBonusAdRatio": 0.3,
+   "cannonAttackRange": 500
+  }
+ },
+ "attack": {
+  "windupFraction": 0.095,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jayce.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jayce.rs."
+ ]
+}

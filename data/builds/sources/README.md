@@ -125,3 +125,75 @@ the model stage itself is not called).
   Twitch and Kassadin in detail; the prompts forbid reading the kits, but for
   those two champions "what Sonnet noticed" is not a clean measurement. Jax,
   Ashe, Cassiopeia and Aphelios are.
+
+## Machine-written drivers (trial, 2026-09-19, branch `sonnet-drivers`)
+
+`python3 jobs/kit_driver.py write <slug>... | --all [--workers 4]` has Sonnet
+write a champion's kit (`data/builds/<slug>.json`) and its rotation driver
+(`engine/src/generated/<slug>.rs`) from the dossier, the numbers sheet and the
+wiki, following `jobs/kit-driver-guide.md` and the hand-written reference
+driver for Jax. A generated driver implements the same `Driver` trait as the
+hand-written ones; the engine runs them behind one vtable
+(`engine/src/dyn_driver.rs`, `Rotation::Generated`), reads their numbers from
+the kit by dotted path (`Kit::num/at_rank/at_level/hit`, no per-champion
+parsing code) and gives them numbered events (`Kind::Ev(i)`). The registry
+`engine/src/generated/mod.rs` is rewritten from the directory's files.
+Every candidate is linted (no game number in the Rust, no std, no unsafe,
+state in `s`/`s0`; every kit number traceable to the dossier, the sheet or the
+wiki, or listed under `assumed`), compiled in a private copy of the engine,
+and fought: five levels, five item sets against the three presets, with and
+without the ult, no panic, no endless event (the fight loop now aborts one),
+breakdown adds up, damage never falls as the fight lengthens or an item is
+added, every damaging ability shows up. What fails goes back to the model
+(five rounds at most, each told what the earlier rounds failed on); what
+passes is admitted. Admitted kits carry `"generated": true, "reviewed": false`.
+The Builds tab ranks them too (`builds.damage_champions()`), behind a search
+box, tagged "unreviewed", with a banner listing what the kit assumed; a cell
+keys on the engine's core plus that champion's own driver, so rewriting one
+driver leaves the rest warm (CLAUDE.md has the details). The hand-written four and their
+goldens are untouched: `test_builds` passes unchanged.
+
+Measured: 12 of 12 champions admitted, 10 on the first round, 4-8 minutes and
+$0.41-0.70 cost-equivalent each. `compare <slug>` sets a driver written BLIND
+(the model never saw the hand-written one) against the hand-written driver
+over 120 random six-item builds at level 16:
+
+| champion | Spearman of build scores (squishy / bruiser / tank) | hand-written best build's rank in blind | median kill time vs hand |
+|---|---|---|---|
+| Kayle | 0.94 / 0.96 / 0.97 | 1 / 3 / 1 | +0% / +4% / +6% |
+| Twitch | 0.91 / 0.95 / 0.96 | 1 / 1 / 1 | +12% / +12% / +10% |
+| Kassadin | 0.90 / 0.91 / 0.92 | 17 / 1 / 1 | +9% / +15% / +14% |
+| Vladimir | 0.51 / 0.32 / 0.26 | 25 / 1 / 1 | kills 118 vs 18 of 120 |
+
+The gaps are rotation rulings, not arithmetic: blind Twitch casts Contaminate
+on cooldown where the hand kit waits for six stacks; blind Vladimir weaves
+basic attacks where the hand kit rules `attack.never` (his ability damage
+matches to the digit). The guide now lets a kit declare a pure caster
+(`"attack": {"never": true}`). Blind Kayle's wave is the bin's by-level base,
+not the hand kit's linear one (see the open finding above). So: usable as
+unreviewed drafts that rank builds much like a reviewed driver when the
+rotation rulings agree, and wrong in exactly the places the kit's `notes`
+spell out. Tests: `python3 -m unittest test_kit_driver`.
+
+The whole roster (2026-09-19, `kit_driver.py write --all --workers 6`, on the
+Claude plan's login): every champion with a dossier except the four with
+hand-written drivers and Dr. Mundo (his hand-written survival kit is in
+progress elsewhere). 171 generated drivers in all, 43,800 lines of Rust; the
+engine builds in 23 s with them and `test_builds` passes unchanged. 129 were
+admitted on the first round, 34 on the second, 7 later; one (Yunara, whose
+ult replaces her W) used up its five rounds relabeling damage back and forth
+to satisfy the "every damaging ability shows up" check, and was admitted on
+a retry once the prompt carried the history of earlier rounds. Not one round failed
+to compile: the failed rounds were the fight checks (36), the static lints
+(13) and replies too long to read (7, the biggest kits: Zeri lost three
+rounds to it). About $100 cost-equivalent and 3.5 hours of wall clock; the
+simple kits cost $0.25, Aphelios $4.87. All 167 pass the fight checks again
+in the combined build.
+
+What "admitted" does not mean: a look at the outliers found Naafiri fighting
+without her Packmates (the guide's "no allies or minions" was read as
+excluding her own summons: the same may hold for other pet champions), Garen
+maxing Q over E with Judgment worth 13% of his damage, and 91 kits carrying
+an `assumed` number. The kits say `"reviewed": false` for a reason: read a
+kit's `notes`, `assumed` and `unused` before trusting its rankings.
+

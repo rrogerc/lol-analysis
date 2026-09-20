@@ -1,0 +1,162 @@
+{
+ "champion": "ekko",
+ "name": "Ekko",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Opens by attacking immediately and casting Chronobreak (R) at t = 0 purely for its explosion damage; its heal and stasis do not matter to damage dealt and are ignored, and it is recast on cooldown afterward.",
+  "Timewinder (Q) is cast on cooldown: the outgoing hit lands on cast, and the return hit is scheduled Timewinder's stated 1.75 s expand duration later, used as a stand-in for the grenade's full out-and-back travel time since exact travel distance to a stationary dummy is not modeled.",
+  "Phase Dive (E) is woven in right after an attack once it is off cooldown: it resets Ekko's attack timer, so the very next attack becomes the empowered one with its own fixed 0.25 s cast time carrying its bonus damage, and its cooldown starts when that attack lands (post-effect).",
+  "Z-Drive Resonance (P) stacks from every basic attack (as an on-hit rider) and from every Q/E/R damage instance; the third stack consumes all three for bonus magic damage, after which a 4 s per-target lockout blocks new stacks, and stacks decay if 4 s pass without a hit landing (3 stacks, 4 s window, 4 s lockout, all stated directly in the wiki text even though the bin carries no dedicated fields for them).",
+  "Parallel Convergence (W) is never actively cast: its active only sets up a self-shield/stun with no direct damage against a stationary, non-chasing dummy, so only its passive on-hit bonus (3% + 3% per 100 AP of the target's missing health, only while the target is below 30% max health) fires, computed as an on-hit rider alongside every attack.",
+  "Because W's on-hit passive only triggers once the dummy's current health has been brought under 30% of its maximum, it can legitimately never fire within a short fight against a tankier build (see 'unused'); this is not a bug, it is the ability working as designed.",
+  "Chronobreak's cast-to-explosion delay is read as the wiki's stated 0.5 s (cast time and dash duration agree at 0.5 s in the prose) rather than the sheet's conflicting 0.25 s castTime field.",
+  "Z-Drive Resonance's 270% damage bonus against monsters does not apply, since the dummy counts as an enemy champion.",
+  "Mana costs are not modeled: nothing in Ekko's kit would realistically run him out of mana inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.Q.expandDelayS",
+   "why": "used as the approximate total delay between Timewinder's outgoing and return damage instances, since exact travel distance to a stationary target is not modeled"
+  }
+ ],
+ "unused": {
+  "W": "Parallel Convergence deals damage only through its passive on-hit bonus, gated to fire while the target is below 30% of its maximum health. Against a full-health stationary dummy with defensive itemization, an 8-15 s fight can end before Ekko's other damage (Q/E/R/P/autos) brings it under that threshold, so some item builds and durations legitimately show no W-labeled source in the breakdown even though the code applies it correctly whenever the threshold is crossed."
+ },
+ "abilities": {
+  "Q": {
+   "name": "Timewinder",
+   "cooldownS": [
+    9,
+    8.5,
+    8,
+    7.5,
+    7
+   ]
+  },
+  "W": {
+   "name": "Parallel Convergence",
+   "cooldownS": [
+    22,
+    20,
+    18,
+    16,
+    14
+   ]
+  },
+  "E": {
+   "name": "Phase Dive",
+   "cooldownS": [
+    9,
+    8.5,
+    8,
+    7.5,
+    7
+   ]
+  },
+  "R": {
+   "name": "Chronobreak",
+   "cooldownS": [
+    110,
+    80,
+    50
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "threeHitDamage": {
+    "baseByLevel": [
+     30,
+     40,
+     50,
+     60,
+     70,
+     80,
+     85,
+     90,
+     95,
+     100,
+     105,
+     110,
+     115,
+     120,
+     125,
+     130,
+     135,
+     140
+    ],
+    "apRatio": 0.8
+   },
+   "maxStacks": 3,
+   "stackDurationS": 4,
+   "lockoutS": 4
+  },
+  "Q": {
+   "outgoingDamage": {
+    "base": [
+     80,
+     95,
+     110,
+     125,
+     140
+    ],
+    "apRatio": 0.3
+   },
+   "returnDamage": {
+    "base": [
+     40,
+     65,
+     90,
+     115,
+     140
+    ],
+    "apRatio": 0.7
+   },
+   "expandDelayS": 1.75
+  },
+  "W": {
+   "baseOnHitPct": 3,
+   "apCoefPct": 0.03,
+   "belowHealthThresholdPct": 30
+  },
+  "E": {
+   "damage": {
+    "base": [
+     50,
+     75,
+     100,
+     125,
+     150
+    ],
+    "apRatio": 0.4
+   },
+   "castTimeS": 0.25,
+   "buffDurationS": 3
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     350,
+     500
+    ],
+    "apRatio": 1.75
+   },
+   "castTimeS": 0.5
+  }
+ },
+ "attack": {
+  "windupFraction": 0.1625,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ekko.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ekko.rs."
+ ]
+}

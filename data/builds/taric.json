@@ -1,0 +1,141 @@
+{
+ "champion": "taric",
+ "name": "Taric",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "E",
+  "W",
+  "Q"
+ ],
+ "notes": [
+  "At t=0 Taric casts Dazzle (E, no cast time, 1s wind-up before its damage lands) and self-casts Bastion (W, 0.25s cast); both are then recast every time they come off cooldown for the whole fight, each tracked as its own event.",
+  "Bravado's empowered-attack queue is modeled explicitly: an ability cast (Q/W/E) grants two stored empowered attacks if fewer than two were stored, refreshing the 5s window only when it does so (a cast while two are already stored does nothing further, matching 'Bravado may only grant up to two empowered attacks'); the first landed empowered attack of a refreshed pair also refreshes the 5s window.",
+  "Starlight's Touch (Q) is cast automatically whenever Taric has at least one stocked charge, on the standard League reading that an ammo-style spell cannot be cast at zero stock (the dossier flags this as an open, high-impact question). Charges are granted only by landing Bravado-empowered attacks; the passive 15s-per-charge natural recharge is not modeled since attack-granted charges dominate within a 15s fight and Q's own heal is irrelevant to the damage fight.",
+  "The engine's stat sheet exposes only total armor, with no base/bonus split for armor (unlike AD, which has ad_base/ad_bonus). Bravado's on-attack magic damage (+15% bonus armor) and Dazzle's damage (+50% bonus armor) therefore both use Taric's total armor stat as the bonus-armor input; this is a documented overestimate (see `assumed`).",
+  "Bastion (W) is self-cast: it grants Taric bonus armor equal to its rank's percentage of his armor once the self-tether forms, treated as permanent for the rest of the fight since nothing severs a self-tether with no allies present; its shield is irrelevant with no incoming damage and is not modeled.",
+  "Bravado's cooldown reduction on Q/W/E's remaining cooldown is modeled by keeping (1 - Haste/(Haste+100)) of each ability's remaining cooldown at every Bravado proc (including on the ability just cast), following the wiki's stated ability-haste conversion formula (the numbers sheet marks the underlying calculation piece unresolved).",
+  "Cosmic Radiance (R) is never cast: it deals no damage and grants nothing useful to a damage fight, only costing a 0.25s cast lockout, matching the dossier's proposed rotation.",
+  "Bravado's '100% total attack speed' is modeled as +100 percentage points of bonus attack speed while an empowered attack is stored and the window has not expired, the closest reading available to the engine's percent bonus-AS hook.",
+  "Mana costs are not modeled: nothing here binds inside an 8-15s fight at level 16."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Starlight's Touch",
+   "cooldownS": [
+    3,
+    3,
+    3,
+    3,
+    3
+   ]
+  },
+  "W": {
+   "name": "Bastion",
+   "cooldownS": [
+    15,
+    15,
+    15,
+    15,
+    15
+   ]
+  },
+  "E": {
+   "name": "Dazzle",
+   "cooldownS": [
+    16,
+    15,
+    14,
+    13,
+    12
+   ]
+  },
+  "R": {
+   "name": "Cosmic Radiance",
+   "cooldownS": [
+    180,
+    150,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "damageByLevel": [
+    25,
+    29,
+    33,
+    37,
+    41,
+    45,
+    49,
+    52.6,
+    56.6,
+    60.6,
+    64.6,
+    68.6,
+    72.6,
+    76.6,
+    80.6,
+    84.6,
+    88.6,
+    93
+   ],
+   "armorCoef": 0.15,
+   "durationS": 5,
+   "attackSpeedBonusPct": 100,
+   "bonusArmorApproxTotalArmor": true
+  },
+  "Q": {
+   "maxCharges": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "requiresChargeToCast": true
+  },
+  "W": {
+   "armorPct": [
+    0.06,
+    0.07,
+    0.08,
+    0.09,
+    0.1
+   ]
+  },
+  "E": {
+   "damage": {
+    "base": [
+     90,
+     130,
+     170,
+     210,
+     250
+    ],
+    "apRatio": 0.5
+   },
+   "armorCoef": 0.5,
+   "windupS": 1
+  }
+ },
+ "assumed": [
+  {
+   "path": "gen.P.bonusArmorApproxTotalArmor",
+   "why": "the engine's Sheet exposes only total armor, not a base/bonus split, so bonus armor for Bravado's on-attack damage and Dazzle's damage is approximated as Taric's total armor stat"
+  },
+  {
+   "path": "gen.Q.requiresChargeToCast",
+   "why": "the dossier leaves open whether Starlight's Touch can be cast at zero stocked charges; the standard League reading for ammo-style spells (cannot cast at zero stock) is used"
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.18,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/taric.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/taric.rs."
+ ]
+}

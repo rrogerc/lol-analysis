@@ -1,0 +1,168 @@
+{
+ "champion": "jinx",
+ "name": "Jinx",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "W",
+  "E",
+  "Q"
+ ],
+ "notes": [
+  "The fight opens with Jinx already toggled to Fishbones, since a real player switches before engaging.",
+  "Super Mega Death Rocket is fired at t=0 assumed from beyond its ~1500-unit maximum-damage travel distance, so it lands doing its full, maximally-travelled damage; this resolves the dossier's highest-impact open question toward best-case play.",
+  "Flame Chompers are thrown directly under the stationary dummy; since the dummy never walks onto them, they are assumed to still detonate as soon as they arm (0.4s to land + 0.5s to arm = 0.9s after cast) rather than waiting out their 5s self-destruct timer.",
+  "Fishbones' 110% AD hit is modeled as the engine's normal 100% AD basic attack plus a 10% AD on-hit rider, both crit-affected, costing 20 mana per attack from the build's total mana pool (no regeneration is modeled); once that pool runs dry Jinx toggles back to the free Pow-Pow stance and keeps attacking for the rest of the fight.",
+  "Because the rotation never switches back to Fishbones after that one mana-driven swap to Pow-Pow, the dossier's open question of whether Rev'd up stacks survive a stance switch never arises here.",
+  "Rev'd up is modeled as a single duration shared by all current stacks (each Pow-Pow attack refreshes it and adds a stack up to 3) rather than each stack expiring independently, since continuous attacking in this fight never lets a partial stack lapse.",
+  "Fishbones' attack-speed penalty is applied as -10% of the build's own bonus attack speed stat, since the engine only exposes the kit's own additive attack-speed contribution rather than a multiplier on the whole bonus AS pool.",
+  "Zap! and Flame Chompers! are cast on cooldown throughout the fight; Super Mega Death Rocket's 45-85s cooldown is far longer than the fight and is not expected to come off cooldown again, though the driver supports a recast if a build's ability haste ever allows it.",
+  "Get Excited! is not modeled: its movement/attack speed burst only triggers on a champion takedown, which a stationary dummy with a fixed health pool is not expected to provide within the fight.",
+  "Zap!, Flame Chompers!, and Super Mega Death Rocket! draw from the same tracked mana pool as Fishbones attacks; if the pool runs out before one of them is ready, that ability simply stops being cast for the rest of the fight."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Switcheroo!",
+   "cooldownS": [
+    0.9,
+    0.9,
+    0.9,
+    0.9,
+    0.9
+   ]
+  },
+  "W": {
+   "name": "Zap!",
+   "cooldownS": [
+    8,
+    7,
+    6,
+    5,
+    4
+   ]
+  },
+  "E": {
+   "name": "Flame Chompers!",
+   "cooldownS": [
+    24,
+    20.5,
+    17,
+    13.5,
+    10
+   ]
+  },
+  "R": {
+   "name": "Super Mega Death Rocket!",
+   "cooldownS": [
+    85,
+    65,
+    45
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "revvedFirstStackAsPct": [
+    15,
+    27.5,
+    40,
+    52.5,
+    65
+   ],
+   "revvedSubStackAsPct": [
+    7.5,
+    13.75,
+    20,
+    26.25,
+    32.5
+   ],
+   "revvedDurationS": 2.5,
+   "revvedMaxStacks": 3,
+   "fishbonesAdRatio": 0.1,
+   "fishbonesAsPenaltyPct": 10,
+   "fishbonesManaCostPerAttack": 20
+  },
+  "W": {
+   "damage": {
+    "base": [
+     10,
+     60,
+     110,
+     160,
+     210
+    ],
+    "adRatio": 1.4
+   },
+   "manaCost": [
+    40,
+    45,
+    50,
+    55,
+    60
+   ],
+   "castTimeMaxS": 0.6,
+   "castTimeMinS": 0.4,
+   "castTimeAsCapPct": 250
+  },
+  "E": {
+   "damage": {
+    "base": [
+     90,
+     140,
+     190,
+     240,
+     290
+    ],
+    "apRatio": 1.0
+   },
+   "manaCost": [
+    90,
+    90,
+    90,
+    90,
+    90
+   ],
+   "landTimeS": 0.4,
+   "armTimeS": 0.5
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     350,
+     500
+    ],
+    "bonusAdRatio": 1.2
+   },
+   "missingHpRatio": [
+    0.25,
+    0.3,
+    0.35
+   ],
+   "manaCost": [
+    100,
+    100,
+    100
+   ],
+   "travelTimeS": 0.85
+  }
+ },
+ "assumed": [
+  {
+   "path": "gen.R.travelTimeS",
+   "why": "assumes Jinx fires Super Mega Death Rocket from beyond its ~1500-unit maximum-damage travel distance, per the wiki's own estimate of ~0.85s travel time to reach full damage"
+  },
+  {
+   "path": "gen.E.landTimeS",
+   "why": "assumes Flame Chompers are thrown directly onto the stationary dummy so they still count as landing on cast, taking only the 0.4s land + 0.5s arm interval before exploding rather than needing the dummy to walk over them"
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.17708,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/jinx.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/jinx.rs."
+ ]
+}

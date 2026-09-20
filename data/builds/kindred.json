@@ -1,0 +1,145 @@
+{
+ "champion": "kindred",
+ "name": "Kindred",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Mark of the Kindred stacks are gained only from champion takedowns, which a solo stationary dummy can never provide, so every stack-scaled term (Q's attack speed, W's current-health%, E's missing-health%) uses 0 assumed stacks.",
+  "Mounting Dread's stack cap is a sheet/wiki discrepancy (bin says 4, wiki text says 3, matching its own 'third stack directs Wolf to pounce'); the wiki's reading of 3 basic attacks to detonate is used.",
+  "Wolf's base attack rate before his 25% conversion of Kindred's bonus attack speed is not stated anywhere in the data; an assumed base of 1.0 attacks/second is used, with 25% of Kindred's total bonus attack speed added on top.",
+  "The opener casts Q immediately for its arrow damage, attack-speed buff and attack-timer reset, casts Mounting Dread (E) onto the dummy to start the mark, and casts Wolf's Frenzy (W) to send Wolf in; all three are off cooldown at t=0.",
+  "Lamb keeps basic-attacking the dummy throughout; each landed attack while a Mounting Dread mark is up adds a stack, and the 3rd stack consumes them all for Wolf's bonus pounce damage, after which Mounting Dread is recast on cooldown to restart the cycle.",
+  "Dance of Arrows' cooldown is treated as continuously capped to its static (reduced) value for the whole time Lamb is standing in Wolf's Frenzy's zone (which she never leaves in this fight), and casting Wolf's Frenzy also instantly cuts Q's current cooldown down to that same value, per the wiki text describing both a standing-in-zone cap and an on-cast reduction.",
+  "Wolf's Frenzy's cooldown is 'post-effect': ability haste is applied only to whatever cooldown remains after the full 8.5s zone duration elapses, per the wiki's worked example.",
+  "Wolf is assumed to occupy the dummy the entire 8.5s zone duration (Lamb never leaves it) and to land his first attack immediately on cast; his damage uses the single-target (non-monster) formula since the dummy counts as an enemy champion.",
+  "Mounting Dread's pounce damage scales with Kindred's crit chance and crit damage as one shared multiplier applied to both its flat+bonus-AD component and its missing-health% component, per the bin's BaseBiteDamage/PercentBiteDamage formulas; this is computed from the build's static crit stats rather than the engine's random-crit mechanic, so crit_mod is left off that damage instance.",
+  "Dance of Arrows has no cast time and is treated as an instant cast (no 0.25s lockout); Mounting Dread has a stated 0.25s cast time and is locked out accordingly.",
+  "Lamb's Respite is never cast: it deals no damage, only heals and grants a low-health invulnerability threshold, which do not matter in this fight.",
+  "Mana costs are not modeled: nothing here would actually bind across an 8-15s level-16 fight."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Dance of Arrows",
+   "cooldownS": [
+    9,
+    9,
+    9,
+    9,
+    9
+   ]
+  },
+  "W": {
+   "name": "Wolf's Frenzy",
+   "cooldownS": [
+    18,
+    17,
+    16,
+    15,
+    14
+   ]
+  },
+  "E": {
+   "name": "Mounting Dread",
+   "cooldownS": [
+    14,
+    12.5,
+    11,
+    9.5,
+    8
+   ]
+  },
+  "R": {
+   "name": "Lamb's Respite",
+   "cooldownS": [
+    160,
+    140,
+    120
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "assumedStacks": 0
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     40,
+     65,
+     90,
+     115,
+     140
+    ],
+    "bonusAdRatio": 0.75
+   },
+   "cdNewValue": [
+    4,
+    3.5,
+    3,
+    2.5,
+    2
+   ],
+   "baseBonusAS": 0.35,
+   "asPerMark": 0.05,
+   "baseASDuration": 4
+  },
+  "W": {
+   "damage": {
+    "base": [
+     25,
+     30,
+     35,
+     40,
+     45
+    ],
+    "bonusAdRatio": 0.2,
+    "apRatio": 0.2
+   },
+   "percentDamageBase": 0.015,
+   "percentDamagePerMark": 0.01,
+   "zoneDurationS": 8.5,
+   "asConversion": 0.25,
+   "assumedBaseAttacksPerSecond": 1.0
+  },
+  "E": {
+   "damage": {
+    "base": [
+     80,
+     110,
+     140,
+     170,
+     200
+    ],
+    "bonusAdRatio": 1.0
+   },
+   "percentDamageBase": 0.05,
+   "percentDamagePerMark": 0.005,
+   "stacksToProc": 3,
+   "castTimeS": 0.25
+  },
+  "R": {}
+ },
+ "assumed": [
+  {
+   "path": "gen.P.assumedStacks",
+   "why": "Mark of the Kindred stacks only come from champion takedowns, impossible against a solo stationary dummy; assumed 0."
+  },
+  {
+   "path": "gen.W.assumedBaseAttacksPerSecond",
+   "why": "Wolf's base attack rate before the stated 25%-of-bonus-AS conversion is not given anywhere; assumed 1.0 attacks/second."
+  }
+ ],
+ "attack": {
+  "windupFraction": 0.17544,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/kindred.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/kindred.rs."
+ ]
+}

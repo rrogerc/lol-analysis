@@ -1,0 +1,205 @@
+{
+ "champion": "pantheon",
+ "name": "Pantheon",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "The fight opens with Grand Starfall at t=0: its two channels (2 s then 2.25 s, using the wiki's stated stage timings) lock out every other action until the spear and shockwave land, after which Comet Spear, Shield Vault, Aegis Assault and basic attacks resume.",
+  "Comet Spear is always tap-released (quickcast) rather than held: it deals the lower 'thrust' base damage but refunds 60% of its cooldown, letting it be recast far more often than the hold-and-throw version, which is never used.",
+  "Comet Spear's damage switches to the wiki's higher 'Increased Thrust' values once the dummy drops below 20% of its maximum health.",
+  "Mortal Will's 5-stack empowerment is modeled as always landing on the next Comet Spear cast: since Q is recast far more often than W or E in this rotation it is in practice almost always the very next basic ability cast when stacks hit 5, so Shield Vault's and Aegis Assault's own Mortal-Will bonuses (a 3-hit attack, and a resist buff) are never triggered.",
+  "Pantheon is assumed to start the fight at maximum (5) Mortal Will stacks, since he is stated to gain max stacks upon spawning.",
+  "Shield Vault and Aegis Assault are each cast as soon as they come off cooldown for their own damage; Aegis Assault is always held for its full 1.5 s channel (rather than recasting at the earliest 0.3 s) to capture the full capped 100% AD of DoT damage before its automatic recast slam.",
+  "Aegis Assault's channel damage is delivered as a single lump instance worth the wiki's stated 100% AD cap at the moment the channel ends, rather than as 12 separate 0.125 s ticks, since only the capped total affects the outcome and attacks/other casts are blocked for the whole channel regardless.",
+  "Grand Starfall's passive armor penetration (10/20/30% by Ultimate rank) is modeled with the engine's single shred slot at its rank-3 (30%) value, applied from the opening cast for the rest of the fight, since that slot does not support a by-rank magnitude.",
+  "Mana costs are not modeled: Pantheon's base mana pool at level 16 comfortably covers the handful of casts inside an 8-15 s fight.",
+  "Pantheon has no on-hit damage of his own; basic attacks land normally and simply generate a Mortal Will stack each."
+ ],
+ "assumed": [
+  {
+   "path": "gen.P.maxStacks",
+   "why": "Pantheon is assumed to already have 5 Mortal Will stacks at the start of the fight, as he gains max stacks at game start/after recall/respawn."
+  },
+  {
+   "path": "abilities.Q.shred.pct",
+   "why": "Grand Starfall's passive armor penetration is rank-dependent (10/20/30%), but the engine's shred slot only holds a single non-by-rank value, so the rank-3 (30%) value is used, matching the standard level-16 test point."
+  },
+  {
+   "path": "abilities.Q.shred.durationS",
+   "why": "Grand Starfall's armor-penetration passive is permanent while the ultimate is active, not a timed debuff; no duration number exists in the dossier or sheet, so a value far longer than any simulated fight (9999s) is used to represent it lasting the whole encounter."
+  },
+  {
+   "path": "gen.R.firstChannelS",
+   "why": "Grand Starfall's channel-stage timings (2 s then 2.25 s, spear thrown 0.8 s into the second channel after a 0.2 s travel) are taken from the wiki's description text; several of these sub-timings are themselves marked 'Estimated' by the wiki since no bin data value confirms them exactly."
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Comet Spear",
+   "cooldownS": [
+    11,
+    10.25,
+    9.5,
+    8.75,
+    8
+   ],
+   "shred": {
+    "pct": 30,
+    "appliesTo": [
+     "armor"
+    ],
+    "durationS": 9999
+   }
+  },
+  "W": {
+   "name": "Shield Vault",
+   "cooldownS": [
+    13,
+    12,
+    11,
+    10,
+    9
+   ]
+  },
+  "E": {
+   "name": "Aegis Assault",
+   "cooldownS": [
+    22,
+    21,
+    20,
+    19,
+    18
+   ]
+  },
+  "R": {
+   "name": "Grand Starfall",
+   "cooldownS": [
+    180,
+    165,
+    150
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "maxStacks": 5
+  },
+  "Q": {
+   "tapDamage": {
+    "base": [
+     70,
+     100,
+     130,
+     160,
+     190
+    ],
+    "bonusAdRatio": 1.15
+   },
+   "tapDamageExecute": {
+    "base": [
+     155,
+     230,
+     305,
+     380,
+     455
+    ],
+    "bonusAdRatio": 2.3
+   },
+   "empowerBonusByLevel": [
+    20,
+    32.941176,
+    45.882353,
+    58.82353,
+    71.76471,
+    84.70588,
+    97.64706,
+    110.588235,
+    123.52941,
+    136.470588,
+    149.41176,
+    162.35294,
+    175.29412,
+    188.23529,
+    201.17647,
+    214.11765,
+    227.05882,
+    240
+   ],
+   "empowerBonusBonusAdRatio": 1.15,
+   "critHealthThreshold": 0.2,
+   "tapCooldownRefund": 0.6
+  },
+  "W": {
+   "maxHealthPct": [
+    0.06,
+    0.065,
+    0.07,
+    0.075,
+    0.08
+   ],
+   "apCoef": 0.00015,
+   "bonusHpCoef": 4e-05
+  },
+  "E": {
+   "channelTotal": {
+    "base": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adRatio": 1.0
+   },
+   "slamDamage": {
+    "base": [
+     55,
+     105,
+     155,
+     205,
+     255
+    ],
+    "bonusAdRatio": 1.5
+   },
+   "channelDurationS": 1.5
+  },
+  "R": {
+   "spearBase": [
+    40,
+    70,
+    100,
+    130,
+    160,
+    190
+   ],
+   "spearBonusAdRatio": 1.15,
+   "spearApRatio": 0.5,
+   "shockwave": {
+    "base": [
+     300,
+     500,
+     700
+    ],
+    "apRatio": 1.0
+   },
+   "castTimeS": 0.1,
+   "firstChannelS": 2,
+   "secondChannelS": 2.25,
+   "spearTimingS": 0.8,
+   "spearTravelS": 0.2
+  }
+ },
+ "attack": {
+  "windupFraction": 0.19031,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/pantheon.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/pantheon.rs."
+ ]
+}

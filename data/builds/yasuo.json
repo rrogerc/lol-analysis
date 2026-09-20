@@ -1,0 +1,124 @@
+{
+ "champion": "yasuo",
+ "name": "Yasuo",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "Yasuo attacks and casts Steel Tempest (Q) on cooldown, tracking Gathering Storm (max 2 stacks, 6s each, refreshed on every landed Q); once 2 stacks are already up, the next landed Q becomes the empowered knock-up whirlwind, which the dossier states deals identical damage to a single target, so both variants share one damage constant.",
+  "Immediately after a knock-up whirlwind lands, Last Breath (R) is cast if it is off cooldown, reading Yasuo's own Q-whirlwind knock-up as satisfying its airborne-target requirement (the well-known live-game Q3->R combo); its damage and the attack lockout land 1 second later, when the knock-up (and R's channel) ends.",
+  "Sweeping Blade (E) is cast whenever its per-target cooldown (10 to 6 seconds by rank, starting on the dash) allows; because that cooldown always exceeds Ride the Wind's 5-second stack duration, the one stack from a previous cast has always decayed by the time E can be recast on the lone dummy, so E is modeled at its unstacked base damage only.",
+  "Wind Wall is never cast: it deals no damage and only blocks projectiles, which never matters against a stationary, non-attacking dummy.",
+  "Steel Tempest's cooldown shrinks with Yasuo's total bonus attack speed per its static formula (capped at 67% reduction at 111.1% bonus attack speed) before ability haste is applied on top via the normal formula; its cast-time reduction is not modeled because the engine only ever charges the flat 0.25s cast lockout, never an ability's own cast-time value.",
+  "Way of the Wanderer doubles Yasuo's total crit chance (capped at 100%) and converts crit chance in excess of 100% into bonus AD (0.5 per 1%); this bonus AD is folded into attack damage and into every ability's AD scaling. Steel Tempest's crit multiplier applies only to its AD-ratio term (its flat base damage never crits), using Yasuo's own crit chance/damage (95% of normal crit damage) baked into Q's damage as an expected value.",
+  "The engine's basic-attack crit math reads the sheet's raw item crit chance/crit damage and has no hook for a champion-specific override, so this driver cannot apply Yasuo's crit-chance doubling or 95%-crit-damage reduction to plain basic-attack crits; only Steel Tempest's hand-computed crit is corrected. This is a known engine-limitation understatement for crit-heavy builds.",
+  "Last Breath's 15-second bonus-armor-penetration-on-crit debuff is not modeled: the engine's only target-debuff primitive is a flat percent armor/MR shred applied to all damage, which would misrepresent an effect limited to bonus armor and to Yasuo's own crits, so it is omitted rather than approximated.",
+  "The Flow shield from Way of the Wanderer is purely defensive (it only ever mitigates incoming damage) and the dummy never damages Yasuo, so it is omitted entirely.",
+  "No Yasuo ability costs mana (the sheet lists 0 cost at every rank for all abilities), so mana is not modeled."
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Steel Tempest",
+   "cooldownS": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "W": {
+   "name": "Wind Wall",
+   "cooldownS": [
+    25,
+    23,
+    21,
+    19,
+    17
+   ]
+  },
+  "E": {
+   "name": "Sweeping Blade",
+   "cooldownS": [
+    0.5,
+    0.4,
+    0.3,
+    0.2,
+    0.1
+   ]
+  },
+  "R": {
+   "name": "Last Breath",
+   "cooldownS": [
+    70,
+    50,
+    30
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "critDamageMod": 0.95,
+   "adPerExcessCritPct": 0.5
+  },
+  "Q": {
+   "baseDamage": [
+    20,
+    45,
+    70,
+    95,
+    120
+   ],
+   "adRatio": 1.05,
+   "asCdCapBonusAsPct": 111.1,
+   "asCdCapReductionFrac": 0.67,
+   "gatheringStormStacksMax": 2,
+   "gatheringStormDurationS": 6
+  },
+  "E": {
+   "baseDamage": [
+    70,
+    85,
+    100,
+    115,
+    130
+   ],
+   "adRatio": 0.2,
+   "apRatio": 0.6,
+   "perTargetCooldownS": [
+    10,
+    9,
+    8,
+    7,
+    6
+   ],
+   "maxStacks": 4,
+   "stackDurationS": 5,
+   "perStackBonusFrac": 0.25
+  },
+  "R": {
+   "baseDamage": [
+    200,
+    350,
+    500
+   ],
+   "bonusAdRatio": 1.5,
+   "knockupDurationS": 1,
+   "critArmorPenPct": 60,
+   "critArmorPenDurationS": 15
+  }
+ },
+ "attack": {
+  "windupFraction": 0.22,
+  "ranged": false
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/yasuo.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/yasuo.rs."
+ ],
+ "manaless": true
+}

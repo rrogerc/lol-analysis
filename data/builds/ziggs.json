@@ -1,0 +1,186 @@
+{
+ "champion": "ziggs",
+ "name": "Ziggs",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "E",
+  "W"
+ ],
+ "notes": [
+  "The engine casts Mega Inferno Bomb at t = 0 as the opener; it is aimed at close range so the bomb lands after 1.617 s (the fixed travel time within ~2700 units, from the start of the cast) with the dummy inside the 250-unit epicenter for full, non-reduced damage.",
+  "After the opener, Bouncing Bomb is recast on cooldown as the primary filler (lowest cooldown), with Hexplosive Minefield and Satchel Charge recast on their own cooldowns and basic attacks thrown in between so Short Fuse's empowered attack goes out as soon as it is armed; Mega Inferno Bomb is recast again only if its long cooldown actually comes back up inside the fight.",
+  "Short Fuse is assumed to be off cooldown at the start of the fight, so the first basic attack is already empowered; each empowered attack deals its bonus magic damage and the passive's own 12 s cooldown starts at that moment (\"cooldown starts on-attack\"), and every ability cast (Q/W/E/R) cuts its remaining cooldown by the level-scaled amount, applied at the start of that ability's cast.",
+  "Short Fuse's bonus damage against structures does not apply to a champion-type dummy and is ignored.",
+  "Satchel Charge is modeled as a single instant action: its damage lands right after the 0.25 s cast, treating the manual recast as immediate with no extra delay of its own, since the dossier leaves the recast's timing open and immediate detonation is the standard aggressive play; only the initial cast (not the detonation) is treated as the ability activation for on-cast effects.",
+  "Hexplosive Minefield's 11 mines are assumed to all contact the stationary dummy (1 full-damage hit plus 10 hits at 40% damage), matching the wiki's documented 'Maximum Total Magic Damage' tooltip; the whole burst is dealt together 0.5 s after the cast, once the mines finish arming.",
+  "Mana costs are not modeled: nothing here binds inside a 15 s fight at level 16."
+ ],
+ "assumed": [
+  {
+   "path": "gen.E.mineCount",
+   "why": "assumes the stationary dummy is hit by all 11 scattered mines (the wiki's documented maximum), since the exact hit count depends on unmodeled mine geometry"
+  },
+  {
+   "path": "gen.R.travelS",
+   "why": "assumes Mega Inferno Bomb is cast within the ~2700-unit close-range threshold for its fixed, shorter travel time, and that the dummy sits inside the epicenter"
+  }
+ ],
+ "abilities": {
+  "Q": {
+   "name": "Bouncing Bomb",
+   "cooldownS": [
+    6,
+    5.5,
+    5,
+    4.5,
+    4
+   ]
+  },
+  "W": {
+   "name": "Satchel Charge",
+   "cooldownS": [
+    20,
+    18,
+    16,
+    14,
+    12
+   ]
+  },
+  "E": {
+   "name": "Hexplosive Minefield",
+   "cooldownS": [
+    16,
+    16,
+    16,
+    16,
+    16
+   ]
+  },
+  "R": {
+   "name": "Mega Inferno Bomb",
+   "cooldownS": [
+    120,
+    95,
+    70
+   ]
+  }
+ },
+ "gen": {
+  "P": {
+   "cooldownS": 12,
+   "baseByLevel": [
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    48,
+    56,
+    64,
+    72,
+    80,
+    88,
+    100,
+    112,
+    124,
+    136,
+    148,
+    160
+   ],
+   "apRatio": 0.5,
+   "cdrByLevel": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Q": {
+   "damage": {
+    "base": [
+     80,
+     130,
+     180,
+     230,
+     280
+    ],
+    "apRatio": [
+     0.6,
+     0.65,
+     0.7,
+     0.75,
+     0.8
+    ]
+   }
+  },
+  "W": {
+   "damage": {
+    "base": [
+     70,
+     105,
+     140,
+     175,
+     210
+    ],
+    "apRatio": 0.5
+   }
+  },
+  "E": {
+   "damage": {
+    "base": [
+     30,
+     70,
+     110,
+     150,
+     190
+    ],
+    "apRatio": [
+     0.25,
+     0.3,
+     0.35,
+     0.4,
+     0.45
+    ]
+   },
+   "subsequentMod": 0.4,
+   "mineCount": 11,
+   "armDelayS": 0.5
+  },
+  "R": {
+   "epicenter": {
+    "base": [
+     300,
+     500,
+     700
+    ],
+    "apRatio": 1.0
+   },
+   "travelS": 1.617
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ziggs.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ziggs.rs."
+ ]
+}

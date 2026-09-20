@@ -1,0 +1,115 @@
+{
+ "champion": "ashe",
+ "name": "Ashe",
+ "patch": "16.18",
+ "generated": true,
+ "reviewed": false,
+ "maxOrder": [
+  "Q",
+  "W",
+  "E"
+ ],
+ "notes": [
+  "Frost Shot (P) needs no code of its own: its bonus is 'critChance x (critDamageMultiplier - 1) x AD' added to the normal hit, which is exactly the standard expected-value crit math the engine already applies to every basic attack (a crit deals critDamageMultiplier x AD, so the expectation is AD x (1 + critChance x (critDamageMultiplier - 1))); modelling P separately on top of the engine's own crit handling would double it.",
+  "Opens with Enchanted Crystal Arrow (R) at t=0; its travel after the 0.25 s cast is assumed negligible (an open question the dossier flags as low impact), so its damage is dealt right when the cast completes.",
+  "Attacks continuously; each attack while Ranger's Focus (Q) is inactive builds a Focus stack (capped at 4). The instant 4 stacks are up and the buff is not already running, Q is activated for free (no cooldown, no cast time, no mana modelled).",
+  "While Ranger's Focus is active (6 s), every attack is the empowered 5-arrow flurry: the driver zeroes that attack's normal (auto) damage instance and instead deals the flurry's full 'total damage per flurry' (110-130% of total AD by rank, with the same expected-crit treatment a normal attack gets) as its own 'Q' source, since the wiki says on-hit effects apply only once per flurry anyway and the dossier's rotation counts the flurry as Q's damage. Each empowered attack also resets the attack timer, so attacks free-run at windup speed for the buff's duration.",
+  "The wiki's claim that the very first flurry of an activation fires a bonus 6th arrow for +20% total damage has no support anywhere in the data bin (ShotsPerStrike is a flat 5 with no 6-arrow or 1.2x field on any rank), so it is treated as stale text and not implemented.",
+  "Volley (W) uses the primary 'Volley' bin object (60/95/130/165/200 base, +100% bonus AD), matching the wiki's leveling table and ddragon's cooldown line exactly; the four duplicate VolleyRank2-5 bin objects (a different, lower, total-AD-scaling formula) are treated as stale leftover data, per the dossier's open question.",
+  "Volley is cast on cooldown; its 0.25 s cast time delays the next attack (lockout) and its damage lands at the end of that cast, per the wiki's 'effect at cast time end' note.",
+  "Hawkshot (E) deals no damage and only grants vision, which does not matter in a stationary dummy fight with no fog of war, so it is never cast.",
+  "Mana costs (Q 30, W 55-75, R 100) are not modelled: nothing here plausibly caps casts inside an 8-15 s fight at level 16."
+ ],
+ "assumed": [],
+ "abilities": {
+  "Q": {
+   "name": "Ranger's Focus",
+   "cooldownS": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "W": {
+   "name": "Volley",
+   "cooldownS": [
+    18,
+    14.5,
+    11,
+    7.5,
+    4
+   ]
+  },
+  "E": {
+   "name": "Hawkshot",
+   "cooldownS": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ]
+  },
+  "R": {
+   "name": "Enchanted Crystal Arrow",
+   "cooldownS": [
+    100,
+    80,
+    60
+   ]
+  }
+ },
+ "gen": {
+  "Q": {
+   "asBonusPct": [
+    20,
+    30,
+    40,
+    50,
+    60
+   ],
+   "buffDurationS": 6,
+   "maxStacks": 4,
+   "flurryAdRatio": [
+    1.1,
+    1.15,
+    1.2,
+    1.25,
+    1.3
+   ]
+  },
+  "W": {
+   "damage": {
+    "base": [
+     60,
+     95,
+     130,
+     165,
+     200
+    ],
+    "bonusAdRatio": 1.0
+   },
+   "castTimeS": 0.25
+  },
+  "R": {
+   "damage": {
+    "base": [
+     200,
+     400,
+     600
+    ],
+    "apRatio": 1.2
+   },
+   "castTimeS": 0.25
+  }
+ },
+ "attack": {
+  "windupFraction": 0.2193,
+  "ranged": true
+ },
+ "_provenance": [
+  "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ashe.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ashe.rs."
+ ]
+}
