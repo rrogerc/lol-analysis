@@ -46,24 +46,26 @@ module and committed JSON archive:
   and a build enumerator (`builds optimize` — ranks every item-pool
   combination against a stat dummy; `--budget`/`--require` for partial
   builds). A kit can rule items out of its pool (Vladimir has no mana,
-  so the Tear items and Actualizer never enter his enumeration) or
+  so the Tear items never enter his enumeration) or
   declare that the champion never auto-attacks (Vladimir, as played:
   on-hit, crit and spellblade items then rank on their raw stats).
   The enumeration pool covers every mage, marksman, assassin, and
-  bruiser damage item (76 items + the 7 boots gold can buy; the Feats of
+  bruiser damage item (75 items + the 7 boots gold can buy; the Feats of
   Strength upgrades are not) — AP, on-hit, crit, executes,
   burns, Energized, shreds, spellblades, item actives, fully-stacked tear
   items; the few items whose passives can't be modeled yet (plus
-  support/tank items) are excluded rather than misranked on stats
-  alone, each with its reason recorded under `"excluded"` in
-  `item-effects.json`. Four scenarios, all full builds at level 16: vs
+  support/tank items, and Actualizer, which Roger keeps out by choice)
+  are excluded rather than misranked on stats alone, each with its
+  reason recorded under `"excluded"` in `item-effects.json`. Four
+  scenarios, all full builds at level 16: vs
   a squishy, a bruiser and a tank stat dummy, plus *overall*. The three
   targets are simulated in one pass, which also fills the overall cell:
   every build ranked on all three at once, by the geometric mean of its
   expected kill times (each target counts equally in percentage terms; a
   build must kill every target to rank above one that leaves any
-  standing). That pass ranks ~115M legal builds — every tier-2 boots
-  with every legal five-item combination from a ~75-item pool — against
+  standing). That pass ranks ~107M legal builds — every tier-2 boots
+  with every legal five-item combination from the 75-item pool (93M for a
+  champion with no mana, whose kit drops the two Tear items) — against
   each target. The enumerator fans out across CPU cores in blocks and
   prunes exactly: it publishes every cell's running 500th-best in shared
   memory, drops results that can't place, and stops a fight the moment

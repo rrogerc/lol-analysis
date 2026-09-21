@@ -493,6 +493,30 @@
   jobs/kit_driver.py check ezreal` and `check --all` (0 of 172 fail),
   `python3 -m unittest test_builds test_kit_driver test_kit_sources
   test_builds_leaderboard`, the four Node builds harnesses.
+- Actualizer is out of the damage pool (2026-09-21): Roger's call — he does
+  not want the item in his builds. `DEFAULT_POOL` is 75 items, and the reason
+  sits beside every other exclusion, under `"excluded"` in item-effects.json,
+  so the Builds tab prints it. Only the ENUMERATION lost it: the engine still
+  models Mana Made Real (`manaActive` — the amp, the 30% faster basic
+  cooldowns, the doubled mana costs), `builds sim --items actualizer` still
+  fights with it, `test_actualizer_doubles_what_casts_cost` still passes, and
+  putting it back is one line in each file. It was never in `TANK_POOL`, so
+  the Survival tier's own pool is untouched — but Dr. Mundo's cells still
+  move, because his attackers are Kayle's and Kassadin's best builds and
+  Kassadin's had the item. How much it had been winning: of the 660 cells
+  whose top row was captured before the warm pruned it (all but the
+  hand-encoded four, Dr. Mundo, Aatrox, Ahri and Akali, recomputed before the
+  snapshot), Actualizer was in the #1 build of 131 — a fifth of the board.
+  The pool is in builds.py's bytes and item-effects.json is in every cell's
+  key, so this re-keys all 691 cells: the whole roster is re-warmed by hand
+  after a change like this, about 9 cells a minute on this box.
+  The goldens need nothing: both fixture sets carry their own item lists
+  (`test_enumerate` passes `candidates=run["pool"]`, `TestSurvivalGolden` its
+  own attacker builds), and all of them replay unchanged. `test_manaless_pool`
+  now asserts the item is out of the pool and that Vladimir drops two mana
+  items rather than three. `TestSurvivalSearch` still feeds Kassadin an
+  Actualizer build as a fixed input: a mechanics fixture, not the live best
+  build.
 
 ## The One-tricks tab (onetricks.py)
 

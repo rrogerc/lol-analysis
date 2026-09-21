@@ -1028,10 +1028,11 @@ class TestVladimirEngine(unittest.TestCase):
         vlad = builds.champion_pool(self.kit, self.effects)
         kayle = builds.champion_pool(builds.load_kit("kayle"), self.effects)
         self.assertEqual(kayle, builds.DEFAULT_POOL)
-        for iid in (3040, 3042, 2522):  # Seraph's, Muramana, Actualizer
+        for iid in (3040, 3042):  # Seraph's, Muramana (Actualizer left the pool)
             self.assertIn(iid, kayle)
             self.assertNotIn(iid, vlad)
-        self.assertEqual(len(vlad), len(builds.DEFAULT_POOL) - 3)
+        self.assertNotIn(2522, builds.DEFAULT_POOL)
+        self.assertEqual(len(vlad), len(builds.DEFAULT_POOL) - 2)
         meta = builds.api_builds_meta()
         by_slug = {c["slug"]: c for c in meta["champions"]}
         self.assertEqual(by_slug["vladimir"]["pool"], vlad)

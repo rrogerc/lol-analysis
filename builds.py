@@ -1837,7 +1837,6 @@ DEFAULT_POOL = [
     8010,  # Bloodletter's Curse
     3152,  # Hextech Rocketbelt
     3146,  # Hextech Gunblade
-    2522,  # Actualizer
     8020,  # Abyssal Mask (12% magic amp outweighs its tank statline sometimes)
     # --- on-hit / marksman ---
     3124,  # Guinsoo's Rageblade
