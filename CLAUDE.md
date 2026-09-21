@@ -442,6 +442,58 @@
   `--driver` now; anything else that reads a candidate's files must too.
   Tests: `test_kit_driver.TestCastTimes`, `TestRepair`, `TestReferenceDriver`.
 
+- Ezreal's projectiles (2026-09-21): the first generated driver with a flight
+  time, hand-edited after Roger pointed out that his cooldown refund was
+  instant. What was true: `e.deal` lands at the clock, so all four of his
+  abilities hit the dummy the instant they were cast and Mystic Shot's 1.5 s
+  refund was applied there too. What the refund's timing is worth depends on
+  the regime, and both halves are checked: where the cooldown left after a
+  cast is longer than the flight, NOTHING — the refund only subtracts 1.5 s
+  from a cooldown with more than a flight to run, so Q's cadence is
+  `cd - 1.5` either way (an AD-crit build casts Q at 1.00/4.00/7.00/10.00 s
+  before and after). Where it is shorter, the refund used to arrive before
+  the bolt did: at maximum basic-ability haste (110 with Shojin) inside
+  Actualizer's 30% window Q's cooldown is 1.57 s, so the refund left 0.07 s
+  of it and the 0.25 s cast time was all that held the next Mystic Shot back
+  (that one follows from the old code, not from a run of it); Q now comes up
+  exactly when its own bolt lands and goes out every 0.275 s, measured. The model: a cast starts a
+  flight of `attack range / the wiki's missile speed`
+  (`gen.<slot>.missileSpeed`: Q 2000, W 1700, E's homing bolt 2000, R 2000 —
+  0.275 s at his own 550 range, 0.324 s for W) and the damage, the Rising
+  Spell Force stack, the Essence Flux mark and the refund all wait for the
+  arrival, while the cooldown still starts at the cast, as in game. The
+  distance is the one the engine already assumes for a target (`Prep::build`
+  scales Hexoptics' Magnification by the attack range); E's 475-unit blink is
+  NOT modeled, so its bolt flies the full standing distance, the slowest
+  reading. Because the refund can bring an ability back up before its own
+  projectile has landed, each ability keeps a board of the flights in the air
+  (`IN_FLIGHT` 4, `launch`/`arrived`/`soonest`) instead of one pending
+  arrival; a full board lands the projectile at once rather than lose it, so
+  the slot count cannot cost damage. Two other things wrong in the same
+  driver were fixed with it, both inert in a 15 s fight (R is not recast):
+  Trueshot Barrage applied Mystic Shot's refund, which it does not, and a
+  recast R did not prime Sheen. One that is not inert: Essence Flux's
+  application granted no Rising Spell Force stack although the kit's notes
+  and the wiki both say every ability hit does (the cap is reached either way
+  in most fights — the naked level-16 fight is unchanged to the unit).
+  Effect on his cells: the squishy winner is the same build 0.25 s slower
+  (1.45 -> 1.70 s), and the ability-haste builds that had won the longer
+  fights lost their edge — the old #1 overall (Ionian Boots, Seraph's,
+  Actualizer, Lord Dominik's, Eclipse, Muramana) is now 17th with a mean of
+  2.37 s instead of 2.02, the old #1 vs tank is 61st (2.75 -> 3.30 s), and
+  the new winners — Infinity Edge with attack-speed boots in place of the
+  ability-haste boots and Eclipse — were 18th, 244th and outside the kept
+  rows. On the leaderboard he goes from where 2.02 would have put him, 39th,
+  to 65th of 172 overall, and 17th to 27th vs the tank. The kit stays
+  `"reviewed": false`: the dossier's open questions about the detonation's
+  on-hit procs are untouched. Only Ezreal re-keyed (the driver hash), so a
+  hand warm of his four cells (40 s) was the whole rebuild.
+  `jobs/kit-driver-guide.md` still tells a model NOT to model flight, and now
+  says a `--repair` of Ezreal must keep his. Checks: `python3
+  jobs/kit_driver.py check ezreal` and `check --all` (0 of 172 fail),
+  `python3 -m unittest test_builds test_kit_driver test_kit_sources
+  test_builds_leaderboard`, the four Node builds harnesses.
+
 ## The One-tricks tab (onetricks.py)
 
 - Counts, per champion, the players on each crawled region's latest Master+

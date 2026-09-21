@@ -11,15 +11,25 @@
  ],
  "notes": [
   "Casts go one at a time: a cast takes effect as it starts and then keeps Ezreal busy for its cast time (Mystic Shot, Essence Flux and Arcane Shift each have a 0.25 s cast time; Trueshot Barrage has 1 s) — no other cast and no attack starts inside that window. One busy_until timer, shared by every cast, enforces this throughout the fight.",
-  "Opens with Trueshot Barrage (R) at t = 0; its damage lands with the cast itself, and its 1 s cast time then holds every other cast and every attack until it ends. It is recast on cooldown if it comes up again inside the fight.",
+  "Every one of Ezreal's abilities is a projectile, and none of them does anything until it arrives: the cast schedules a flight and the damage, the Rising Spell Force stack, the Essence Flux detonation and Mystic Shot's cooldown refund all wait for the hit. The flight is the dummy's distance divided by the wiki's missile speed (Q 2000, W 1700, E's homing bolt 2000, R 2000), so at Ezreal's own 550 range it is 0.275 s for Q, E and R and 0.324 s for W. The cooldown itself still starts at the cast, as in game.",
+  "Opens with Trueshot Barrage (R) at t = 0: the arc leaves at the start of the cast (the wiki's 'effect at cast time start'), lands its flight later, and the 1 s cast time holds every other cast and every attack until it ends. It is recast on cooldown if it comes up again inside the fight.",
   "Mystic Shot (Q) is cast on cooldown throughout; it is modeled as able to critically strike, since the wiki explicitly calls it 'basic damage' rather than a pure spell-damage ability.",
-  "Every Mystic Shot hit reduces the CURRENT cooldowns of Q, W, E and R by 1.5 s; R is included in that reduction (the dossier leaves this open, and 'all of Ezreal's abilities' is read literally as including the ultimate).",
-  "Essence Flux (W) is cast on cooldown to refresh its mark (its 0.25 s cast time holds other casts and attacks, but it deals 0 damage on application, matching the wiki); the mark deals 0 damage itself and is detonated for its bonus magic damage by whichever of a basic attack, Mystic Shot or Arcane Shift lands on the dummy next, matching 'his next basic attack or ability against the target detonates the mark'. Total damage is the same regardless of which of the three detonates it, so no priority is enforced beyond natural timing.",
-  "Arcane Shift (E) is cast on cooldown for its own magic damage, landing with the cast; against a single stationary target it is always the 'nearest enemy' the homing bolt strikes, and its short blink/travel time is not modeled beyond its 0.25 s cast time.",
-  "Rising Spell Force (P) gains a stack (capped at 5, 10% bonus AS each) whenever an ability (Q, W's application, E, R, or the Essence Flux detonation) hits the dummy; all current stacks are modeled as sharing one refreshing 6 s timer rather than expiring individually, since casts land close enough together for this to make no practical difference.",
+  "Every Mystic Shot HIT reduces the current cooldowns of Q, W, E and R by 1.5 s, at the moment the bolt arrives; R is included in that reduction (the dossier leaves this open, and 'all of Ezreal's abilities' is read literally as including the ultimate). No other ability refunds anything.",
+  "Essence Flux (W) is cast on cooldown; its orb deals 0 damage on application, matching the wiki, and its mark goes on the dummy (and grants a Rising Spell Force stack) when the orb arrives, 4 s from there. The mark deals 0 damage itself and is detonated for its bonus magic damage by whichever of a basic attack, Mystic Shot or Arcane Shift lands on the dummy next. Total damage is the same regardless of which of the three detonates it, so no priority is enforced beyond natural timing.",
+  "Arcane Shift (E) is cast on cooldown for its own magic damage; against a single stationary target it is always the 'nearest enemy' the homing bolt strikes. The blink is not modeled: the bolt is flown the same standing distance as every other missile, which is the longest reading of it (a blink towards the dummy would shorten the flight).",
+  "Rising Spell Force (P) gains a stack (capped at 5, 10% bonus AS each) whenever an ability hits the dummy — Mystic Shot's bolt, Essence Flux's orb, Arcane Shift's bolt, Trueshot Barrage's arc, or the Essence Flux detonation; all current stacks are modeled as sharing one refreshing 6 s timer rather than expiring individually, since casts land close enough together for this to make no practical difference.",
   "Mana is not modeled: at level 16 nothing here plausibly runs the fight out of mana inside 15 s."
  ],
- "assumed": [],
+ "assumed": [
+  {
+   "path": "gen.<slot>.missileSpeed (the distance flown)",
+   "why": "the engine has no positions, so a missile's flight needs a distance: every one of Ezreal's is flown the champion's own attack range (550), the one distance the engine already assumes for a target (Prep::build scales Hexoptics' Magnification by it). The speeds themselves are the wiki's."
+  },
+  {
+   "path": "gen.E.missileSpeed (the blink)",
+   "why": "Arcane Shift blinks up to 475 units before the bolt fires, and the bolt flies from Ezreal's new position. With no positions to blink between, the bolt is flown the full standing distance; a blink towards the dummy would make it shorter, so this is the slowest reading."
+  }
+ ],
  "abilities": {
   "Q": {
    "name": "Mystic Shot",
@@ -79,7 +89,8 @@
     "apRatio": 0.4
    },
    "cdrOnHitS": 1.5,
-   "castTimeS": 0.25
+   "castTimeS": 0.25,
+   "missileSpeed": 2000
   },
   "W": {
    "damage": {
@@ -94,7 +105,8 @@
     "apRatio": 0.9
    },
    "markDurationS": 4,
-   "castTimeS": 0.25
+   "castTimeS": 0.25,
+   "missileSpeed": 1700
   },
   "E": {
    "damage": {
@@ -108,7 +120,8 @@
     "bonusAdRatio": 0.6,
     "apRatio": 0.75
    },
-   "castTimeS": 0.25
+   "castTimeS": 0.25,
+   "missileSpeed": 2000
   },
   "R": {
    "damage": {
@@ -120,7 +133,8 @@
     "bonusAdRatio": 1.0,
     "apRatio": 1.1
    },
-   "castTimeS": 1
+   "castTimeS": 1,
+   "missileSpeed": 2000
   }
  },
  "attack": {
@@ -129,6 +143,7 @@
  },
  "_provenance": [
   "Machine-written by jobs/kit_driver.py (sonnet, 2026-09-19) from data/builds/dossiers/ezreal.json and the archived sources; compiled and passed the fight checks; NOT reviewed by a person. The driver is engine/src/generated/ezreal.rs.",
-  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person."
+  "Repaired by jobs/kit_driver.py --repair (sonnet, 2026-09-20): the admitted kit and driver went back to the model with the fight checks they had come to fail; compiled and passed them; NOT reviewed by a person.",
+  "Hand-edited 2026-09-21 (Claude Opus 5, at Roger's request): every ability's missile flight is modeled, so the damage, the passive stack, the Essence Flux mark and Mystic Shot's cooldown refund land when the projectile arrives instead of at the cast. Three things wrong in the same code were fixed with it: Trueshot Barrage applied Mystic Shot's 1.5 s refund (it does not), Essence Flux's application granted no Rising Spell Force stack although this kit's notes and the wiki both say it does, and a recast Trueshot Barrage did not prime Sheen. The first and the third are inert in a 15 s fight, where R is never recast. STILL NOT a full person-review of the kit: the dossier's open questions about the detonation's on-hit procs are untouched."
  ]
 }

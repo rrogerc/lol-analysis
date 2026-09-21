@@ -96,7 +96,11 @@ rejects it. The rule, the one the hand-written kits follow:
   damage (an eruption, a detonation, a tether that breaks after 1.5 s, a recast
   that opens later), a channel (busy for its length, its ticks landing inside
   it). Model those with events. A missile's flight and a dash's travel are
-  not modeled: the dummy stands next to the champion.
+  not modeled: the dummy stands next to the champion. The one exception is
+  Ezreal, whose driver was hand-edited to fly every projectile the champion's
+  own attack range at the wiki's missile speed (his Mystic Shot refunds
+  cooldown on the HIT, so the arrival time is part of the kit); a `--repair`
+  of him must keep that, and nothing else is expected to have it.
 
 Keep every cast time in the kit (`gen.<slot>.castTimeS`) and ONE `busy_until`
 in the state (0.0 at the start), with these two helpers, as the reference
